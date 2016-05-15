@@ -18,7 +18,7 @@ func (r response) Result() interface{} {
 
 func (r response) StatusCode() int {
 	if r.Code == 0 {
-		// return OK by default
+		// return 200 by default
 		return http.StatusOK
 	}
 
