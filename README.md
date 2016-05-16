@@ -9,3 +9,37 @@
 **A small and opinionated framework for Go providing Ember Data compatible JSON APIs.**
 
 Fire is built on [api2go](https://github.com/manyminds/api2go), uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building JSON API services for your Ember projects.
+
+# Usage
+
+Get the package using the go tool:
+
+```bash
+$ go get github.com/256dpi/fire
+```
+
+Describe your models using structs tags and some special fields:
+
+```go
+type Post struct {
+	fire.Base `bson:",inline" fire:"post:posts"`
+	Title     string         `json:"title" valid:"required" bson:"title" fire:"filter"`
+	TextBody  string         `json:"text-body" valid:"-" bson:"text_body"`
+	NextPost  *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
+	Comments  fire.HasMany   `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+}
+
+type Comment struct {
+	fire.Base `bson:",inline" fire:"comment:comments"`
+	Message   string        `json:"message" valid:"required"`
+	PostID    bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+}
+```
+
+The embedded struct `fire.Base` has to be present in every model as it holds the document `ID` and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+
+Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/posts?filter[title]=foo` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
+
+All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as belongs to relationships and are required to have the `fire:"name:type"` struct tag.
+
+Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag.
