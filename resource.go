@@ -14,6 +14,7 @@ import (
 // An Action describes the currently called action on the API.
 type Action int
 
+// All the available actions.
 const (
 	FindAll Action = iota
 	FindOne
