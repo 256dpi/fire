@@ -18,6 +18,8 @@ Get the package using the go tool:
 $ go get github.com/256dpi/fire
 ```
 
+## Models
+
 Describe your models using structs tags and some special fields:
 
 ```go
@@ -38,8 +40,31 @@ type Comment struct {
 
 The embedded struct `fire.Base` has to be present in every model as it holds the document `ID` and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
-Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/posts?filter[title]=foo` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
+Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/foos?filter[field]=bar` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
 
-All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as belongs to relationships and are required to have the `fire:"name:type"` struct tag.
+All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as belongs to relationships and are required to have the `fire:"name:type"` struct tag. That way, the resources include the relationship links to load the relations like `/foos/1/bar`.
 
-Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag.
+Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag. This also generates links allows loading the related resources through `/foos/1/bars`.
+
+## Endpoints
+
+By declaring and endpoint, you can mount these resources in your gin application:
+
+```go
+var db *mgo.Databse
+var router *gin.Engine
+
+endpoint := fire.NewEndpoint(db)
+
+endpoint.AddResource(&fire.Resource{
+    Model:      &Post{},
+    Collection: "posts",
+})
+
+endpoint.AddResource(&fire.Resource{
+    Model:      &Comment{},
+    Collection: "comments",
+})
+
+endpoint.Register(router)
+```
