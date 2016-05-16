@@ -51,12 +51,19 @@ Finally, fields that have a `fire.HasMany` as their type define the inverse of a
 By declaring and endpoint, you can mount these resources in your gin application:
 
 ```go
-var db *mgo.Databse
+var db *mgo.Database
 var router *gin.Engine
 
 endpoint := fire.NewEndpoint(db)
-endpoint.AddResource(&fire.Resource{Model: &Post{}, Collection: "posts"})
-endpoint.AddResource(&fire.Resource{Model: &Comment{}, Collection: "comments"})
+endpoint.AddResource(&fire.Resource{
+    Model:      &Post{},
+    Collection: "posts"
+})
+
+endpoint.AddResource(&fire.Resource{
+    Model:       &Comment{},
+    Collection: "comments"
+})
 
 endpoint.Register(router)
 ```
