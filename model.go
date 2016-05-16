@@ -211,15 +211,18 @@ func (b *Base) parseTags() {
 
 /* api2go.jsonapi interface */
 
+// GetName implements the jsonapi.EntityNamer interface.
 func (b *Base) GetName() string {
 	b.parseTags()
 	return b.pluralName
 }
 
+// GetID implements the jsonapi.MarshalIdentifier interface.
 func (b *Base) GetID() string {
 	return b.DocID.Hex()
 }
 
+// SetID implements the jsonapi.UnmarshalIdentifier interface.
 func (b *Base) SetID(id string) error {
 	if len(id) == 0 {
 		b.DocID = bson.NewObjectId()
@@ -234,6 +237,7 @@ func (b *Base) SetID(id string) error {
 	return nil
 }
 
+// GetReferences implements the jsonapi.MarshalReferences interface.
 func (b *Base) GetReferences() []jsonapi.Reference {
 	b.parseTags()
 
@@ -261,6 +265,7 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	return refs
 }
 
+// GetReferencedIDs implements the jsonapi.MarshalLinkedRelations interface.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	b.parseTags()
 
@@ -299,6 +304,7 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	return ids
 }
 
+// SetToOneReferenceID implements the jsonapi.UnmarshalToOneRelations interface.
 func (b *Base) SetToOneReferenceID(name, id string) error {
 	b.parseTags()
 
@@ -328,3 +334,5 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 
 	return nil
 }
+
+// TODO: Implement jsonapi.UnmarshalToManyRelations interface.
