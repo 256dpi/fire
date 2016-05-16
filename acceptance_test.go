@@ -200,7 +200,7 @@ func TestComments(t *testing.T) {
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
 		})
 
-	// get empty list of related comments
+	// get list of related comments
 	r.GET(link).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)

@@ -42,7 +42,3 @@ func newStructPointer(from interface{}) interface{} {
 func sliceContent(pointer interface{}) interface{} {
 	return reflect.ValueOf(pointer).Elem().Interface()
 }
-
-func equalTypes(a, b interface{}) bool {
-	return reflect.TypeOf(a) == reflect.TypeOf(b)
-}

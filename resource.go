@@ -180,11 +180,6 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 		}
 	}
 
-	// check type
-	if !equalTypes(r.Model, obj) {
-		return nil, api2go.NewHTTPError(nil, "invalid input given", http.StatusBadRequest)
-	}
-
 	// get model
 	model, ok := obj.(Model)
 	if !ok {
@@ -226,11 +221,6 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 		if !ok {
 			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
 		}
-	}
-
-	// check type
-	if !equalTypes(r.Model, obj) {
-		return nil, api2go.NewHTTPError(nil, "invalid input given", http.StatusBadRequest)
 	}
 
 	// get model
