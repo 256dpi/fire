@@ -55,6 +55,7 @@ var db *mgo.Database
 var router *gin.Engine
 
 endpoint := fire.NewEndpoint(db)
+
 endpoint.AddResource(&fire.Resource{
     Model:      &Post{},
     Collection: "posts"
@@ -67,3 +68,4 @@ endpoint.AddResource(&fire.Resource{
 
 endpoint.Register(router)
 ```
+

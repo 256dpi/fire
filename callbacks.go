@@ -66,18 +66,13 @@ func VerifyReferencesValidator(relations map[string]string) Callback {
 		// check all relations
 		for relation, collection := range relations {
 			// read referenced fire.Resource id
-			id, err := ctx.Model.GetToOneReferenceID(relation)
-			if err != nil {
-				return err, nil
-			}
-
-			// continue if relation is not set
-			if len(id) == 0 {
+			id := ctx.Model.ReferenceID(relation)
+			if id == nil {
 				continue
 			}
 
 			// count entities in database
-			n, err := ctx.DB.C(collection).FindId(bson.ObjectIdHex(id)).Limit(1).Count()
+			n, err := ctx.DB.C(collection).FindId(id).Limit(1).Count()
 			if err != nil {
 				return nil, err
 			}

@@ -36,7 +36,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	// create context
 	ctx := &Context{
 		Action: Delete,
-		ID:     post.getBase().ID,
+		ID:     post.ID(),
 		DB:     db,
 	}
 
@@ -47,7 +47,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 
 	// create comment
 	saveModel(db, "comments", &Comment{
-		PostID: post.getBase().ID,
+		PostID: post.ID(),
 	})
 
 	// call validator
@@ -84,7 +84,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	// create post & comment
 	post := saveModel(db, "posts", &Post{})
 	comment2 := saveModel(db, "comments", &Comment{
-		PostID: post.getBase().ID,
+		PostID: post.ID(),
 	})
 
 	// update ctx

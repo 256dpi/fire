@@ -3,6 +3,7 @@ package fire
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/manyminds/api2go"
+	"github.com/manyminds/api2go/jsonapi"
 	"gopkg.in/mgo.v2"
 )
 
@@ -29,7 +30,7 @@ func (e *Endpoint) AddResource(resource *Resource) {
 	Init(resource.Model)
 
 	// create entry in name map
-	e.nameMap[resource.Model.GetName()] = resource.Model.getBase().singularName
+	e.nameMap[resource.Model.getBase().pluralName] = resource.Model.getBase().singularName
 
 	// add resource to internal list
 	resource.endpoint = e
@@ -58,6 +59,6 @@ func (e *Endpoint) Register(prefix string, router gin.IRouter) {
 		resource.adapter = adapter
 
 		// add resource to api
-		api.AddResource(resource.Model, resource)
+		api.AddResource(resource.Model.(jsonapi.MarshalIdentifier), resource)
 	}
 }

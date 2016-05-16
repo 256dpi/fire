@@ -238,17 +238,17 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 	// create comments
 	saveModel(db, "comments", &Comment{
 		Message: "Comment 1",
-		PostID:  post1.getBase().ID,
+		PostID:  post1.ID(),
 	})
 	saveModel(db, "comments", &Comment{
 		Message: "Comment 2",
-		PostID:  post2.getBase().ID,
+		PostID:  post2.ID(),
 	})
 
 	r := gofight.New()
 
 	// get related post
-	r.GET("/posts/"+post1.GetID()+"/comments").
+	r.GET("/posts/"+post1.ID().Hex()+"/comments").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
 			obj := json.Path("data").Index(0)
@@ -288,7 +288,7 @@ func TestToOneRelationship(t *testing.T) {
 					"next-post": {
 						"data": {
 							"type": "posts",
-							"id": "`+post.GetID()+`"
+							"id": "`+post.ID().Hex()+`"
 						}
 					}
 				}
@@ -302,7 +302,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
-			assert.Equal(t, post.GetID(), obj.Path("relationships.next-post.data.id").Data().(string))
+			assert.Equal(t, post.ID().Hex(), obj.Path("relationships.next-post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.next-post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.next-post.links.related").Data().(string))
 

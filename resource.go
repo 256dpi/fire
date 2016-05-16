@@ -186,7 +186,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Collection).UpdateId(ctx.Model.getBase().ID, ctx.Model)
+	err = r.endpoint.db.C(r.Collection).UpdateId(ctx.Model.ID(), ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}
