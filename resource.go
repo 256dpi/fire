@@ -30,24 +30,6 @@ type Context struct {
 	Api2GoReq  *api2go.Request
 }
 
-type Callback func(*Context) (error, error)
-
-func Combine(callbacks... Callback) Callback {
-	return func(ctx *Context) (error, error) {
-		// call all callbacks
-		for _, cb := range callbacks {
-			err, sysErr := cb(ctx)
-
-			// return early if an error occurs
-			if err != nil || sysErr != nil {
-				return err, sysErr
-			}
-		}
-
-		return nil, nil
-	}
-}
-
 type Resource struct {
 	Model      Model
 	Collection string

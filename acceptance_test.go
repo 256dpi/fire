@@ -352,19 +352,3 @@ func TestFiltering(t *testing.T) {
 			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
 		})
 }
-
-func TestCombine(t *testing.T) {
-	var counter int
-
-	cb := func(ctx *Context)(error, error) {
-		counter++
-		return nil, nil
-	}
-
-	ccb := Combine(cb, cb, cb)
-
-	err, sysErr := ccb(nil)
-	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
-	assert.Equal(t, 3, counter)
-}
