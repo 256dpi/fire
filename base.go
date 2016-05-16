@@ -101,13 +101,9 @@ func (b *Base) parseTags() {
 	}
 }
 
-func (b *Base) getSingularName() string {
+func (b *Base) getBase() *Base {
 	b.parseTags()
-	return b.singularName
-}
-
-func (b *Base) getObjectID() bson.ObjectId {
-	return b.ID
+	return b
 }
 
 // Validate validates the parent model.

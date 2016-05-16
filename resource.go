@@ -73,7 +73,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	query := bson.M{}
 
 	// add self referencing filter
-	if value, ok := getQueryParam(&req, r.Model.getSingularName() + "-id"); ok {
+	if value, ok := getQueryParam(&req, r.Model.getBase().singularName + "-id"); ok {
 		query["_id"] = value
 	}
 
@@ -193,7 +193,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Collection).UpdateId(ctx.Model.getObjectID(), ctx.Model)
+	err = r.endpoint.db.C(r.Collection).UpdateId(ctx.Model.getBase().ID, ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}

@@ -1,7 +1,5 @@
 package fire
 
-import "gopkg.in/mgo.v2/bson"
-
 type Model interface {
 	Validate(bool) error
 	GetName() string
@@ -11,8 +9,7 @@ type Model interface {
 	SetToOneReferenceID(string, string) error
 
 	initialize(interface{})
-	getSingularName() string
-	getObjectID() bson.ObjectId
+	getBase() *Base
 }
 
 func Init(model Model) Model {
