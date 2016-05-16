@@ -84,8 +84,6 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		}
 	}
 
-	// TODO: add has many filters automatically
-
 	// TODO: support query filters using fire:"filter" struct tags.
 
 	// add query filters
