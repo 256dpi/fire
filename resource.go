@@ -77,7 +77,14 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		query["_id"] = value
 	}
 
-	// TODO: add belongs to and has many filters automatically
+	// add to one relationship filters
+	for _, rel := range r.Model.getBase().toOneRelationships {
+		if value, ok := getQueryParam(&req, rel.name + "-id"); ok {
+			query[rel.dbField] = value
+		}
+	}
+
+	// TODO: add has many filters automatically
 
 	// TODO: support query filters using fire:"filter" struct tags.
 

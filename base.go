@@ -20,6 +20,7 @@ type relationship struct {
 	typ      string
 	index    int
 	optional bool
+	dbField  string
 }
 
 // Base is the base for every fire model.
@@ -77,12 +78,15 @@ func (b *Base) parseTags() {
 		// check if field is a to one relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
 			values := strings.Split(field.Tag.Get("fire"), ":")
+			// TODO: panic if tags is empty or malformed
 			if len(values) == 2 {
 				b.toOneRelationships[values[0]] = relationship{
 					name:     values[0],
 					typ:      values[1],
 					index:    i,
 					optional: field.Type == optionalToOneType,
+					// TODO: panic if tags is empty or malformed
+					dbField: field.Tag.Get("bson"),
 				}
 			}
 		}
@@ -90,6 +94,7 @@ func (b *Base) parseTags() {
 		// check if field is a has many relationship
 		if field.Type == hasManyType {
 			values := strings.Split(field.Tag.Get("fire"), ":")
+			// TODO: panic if tags is empty or malformed
 			if len(values) == 2 {
 				b.hasManyRelationships[values[0]] = relationship{
 					name:  values[0],

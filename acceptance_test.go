@@ -222,6 +222,51 @@ func TestHasManyRelationship(t *testing.T) {
 		})
 }
 
+func TestHasManyRelationshipFiltering(t *testing.T) {
+	server, db, close := buildServer(&Resource{
+		Model:      &Post{},
+		Collection: "posts",
+	}, &Resource{
+		Model:      &Comment{},
+		Collection: "comments",
+	})
+
+	defer close()
+
+	// create posts
+	post1 := saveModel(db, "posts", &Post{
+		Title: "Post 1",
+	})
+	post2 := saveModel(db, "posts", &Post{
+		Title: "Post 2",
+	})
+
+	// create comments
+	saveModel(db, "comments", &Comment{
+		Message: "Comment 1",
+		PostID: post1.getBase().ID,
+	})
+	saveModel(db, "comments", &Comment{
+		Message: "Comment 2",
+		PostID: post2.getBase().ID,
+	})
+
+	r := gofight.New()
+
+	// get related post
+	r.GET("/posts/" + post1.GetID() + "/comments").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj := json.Path("data").Index(0)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 1, countChildren(json.Path("data")))
+		assert.Equal(t, "comments", obj.Path("type").Data().(string))
+		assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+		assert.Equal(t, "Comment 1", obj.Path("attributes.message").Data().(string))
+	})
+}
+
 func TestToOneRelationship(t *testing.T) {
 	server, db, close := buildServer(&Resource{
 		Model:      &Post{},
@@ -230,12 +275,12 @@ func TestToOneRelationship(t *testing.T) {
 
 	defer close()
 
-	r := gofight.New()
-
 	// create post
 	post := saveModel(db, "posts", &Post{
 		Title: "Hello World!",
 	})
+
+	r := gofight.New()
 
 	var link string
 
