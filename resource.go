@@ -22,8 +22,8 @@ const (
 )
 
 type Context struct {
-	ctx *gin.Context
-	req *api2go.Request
+	GinContext *gin.Context
+	Api2GoReq *api2go.Request
 }
 
 type Authorizer func(Action, *Context) (bool, error)
@@ -313,7 +313,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 
 func (r *Resource) buildContext(req *api2go.Request) *Context {
 	return &Context{
-		ctx: r.adapter.getContext(req),
-		req: req,
+		GinContext: r.adapter.getContext(req),
+		Api2GoReq: req,
 	}
 }
