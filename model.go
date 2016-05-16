@@ -49,7 +49,6 @@ type relationship struct {
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
 
-	baseBridge
 	parentModel          interface{}
 	singularName         string
 	pluralName           string
@@ -59,7 +58,6 @@ type Base struct {
 }
 
 func (b *Base) initialize(model interface{}) {
-	b.base = b
 	b.parentModel = model
 
 	// set id if missing
@@ -211,24 +209,20 @@ func (b *Base) parseTags() {
 	}
 }
 
-/* api2go.jsonapi interface bridge */
+/* api2go.jsonapi interface */
 
-type baseBridge struct {
-	base *Base
+func (b *Base) GetName() string {
+	b.parseTags()
+	return b.pluralName
 }
 
-func (b *baseBridge) GetName() string {
-	b.base.parseTags()
-	return b.base.pluralName
+func (b *Base) GetID() string {
+	return b.DocID.Hex()
 }
 
-func (b *baseBridge) GetID() string {
-	return b.base.DocID.Hex()
-}
-
-func (b *baseBridge) SetID(id string) error {
+func (b *Base) SetID(id string) error {
 	if len(id) == 0 {
-		b.base.DocID = bson.NewObjectId()
+		b.DocID = bson.NewObjectId()
 		return nil
 	}
 
@@ -236,18 +230,18 @@ func (b *baseBridge) SetID(id string) error {
 		return ErrInvalidID
 	}
 
-	b.base.DocID = bson.ObjectIdHex(id)
+	b.DocID = bson.ObjectIdHex(id)
 	return nil
 }
 
-func (b *baseBridge) GetReferences() []jsonapi.Reference {
-	b.base.parseTags()
+func (b *Base) GetReferences() []jsonapi.Reference {
+	b.parseTags()
 
 	// prepare result
 	var refs []jsonapi.Reference
 
 	// add to one relationships
-	for _, rel := range b.base.toOneRelationships {
+	for _, rel := range b.toOneRelationships {
 		refs = append(refs, jsonapi.Reference{
 			Type:        rel.typ,
 			Name:        rel.name,
@@ -256,7 +250,7 @@ func (b *baseBridge) GetReferences() []jsonapi.Reference {
 	}
 
 	// add has many relationships
-	for _, rel := range b.base.hasManyRelationships {
+	for _, rel := range b.hasManyRelationships {
 		refs = append(refs, jsonapi.Reference{
 			Type:        rel.typ,
 			Name:        rel.name,
@@ -267,15 +261,15 @@ func (b *baseBridge) GetReferences() []jsonapi.Reference {
 	return refs
 }
 
-func (b *baseBridge) GetReferencedIDs() []jsonapi.ReferenceID {
-	b.base.parseTags()
+func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
+	b.parseTags()
 
 	// prepare result
 	var ids []jsonapi.ReferenceID
 
 	// add to one relationships
-	for _, rel := range b.base.toOneRelationships {
-		field := reflect.ValueOf(b.base.parentModel).Elem().Field(rel.index)
+	for _, rel := range b.toOneRelationships {
+		field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
 
 		// prepare id
 		var id string
@@ -305,8 +299,8 @@ func (b *baseBridge) GetReferencedIDs() []jsonapi.ReferenceID {
 	return ids
 }
 
-func (b *baseBridge) SetToOneReferenceID(name, id string) error {
-	b.base.parseTags()
+func (b *Base) SetToOneReferenceID(name, id string) error {
+	b.parseTags()
 
 	// check object id
 	if !bson.IsObjectIdHex(id) {
@@ -314,13 +308,13 @@ func (b *baseBridge) SetToOneReferenceID(name, id string) error {
 	}
 
 	// try to find field in relationships map
-	rel, ok := b.base.toOneRelationships[name]
+	rel, ok := b.toOneRelationships[name]
 	if !ok {
 		return errors.New("missing relationship " + name)
 	}
 
 	// get field
-	field := reflect.ValueOf(b.base.parentModel).Elem().Field(rel.index)
+	field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
 
 	// create id
 	oid := bson.ObjectIdHex(id)
