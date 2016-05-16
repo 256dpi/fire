@@ -32,11 +32,15 @@ func TestDependentResourcesValidator(t *testing.T) {
 	// create post
 	post1 := saveModel(db, "posts", &Post{})
 
-	// call validator
-	err, sysErr := validator(&Context{
+	// create context
+	ctx := &Context{
+		Action: Delete,
 		ID: post1.getBase().ID,
 		DB: db,
-	})
+	}
+
+	// call validator
+	err, sysErr := validator(ctx)
 
 	assert.NoError(t, err)
 	assert.NoError(t, sysErr)
@@ -47,10 +51,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// call validator
-	err, sysErr = validator(&Context{
-		ID: post1.getBase().ID,
-		DB: db,
-	})
+	err, sysErr = validator(ctx)
 
 	assert.Error(t, err)
 	assert.NoError(t, sysErr)

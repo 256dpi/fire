@@ -34,11 +34,9 @@ type Resource struct {
 	Model      Model
 	Collection string
 
-	Authorizer      Callback
-	CreateValidator Callback
-	UpdateValidator Callback
-	DeleteValidator Callback
-	Cleaner         Callback
+	Authorizer Callback
+	Validator  Callback
+	Cleaner    Callback
 
 	adapter  *adapter
 	endpoint *Endpoint
@@ -152,8 +150,8 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 		return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 	}
 
-	// run delete validator if available
-	if err := r.runCallback(r.CreateValidator, ctx); err != nil {
+	// run validator if available
+	if err := r.runCallback(r.Validator, ctx); err != nil {
 		return nil, *err
 	}
 
@@ -182,8 +180,8 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 		return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 	}
 
-	// run update validator if available
-	if err := r.runCallback(r.UpdateValidator, ctx); err != nil {
+	// run validator if available
+	if err := r.runCallback(r.Validator, ctx); err != nil {
 		return nil, *err
 	}
 
@@ -211,8 +209,8 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 		return nil, *err
 	}
 
-	// run delete validator if available
-	if err := r.runCallback(r.DeleteValidator, ctx); err != nil {
+	// run validator if available
+	if err := r.runCallback(r.Validator, ctx); err != nil {
 		return nil, *err
 	}
 

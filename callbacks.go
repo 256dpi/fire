@@ -30,6 +30,11 @@ func Combine(callbacks... Callback) Callback {
 // resources from breaking relations when requested to be deleted.
 func DependentResourcesValidator(relations map[string]string) Callback {
 	return func(ctx *Context) (error, error) {
+		// only run validator on Delete
+		if ctx.Action != Delete {
+			return nil, nil
+		}
+
 		// check all relations
 		for coll, field := range relations {
 			// count referencing documents
