@@ -231,7 +231,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 	return &Context{
 		Action:     act,
-		DB: r.endpoint.db,
+		DB:         r.endpoint.db,
 		GinContext: r.adapter.getContext(req),
 		Api2GoReq:  req,
 	}

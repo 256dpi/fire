@@ -9,7 +9,7 @@ import (
 type Callback func(*Context) (error, error)
 
 // Combine combines multiple callbacks to one.
-func Combine(callbacks... Callback) Callback {
+func Combine(callbacks ...Callback) Callback {
 	return func(ctx *Context) (error, error) {
 		// call all callbacks
 		for _, cb := range callbacks {
@@ -46,6 +46,45 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 			// immediately return if a document is found
 			if n == 1 {
 				return errors.New("resource has dependent resources"), nil
+			}
+		}
+
+		// pass validation
+		return nil, nil
+	}
+}
+
+// The VerifyReferencesValidator makes sure all references in the document are
+// existing and also reference properly intermediary documents.
+func VerifyReferencesValidator(validateableRelations map[string]string) Callback {
+	return func(ctx *Context) (error, error) {
+		// only run validator on Create and Update
+		if ctx.Action != Create && ctx.Action != Update {
+			return nil, nil
+		}
+
+		// check all relations
+		for relation, collection := range validateableRelations {
+			// read referenced fire.Resource id
+			id, err := ctx.Model.GetToOneReferenceID(relation)
+			if err != nil {
+				return err, nil
+			}
+
+			// continue if relation is not set
+			if len(id) == 0 {
+				continue
+			}
+
+			// count entities in database
+			n, err := ctx.DB.C(collection).FindId(bson.ObjectIdHex(id)).Limit(1).Count()
+			if err != nil {
+				return nil, err
+			}
+
+			// check for existence
+			if n != 1 {
+				return errors.New("missing required relationship " + relation), nil
 			}
 		}
 
