@@ -73,6 +73,11 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// prepare query
 	query := bson.M{}
 
+	// add self referencing filter
+	if value, ok := getQueryParam(&req, r.Model.getSingularName() + "-id"); ok {
+		query["_id"] = value
+	}
+
 	// add query filters
 	for _, filter := range r.QueryFilters {
 		if value, ok := getQueryParam(&req, filter.Param); ok {

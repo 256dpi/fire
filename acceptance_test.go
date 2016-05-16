@@ -225,10 +225,6 @@ func TestToOneRelationship(t *testing.T) {
 	server, db, close := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
-		QueryFilters: []Filter{
-			// TODO: this should be automatically inferred somehow.
-			{Param: "post-id", Field: "_id"},
-		},
 	})
 
 	defer close()
