@@ -7,7 +7,7 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-// An Endpoint provides access to multiple resources.
+// An Endpoint mounts and provides access to multiple resources.
 type Endpoint struct {
 	db        *mgo.Database
 	nameMap   map[string]string

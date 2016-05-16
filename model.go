@@ -10,6 +10,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
 	ReferenceID(string) *bson.ObjectId

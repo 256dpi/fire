@@ -11,6 +11,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// An Action describes the currently called action on the API.
 type Action int
 
 const (
@@ -21,6 +22,7 @@ const (
 	Delete
 )
 
+// A Context provides useful contextual information to callbacks.
 type Context struct {
 	Action     Action
 	Model      Model
@@ -30,6 +32,7 @@ type Context struct {
 	Api2GoReq  *api2go.Request
 }
 
+// A Resource provides an interface to a model.
 type Resource struct {
 	Model      Model
 	Collection string
@@ -42,11 +45,15 @@ type Resource struct {
 	endpoint *Endpoint
 }
 
+/* api2go interface */
+
+// InitializeObject implements the api2go.ObjectInitializer interface.
 func (r *Resource) InitializeObject(obj interface{}) {
 	// initialize model
 	Init(obj.(Model))
 }
 
+// FindAll implements the api2go.FindAll interface.
 func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// clean query params
 	r.cleanQueryParams(&req)
@@ -102,6 +109,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	return &response{Data: slice}, nil
 }
 
+// FindOne implements a part of the api2go.CRUD interface.
 func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, error) {
 	// validate id
 	if !bson.IsObjectIdHex(id) {
@@ -134,6 +142,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	return &response{Data: model}, nil
 }
 
+// Create implements a part of the api2go.CRUD interface.
 func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder, error) {
 	// build context
 	ctx := r.buildContext(Create, &req)
@@ -164,6 +173,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	return &response{Data: ctx.Model, Code: http.StatusCreated}, nil
 }
 
+// Update implements a part of the api2go.CRUD interface.
 func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder, error) {
 	// build context
 	ctx := r.buildContext(Update, &req)
@@ -194,6 +204,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	return &response{Data: ctx.Model}, nil
 }
 
+// Delete implements a part of the api2go.CRUD interface.
 func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, error) {
 	// validate id
 	if !bson.IsObjectIdHex(id) {
