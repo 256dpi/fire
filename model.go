@@ -24,7 +24,7 @@ func Init(model Model) Model {
 	return model
 }
 
-var ErrInvalidID = errors.New("invalid id")
+var errInvalidID = errors.New("invalid id")
 
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
@@ -102,7 +102,7 @@ func (b *Base) ReferenceID(name string) *bson.ObjectId {
 func (b *Base) Validate(fresh bool) error {
 	// validate id
 	if !b.DocID.Valid() {
-		return ErrInvalidID
+		return errInvalidID
 	}
 
 	// validate parent model
@@ -230,7 +230,7 @@ func (b *Base) SetID(id string) error {
 	}
 
 	if !bson.IsObjectIdHex(id) {
-		return ErrInvalidID
+		return errInvalidID
 	}
 
 	b.DocID = bson.ObjectIdHex(id)
@@ -310,7 +310,7 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 
 	// check object id
 	if !bson.IsObjectIdHex(id) {
-		return ErrInvalidID
+		return errInvalidID
 	}
 
 	// try to find field in relationships map
