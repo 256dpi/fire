@@ -23,7 +23,7 @@ type Comment struct {
 	PostID  bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-func TestPosts(t *testing.T) {
+func TestBasicOperations(t *testing.T) {
 	server := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
@@ -126,7 +126,7 @@ func TestPosts(t *testing.T) {
 		})
 }
 
-func TestComments(t *testing.T) {
+func TestHasManyRelationship(t *testing.T) {
 	server := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
