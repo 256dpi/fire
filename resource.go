@@ -58,9 +58,7 @@ type Resource struct {
 
 func (r *Resource) InitializeObject(obj interface{}) {
 	// initialize model
-	if model, ok := obj.(Model); ok {
-		Init(model)
-	}
+	Init(obj.(Model))
 }
 
 func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
@@ -121,9 +119,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// initialize each model
 	s := reflect.ValueOf(slice)
 	for i := 0; i < s.Len(); i++ {
-		if model, ok := s.Index(i).Interface().(Model); ok {
-			Init(model)
-		}
+		Init(s.Index(i).Interface().(Model))
 	}
 
 	return &response{Data: slice}, nil
@@ -157,10 +153,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	}
 
 	// get model
-	model, ok := obj.(Model)
-	if !ok {
-		return nil, api2go.NewHTTPError(nil, "invalid input given", http.StatusBadRequest)
-	}
+	model := obj.(Model)
 
 	// initialize model
 	Init(model)
@@ -181,10 +174,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// get model
-	model, ok := obj.(Model)
-	if !ok {
-		return nil, api2go.NewHTTPError(nil, "invalid input given", http.StatusBadRequest)
-	}
+	model := obj.(Model)
 
 	// validate model
 	err := model.Validate(true)
@@ -224,10 +214,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// get model
-	model, ok := obj.(Model)
-	if !ok {
-		return nil, api2go.NewHTTPError(nil, "invalid input given", http.StatusBadRequest)
-	}
+	model := obj.(Model)
 
 	// validate model
 	err := model.Validate(false)
