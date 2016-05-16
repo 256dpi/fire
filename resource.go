@@ -59,6 +59,9 @@ func (r *Resource) InitializeObject(obj interface{}) {
 }
 
 func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
+	// clean query params
+	r.cleanQueryParams(&req)
+
 	// build context
 	ctx := r.buildContext(FindAll, &req)
 
@@ -67,32 +70,8 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		return nil, *err
 	}
 
-	// prepare slice
-	pointer := newSlicePointer(r.Model)
-
 	// prepare query
 	query := bson.M{}
-
-	// process ugly QueryParams
-	for param, values := range req.QueryParams {
-		// TODO: Use *Name param to lookup relationship type and add the proper
-		// filter as the query parameter
-
-		// remove *Name params as not needed
-		if strings.HasSuffix(param, "Name") {
-			delete(req.QueryParams, param)
-		}
-
-		// map *ID to singular names using the resourceNameMap
-		if strings.HasSuffix(param, "ID") {
-			pluralName := strings.Replace(param, "ID", "", 1)
-			singularName, ok := r.endpoint.nameMap[pluralName]
-			if ok {
-				delete(req.QueryParams, param)
-				req.QueryParams[singularName+"-id"] = values
-			}
-		}
-	}
 
 	// add query filters
 	for _, filter := range r.QueryFilters {
@@ -100,6 +79,9 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 			query[filter.Field] = value
 		}
 	}
+
+	// prepare slice
+	pointer := newSlicePointer(r.Model)
 
 	// query db
 	err := r.endpoint.db.C(r.Collection).Find(query).All(pointer)
@@ -250,6 +232,25 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 		Action:     act,
 		GinContext: r.adapter.getContext(req),
 		Api2GoReq:  req,
+	}
+}
+
+func (r *Resource) cleanQueryParams(req *api2go.Request) {
+	for param, values := range req.QueryParams {
+		// remove *Name params as not needed
+		if strings.HasSuffix(param, "Name") {
+			delete(req.QueryParams, param)
+		}
+
+		// map *ID to dashed singular names using the endpoints nameMap
+		if strings.HasSuffix(param, "ID") {
+			pluralName := strings.Replace(param, "ID", "", 1)
+			singularName, ok := r.endpoint.nameMap[pluralName]
+			if ok {
+				delete(req.QueryParams, param)
+				req.QueryParams[singularName+"-id"] = values
+			}
+		}
 	}
 }
 
