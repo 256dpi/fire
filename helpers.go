@@ -15,7 +15,7 @@ func getQueryParam(req *api2go.Request, param string) (interface{}, bool) {
 		return "", false
 	}
 
-	if !strings.HasSuffix(param, "-id") && !strings.HasSuffix(param, "ID") {
+	if !strings.HasSuffix(param, "-id") {
 		return req.QueryParams[param][0], true
 	}
 
