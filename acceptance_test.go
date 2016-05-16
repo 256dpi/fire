@@ -225,6 +225,10 @@ func TestToOneRelationship(t *testing.T) {
 	server, db, close := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
+		QueryFilters: []Filter{
+			// TODO: this should be automatically inferred somehow.
+			{Param: "post-id", Field: "_id"},
+		},
 	})
 
 	defer close()
@@ -236,7 +240,9 @@ func TestToOneRelationship(t *testing.T) {
 		Title: "Hello World!",
 	})
 
-	// create related comment
+	var link string
+
+	// create relating post
 	r.POST("/posts").
 		SetBody(`{
 			"data": {
@@ -265,5 +271,20 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, post.GetID(), obj.Path("relationships.next-post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.next-post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.next-post.links.related").Data().(string))
+
+			link = obj.Path("relationships.next-post.links.related").Data().(string)
+		})
+
+	// get related post
+	r.GET(link).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
 		})
 }

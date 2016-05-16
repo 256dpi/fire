@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"github.com/Jeffail/gabs"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
 )
@@ -50,4 +51,9 @@ func saveModel(db *mgo.Database, collection string, model Model) Model {
 	}
 
 	return model
+}
+
+func countChildren(c *gabs.Container) int {
+	list, _ := c.Children()
+	return len(list)
 }
