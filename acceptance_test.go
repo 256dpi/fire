@@ -27,19 +27,18 @@ func TestPosts(t *testing.T) {
 	server := buildServer(&Resource{
 		Model: &Post{},
 		Collection: "posts",
-	}, &Resource{
-		Model: &Comment{},
-		Collection: "comments",
 	})
 
 	r := gofight.New()
 
+	// get empty list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
 
+	// create post
 	r.POST("/posts").
 		SetBody(`{
 			"data": {
@@ -62,6 +61,7 @@ func TestPosts(t *testing.T) {
 
 	var id string
 
+	// get list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
@@ -76,6 +76,7 @@ func TestPosts(t *testing.T) {
 			id = obj.Path("id").Data().(string)
 		})
 
+	// update post
 	r.PATCH("/posts/" + id).
 		SetBody(`{
 			"data": {
@@ -97,6 +98,7 @@ func TestPosts(t *testing.T) {
 			assert.Equal(t, "Some Text...", obj.Path("attributes.text-body").Data().(string))
 		})
 
+	// get single post
 	r.GET("/posts/" + id).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
@@ -109,12 +111,14 @@ func TestPosts(t *testing.T) {
 			assert.Equal(t, "Some Text...", obj.Path("attributes.text-body").Data().(string))
 		})
 
+	// delete post
 	r.DELETE("/posts/" + id).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusNoContent, r.Code)
 			assert.Equal(t, "", r.Body.String())
 		})
 
+	// get empty list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
