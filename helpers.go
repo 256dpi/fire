@@ -42,3 +42,15 @@ func newStructPointer(from interface{}) interface{} {
 func sliceContent(pointer interface{}) interface{} {
 	return reflect.ValueOf(pointer).Elem().Interface()
 }
+
+func getFirstTagValue(field *reflect.StructField, name string) string {
+	tag := field.Tag.Get(name)
+	values := strings.Split(tag, ",")
+
+	// check length
+	if len(tag) == 0 || len(values[0]) == 0 {
+		panic("expected to find value in the tag " + name)
+	}
+
+	return values[0]
+}

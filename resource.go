@@ -31,16 +31,9 @@ type Context struct {
 
 type Callback func(*Context) (error, error)
 
-type Filter struct {
-	Param string
-	Field string
-}
-
 type Resource struct {
 	Model      Model
 	Collection string
-
-	QueryFilters []Filter
 
 	Authorizer      Callback
 	CreateValidator Callback
@@ -73,23 +66,21 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	query := bson.M{}
 
 	// add self referencing filter
-	if value, ok := getQueryParam(&req, r.Model.getBase().singularName + "-id"); ok {
+	if value, ok := getQueryParam(&req, r.Model.getBase().singularName+"-id"); ok {
 		query["_id"] = value
 	}
 
 	// add to one relationship filters
 	for _, rel := range r.Model.getBase().toOneRelationships {
-		if value, ok := getQueryParam(&req, rel.name + "-id"); ok {
+		if value, ok := getQueryParam(&req, rel.name+"-id"); ok {
 			query[rel.dbField] = value
 		}
 	}
 
-	// TODO: support query filters using fire:"filter" struct tags.
-
-	// add query filters
-	for _, filter := range r.QueryFilters {
-		if value, ok := getQueryParam(&req, filter.Param); ok {
-			query[filter.Field] = value
+	// add filters
+	for _, attr := range r.Model.getBase().attributes {
+		if value, ok := getQueryParam(&req, "filter["+attr.name+"]"); ok {
+			query[attr.dbField] = value
 		}
 	}
 

@@ -15,6 +15,14 @@ var ErrInvalidID = errors.New("invalid id")
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
+type attribute struct {
+	name       string
+	index      int
+	optional   bool
+	filterable bool
+	dbField    string
+}
+
 type relationship struct {
 	name     string
 	typ      string
@@ -30,6 +38,7 @@ type Base struct {
 	parentModel          interface{}
 	singularName         string
 	pluralName           string
+	attributes           map[string]attribute
 	toOneRelationships   map[string]relationship
 	hasManyRelationships map[string]relationship
 }
@@ -50,6 +59,7 @@ func (b *Base) parseTags() {
 	}
 
 	// prepare storage
+	b.attributes = make(map[string]attribute)
 	b.toOneRelationships = make(map[string]relationship)
 	b.hasManyRelationships = make(map[string]relationship)
 
@@ -73,34 +83,57 @@ func (b *Base) parseTags() {
 			} else {
 				panic("expected to find a tag of the form fire:\"singular:plural\"")
 			}
+
+			continue
 		}
 
 		// check if field is a to one relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
 			values := strings.Split(field.Tag.Get("fire"), ":")
-			// TODO: panic if tags is empty or malformed
 			if len(values) == 2 {
 				b.toOneRelationships[values[0]] = relationship{
 					name:     values[0],
 					typ:      values[1],
 					index:    i,
 					optional: field.Type == optionalToOneType,
-					// TODO: panic if tags is empty or malformed
-					dbField: field.Tag.Get("bson"),
+					dbField:  getFirstTagValue(&field, "bson"),
 				}
+			} else {
+				panic("expected to find a tag of the form fire:\"name:type\"")
 			}
+
+			continue
 		}
 
 		// check if field is a has many relationship
 		if field.Type == hasManyType {
 			values := strings.Split(field.Tag.Get("fire"), ":")
-			// TODO: panic if tags is empty or malformed
 			if len(values) == 2 {
 				b.hasManyRelationships[values[0]] = relationship{
 					name:  values[0],
 					typ:   values[1],
 					index: i,
 				}
+			} else {
+				panic("expected to find a tag of the form fire:\"name:type\"")
+			}
+
+			continue
+		}
+
+		// get fire tags
+		tag := field.Tag.Get("fire")
+
+		// check if filter
+		if tag == "filter" {
+			name := getFirstTagValue(&field, "json")
+
+			b.attributes[name] = attribute{
+				name:       name,
+				index:      i,
+				filterable: true,
+				optional:   field.Type.Kind() == reflect.Ptr,
+				dbField:    getFirstTagValue(&field, "bson"),
 			}
 		}
 	}

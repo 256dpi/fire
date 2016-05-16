@@ -12,7 +12,7 @@ import (
 
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
-	Title    string         `json:"title" valid:"required"`
+	Title    string         `json:"title" valid:"required" bson:"title" fire:"filter"`
 	TextBody string         `json:"text-body" valid:"-" bson:"text_body"`
 	NextPost *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
 	Comments HasMany        `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
@@ -244,27 +244,27 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 	// create comments
 	saveModel(db, "comments", &Comment{
 		Message: "Comment 1",
-		PostID: post1.getBase().ID,
+		PostID:  post1.getBase().ID,
 	})
 	saveModel(db, "comments", &Comment{
 		Message: "Comment 2",
-		PostID: post2.getBase().ID,
+		PostID:  post2.getBase().ID,
 	})
 
 	r := gofight.New()
 
 	// get related post
-	r.GET("/posts/" + post1.GetID() + "/comments").
+	r.GET("/posts/"+post1.GetID()+"/comments").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj := json.Path("data").Index(0)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 1, countChildren(json.Path("data")))
-		assert.Equal(t, "comments", obj.Path("type").Data().(string))
-		assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-		assert.Equal(t, "Comment 1", obj.Path("attributes.message").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, "comments", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Comment 1", obj.Path("attributes.message").Data().(string))
+		})
 }
 
 func TestToOneRelationship(t *testing.T) {
@@ -328,5 +328,37 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
+		})
+}
+
+func TestFiltering(t *testing.T) {
+	server, db, close := buildServer(&Resource{
+		Model:      &Post{},
+		Collection: "posts",
+	})
+
+	defer close()
+
+	// create posts
+	saveModel(db, "posts", &Post{
+		Title: "post-1",
+	})
+	saveModel(db, "posts", &Post{
+		Title: "post-2",
+	})
+
+	r := gofight.New()
+
+	// get posts
+	r.GET("/posts?filter[title]=post-1").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
 		})
 }
