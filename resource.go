@@ -40,7 +40,6 @@ type Resource struct {
 	Model      Model
 	Collection string
 
-	// TODO: support query filters using fire:"filter" struct tags.
 	QueryFilters []Filter
 
 	Authorizer      Callback
@@ -77,6 +76,10 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	if value, ok := getQueryParam(&req, r.Model.getSingularName() + "-id"); ok {
 		query["_id"] = value
 	}
+
+	// TODO: add belongs to and has many filters automatically
+
+	// TODO: support query filters using fire:"filter" struct tags.
 
 	// add query filters
 	for _, filter := range r.QueryFilters {
