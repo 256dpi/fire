@@ -106,6 +106,10 @@ func (b *Base) getSingularName() string {
 	return b.singularName
 }
 
+func (b *Base) getObjectID() bson.ObjectId {
+	return b.ID
+}
+
 // Validate validates the parent model.
 func (b *Base) Validate(fresh bool) error {
 	// validate id
