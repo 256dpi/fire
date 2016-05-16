@@ -40,3 +40,14 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database, func()) {
 
 	}
 }
+
+func saveModel(db *mgo.Database, collection string, model Model) Model {
+	Init(model)
+
+	err := db.C(collection).Insert(model)
+	if err != nil {
+		panic(err)
+	}
+
+	return model
+}

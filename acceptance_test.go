@@ -12,9 +12,10 @@ import (
 
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
-	Title    string  `json:"title" valid:"required"`
-	TextBody string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Title    string         `json:"title" valid:"required"`
+	TextBody string         `json:"text-body" valid:"-" bson:"text_body"`
+	NextPost *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
+	Comments HasMany        `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
 }
 
 type Comment struct {
@@ -217,5 +218,52 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.Equal(t, id, obj.Path("relationships.post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
+		})
+}
+
+func TestToOneRelationship(t *testing.T) {
+	server, db, close := buildServer(&Resource{
+		Model:      &Post{},
+		Collection: "posts",
+	})
+
+	defer close()
+
+	r := gofight.New()
+
+	// create post
+	post := saveModel(db, "posts", &Post{
+		Title: "Hello World!",
+	})
+
+	// create related comment
+	r.POST("/posts").
+		SetBody(`{
+			"data": {
+				"type": "posts",
+				"attributes": {
+			  		"title": "Amazing Thing!"
+				},
+				"relationships": {
+					"next-post": {
+						"data": {
+							"type": "posts",
+							"id": "`+post.GetID()+`"
+						}
+					}
+				}
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
+
+			assert.Equal(t, http.StatusCreated, r.Code)
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
+			assert.Equal(t, post.GetID(), obj.Path("relationships.next-post.data.id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.next-post.data.type").Data().(string))
+			assert.NotEmpty(t, obj.Path("relationships.next-post.links.related").Data().(string))
 		})
 }
