@@ -212,6 +212,7 @@ func TestHasManyRelationship(t *testing.T) {
 			obj := json.Path("data").Index(0)
 
 			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, "comments", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.message").Data().(string))
