@@ -22,11 +22,11 @@ const (
 )
 
 type Context struct {
-	Action Action
-	Model Model
-	ID bson.ObjectId
+	Action     Action
+	Model      Model
+	ID         bson.ObjectId
 	GinContext *gin.Context
-	Api2GoReq *api2go.Request
+	Api2GoReq  *api2go.Request
 }
 
 type Callback func(*Context) (error, error)
@@ -247,9 +247,9 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 
 func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 	return &Context{
-		Action: act,
+		Action:     act,
 		GinContext: r.adapter.getContext(req),
-		Api2GoReq: req,
+		Api2GoReq:  req,
 	}
 }
 

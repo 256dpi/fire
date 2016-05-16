@@ -1,13 +1,13 @@
 package fire
 
 import (
-	"testing"
 	"net/http"
+	"testing"
 
-	"gopkg.in/mgo.v2/bson"
-	"github.com/stretchr/testify/assert"
-	"github.com/appleboy/gofight"
 	"github.com/Jeffail/gabs"
+	"github.com/appleboy/gofight"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Post struct {
@@ -25,7 +25,7 @@ type Comment struct {
 
 func TestPosts(t *testing.T) {
 	server := buildServer(&Resource{
-		Model: &Post{},
+		Model:      &Post{},
 		Collection: "posts",
 	})
 
@@ -77,11 +77,11 @@ func TestPosts(t *testing.T) {
 		})
 
 	// update post
-	r.PATCH("/posts/" + id).
+	r.PATCH("/posts/"+id).
 		SetBody(`{
 			"data": {
 				"type": "posts",
-				"id": "` + id + `",
+				"id": "`+id+`",
 				"attributes": {
 			  		"text-body": "Some Text..."
 				}
@@ -99,7 +99,7 @@ func TestPosts(t *testing.T) {
 		})
 
 	// get single post
-	r.GET("/posts/" + id).
+	r.GET("/posts/"+id).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
 			obj := json.Path("data")
@@ -112,7 +112,7 @@ func TestPosts(t *testing.T) {
 		})
 
 	// delete post
-	r.DELETE("/posts/" + id).
+	r.DELETE("/posts/"+id).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusNoContent, r.Code)
 			assert.Equal(t, "", r.Body.String())
@@ -121,17 +121,17 @@ func TestPosts(t *testing.T) {
 	// get empty list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, `{"data":[]}`, r.Body.String())
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
 }
 
 func TestComments(t *testing.T) {
 	server := buildServer(&Resource{
-		Model: &Post{},
+		Model:      &Post{},
 		Collection: "posts",
 	}, &Resource{
-		Model: &Comment{},
+		Model:      &Comment{},
 		Collection: "comments",
 	})
 
@@ -165,9 +165,9 @@ func TestComments(t *testing.T) {
 	// get empty list of related comments
 	r.GET(link).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, `{"data":[]}`, r.Body.String())
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
 
 	// create related comment
 	r.POST("/comments").
@@ -181,7 +181,7 @@ func TestComments(t *testing.T) {
 					"post": {
 						"data": {
 							"type": "posts",
-							"id": "` + id + `"
+							"id": "`+id+`"
 						}
 					}
 				}

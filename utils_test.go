@@ -9,7 +9,7 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-func buildServer(resources... *Resource) *gin.Engine {
+func buildServer(resources ...*Resource) *gin.Engine {
 	// connect to local mongodb
 	session, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
 	if err != nil {
