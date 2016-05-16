@@ -29,11 +29,7 @@ type Context struct {
 	Api2GoReq *api2go.Request
 }
 
-type Authorizer func(*Context) (bool, error)
-
-type Validator func(*Context) (bool, error)
-
-type Cleaner func(*Context) error
+type Callback func(*Context) (error, error)
 
 type Filter struct {
 	Param string
@@ -47,11 +43,11 @@ type Resource struct {
 	// TODO: support query filters using fire:"filter" struct tags.
 	QueryFilters []Filter
 
-	Authorizer      Authorizer
-	CreateValidator Validator
-	UpdateValidator Validator
-	DeleteValidator Validator
-	Cleaner         Cleaner
+	Authorizer      Callback
+	CreateValidator Callback
+	UpdateValidator Callback
+	DeleteValidator Callback
+	Cleaner         Callback
 
 	adapter  *adapter
 	endpoint *Endpoint
@@ -68,12 +64,12 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// run authorizer if available
 	if r.Authorizer != nil {
-		ok, err := r.Authorizer(ctx)
-		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while authorizing action", http.StatusInternalServerError)
+		err, sysErr := r.Authorizer(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while authorizing action", http.StatusInternalServerError)
 		}
-		if !ok {
-			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
+		if err != nil {
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusForbidden)
 		}
 	}
 
@@ -141,12 +137,12 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 
 	// run authorizer if available
 	if r.Authorizer != nil {
-		ok, err := r.Authorizer(ctx)
-		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while authorizing action", http.StatusInternalServerError)
+		err, sysErr := r.Authorizer(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while authorizing action", http.StatusInternalServerError)
 		}
-		if !ok {
-			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
+		if err != nil {
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusForbidden)
 		}
 	}
 
@@ -174,12 +170,12 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run authorizer if available
 	if r.Authorizer != nil {
-		ok, err := r.Authorizer(ctx)
-		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while authorizing action", http.StatusInternalServerError)
+		err, sysErr := r.Authorizer(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while authorizing action", http.StatusInternalServerError)
 		}
-		if !ok {
-			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
+		if err != nil {
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusForbidden)
 		}
 	}
 
@@ -191,11 +187,12 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run delete validator if available
 	if r.CreateValidator != nil {
-		ok, err := r.CreateValidator(ctx)
+		err, sysErr := r.CreateValidator(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while validating creation", http.StatusInternalServerError)
+		}
 		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while validating creation", http.StatusInternalServerError)
-		} else if !ok {
-			return nil, api2go.NewHTTPError(nil, "resource cannot be created", http.StatusBadRequest)
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 		}
 	}
 
@@ -215,12 +212,12 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run authorizer if available
 	if r.Authorizer != nil {
-		ok, err := r.Authorizer(ctx)
-		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while authorizing action", http.StatusInternalServerError)
+		err, sysErr := r.Authorizer(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while authorizing action", http.StatusInternalServerError)
 		}
-		if !ok {
-			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
+		if err != nil {
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusForbidden)
 		}
 	}
 
@@ -232,11 +229,12 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run update validator if available
 	if r.UpdateValidator != nil {
-		ok, err := r.UpdateValidator(ctx)
+		err, sysErr := r.UpdateValidator(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while validating update", http.StatusInternalServerError)
+		}
 		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while validating update", http.StatusInternalServerError)
-		} else if !ok {
-			return nil, api2go.NewHTTPError(nil, "resource cannot be updated", http.StatusBadRequest)
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 		}
 	}
 
@@ -261,30 +259,34 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 
 	// run authorizer if available
 	if r.Authorizer != nil {
-		ok, err := r.Authorizer(ctx)
-		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while authorizing action", http.StatusInternalServerError)
+		err, sysErr := r.Authorizer(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while authorizing action", http.StatusInternalServerError)
 		}
-		if !ok {
-			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
+		if err != nil {
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusForbidden)
 		}
 	}
 
 	// run delete validator if available
 	if r.DeleteValidator != nil {
-		ok, err := r.DeleteValidator(ctx)
+		err, sysErr := r.DeleteValidator(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while validating deletion", http.StatusInternalServerError)
+		}
 		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while validating deletion", http.StatusInternalServerError)
-		} else if !ok {
-			return nil, api2go.NewHTTPError(nil, "resource cannot be deleted", http.StatusBadRequest)
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 		}
 	}
 
 	// run cleaner if available
 	if r.Cleaner != nil {
-		err := r.Cleaner(ctx)
+		err, sysErr := r.Cleaner(ctx)
+		if sysErr != nil {
+			return nil, api2go.NewHTTPError(sysErr, "error while cleaning up", http.StatusInternalServerError)
+		}
 		if err != nil {
-			return nil, api2go.NewHTTPError(err, "error while cleaning up", http.StatusInternalServerError)
+			return nil, api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
 		}
 	}
 
