@@ -9,22 +9,35 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-func init() {
-	gin.SetMode(gin.TestMode)
-}
+var session *mgo.Session
 
-func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database, func()) {
+func init() {
+	// set test mode
+	gin.SetMode(gin.TestMode)
+
 	// connect to local mongodb
-	session, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
+	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
 	if err != nil {
 		panic(err)
 	}
 
+	// store session globally
+	session = sess
+}
+
+func getDB() *mgo.Database {
 	// get db
 	db := session.DB("")
 
 	// clean database by dropping it
 	db.DropDatabase()
+
+	return db
+}
+
+func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
+	// get db
+	db := getDB()
 
 	// create new router and endpoint
 	router := gin.Default()
@@ -39,10 +52,7 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database, func()) {
 	endpoint.Register("", router)
 
 	// return router
-	return router, db, func() {
-		session.Close()
-
-	}
+	return router, db
 }
 
 func saveModel(db *mgo.Database, collection string, model Model) Model {

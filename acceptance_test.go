@@ -25,12 +25,10 @@ type Comment struct {
 }
 
 func TestBasicOperations(t *testing.T) {
-	server, _, close := buildServer(&Resource{
+	server, _ := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	})
-
-	defer close()
 
 	r := gofight.New()
 
@@ -130,15 +128,13 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	server, _, close := buildServer(&Resource{
+	server, _ := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	}, &Resource{
 		Model:      &Comment{},
 		Collection: "comments",
 	})
-
-	defer close()
 
 	r := gofight.New()
 
@@ -223,15 +219,13 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestHasManyRelationshipFiltering(t *testing.T) {
-	server, db, close := buildServer(&Resource{
+	server, db := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	}, &Resource{
 		Model:      &Comment{},
 		Collection: "comments",
 	})
-
-	defer close()
 
 	// create posts
 	post1 := saveModel(db, "posts", &Post{
@@ -268,12 +262,10 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	server, db, close := buildServer(&Resource{
+	server, db := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	})
-
-	defer close()
 
 	// create post
 	post := saveModel(db, "posts", &Post{
@@ -332,12 +324,10 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	server, db, close := buildServer(&Resource{
+	server, db := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	})
-
-	defer close()
 
 	// create posts
 	saveModel(db, "posts", &Post{
