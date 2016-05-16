@@ -55,16 +55,8 @@ var db *mgo.Databse
 var router *gin.Engine
 
 endpoint := fire.NewEndpoint(db)
-
-endpoint.AddResource(&fire.Resource{
-    Model:      &Post{},
-    Collection: "posts",
-})
-
-endpoint.AddResource(&fire.Resource{
-    Model:      &Comment{},
-    Collection: "comments",
-})
+endpoint.AddResource(&fire.Resource{Model: &Post{}, Collection: "posts"})
+endpoint.AddResource(&fire.Resource{Model: &Comment{}, Collection: "comments"})
 
 endpoint.Register(router)
 ```
