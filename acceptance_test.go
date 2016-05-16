@@ -125,3 +125,93 @@ func TestPosts(t *testing.T) {
 		assert.Equal(t, `{"data":[]}`, r.Body.String())
 	})
 }
+
+func TestComments(t *testing.T) {
+	server := buildServer(&Resource{
+		Model: &Post{},
+		Collection: "posts",
+	}, &Resource{
+		Model: &Comment{},
+		Collection: "comments",
+	})
+
+	r := gofight.New()
+
+	var id string
+	var link string
+
+	// create post
+	r.POST("/posts").
+		SetBody(`{
+			"data": {
+				"type": "posts",
+				"attributes": {
+			  		"title": "Hello World!"
+				}
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
+
+			assert.Equal(t, http.StatusCreated, r.Code)
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.NotEmpty(t, obj.Path("relationships.comments.links.related").Data().(string))
+
+			id = obj.Path("id").Data().(string)
+			link = obj.Path("relationships.comments.links.related").Data().(string)
+		})
+
+	// get empty list of related comments
+	r.GET(link).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, `{"data":[]}`, r.Body.String())
+	})
+
+	// create related comment
+	r.POST("/comments").
+		SetBody(`{
+			"data": {
+				"type": "comments",
+				"attributes": {
+			  		"message": "Amazing Thing!"
+				},
+				"relationships": {
+					"post": {
+						"data": {
+							"type": "posts",
+							"id": "` + id + `"
+						}
+					}
+				}
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
+
+			assert.Equal(t, http.StatusCreated, r.Code)
+			assert.Equal(t, "comments", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.message").Data().(string))
+			assert.Equal(t, id, obj.Path("relationships.post.data.id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
+			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
+		})
+
+	// get empty list of related comments
+	r.GET(link).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "comments", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.message").Data().(string))
+			assert.Equal(t, id, obj.Path("relationships.post.data.id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
+			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
+		})
+}
