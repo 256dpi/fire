@@ -57,6 +57,8 @@ func (e *Endpoint) Register(prefix string, router gin.IRouter) {
 		// assign adapter
 		resource.adapter = adapter
 
+		// TODO: should we use some kind of a Bridge to hide api2go internals?
+
 		// add resource to api
 		api.AddResource(resource.Model, resource)
 	}

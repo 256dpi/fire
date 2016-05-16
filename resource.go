@@ -126,6 +126,14 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 }
 
 func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, error) {
+	// validate id
+	if !bson.IsObjectIdHex(id) {
+		return nil, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
+	}
+
+	// get object id
+	oid := bson.ObjectIdHex(id)
+
 	// run authorizer if available
 	if r.Authorizer != nil {
 		ok, err := r.Authorizer(FindOne, r.buildContext(&req))
@@ -137,31 +145,27 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 		}
 	}
 
-	if !bson.IsObjectIdHex(id) {
-		return &response{}, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
-	}
-
 	// prepare object
 	obj := newStructPointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).FindId(bson.ObjectIdHex(id)).One(obj)
+	err := r.endpoint.db.C(r.Collection).FindId(oid).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, api2go.NewHTTPError(err, "resource not found", http.StatusNotFound)
 	} else if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resource", http.StatusInternalServerError)
 	}
 
-	// get model
-	model := obj.(Model)
-
 	// initialize model
-	Init(model)
+	Init(obj.(Model))
 
-	return &response{Data: model}, nil
+	return &response{Data: obj}, nil
 }
 
 func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder, error) {
+	// get model
+	model := obj.(Model)
+
 	// run authorizer if available
 	if r.Authorizer != nil {
 		ok, err := r.Authorizer(Create, r.buildContext(&req))
@@ -172,9 +176,6 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
 		}
 	}
-
-	// get model
-	model := obj.(Model)
 
 	// validate model
 	err := model.Validate(true)
@@ -202,6 +203,9 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 }
 
 func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder, error) {
+	// get model
+	model := obj.(Model)
+
 	// run authorizer if available
 	if r.Authorizer != nil {
 		ok, err := r.Authorizer(Update, r.buildContext(&req))
@@ -212,9 +216,6 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
 		}
 	}
-
-	// get model
-	model := obj.(Model)
 
 	// validate model
 	err := model.Validate(false)
@@ -242,6 +243,14 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 }
 
 func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, error) {
+	// validate id
+	if !bson.IsObjectIdHex(id) {
+		return nil, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
+	}
+
+	// get object id
+	oid := bson.ObjectIdHex(id)
+
 	// run authorizer if available
 	if r.Authorizer != nil {
 		ok, err := r.Authorizer(Delete, r.buildContext(&req))
@@ -252,14 +261,6 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 			return nil, api2go.NewHTTPError(nil, "client not authorized", http.StatusForbidden)
 		}
 	}
-
-	// validate supplied id
-	if !bson.IsObjectIdHex(id) {
-		return nil, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
-	}
-
-	// get object id
-	oid := bson.ObjectIdHex(id)
 
 	// run delete validator if available
 	if r.DeleteValidator != nil {
