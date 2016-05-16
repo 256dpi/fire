@@ -23,18 +23,14 @@ type Comment struct {
 	PostID  bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-var PostResource = &Resource{
-	Model: &Post{},
-	Collection: "posts",
-}
-
-var CommentResource = &Resource{
-	Model: &Comment{},
-	Collection: "comments",
-}
-
 func TestPosts(t *testing.T) {
-	server := buildServer(PostResource, CommentResource)
+	server := buildServer(&Resource{
+		Model: &Post{},
+		Collection: "posts",
+	}, &Resource{
+		Model: &Comment{},
+		Collection: "comments",
+	})
 
 	r := gofight.New()
 
