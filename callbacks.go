@@ -26,7 +26,7 @@ func Combine(callbacks ...Callback) Callback {
 	}
 }
 
-// A DependentResourcesValidator counts documents in the supplied collections
+// DependentResourcesValidator counts documents in the supplied collections
 // and returns an error if some get found. This callback is meant to protect
 // resources from breaking relations when requested to be deleted.
 func DependentResourcesValidator(relations map[string]string) Callback {
@@ -55,7 +55,7 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 	}
 }
 
-// A VerifyReferencesValidator makes sure all references in the document are
+// VerifyReferencesValidator makes sure all references in the document are
 // existing by counting on the related collections.
 func VerifyReferencesValidator(relations map[string]string) Callback {
 	return func(ctx *Context) (error, error) {
