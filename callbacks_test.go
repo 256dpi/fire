@@ -7,13 +7,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type SuperComment struct {
-	Base      `bson:",inline" fire:"comment:comments"`
-	Message   string        `json:"message" valid:"required"`
-	PostID    bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
-	CommentID bson.ObjectId `json:"-" valid:"required" bson:"comment_id" fire:"comment:comments"`
-}
-
 func TestCombine(t *testing.T) {
 	// prepare fake callback
 	var counter int

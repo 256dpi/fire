@@ -55,8 +55,8 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 }
 
 // The VerifyReferencesValidator makes sure all references in the document are
-// existing and also reference properly intermediary documents.
-func VerifyReferencesValidator(validateableRelations map[string]string) Callback {
+// existing by counting on the related collections.
+func VerifyReferencesValidator(relations map[string]string) Callback {
 	return func(ctx *Context) (error, error) {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -64,7 +64,7 @@ func VerifyReferencesValidator(validateableRelations map[string]string) Callback
 		}
 
 		// check all relations
-		for relation, collection := range validateableRelations {
+		for relation, collection := range relations {
 			// read referenced fire.Resource id
 			id, err := ctx.Model.GetToOneReferenceID(relation)
 			if err != nil {
