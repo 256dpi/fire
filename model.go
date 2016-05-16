@@ -19,6 +19,7 @@ type Model interface {
 	initialize(interface{})
 }
 
+// Init initializes the internals of a model and should be called first.
 func Init(model Model) Model {
 	model.initialize(model)
 	return model
@@ -66,10 +67,12 @@ func (b *Base) initialize(model interface{}) {
 	}
 }
 
+// ID returns the models id.
 func (b *Base) ID() bson.ObjectId {
 	return b.DocID
 }
 
+// ReferenceID returns the ID of a to one relationship.
 func (b *Base) ReferenceID(name string) *bson.ObjectId {
 	b.parseTags()
 
@@ -98,7 +101,7 @@ func (b *Base) ReferenceID(name string) *bson.ObjectId {
 	return &id
 }
 
-// Validate validates the parent model.
+// Validate validates the model based on the `valid:""` struct tags.
 func (b *Base) Validate(fresh bool) error {
 	// validate id
 	if !b.DocID.Valid() {
