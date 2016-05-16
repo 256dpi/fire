@@ -6,6 +6,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Callbacks are allow further extensibility and customisation of the API.
 type Callback func(*Context) (error, error)
 
 // Combine combines multiple callbacks to one.
