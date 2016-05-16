@@ -24,10 +24,12 @@ type Comment struct {
 }
 
 func TestBasicOperations(t *testing.T) {
-	server := buildServer(&Resource{
+	server, _, close := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	})
+
+	defer close()
 
 	r := gofight.New()
 
@@ -127,13 +129,15 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	server := buildServer(&Resource{
+	server, _, close := buildServer(&Resource{
 		Model:      &Post{},
 		Collection: "posts",
 	}, &Resource{
 		Model:      &Comment{},
 		Collection: "comments",
 	})
+
+	defer close()
 
 	r := gofight.New()
 
