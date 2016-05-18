@@ -43,14 +43,38 @@ func sliceContent(pointer interface{}) interface{} {
 	return reflect.ValueOf(pointer).Elem().Interface()
 }
 
-func getFirstTagValue(field *reflect.StructField, name string) string {
-	tag := field.Tag.Get(name)
+func getJSONFieldName(field *reflect.StructField) string {
+	tag := field.Tag.Get("json")
 	values := strings.Split(tag, ",")
 
-	// check length
-	if len(tag) == 0 || len(values[0]) == 0 {
-		panic("expected to find value in the tag " + name)
+	// check first value
+	if len(tag) > 0 || len(values[0]) > 0 {
+		return values[0]
 	}
 
-	return values[0]
+	return field.Name
+}
+
+func getBSONFieldName(field *reflect.StructField) string {
+	tag := field.Tag.Get("bson")
+	values := strings.Split(tag, ",")
+
+	// check first value
+	if len(tag) > 0 || len(values[0]) > 0 {
+		return values[0]
+	}
+
+	return strings.ToLower(field.Name)
+}
+
+// other functions
+
+func stringInList(list []string, str string) bool {
+	for _, val := range list {
+		if val == str {
+			return true
+		}
+	}
+
+	return false
 }

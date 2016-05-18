@@ -36,6 +36,7 @@ type attribute struct {
 	index      int
 	optional   bool
 	filterable bool
+	sortable   bool
 	dbField    string
 }
 
@@ -170,7 +171,7 @@ func (b *Base) parseTags() {
 					typ:      values[1],
 					index:    i,
 					optional: field.Type == optionalToOneType,
-					dbField:  getFirstTagValue(&field, "bson"),
+					dbField:  getBSONFieldName(&field),
 				}
 			} else {
 				panic("expected to find a tag of the form fire:\"name:type\"")
@@ -196,19 +197,17 @@ func (b *Base) parseTags() {
 		}
 
 		// get fire tags
-		tag := field.Tag.Get("fire")
+		tags := strings.Split(field.Tag.Get("fire"), ",")
 
-		// check if filter
-		if tag == "filter" {
-			name := getFirstTagValue(&field, "json")
+		// get name of field
+		name := getJSONFieldName(&field)
 
-			b.attributes[name] = attribute{
-				name:       name,
-				index:      i,
-				filterable: true,
-				optional:   field.Type.Kind() == reflect.Ptr,
-				dbField:    getFirstTagValue(&field, "bson"),
-			}
+		b.attributes[name] = attribute{
+			name:       name,
+			index:      i,
+			filterable: stringInList(tags, "filter"),
+			optional:   field.Type.Kind() == reflect.Ptr,
+			dbField:    getBSONFieldName(&field),
 		}
 	}
 }
