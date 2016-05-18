@@ -25,12 +25,23 @@ const (
 
 // A Context provides useful contextual information to callbacks.
 type Context struct {
-	Action     Action
-	Model      Model
-	ID         bson.ObjectId
-	DB         *mgo.Database
+	// The action that has been called.
+	Action Action
+
+	// The Model that will be saved during Create and Update.
+	Model Model
+
+	// The document ID that will be loaded during FindOne or deleted during Delete.
+	ID bson.ObjectId
+
+	// The db used to query.
+	DB *mgo.Database
+
+	// The underlying gin.context.
 	GinContext *gin.Context
-	Api2GoReq  *api2go.Request
+
+	// The underlying api2go.Request
+	Api2GoReq *api2go.Request
 }
 
 // A Resource provides an interface to a model.
