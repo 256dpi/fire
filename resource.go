@@ -31,8 +31,12 @@ type Context struct {
 	// The Model that will be saved during Create and Update.
 	Model Model
 
-	// The document ID that will be loaded during FindOne or deleted during Delete.
-	ID bson.ObjectId
+	// The query that will be used during FindAll, FindOne, Update and Delete.
+	//
+	// Note: On FindOne, Update and Delete, the "_id" key is already set to the
+	// document ID. On FindAll all ordinary filters and relationship filters are
+	// also already present.
+	Query bson.M
 
 	// The db used to query.
 	DB *mgo.Database
@@ -72,39 +76,37 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// build context
 	ctx := r.buildContext(FindAll, &req)
-
-	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
-		return nil, *err
-	}
-
-	// prepare query
-	query := bson.M{}
+	ctx.Query = bson.M{}
 
 	// add self referencing filter
 	if value, ok := getQueryParam(&req, r.Model.getBase().singularName+"-id"); ok {
-		query["_id"] = value
+		ctx.Query["_id"] = value
 	}
 
 	// add to one relationship filters
 	for _, rel := range r.Model.getBase().toOneRelationships {
 		if value, ok := getQueryParam(&req, rel.name+"-id"); ok {
-			query[rel.dbField] = value
+			ctx.Query[rel.dbField] = value
 		}
 	}
 
 	// add filters
 	for _, attr := range r.Model.getBase().attributes {
 		if value, ok := getQueryParam(&req, "filter["+attr.name+"]"); ok {
-			query[attr.dbField] = value
+			ctx.Query[attr.dbField] = value
 		}
+	}
+
+	// run authorizer if available
+	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+		return nil, *err
 	}
 
 	// prepare slice
 	pointer := newSlicePointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).Find(query).All(pointer)
+	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).All(pointer)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
@@ -130,7 +132,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 
 	// build context
 	ctx := r.buildContext(FindOne, &req)
-	ctx.ID = bson.ObjectIdHex(id)
+	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx); err != nil {
@@ -141,7 +143,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	obj := newStructPointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).FindId(ctx.ID).One(obj)
+	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, api2go.NewHTTPError(err, "resource not found", http.StatusNotFound)
 	} else if err != nil {
@@ -190,6 +192,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	// build context
 	ctx := r.buildContext(Update, &req)
 	ctx.Model = obj.(Model)
+	ctx.Query = bson.M{"_id": ctx.Model.ID()}
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx); err != nil {
@@ -208,7 +211,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Collection).UpdateId(ctx.Model.ID(), ctx.Model)
+	err = r.endpoint.db.C(r.Collection).Update(ctx.Query, ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}
@@ -225,7 +228,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 
 	// build context
 	ctx := r.buildContext(Delete, &req)
-	ctx.ID = bson.ObjectIdHex(id)
+	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx); err != nil {
@@ -243,7 +246,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	}
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).RemoveId(ctx.ID)
+	err := r.endpoint.db.C(r.Collection).Remove(ctx.Query)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while deleting resource", http.StatusInternalServerError)
 	}

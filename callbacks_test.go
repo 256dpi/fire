@@ -36,7 +36,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	// create context
 	ctx := &Context{
 		Action: Delete,
-		ID:     post.ID(),
+		Query:  bson.M{"_id": post.ID()},
 		DB:     db,
 	}
 

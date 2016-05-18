@@ -39,7 +39,7 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 		// check all relations
 		for coll, field := range relations {
 			// count referencing documents
-			n, err := ctx.DB.C(coll).Find(bson.M{field: ctx.ID}).Limit(1).Count()
+			n, err := ctx.DB.C(coll).Find(bson.M{field: ctx.Query["_id"]}).Limit(1).Count()
 			if err != nil {
 				return nil, err
 			}
