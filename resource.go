@@ -99,8 +99,10 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// add filters
 	for _, attr := range r.Model.getBase().attributes {
-		if value, ok := getQueryParam(&req, "filter["+attr.name+"]"); ok {
-			ctx.Query[attr.dbField] = value
+		if attr.filterable {
+			if value, ok := getQueryParam(&req, "filter["+attr.name+"]"); ok {
+				ctx.Query[attr.dbField] = value
+			}
 		}
 	}
 
