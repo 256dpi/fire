@@ -50,12 +50,19 @@ type Context struct {
 
 // A Resource provides an interface to a model.
 type Resource struct {
-	Model      Model
+	// The model that this resource should provide (e.g. &Foo{}).
+	Model Model
+
+	// The MongoDB collection that should be used for storage.
 	Collection string
 
+	// The Authorizer is run on all actions. Will return a Forbidden status if
+	// a user error is returned.
 	Authorizer Callback
+
+	// The Validator is run to validate Create, Update and Delete actions. Will
+	// return a Bad Request status if a user error is returned.
 	Validator  Callback
-	Cleaner    Callback
 
 	adapter  *adapter
 	endpoint *Endpoint
@@ -98,7 +105,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
 	}
 
@@ -135,7 +142,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
 	}
 
@@ -163,7 +170,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Model = obj.(Model)
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
 	}
 
@@ -174,7 +181,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// run validator if available
-	if err := r.runCallback(r.Validator, ctx); err != nil {
+	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
 		return nil, *err
 	}
 
@@ -195,7 +202,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Query = bson.M{"_id": ctx.Model.ID()}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
 	}
 
@@ -206,7 +213,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// run validator if available
-	if err := r.runCallback(r.Validator, ctx); err != nil {
+	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
 		return nil, *err
 	}
 
@@ -231,17 +238,12 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
 	}
 
 	// run validator if available
-	if err := r.runCallback(r.Validator, ctx); err != nil {
-		return nil, *err
-	}
-
-	// run cleaner if available
-	if err := r.runCallback(r.Cleaner, ctx); err != nil {
+	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
 		return nil, *err
 	}
 
@@ -282,7 +284,7 @@ func (r *Resource) cleanQueryParams(req *api2go.Request) {
 	}
 }
 
-func (r *Resource) runCallback(cb Callback, ctx *Context) *api2go.HTTPError {
+func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) *api2go.HTTPError {
 	// check if callback is available
 	if cb != nil {
 		err, sysErr := cb(ctx)
@@ -293,7 +295,7 @@ func (r *Resource) runCallback(cb Callback, ctx *Context) *api2go.HTTPError {
 		}
 		if err != nil {
 			// return user error
-			httpErr := api2go.NewHTTPError(nil, err.Error(), http.StatusBadRequest)
+			httpErr := api2go.NewHTTPError(nil, err.Error(), errorStatus)
 			return &httpErr
 		}
 	}

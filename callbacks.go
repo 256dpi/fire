@@ -7,6 +7,10 @@ import (
 )
 
 // A Callback allows further extensibility and customisation of the API.
+//
+// Note: The first return value is the userError which will be serialized to the
+// jsonapi error object. The second return value is the system error that appears
+// just in the logs.
 type Callback func(*Context) (error, error)
 
 // Combine combines multiple callbacks to one.
