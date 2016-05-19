@@ -25,7 +25,7 @@ Describe your models using structs tags and some special fields:
 ```go
 type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
-	Slug      string         `json:"slug" valid:"required" bson:"slug" fire:"filter"`
+	Slug      string         `json:"slug" valid:"required" bson:"slug" fire:"filter,sort"`
 	Title     string         `json:"title" valid:"required"`
 	TextBody  string         `json:"text-body" valid:"-" bson:"text_body"`
 	Comments  fire.HasMany   `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
@@ -46,6 +46,10 @@ The embedded struct `fire.Base` has to be present in every model as it holds the
 ### Filter
 
 Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/foos?filter[field]=bar` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
+
+### Sorting
+
+Simple fields can be annotated wit the `fire:"filter"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
 
 ### To One Relationships
 

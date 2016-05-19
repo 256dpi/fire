@@ -12,7 +12,7 @@ import (
 
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
-	Title    string         `json:"title" valid:"required" bson:"title" fire:"filter"`
+	Title    string         `json:"title" valid:"required" bson:"title" fire:"filter,sort"`
 	TextBody string         `json:"text-body" valid:"-" bson:"text_body"`
 	NextPost *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
 	Comments HasMany        `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
@@ -350,5 +350,49 @@ func TestFiltering(t *testing.T) {
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
+		})
+}
+
+func TestSorting(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model:      &Post{},
+		Collection: "posts",
+	})
+
+	// create posts
+	saveModel(db, "posts", &Post{
+		Title: "2",
+	})
+	saveModel(db, "posts", &Post{
+		Title: "1",
+	})
+	saveModel(db, "posts", &Post{
+		Title: "3",
+	})
+
+	r := gofight.New()
+
+	// get posts in ascending order
+	r.GET("/posts?sort=title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 3, countChildren(json.Path("data")))
+			assert.Equal(t, "1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+		})
+
+	// get posts in descending order
+	r.GET("/posts?sort=-title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 3, countChildren(json.Path("data")))
+			assert.Equal(t, "3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
 		})
 }

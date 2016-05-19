@@ -206,6 +206,7 @@ func (b *Base) parseTags() {
 			name:       name,
 			index:      i,
 			filterable: stringInList(tags, "filter"),
+			sortable:   stringInList(tags, "sort"),
 			optional:   field.Type.Kind() == reflect.Ptr,
 			dbField:    getBSONFieldName(&field),
 		}

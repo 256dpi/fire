@@ -38,6 +38,12 @@ type Context struct {
 	// also already present.
 	Query bson.M
 
+	// The sorting that will be used during FindAll.
+	//
+	// Note: This list will already include allowed sorting parameters passed
+	// in the query parameters.
+	Sorting []string
+
 	// The db used to query.
 	DB *mgo.Database
 
@@ -106,6 +112,17 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		}
 	}
 
+	// add sorting
+	if fields, ok := req.QueryParams["sort"]; ok {
+		for _, field := range fields {
+			for _, attr := range r.Model.getBase().attributes {
+				if attr.sortable && (field == attr.dbField || field == "-"+attr.dbField) {
+					ctx.Sorting = append(ctx.Sorting, field)
+				}
+			}
+		}
+	}
+
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
 		return nil, *err
@@ -115,7 +132,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	pointer := newSlicePointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).All(pointer)
+	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
