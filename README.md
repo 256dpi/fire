@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/256dpi/fire/master/doc/logo.png" alt="Logo" style="width: 256;"/>
+
 # fire
 
 [![Circle CI](https://img.shields.io/circleci/project/256dpi/fire.svg)](https://circleci.com/gh/256dpi/fire)
