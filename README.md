@@ -66,6 +66,7 @@ endpoint.Register(router)
 
 After starting the gin server you can inspect the created routes from the console output (simplified):
 
+<table><tr><td
 ```
 GET     /posts
 GET     /posts/:id
@@ -78,7 +79,9 @@ PATCH   /posts/:id/relationships/comments
 POST    /posts
 DELETE  /posts/:id
 PATCH   /posts/:id
-
+```
+</td><td>
+```
 GET     /comments
 GET     /comments/:id
 GET     /comments/:id/relationships/post
@@ -88,6 +91,7 @@ POST    /comments
 DELETE  /comments/:id
 PATCH   /comments/:id
 ```
+</td></tr></table>
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
 
@@ -192,7 +196,7 @@ Multiple validators or authorizers can be combined to one callback using `Combin
 Note: Fire comes with several built-in callbacks that provide common functionalities and are well combineable with custom callbacks. Following callbacks are available:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
-- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator))
+- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
 
 ### Endpoints
 
