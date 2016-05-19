@@ -12,7 +12,7 @@
 
 Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) library, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building JSON API services for your Ember projects.
 
-# Usage
+# Installation
 
 Get the package using the go tool:
 
@@ -20,7 +20,7 @@ Get the package using the go tool:
 $ go get github.com/256dpi/fire
 ```
 
-## Usage
+# Usage
 
 Fire infers all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `fire` struct tag and integrates [govalidator](https://github.com/asaskevich/govalidator) which uses the `valid` struct tag.
 
