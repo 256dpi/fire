@@ -78,6 +78,7 @@ PATCH   /posts/:id/relationships/comments
 POST    /posts
 DELETE  /posts/:id
 PATCH   /posts/:id
+
 GET     /comments
 GET     /comments/:id
 GET     /comments/:id/relationships/post
@@ -96,7 +97,7 @@ Fire provides various advanced features to hook into the request processing flow
 
 This section describes the configuration of fire models using the right combination of struct tags.
 
-#### Base
+#### Basics
 
 ```go
 type Post struct {
@@ -155,9 +156,43 @@ Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they
 
 This section describes the construction of fire resources that provide access to models.
 
-#### Options
+#### Basics
+
+```go
+posts := &fire.Resource{
+    Model:      &Post{},
+    Collection: "posts"
+}
+```
+
+Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model` and specifying the MongoDB `Collection`.
 
 #### Callbacks
+
+```go
+posts := &fire.Resource{
+    // ...
+    Authorizer: func(ctx *fire.Context) (error, error) {
+        // ...
+    },
+    Validator: func(ctx *fire.Context) (error, error) {
+        // ...
+   },
+}
+```
+
+Fire allows the definition of two callbacks. The `Authorizer` is run after inferring all available data from the request and is therefore perfectly suited to do a general user authentication. The `Validator` is only run before creating, updating or deleting a model and is ideal to protect resources from certain actions.
+
+```go
+fire.Combine(callback1, callback2)
+```
+
+Multiple validators or authorizers can be combined to one callback using `Combine`.
+
+Note: Fire comes with several built-in callbacks that provide common functionalities and are well combineable with custom callbacks. Following callbacks are available:
+
+- [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
+- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator))
 
 ### Endpoints
 
