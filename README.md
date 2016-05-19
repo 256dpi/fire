@@ -103,7 +103,7 @@ type Post struct {
 }
 ```
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag.
+The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. The plural name of the model is also the type for to one and has many relationships.
 
 Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
@@ -117,17 +117,35 @@ type Post struct {
 }
 ```
 
-Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering and with the `fire:"sort"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
+Fields can be annotated with the `fire:"filter"` struct tag to allow filtering and with the `fire:"sort"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
 Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
 #### To One Relationships
 
-All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag. That way, the resources include the relationship links to load the relations like `/foos/1/bar`.
+```go
+type Comment struct {
+	// ...
+	PostID bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+    // ...
+}
+```
+
+All fields of the `bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag.
+
+Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
 
 #### Has Many Relationships
 
-Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag. This also generates links allows loading the related resources through `/foos/1/bars`.
+```go
+type Post struct {
+    // ...
+	Comments fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	// ...
+}
+```
+
+Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag.
 
 ### Endpoint
 
