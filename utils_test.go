@@ -29,7 +29,7 @@ func getDB() *mgo.Database {
 	// get db
 	db := session.DB("")
 
-	// clean database by dropping it
+	// clean database by removing all documents
 	db.C("posts").RemoveAll(nil)
 	db.C("comments").RemoveAll(nil)
 

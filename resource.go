@@ -62,7 +62,7 @@ type Resource struct {
 
 	// The Validator is run to validate Create, Update and Delete actions. Will
 	// return a Bad Request status if a user error is returned.
-	Validator  Callback
+	Validator Callback
 
 	adapter  *adapter
 	endpoint *Endpoint
