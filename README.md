@@ -110,6 +110,27 @@ The embedded struct `fire.Base` has to be present in every model as it holds the
 
 Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
+#### Getters
+
+```go
+post.ID()
+comment.ReferenceID("post")
+```
+
+The `ID` and `ReferenceID` functions are short-hands to access the document id and to one relationships.
+
+#### Validation
+
+```go
+func (p *Post) Validate(fresh bool) error {
+    // ...
+
+    return p.Base.Validate(fresh)
+}
+```
+
+The `Validate` method can be overridden per model to implement custom validations.
+
 #### Filtering & Sorting
 
 ```go
@@ -187,12 +208,12 @@ Fire allows the definition of two callbacks. The `Authorizer` is run after infer
 fire.Combine(callback1, callback2)
 ```
 
-Multiple validators or authorizers can be combined to one callback using `Combine`.
+Multiple validators or authorizers can be combined to one callback using `fire.Combine`.
 
 Note: Fire comes with several built-in callbacks that provide common functionalities and are well combineable with custom callbacks. Following callbacks are available:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
-- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator))
+- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
 
 ### Endpoints
 
