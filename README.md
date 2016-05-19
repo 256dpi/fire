@@ -49,7 +49,7 @@ Simple fields can be annotated with the `fire:"filter"` struct tag to allow filt
 
 ### Sorting
 
-Simple fields can be annotated wit the `fire:"filter"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
+Simple fields can be annotated wit the `fire:"sort"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
 
 ### To One Relationships
 
