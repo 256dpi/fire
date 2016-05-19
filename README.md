@@ -43,7 +43,7 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` provides access to these resources over an API:
+Finally, an `Endpoint` manages and provides access to these resources:
 
 ```go
 var db *mgo.Database // a reference to a database from a mgo.Session
