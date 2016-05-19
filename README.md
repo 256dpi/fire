@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/256dpi/fire/master/doc/logo.png" alt="Logo" style="width: 256;"/>
+<img src="https://raw.githubusercontent.com/256dpi/fire/master/doc/logo.png" alt="Logo" width="256"/>
 
 # fire
 
