@@ -107,7 +107,7 @@ The embedded struct `fire.Base` has to be present in every model as it holds the
 
 Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
-#### Sorting & Filtering
+#### Filtering & Sorting
 
 ```go
 type Post struct {
