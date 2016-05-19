@@ -43,7 +43,7 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` manages and provides access to these resources:
+Finally, an `Endpoint` mounts resources in a gin application and thus provides access to them:
 
 ```go
 var db *mgo.Database // a reference to a database from a mgo.Session
@@ -92,7 +92,9 @@ Fire provides various advanced features to hook into the request processing flow
 
 ## API
 
-### Model
+### Models
+
+This section describes the configuration of fire models using the right combination of struct tags.
 
 #### Base
 
@@ -147,6 +149,16 @@ type Post struct {
 
 Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag.
 
-### Endpoint
+Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
+
+### Resources
+
+This section describes the construction of fire resources that provide access to models.
+
+#### Options
 
 #### Callbacks
+
+### Endpoints
+
+This section describes the usage of endpoints for mounting resources in a gin application.
