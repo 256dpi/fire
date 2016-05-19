@@ -96,15 +96,30 @@ Fire provides various advanced features to hook into the request processing flow
 
 #### Base
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document `ID` and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+```go
+type Post struct {
+    fire.Base `bson:",inline" fire:"post:posts"`
+    // ...
+}
+```
 
-#### Filter
+The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag.
 
-Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/foos?filter[field]=bar` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
+Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
-#### Sorting
+#### Sorting & Filtering
 
-Simple fields can be annotated wit the `fire:"sort"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
+```go
+type Post struct {
+    // ...
+	Slug string `json:"slug" valid:"required" bson:"slug" fire:"filterable,sortable"`
+	// ...
+}
+```
+
+Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering and with the `fire:"sort"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
+
+Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
 #### To One Relationships
 
