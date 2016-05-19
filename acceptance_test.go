@@ -12,7 +12,7 @@ import (
 
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
-	Title    string         `json:"title" valid:"required" bson:"title" fire:"filter,sort"`
+	Title    string         `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
 	TextBody string         `json:"text-body" valid:"-" bson:"text_body"`
 	NextPost *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
 	Comments HasMany        `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
