@@ -20,9 +20,11 @@ Get the package using the go tool:
 $ go get github.com/256dpi/fire
 ```
 
-## Models
+## Usage
 
-Describe your models using structs tags and some special fields:
+Fire infers all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `fire` struct tag and integrates [govalidator](https://github.com/asaskevich/govalidator) which uses the `valid` struct tag.
+
+Such a declaration could look like the following two models for a blog system:
 
 ```go
 type Post struct {
@@ -41,33 +43,11 @@ type Comment struct {
 }
 ```
 
-### Base
-
-The embedded struct `fire.Base` has to be present in every model as it holds the document `ID` and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
-
-### Filter
-
-Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/foos?filter[field]=bar` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
-
-### Sorting
-
-Simple fields can be annotated wit the `fire:"sort"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
-
-### To One Relationships
-
-All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag. That way, the resources include the relationship links to load the relations like `/foos/1/bar`.
-
-### Has Many Relationships
-
-Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag. This also generates links allows loading the related resources through `/foos/1/bars`.
-
-## Endpoints
-
-By declaring and endpoint, you can mount these resources in your gin application:
+Finally, an `Endpoint` provides access to these resources over an API:
 
 ```go
-var db *mgo.Database
-var router *gin.Engine
+var db *mgo.Database // a reference to a database from a mgo.Session
+var router gin.IRouter // a reference to a gin router compatible instance
 
 endpoint := fire.NewEndpoint(db)
 
@@ -84,3 +64,56 @@ endpoint.AddResource(&fire.Resource{
 endpoint.Register(router)
 ```
 
+After starting the gin server you can inspect the created routes from the console output (simplified):
+
+```
+GET     /posts
+GET     /posts/:id
+GET     /posts/:id/relationships/next-post
+GET     /posts/:id/next-post
+PATCH   /posts/:id/relationships/next-post
+GET     /posts/:id/relationships/comments
+GET     /posts/:id/comments
+PATCH   /posts/:id/relationships/comments
+POST    /posts
+DELETE  /posts/:id
+PATCH   /posts/:id
+GET     /comments
+GET     /comments/:id
+GET     /comments/:id/relationships/post
+GET     /comments/:id/post
+PATCH   /comments/:id/relationships/post
+POST    /comments
+DELETE  /comments/:id
+PATCH   /comments/:id
+```
+
+Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
+
+## API
+
+### Model
+
+#### Base
+
+The embedded struct `fire.Base` has to be present in every model as it holds the document `ID` and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+
+#### Filter
+
+Simple fields can be annotated with the `fire:"filter"` struct tag to allow filtering using the `/foos?filter[field]=bar` query parameter. All filterable fields need to specify the `bson:"field"` struct tag as well.
+
+#### Sorting
+
+Simple fields can be annotated wit the `fire:"sort"` struct tag to allow sorting using the `/foos?sort=field` or `/foos?sort=-field` query parameter. All sortable fields need to specify the `bson:"field"` struct tag as well.
+
+#### To One Relationships
+
+All fields with the `bson.ObjectId` or `*bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag. That way, the resources include the relationship links to load the relations like `/foos/1/bar`.
+
+#### Has Many Relationships
+
+Finally, fields that have a `fire.HasMany` as their type define the inverse of a belong to relationship and also require the `fire:"name:type"` struct tag. This also generates links allows loading the related resources through `/foos/1/bars`.
+
+### Endpoint
+
+#### Callbacks
