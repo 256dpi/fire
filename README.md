@@ -217,4 +217,15 @@ Note: Fire comes with several built-in callbacks that provide common functionali
 
 ### Endpoints
 
-This section describes the usage of endpoints for mounting resources in a gin application.
+```go
+endpoint := fire.NewEndpoint(db)
+
+endpoint.AddResource(&fire.Resource{
+    Model:      &Post{},
+    Collection: "posts"
+})
+
+endpoint.Register(router)
+````
+
+An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`. Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
