@@ -358,11 +358,11 @@ func TestFiltering(t *testing.T) {
 	// get posts with multi value filter
 	r.GET("/posts?filter[title]=post-2,post-3").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 2, countChildren(json.Path("data")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 2, countChildren(json.Path("data")))
+		})
 }
 
 func TestSorting(t *testing.T) {
@@ -425,11 +425,11 @@ func TestSparseFieldsets(t *testing.T) {
 	// get posts with single value filter
 	r.GET("/posts?fields[posts]=title").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj := json.Path("data").Index(0)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 1, countChildren(json.Path("data")))
-		assert.Equal(t, 1, countChildren(obj.Path("attributes")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, 1, countChildren(obj.Path("attributes")))
+		})
 }
