@@ -408,3 +408,28 @@ func TestSorting(t *testing.T) {
 			assert.Equal(t, "1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
 		})
 }
+
+func TestSparseFieldsets(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model:      &Post{},
+		Collection: "posts",
+	})
+
+	// create posts
+	saveModel(db, "posts", &Post{
+		Title: "post-1",
+	})
+
+	r := gofight.New()
+
+	// get posts with single value filter
+	r.GET("/posts?fields[posts]=title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj := json.Path("data").Index(0)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 1, countChildren(json.Path("data")))
+		assert.Equal(t, 1, countChildren(obj.Path("attributes")))
+	})
+}
