@@ -84,24 +84,12 @@ func (r *Resource) InitializeObject(obj interface{}) {
 
 // FindAll implements the api2go.FindAll interface.
 func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
-	// clean query params
-	r.cleanQueryParams(&req)
-
 	// build context
 	ctx := r.buildContext(FindAll, &req)
 	ctx.Query = bson.M{}
 
-	// add self referencing filter
-	if value, ok := getQueryParam(&req, r.Model.getBase().singularName+"-id"); ok {
-		ctx.Query["_id"] = value
-	}
-
-	// add to one relationship filters
-	for _, rel := range r.Model.getBase().toOneRelationships {
-		if value, ok := getQueryParam(&req, rel.name+"-id"); ok {
-			ctx.Query[rel.dbField] = value
-		}
-	}
+	// set self referencing and to one relationship filters
+	r.setRelationshipFilters(ctx)
 
 	// add filters
 	for _, attr := range r.Model.getBase().attributes {
@@ -284,11 +272,11 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 	}
 }
 
-func (r *Resource) cleanQueryParams(req *api2go.Request) {
-	for param, values := range req.QueryParams {
+func (r *Resource) setRelationshipFilters(ctx *Context) {
+	for param, values := range ctx.Api2GoReq.QueryParams {
 		// remove *Name params as not needed
 		if strings.HasSuffix(param, "Name") {
-			delete(req.QueryParams, param)
+			delete(ctx.Api2GoReq.QueryParams, param)
 		}
 
 		// map *ID to dashed singular names using the endpoints nameMap
@@ -296,9 +284,21 @@ func (r *Resource) cleanQueryParams(req *api2go.Request) {
 			pluralName := strings.Replace(param, "ID", "", 1)
 			singularName, ok := r.endpoint.nameMap[pluralName]
 			if ok {
-				delete(req.QueryParams, param)
-				req.QueryParams[singularName+"-id"] = values
+				delete(ctx.Api2GoReq.QueryParams, param)
+				ctx.Api2GoReq.QueryParams[singularName+"-id"] = values
 			}
+		}
+	}
+
+	// add self referencing filter
+	if value, ok := getQueryParam(ctx.Api2GoReq, r.Model.getBase().singularName+"-id"); ok {
+		ctx.Query["_id"] = value
+	}
+
+	// add to one relationship filters
+	for _, rel := range r.Model.getBase().toOneRelationships {
+		if value, ok := getQueryParam(ctx.Api2GoReq, rel.name+"-id"); ok {
+			ctx.Query[rel.dbField] = value
 		}
 	}
 }
