@@ -336,10 +336,13 @@ func TestFiltering(t *testing.T) {
 	saveModel(db, "posts", &Post{
 		Title: "post-2",
 	})
+	saveModel(db, "posts", &Post{
+		Title: "post-3",
+	})
 
 	r := gofight.New()
 
-	// get posts
+	// get posts with single value filter
 	r.GET("/posts?filter[title]=post-1").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
@@ -351,6 +354,15 @@ func TestFiltering(t *testing.T) {
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
 		})
+
+	// get posts with multi value filter
+	r.GET("/posts?filter[title]=post-2,post-3").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 2, countChildren(json.Path("data")))
+	})
 }
 
 func TestSorting(t *testing.T) {

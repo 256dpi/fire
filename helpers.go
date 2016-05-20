@@ -4,29 +4,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/manyminds/api2go"
 	"gopkg.in/mgo.v2/bson"
 )
-
-// query helper functions
-
-func getQueryParam(req *api2go.Request, param string) (interface{}, bool) {
-	if len(req.QueryParams[param]) == 0 {
-		return "", false
-	}
-
-	if !strings.HasSuffix(param, "-id") {
-		return req.QueryParams[param][0], true
-	}
-
-	if !bson.IsObjectIdHex(req.QueryParams[param][0]) {
-		return "", false
-	}
-
-	return bson.ObjectIdHex(req.QueryParams[param][0]), true
-}
-
-// reflect helper functions
 
 func newSlicePointer(from interface{}) interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(from)), 0, 0)
@@ -66,8 +45,6 @@ func getBSONFieldName(field *reflect.StructField) string {
 
 	return strings.ToLower(field.Name)
 }
-
-// other functions
 
 func stringInList(list []string, str string) bool {
 	for _, val := range list {
