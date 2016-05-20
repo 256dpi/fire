@@ -279,26 +279,31 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			delete(ctx.Api2GoReq.QueryParams, param)
 		}
 
-		// map *ID to dashed singular names using the endpoints nameMap
+		// handle *ID params
 		if strings.HasSuffix(param, "ID") {
+			// remove param in any case
+			delete(ctx.Api2GoReq.QueryParams, param)
+
+			// get plural name
 			pluralName := strings.Replace(param, "ID", "", 1)
+
+			// get singular name and continue if not existing
 			singularName, ok := r.endpoint.nameMap[pluralName]
-			if ok {
-				delete(ctx.Api2GoReq.QueryParams, param)
-				ctx.Api2GoReq.QueryParams[singularName+"-id"] = values
+			if !ok {
+				continue
 			}
-		}
-	}
 
-	// add self referencing filter
-	if value, ok := getQueryParam(ctx.Api2GoReq, r.Model.getBase().singularName+"-id"); ok {
-		ctx.Query["_id"] = value
-	}
+			// check if self referencing
+			if singularName == r.Model.getBase().singularName {
+				ctx.Query["_id"] = bson.M{"$in": stringsToIDs(values)}
+			}
 
-	// add to one relationship filters
-	for _, rel := range r.Model.getBase().toOneRelationships {
-		if value, ok := getQueryParam(ctx.Api2GoReq, rel.name+"-id"); ok {
-			ctx.Query[rel.dbField] = value
+			// add to one relationship filters
+			for _, rel := range r.Model.getBase().toOneRelationships {
+				if rel.name == singularName {
+					ctx.Query[rel.dbField] = bson.M{"$in": stringsToIDs(values)}
+				}
+			}
 		}
 	}
 }

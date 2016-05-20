@@ -78,3 +78,15 @@ func stringInList(list []string, str string) bool {
 
 	return false
 }
+
+func stringsToIDs(list []string) []bson.ObjectId {
+	var ids []bson.ObjectId
+
+	for _, str := range list {
+		if bson.IsObjectIdHex(str) {
+			ids = append(ids, bson.ObjectIdHex(str))
+		}
+	}
+
+	return ids
+}
