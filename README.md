@@ -141,7 +141,7 @@ type Post struct {
 }
 ```
 
-Fields can be annotated with the `fire:"filter"` struct tag to allow filtering and with the `fire:"sort"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
+Fields can be annotated with the `fire:"filterable"` struct tag to allow filtering and with the `fire:"sortable"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
 Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
