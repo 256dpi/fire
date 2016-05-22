@@ -196,20 +196,38 @@ func (b *Base) parseTags() {
 			continue
 		}
 
-		// get fire tags
-		tags := strings.Split(field.Tag.Get("fire"), ",")
-
 		// get name of field
 		name := getJSONFieldName(&field)
 
-		b.attributes[name] = attribute{
+		// TODO: raise error on unexpected tag
+
+		// create attribute
+		attr := attribute{
 			name:       name,
 			index:      i,
-			filterable: stringInList(tags, "filterable"),
-			sortable:   stringInList(tags, "sortable"),
 			optional:   field.Type.Kind() == reflect.Ptr,
 			dbField:    getBSONFieldName(&field),
 		}
+
+		// get fire tag
+		tag := field.Tag.Get("fire")
+
+		// check tags
+		if len(tag) > 0 {
+			for _, t := range strings.Split(tag, ",") {
+				if t == "filterable" {
+					attr.filterable = true
+				} else if t == "sortable" {
+					attr.sortable = true
+				} else {
+					println(t)
+					panic("expected to find either a 'filterable' or 'sortable' tag")
+				}
+			}
+		}
+
+		// add attribute
+		b.attributes[name] = attr
 	}
 }
 
