@@ -13,6 +13,7 @@ import (
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
+	Attribute(string) interface{}
 	ReferenceID(string) *bson.ObjectId
 	Validate(bool) error
 
@@ -72,6 +73,23 @@ func (b *Base) initialize(model interface{}) {
 // ID returns the models id.
 func (b *Base) ID() bson.ObjectId {
 	return b.DocID
+}
+
+// Attribute returns the value of the given attribute.
+func (b *Base) Attribute(name string) interface{} {
+	b.parseTags()
+
+	// try to find attribute in map
+	attr, ok := b.attributes[name]
+	if !ok {
+		return nil
+	}
+
+	// get field
+	field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
+
+	// return value
+	return field.Interface()
 }
 
 // ReferenceID returns the ID of a to one relationship.

@@ -114,10 +114,11 @@ Note: Ember Data requires you to use dashed names for multi-word model names lik
 
 ```go
 post.ID()
+post.Attribute("title")
 comment.ReferenceID("post")
 ```
 
-The `ID` and `ReferenceID` functions are short-hands to access the document id and to one relationships.
+The `ID`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, its attributes and to one relationships.
 
 #### Validation
 
