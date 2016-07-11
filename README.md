@@ -6,7 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/256dpi/fire/badge.svg?branch=master&service=github)](https://coveralls.io/github/256dpi/fire?branch=master)
 [![GoDoc](https://godoc.org/github.com/256dpi/fire?status.svg)](http://godoc.org/github.com/256dpi/fire)
 [![Release](https://img.shields.io/github/release/256dpi/fire.svg)](https://github.com/256dpi/fire/releases)
-[![Go Report Card](http://goreportcard.com/badge/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
+[![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
 
 **A small and opinionated framework for Go providing Ember Data compatible JSON APIs.**
 
