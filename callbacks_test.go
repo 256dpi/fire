@@ -95,3 +95,59 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, sysErr)
 }
+
+func TestMatchingReferencesValidator(t *testing.T) {
+	db := getDB()
+
+	// create validator
+	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
+		"post_id": "post",
+	})
+
+	// post id
+	postID := bson.NewObjectId()
+
+	// create root comment
+	comment1 := saveModel(db, "comments", &Comment{
+		PostID: postID,
+	})
+
+	// create leaf comment
+	parentID := comment1.ID()
+	comment2 := saveModel(db, "comments", &Comment{
+		Parent: &parentID,
+		PostID: bson.NewObjectId(),
+	})
+
+	// create context
+	ctx := &Context{
+		Action: Create,
+		Model:  comment2,
+		DB:     db,
+	}
+
+	// call validator
+	err, sysErr := validator(ctx)
+	assert.Error(t, err)
+	assert.NoError(t, sysErr)
+
+	// create root comment
+	comment3 := saveModel(db, "comments", &Comment{
+		PostID: postID,
+	})
+
+	// create leaf comment
+	parentID = comment3.ID()
+	comment4 := saveModel(db, "comments", &Comment{
+		Parent: &parentID,
+		PostID: postID,
+	})
+
+	// update ctx
+	ctx.Model = comment4
+
+	// call validator
+	err, sysErr = validator(ctx)
+	assert.NoError(t, err)
+	assert.NoError(t, sysErr)
+}

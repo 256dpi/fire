@@ -92,3 +92,49 @@ func VerifyReferencesValidator(relations map[string]string) Callback {
 		return nil, nil
 	}
 }
+
+// MatchingReferencesValidator compares the model with a referencing relation and
+// checks if they share other relations.
+func MatchingReferencesValidator(collection, referencingRelation string, matcher map[string]string) Callback {
+	return func(ctx *Context) (error, error) {
+		// only run validator on Create and Update
+		if ctx.Action != Create && ctx.Action != Update {
+			return nil, nil
+		}
+
+		// get main reference
+		id := ctx.Model.ReferenceID(referencingRelation)
+		if id == nil {
+			// continue if relation is not set
+			return nil, nil
+		}
+
+		// prepare query
+		query := bson.M{
+			"_id": *id,
+		}
+
+		// add other references
+		for field, relation := range matcher {
+			id := ctx.Model.ReferenceID(relation)
+			if id == nil {
+				return errors.New("missing id"), nil
+			}
+
+			query[field] = *id
+		}
+
+		// query db
+		n, err := ctx.DB.C(collection).Find(query).Limit(1).Count()
+		if err != nil {
+			return nil, err
+		}
+
+		// return error if document is missing
+		if n == 0 {
+			return errors.New("references do not match"), nil
+		}
+
+		return nil, nil
+	}
+}

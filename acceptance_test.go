@@ -20,8 +20,9 @@ type Post struct {
 
 type Comment struct {
 	Base    `bson:",inline" fire:"comment:comments"`
-	Message string        `json:"message" valid:"required"`
-	PostID  bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	Message string         `json:"message" valid:"required"`
+	Parent  *bson.ObjectId `json:"parent" valid:"-" fire:"parent:comments"`
+	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
 func TestBasicOperations(t *testing.T) {

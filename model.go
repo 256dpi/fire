@@ -221,10 +221,10 @@ func (b *Base) parseTags() {
 
 		// create attribute
 		attr := attribute{
-			name:       name,
-			index:      i,
-			optional:   field.Type.Kind() == reflect.Ptr,
-			dbField:    getBSONFieldName(&field),
+			name:     name,
+			index:    i,
+			optional: field.Type.Kind() == reflect.Ptr,
+			dbField:  getBSONFieldName(&field),
 		}
 
 		// get fire tag
