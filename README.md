@@ -217,7 +217,7 @@ Multiple callbacks can be combined using `fire.Combine`:
 fire.Combine(callback1, callback2)
 ```
 
-Note: Fire comes with several built-in callbacks that provide common functionalities and are well combineable with custom callbacks. Following callbacks are available:
+Note: Fire comes with several built-in callbacks that provide common functionalities and are well combinable with custom callbacks. Following callbacks are available:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
 - [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
