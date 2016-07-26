@@ -239,6 +239,3 @@ endpoint.Register("api", router)
 ````
 
 Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
-
-### Authenticators
-
