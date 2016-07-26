@@ -8,9 +8,9 @@
 [![Release](https://img.shields.io/github/release/256dpi/fire.svg)](https://github.com/256dpi/fire/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
 
-**A small and opinionated framework for Go providing Ember Data compatible JSON APIs.**
+**A small and opinionated framework for Go providing Ember compatible JSON APIs.**
 
-Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) library, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building JSON API services for your Ember projects.
+Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) project, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources, plays well with the [gin](https://github.com/gin-gonic/gin) framework and leverages the [fosite](https://github.com/ory-am/fosite) library to implement OAuth2 based authentication. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
 
 # Installation
 
@@ -27,6 +27,13 @@ Fire infers all necessary meta information about your models from the already av
 Such a declaration could look like the following two models for a blog system:
 
 ```go
+type User struct {
+	fire.Base    `bson:",inline" fire:"user:users"`
+	FullName     string `json:"full_name" valid:"required"`
+	Email        string `json:"email" valid:"required" fire:"identifiable"`
+	PasswordHash []byte `json:"-" valid:"required" fire:"verifiable"`
+}
+
 type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
 	Title     string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
@@ -227,3 +234,25 @@ endpoint.Register("api", router)
 ````
 
 Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+
+### Authenticators
+
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database` and a secret:
+
+```go
+authenticator := fire.NewAuthenticator(db, "a-very-long-secret") 
+
+authenticator.SetResourceOwner(&User{}, "users")
+authenticator.SetConfidentalClient(&Application(), "applications")
+
+authenticator.Register("auth", router)
+```
+
+Later on you can use the authenticator to authorize access to your resources:
+
+```go
+posts := &fire.Resource{
+    // ...
+    Authorizer: authenticator.ResourceAuthorizer(),
+}
+```

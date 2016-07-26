@@ -34,12 +34,14 @@ var errInvalidID = errors.New("invalid id")
 type HasMany struct{}
 
 type attribute struct {
-	name       string
-	index      int
-	optional   bool
-	filterable bool
-	sortable   bool
-	dbField    string
+	name         string
+	index        int
+	optional     bool
+	filterable   bool
+	sortable     bool
+	identifiable bool
+	verifiable   bool
+	dbField      string
 }
 
 type relationship struct {
@@ -231,8 +233,6 @@ func (b *Base) parseTags() {
 		// get name of field
 		name := getJSONFieldName(&field)
 
-		// TODO: raise error on unexpected tag
-
 		// create attribute
 		attr := attribute{
 			name:     name,
@@ -251,9 +251,12 @@ func (b *Base) parseTags() {
 					attr.filterable = true
 				} else if t == "sortable" {
 					attr.sortable = true
+				} else if t == "identifiable" {
+					attr.identifiable = true
+				} else if t == "verifiable" {
+					attr.verifiable = true
 				} else {
-					println(t)
-					panic("expected to find either a 'filterable' or 'sortable' tag")
+					panic("unexpected tag: " + t)
 				}
 			}
 		}

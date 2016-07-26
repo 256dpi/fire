@@ -10,6 +10,13 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type User struct {
+	Base         `bson:",inline" fire:"user:users"`
+	FullName     string `json:"full_name" valid:"required"`
+	Email        string `json:"email" valid:"required" fire:"identifiable"`
+	PasswordHash []byte `json:"-" valid:"required" fire:"verifiable"`
+}
+
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
 	Title    string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
@@ -424,5 +431,42 @@ func TestSparseFieldsets(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, 1, countChildren(obj.Path("attributes")))
+		})
+}
+
+func TestAuthentication(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	})
+
+	authenticator := NewAuthenticator(db, &User{}, "users", "a-very-very-very-long-secret")
+	authenticator.Register("auth", server)
+
+	// create user
+	saveModel(db, "users", &User{
+		FullName:     "Peter Sandberg",
+		Email:        "peter@example.com",
+		PasswordHash: hashPassword("abcd1234"),
+	})
+
+	r := gofight.New()
+
+	// get access token
+	r.POST("/auth/token").
+		SetHeader(basicAuth("peter@example.com", "abcd1234")).
+		SetFORM(gofight.H{
+			"grant_type": "password",
+			"username":   "peter@example.com",
+			"password":   "abcd1234",
+			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			// TODO: Where is the refresh token?
+
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
+			assert.Equal(t, "fire", json.Path("scope").Data().(string))
+			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
 		})
 }

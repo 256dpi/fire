@@ -1,11 +1,14 @@
 package fire
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/Jeffail/gabs"
+	"github.com/appleboy/gofight"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 )
 
@@ -32,6 +35,7 @@ func getDB() *mgo.Database {
 	// clean database by removing all documents
 	db.C("posts").RemoveAll(nil)
 	db.C("comments").RemoveAll(nil)
+	db.C("users").RemoveAll(nil)
 
 	return db
 }
@@ -70,6 +74,24 @@ func saveModel(db *mgo.Database, collection string, model Model) Model {
 func countChildren(c *gabs.Container) int {
 	list, _ := c.Children()
 	return len(list)
+}
+
+func basicAuth(username, password string) gofight.H {
+	auth := username + ":" + password
+	auth = "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+
+	return gofight.H{
+		"Authorization": auth,
+	}
+}
+
+func hashPassword(password string) []byte {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 0)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }
 
 // some cheats to get more coverage
