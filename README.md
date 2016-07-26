@@ -124,6 +124,8 @@ comment.ReferenceID("post")
 
 #### Validation
 
+The `Validate` method can be overridden per model to implement custom validations:
+
 ```go
 func (p *Post) Validate(fresh bool) error {
     // ...
@@ -131,8 +133,6 @@ func (p *Post) Validate(fresh bool) error {
     return p.Base.Validate(fresh)
 }
 ```
-
-The `Validate` method can be overridden per model to implement custom validations.
 
 #### Filtering & Sorting
 
@@ -225,7 +225,7 @@ Note: Fire comes with several built-in callbacks that provide common functionali
 
 ### Endpoints
 
-An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`. Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`:
 
 ```go
 endpoint := fire.NewEndpoint(db)
@@ -237,6 +237,8 @@ endpoint.AddResource(&fire.Resource{
 
 endpoint.Register("api", router)
 ````
+
+Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
 
 ### Authenticators
 
