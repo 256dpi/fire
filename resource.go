@@ -63,11 +63,11 @@ type Resource struct {
 	Collection string
 
 	// The Authorizer is run on all actions. Will return a Forbidden status if
-	// a user error is returned.
+	// an user error is returned.
 	Authorizer Callback
 
 	// The Validator is run to validate Create, Update and Delete actions. Will
-	// return a Bad Request status if a user error is returned.
+	// return a Bad Request status if an user error is returned.
 	Validator Callback
 
 	adapter  *adapter

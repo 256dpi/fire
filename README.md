@@ -99,6 +99,8 @@ This section describes the configuration of fire models using the right combinat
 
 #### Basics
 
+The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag:
+
 ```go
 type Post struct {
     fire.Base `bson:",inline" fire:"post:posts"`
@@ -106,19 +108,19 @@ type Post struct {
 }
 ```
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag. The plural name of the model is also the type for to one and has many relationships.
+The plural name of the model is also the type for to one and has many relationships.
 
 Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
 #### Getters
+
+The `ID`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, its attributes and to one relationships:
 
 ```go
 post.ID()
 post.Attribute("title")
 comment.ReferenceID("post")
 ```
-
-The `ID`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, its attributes and to one relationships.
 
 #### Validation
 
@@ -134,6 +136,8 @@ The `Validate` method can be overridden per model to implement custom validation
 
 #### Filtering & Sorting
 
+Fields can be annotated with the `fire:"filterable"` struct tag to allow filtering and with the `fire:"sortable"` struct tag to allow sorting:
+
 ```go
 type Post struct {
     // ...
@@ -142,11 +146,13 @@ type Post struct {
 }
 ```
 
-Fields can be annotated with the `fire:"filterable"` struct tag to allow filtering and with the `fire:"sortable"` struct tag to allow sorting. Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
+Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
 Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
 #### To One Relationships
+
+All fields of the `bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag:
 
 ```go
 type Comment struct {
@@ -156,11 +162,11 @@ type Comment struct {
 }
 ```
 
-All fields of the `bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag.
-
 Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
 
 #### Has Many Relationships
+
+Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag:
 
 ```go
 type Post struct {
@@ -170,8 +176,6 @@ type Post struct {
 }
 ```
 
-Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag.
-
 Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
 ### Resources
@@ -180,6 +184,8 @@ This section describes the construction of fire resources that provide access to
 
 #### Basics
 
+Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model` and specifying the MongoDB `Collection`:
+
 ```go
 posts := &fire.Resource{
     Model:      &Post{},
@@ -187,9 +193,9 @@ posts := &fire.Resource{
 }
 ```
 
-Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model` and specifying the MongoDB `Collection`.
-
 #### Callbacks
+
+Fire allows the definition of two callbacks.
 
 ```go
 posts := &fire.Resource{
@@ -203,13 +209,13 @@ posts := &fire.Resource{
 }
 ```
 
-Fire allows the definition of two callbacks. The `Authorizer` is run after inferring all available data from the request and is therefore perfectly suited to do a general user authentication. The `Validator` is only run before creating, updating or deleting a model and is ideal to protect resources from certain actions.
+The `Authorizer` is run after inferring all available data from the request and is therefore perfectly suited to do a general user authentication. The `Validator` is only run before creating, updating or deleting a model and is ideal to protect resources from certain actions.
+
+Multiple callbacks can be combined using `fire.Combine`:
 
 ```go
 fire.Combine(callback1, callback2)
 ```
-
-Multiple validators or authorizers can be combined to one callback using `fire.Combine`.
 
 Note: Fire comes with several built-in callbacks that provide common functionalities and are well combineable with custom callbacks. Following callbacks are available:
 
@@ -218,6 +224,8 @@ Note: Fire comes with several built-in callbacks that provide common functionali
 - [MatchingReferencesValidator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)
 
 ### Endpoints
+
+An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`. Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
 
 ```go
 endpoint := fire.NewEndpoint(db)
@@ -230,4 +238,5 @@ endpoint.AddResource(&fire.Resource{
 endpoint.Register("api", router)
 ````
 
-An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`. Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+### Authenticators
+
