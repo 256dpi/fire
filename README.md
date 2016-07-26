@@ -29,7 +29,7 @@ Such a declaration could look like the following two models for a blog system:
 ```go
 type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
-	Slug      string         `json:"slug" valid:"required" bson:"slug" fire:"filter,sort"`
+	Slug      string         `json:"slug" valid:"required" bson:"slug" fire:"filterable,sortable"`
 	Title     string         `json:"title" valid:"required"`
 	TextBody  string         `json:"text-body" valid:"-" bson:"text_body"`
 	Comments  fire.HasMany   `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
@@ -53,15 +53,15 @@ endpoint := fire.NewEndpoint(db)
 
 endpoint.AddResource(&fire.Resource{
     Model:      &Post{},
-    Collection: "posts"
+    Collection: "posts",
 })
 
 endpoint.AddResource(&fire.Resource{
     Model:       &Comment{},
-    Collection: "comments"
+    Collection: "comments",
 })
 
-endpoint.Register(router)
+endpoint.Register("api", router)
 ```
 
 After starting the gin server you can inspect the created routes from the console output (simplified):
@@ -183,7 +183,7 @@ This section describes the construction of fire resources that provide access to
 ```go
 posts := &fire.Resource{
     Model:      &Post{},
-    Collection: "posts"
+    Collection: "posts",
 }
 ```
 
@@ -224,10 +224,10 @@ endpoint := fire.NewEndpoint(db)
 
 endpoint.AddResource(&fire.Resource{
     Model:      &Post{},
-    Collection: "posts"
+    Collection: "posts",
 })
 
-endpoint.Register(router)
+endpoint.Register("api", router)
 ````
 
 An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`. Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
