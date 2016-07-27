@@ -242,8 +242,8 @@ An `Authenticator` provides authentication through OAuth2 and can be created usi
 ```go
 authenticator := fire.NewAuthenticator(db, "a-very-long-secret") 
 
-authenticator.SetResourceOwner(&User{}, "users")
-authenticator.SetConfidentalClient(&Application(), "applications")
+authenticator.SetResourceOwner(&User{})
+authenticator.SetConfidentalClient(&Application())
 
 authenticator.Register("auth", router)
 ```

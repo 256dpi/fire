@@ -22,7 +22,7 @@ type Authenticator struct {
 	backend *fosite.Fosite
 }
 
-func NewAuthenticator(db *mgo.Database, model Model, collection, secret string) *Authenticator {
+func NewAuthenticator(db *mgo.Database, model Model, secret string) *Authenticator {
 	model = Init(model)
 
 	// prepare lists
@@ -48,7 +48,6 @@ func NewAuthenticator(db *mgo.Database, model Model, collection, secret string) 
 	s := &storage{
 		db:           db,
 		model:        model,
-		collection:   collection,
 		identifiable: identifiable[0],
 		verifiable:   verifiable[0],
 	}
@@ -256,7 +255,7 @@ func (s *storage) findClient(id string) (Model, error) {
 	obj := newStructPointer(s.model)
 
 	// query db
-	err := s.db.C(s.collection).Find(bson.M{
+	err := s.db.C(s.model.Collection()).Find(bson.M{
 		s.identifiable.dbField: id,
 	}).One(obj)
 	if err != nil {

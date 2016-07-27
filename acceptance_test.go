@@ -439,7 +439,7 @@ func TestAuthentication(t *testing.T) {
 		Model: &Post{},
 	})
 
-	authenticator := NewAuthenticator(db, &User{}, "users", "a-very-very-very-long-secret")
+	authenticator := NewAuthenticator(db, &User{}, "a-very-very-very-long-secret")
 	authenticator.Register("auth", server)
 
 	// create user
