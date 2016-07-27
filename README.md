@@ -29,10 +29,10 @@ Such a declaration could look like the following two models for a blog system:
 ```go
 type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
-	Slug     string       `json:"slug" valid:"required" bson:"slug" fire:"filterable,sortable"`
-	Title    string       `json:"title" valid:"required"`
-	TextBody string       `json:"text-body" valid:"-" bson:"text_body"`
-	Comments fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Slug      string       `json:"slug" valid:"required" bson:"slug" fire:"filterable,sortable"`
+	Title     string       `json:"title" valid:"required"`
+	TextBody  string       `json:"text-body" valid:"-" bson:"text_body"`
+	Comments  fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
 }
 
 type Comment struct {
