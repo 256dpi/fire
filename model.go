@@ -36,10 +36,10 @@ type HasMany struct{}
 var supportedTags = []string{"filterable", "sortable", "identifiable", "verifiable"}
 
 type attribute struct {
-	name         string
-	index        int
-	tags         []string
-	dbField      string
+	name    string
+	index   int
+	tags    []string
+	dbField string
 }
 
 type relationship struct {
@@ -233,9 +233,9 @@ func (b *Base) parseTags() {
 
 		// create attribute
 		attr := attribute{
-			name:     name,
-			index:    i,
-			dbField:  getBSONFieldName(&field),
+			name:    name,
+			index:   i,
+			dbField: getBSONFieldName(&field),
 		}
 
 		// check if optional
