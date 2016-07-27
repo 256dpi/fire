@@ -50,17 +50,8 @@ var db *mgo.Database // a reference to a database from a mgo.Session
 var router gin.IRouter // a reference to a gin router compatible instance
 
 endpoint := fire.NewEndpoint(db)
-
-endpoint.AddResource(&fire.Resource{
-    Model:      &Post{},
-    Collection: "posts",
-})
-
-endpoint.AddResource(&fire.Resource{
-    Model:       &Comment{},
-    Collection: "comments",
-})
-
+endpoint.AddResource(&fire.Resource{Model: &Post{}})
+endpoint.AddResource(&fire.Resource{Model: &Comment{}})
 endpoint.Register("api", router)
 ```
 
@@ -99,7 +90,7 @@ This section describes the configuration of fire models using the right combinat
 
 #### Basics
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name via the `fire:"singular:plural"` struct tag:
+The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name and collection via the `fire:"singular:plural[:collection]"` struct tag:
 
 ```go
 type Post struct {
@@ -108,9 +99,9 @@ type Post struct {
 }
 ```
 
-The plural name of the model is also the type for to one and has many relationships.
-
-Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+- If the collection is not explicitly set the plural name is used instead.
+- The plural name of the model is also the type for to one and has many relationships.
+- Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
 
 #### Getters
 
@@ -148,7 +139,7 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
-Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
+- Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
 #### To One Relationships
 
@@ -162,7 +153,7 @@ type Comment struct {
 }
 ```
 
-Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
+- Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
 
 #### Has Many Relationships
 
@@ -184,12 +175,11 @@ This section describes the construction of fire resources that provide access to
 
 #### Basics
 
-Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model` and specifying the MongoDB `Collection`:
+Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model`:
 
 ```go
 posts := &fire.Resource{
-    Model:      &Post{},
-    Collection: "posts",
+    Model: &Post{},
 }
 ```
 
@@ -231,8 +221,7 @@ An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to 
 endpoint := fire.NewEndpoint(db)
 
 endpoint.AddResource(&fire.Resource{
-    Model:      &Post{},
-    Collection: "posts",
+    Model: &Post{},
 })
 
 endpoint.Register("api", router)

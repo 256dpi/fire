@@ -59,9 +59,6 @@ type Resource struct {
 	// The model that this resource should provide (e.g. &Foo{}).
 	Model Model
 
-	// The MongoDB collection that should be used for storage.
-	Collection string
-
 	// The Authorizer is run on all actions. Will return a Forbidden status if
 	// an user error is returned.
 	Authorizer Callback
@@ -120,7 +117,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	pointer := newSlicePointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
+	err := r.endpoint.db.C(r.Model.getBase().collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
@@ -157,7 +154,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	obj := newStructPointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).Find(ctx.Query).One(obj)
+	err := r.endpoint.db.C(r.Model.getBase().collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, api2go.NewHTTPError(err, "resource not found", http.StatusNotFound)
 	} else if err != nil {
@@ -193,7 +190,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Collection).Insert(ctx.Model)
+	err = r.endpoint.db.C(r.Model.getBase().collection).Insert(ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while saving resource", http.StatusInternalServerError)
 	}
@@ -225,7 +222,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Collection).Update(ctx.Query, ctx.Model)
+	err = r.endpoint.db.C(r.Model.getBase().collection).Update(ctx.Query, ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}
@@ -255,7 +252,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	}
 
 	// query db
-	err := r.endpoint.db.C(r.Collection).Remove(ctx.Query)
+	err := r.endpoint.db.C(r.Model.getBase().collection).Remove(ctx.Query)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while deleting resource", http.StatusInternalServerError)
 	}

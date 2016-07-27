@@ -56,6 +56,7 @@ type Base struct {
 	parentModel          interface{}
 	singularName         string
 	pluralName           string
+	collection           string
 	attributes           map[string]attribute
 	toOneRelationships   map[string]relationship
 	hasManyRelationships map[string]relationship
@@ -170,11 +171,18 @@ func (b *Base) parseTags() {
 		// check if field is the Base
 		if field.Type == baseType {
 			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) == 2 {
-				b.singularName = values[0]
-				b.pluralName = values[1]
-			} else {
-				panic("expected to find a tag of the form fire:\"singular:plural\"")
+			if len(values) < 2 || len(values) > 3 {
+				panic("expected to find a tag of the form fire:\"singular:plural[:collection]\"")
+			}
+
+			// infer singular and plural and collection based on plural
+			b.singularName = values[0]
+			b.pluralName = values[1]
+			b.collection = values[1]
+
+			// infer collection
+			if len(values) == 3 {
+				b.collection = values[2]
 			}
 
 			continue

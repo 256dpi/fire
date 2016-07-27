@@ -27,8 +27,7 @@ type Comment struct {
 
 func TestBasicOperations(t *testing.T) {
 	server, _ := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	})
 
 	r := gofight.New()
@@ -130,11 +129,9 @@ func TestBasicOperations(t *testing.T) {
 
 func TestHasManyRelationship(t *testing.T) {
 	server, _ := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	}, &Resource{
-		Model:      &Comment{},
-		Collection: "comments",
+		Model: &Comment{},
 	})
 
 	r := gofight.New()
@@ -221,11 +218,9 @@ func TestHasManyRelationship(t *testing.T) {
 
 func TestHasManyRelationshipFiltering(t *testing.T) {
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	}, &Resource{
-		Model:      &Comment{},
-		Collection: "comments",
+		Model: &Comment{},
 	})
 
 	// create posts
@@ -264,8 +259,7 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 
 func TestToOneRelationship(t *testing.T) {
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	})
 
 	// create post
@@ -326,8 +320,7 @@ func TestToOneRelationship(t *testing.T) {
 
 func TestFiltering(t *testing.T) {
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	})
 
 	// create posts
@@ -368,8 +361,7 @@ func TestFiltering(t *testing.T) {
 
 func TestSorting(t *testing.T) {
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	})
 
 	// create posts
@@ -412,8 +404,7 @@ func TestSorting(t *testing.T) {
 
 func TestSparseFieldsets(t *testing.T) {
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Collection: "posts",
+		Model: &Post{},
 	})
 
 	// create posts
