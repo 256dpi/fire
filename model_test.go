@@ -13,12 +13,12 @@ func TestIDHelper(t *testing.T) {
 }
 
 func TestReferenceIDHelper(t *testing.T) {
-	post1 := Init(&Post{})
-	assert.Equal(t, post1.(*Post).NextPost, post1.ReferenceID("next-post"))
+	comment1 := Init(&Comment{})
+	assert.Equal(t, comment1.(*Comment).Parent, comment1.ReferenceID("parent"))
 
 	id := bson.NewObjectId()
-	post2 := Init(&Post{NextPost: &id})
-	assert.Equal(t, post2.(*Post).NextPost, post2.ReferenceID("next-post"))
+	comment2 := Init(&Comment{Parent: &id})
+	assert.Equal(t, comment2.(*Comment).Parent, comment2.ReferenceID("parent"))
 }
 
 func TestAttributeHelper(t *testing.T) {

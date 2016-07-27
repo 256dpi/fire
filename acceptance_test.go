@@ -12,10 +12,9 @@ import (
 
 type Post struct {
 	Base     `bson:",inline" fire:"post:posts"`
-	Title    string         `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	TextBody string         `json:"text-body" valid:"-" bson:"text_body"`
-	NextPost *bson.ObjectId `json:"-" valid:"-" bson:"next_post_id" fire:"next-post:posts"`
-	Comments HasMany        `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Title    string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	TextBody string  `json:"text-body" valid:"-" bson:"text_body"`
+	Comments HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
 }
 
 type Comment struct {
@@ -260,6 +259,8 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 func TestToOneRelationship(t *testing.T) {
 	server, db := buildServer(&Resource{
 		Model: &Post{},
+	}, &Resource{
+		Model: &Comment{},
 	})
 
 	// create post
@@ -272,15 +273,15 @@ func TestToOneRelationship(t *testing.T) {
 	var link string
 
 	// create relating post
-	r.POST("/posts").
+	r.POST("/comments").
 		SetBody(`{
 			"data": {
-				"type": "posts",
+				"type": "comments",
 				"attributes": {
-			  		"title": "Amazing Thing!"
+			  		"message": "Amazing Thing!"
 				},
 				"relationships": {
-					"next-post": {
+					"post": {
 						"data": {
 							"type": "posts",
 							"id": "`+post.ID().Hex()+`"
@@ -294,14 +295,14 @@ func TestToOneRelationship(t *testing.T) {
 			obj := json.Path("data")
 
 			assert.Equal(t, http.StatusCreated, r.Code)
-			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.Equal(t, "comments", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
-			assert.Equal(t, post.ID().Hex(), obj.Path("relationships.next-post.data.id").Data().(string))
-			assert.Equal(t, "posts", obj.Path("relationships.next-post.data.type").Data().(string))
-			assert.NotEmpty(t, obj.Path("relationships.next-post.links.related").Data().(string))
+			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.message").Data().(string))
+			assert.Equal(t, post.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
+			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
 
-			link = obj.Path("relationships.next-post.links.related").Data().(string)
+			link = obj.Path("relationships.post.links.related").Data().(string)
 		})
 
 	// get related post
@@ -314,7 +315,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.title").Data().(string))
+			assert.Equal(t, "Hello World!", obj.Path("attributes.title").Data().(string))
 		})
 }
 
