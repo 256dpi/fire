@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,10 +10,7 @@ import (
 	"github.com/ory-am/fosite/handler/core/owner"
 	"github.com/ory-am/fosite/handler/core/strategy"
 	"github.com/ory-am/fosite/token/hmac"
-	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type AccessToken struct {
@@ -25,7 +21,7 @@ type AccessToken struct {
 }
 
 type Authenticator struct {
-	storage *storage
+	storage *authenticatorStorage
 
 	strategy     *strategy.HMACSHAStrategy
 	handleHelper *core.HandleHelper
@@ -65,7 +61,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	}
 
 	// create storage
-	s := &storage{
+	s := &authenticatorStorage{
 		db:               db,
 		ownerModel:       ownerModel,
 		ownerIDAttr:      ownerIdentifiable[0],
@@ -203,117 +199,4 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 
 	// write response
 	a.fosite.WriteAccessResponse(ctx.Writer, req, res)
-}
-
-type storage struct {
-	db               *mgo.Database
-	ownerModel       Model
-	ownerIDAttr      attribute
-	ownerSecretAttr  attribute
-	clientModel      Model
-	clientIDAttr     attribute
-	clientSecretAttr attribute
-}
-
-func (s *storage) GetClient(id string) (fosite.Client, error) {
-	// prepare object
-	obj := newStructPointer(s.clientModel)
-
-	// query db
-	err := s.db.C(s.clientModel.Collection()).Find(bson.M{
-		s.clientIDAttr.dbField: id,
-	}).One(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// initialize model
-	_client := Init(obj.(Model))
-
-	// TODO: We shouldn't use Attribute() as the field might be hidden.
-
-	return &fosite.DefaultClient{
-		ID:            id,
-		Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
-		GrantTypes:    []string{"password"},
-		ResponseTypes: []string{"token"},
-	}, nil
-}
-
-func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
-	req := fosite.NewRequest()
-	req.Merge(request)
-
-	client := req.Client.(*fosite.DefaultClient)
-	req.Client = nil
-
-	accessToken := Init(&AccessToken{
-		Signature:    signature,
-		PlainRequest: req,
-		PlainClient:  client,
-	})
-
-	return s.db.C(accessTokenModel.Collection()).Insert(accessToken)
-}
-
-func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
-	accessToken := AccessToken{}
-	accessToken.PlainRequest = fosite.NewRequest()
-	accessToken.PlainClient = &fosite.DefaultClient{}
-
-	err := s.db.C(accessTokenModel.Collection()).Find(bson.M{
-		"signature": signature,
-	}).One(&accessToken)
-	if err != nil {
-		return nil, err
-	}
-
-	accessToken.PlainRequest.Client = accessToken.PlainClient
-	accessToken.PlainRequest.Session = session
-
-	return accessToken.PlainRequest, nil
-}
-
-func (s *storage) DeleteAccessTokenSession(ctx context.Context, signature string) error {
-	pretty.Println("DeleteAccessTokenSession", ctx, signature)
-	return nil
-}
-
-func (s *storage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
-	pretty.Println("CreateRefreshTokenSession", ctx, signature, request)
-	return nil
-}
-
-func (s *storage) GetRefreshTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
-	pretty.Println("GetRefreshTokenSession", ctx, signature, session)
-	return nil, errors.New("error get refresh token session")
-}
-
-func (s *storage) DeleteRefreshTokenSession(ctx context.Context, signature string) error {
-	pretty.Println("DeleteRefreshTokenSession", ctx, signature)
-	return nil
-}
-
-func (s *storage) PersistRefreshTokenGrantSession(ctx context.Context, requestRefreshSignature, accessSignature, refreshSignature string, request fosite.Requester) error {
-	pretty.Println("PersistRefreshTokenGrantSession", ctx, requestRefreshSignature, accessSignature, refreshSignature, request)
-	return nil
-}
-
-func (s *storage) Authenticate(ctx context.Context, id string, secret string) error {
-	// prepare object
-	obj := newStructPointer(s.ownerModel)
-
-	// query db
-	err := s.db.C(s.ownerModel.Collection()).Find(bson.M{
-		s.ownerIDAttr.dbField: id,
-	}).One(obj)
-	if err != nil {
-		return err
-	}
-
-	// initialize model
-	owner := Init(obj.(Model))
-
-	// check secret
-	return bcrypt.CompareHashAndPassword(owner.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
 }
