@@ -33,14 +33,12 @@ var errInvalidID = errors.New("invalid id")
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
+var supportedTags = []string{"filterable", "sortable", "identifiable", "verifiable"}
+
 type attribute struct {
 	name         string
 	index        int
-	optional     bool
-	filterable   bool
-	sortable     bool
-	identifiable bool
-	verifiable   bool
+	tags         []string
 	dbField      string
 }
 
@@ -237,26 +235,24 @@ func (b *Base) parseTags() {
 		attr := attribute{
 			name:     name,
 			index:    i,
-			optional: field.Type.Kind() == reflect.Ptr,
 			dbField:  getBSONFieldName(&field),
 		}
 
+		// check if optional
+		if field.Type.Kind() == reflect.Ptr {
+			attr.tags = append(attr.tags, "optional")
+		}
+
 		// get fire tag
-		tag := field.Tag.Get("fire")
+		fireTag := field.Tag.Get("fire")
 
 		// check tags
-		if len(tag) > 0 {
-			for _, t := range strings.Split(tag, ",") {
-				if t == "filterable" {
-					attr.filterable = true
-				} else if t == "sortable" {
-					attr.sortable = true
-				} else if t == "identifiable" {
-					attr.identifiable = true
-				} else if t == "verifiable" {
-					attr.verifiable = true
+		if len(fireTag) > 0 {
+			for _, tag := range strings.Split(fireTag, ",") {
+				if stringInList(supportedTags, tag) {
+					attr.tags = append(attr.tags, tag)
 				} else {
-					panic("unexpected tag: " + t)
+					panic("unexpected tag: " + tag)
 				}
 			}
 		}
@@ -264,6 +260,19 @@ func (b *Base) parseTags() {
 		// add attribute
 		b.attributes[name] = attr
 	}
+}
+
+func (b *Base) attributesByTag(tag string) []attribute {
+	var list []attribute
+
+	// find identifiable and verifiable attributes
+	for _, attr := range b.attributes {
+		if stringInList(attr.tags, tag) {
+			list = append(list, attr)
+		}
+	}
+
+	return list
 }
 
 /* api2go.jsonapi interface */

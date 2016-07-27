@@ -89,19 +89,17 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	r.setRelationshipFilters(ctx)
 
 	// add filters
-	for _, attr := range r.Model.getBase().attributes {
-		if attr.filterable {
-			if values, ok := ctx.Api2GoReq.QueryParams["filter["+attr.name+"]"]; ok {
-				ctx.Query[attr.dbField] = bson.M{"$in": values}
-			}
+	for _, attr := range r.Model.getBase().attributesByTag("filterable") {
+		if values, ok := ctx.Api2GoReq.QueryParams["filter["+attr.name+"]"]; ok {
+			ctx.Query[attr.dbField] = bson.M{"$in": values}
 		}
 	}
 
 	// add sorting
 	if fields, ok := req.QueryParams["sort"]; ok {
 		for _, field := range fields {
-			for _, attr := range r.Model.getBase().attributes {
-				if attr.sortable && (field == attr.dbField || field == "-"+attr.dbField) {
+			for _, attr := range r.Model.getBase().attributesByTag("sortable") {
+				if field == attr.dbField || field == "-"+attr.dbField {
 					ctx.Sorting = append(ctx.Sorting, field)
 				}
 			}
