@@ -13,6 +13,7 @@ import (
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
+	Collection() string
 	Attribute(string) interface{}
 	ReferenceID(string) *bson.ObjectId
 	Validate(bool) error
@@ -69,6 +70,11 @@ func (b *Base) initialize(model interface{}) {
 	if !b.DocID.Valid() {
 		b.DocID = bson.NewObjectId()
 	}
+}
+
+// Collection returns the models collection.
+func (b *Base) Collection() string {
+	return b.collection
 }
 
 // ID returns the models id.
