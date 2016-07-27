@@ -7,6 +7,7 @@ import (
 	"github.com/kr/pretty"
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/handler/core"
+	"github.com/ory-am/fosite/handler/core/client"
 	"github.com/ory-am/fosite/handler/core/owner"
 	"github.com/ory-am/fosite/handler/core/strategy"
 	"github.com/ory-am/fosite/token/hmac"
@@ -113,14 +114,14 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 // EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
 // Credentials Grant.
 func (a *Authenticator) EnablePasswordGrant() {
-	// this handler is responsible for the resource owner password credentials grant
-	ownerHandler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
+	// create handler
+	passwordHandler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
 		HandleHelper:                                 a.handleHelper,
 		ResourceOwnerPasswordCredentialsGrantStorage: a.storage,
 	}
 
 	// add handler to fosite
-	a.fosite.TokenEndpointHandlers.Append(ownerHandler)
+	a.fosite.TokenEndpointHandlers.Append(passwordHandler)
 
 	// TODO: Enable refresh token.
 	// this handler is responsible for the refresh token grant
@@ -137,7 +138,13 @@ func (a *Authenticator) EnablePasswordGrant() {
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
 func (a *Authenticator) EnableCredentialsGrant() {
+	// create handler
+	credentialsHandler := &client.ClientCredentialsGrantHandler{
+		HandleHelper: a.handleHelper,
+	}
 
+	// add handler to fosite
+	a.fosite.TokenEndpointHandlers.Append(credentialsHandler)
 }
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.

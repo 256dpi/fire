@@ -41,7 +41,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	return &fosite.DefaultClient{
 		ID:            id,
 		Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
-		GrantTypes:    []string{"password"},
+		GrantTypes:    []string{"password", "client_credentials"},
 		ResponseTypes: []string{"token"},
 	}, nil
 }

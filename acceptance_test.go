@@ -497,3 +497,51 @@ func TestPasswordGrant(t *testing.T) {
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
 }
+
+func TestCredentialsGrant(t *testing.T) {
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator.EnableCredentialsGrant()
+
+	server, db := buildServer(&Resource{
+		Model:      &Post{},
+		Authorizer: authenticator.Authorizer(),
+	})
+
+	authenticator.Register("auth", server)
+
+	// create application
+	saveModel(db, &Application{
+		Name:   "Test Application",
+		Key:    "some-fancy-key",
+		Secret: hashPassword(authenticator, "some-fancy-secret"),
+	})
+
+	r := gofight.New()
+
+	var token string
+
+	// get access token
+	r.POST("/auth/token").
+		SetHeader(basicAuth("some-fancy-key", "some-fancy-secret")).
+		SetFORM(gofight.H{
+			"grant_type": "client_credentials",
+			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
+			assert.Equal(t, "fire", json.Path("scope").Data().(string))
+			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+
+			token = json.Path("access_token").Data().(string)
+		})
+
+	// get empty list of posts
+	r.GET("/posts").
+		SetHeader(bearerAuth(token)).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
+}
