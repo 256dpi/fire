@@ -240,10 +240,15 @@ Resources can be added with `AddResource` before the routes are registered on an
 An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database` and a secret:
 
 ```go
-authenticator := fire.NewAuthenticator(db, "a-very-long-secret") 
+authenticator := fire.NewAuthenticator(db,
+    &User{},
+    &Application{},
+    "a-very-long-secret"
+) 
 
-authenticator.SetResourceOwner(&User{})
-authenticator.SetConfidentalClient(&Application())
+authenticator.EnablePasswordGrant()
+authenticator.EnableCredentialsGrant()
+authenticator.EnableImplicitGrant()
 
 authenticator.Register("auth", router)
 ```

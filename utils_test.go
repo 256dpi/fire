@@ -8,7 +8,6 @@ import (
 	"github.com/appleboy/gofight"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 )
 
@@ -36,6 +35,8 @@ func getDB() *mgo.Database {
 	db.C("posts").RemoveAll(nil)
 	db.C("comments").RemoveAll(nil)
 	db.C("users").RemoveAll(nil)
+	db.C("applications").RemoveAll(nil)
+	db.C("access_tokens").RemoveAll(nil)
 
 	return db
 }
@@ -85,8 +86,14 @@ func basicAuth(username, password string) gofight.H {
 	}
 }
 
-func hashPassword(password string) []byte {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 0)
+func bearerAuth(token string) gofight.H {
+	return gofight.H{
+		"Authorization": "Bearer " + token,
+	}
+}
+
+func hashPassword(authenticator *Authenticator, password string) []byte {
+	bytes, err := authenticator.HashPassword(password)
 	if err != nil {
 		panic(err)
 	}

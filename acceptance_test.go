@@ -10,6 +10,13 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type Application struct {
+	Base   `bson:",inline" fire:"application:applications"`
+	Name   string `json:"full_name" valid:"required"`
+	Key    string `json:"key" valid:"required" fire:"identifiable"`
+	Secret []byte `json:"secret" valid:"required" fire:"verifiable"`
+}
+
 type User struct {
 	Base         `bson:",inline" fire:"user:users"`
 	FullName     string `json:"full_name" valid:"required"`
@@ -434,26 +441,38 @@ func TestSparseFieldsets(t *testing.T) {
 		})
 }
 
-func TestAuthentication(t *testing.T) {
+func TestPasswordGrant(t *testing.T) {
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator.EnablePasswordGrant()
+
 	server, db := buildServer(&Resource{
-		Model: &Post{},
+		Model:      &Post{},
+		Authorizer: authenticator.Authorizer(),
 	})
 
-	authenticator := NewAuthenticator(db, &User{}, "a-very-very-very-long-secret")
 	authenticator.Register("auth", server)
+
+	// create application
+	saveModel(db, &Application{
+		Name:   "Test Application",
+		Key:    "some-fancy-key",
+		Secret: hashPassword(authenticator, "some-fancy-secret"),
+	})
 
 	// create user
 	saveModel(db, &User{
 		FullName:     "Peter Sandberg",
 		Email:        "peter@example.com",
-		PasswordHash: hashPassword("abcd1234"),
+		PasswordHash: hashPassword(authenticator, "abcd1234"),
 	})
 
 	r := gofight.New()
 
+	var token string
+
 	// get access token
 	r.POST("/auth/token").
-		SetHeader(basicAuth("peter@example.com", "abcd1234")).
+		SetHeader(basicAuth("some-fancy-key", "some-fancy-secret")).
 		SetFORM(gofight.H{
 			"grant_type": "password",
 			"username":   "peter@example.com",
@@ -461,12 +480,20 @@ func TestAuthentication(t *testing.T) {
 			"scope":      "fire",
 		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			// TODO: Where is the refresh token?
-
 			json, _ := gabs.ParseJSONBuffer(r.Body)
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
 			assert.Equal(t, "fire", json.Path("scope").Data().(string))
 			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+
+			token = json.Path("access_token").Data().(string)
+		})
+
+	// get empty list of posts
+	r.GET("/posts").
+		SetHeader(bearerAuth(token)).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
 }
