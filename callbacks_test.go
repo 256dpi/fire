@@ -31,7 +31,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(db, "posts", &Post{})
+	post := saveModel(db, &Post{})
 
 	// create context
 	ctx := &Context{
@@ -46,7 +46,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	assert.NoError(t, sysErr)
 
 	// create comment
-	saveModel(db, "comments", &Comment{
+	saveModel(db, &Comment{
 		PostID: post.ID(),
 	})
 
@@ -65,7 +65,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	})
 
 	// create bad comment
-	comment1 := saveModel(db, "comments", &Comment{
+	comment1 := saveModel(db, &Comment{
 		PostID: bson.NewObjectId(),
 	})
 
@@ -82,8 +82,8 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	assert.NoError(t, sysErr)
 
 	// create post & comment
-	post := saveModel(db, "posts", &Post{})
-	comment2 := saveModel(db, "comments", &Comment{
+	post := saveModel(db, &Post{})
+	comment2 := saveModel(db, &Comment{
 		PostID: post.ID(),
 	})
 
@@ -108,13 +108,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	postID := bson.NewObjectId()
 
 	// create root comment
-	comment1 := saveModel(db, "comments", &Comment{
+	comment1 := saveModel(db, &Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
-	comment2 := saveModel(db, "comments", &Comment{
+	comment2 := saveModel(db, &Comment{
 		Parent: &parentID,
 		PostID: bson.NewObjectId(),
 	})
@@ -132,13 +132,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	assert.NoError(t, sysErr)
 
 	// create root comment
-	comment3 := saveModel(db, "comments", &Comment{
+	comment3 := saveModel(db, &Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
-	comment4 := saveModel(db, "comments", &Comment{
+	comment4 := saveModel(db, &Comment{
 		Parent: &parentID,
 		PostID: postID,
 	})

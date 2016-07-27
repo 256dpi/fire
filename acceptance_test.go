@@ -230,19 +230,19 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 	})
 
 	// create posts
-	post1 := saveModel(db, "posts", &Post{
+	post1 := saveModel(db, &Post{
 		Title: "Post 1",
 	})
-	post2 := saveModel(db, "posts", &Post{
+	post2 := saveModel(db, &Post{
 		Title: "Post 2",
 	})
 
 	// create comments
-	saveModel(db, "comments", &Comment{
+	saveModel(db, &Comment{
 		Message: "Comment 1",
 		PostID:  post1.ID(),
 	})
-	saveModel(db, "comments", &Comment{
+	saveModel(db, &Comment{
 		Message: "Comment 2",
 		PostID:  post2.ID(),
 	})
@@ -271,7 +271,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(db, "posts", &Post{
+	post := saveModel(db, &Post{
 		Title: "Hello World!",
 	})
 
@@ -332,13 +332,13 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// create posts
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "post-1",
 	})
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "post-2",
 	})
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "post-3",
 	})
 
@@ -373,13 +373,13 @@ func TestSorting(t *testing.T) {
 	})
 
 	// create posts
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "2",
 	})
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "1",
 	})
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "3",
 	})
 
@@ -416,7 +416,7 @@ func TestSparseFieldsets(t *testing.T) {
 	})
 
 	// create posts
-	saveModel(db, "posts", &Post{
+	saveModel(db, &Post{
 		Title: "post-1",
 	})
 
@@ -443,7 +443,7 @@ func TestAuthentication(t *testing.T) {
 	authenticator.Register("auth", server)
 
 	// create user
-	saveModel(db, "users", &User{
+	saveModel(db, &User{
 		FullName:     "Peter Sandberg",
 		Email:        "peter@example.com",
 		PasswordHash: hashPassword("abcd1234"),
