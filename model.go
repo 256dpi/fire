@@ -72,14 +72,16 @@ func (b *Base) initialize(model interface{}) {
 	}
 }
 
-// Collection returns the models collection.
-func (b *Base) Collection() string {
-	return b.collection
-}
-
 // ID returns the models id.
 func (b *Base) ID() bson.ObjectId {
 	return b.DocID
+}
+
+// Collection returns the models collection.
+func (b *Base) Collection() string {
+	b.parseTags()
+
+	return b.collection
 }
 
 // Attribute returns the value of the given attribute.
@@ -174,21 +176,24 @@ func (b *Base) parseTags() {
 	for i := 0; i < modelType.NumField(); i++ {
 		field := modelType.Field(i)
 
+		// get fire tag
+		fireStructTag := field.Tag.Get("fire")
+
 		// check if field is the Base
 		if field.Type == baseType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) < 2 || len(values) > 3 {
+			fireTags := strings.Split(fireStructTag, ":")
+			if len(fireTags) < 2 || len(fireTags) > 3 {
 				panic("expected to find a tag of the form fire:\"singular:plural[:collection]\"")
 			}
 
 			// infer singular and plural and collection based on plural
-			b.singularName = values[0]
-			b.pluralName = values[1]
-			b.collection = values[1]
+			b.singularName = fireTags[0]
+			b.pluralName = fireTags[1]
+			b.collection = fireTags[1]
 
 			// infer collection
-			if len(values) == 3 {
-				b.collection = values[2]
+			if len(fireTags) == 3 {
+				b.collection = fireTags[2]
 			}
 
 			continue
@@ -196,11 +201,11 @@ func (b *Base) parseTags() {
 
 		// check if field is a to one relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) == 2 {
-				b.toOneRelationships[values[0]] = relationship{
-					name:     values[0],
-					typ:      values[1],
+			fireTags := strings.Split(fireStructTag, ":")
+			if len(fireTags) == 2 {
+				b.toOneRelationships[fireTags[0]] = relationship{
+					name:     fireTags[0],
+					typ:      fireTags[1],
 					index:    i,
 					optional: field.Type == optionalToOneType,
 					dbField:  getBSONFieldName(&field),
@@ -214,11 +219,11 @@ func (b *Base) parseTags() {
 
 		// check if field is a has many relationship
 		if field.Type == hasManyType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) == 2 {
-				b.hasManyRelationships[values[0]] = relationship{
-					name:  values[0],
-					typ:   values[1],
+			fireTags := strings.Split(fireStructTag, ":")
+			if len(fireTags) == 2 {
+				b.hasManyRelationships[fireTags[0]] = relationship{
+					name:  fireTags[0],
+					typ:   fireTags[1],
 					index: i,
 				}
 			} else {
@@ -243,12 +248,10 @@ func (b *Base) parseTags() {
 			attr.tags = append(attr.tags, "optional")
 		}
 
-		// get fire tag
-		fireTag := field.Tag.Get("fire")
-
 		// check tags
-		if len(fireTag) > 0 {
-			for _, tag := range strings.Split(fireTag, ",") {
+		if len(fireStructTag) > 0 {
+			fireTags := strings.Split(fireStructTag, ",")
+			for _, tag := range fireTags {
 				if stringInList(supportedTags, tag) {
 					attr.tags = append(attr.tags, tag)
 				} else {
