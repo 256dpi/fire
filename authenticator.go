@@ -166,9 +166,21 @@ func (a *Authenticator) HashPassword(password string) ([]byte, error) {
 	return a.fosite.Hasher.Hash([]byte(password))
 }
 
+// MustHashPassword is the same as HashPassword except that it raises and error
+// when the hashing failed.
+func (a *Authenticator) MustHashPassword(password string) []byte {
+	bytes, err := a.HashPassword(password)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
+}
+
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
-	router.POST(prefix+"/auth", a.authEndpoint)
+	router.GET(prefix+"/authorize", a.authEndpoint)
+	router.POST(prefix+"/authorize", a.authEndpoint)
 }
 
 func (a *Authenticator) Authorizer() Callback {

@@ -12,16 +12,16 @@ import (
 
 type Application struct {
 	Base   `bson:",inline" fire:"application:applications"`
-	Name   string `json:"full_name" valid:"required"`
+	Name   string `json:"name" valid:"required"`
 	Key    string `json:"key" valid:"required" fire:"identifiable"`
 	Secret []byte `json:"secret" valid:"required" fire:"verifiable"`
 }
 
 type User struct {
-	Base         `bson:",inline" fire:"user:users"`
-	FullName     string `json:"full_name" valid:"required"`
-	Email        string `json:"email" valid:"required" fire:"identifiable"`
-	PasswordHash []byte `json:"-" valid:"required" fire:"verifiable"`
+	Base     `bson:",inline" fire:"user:users"`
+	FullName string `json:"full_name" valid:"required"`
+	Email    string `json:"email" valid:"required" fire:"identifiable"`
+	Password []byte `json:"-" valid:"required" fire:"verifiable"`
 }
 
 type Post struct {
@@ -456,14 +456,14 @@ func TestPasswordGrant(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "some-fancy-key",
-		Secret: hashPassword(authenticator, "some-fancy-secret"),
+		Secret: authenticator.MustHashPassword("some-fancy-secret"),
 	})
 
 	// create user
 	saveModel(db, &User{
-		FullName:     "Peter Sandberg",
-		Email:        "peter@example.com",
-		PasswordHash: hashPassword(authenticator, "abcd1234"),
+		FullName: "Peter Sandberg",
+		Email:    "peter@example.com",
+		Password: authenticator.MustHashPassword("abcd1234"),
 	})
 
 	r := gofight.New()

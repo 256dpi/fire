@@ -92,15 +92,6 @@ func bearerAuth(token string) gofight.H {
 	}
 }
 
-func hashPassword(authenticator *Authenticator, password string) []byte {
-	bytes, err := authenticator.HashPassword(password)
-	if err != nil {
-		panic(err)
-	}
-
-	return bytes
-}
-
 // some cheats to get more coverage
 
 func TestAdapter(t *testing.T) {
