@@ -15,6 +15,18 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+var callbackTemplate = []byte(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Authorize</title>
+    <script>
+      var hash = window.location.hash;
+      window.opener.App.oauth.trigger('redirect', hash);
+      window.close();
+    </script>
+  </head>
+</html>`)
+
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
 	Signature     string    `json:"-" valid:"required"`
@@ -181,6 +193,7 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
 	router.GET(prefix+"/authorize", a.authorizeEndpoint)
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
+	router.GET(prefix+"/callback", a.callbackEndpoint)
 }
 
 func (a *Authenticator) Authorizer() Callback {
@@ -277,4 +290,8 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 
 	// write response
 	a.fosite.WriteAuthorizeResponse(ctx.Writer, req, res)
+}
+
+func (a *Authenticator) callbackEndpoint(ctx *gin.Context) {
+	ctx.Writer.Write(callbackTemplate)
 }
