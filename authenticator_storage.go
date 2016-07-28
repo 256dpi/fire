@@ -48,26 +48,22 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 }
 
 func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
-	req := fosite.NewRequest()
-	req.Merge(request)
-
-	client := req.Client.(*fosite.DefaultClient)
-	req.Client = nil
-
+	// create access token
 	accessToken := Init(&AccessToken{
-		Signature:    signature,
-		PlainRequest: req,
-		PlainClient:  client,
+		Signature:     signature,
+		RequestedAt:   request.GetRequestedAt(),
+		GrantedScopes: request.GetGrantedScopes(),
 	})
 
+	// TODO: Save Client Id.
+
+	// save access token
 	return s.db.C(accessTokenModel.Collection()).Insert(accessToken)
 }
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
-	accessToken := AccessToken{}
-	accessToken.PlainRequest = fosite.NewRequest()
-	accessToken.PlainClient = &fosite.DefaultClient{}
-
+	// fetch access token
+	var accessToken AccessToken
 	err := s.db.C(accessTokenModel.Collection()).Find(bson.M{
 		"signature": signature,
 	}).One(&accessToken)
@@ -75,10 +71,13 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 		return nil, err
 	}
 
-	accessToken.PlainRequest.Client = accessToken.PlainClient
-	accessToken.PlainRequest.Session = session
+	// create request
+	req := fosite.NewRequest()
+	req.RequestedAt = accessToken.RequestedAt
+	req.GrantedScopes = accessToken.GrantedScopes
+	req.Session = session
 
-	return accessToken.PlainRequest, nil
+	return req, nil
 }
 
 func (s *authenticatorStorage) DeleteAccessTokenSession(ctx context.Context, signature string) error {

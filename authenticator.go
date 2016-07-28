@@ -16,10 +16,10 @@ import (
 )
 
 type AccessToken struct {
-	Base         `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
-	Signature    string                `json:"-" valid:"-"`
-	PlainRequest *fosite.Request       `json:"-" valid:"-" bson:"plain_request"`
-	PlainClient  *fosite.DefaultClient `json:"-" valid:"-" bson:"plain_client"`
+	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
+	Signature     string    `json:"-" valid:"required"`
+	RequestedAt   time.Time `json:"requested-at" valid:"required" bson:"requested_at"`
+	GrantedScopes []string  `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
 }
 
 type Authenticator struct {
