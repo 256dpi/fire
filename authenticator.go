@@ -98,6 +98,18 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		AccessTokenLifespan: tokenLifespan,
 	}
 
+	// TODO: Enable refresh token.
+	// this handler is responsible for the refresh token grant
+	//refreshHandler := &refresh.RefreshTokenGrantHandler{
+	//	AccessTokenStrategy:      strategy,
+	//	RefreshTokenStrategy:     strategy,
+	//	RefreshTokenGrantStorage: s,
+	//	AccessTokenLifespan:      accessTokenLifespan,
+	//}
+
+	// add handler to fosite
+	//f.TokenEndpointHandlers.Append(refreshHandler)
+
 	// add a request validator for access tokens to fosite
 	f.AuthorizedRequestValidators.Append(&core.CoreValidator{
 		AccessTokenStrategy: strategy,
@@ -123,18 +135,6 @@ func (a *Authenticator) EnablePasswordGrant() {
 
 	// add handler to fosite
 	a.fosite.TokenEndpointHandlers.Append(passwordHandler)
-
-	// TODO: Enable refresh token.
-	// this handler is responsible for the refresh token grant
-	//refreshHandler := &refresh.RefreshTokenGrantHandler{
-	//	AccessTokenStrategy:      strategy,
-	//	RefreshTokenStrategy:     strategy,
-	//	RefreshTokenGrantStorage: s,
-	//	AccessTokenLifespan:      accessTokenLifespan,
-	//}
-
-	// add handler to fosite
-	//f.TokenEndpointHandlers.Append(refreshHandler)
 }
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
@@ -150,13 +150,14 @@ func (a *Authenticator) EnableCredentialsGrant() {
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
 func (a *Authenticator) EnableImplicitGrant() {
-	// This handler is responsible for the implicit flow. The implicit flow does not return an authorize code
-	// but instead returns the access token directly via an url fragment.
+	// create handler
 	implicitHandler := &implicit.AuthorizeImplicitGrantTypeHandler{
 		AccessTokenStrategy: a.handleHelper.AccessTokenStrategy,
 		AccessTokenStorage:  a.handleHelper.AccessTokenStorage,
 		AccessTokenLifespan: a.handleHelper.AccessTokenLifespan,
 	}
+
+	// add handler to fosite
 	a.fosite.AuthorizeEndpointHandlers.Append(implicitHandler)
 }
 
@@ -178,8 +179,8 @@ func (a *Authenticator) MustHashPassword(password string) []byte {
 
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
-	router.GET(prefix+"/authorize", a.authEndpoint)
-	router.POST(prefix+"/authorize", a.authEndpoint)
+	router.GET(prefix+"/authorize", a.authorizeEndpoint)
+	router.POST(prefix+"/authorize", a.authorizeEndpoint)
 }
 
 func (a *Authenticator) Authorizer() Callback {
@@ -230,7 +231,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	a.fosite.WriteAccessResponse(ctx.Writer, req, res)
 }
 
-func (a *Authenticator) authEndpoint(ctx *gin.Context) {
+func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// create new context
 	f := fosite.NewContext()
 
