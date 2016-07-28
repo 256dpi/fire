@@ -513,7 +513,7 @@ func TestCredentialsGrant(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "some-fancy-key",
-		Secret: hashPassword(authenticator, "some-fancy-secret"),
+		Secret: authenticator.MustHashPassword("some-fancy-secret"),
 	})
 
 	r := gofight.New()
