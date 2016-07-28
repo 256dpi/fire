@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -204,7 +203,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	f := fosite.NewContext()
 
 	// create new session
-	s := make(map[string]interface{})
+	s := &strategy.HMACSession{}
 
 	// obtain access request
 	req, err := a.fosite.NewAccessRequest(f, ctx.Request, s)
@@ -215,7 +214,9 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	}
 
 	// grant the mandatory scope
-	req.GrantScope("fire")
+	if req.GetScopes().Has("fire") {
+		req.GrantScope("fire")
+	}
 
 	// obtain access response
 	res, err := a.fosite.NewAccessResponse(f, ctx.Request, req)
@@ -233,11 +234,10 @@ func (a *Authenticator) authEndpoint(ctx *gin.Context) {
 	// create new context
 	f := fosite.NewContext()
 
-	// Let's create an AuthorizeRequest object!
-	// It will analyze the request and extract important information like scopes, response type and others.
+	// obtain authorize request
 	req, err := a.fosite.NewAuthorizeRequest(f, ctx.Request)
 	if err != nil {
-		fmt.Printf("Error occurred in NewAuthorizeRequest: %s\n", err)
+		pretty.Println(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
@@ -263,24 +263,17 @@ func (a *Authenticator) authEndpoint(ctx *gin.Context) {
 		req.GrantScope("offline")
 	}
 
-	// Now that the user is authorized, we set up a session:
-	session := &strategy.HMACSession{}
+	// create new session
+	s := &strategy.HMACSession{}
 
-	// Now we need to get a response. This is the place where the AuthorizeEndpointHandlers kick in and start processing the request.
-	// NewAuthorizeResponse is capable of running multiple response type handlers which in turn enables this library
-	// to support open id connect.
-	res, err := a.fosite.NewAuthorizeResponse(ctx, ctx.Request, req, session)
-
-	// Catch any errors, e.g.:
-	// * unknown client
-	// * invalid redirect
-	// * ...
+	// obtain authorize response
+	res, err := a.fosite.NewAuthorizeResponse(ctx, ctx.Request, req, s)
 	if err != nil {
-		fmt.Printf("Error occurred in NewAuthorizeResponse: %s", err)
+		pretty.Println(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
 
-	// Last but not least, send the response!
+	// write response
 	a.fosite.WriteAuthorizeResponse(ctx.Writer, req, res)
 }
