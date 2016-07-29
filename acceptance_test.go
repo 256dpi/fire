@@ -456,8 +456,8 @@ func TestPasswordGrant(t *testing.T) {
 	// create application
 	saveModel(db, &Application{
 		Name:   "Test Application",
-		Key:    "some-fancy-key",
-		Secret: authenticator.MustHashPassword("some-fancy-secret"),
+		Key:    "key",
+		Secret: authenticator.MustHashPassword("secret"),
 	})
 
 	// create user
@@ -473,7 +473,7 @@ func TestPasswordGrant(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/token").
-		SetHeader(basicAuth("some-fancy-key", "some-fancy-secret")).
+		SetHeader(basicAuth("key", "secret")).
 		SetFORM(gofight.H{
 			"grant_type": "password",
 			"username":   "peter@example.com",
@@ -513,8 +513,8 @@ func TestCredentialsGrant(t *testing.T) {
 	// create application
 	saveModel(db, &Application{
 		Name:   "Test Application",
-		Key:    "some-fancy-key",
-		Secret: authenticator.MustHashPassword("some-fancy-secret"),
+		Key:    "key",
+		Secret: authenticator.MustHashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -523,7 +523,7 @@ func TestCredentialsGrant(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/token").
-		SetHeader(basicAuth("some-fancy-key", "some-fancy-secret")).
+		SetHeader(basicAuth("key", "secret")).
 		SetFORM(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
