@@ -248,8 +248,13 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	// validate user
-	if ctx.Request.Form.Get("username") != "peter" {
+	// get credentials
+	username := ctx.Request.Form.Get("username")
+	password := ctx.Request.Form.Get("password")
+
+	// authenticate user
+	err = a.storage.Authenticate(f, username, password)
+	if err != nil {
 		uri := ctx.Request.Referer() + "&error=invalid_credentials"
 		ctx.Redirect(http.StatusTemporaryRedirect, uri)
 		return
