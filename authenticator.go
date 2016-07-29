@@ -115,18 +115,6 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		AccessTokenLifespan: tokenLifespan,
 	}
 
-	// TODO: Enable refresh token.
-	// this handler is responsible for the refresh token grant
-	//refreshHandler := &refresh.RefreshTokenGrantHandler{
-	//	AccessTokenStrategy:      strategy,
-	//	RefreshTokenStrategy:     strategy,
-	//	RefreshTokenGrantStorage: s,
-	//	AccessTokenLifespan:      accessTokenLifespan,
-	//}
-
-	// add handler to fosite
-	//f.TokenEndpointHandlers.Append(refreshHandler)
-
 	// add a request validator for access tokens to fosite
 	f.AuthorizedRequestValidators.Append(&core.CoreValidator{
 		AccessTokenStrategy: strategy,
@@ -265,11 +253,6 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 		uri := ctx.Request.Referer() + "&error=invalid_credentials"
 		ctx.Redirect(http.StatusTemporaryRedirect, uri)
 		return
-	}
-
-	// we allow issuing of refresh tokens per default
-	if req.GetScopes().Has("offline") {
-		req.GrantScope("offline")
 	}
 
 	// create new session
