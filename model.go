@@ -33,7 +33,13 @@ var errInvalidID = errors.New("invalid id")
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
-var supportedTags = []string{"filterable", "sortable", "identifiable", "verifiable"}
+var supportedTags = []string{
+	"filterable",
+	"sortable",
+	"identifiable",
+	"verifiable",
+	"callable",
+}
 
 type attribute struct {
 	name    string

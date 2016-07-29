@@ -12,13 +12,14 @@ import (
 )
 
 type authenticatorStorage struct {
-	db               *mgo.Database
-	ownerModel       Model
-	ownerIDAttr      attribute
-	ownerSecretAttr  attribute
-	clientModel      Model
-	clientIDAttr     attribute
-	clientSecretAttr attribute
+	db                 *mgo.Database
+	ownerModel         Model
+	ownerIDAttr        attribute
+	ownerSecretAttr    attribute
+	clientModel        Model
+	clientIDAttr       attribute
+	clientSecretAttr   attribute
+	clientCallableAttr attribute
 }
 
 func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
@@ -43,7 +44,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 		Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
 		GrantTypes:    []string{"password", "client_credentials", "implicit"},
 		ResponseTypes: []string{"token"},
-		RedirectURIs:  []string{"http://localhost:3846/callback"}, // TODO: Change!
+		RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.name).(string)},
 	}, nil
 }
 

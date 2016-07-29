@@ -11,10 +11,11 @@ import (
 )
 
 type Application struct {
-	Base   `bson:",inline" fire:"application:applications"`
-	Name   string `json:"name" valid:"required"`
-	Key    string `json:"key" valid:"required" fire:"identifiable"`
-	Secret []byte `json:"secret" valid:"required" fire:"verifiable"`
+	Base     `bson:",inline" fire:"application:applications"`
+	Name     string `json:"name" valid:"required"`
+	Key      string `json:"key" valid:"required" fire:"identifiable"`
+	Secret   []byte `json:"secret" valid:"required" fire:"verifiable"`
+	Callback string `json:"callback" valid:"required" fire:"callable"`
 }
 
 type User struct {

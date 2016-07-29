@@ -20,8 +20,7 @@ var callbackTemplate = []byte(`<!DOCTYPE html>
   <head>
     <title>Authorize</title>
     <script>
-      var hash = window.location.hash;
-      window.opener.App.oauth.trigger('redirect', hash);
+      window.opener.fireCallback(window.location.hash);
       window.close();
     </script>
   </head>
@@ -73,16 +72,21 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	if len(clientVerifiable) != 1 {
 		panic("expected to find exactly one 'verifiable' tag on model")
 	}
+	clientCallable := clientModel.getBase().attributesByTag("callable")
+	if len(clientCallable) != 1 {
+		panic("expected to find exactly one 'callable' tag on model")
+	}
 
 	// create storage
 	s := &authenticatorStorage{
-		db:               db,
-		ownerModel:       ownerModel,
-		ownerIDAttr:      ownerIdentifiable[0],
-		ownerSecretAttr:  ownerVerifiable[0],
-		clientModel:      clientModel,
-		clientIDAttr:     clientIdentifiable[0],
-		clientSecretAttr: clientVerifiable[0],
+		db:                 db,
+		ownerModel:         ownerModel,
+		ownerIDAttr:        ownerIdentifiable[0],
+		ownerSecretAttr:    ownerVerifiable[0],
+		clientModel:        clientModel,
+		clientIDAttr:       clientIdentifiable[0],
+		clientSecretAttr:   clientVerifiable[0],
+		clientCallableAttr: clientCallable[0],
 	}
 
 	// set the default token lifespan to one hour
