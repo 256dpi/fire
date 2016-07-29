@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -195,7 +196,6 @@ func (a *Authenticator) MustHashPassword(password string) []byte {
 
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
-	router.GET(prefix+"/authorize", a.authorizeEndpoint)
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
 	router.GET(prefix+"/callback", a.callbackEndpoint)
 }
@@ -259,20 +259,11 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
-	// You have now access to authorizeRequest, Code ResponseTypes, Scopes ...
 
-	// Normally, this would be the place where you would check if the user is logged in and gives his consent.
-	// We're simplifying things and just checking if the request includes a valid username and password
+	// validate user
 	if ctx.Request.Form.Get("username") != "peter" {
-		ctx.Writer.Header().Set("Content-Type", "text/html; charset=utf-8")
-		ctx.Writer.Write([]byte(`<h1>Login page</h1>`))
-		ctx.Writer.Write([]byte(`
-			<p>Howdy! This is the log in page. For this example, it is enough to supply the username.</p>
-			<form method="post">
-				<input type="text" name="username" /> <small>try peter</small><br>
-				<input type="submit">
-			</form>
-		`))
+		uri := ctx.Request.Referer() + "&error=invalid_credentials"
+		ctx.Redirect(http.StatusTemporaryRedirect, uri)
 		return
 	}
 
