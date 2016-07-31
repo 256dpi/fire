@@ -1,8 +1,6 @@
 package fire
 
 import (
-	"errors"
-
 	"github.com/kr/pretty"
 	"github.com/ory-am/fosite"
 	"golang.org/x/crypto/bcrypt"
@@ -83,26 +81,6 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 
 func (s *authenticatorStorage) DeleteAccessTokenSession(ctx context.Context, signature string) error {
 	pretty.Println("DeleteAccessTokenSession", ctx, signature)
-	return nil
-}
-
-func (s *authenticatorStorage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
-	pretty.Println("CreateRefreshTokenSession", ctx, signature, request)
-	return nil
-}
-
-func (s *authenticatorStorage) GetRefreshTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
-	pretty.Println("GetRefreshTokenSession", ctx, signature, session)
-	return nil, errors.New("error get refresh token session")
-}
-
-func (s *authenticatorStorage) DeleteRefreshTokenSession(ctx context.Context, signature string) error {
-	pretty.Println("DeleteRefreshTokenSession", ctx, signature)
-	return nil
-}
-
-func (s *authenticatorStorage) PersistRefreshTokenGrantSession(ctx context.Context, requestRefreshSignature, accessSignature, refreshSignature string, request fosite.Requester) error {
-	pretty.Println("PersistRefreshTokenGrantSession", ctx, requestRefreshSignature, accessSignature, refreshSignature, request)
 	return nil
 }
 
