@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"github.com/kr/pretty"
 	"github.com/ory-am/fosite"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
@@ -80,7 +79,7 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 }
 
 func (s *authenticatorStorage) DeleteAccessTokenSession(ctx context.Context, signature string) error {
-	pretty.Println("DeleteAccessTokenSession", ctx, signature)
+	// TODO: Currently not implemented in fosite?
 	return nil
 }
 
