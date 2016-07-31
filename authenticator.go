@@ -49,6 +49,7 @@ func init() {
 	Init(accessTokenModel)
 }
 
+// NetAuthenticator creates and returns a new Authenticator.
 func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
 	// initialize models
 	Init(ownerModel)
@@ -131,6 +132,8 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 // EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
 // Credentials Grant.
+//
+// Note: This method should only be called once.
 func (a *Authenticator) EnablePasswordGrant() {
 	// create handler
 	passwordHandler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
@@ -143,6 +146,8 @@ func (a *Authenticator) EnablePasswordGrant() {
 }
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
+//
+// Note: This method should only be called once.
 func (a *Authenticator) EnableCredentialsGrant() {
 	// create handler
 	credentialsHandler := &client.ClientCredentialsGrantHandler{
@@ -154,6 +159,8 @@ func (a *Authenticator) EnableCredentialsGrant() {
 }
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
+//
+// Note: This method should only be called once.
 func (a *Authenticator) EnableImplicitGrant() {
 	// create handler
 	implicitHandler := &implicit.AuthorizeImplicitGrantTypeHandler{
@@ -182,10 +189,16 @@ func (a *Authenticator) MustHashPassword(password string) []byte {
 	return bytes
 }
 
+// Register will create all necessary routes on the passed router. If want to
+// prefix the auth endpoint (e.g. /auth/) you need to pass it to Register.
+//
+// Note: This functions should only be called once after enabling all flows.
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
 	router.GET(prefix+"/callback", a.callbackEndpoint)
+
+	// TODO: Redirect to auxiliary Login form.
 }
 
 func (a *Authenticator) Authorizer() Callback {
