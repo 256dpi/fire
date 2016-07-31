@@ -2,6 +2,7 @@ package fire
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/Jeffail/gabs"
@@ -456,15 +457,15 @@ func TestPasswordGrant(t *testing.T) {
 	// create application
 	saveModel(db, &Application{
 		Name:   "Test Application",
-		Key:    "key",
+		Key:    "key1",
 		Secret: authenticator.MustHashPassword("secret"),
 	})
 
 	// create user
 	saveModel(db, &User{
-		FullName: "Peter Sandberg",
-		Email:    "peter@example.com",
-		Password: authenticator.MustHashPassword("abcd1234"),
+		FullName: "Test User",
+		Email:    "user1@example.com",
+		Password: authenticator.MustHashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -473,11 +474,11 @@ func TestPasswordGrant(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/token").
-		SetHeader(basicAuth("key", "secret")).
+		SetHeader(basicAuth("key1", "secret")).
 		SetFORM(gofight.H{
 			"grant_type": "password",
-			"username":   "peter@example.com",
-			"password":   "abcd1234",
+			"username":   "user1@example.com",
+			"password":   "secret",
 			"scope":      "fire",
 		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -513,7 +514,7 @@ func TestCredentialsGrant(t *testing.T) {
 	// create application
 	saveModel(db, &Application{
 		Name:   "Test Application",
-		Key:    "key",
+		Key:    "key2",
 		Secret: authenticator.MustHashPassword("secret"),
 	})
 
@@ -523,7 +524,7 @@ func TestCredentialsGrant(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/token").
-		SetHeader(basicAuth("key", "secret")).
+		SetHeader(basicAuth("key2", "secret")).
 		SetFORM(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
@@ -536,6 +537,71 @@ func TestCredentialsGrant(t *testing.T) {
 			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
 
 			token = json.Path("access_token").Data().(string)
+		})
+
+	// get empty list of posts
+	r.GET("/posts").
+		SetHeader(bearerAuth(token)).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
+}
+
+func TestImplicitGrant(t *testing.T) {
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator.EnableImplicitGrant()
+
+	server, db := buildServer(&Resource{
+		Model:      &Post{},
+		Authorizer: authenticator.Authorizer(),
+	})
+
+	authenticator.Register("auth", server)
+
+	// create application
+	saveModel(db, &Application{
+		Name:     "Test Application",
+		Key:      "key3",
+		Secret:   authenticator.MustHashPassword("secret"),
+		Callback: "https://0.0.0.0:8080/auth/callback",
+	})
+
+	// create user
+	saveModel(db, &User{
+		FullName: "Test User",
+		Email:    "user2@example.com",
+		Password: authenticator.MustHashPassword("secret"),
+	})
+
+	r := gofight.New()
+
+	var token string
+
+	// get access token
+	r.POST("/auth/authorize").
+		SetFORM(gofight.H{
+			"response_type": "token",
+			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
+			"client_id":     "key3",
+			"state":         "state1234",
+			"scope":         "fire",
+			"username":      "user2@example.com",
+			"password":      "secret",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			loc, err := url.Parse(r.HeaderMap.Get("Location"))
+			assert.NoError(t, err)
+
+			vals, err := url.ParseQuery(loc.Fragment)
+			assert.NoError(t, err)
+
+			assert.Equal(t, http.StatusFound, r.Code)
+			assert.Equal(t, "3600", vals.Get("expires_in"))
+			assert.Equal(t, "fire", vals.Get("scope"))
+			assert.Equal(t, "bearer", vals.Get("token_type"))
+
+			token = vals.Get("access_token")
 		})
 
 	// get empty list of posts

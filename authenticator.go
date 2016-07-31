@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kr/pretty"
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/handler/core"
 	"github.com/ory-am/fosite/handler/core/client"
@@ -227,7 +226,6 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access request
 	req, err := a.fosite.NewAccessRequest(f, ctx.Request, s)
 	if err != nil {
-		pretty.Println(err)
 		a.fosite.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -240,7 +238,6 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access response
 	res, err := a.fosite.NewAccessResponse(f, ctx.Request, req)
 	if err != nil {
-		pretty.Println(err)
 		a.fosite.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -256,7 +253,6 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize request
 	req, err := a.fosite.NewAuthorizeRequest(f, ctx.Request)
 	if err != nil {
-		pretty.Println(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
@@ -279,7 +275,6 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize response
 	res, err := a.fosite.NewAuthorizeResponse(ctx, ctx.Request, req, s)
 	if err != nil {
-		pretty.Println(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
