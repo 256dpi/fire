@@ -26,6 +26,8 @@ var callbackTemplate = []byte(`<!DOCTYPE html>
   </head>
 </html>`)
 
+// AccessToken is the internal model used to stored access tokens. The model
+// can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
 	Signature     string    `json:"-" valid:"required"`
@@ -33,19 +35,22 @@ type AccessToken struct {
 	GrantedScopes []string  `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
 }
 
+var accessTokenModel *AccessToken
+
+func init() {
+	accessTokenModel = &AccessToken{}
+	Init(accessTokenModel)
+}
+
+// A Authenticator provides OAuth2 based authentication. The implementation
+// currently supports the Resource Owner Credentials, Client Credentials and
+// Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
 	storage *authenticatorStorage
 
 	strategy     *strategy.HMACSHAStrategy
 	handleHelper *core.HandleHelper
 	fosite       *fosite.Fosite
-}
-
-var accessTokenModel *AccessToken
-
-func init() {
-	accessTokenModel = &AccessToken{}
-	Init(accessTokenModel)
 }
 
 // NetAuthenticator creates and returns a new Authenticator.
@@ -200,7 +205,11 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	// TODO: Redirect to auxiliary Login form.
 }
 
+// Authorizer returns a callback that can be used to protect resources by requiring
+// an access tokens with the provides scopes to be granted.
 func (a *Authenticator) Authorizer() Callback {
+	// TODO: Add scopes.
+
 	return func(ctx *Context) (error, error) {
 		// prepare fosite
 		f := fosite.NewContext()
@@ -284,5 +293,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 }
 
 func (a *Authenticator) callbackEndpoint(ctx *gin.Context) {
+	// TODO: Remove callback endpoint.
+
 	ctx.Writer.Write(callbackTemplate)
 }
