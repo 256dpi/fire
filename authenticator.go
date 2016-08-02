@@ -235,6 +235,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access request
 	req, err := a.fosite.NewAccessRequest(f, ctx.Request, s)
 	if err != nil {
+		ctx.Error(err)
 		a.fosite.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -247,6 +248,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access response
 	res, err := a.fosite.NewAccessResponse(f, ctx.Request, req)
 	if err != nil {
+		ctx.Error(err)
 		a.fosite.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -262,6 +264,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize request
 	req, err := a.fosite.NewAuthorizeRequest(f, ctx.Request)
 	if err != nil {
+		ctx.Error(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
@@ -284,6 +287,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize response
 	res, err := a.fosite.NewAuthorizeResponse(ctx, ctx.Request, req, s)
 	if err != nil {
+		ctx.Error(err)
 		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
