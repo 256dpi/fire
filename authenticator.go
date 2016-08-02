@@ -15,17 +15,6 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-var callbackTemplate = []byte(`<!DOCTYPE html>
-<html>
-  <head>
-    <title>Authorize</title>
-    <script>
-      window.opener.fireCallback(window.location.hash);
-      window.close();
-    </script>
-  </head>
-</html>`)
-
 // AccessToken is the internal model used to stored access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
@@ -200,7 +189,6 @@ func (a *Authenticator) MustHashPassword(password string) []byte {
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
-	router.GET(prefix+"/callback", a.callbackEndpoint)
 
 	// TODO: Redirect to auxiliary Login form.
 }
@@ -294,10 +282,4 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 
 	// write response
 	a.fosite.WriteAuthorizeResponse(ctx.Writer, req, res)
-}
-
-func (a *Authenticator) callbackEndpoint(ctx *gin.Context) {
-	// TODO: Remove callback endpoint.
-
-	ctx.Writer.Write(callbackTemplate)
 }
