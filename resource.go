@@ -59,8 +59,8 @@ type Resource struct {
 	// The model that this resource should provide (e.g. &Foo{}).
 	Model Model
 
-	// The Authorizer is run on all actions. Will return a Forbidden status if
-	// an user error is returned.
+	// The Authorizer is run on all actions. Will return an Unauthorized status
+	// if an user error is returned.
 	Authorizer Callback
 
 	// The Validator is run to validate Create, Update and Delete actions. Will
@@ -107,7 +107,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -144,7 +144,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -172,7 +172,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Model = obj.(Model)
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -204,7 +204,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Query = bson.M{"_id": ctx.Model.ID()}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -240,7 +240,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
