@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -264,12 +263,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// authenticate user
 	err = a.storage.Authenticate(f, username, password)
 	if err != nil {
-		// TODO: Check for an official invalid credentials error format.
-		uri := ctx.Request.Form.Get("redirect_uri")
-		uri += "?error=invalid_credentials"
-		uri += "&error_description=The+provided+credentials+are+invalid"
-		uri += "&state=" + ctx.Request.Form.Get("state")
-		ctx.Redirect(http.StatusTemporaryRedirect, uri)
+		a.fosite.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
 		return
 	}
 
