@@ -14,7 +14,7 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-// AccessToken is the internal model used to stored access tokens. The model
+// AccessToken is the internal model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
@@ -36,9 +36,9 @@ func init() {
 type Authenticator struct {
 	storage *authenticatorStorage
 
+	provider     *fosite.Fosite
 	strategy     *strategy.HMACSHAStrategy
 	handleHelper *core.HandleHelper
-	fosite       *fosite.Fosite
 }
 
 // NetAuthenticator creates and returns a new Authenticator.
@@ -72,7 +72,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	}
 
 	// create storage
-	s := &authenticatorStorage{
+	storage := &authenticatorStorage{
 		db:                 db,
 		ownerModel:         ownerModel,
 		ownerIDAttr:        ownerIdentifiable[0],
@@ -87,7 +87,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	tokenLifespan := time.Hour
 
 	// create a new token generation strategy
-	strategy := &strategy.HMACSHAStrategy{
+	tokenStrategy := &strategy.HMACSHAStrategy{
 		Enigma: &hmac.HMACStrategy{
 			GlobalSecret: []byte(secret),
 		},
@@ -95,30 +95,30 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		AuthorizeCodeLifespan: tokenLifespan,
 	}
 
-	// instantiate a new fosite instance
-	f := fosite.NewFosite(s)
+	// create provider
+	provider := fosite.NewFosite(storage)
 
 	// set mandatory scope
-	f.MandatoryScope = "fire"
+	provider.MandatoryScope = "fire"
 
 	// this little helper is used by some of the handlers later
 	handleHelper := &core.HandleHelper{
-		AccessTokenStrategy: strategy,
-		AccessTokenStorage:  s,
+		AccessTokenStrategy: tokenStrategy,
+		AccessTokenStorage:  storage,
 		AccessTokenLifespan: tokenLifespan,
 	}
 
-	// add a request validator for access tokens to fosite
-	f.AuthorizedRequestValidators.Append(&core.CoreValidator{
-		AccessTokenStrategy: strategy,
-		AccessTokenStorage:  s,
+	// add a request validator for access tokens
+	provider.AuthorizedRequestValidators.Append(&core.CoreValidator{
+		AccessTokenStrategy: tokenStrategy,
+		AccessTokenStorage:  storage,
 	})
 
 	return &Authenticator{
-		storage:      s,
-		fosite:       f,
+		storage:      storage,
+		provider:     provider,
 		handleHelper: handleHelper,
-		strategy:     strategy,
+		strategy:     tokenStrategy,
 	}
 }
 
@@ -128,13 +128,13 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 // Note: This method should only be called once.
 func (a *Authenticator) EnablePasswordGrant() {
 	// create handler
-	passwordHandler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
+	handler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
 		HandleHelper:                                 a.handleHelper,
 		ResourceOwnerPasswordCredentialsGrantStorage: a.storage,
 	}
 
-	// add handler to fosite
-	a.fosite.TokenEndpointHandlers.Append(passwordHandler)
+	// add handler
+	a.provider.TokenEndpointHandlers.Append(handler)
 }
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
@@ -142,12 +142,12 @@ func (a *Authenticator) EnablePasswordGrant() {
 // Note: This method should only be called once.
 func (a *Authenticator) EnableCredentialsGrant() {
 	// create handler
-	credentialsHandler := &client.ClientCredentialsGrantHandler{
+	handler := &client.ClientCredentialsGrantHandler{
 		HandleHelper: a.handleHelper,
 	}
 
-	// add handler to fosite
-	a.fosite.TokenEndpointHandlers.Append(credentialsHandler)
+	// add handler
+	a.provider.TokenEndpointHandlers.Append(handler)
 }
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
@@ -155,23 +155,23 @@ func (a *Authenticator) EnableCredentialsGrant() {
 // Note: This method should only be called once.
 func (a *Authenticator) EnableImplicitGrant() {
 	// create handler
-	implicitHandler := &implicit.AuthorizeImplicitGrantTypeHandler{
+	handler := &implicit.AuthorizeImplicitGrantTypeHandler{
 		AccessTokenStrategy: a.handleHelper.AccessTokenStrategy,
 		AccessTokenStorage:  a.handleHelper.AccessTokenStorage,
 		AccessTokenLifespan: a.handleHelper.AccessTokenLifespan,
 	}
 
-	// add handler to fosite
-	a.fosite.AuthorizeEndpointHandlers.Append(implicitHandler)
+	// add handler
+	a.provider.AuthorizeEndpointHandlers.Append(handler)
 }
 
 // HashPassword returns an Authenticator compatible hash of the password.
 func (a *Authenticator) HashPassword(password string) ([]byte, error) {
-	return a.fosite.Hasher.Hash([]byte(password))
+	return a.provider.Hasher.Hash([]byte(password))
 }
 
-// MustHashPassword is the same as HashPassword except that it raises and error
-// when the hashing failed.
+// MustHashPassword is the same as HashPassword except that it panics when the
+// hashing failed.
 func (a *Authenticator) MustHashPassword(password string) []byte {
 	bytes, err := a.HashPassword(password)
 	if err != nil {
@@ -188,8 +188,6 @@ func (a *Authenticator) MustHashPassword(password string) []byte {
 func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/token", a.tokenEndpoint)
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
-
-	// TODO: Redirect to auxiliary Login form.
 }
 
 // Authorizer returns a callback that can be used to protect resources by requiring
@@ -198,12 +196,12 @@ func (a *Authenticator) Authorizer() Callback {
 	// TODO: Add scopes.
 
 	return func(ctx *Context) (error, error) {
-		// prepare fosite
-		f := fosite.NewContext()
+		// create new auth context
+		authCtx := fosite.NewContext()
 		session := &strategy.HMACSession{}
 
 		// validate request
-		_, err := a.fosite.ValidateRequestAuthorization(f, ctx.GinContext.Request, session, "fire")
+		_, err := a.provider.ValidateRequestAuthorization(authCtx, ctx.GinContext.Request, session, "fire")
 		if err != nil {
 			return err, nil
 		}
@@ -213,17 +211,17 @@ func (a *Authenticator) Authorizer() Callback {
 }
 
 func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
-	// create new context
-	f := fosite.NewContext()
+	// create new auth context
+	authCtx := fosite.NewContext()
 
 	// create new session
 	s := &strategy.HMACSession{}
 
 	// obtain access request
-	req, err := a.fosite.NewAccessRequest(f, ctx.Request, s)
+	req, err := a.provider.NewAccessRequest(authCtx, ctx.Request, s)
 	if err != nil {
 		ctx.Error(err)
-		a.fosite.WriteAccessError(ctx.Writer, req, err)
+		a.provider.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
 
@@ -233,26 +231,26 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	}
 
 	// obtain access response
-	res, err := a.fosite.NewAccessResponse(f, ctx.Request, req)
+	res, err := a.provider.NewAccessResponse(authCtx, ctx.Request, req)
 	if err != nil {
 		ctx.Error(err)
-		a.fosite.WriteAccessError(ctx.Writer, req, err)
+		a.provider.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
 
 	// write response
-	a.fosite.WriteAccessResponse(ctx.Writer, req, res)
+	a.provider.WriteAccessResponse(ctx.Writer, req, res)
 }
 
 func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
-	// create new context
-	f := fosite.NewContext()
+	// create new auth context
+	authCtx := fosite.NewContext()
 
 	// obtain authorize request
-	req, err := a.fosite.NewAuthorizeRequest(f, ctx.Request)
+	req, err := a.provider.NewAuthorizeRequest(authCtx, ctx.Request)
 	if err != nil {
 		ctx.Error(err)
-		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
+		a.provider.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
 
@@ -261,9 +259,9 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	password := ctx.Request.Form.Get("password")
 
 	// authenticate user
-	err = a.storage.Authenticate(f, username, password)
+	err = a.storage.Authenticate(authCtx, username, password)
 	if err != nil {
-		a.fosite.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
+		a.provider.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
 		return
 	}
 
@@ -271,13 +269,13 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	s := &strategy.HMACSession{}
 
 	// obtain authorize response
-	res, err := a.fosite.NewAuthorizeResponse(ctx, ctx.Request, req, s)
+	res, err := a.provider.NewAuthorizeResponse(ctx, ctx.Request, req, s)
 	if err != nil {
 		ctx.Error(err)
-		a.fosite.WriteAuthorizeError(ctx.Writer, req, err)
+		a.provider.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
 
 	// write response
-	a.fosite.WriteAuthorizeResponse(ctx.Writer, req, res)
+	a.provider.WriteAuthorizeResponse(ctx.Writer, req, res)
 }
