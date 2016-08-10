@@ -19,6 +19,11 @@ type authenticatorStorage struct {
 	clientCallableAttr attribute
 }
 
+type authenticatorClient struct {
+	fosite.DefaultClient
+	model Model
+}
+
 func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
 	obj := newStructPointer(s.clientModel)
@@ -36,12 +41,15 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 
 	// TODO: We shouldn't use Attribute() as the field might be hidden.
 
-	return &fosite.DefaultClient{
-		ID:            id,
-		Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
-		GrantTypes:    []string{"password", "client_credentials", "implicit"},
-		ResponseTypes: []string{"token"},
-		RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.name).(string)},
+	return &authenticatorClient{
+		DefaultClient: fosite.DefaultClient{
+			ID:            id,
+			Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
+			GrantTypes:    []string{"password", "client_credentials", "implicit"},
+			ResponseTypes: []string{"token"},
+			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.name).(string)},
+		},
+		model: _client,
 	}, nil
 }
 
