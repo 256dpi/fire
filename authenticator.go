@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -192,7 +193,7 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 
 // Authorizer returns a callback that can be used to protect resources by requiring
 // an access tokens with the provided scopes to be granted.
-func (a *Authenticator) Authorizer(scopes... string) Callback {
+func (a *Authenticator) Authorizer(scopes ...string) Callback {
 	return func(ctx *Context) (error, error) {
 		// create new auth context
 		authCtx := fosite.NewContext()
@@ -209,6 +210,8 @@ func (a *Authenticator) Authorizer(scopes... string) Callback {
 			return err, nil
 		}
 
+		// TODO: Assign client to context.
+
 		return nil, nil
 	}
 }
@@ -223,7 +226,10 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access request
 	req, err := a.provider.NewAccessRequest(authCtx, ctx.Request, s)
 	if err != nil {
-		ctx.Error(err)
+		if a.isFatalError(err) {
+			ctx.Error(err)
+		}
+
 		a.provider.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -236,7 +242,10 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// obtain access response
 	res, err := a.provider.NewAccessResponse(authCtx, ctx.Request, req)
 	if err != nil {
-		ctx.Error(err)
+		if a.isFatalError(err) {
+			ctx.Error(err)
+		}
+
 		a.provider.WriteAccessError(ctx.Writer, req, err)
 		return
 	}
@@ -252,7 +261,10 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize request
 	req, err := a.provider.NewAuthorizeRequest(authCtx, ctx.Request)
 	if err != nil {
-		ctx.Error(err)
+		if a.isFatalError(err) {
+			ctx.Error(err)
+		}
+
 		a.provider.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
@@ -274,11 +286,18 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// obtain authorize response
 	res, err := a.provider.NewAuthorizeResponse(ctx, ctx.Request, req, s)
 	if err != nil {
-		ctx.Error(err)
+		if a.isFatalError(err) {
+			ctx.Error(err)
+		}
+
 		a.provider.WriteAuthorizeError(ctx.Writer, req, err)
 		return
 	}
 
 	// write response
 	a.provider.WriteAuthorizeResponse(ctx.Writer, req, res)
+}
+
+func (a *Authenticator) isFatalError(err error) bool {
+	return fosite.ErrorToRFC6749Error(err).StatusCode == http.StatusInternalServerError
 }
