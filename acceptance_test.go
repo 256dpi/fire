@@ -470,6 +470,13 @@ func TestPasswordGrant(t *testing.T) {
 
 	r := gofight.New()
 
+	// failing to get list of posts
+	r.GET("/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.NotEmpty(t, r.Body.String())
+	})
+
 	var token string
 
 	// get access token
@@ -519,6 +526,13 @@ func TestCredentialsGrant(t *testing.T) {
 	})
 
 	r := gofight.New()
+
+	// failing to get list of posts
+	r.GET("/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.NotEmpty(t, r.Body.String())
+	})
 
 	var token string
 
@@ -575,6 +589,13 @@ func TestImplicitGrant(t *testing.T) {
 	})
 
 	r := gofight.New()
+
+	// failing to get list of posts
+	r.GET("/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
 
 	var token string
 
