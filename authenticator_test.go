@@ -37,14 +37,14 @@ func TestPasswordGrant(t *testing.T) {
 
 	r := gofight.New()
 
-	// failing to get list of posts
+	// missing auth
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
 			assert.NotEmpty(t, r.Body.String())
 		})
 
-	// failing to get access token
+	// wrong secret
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key1", "secret")).
 		SetFORM(gofight.H{
@@ -52,6 +52,20 @@ func TestPasswordGrant(t *testing.T) {
 			"username":   "user1@example.com",
 			"password":   "wrong-secret",
 			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
+
+	// wrong scope
+	r.POST("/auth/token").
+		SetHeader(basicAuth("key1", "secret")).
+		SetFORM(gofight.H{
+			"grant_type": "password",
+			"username":   "user1@example.com",
+			"password":   "secret",
+			"scope":      "wrong",
 		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
@@ -108,19 +122,31 @@ func TestCredentialsGrant(t *testing.T) {
 
 	r := gofight.New()
 
-	// failing to get list of posts
+	// missing auth
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
 			assert.NotEmpty(t, r.Body.String())
 		})
 
-	// failing to get access token
+	// wrong secret
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key2", "wrong-secret")).
 		SetFORM(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
+
+	// wrong scope
+	r.POST("/auth/token").
+		SetHeader(basicAuth("key2", "secret")).
+		SetFORM(gofight.H{
+			"grant_type": "client_credentials",
+			"scope":      "wrong",
 		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
@@ -183,14 +209,14 @@ func TestImplicitGrant(t *testing.T) {
 
 	r := gofight.New()
 
-	// failing to get list of posts
+	// missing auth
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
 			assert.NotEmpty(t, r.Body.String())
 		})
 
-	// failing to get access token
+	// wrong secret
 	r.POST("/auth/authorize").
 		SetFORM(gofight.H{
 			"response_type": "token",
@@ -200,6 +226,25 @@ func TestImplicitGrant(t *testing.T) {
 			"scope":         "fire",
 			"username":      "user2@example.com",
 			"password":      "wrong-secret",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			loc, err := url.Parse(r.HeaderMap.Get("Location"))
+			assert.NoError(t, err)
+
+			assert.Equal(t, http.StatusFound, r.Code)
+			assert.NotEmpty(t, loc.RawQuery)
+		})
+
+	// wrong scope
+	r.POST("/auth/authorize").
+		SetFORM(gofight.H{
+			"response_type": "token",
+			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
+			"client_id":     "key3",
+			"state":         "state1234",
+			"scope":         "wrong",
+			"username":      "user2@example.com",
+			"password":      "secret",
 		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			loc, err := url.Parse(r.HeaderMap.Get("Location"))
