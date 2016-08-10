@@ -192,16 +192,19 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 
 // Authorizer returns a callback that can be used to protect resources by requiring
 // an access tokens with the provided scopes to be granted.
-func (a *Authenticator) Authorizer() Callback {
-	// TODO: Add scopes.
-
+func (a *Authenticator) Authorizer(scopes... string) Callback {
 	return func(ctx *Context) (error, error) {
 		// create new auth context
 		authCtx := fosite.NewContext()
 		session := &strategy.HMACSession{}
 
+		// add mandatory scope if missing
+		if !stringInList(scopes, a.provider.MandatoryScope) {
+			scopes = append(scopes, a.provider.MandatoryScope)
+		}
+
 		// validate request
-		_, err := a.provider.ValidateRequestAuthorization(authCtx, ctx.GinContext.Request, session, "fire")
+		_, err := a.provider.ValidateRequestAuthorization(authCtx, ctx.GinContext.Request, session, scopes...)
 		if err != nil {
 			return err, nil
 		}
