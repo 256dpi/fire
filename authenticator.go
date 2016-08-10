@@ -234,10 +234,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	// grant the mandatory scope
-	if req.GetScopes().Has(a.provider.MandatoryScope) {
-		req.GrantScope(a.provider.MandatoryScope)
-	}
+	// TODO: Call callback that grants additional scopes.
 
 	// obtain access response
 	res, err := a.provider.NewAccessResponse(authCtx, ctx.Request, req)
