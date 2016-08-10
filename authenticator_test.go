@@ -44,6 +44,20 @@ func TestPasswordGrant(t *testing.T) {
 			assert.NotEmpty(t, r.Body.String())
 		})
 
+	// failing to get access token
+	r.POST("/auth/token").
+		SetHeader(basicAuth("key1", "secret")).
+		SetFORM(gofight.H{
+			"grant_type": "password",
+			"username":   "user1@example.com",
+			"password":   "wrong-secret",
+			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
+
 	var token string
 
 	// get access token
@@ -98,6 +112,18 @@ func TestCredentialsGrant(t *testing.T) {
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
+
+	// failing to get access token
+	r.POST("/auth/token").
+		SetHeader(basicAuth("key2", "wrong-secret")).
+		SetFORM(gofight.H{
+			"grant_type": "client_credentials",
+			"scope":      "fire",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
 			assert.NotEmpty(t, r.Body.String())
 		})
 
@@ -162,6 +188,25 @@ func TestImplicitGrant(t *testing.T) {
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
 			assert.NotEmpty(t, r.Body.String())
+		})
+
+	// failing to get access token
+	r.POST("/auth/authorize").
+		SetFORM(gofight.H{
+			"response_type": "token",
+			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
+			"client_id":     "key3",
+			"state":         "state1234",
+			"scope":         "fire",
+			"username":      "user2@example.com",
+			"password":      "wrong-secret",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			loc, err := url.Parse(r.HeaderMap.Get("Location"))
+			assert.NoError(t, err)
+
+			assert.Equal(t, http.StatusFound, r.Code)
+			assert.NotEmpty(t, loc.RawQuery)
 		})
 
 	var token string
