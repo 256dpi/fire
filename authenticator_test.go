@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/appleboy/gofight"
 	"github.com/Jeffail/gabs"
+	"github.com/appleboy/gofight"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPasswordGrant(t *testing.T) {
@@ -40,9 +40,9 @@ func TestPasswordGrant(t *testing.T) {
 	// failing to get list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
-	})
+			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
 
 	var token string
 
@@ -50,28 +50,28 @@ func TestPasswordGrant(t *testing.T) {
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key1", "secret")).
 		SetFORM(gofight.H{
-		"grant_type": "password",
-		"username":   "user1@example.com",
-		"password":   "secret",
-		"scope":      "fire",
-	}).
+			"grant_type": "password",
+			"username":   "user1@example.com",
+			"password":   "secret",
+			"scope":      "fire",
+		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "fire", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
+			assert.Equal(t, "fire", json.Path("scope").Data().(string))
+			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
 
-		token = json.Path("access_token").Data().(string)
-	})
+			token = json.Path("access_token").Data().(string)
+		})
 
 	// get empty list of posts
 	r.GET("/posts").
 		SetHeader(bearerAuth(token)).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, `{"data":[]}`, r.Body.String())
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
 }
 
 func TestCredentialsGrant(t *testing.T) {
@@ -97,9 +97,9 @@ func TestCredentialsGrant(t *testing.T) {
 	// failing to get list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
-	})
+			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
 
 	var token string
 
@@ -107,26 +107,26 @@ func TestCredentialsGrant(t *testing.T) {
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key2", "secret")).
 		SetFORM(gofight.H{
-		"grant_type": "client_credentials",
-		"scope":      "fire",
-	}).
+			"grant_type": "client_credentials",
+			"scope":      "fire",
+		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "fire", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
+			assert.Equal(t, "fire", json.Path("scope").Data().(string))
+			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
 
-		token = json.Path("access_token").Data().(string)
-	})
+			token = json.Path("access_token").Data().(string)
+		})
 
 	// get empty list of posts
 	r.GET("/posts").
 		SetHeader(bearerAuth(token)).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, `{"data":[]}`, r.Body.String())
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
 }
 
 func TestImplicitGrant(t *testing.T) {
@@ -160,44 +160,43 @@ func TestImplicitGrant(t *testing.T) {
 	// failing to get list of posts
 	r.GET("/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
-	})
+			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.NotEmpty(t, r.Body.String())
+		})
 
 	var token string
 
 	// get access token
 	r.POST("/auth/authorize").
 		SetFORM(gofight.H{
-		"response_type": "token",
-		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
-		"client_id":     "key3",
-		"state":         "state1234",
-		"scope":         "fire",
-		"username":      "user2@example.com",
-		"password":      "secret",
-	}).
+			"response_type": "token",
+			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
+			"client_id":     "key3",
+			"state":         "state1234",
+			"scope":         "fire",
+			"username":      "user2@example.com",
+			"password":      "secret",
+		}).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		loc, err := url.Parse(r.HeaderMap.Get("Location"))
-		assert.NoError(t, err)
+			loc, err := url.Parse(r.HeaderMap.Get("Location"))
+			assert.NoError(t, err)
 
-		query, err := url.ParseQuery(loc.Fragment)
-		assert.NoError(t, err)
+			query, err := url.ParseQuery(loc.Fragment)
+			assert.NoError(t, err)
 
-		assert.Equal(t, http.StatusFound, r.Code)
-		assert.Equal(t, "3600", query.Get("expires_in"))
-		assert.Equal(t, "fire", query.Get("scope"))
-		assert.Equal(t, "bearer", query.Get("token_type"))
+			assert.Equal(t, http.StatusFound, r.Code)
+			assert.Equal(t, "3600", query.Get("expires_in"))
+			assert.Equal(t, "fire", query.Get("scope"))
+			assert.Equal(t, "bearer", query.Get("token_type"))
 
-		token = query.Get("access_token")
-	})
+			token = query.Get("access_token")
+		})
 
 	// get empty list of posts
 	r.GET("/posts").
 		SetHeader(bearerAuth(token)).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, `{"data":[]}`, r.Body.String())
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, `{"data":[]}`, r.Body.String())
+		})
 }
-
