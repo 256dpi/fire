@@ -92,7 +92,7 @@ func bearerAuth(token string) gofight.H {
 	}
 }
 
-// some cheats to get more coverage
+// cheat to get more coverage
 
 func TestAdapter(t *testing.T) {
 	assert.Nil(t, (&adapter{}).Handler())
