@@ -226,8 +226,8 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	}
 
 	// grant the mandatory scope
-	if req.GetScopes().Has("fire") {
-		req.GrantScope("fire")
+	if req.GetScopes().Has(a.provider.MandatoryScope) {
+		req.GrantScope(a.provider.MandatoryScope)
 	}
 
 	// obtain access response
