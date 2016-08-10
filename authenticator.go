@@ -191,7 +191,7 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 }
 
 // Authorizer returns a callback that can be used to protect resources by requiring
-// an access tokens with the provides scopes to be granted.
+// an access tokens with the provided scopes to be granted.
 func (a *Authenticator) Authorizer() Callback {
 	// TODO: Add scopes.
 

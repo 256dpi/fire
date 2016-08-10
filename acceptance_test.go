@@ -593,15 +593,15 @@ func TestImplicitGrant(t *testing.T) {
 			loc, err := url.Parse(r.HeaderMap.Get("Location"))
 			assert.NoError(t, err)
 
-			vals, err := url.ParseQuery(loc.Fragment)
+			query, err := url.ParseQuery(loc.Fragment)
 			assert.NoError(t, err)
 
 			assert.Equal(t, http.StatusFound, r.Code)
-			assert.Equal(t, "3600", vals.Get("expires_in"))
-			assert.Equal(t, "fire", vals.Get("scope"))
-			assert.Equal(t, "bearer", vals.Get("token_type"))
+			assert.Equal(t, "3600", query.Get("expires_in"))
+			assert.Equal(t, "fire", query.Get("scope"))
+			assert.Equal(t, "bearer", query.Get("token_type"))
 
-			token = vals.Get("access_token")
+			token = query.Get("access_token")
 		})
 
 	// get empty list of posts
