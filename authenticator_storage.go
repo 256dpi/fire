@@ -99,5 +99,10 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	owner := Init(obj.(Model))
 
 	// check secret
-	return bcrypt.CompareHashAndPassword(owner.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
+	err = bcrypt.CompareHashAndPassword(owner.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
+	if err != nil {
+		return fosite.ErrNotFound
+	}
+
+	return nil
 }
