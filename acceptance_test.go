@@ -40,6 +40,8 @@ type Comment struct {
 	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
+const secret = "a-very-very-very-long-secret"
+
 func TestBasicOperations(t *testing.T) {
 	server, _ := buildServer(&Resource{
 		Model: &Post{},
@@ -444,7 +446,7 @@ func TestSparseFieldsets(t *testing.T) {
 }
 
 func TestPasswordGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret, "fire")
 	authenticator.EnablePasswordGrant()
 
 	server, db := buildServer(&Resource{
@@ -508,7 +510,7 @@ func TestPasswordGrant(t *testing.T) {
 }
 
 func TestCredentialsGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret, "fire")
 	authenticator.EnableCredentialsGrant()
 
 	server, db := buildServer(&Resource{
@@ -563,7 +565,7 @@ func TestCredentialsGrant(t *testing.T) {
 }
 
 func TestImplicitGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, "a-very-very-very-long-secret")
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret, "fire")
 	authenticator.EnableImplicitGrant()
 
 	server, db := buildServer(&Resource{

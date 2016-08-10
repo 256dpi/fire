@@ -42,7 +42,7 @@ type Authenticator struct {
 }
 
 // NetAuthenticator creates and returns a new Authenticator.
-func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
+func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret, mandatoryScope string) *Authenticator {
 	// initialize models
 	Init(ownerModel)
 	Init(clientModel)
@@ -99,7 +99,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	provider := fosite.NewFosite(storage)
 
 	// set mandatory scope
-	provider.MandatoryScope = "fire"
+	provider.MandatoryScope = mandatoryScope
 
 	// this little helper is used by some of the handlers later
 	handleHelper := &core.HandleHelper{

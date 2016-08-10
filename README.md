@@ -243,7 +243,8 @@ An `Authenticator` provides authentication through OAuth2 and can be created usi
 authenticator := fire.NewAuthenticator(db,
     &User{},
     &Application{},
-    "a-very-long-secret"
+    "a-very-long-secret",
+    "the-mandatory-scope"
 ) 
 
 authenticator.EnablePasswordGrant()
