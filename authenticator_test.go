@@ -20,9 +20,9 @@ func TestPasswordGrant(t *testing.T) {
 		Model: &Post{},
 		Authorizer: Combine(
 			authenticator.Authorizer(),
-			func(ctx *Context) (error, error) {
+			func(ctx *Context) error {
 				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
-				return nil, nil
+				return nil
 			},
 		),
 	})
@@ -127,9 +127,9 @@ func TestCredentialsGrant(t *testing.T) {
 		Model: &Post{},
 		Authorizer: Combine(
 			authenticator.Authorizer(),
-			func(ctx *Context) (error, error) {
+			func(ctx *Context) error {
 				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
-				return nil, nil
+				return nil
 			},
 		),
 	})
@@ -221,9 +221,9 @@ func TestImplicitGrant(t *testing.T) {
 		Model: &Post{},
 		Authorizer: Combine(
 			authenticator.Authorizer(),
-			func(ctx *Context) (error, error) {
+			func(ctx *Context) error {
 				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
-				return nil, nil
+				return nil
 			},
 		),
 	})

@@ -10,15 +10,14 @@ import (
 func TestCombine(t *testing.T) {
 	// prepare fake callback
 	var counter int
-	cb := func(ctx *Context) (error, error) {
+	cb := func(ctx *Context) error {
 		counter++
-		return nil, nil
+		return nil
 	}
 
 	// call combined callbacks
-	err, sysErr := Combine(cb, cb, cb)(nil)
+	err := Combine(cb, cb, cb)(nil)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 	assert.Equal(t, 3, counter)
 }
 
@@ -41,9 +40,8 @@ func TestDependentResourcesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 
 	// create comment
 	saveModel(db, &Comment{
@@ -51,9 +49,8 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 }
 
 func TestVerifyReferencesValidator(t *testing.T) {
@@ -77,9 +74,8 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 
 	// create post & comment
 	post := saveModel(db, &Post{})
@@ -91,9 +87,8 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	ctx.Model = comment2
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
@@ -127,9 +122,8 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 
 	// create root comment
 	comment3 := saveModel(db, &Comment{
@@ -147,7 +141,6 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	ctx.Model = comment4
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 }

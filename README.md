@@ -196,10 +196,10 @@ Fire allows the definition of two callbacks.
 ```go
 posts := &fire.Resource{
     // ...
-    Authorizer: func(ctx *fire.Context) (error, error) {
+    Authorizer: func(ctx *fire.Context) error {
         // ...
     },
-    Validator: func(ctx *fire.Context) (error, error) {
+    Validator: func(ctx *fire.Context) error {
         // ...
     },
 }

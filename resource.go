@@ -306,10 +306,10 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) *api2go.HTTPError {
 	// check if callback is available
 	if cb != nil {
-		err, sysErr := cb(ctx)
-		if sysErr != nil {
+		err := cb(ctx)
+		if isFatal(err) {
 			// return system error
-			httpErr := api2go.NewHTTPError(sysErr, "internal server error", http.StatusInternalServerError)
+			httpErr := api2go.NewHTTPError(err, "internal server error", http.StatusInternalServerError)
 			return &httpErr
 		}
 		if err != nil {
