@@ -54,7 +54,11 @@ type Context struct {
 	Api2GoReq *api2go.Request
 }
 
+// TODO: Use intermediate ResourceDefinition to hide api2go specifics?
+
 // A Resource provides an interface to a model.
+//
+// Note: Resources must not be modified after adding to an Endpoint.
 type Resource struct {
 	// The model that this resource should provide (e.g. &Foo{}).
 	Model Model

@@ -27,13 +27,6 @@ Fire infers all necessary meta information about your models from the already av
 Such a declaration could look like the following two models for a blog system:
 
 ```go
-type User struct {
-	fire.Base    `bson:",inline" fire:"user:users"`
-	FullName     string `json:"full_name" valid:"required"`
-	Email        string `json:"email" valid:"required" fire:"identifiable"`
-	PasswordHash []byte `json:"-" valid:"required" fire:"verifiable"`
-}
-
 type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
 	Title     string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
@@ -228,6 +221,7 @@ endpoint := fire.NewEndpoint(db)
 
 endpoint.AddResource(&fire.Resource{
     Model: &Post{},
+    // ...
 })
 
 endpoint.Register("api", router)
@@ -237,14 +231,29 @@ Resources can be added with `AddResource` before the routes are registered on an
 
 ### Authenticators
 
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a secret and the mandatory scope:
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a client model, a owner model and a secret:
 
 ```go
+type Application struct {
+	Base     `bson:",inline" fire:"application:applications"`
+	Name     string   `json:"name" valid:"required"`
+	Key      string   `json:"key" valid:"required" fire:"identifiable"`
+	Secret   []byte   `json:"secret" valid:"required" fire:"verifiable"`
+	Scopes   []string `json:"scopes" valid:"required" fire:"grantable"`
+	Callback string   `json:"callback" valid:"required" fire:"callable"`
+}
+
+type User struct {
+	Base     `bson:",inline" fire:"user:users"`
+	FullName string `json:"full_name" valid:"required"`
+	Email    string `json:"email" valid:"required" fire:"identifiable"`
+	Password []byte `json:"-" valid:"required" fire:"verifiable"`
+}
+
 authenticator := fire.NewAuthenticator(db,
     &User{},
     &Application{},
-    "a-very-long-secret",
-    "the-mandatory-scope"
+    "a-very-long-secret"
 ) 
 
 authenticator.EnablePasswordGrant()

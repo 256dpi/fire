@@ -38,6 +38,7 @@ var supportedTags = []string{
 	"sortable",
 	"identifiable",
 	"verifiable",
+	"grantable",
 	"callable",
 }
 

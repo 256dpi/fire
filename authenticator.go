@@ -6,12 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
-	"github.com/ory-am/fosite/handler/core"
-	"github.com/ory-am/fosite/handler/core/client"
-	"github.com/ory-am/fosite/handler/core/implicit"
-	"github.com/ory-am/fosite/handler/core/owner"
-	"github.com/ory-am/fosite/handler/core/strategy"
-	"github.com/ory-am/fosite/token/hmac"
+	"github.com/ory-am/fosite/compose"
+	"github.com/ory-am/fosite/handler/oauth2"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -47,15 +43,14 @@ func init() {
 type Authenticator struct {
 	GrantCallback GrantCallback
 
-	storage *authenticatorStorage
-
-	provider     *fosite.Fosite
-	strategy     *strategy.HMACSHAStrategy
-	handleHelper *core.HandleHelper
+	config   *compose.Config
+	provider *fosite.Fosite
+	strategy *oauth2.HMACSHAStrategy
+	storage  *authenticatorStorage
 }
 
 // NetAuthenticator creates and returns a new Authenticator.
-func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret, mandatoryScope string) *Authenticator {
+func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
 	// initialize models
 	Init(ownerModel)
 	Init(clientModel)
@@ -63,75 +58,62 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret, m
 	// extract attributes from owner
 	ownerIdentifiable := ownerModel.getBase().attributesByTag("identifiable")
 	if len(ownerIdentifiable) != 1 {
-		panic("expected to find exactly one 'identifiable' attribute on model")
+		panic("Expected to find exactly one 'identifiable' attribute on the passed owner model")
 	}
 	ownerVerifiable := ownerModel.getBase().attributesByTag("verifiable")
 	if len(ownerVerifiable) != 1 {
-		panic("expected to find exactly one 'verifiable' attribute on model")
+		panic("Expected to find exactly one 'verifiable' attribute on the passed owner model")
 	}
 
 	// extract attributes from client
 	clientIdentifiable := clientModel.getBase().attributesByTag("identifiable")
 	if len(clientIdentifiable) != 1 {
-		panic("expected to find exactly one 'identifiable' attribute on model")
+		panic("Expected to find exactly one 'identifiable' attribute on the passed client model")
 	}
 	clientVerifiable := clientModel.getBase().attributesByTag("verifiable")
 	if len(clientVerifiable) != 1 {
-		panic("expected to find exactly one 'verifiable' attribute on model")
+		panic("Expected to find exactly one 'verifiable' attribute on the passed client model")
+	}
+	clientGrantable := clientModel.getBase().attributesByTag("grantable")
+	if len(clientGrantable) != 1 {
+		panic("Expected to find exactly one 'grantable' attribute on the passed client model")
 	}
 	clientCallable := clientModel.getBase().attributesByTag("callable")
 	if len(clientCallable) != 1 {
-		panic("expected to find exactly one 'callable' attribute on model")
+		panic("Expected to find exactly one 'callable' attribute on the passed client model")
 	}
 
 	// create storage
 	storage := &authenticatorStorage{
-		db:                 db,
-		ownerModel:         ownerModel,
-		ownerIDAttr:        ownerIdentifiable[0],
-		ownerSecretAttr:    ownerVerifiable[0],
-		clientModel:        clientModel,
-		clientIDAttr:       clientIdentifiable[0],
-		clientSecretAttr:   clientVerifiable[0],
-		clientCallableAttr: clientCallable[0],
+		db:                  db,
+		ownerModel:          ownerModel,
+		ownerIDAttr:         ownerIdentifiable[0],
+		ownerSecretAttr:     ownerVerifiable[0],
+		clientModel:         clientModel,
+		clientIDAttr:        clientIdentifiable[0],
+		clientSecretAttr:    clientVerifiable[0],
+		clientGrantableAttr: clientGrantable[0],
+		clientCallableAttr:  clientCallable[0],
 	}
 
-	// set the default token lifespan to one hour
-	tokenLifespan := time.Hour
+	// provider config
+	// TODO: Allow modifying the config for tests (hash cost).
+	config := &compose.Config{}
 
 	// create a new token generation strategy
-	tokenStrategy := &strategy.HMACSHAStrategy{
-		Enigma: &hmac.HMACStrategy{
-			GlobalSecret: []byte(secret),
-		},
-		AccessTokenLifespan:   tokenLifespan,
-		AuthorizeCodeLifespan: tokenLifespan,
-	}
+	strategy := compose.NewOAuth2HMACStrategy(config, []byte(secret))
 
 	// create provider
-	provider := fosite.NewFosite(storage)
+	provider := compose.Compose(config, storage, strategy)
 
-	// set mandatory scope
-	provider.MandatoryScope = mandatoryScope
-
-	// this little helper is used by some of the handlers later
-	handleHelper := &core.HandleHelper{
-		AccessTokenStrategy: tokenStrategy,
-		AccessTokenStorage:  storage,
-		AccessTokenLifespan: tokenLifespan,
-	}
-
-	// add a request validator for access tokens
-	provider.AuthorizedRequestValidators.Append(&core.CoreValidator{
-		AccessTokenStrategy: tokenStrategy,
-		AccessTokenStorage:  storage,
-	})
+	// TODO: Implement refresh tokens.
+	// TODO: Allow enabling access code flow (explicit)?
 
 	return &Authenticator{
-		storage:      storage,
-		provider:     provider,
-		handleHelper: handleHelper,
-		strategy:     tokenStrategy,
+		config:   config,
+		provider: provider.(*fosite.Fosite),
+		strategy: strategy,
+		storage:  storage,
 	}
 }
 
@@ -140,42 +122,27 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret, m
 //
 // Note: This method should only be called once.
 func (a *Authenticator) EnablePasswordGrant() {
-	// create handler
-	handler := &owner.ResourceOwnerPasswordCredentialsGrantHandler{
-		HandleHelper:                                 a.handleHelper,
-		ResourceOwnerPasswordCredentialsGrantStorage: a.storage,
-	}
-
-	// add handler
-	a.provider.TokenEndpointHandlers.Append(handler)
+	handler := compose.OAuth2ResourceOwnerPasswordCredentialsFactory(a.config, a.storage, a.strategy)
+	a.provider.TokenEndpointHandlers.Append(handler.(fosite.TokenEndpointHandler))
+	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
 }
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
 //
 // Note: This method should only be called once.
 func (a *Authenticator) EnableCredentialsGrant() {
-	// create handler
-	handler := &client.ClientCredentialsGrantHandler{
-		HandleHelper: a.handleHelper,
-	}
-
-	// add handler
-	a.provider.TokenEndpointHandlers.Append(handler)
+	handler := compose.OAuth2ClientCredentialsGrantFactory(a.config, a.storage, a.strategy)
+	a.provider.TokenEndpointHandlers.Append(handler.(fosite.TokenEndpointHandler))
+	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
 }
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
 //
 // Note: This method should only be called once.
 func (a *Authenticator) EnableImplicitGrant() {
-	// create handler
-	handler := &implicit.AuthorizeImplicitGrantTypeHandler{
-		AccessTokenStrategy: a.handleHelper.AccessTokenStrategy,
-		AccessTokenStorage:  a.handleHelper.AccessTokenStorage,
-		AccessTokenLifespan: a.handleHelper.AccessTokenLifespan,
-	}
-
-	// add handler
-	a.provider.AuthorizeEndpointHandlers.Append(handler)
+	handler := compose.OAuth2AuthorizeImplicitFactory(a.config, a.storage, a.strategy)
+	a.provider.AuthorizeEndpointHandlers.Append(handler.(fosite.AuthorizeEndpointHandler))
+	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
 }
 
 // HashPassword returns an Authenticator compatible hash of the password.
@@ -206,17 +173,19 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 // Authorizer returns a callback that can be used to protect resources by requiring
 // an access tokens with the provided scopes to be granted.
 func (a *Authenticator) Authorizer(scopes ...string) Callback {
+	if len(scopes) < 1 {
+		panic("Authorizer must be called with at least one scope")
+	}
+
 	return func(ctx *Context) error {
 		// create new session
-		session := &strategy.HMACSession{}
+		session := &oauth2.HMACSession{}
 
-		// add mandatory scope if missing
-		if !stringInList(scopes, a.provider.MandatoryScope) {
-			scopes = append(scopes, a.provider.MandatoryScope)
-		}
+		// get token
+		token := fosite.AccessTokenFromRequest(ctx.GinContext.Request)
 
 		// validate request
-		_, err := a.provider.ValidateRequestAuthorization(ctx.GinContext, ctx.GinContext.Request, session, scopes...)
+		_, err := a.provider.ValidateToken(ctx.GinContext, token, fosite.AccessToken, session, scopes...)
 		if err != nil {
 			return err
 		}
@@ -229,7 +198,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	var err error
 
 	// create new session
-	session := &strategy.HMACSession{}
+	session := &oauth2.HMACSession{}
 
 	// prepare optional owner
 	var ownerModel Model
@@ -238,7 +207,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	if ctx.Request.FormValue("grant_type") == "password" {
 		ownerModel, err = a.storage.getOwner(ctx.Request.FormValue("username"))
 		if err != nil {
-			a.provider.WriteAccessError(ctx.Writer, nil, fosite.ErrInvalidRequest)
+			a.provider.WriteAccessError(ctx.Writer, nil, err)
 			return
 		}
 
@@ -323,11 +292,19 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	// set client
 	ctx.Set("client", clientModel)
 
+	// check if client has all scopes
+	for _, scope := range req.GetRequestedScopes() {
+		if !a.provider.ScopeStrategy(req.GetClient().GetScopes(), scope) {
+			a.provider.WriteAuthorizeError(ctx.Writer, req, fosite.ErrInvalidScope)
+			return
+		}
+	}
+
 	// grant additional scopes if the grant callback is present
 	a.invokeGrantCallback("implicit", req, clientModel, ownerModel)
 
 	// create new session
-	session := &strategy.HMACSession{}
+	session := &oauth2.HMACSession{}
 
 	// obtain authorize response
 	res, err := a.provider.NewAuthorizeResponse(ctx, ctx.Request, req, session)
@@ -346,14 +323,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 
 func (a *Authenticator) invokeGrantCallback(grantType string, req fosite.Requester, clientModel, ownerModel Model) {
 	if a.GrantCallback != nil {
-		additionalScopes := make([]string, 0)
-		for _, scope := range req.GetScopes() {
-			if scope != a.provider.MandatoryScope {
-				additionalScopes = append(additionalScopes, scope)
-			}
-		}
-
-		for _, scope := range a.GrantCallback(grantType, additionalScopes, clientModel, ownerModel) {
+		for _, scope := range a.GrantCallback(grantType, req.GetRequestedScopes(), clientModel, ownerModel) {
 			req.GrantScope(scope)
 		}
 	}

@@ -1,6 +1,8 @@
 package fire
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
 	"golang.org/x/crypto/bcrypt"
@@ -10,14 +12,17 @@ import (
 )
 
 type authenticatorStorage struct {
-	db                 *mgo.Database
-	ownerModel         Model
-	ownerIDAttr        attribute
-	ownerSecretAttr    attribute
-	clientModel        Model
-	clientIDAttr       attribute
-	clientSecretAttr   attribute
-	clientCallableAttr attribute
+	authenticator *Authenticator
+
+	db                  *mgo.Database
+	ownerModel          Model
+	ownerIDAttr         attribute
+	ownerSecretAttr     attribute
+	clientModel         Model
+	clientIDAttr        attribute
+	clientSecretAttr    attribute
+	clientGrantableAttr attribute
+	clientCallableAttr  attribute
 }
 
 type authenticatorClient struct {
@@ -33,7 +38,9 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	err := s.db.C(s.clientModel.Collection()).Find(bson.M{
 		s.clientIDAttr.bsonName: id,
 	}).One(obj)
-	if err != nil {
+	if err == mgo.ErrNotFound {
+		return nil, fosite.ErrInvalidClient
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -47,6 +54,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 			GrantTypes:    []string{"password", "client_credentials", "implicit"},
 			ResponseTypes: []string{"token"},
 			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.fieldName).(string)},
+			Scopes:        _client.Attribute(s.clientGrantableAttr.fieldName).([]string),
 		},
 		model: _client,
 	}, nil
@@ -91,7 +99,9 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	err := s.db.C(accessTokenModel.Collection()).Find(bson.M{
 		"signature": signature,
 	}).One(&accessToken)
-	if err != nil {
+	if err == mgo.ErrNotFound {
+		return nil, fosite.ErrAccessDenied
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -146,7 +156,9 @@ func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	err := s.db.C(s.ownerModel.Collection()).Find(bson.M{
 		s.ownerIDAttr.bsonName: id,
 	}).One(obj)
-	if err != nil {
+	if err == mgo.ErrNotFound {
+		return nil, fosite.ErrInvalidRequest
+	} else if err != nil {
 		return nil, err
 	}
 
