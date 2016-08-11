@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"code.google.com/p/go.net/context"
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/handler/core"
@@ -13,6 +12,7 @@ import (
 	"github.com/ory-am/fosite/handler/core/owner"
 	"github.com/ory-am/fosite/handler/core/strategy"
 	"github.com/ory-am/fosite/token/hmac"
+	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2"
 )
 
