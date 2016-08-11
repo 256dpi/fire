@@ -1,10 +1,19 @@
+machine:
+  environment:
+    IMPORT_PATH: "/home/ubuntu/.go_workspace/src/github.com/256dpi"
+    APP_PATH: "$IMPORT_PATH/fire"
 dependencies:
   post:
+    - go get github.com/masterminds/glide
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
     - go get golang.org/x/tools/cmd/cover
 test:
+  pre:
+    - mkdir -p "$IMPORT_PATH"
+    - ln -sf "$(pwd)" "$APP_PATH"
+    - cd "$APP_PATH" && glide install
   override:
-    - go test -v -cover -race -coverprofile=/home/ubuntu/coverage.out
+    - cd "$APP_PATH" && go test -v -cover -race -coverprofile=/home/ubuntu/coverage.out $(glide nv)
   post:
     - /home/ubuntu/.go_workspace/bin/goveralls -coverprofile=/home/ubuntu/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN

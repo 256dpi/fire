@@ -49,7 +49,7 @@ type Authenticator struct {
 	storage  *authenticatorStorage
 }
 
-// NetAuthenticator creates and returns a new Authenticator.
+// NewAuthenticator creates and returns a new Authenticator.
 func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
 	// initialize models
 	Init(ownerModel)

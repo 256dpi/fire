@@ -1,7 +1,15 @@
-FILES=$(shell go list ./... | grep -v '/vendor/')
+PKGS=$(shell glide nv)
+
+all: fmt vet lint err
 
 vet:
-	go vet $(FILES)
+	go vet $(PKGS)
 
 fmt:
-	go fmt $(FILES)
+	go fmt $(PKGS)
+
+lint:
+	golint $(PKGS)
+
+err:
+	errcheck -ignoretests -asserts $(PKGS)

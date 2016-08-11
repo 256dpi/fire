@@ -51,7 +51,7 @@ type Context struct {
 	GinContext *gin.Context
 
 	// The underlying api2go.Request
-	Api2GoReq *api2go.Request
+	API2GoReq *api2go.Request
 }
 
 // TODO: Use intermediate ResourceDefinition to hide api2go specifics?
@@ -94,7 +94,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// add filters
 	for _, attr := range r.Model.getBase().attributesByTag("filterable") {
-		if values, ok := ctx.Api2GoReq.QueryParams["filter["+attr.jsonName+"]"]; ok {
+		if values, ok := ctx.API2GoReq.QueryParams["filter["+attr.jsonName+"]"]; ok {
 			ctx.Query[attr.bsonName] = bson.M{"$in": values}
 		}
 	}
@@ -267,21 +267,21 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 		Action:     act,
 		DB:         r.endpoint.db,
 		GinContext: r.adapter.getContext(req),
-		Api2GoReq:  req,
+		API2GoReq:  req,
 	}
 }
 
 func (r *Resource) setRelationshipFilters(ctx *Context) {
-	for param, values := range ctx.Api2GoReq.QueryParams {
+	for param, values := range ctx.API2GoReq.QueryParams {
 		// remove *Name params as not needed
 		if strings.HasSuffix(param, "Name") {
-			delete(ctx.Api2GoReq.QueryParams, param)
+			delete(ctx.API2GoReq.QueryParams, param)
 		}
 
 		// handle *ID params
 		if strings.HasSuffix(param, "ID") {
 			// remove param in any case
-			delete(ctx.Api2GoReq.QueryParams, param)
+			delete(ctx.API2GoReq.QueryParams, param)
 
 			// get plural name
 			pluralName := strings.Replace(param, "ID", "", 1)
