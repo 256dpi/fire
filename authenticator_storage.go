@@ -52,14 +52,21 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 }
 
 func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
+	// retrieve optional owner id
+	var ownerID *bson.ObjectId
+	if ctx.Value("owner") != nil {
+		id := ctx.Value("owner").(Model).ID()
+		ownerID = &id
+	}
+
 	// create access token
 	accessToken := Init(&AccessToken{
 		Signature:     signature,
 		RequestedAt:   request.GetRequestedAt(),
 		GrantedScopes: request.GetGrantedScopes(),
+		ClientID:      ctx.Value("client").(Model).ID(),
+		OwnerID:       ownerID,
 	})
-
-	// TODO: Save Client Id.
 
 	// save access token
 	return s.db.C(accessTokenModel.Collection()).Insert(accessToken)

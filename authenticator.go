@@ -13,6 +13,7 @@ import (
 	"github.com/ory-am/fosite/handler/core/strategy"
 	"github.com/ory-am/fosite/token/hmac"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // The GrantCallback is invoked by the Authenticator with the grant type,
@@ -26,9 +27,11 @@ type GrantCallback func(grant string, scopes []string, client Model, owner Model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
-	Signature     string    `json:"-" valid:"required"`
-	RequestedAt   time.Time `json:"requested-at" valid:"required" bson:"requested_at"`
-	GrantedScopes []string  `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
+	Signature     string         `json:"-" valid:"required"`
+	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
+	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
+	ClientID      bson.ObjectId  `json:"-" valid:"-" bson:"client_id"`
+	OwnerID       *bson.ObjectId `json:"-" valid:"-" bson:"owner_id"`
 }
 
 var accessTokenModel *AccessToken
@@ -262,6 +265,9 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	// retrieve client
 	clientModel := req.GetClient().(*authenticatorClient).model
 
+	// set client
+	ctx.Set("client", clientModel)
+
 	// grant additional scopes if the grant callback is present
 	a.invokeGrantCallback(grantType, req, clientModel, ownerModel)
 
@@ -315,6 +321,9 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 
 	// retrieve client
 	clientModel := req.GetClient().(*authenticatorClient).model
+
+	// set client
+	ctx.Set("client", clientModel)
 
 	// grant additional scopes if the grant callback is present
 	a.invokeGrantCallback("implicit", req, clientModel, ownerModel)

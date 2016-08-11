@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var session *mgo.Session
@@ -65,6 +66,17 @@ func saveModel(db *mgo.Database, model Model) Model {
 	Init(model)
 
 	err := db.C(model.Collection()).Insert(model)
+	if err != nil {
+		panic(err)
+	}
+
+	return model
+}
+
+func findModel(db *mgo.Database, model Model, query bson.M) Model {
+	Init(model)
+
+	err := db.C(model.Collection()).Find(query).One(model)
 	if err != nil {
 		panic(err)
 	}

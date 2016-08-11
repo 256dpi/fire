@@ -219,7 +219,7 @@ func (b *Base) parseTags() {
 					optional:  field.Type == optionalToOneType,
 					index:     i,
 				}
-			} else {
+			} else if len(fireStructTag) > 0 {
 				panic("expected to find a tag of the form fire:\"name:type\"")
 			}
 

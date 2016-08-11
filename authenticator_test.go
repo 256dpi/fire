@@ -3,11 +3,13 @@ package fire
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/Jeffail/gabs"
 	"github.com/appleboy/gofight"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func TestPasswordGrant(t *testing.T) {
@@ -100,6 +102,15 @@ func TestPasswordGrant(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
+
+	// check issued access token
+	accessToken := &AccessToken{}
+	findModel(db, accessToken, bson.M{
+		"signature": strings.Split(token, ".")[1],
+	})
+	assert.Equal(t, []string{"fire"}, accessToken.GrantedScopes)
+	assert.True(t, accessToken.ClientID.Valid())
+	assert.True(t, accessToken.OwnerID.Valid())
 }
 
 func TestCredentialsGrant(t *testing.T) {
@@ -179,6 +190,15 @@ func TestCredentialsGrant(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
+
+	// check issued access token
+	accessToken := &AccessToken{}
+	findModel(db, accessToken, bson.M{
+		"signature": strings.Split(token, ".")[1],
+	})
+	assert.Equal(t, []string{"fire"}, accessToken.GrantedScopes)
+	assert.True(t, accessToken.ClientID.Valid())
+	assert.Nil(t, accessToken.OwnerID)
 }
 
 func TestImplicitGrant(t *testing.T) {
@@ -289,6 +309,15 @@ func TestImplicitGrant(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
+
+	// check issued access token
+	accessToken := &AccessToken{}
+	findModel(db, accessToken, bson.M{
+		"signature": strings.Split(token, ".")[1],
+	})
+	assert.Equal(t, []string{"fire"}, accessToken.GrantedScopes)
+	assert.True(t, accessToken.ClientID.Valid())
+	assert.True(t, accessToken.OwnerID.Valid())
 }
 
 func TestPasswordGrantAdditionalScope(t *testing.T) {
