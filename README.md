@@ -237,7 +237,7 @@ Resources can be added with `AddResource` before the routes are registered on an
 
 ### Authenticators
 
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database` and a secret:
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a secret and the mandatory scope:
 
 ```go
 authenticator := fire.NewAuthenticator(db,
@@ -253,6 +253,8 @@ authenticator.EnableImplicitGrant()
 
 authenticator.Register("auth", router)
 ```
+
+Multiple OAuth2 flows can then be enabled using the `EnableXGrant()` methods before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
 
 Later on you can use the authenticator to authorize access to your resources:
 
