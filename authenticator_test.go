@@ -55,7 +55,7 @@ func TestPasswordGrant(t *testing.T) {
 	// wrong secret
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key1", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "password",
 			"username":   "user1@example.com",
 			"password":   "wrong-secret",
@@ -69,7 +69,7 @@ func TestPasswordGrant(t *testing.T) {
 	// wrong scope
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key1", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "password",
 			"username":   "user1@example.com",
 			"password":   "secret",
@@ -85,7 +85,7 @@ func TestPasswordGrant(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key1", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "password",
 			"username":   "user1@example.com",
 			"password":   "secret",
@@ -155,7 +155,7 @@ func TestCredentialsGrant(t *testing.T) {
 	// wrong secret
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key2", "wrong-secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
 		}).
@@ -167,7 +167,7 @@ func TestCredentialsGrant(t *testing.T) {
 	// wrong scope
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key2", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "wrong",
 		}).
@@ -181,7 +181,7 @@ func TestCredentialsGrant(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key2", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
 		}).
@@ -256,7 +256,7 @@ func TestImplicitGrant(t *testing.T) {
 
 	// wrong secret
 	r.POST("/auth/authorize").
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"response_type": "token",
 			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 			"client_id":     "key3",
@@ -275,7 +275,7 @@ func TestImplicitGrant(t *testing.T) {
 
 	// wrong scope
 	r.POST("/auth/authorize").
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"response_type": "token",
 			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 			"client_id":     "key3",
@@ -296,7 +296,7 @@ func TestImplicitGrant(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/authorize").
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"response_type": "token",
 			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 			"client_id":     "key3",
@@ -379,7 +379,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key4", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "password",
 			"username":   "user4@example.com",
 			"password":   "secret",
@@ -445,7 +445,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key5", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "password",
 			"username":   "user5@example.com",
 			"password":   "secret",
@@ -504,7 +504,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key6", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire admin",
 		}).
@@ -561,7 +561,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	// get access token
 	r.POST("/auth/token").
 		SetHeader(basicAuth("key7", "secret")).
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"grant_type": "client_credentials",
 			"scope":      "fire",
 		}).
@@ -625,7 +625,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/authorize").
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"response_type": "token",
 			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 			"client_id":     "key8",
@@ -699,7 +699,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 
 	// get access token
 	r.POST("/auth/authorize").
-		SetFORM(gofight.H{
+		SetForm(gofight.H{
 			"response_type": "token",
 			"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 			"client_id":     "key9",
