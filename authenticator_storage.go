@@ -39,15 +39,13 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// initialize model
 	_client := Init(obj.(Model))
 
-	// TODO: We shouldn't use Attribute() as the field might be hidden.
-
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        _client.Attribute(s.clientSecretAttr.jsonName).([]byte),
+			Secret:        _client.Attribute(s.clientSecretAttr.fieldName).([]byte),
 			GrantTypes:    []string{"password", "client_credentials", "implicit"},
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.jsonName).(string)},
+			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.fieldName).(string)},
 		},
 		model: _client,
 	}, nil
@@ -98,7 +96,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// check secret
-	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.jsonName).([]byte), []byte(secret))
+	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.fieldName).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
