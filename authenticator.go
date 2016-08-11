@@ -221,8 +221,6 @@ func (a *Authenticator) Authorizer(scopes ...string) Callback {
 			return err, nil
 		}
 
-		// TODO: Assign client to context.
-
 		return nil, nil
 	}
 }

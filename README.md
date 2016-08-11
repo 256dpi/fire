@@ -259,6 +259,10 @@ Later on you can use the authenticator to authorize access to your resources:
 ```go
 posts := &fire.Resource{
     // ...
-    Authorizer: authenticator.ResourceAuthorizer(),
+    Authorizer: authenticator.Authorizer("admin"),
 }
 ```
+
+The Authorizer accepts a list of scopes that must be granted by the token.
+
+- The authorizer will assign the AccessToken to the context using the `fire.access_token` key.

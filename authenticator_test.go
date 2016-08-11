@@ -17,8 +17,14 @@ func TestPasswordGrant(t *testing.T) {
 	authenticator.EnablePasswordGrant()
 
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Authorizer: authenticator.Authorizer(),
+		Model: &Post{},
+		Authorizer: Combine(
+			authenticator.Authorizer(),
+			func(ctx *Context) (error, error) {
+				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
+				return nil, nil
+			},
+		),
 	})
 
 	authenticator.Register("auth", server)
@@ -118,8 +124,14 @@ func TestCredentialsGrant(t *testing.T) {
 	authenticator.EnableCredentialsGrant()
 
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Authorizer: authenticator.Authorizer(),
+		Model: &Post{},
+		Authorizer: Combine(
+			authenticator.Authorizer(),
+			func(ctx *Context) (error, error) {
+				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
+				return nil, nil
+			},
+		),
 	})
 
 	authenticator.Register("auth", server)
@@ -206,8 +218,14 @@ func TestImplicitGrant(t *testing.T) {
 	authenticator.EnableImplicitGrant()
 
 	server, db := buildServer(&Resource{
-		Model:      &Post{},
-		Authorizer: authenticator.Authorizer(),
+		Model: &Post{},
+		Authorizer: Combine(
+			authenticator.Authorizer(),
+			func(ctx *Context) (error, error) {
+				assert.NotNil(t, ctx.GinContext.MustGet("fire.access_token"))
+				return nil, nil
+			},
+		),
 	})
 
 	authenticator.Register("auth", server)

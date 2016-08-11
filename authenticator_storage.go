@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
@@ -87,6 +88,9 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	req.RequestedAt = accessToken.RequestedAt
 	req.GrantedScopes = accessToken.GrantedScopes
 	req.Session = session
+
+	// assign access token to context
+	ctx.(*gin.Context).Set("fire.access_token", &accessToken)
 
 	return req, nil
 }
