@@ -3,8 +3,9 @@ machine:
     IMPORT_PATH: "/home/ubuntu/.go_workspace/src/github.com/256dpi"
     APP_PATH: "$IMPORT_PATH/fire"
 dependencies:
-  post:
+  override:
     - go get github.com/masterminds/glide
+  post:
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
     - go get golang.org/x/tools/cmd/cover
