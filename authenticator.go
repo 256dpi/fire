@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"code.google.com/p/go.net/context"
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/handler/core"
@@ -14,6 +15,13 @@ import (
 	"github.com/ory-am/fosite/token/hmac"
 	"gopkg.in/mgo.v2"
 )
+
+// The GrantCallback is invoked by the Authenticator with the grant type,
+// requested scopes, the client and the owner before issuing an AccessToken.
+// The callback should return a list of additional scopes that should be granted.
+//
+// Note: The Owner is not set for a client credentials grant.
+type GrantCallback func(grant string, scopes []string, client Model, owner Model) []string
 
 // AccessToken is the internal model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
@@ -35,6 +43,8 @@ func init() {
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
+	GrantCallback GrantCallback
+
 	storage *authenticatorStorage
 
 	provider     *fosite.Fosite
@@ -217,14 +227,31 @@ func (a *Authenticator) Authorizer(scopes ...string) Callback {
 }
 
 func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
+	var err error
+
 	// create new auth context
 	authCtx := fosite.NewContext()
 
 	// create new session
-	s := &strategy.HMACSession{}
+	session := &strategy.HMACSession{}
+
+	// prepare optional owner
+	var ownerModel Model
+
+	// retrieve owner
+	if ctx.Request.FormValue("grant_type") == "password" {
+		ownerModel, err = a.storage.getOwner(ctx.Request.FormValue("username"))
+		if err != nil {
+			a.provider.WriteAccessError(ctx.Writer, nil, fosite.ErrInvalidRequest)
+			return
+		}
+
+		// assign owner to context
+		authCtx = context.WithValue(authCtx, "owner", ownerModel)
+	}
 
 	// obtain access request
-	req, err := a.provider.NewAccessRequest(authCtx, ctx.Request, s)
+	req, err := a.provider.NewAccessRequest(authCtx, ctx.Request, session)
 	if err != nil {
 		if a.isFatalError(err) {
 			ctx.Error(err)
@@ -234,7 +261,14 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Call callback that grants additional scopes.
+	// extract grant type
+	grantType := req.GetGrantTypes()[0]
+
+	// retrieve client
+	clientModel := req.GetClient().(*authenticatorClient).model
+
+	// grant additional scopes if the grant callback is present
+	a.invokeGrantCallback(grantType, req, clientModel, ownerModel)
 
 	// obtain access response
 	res, err := a.provider.NewAccessResponse(authCtx, ctx.Request, req)
@@ -267,8 +301,18 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// get credentials
-	username := ctx.Request.Form.Get("username")
-	password := ctx.Request.Form.Get("password")
+	username := ctx.Request.FormValue("username")
+	password := ctx.Request.FormValue("password")
+
+	// retrieve owner
+	ownerModel, err := a.storage.getOwner(username)
+	if err != nil {
+		a.provider.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
+		return
+	}
+
+	// assign owner to context
+	authCtx = context.WithValue(authCtx, "owner", ownerModel)
 
 	// authenticate user
 	err = a.storage.Authenticate(authCtx, username, password)
@@ -277,11 +321,17 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 		return
 	}
 
+	// retrieve client
+	clientModel := req.GetClient().(*authenticatorClient).model
+
+	// grant additional scopes if the grant callback is present
+	a.invokeGrantCallback("implicit", req, clientModel, ownerModel)
+
 	// create new session
-	s := &strategy.HMACSession{}
+	session := &strategy.HMACSession{}
 
 	// obtain authorize response
-	res, err := a.provider.NewAuthorizeResponse(ctx, ctx.Request, req, s)
+	res, err := a.provider.NewAuthorizeResponse(ctx, ctx.Request, req, session)
 	if err != nil {
 		if a.isFatalError(err) {
 			ctx.Error(err)
@@ -293,6 +343,21 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 
 	// write response
 	a.provider.WriteAuthorizeResponse(ctx.Writer, req, res)
+}
+
+func (a *Authenticator) invokeGrantCallback(grantType string, req fosite.Requester, clientModel, ownerModel Model) {
+	if a.GrantCallback != nil {
+		additionalScopes := make([]string, 0)
+		for _, scope := range req.GetScopes() {
+			if scope != a.provider.MandatoryScope {
+				additionalScopes = append(additionalScopes, scope)
+			}
+		}
+
+		for _, scope := range a.GrantCallback(grantType, additionalScopes, clientModel, ownerModel) {
+			req.GrantScope(scope)
+		}
+	}
 }
 
 func (a *Authenticator) isFatalError(err error) bool {

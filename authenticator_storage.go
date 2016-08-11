@@ -92,6 +92,21 @@ func (s *authenticatorStorage) DeleteAccessTokenSession(ctx context.Context, sig
 }
 
 func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secret string) error {
+	var model Model
+
+	// get owner from context
+	model = ctx.Value("owner").(Model)
+
+	// check secret
+	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
+	if err != nil {
+		return fosite.ErrNotFound
+	}
+
+	return nil
+}
+
+func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	// prepare object
 	obj := newStructPointer(s.ownerModel)
 
@@ -100,17 +115,9 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 		s.ownerIDAttr.dbField: id,
 	}).One(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// initialize model
-	owner := Init(obj.(Model))
-
-	// check secret
-	err = bcrypt.CompareHashAndPassword(owner.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
-	if err != nil {
-		return fosite.ErrNotFound
-	}
-
-	return nil
+	return Init(obj.(Model)), nil
 }
