@@ -78,6 +78,8 @@ func (b *Base) initialize(model interface{}) {
 	if !b.DocID.Valid() {
 		b.DocID = bson.NewObjectId()
 	}
+
+	b.parseTags()
 }
 
 // ID returns the models id.
@@ -87,8 +89,6 @@ func (b *Base) ID() bson.ObjectId {
 
 // Collection returns the models collection.
 func (b *Base) Collection() string {
-	b.parseTags()
-
 	return b.collection
 }
 
@@ -96,8 +96,6 @@ func (b *Base) Collection() string {
 //
 // Note: Attribute will compare against the JSON, BSON and struct field name.
 func (b *Base) Attribute(name string) interface{} {
-	b.parseTags()
-
 	// try to find attribute in map
 	for _, attr := range b.attributes {
 		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
@@ -112,8 +110,6 @@ func (b *Base) Attribute(name string) interface{} {
 
 // ReferenceID returns the ID of a to one relationship.
 func (b *Base) ReferenceID(name string) *bson.ObjectId {
-	b.parseTags()
-
 	// try to find field in relationships map
 	rel, ok := b.toOneRelationships[name]
 	if !ok {
@@ -159,7 +155,6 @@ func (b *Base) Validate(fresh bool) error {
 }
 
 func (b *Base) getBase() *Base {
-	b.parseTags()
 	return b
 }
 
@@ -295,7 +290,6 @@ func (b *Base) attributesByTag(tag string) []attribute {
 
 // GetName implements the jsonapi.EntityNamer interface.
 func (b *Base) GetName() string {
-	b.parseTags()
 	return b.pluralName
 }
 
@@ -321,8 +315,6 @@ func (b *Base) SetID(id string) error {
 
 // GetReferences implements the jsonapi.MarshalReferences interface.
 func (b *Base) GetReferences() []jsonapi.Reference {
-	b.parseTags()
-
 	// prepare result
 	var refs []jsonapi.Reference
 
@@ -349,8 +341,6 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 
 // GetReferencedIDs implements the jsonapi.MarshalLinkedRelations interface.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
-	b.parseTags()
-
 	// prepare result
 	var ids []jsonapi.ReferenceID
 
@@ -388,8 +378,6 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 
 // SetToOneReferenceID implements the jsonapi.UnmarshalToOneRelations interface.
 func (b *Base) SetToOneReferenceID(name, id string) error {
-	b.parseTags()
-
 	// check object id
 	if !bson.IsObjectIdHex(id) {
 		return errInvalidID
