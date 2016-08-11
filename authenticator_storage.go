@@ -52,6 +52,18 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	}, nil
 }
 
+func (s *authenticatorStorage) CreateAuthorizeCodeSession(ctx context.Context, code string, request fosite.Requester) error {
+	return errors.New("not implemented")
+}
+
+func (s *authenticatorStorage) GetAuthorizeCodeSession(ctx context.Context, code string, session interface{}) (fosite.Requester, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *authenticatorStorage) DeleteAuthorizeCodeSession(ctx context.Context, code string) error {
+	return errors.New("not implemented")
+}
+
 func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
 	// retrieve optional owner id
 	var ownerID *bson.ObjectId
@@ -96,8 +108,19 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 }
 
 func (s *authenticatorStorage) DeleteAccessTokenSession(ctx context.Context, signature string) error {
-	// TODO: Currently not implemented in fosite?
-	return nil
+	return errors.New("not implemented")
+}
+
+func (s *authenticatorStorage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
+	return errors.New("not implemented")
+}
+
+func (s *authenticatorStorage) GetRefreshTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *authenticatorStorage) DeleteRefreshTokenSession(ctx context.Context, signature string) error {
+	return errors.New("not implemented")
 }
 
 func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secret string) error {
