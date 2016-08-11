@@ -24,7 +24,9 @@ func TestReferenceIDHelper(t *testing.T) {
 func TestAttributeHelper(t *testing.T) {
 	post1 := Init(&Post{})
 	assert.Equal(t, post1.(*Post).Title, post1.Attribute("title"))
+	assert.Equal(t, post1.(*Post).Title, post1.Attribute("Title"))
 
 	post2 := Init(&Post{Title: "hello"})
 	assert.Equal(t, post2.(*Post).Title, post2.Attribute("title"))
+	assert.Equal(t, post2.(*Post).Title, post2.Attribute("Title"))
 }

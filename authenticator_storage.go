@@ -30,7 +30,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 
 	// query db
 	err := s.db.C(s.clientModel.Collection()).Find(bson.M{
-		s.clientIDAttr.dbField: id,
+		s.clientIDAttr.bsonName: id,
 	}).One(obj)
 	if err != nil {
 		return nil, err
@@ -44,10 +44,10 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        _client.Attribute(s.clientSecretAttr.name).([]byte),
+			Secret:        _client.Attribute(s.clientSecretAttr.jsonName).([]byte),
 			GrantTypes:    []string{"password", "client_credentials", "implicit"},
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.name).(string)},
+			RedirectURIs:  []string{_client.Attribute(s.clientCallableAttr.jsonName).(string)},
 		},
 		model: _client,
 	}, nil
@@ -98,7 +98,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// check secret
-	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.name).([]byte), []byte(secret))
+	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.jsonName).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
@@ -112,7 +112,7 @@ func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 
 	// query db
 	err := s.db.C(s.ownerModel.Collection()).Find(bson.M{
-		s.ownerIDAttr.dbField: id,
+		s.ownerIDAttr.bsonName: id,
 	}).One(obj)
 	if err != nil {
 		return nil, err

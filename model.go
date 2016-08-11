@@ -42,18 +42,20 @@ var supportedTags = []string{
 }
 
 type attribute struct {
-	name    string
-	index   int
-	tags    []string
-	dbField string
+	jsonName  string
+	bsonName  string
+	fieldName string
+	tags      []string
+	index     int
 }
 
 type relationship struct {
-	name     string
-	typ      string
-	index    int
-	optional bool
-	dbField  string
+	name      string
+	bsonName  string
+	fieldName string
+	typ       string
+	optional  bool
+	index     int
 }
 
 // Base is the base for every fire model.
@@ -91,20 +93,21 @@ func (b *Base) Collection() string {
 }
 
 // Attribute returns the value of the given attribute.
+//
+// Note: Attribute will compare against the JSON, BSON and struct field name.
 func (b *Base) Attribute(name string) interface{} {
 	b.parseTags()
 
 	// try to find attribute in map
-	attr, ok := b.attributes[name]
-	if !ok {
-		return nil
+	for _, attr := range b.attributes {
+		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
+			// read value from model struct
+			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
+			return field.Interface()
+		}
 	}
 
-	// get field
-	field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
-
-	// return value
-	return field.Interface()
+	return nil
 }
 
 // ReferenceID returns the ID of a to one relationship.
@@ -185,6 +188,10 @@ func (b *Base) parseTags() {
 		// get fire tag
 		fireStructTag := field.Tag.Get("fire")
 
+		// get field names
+		jsonName := getJSONFieldName(&field)
+		bsonName := getBSONFieldName(&field)
+
 		// check if field is the Base
 		if field.Type == baseType {
 			fireTags := strings.Split(fireStructTag, ":")
@@ -210,11 +217,12 @@ func (b *Base) parseTags() {
 			fireTags := strings.Split(fireStructTag, ":")
 			if len(fireTags) == 2 {
 				b.toOneRelationships[fireTags[0]] = relationship{
-					name:     fireTags[0],
-					typ:      fireTags[1],
-					index:    i,
-					optional: field.Type == optionalToOneType,
-					dbField:  getBSONFieldName(&field),
+					name:      fireTags[0],
+					bsonName:  bsonName,
+					fieldName: field.Name,
+					typ:       fireTags[1],
+					optional:  field.Type == optionalToOneType,
+					index:     i,
 				}
 			} else {
 				panic("expected to find a tag of the form fire:\"name:type\"")
@@ -228,9 +236,10 @@ func (b *Base) parseTags() {
 			fireTags := strings.Split(fireStructTag, ":")
 			if len(fireTags) == 2 {
 				b.hasManyRelationships[fireTags[0]] = relationship{
-					name:  fireTags[0],
-					typ:   fireTags[1],
-					index: i,
+					name:      fireTags[0],
+					fieldName: field.Name,
+					typ:       fireTags[1],
+					index:     i,
 				}
 			} else {
 				panic("expected to find a tag of the form fire:\"name:type\"")
@@ -239,14 +248,12 @@ func (b *Base) parseTags() {
 			continue
 		}
 
-		// get name of field
-		name := getJSONFieldName(&field)
-
 		// create attribute
 		attr := attribute{
-			name:    name,
-			index:   i,
-			dbField: getBSONFieldName(&field),
+			jsonName:  jsonName,
+			bsonName:  bsonName,
+			fieldName: field.Name,
+			index:     i,
 		}
 
 		// check if optional
@@ -267,7 +274,7 @@ func (b *Base) parseTags() {
 		}
 
 		// add attribute
-		b.attributes[name] = attr
+		b.attributes[field.Name] = attr
 	}
 }
 

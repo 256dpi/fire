@@ -61,25 +61,25 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret, m
 	// extract attributes from owner
 	ownerIdentifiable := ownerModel.getBase().attributesByTag("identifiable")
 	if len(ownerIdentifiable) != 1 {
-		panic("expected to find exactly one 'identifiable' tag on model")
+		panic("expected to find exactly one 'identifiable' attribute on model")
 	}
 	ownerVerifiable := ownerModel.getBase().attributesByTag("verifiable")
 	if len(ownerVerifiable) != 1 {
-		panic("expected to find exactly one 'verifiable' tag on model")
+		panic("expected to find exactly one 'verifiable' attribute on model")
 	}
 
 	// extract attributes from client
 	clientIdentifiable := clientModel.getBase().attributesByTag("identifiable")
 	if len(clientIdentifiable) != 1 {
-		panic("expected to find exactly one 'identifiable' tag on model")
+		panic("expected to find exactly one 'identifiable' attribute on model")
 	}
 	clientVerifiable := clientModel.getBase().attributesByTag("verifiable")
 	if len(clientVerifiable) != 1 {
-		panic("expected to find exactly one 'verifiable' tag on model")
+		panic("expected to find exactly one 'verifiable' attribute on model")
 	}
 	clientCallable := clientModel.getBase().attributesByTag("callable")
 	if len(clientCallable) != 1 {
-		panic("expected to find exactly one 'callable' tag on model")
+		panic("expected to find exactly one 'callable' attribute on model")
 	}
 
 	// create storage
