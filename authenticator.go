@@ -12,7 +12,6 @@ import (
 	"github.com/ory-am/fosite/handler/core/owner"
 	"github.com/ory-am/fosite/handler/core/strategy"
 	"github.com/ory-am/fosite/token/hmac"
-	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2"
 )
 
@@ -205,8 +204,7 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 // an access tokens with the provided scopes to be granted.
 func (a *Authenticator) Authorizer(scopes ...string) Callback {
 	return func(ctx *Context) (error, error) {
-		// create new auth context
-		authCtx := fosite.NewContext()
+		// create new session
 		session := &strategy.HMACSession{}
 
 		// add mandatory scope if missing
@@ -215,7 +213,7 @@ func (a *Authenticator) Authorizer(scopes ...string) Callback {
 		}
 
 		// validate request
-		_, err := a.provider.ValidateRequestAuthorization(authCtx, ctx.GinContext.Request, session, scopes...)
+		_, err := a.provider.ValidateRequestAuthorization(ctx.GinContext, ctx.GinContext.Request, session, scopes...)
 		if err != nil {
 			return err, nil
 		}
@@ -228,9 +226,6 @@ func (a *Authenticator) Authorizer(scopes ...string) Callback {
 
 func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	var err error
-
-	// create new auth context
-	authCtx := fosite.NewContext()
 
 	// create new session
 	session := &strategy.HMACSession{}
@@ -247,11 +242,11 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 		}
 
 		// assign owner to context
-		authCtx = context.WithValue(authCtx, "owner", ownerModel)
+		ctx.Set("owner", ownerModel)
 	}
 
 	// obtain access request
-	req, err := a.provider.NewAccessRequest(authCtx, ctx.Request, session)
+	req, err := a.provider.NewAccessRequest(ctx, ctx.Request, session)
 	if err != nil {
 		if a.isFatalError(err) {
 			ctx.Error(err)
@@ -271,7 +266,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	a.invokeGrantCallback(grantType, req, clientModel, ownerModel)
 
 	// obtain access response
-	res, err := a.provider.NewAccessResponse(authCtx, ctx.Request, req)
+	res, err := a.provider.NewAccessResponse(ctx, ctx.Request, req)
 	if err != nil {
 		if a.isFatalError(err) {
 			ctx.Error(err)
@@ -286,11 +281,8 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 }
 
 func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
-	// create new auth context
-	authCtx := fosite.NewContext()
-
 	// obtain authorize request
-	req, err := a.provider.NewAuthorizeRequest(authCtx, ctx.Request)
+	req, err := a.provider.NewAuthorizeRequest(ctx, ctx.Request)
 	if err != nil {
 		if a.isFatalError(err) {
 			ctx.Error(err)
@@ -312,10 +304,10 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// assign owner to context
-	authCtx = context.WithValue(authCtx, "owner", ownerModel)
+	ctx.Set("owner", ownerModel)
 
 	// authenticate user
-	err = a.storage.Authenticate(authCtx, username, password)
+	err = a.storage.Authenticate(ctx, username, password)
 	if err != nil {
 		a.provider.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
 		return
