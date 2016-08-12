@@ -6,27 +6,46 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Callback allows further extensibility and customisation of the API.
+// A Callback is can be an Authorizer or Validator an is called during accessing
+// a resource via the API.
 //
-// Note: The first return value is the userError which will be serialized to the
-// jsonapi error object. The second return value is the system error that appears
-// just in the logs.
-type Callback func(*Context) (error, error)
+// Note: If the callback returns an error wrapped using Fatal() the API returns
+// an InternalServerError status and the error will be logged. All other errors
+// are serialized to an error object and returned.
+type Callback func(*Context) error
+
+type fatalError struct {
+	err error
+}
+
+// Fatal wraps an error and marks it as fatal.
+func Fatal(err error) error {
+	return &fatalError{
+		err: err,
+	}
+}
+
+func (err *fatalError) Error() string {
+	return "fatal: " + err.err.Error()
+}
+
+func isFatal(err error) bool {
+	_, ok := err.(*fatalError)
+	return ok
+}
 
 // Combine combines multiple callbacks to one.
 func Combine(callbacks ...Callback) Callback {
-	return func(ctx *Context) (error, error) {
+	return func(ctx *Context) error {
 		// call all callbacks
 		for _, cb := range callbacks {
-			err, sysErr := cb(ctx)
-
-			// return early if an error occurs
-			if err != nil || sysErr != nil {
-				return err, sysErr
+			err := cb(ctx)
+			if err != nil {
+				return err
 			}
 		}
 
-		return nil, nil
+		return nil
 	}
 }
 
@@ -34,10 +53,10 @@ func Combine(callbacks ...Callback) Callback {
 // and returns an error if some get found. This callback is meant to protect
 // resources from breaking relations when requested to be deleted.
 func DependentResourcesValidator(relations map[string]string) Callback {
-	return func(ctx *Context) (error, error) {
+	return func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Action != Delete {
-			return nil, nil
+			return nil
 		}
 
 		// check all relations
@@ -45,27 +64,27 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 			// count referencing documents
 			n, err := ctx.DB.C(coll).Find(bson.M{field: ctx.Query["_id"]}).Limit(1).Count()
 			if err != nil {
-				return nil, err
+				return Fatal(err)
 			}
 
 			// immediately return if a document is found
 			if n == 1 {
-				return errors.New("resource has dependent resources"), nil
+				return errors.New("resource has dependent resources")
 			}
 		}
 
 		// pass validation
-		return nil, nil
+		return nil
 	}
 }
 
 // VerifyReferencesValidator makes sure all references in the document are
 // existing by counting on the related collections.
 func VerifyReferencesValidator(relations map[string]string) Callback {
-	return func(ctx *Context) (error, error) {
+	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
-			return nil, nil
+			return nil
 		}
 
 		// check all relations
@@ -79,34 +98,34 @@ func VerifyReferencesValidator(relations map[string]string) Callback {
 			// count entities in database
 			n, err := ctx.DB.C(collection).FindId(id).Limit(1).Count()
 			if err != nil {
-				return nil, err
+				return Fatal(err)
 			}
 
 			// check for existence
 			if n != 1 {
-				return errors.New("missing required relationship " + relation), nil
+				return errors.New("missing required relationship " + relation)
 			}
 		}
 
 		// pass validation
-		return nil, nil
+		return nil
 	}
 }
 
 // MatchingReferencesValidator compares the model with a referencing relation and
 // checks if they share other relations.
 func MatchingReferencesValidator(collection, referencingRelation string, matcher map[string]string) Callback {
-	return func(ctx *Context) (error, error) {
+	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
-			return nil, nil
+			return nil
 		}
 
 		// get main reference
 		id := ctx.Model.ReferenceID(referencingRelation)
 		if id == nil {
 			// continue if relation is not set
-			return nil, nil
+			return nil
 		}
 
 		// prepare query
@@ -118,7 +137,7 @@ func MatchingReferencesValidator(collection, referencingRelation string, matcher
 		for field, relation := range matcher {
 			id := ctx.Model.ReferenceID(relation)
 			if id == nil {
-				return errors.New("missing id"), nil
+				return errors.New("missing id")
 			}
 
 			query[field] = *id
@@ -127,14 +146,14 @@ func MatchingReferencesValidator(collection, referencingRelation string, matcher
 		// query db
 		n, err := ctx.DB.C(collection).Find(query).Limit(1).Count()
 		if err != nil {
-			return nil, err
+			return Fatal(err)
 		}
 
 		// return error if document is missing
 		if n == 0 {
-			return errors.New("references do not match"), nil
+			return errors.New("references do not match")
 		}
 
-		return nil, nil
+		return nil
 	}
 }

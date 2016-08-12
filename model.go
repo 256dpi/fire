@@ -33,21 +33,30 @@ var errInvalidID = errors.New("invalid id")
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
+var supportedTags = []string{
+	"filterable",
+	"sortable",
+	"identifiable",
+	"verifiable",
+	"grantable",
+	"callable",
+}
+
 type attribute struct {
-	name       string
-	index      int
-	optional   bool
-	filterable bool
-	sortable   bool
-	dbField    string
+	jsonName  string
+	bsonName  string
+	fieldName string
+	tags      []string
+	index     int
 }
 
 type relationship struct {
-	name     string
-	typ      string
-	index    int
-	optional bool
-	dbField  string
+	name      string
+	bsonName  string
+	fieldName string
+	typ       string
+	optional  bool
+	index     int
 }
 
 // Base is the base for every fire model.
@@ -70,11 +79,8 @@ func (b *Base) initialize(model interface{}) {
 	if !b.DocID.Valid() {
 		b.DocID = bson.NewObjectId()
 	}
-}
 
-// Collection returns the models collection.
-func (b *Base) Collection() string {
-	return b.collection
+	b.parseTags()
 }
 
 // ID returns the models id.
@@ -82,27 +88,29 @@ func (b *Base) ID() bson.ObjectId {
 	return b.DocID
 }
 
-// Attribute returns the value of the given attribute.
-func (b *Base) Attribute(name string) interface{} {
-	b.parseTags()
+// Collection returns the models collection.
+func (b *Base) Collection() string {
+	return b.collection
+}
 
+// Attribute returns the value of the given attribute.
+//
+// Note: Attribute will compare against the JSON, BSON and struct field name.
+func (b *Base) Attribute(name string) interface{} {
 	// try to find attribute in map
-	attr, ok := b.attributes[name]
-	if !ok {
-		return nil
+	for _, attr := range b.attributes {
+		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
+			// read value from model struct
+			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
+			return field.Interface()
+		}
 	}
 
-	// get field
-	field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
-
-	// return value
-	return field.Interface()
+	return nil
 }
 
 // ReferenceID returns the ID of a to one relationship.
 func (b *Base) ReferenceID(name string) *bson.ObjectId {
-	b.parseTags()
-
 	// try to find field in relationships map
 	rel, ok := b.toOneRelationships[name]
 	if !ok {
@@ -148,7 +156,6 @@ func (b *Base) Validate(fresh bool) error {
 }
 
 func (b *Base) getBase() *Base {
-	b.parseTags()
 	return b
 }
 
@@ -174,100 +181,121 @@ func (b *Base) parseTags() {
 	for i := 0; i < modelType.NumField(); i++ {
 		field := modelType.Field(i)
 
+		// get fire tag
+		fireStructTag := field.Tag.Get("fire")
+
+		// get field names
+		jsonName := getJSONFieldName(&field)
+		bsonName := getBSONFieldName(&field)
+
 		// check if field is the Base
 		if field.Type == baseType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) < 2 || len(values) > 3 {
+			baseTag := strings.Split(fireStructTag, ":")
+			if len(baseTag) < 2 || len(baseTag) > 3 {
 				panic("expected to find a tag of the form fire:\"singular:plural[:collection]\"")
 			}
 
 			// infer singular and plural and collection based on plural
-			b.singularName = values[0]
-			b.pluralName = values[1]
-			b.collection = values[1]
+			b.singularName = baseTag[0]
+			b.pluralName = baseTag[1]
+			b.collection = baseTag[1]
 
 			// infer collection
-			if len(values) == 3 {
-				b.collection = values[2]
+			if len(baseTag) == 3 {
+				b.collection = baseTag[2]
 			}
 
 			continue
 		}
 
-		// check if field is a to one relationship
+		// parse individual tags
+		fireTags := strings.Split(fireStructTag, ",")
+		if len(fireStructTag) == 0 {
+			fireTags = nil
+		}
+
+		// check if field is marked as a ToOne relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) == 2 {
-				b.toOneRelationships[values[0]] = relationship{
-					name:     values[0],
-					typ:      values[1],
-					index:    i,
-					optional: field.Type == optionalToOneType,
-					dbField:  getBSONFieldName(&field),
+			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				if strings.Count(fireTags[0], ":") > 1 {
+					panic("Expected to find a tag of the form fire:\"name:type\" on ToOne relationship")
 				}
-			} else {
-				panic("expected to find a tag of the form fire:\"name:type\"")
-			}
 
-			continue
+				toOneTag := strings.Split(fireTags[0], ":")
+				b.toOneRelationships[toOneTag[0]] = relationship{
+					name:      toOneTag[0],
+					bsonName:  bsonName,
+					fieldName: field.Name,
+					typ:       toOneTag[1],
+					optional:  field.Type == optionalToOneType,
+					index:     i,
+				}
+
+				continue
+			}
 		}
 
-		// check if field is a has many relationship
+		// check if field is marked as a HasMany relationship
 		if field.Type == hasManyType {
-			values := strings.Split(field.Tag.Get("fire"), ":")
-			if len(values) == 2 {
-				b.hasManyRelationships[values[0]] = relationship{
-					name:  values[0],
-					typ:   values[1],
-					index: i,
-				}
-			} else {
-				panic("expected to find a tag of the form fire:\"name:type\"")
+			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
+				panic("Expected to find a tag of the form fire:\"name:type\" on HasMany relationship")
+			}
+
+			hasManyTag := strings.Split(fireTags[0], ":")
+			b.hasManyRelationships[hasManyTag[0]] = relationship{
+				name:      hasManyTag[0],
+				fieldName: field.Name,
+				typ:       hasManyTag[1],
+				index:     i,
 			}
 
 			continue
 		}
-
-		// get name of field
-		name := getJSONFieldName(&field)
-
-		// TODO: raise error on unexpected tag
 
 		// create attribute
 		attr := attribute{
-			name:     name,
-			index:    i,
-			optional: field.Type.Kind() == reflect.Ptr,
-			dbField:  getBSONFieldName(&field),
+			jsonName:  jsonName,
+			bsonName:  bsonName,
+			fieldName: field.Name,
+			index:     i,
 		}
 
-		// get fire tag
-		tag := field.Tag.Get("fire")
+		// check if optional
+		if field.Type.Kind() == reflect.Ptr {
+			attr.tags = append(attr.tags, "optional")
+		}
 
-		// check tags
-		if len(tag) > 0 {
-			for _, t := range strings.Split(tag, ",") {
-				if t == "filterable" {
-					attr.filterable = true
-				} else if t == "sortable" {
-					attr.sortable = true
-				} else {
-					println(t)
-					panic("expected to find either a 'filterable' or 'sortable' tag")
-				}
+		// add tags
+		for _, tag := range fireTags {
+			if stringInList(supportedTags, tag) {
+				attr.tags = append(attr.tags, tag)
+			} else {
+				panic("unexpected tag: " + tag)
 			}
 		}
 
 		// add attribute
-		b.attributes[name] = attr
+		b.attributes[field.Name] = attr
 	}
+}
+
+func (b *Base) attributesByTag(tag string) []attribute {
+	var list []attribute
+
+	// find identifiable and verifiable attributes
+	for _, attr := range b.attributes {
+		if stringInList(attr.tags, tag) {
+			list = append(list, attr)
+		}
+	}
+
+	return list
 }
 
 /* api2go.jsonapi interface */
 
 // GetName implements the jsonapi.EntityNamer interface.
 func (b *Base) GetName() string {
-	b.parseTags()
 	return b.pluralName
 }
 
@@ -293,8 +321,6 @@ func (b *Base) SetID(id string) error {
 
 // GetReferences implements the jsonapi.MarshalReferences interface.
 func (b *Base) GetReferences() []jsonapi.Reference {
-	b.parseTags()
-
 	// prepare result
 	var refs []jsonapi.Reference
 
@@ -321,8 +347,6 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 
 // GetReferencedIDs implements the jsonapi.MarshalLinkedRelations interface.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
-	b.parseTags()
-
 	// prepare result
 	var ids []jsonapi.ReferenceID
 
@@ -360,8 +384,6 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 
 // SetToOneReferenceID implements the jsonapi.UnmarshalToOneRelations interface.
 func (b *Base) SetToOneReferenceID(name, id string) error {
-	b.parseTags()
-
 	// check object id
 	if !bson.IsObjectIdHex(id) {
 		return errInvalidID

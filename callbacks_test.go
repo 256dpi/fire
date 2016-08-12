@@ -10,15 +10,14 @@ import (
 func TestCombine(t *testing.T) {
 	// prepare fake callback
 	var counter int
-	cb := func(ctx *Context) (error, error) {
+	cb := func(ctx *Context) error {
 		counter++
-		return nil, nil
+		return nil
 	}
 
 	// call combined callbacks
-	err, sysErr := Combine(cb, cb, cb)(nil)
+	err := Combine(cb, cb, cb)(nil)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 	assert.Equal(t, 3, counter)
 }
 
@@ -31,7 +30,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(db, "posts", &Post{})
+	post := saveModel(db, &Post{})
 
 	// create context
 	ctx := &Context{
@@ -41,19 +40,17 @@ func TestDependentResourcesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 
 	// create comment
-	saveModel(db, "comments", &Comment{
+	saveModel(db, &Comment{
 		PostID: post.ID(),
 	})
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 }
 
 func TestVerifyReferencesValidator(t *testing.T) {
@@ -65,7 +62,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	})
 
 	// create bad comment
-	comment1 := saveModel(db, "comments", &Comment{
+	comment1 := saveModel(db, &Comment{
 		PostID: bson.NewObjectId(),
 	})
 
@@ -77,13 +74,12 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 
 	// create post & comment
-	post := saveModel(db, "posts", &Post{})
-	comment2 := saveModel(db, "comments", &Comment{
+	post := saveModel(db, &Post{})
+	comment2 := saveModel(db, &Comment{
 		PostID: post.ID(),
 	})
 
@@ -91,9 +87,8 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	ctx.Model = comment2
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
@@ -108,13 +103,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	postID := bson.NewObjectId()
 
 	// create root comment
-	comment1 := saveModel(db, "comments", &Comment{
+	comment1 := saveModel(db, &Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
-	comment2 := saveModel(db, "comments", &Comment{
+	comment2 := saveModel(db, &Comment{
 		Parent: &parentID,
 		PostID: bson.NewObjectId(),
 	})
@@ -127,18 +122,17 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	}
 
 	// call validator
-	err, sysErr := validator(ctx)
+	err := validator(ctx)
 	assert.Error(t, err)
-	assert.NoError(t, sysErr)
 
 	// create root comment
-	comment3 := saveModel(db, "comments", &Comment{
+	comment3 := saveModel(db, &Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
-	comment4 := saveModel(db, "comments", &Comment{
+	comment4 := saveModel(db, &Comment{
 		Parent: &parentID,
 		PostID: postID,
 	})
@@ -147,7 +141,6 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	ctx.Model = comment4
 
 	// call validator
-	err, sysErr = validator(ctx)
+	err = validator(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, sysErr)
 }

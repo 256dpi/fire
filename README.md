@@ -8,9 +8,9 @@
 [![Release](https://img.shields.io/github/release/256dpi/fire.svg)](https://github.com/256dpi/fire/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
 
-**A small and opinionated framework for Go providing Ember Data compatible JSON APIs.**
+**A small and opinionated framework for Go providing Ember compatible JSON APIs.**
 
-Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) library, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building JSON API services for your Ember projects.
+Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) project, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources, plays well with the [gin](https://github.com/gin-gonic/gin) framework and leverages the [fosite](https://github.com/ory-am/fosite) library to implement OAuth2 based authentication. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
 
 # Installation
 
@@ -37,46 +37,50 @@ type Post struct {
 type Comment struct {
 	fire.Base `bson:",inline" fire:"comment:comments"`
 	Message   string         `json:"message" valid:"required"`
-	Parent    *bson.ObjectId `json:"parent" valid:"-" fire:"parent:comments"`
+	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 ```
 
-Finally, an `Endpoint` mounts resources in a gin application and thus provides access to them:
+Finally, an `Endpoint` is used to register the resources on a gin router and make them accessible:
 
 ```go
-var db *mgo.Database // a reference to a database from a mgo.Session
-var router gin.IRouter // a reference to a gin router compatible instance
-
 endpoint := fire.NewEndpoint(db)
-endpoint.AddResource(&fire.Resource{Model: &Post{}})
-endpoint.AddResource(&fire.Resource{Model: &Comment{}})
+
+endpoint.AddResource(&fire.Resource{
+    Model: &Post{},
+})
+
+endpoint.AddResource(&fire.Resource{
+    Model: &Comment{},
+})
+
 endpoint.Register("api", router)
 ```
 
-After starting the gin server you can inspect the created routes from the console output (simplified):
+After starting the server you can inspect the created routes from the console output (simplified):
 
 ```
-GET     /posts
-GET     /posts/:id
-GET     /posts/:id/relationships/next-post
-GET     /posts/:id/next-post
-PATCH   /posts/:id/relationships/next-post
-GET     /posts/:id/relationships/comments
-GET     /posts/:id/comments
-PATCH   /posts/:id/relationships/comments
-POST    /posts
-DELETE  /posts/:id
-PATCH   /posts/:id
+GET    /posts
+GET    /posts/:id
+GET    /posts/:id/relationships/comments
+GET    /posts/:id/comments
+PATCH  /posts/:id/relationships/comments
+POST   /posts
+DELETE /posts/:id
+PATCH  /posts/:id
 
-GET     /comments
-GET     /comments/:id
-GET     /comments/:id/relationships/post
-GET     /comments/:id/post
-PATCH   /comments/:id/relationships/post
-POST    /comments
-DELETE  /comments/:id
-PATCH   /comments/:id
+GET    /comments
+GET    /comments/:id
+GET    /comments/:id/relationships/post
+GET    /comments/:id/post
+PATCH  /comments/:id/relationships/post
+GET    /comments/:id/relationships/parent
+GET    /comments/:id/parent
+PATCH  /comments/:id/relationships/parent
+POST   /comments
+DELETE /comments/:id
+PATCH  /comments/:id
 ```
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
@@ -100,17 +104,24 @@ type Post struct {
 
 - If the collection is not explicitly set the plural name is used instead.
 - The plural name of the model is also the type for to one and has many relationships.
-- Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+
+_Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name._
+
+_Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
 #### Getters
 
-The `ID`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, its attributes and to one relationships:
+The `ID`, `Collection`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, collection name, attributes and to one relationships:
 
 ```go
 post.ID()
+post.Collection()
 post.Attribute("title")
 comment.ReferenceID("post")
 ```
+
+- The method `Attribute` uses the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value.
+- The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id. 
 
 #### Validation
 
@@ -123,6 +134,8 @@ func (p *Post) Validate(fresh bool) error {
     return p.Base.Validate(fresh)
 }
 ```
+
+- The argument `fresh` indicates if the model has been just created.
 
 #### Filtering & Sorting
 
@@ -138,11 +151,9 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
-- Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
-
 #### To One Relationships
 
-All fields of the `bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag:
+Fields of the type `bson.ObjectId` or `*bson.ObjectId` can be marked as to one relationships using the `fire:"name:type"` struct tag:
 
 ```go
 type Comment struct {
@@ -152,11 +163,14 @@ type Comment struct {
 }
 ```
 
-- Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
+- Fields of the type `*bson.ObjectId` are treated as optional relationships
+- To one relationships can also have additional tags.
+
+_Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
 #### Has Many Relationships
 
-Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag:
+Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type"` struct tag:
 
 ```go
 type Post struct {
@@ -189,10 +203,10 @@ Fire allows the definition of two callbacks.
 ```go
 posts := &fire.Resource{
     // ...
-    Authorizer: func(ctx *fire.Context) (error, error) {
+    Authorizer: func(ctx *fire.Context) error {
         // ...
     },
-    Validator: func(ctx *fire.Context) (error, error) {
+    Validator: func(ctx *fire.Context) error {
         // ...
     },
 }
@@ -206,7 +220,7 @@ Multiple callbacks can be combined using `fire.Combine`:
 fire.Combine(callback1, callback2)
 ```
 
-Note: Fire comes with several built-in callbacks that provide common functionalities and are well combinable with custom callbacks. Following callbacks are available:
+Fire ships with several built-in callbacks that implement common concerns:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
 - [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
@@ -221,9 +235,89 @@ endpoint := fire.NewEndpoint(db)
 
 endpoint.AddResource(&fire.Resource{
     Model: &Post{},
+    // ...
 })
 
 endpoint.Register("api", router)
 ````
 
-Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+Resources can be added with `AddResource` before the routes are registered using `Register` on a gin router.
+
+### Authenticators
+
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a client model, a owner model and a secret:
+
+```go
+type Application struct {
+	Base     `bson:",inline" fire:"application:applications"`
+	Name     string   `json:"name" valid:"required"`
+	Key      string   `json:"key" valid:"required" fire:"identifiable"`
+	Secret   []byte   `json:"secret" valid:"required" fire:"verifiable"`
+	Scopes   []string `json:"scopes" valid:"required" fire:"grantable"`
+	Callback string   `json:"callback" valid:"required" fire:"callable"`
+}
+
+type User struct {
+	Base     `bson:",inline" fire:"user:users"`
+	FullName string `json:"full_name" valid:"required"`
+	Email    string `json:"email" valid:"required" fire:"identifiable"`
+	Password []byte `json:"-" valid:"required" fire:"verifiable"`
+}
+
+authenticator := fire.NewAuthenticator(db,
+    &User{},
+    &Application{},
+    "a-very-long-secret"
+) 
+
+authenticator.EnablePasswordGrant()
+authenticator.EnableCredentialsGrant()
+authenticator.EnableImplicitGrant()
+
+authenticator.Register("auth", router)
+```
+
+The application model requires the tags `identifiable`, `verifiable`, `grantable` and `callable` to infer the fields for the id (key), secret, scope list and callback uri. Identically, the owner model requires the tags `identifiable` and `verifiable` to infer the id (email, username) and secret.
+
+After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a gin router.
+
+More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
+
+#### Scopes
+
+The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant logic can be implemented by setting a `GrantCallback`.
+
+The following callback always grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
+ 
+```go
+authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
+    list := []string{"default"}
+    
+    if owner.Attribute("admin").(bool) {
+        list = append(list, "admin")
+    }
+
+    return list
+}
+```
+
+#### Authorization
+
+Later on you can use the authenticator to authorize access to your resources:
+
+```go
+posts := &fire.Resource{
+    // ...
+    Authorizer: authenticator.Authorizer("admin"),
+}
+```
+
+The Authorizer accepts a list of scopes that must have been granted to the token.
+
+- The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
+
+## License
+
+The MIT License (MIT)
+
+Copyright (c) 2016 Joël Gähwiler

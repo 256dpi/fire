@@ -51,16 +51,20 @@ type Context struct {
 	GinContext *gin.Context
 
 	// The underlying api2go.Request
-	Api2GoReq *api2go.Request
+	API2GoReq *api2go.Request
 }
 
+// TODO: Use intermediate ResourceDefinition to hide api2go specifics?
+
 // A Resource provides an interface to a model.
+//
+// Note: Resources must not be modified after adding to an Endpoint.
 type Resource struct {
 	// The model that this resource should provide (e.g. &Foo{}).
 	Model Model
 
-	// The Authorizer is run on all actions. Will return a Forbidden status if
-	// an user error is returned.
+	// The Authorizer is run on all actions. Will return an Unauthorized status
+	// if an user error is returned.
 	Authorizer Callback
 
 	// The Validator is run to validate Create, Update and Delete actions. Will
@@ -89,19 +93,17 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	r.setRelationshipFilters(ctx)
 
 	// add filters
-	for _, attr := range r.Model.getBase().attributes {
-		if attr.filterable {
-			if values, ok := ctx.Api2GoReq.QueryParams["filter["+attr.name+"]"]; ok {
-				ctx.Query[attr.dbField] = bson.M{"$in": values}
-			}
+	for _, attr := range r.Model.getBase().attributesByTag("filterable") {
+		if values, ok := ctx.API2GoReq.QueryParams["filter["+attr.jsonName+"]"]; ok {
+			ctx.Query[attr.bsonName] = bson.M{"$in": values}
 		}
 	}
 
 	// add sorting
 	if fields, ok := req.QueryParams["sort"]; ok {
 		for _, field := range fields {
-			for _, attr := range r.Model.getBase().attributes {
-				if attr.sortable && (field == attr.dbField || field == "-"+attr.dbField) {
+			for _, attr := range r.Model.getBase().attributesByTag("sortable") {
+				if field == attr.bsonName || field == "-"+attr.bsonName {
 					ctx.Sorting = append(ctx.Sorting, field)
 				}
 			}
@@ -109,7 +111,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -146,7 +148,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -174,7 +176,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Model = obj.(Model)
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -206,7 +208,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	ctx.Query = bson.M{"_id": ctx.Model.ID()}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -242,7 +244,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	ctx.Query = bson.M{"_id": bson.ObjectIdHex(id)}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusForbidden); err != nil {
+	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return nil, *err
 	}
 
@@ -265,21 +267,21 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 		Action:     act,
 		DB:         r.endpoint.db,
 		GinContext: r.adapter.getContext(req),
-		Api2GoReq:  req,
+		API2GoReq:  req,
 	}
 }
 
 func (r *Resource) setRelationshipFilters(ctx *Context) {
-	for param, values := range ctx.Api2GoReq.QueryParams {
+	for param, values := range ctx.API2GoReq.QueryParams {
 		// remove *Name params as not needed
 		if strings.HasSuffix(param, "Name") {
-			delete(ctx.Api2GoReq.QueryParams, param)
+			delete(ctx.API2GoReq.QueryParams, param)
 		}
 
 		// handle *ID params
 		if strings.HasSuffix(param, "ID") {
 			// remove param in any case
-			delete(ctx.Api2GoReq.QueryParams, param)
+			delete(ctx.API2GoReq.QueryParams, param)
 
 			// get plural name
 			pluralName := strings.Replace(param, "ID", "", 1)
@@ -298,7 +300,7 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			// add to one relationship filters
 			for _, rel := range r.Model.getBase().toOneRelationships {
 				if rel.name == singularName {
-					ctx.Query[rel.dbField] = bson.M{"$in": stringsToIDs(values)}
+					ctx.Query[rel.bsonName] = bson.M{"$in": stringsToIDs(values)}
 				}
 			}
 		}
@@ -308,10 +310,10 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) *api2go.HTTPError {
 	// check if callback is available
 	if cb != nil {
-		err, sysErr := cb(ctx)
-		if sysErr != nil {
+		err := cb(ctx)
+		if isFatal(err) {
 			// return system error
-			httpErr := api2go.NewHTTPError(sysErr, "internal server error", http.StatusInternalServerError)
+			httpErr := api2go.NewHTTPError(err, "internal server error", http.StatusInternalServerError)
 			return &httpErr
 		}
 		if err != nil {
