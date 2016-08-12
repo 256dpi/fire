@@ -99,7 +99,6 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	}
 
 	// provider config
-	// TODO: Allow modifying the config for tests (hash cost).
 	config := &compose.Config{
 		HashCost: hashCost,
 	}

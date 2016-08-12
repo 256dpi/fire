@@ -42,41 +42,45 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` mounts resources in a gin application and thus provides access to them:
+Finally, an `Endpoint` is used to register the resources on a gin router and make them accessible:
 
 ```go
-var db *mgo.Database // a reference to a database from a mgo.Session
-var router gin.IRouter // a reference to a gin router compatible instance
-
 endpoint := fire.NewEndpoint(db)
-endpoint.AddResource(&fire.Resource{Model: &Post{}})
-endpoint.AddResource(&fire.Resource{Model: &Comment{}})
+
+endpoint.AddResource(&fire.Resource{
+    Model: &Post{},
+})
+
+endpoint.AddResource(&fire.Resource{
+    Model: &Comment{},
+})
+
 endpoint.Register("api", router)
 ```
 
-After starting the gin server you can inspect the created routes from the console output (simplified):
+After starting the server you can inspect the created routes from the console output (simplified):
 
 ```
-GET     /posts
-GET     /posts/:id
-GET     /posts/:id/relationships/next-post
-GET     /posts/:id/next-post
-PATCH   /posts/:id/relationships/next-post
-GET     /posts/:id/relationships/comments
-GET     /posts/:id/comments
-PATCH   /posts/:id/relationships/comments
-POST    /posts
-DELETE  /posts/:id
-PATCH   /posts/:id
+GET    /posts
+GET    /posts/:id
+GET    /posts/:id/relationships/comments
+GET    /posts/:id/comments
+PATCH  /posts/:id/relationships/comments
+POST   /posts
+DELETE /posts/:id
+PATCH  /posts/:id
 
-GET     /comments
-GET     /comments/:id
-GET     /comments/:id/relationships/post
-GET     /comments/:id/post
-PATCH   /comments/:id/relationships/post
-POST    /comments
-DELETE  /comments/:id
-PATCH   /comments/:id
+GET    /comments
+GET    /comments/:id
+GET    /comments/:id/relationships/post
+GET    /comments/:id/post
+PATCH  /comments/:id/relationships/post
+GET    /comments/:id/relationships/parent
+GET    /comments/:id/parent
+PATCH  /comments/:id/relationships/parent
+POST   /comments
+DELETE /comments/:id
+PATCH  /comments/:id
 ```
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
