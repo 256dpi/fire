@@ -4,7 +4,9 @@ machine:
     APP_PATH: "$IMPORT_PATH/fire"
 dependencies:
   override:
-    - go get github.com/masterminds/glide
+    - sudo add-apt-repository ppa:masterminds/glide -y
+    - sudo apt-get update
+    - sudo apt-get install glide -y
   post:
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
