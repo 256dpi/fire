@@ -4,7 +4,7 @@ machine:
     APP_PATH: "$IMPORT_PATH/fire"
 dependencies:
   override:
-    - go get github.com/masterminds/glide
+    - go get github.com/Masterminds/glide
   post:
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
