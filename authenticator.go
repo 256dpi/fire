@@ -28,8 +28,8 @@ type AccessToken struct {
 	Signature     string         `json:"-" valid:"required"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
-	ClientID      bson.ObjectId  `json:"-" valid:"-" bson:"client_id"`
-	OwnerID       *bson.ObjectId `json:"-" valid:"-" bson:"owner_id"`
+	ClientID      bson.ObjectId  `json:"-" valid:"-" bson:"client_id" fire:"filterable,sortable"`
+	OwnerID       *bson.ObjectId `json:"-" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
 }
 
 var accessTokenModel *AccessToken

@@ -28,6 +28,6 @@ type Post struct {
 type Comment struct {
 	Base    `bson:",inline" fire:"comment:comments"`
 	Message string         `json:"message" valid:"required"`
-	Parent  *bson.ObjectId `json:"parent" valid:"-" fire:"parent:comments"`
+	Parent  *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }

@@ -37,7 +37,7 @@ type Post struct {
 type Comment struct {
 	fire.Base `bson:",inline" fire:"comment:comments"`
 	Message   string         `json:"message" valid:"required"`
-	Parent    *bson.ObjectId `json:"parent" valid:"-" fire:"parent:comments"`
+	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 ```
@@ -104,17 +104,24 @@ type Post struct {
 
 - If the collection is not explicitly set the plural name is used instead.
 - The plural name of the model is also the type for to one and has many relationships.
-- Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+
+_Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name._
+
+_Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
 #### Getters
 
-The `ID`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, its attributes and to one relationships:
+The `ID`, `Collection`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, collection name, attributes and to one relationships:
 
 ```go
 post.ID()
+post.Collection()
 post.Attribute("title")
 comment.ReferenceID("post")
 ```
+
+- The method `Attribute` uses the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value.
+- The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id. 
 
 #### Validation
 
@@ -127,6 +134,8 @@ func (p *Post) Validate(fresh bool) error {
     return p.Base.Validate(fresh)
 }
 ```
+
+- The argument `fresh` indicates if the model has been just created.
 
 #### Filtering & Sorting
 
@@ -142,11 +151,9 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
-- Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
-
 #### To One Relationships
 
-All fields of the `bson.ObjectId` type are treated as to one relationships and are required to have the `fire:"name:type"` struct tag:
+Fields of the type `bson.ObjectId` or `*bson.ObjectId` can be marked as to one relationships using the `fire:"name:type"` struct tag:
 
 ```go
 type Comment struct {
@@ -156,11 +163,14 @@ type Comment struct {
 }
 ```
 
-- Note: Fields of the type `*bson.ObjectId` are treated as optional relationships. Also the field should have the `json:"-"` struct tag to be excluded from the generated attributes object.
+- Fields of the type `*bson.ObjectId` are treated as optional relationships
+- To one relationships can also have additional tags.
+
+_Note: To one relationship fields should be excluded from the generated attributes object by using the `json:"-"` struct tag._
 
 #### Has Many Relationships
 
-Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and also require the `fire:"name:type"` struct tag:
+Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type"` struct tag:
 
 ```go
 type Post struct {

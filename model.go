@@ -190,55 +190,63 @@ func (b *Base) parseTags() {
 
 		// check if field is the Base
 		if field.Type == baseType {
-			fireTags := strings.Split(fireStructTag, ":")
-			if len(fireTags) < 2 || len(fireTags) > 3 {
+			baseTag := strings.Split(fireStructTag, ":")
+			if len(baseTag) < 2 || len(baseTag) > 3 {
 				panic("expected to find a tag of the form fire:\"singular:plural[:collection]\"")
 			}
 
 			// infer singular and plural and collection based on plural
-			b.singularName = fireTags[0]
-			b.pluralName = fireTags[1]
-			b.collection = fireTags[1]
+			b.singularName = baseTag[0]
+			b.pluralName = baseTag[1]
+			b.collection = baseTag[1]
 
 			// infer collection
-			if len(fireTags) == 3 {
-				b.collection = fireTags[2]
+			if len(baseTag) == 3 {
+				b.collection = baseTag[2]
 			}
 
 			continue
 		}
 
-		// check if field is a to one relationship
+		// parse individual tags
+		fireTags := strings.Split(fireStructTag, ",")
+		if len(fireStructTag) == 0 {
+			fireTags = nil
+		}
+
+		// check if field is marked as a ToOne relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
-			fireTags := strings.Split(fireStructTag, ":")
-			if len(fireTags) == 2 {
-				b.toOneRelationships[fireTags[0]] = relationship{
-					name:      fireTags[0],
+			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				if strings.Count(fireTags[0], ":") > 1 {
+					panic("Expected to find a tag of the form fire:\"name:type\" on ToOne relationship")
+				}
+
+				toOneTag := strings.Split(fireTags[0], ":")
+				b.toOneRelationships[toOneTag[0]] = relationship{
+					name:      toOneTag[0],
 					bsonName:  bsonName,
 					fieldName: field.Name,
-					typ:       fireTags[1],
+					typ:       toOneTag[1],
 					optional:  field.Type == optionalToOneType,
 					index:     i,
 				}
-			} else if len(fireStructTag) > 0 {
-				panic("expected to find a tag of the form fire:\"name:type\"")
-			}
 
-			continue
+				continue
+			}
 		}
 
-		// check if field is a has many relationship
+		// check if field is marked as a HasMany relationship
 		if field.Type == hasManyType {
-			fireTags := strings.Split(fireStructTag, ":")
-			if len(fireTags) == 2 {
-				b.hasManyRelationships[fireTags[0]] = relationship{
-					name:      fireTags[0],
-					fieldName: field.Name,
-					typ:       fireTags[1],
-					index:     i,
-				}
-			} else {
-				panic("expected to find a tag of the form fire:\"name:type\"")
+			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
+				panic("Expected to find a tag of the form fire:\"name:type\" on HasMany relationship")
+			}
+
+			hasManyTag := strings.Split(fireTags[0], ":")
+			b.hasManyRelationships[hasManyTag[0]] = relationship{
+				name:      hasManyTag[0],
+				fieldName: field.Name,
+				typ:       hasManyTag[1],
+				index:     i,
 			}
 
 			continue
@@ -257,15 +265,12 @@ func (b *Base) parseTags() {
 			attr.tags = append(attr.tags, "optional")
 		}
 
-		// check tags
-		if len(fireStructTag) > 0 {
-			fireTags := strings.Split(fireStructTag, ",")
-			for _, tag := range fireTags {
-				if stringInList(supportedTags, tag) {
-					attr.tags = append(attr.tags, tag)
-				} else {
-					panic("unexpected tag: " + tag)
-				}
+		// add tags
+		for _, tag := range fireTags {
+			if stringInList(supportedTags, tag) {
+				attr.tags = append(attr.tags, tag)
+			} else {
+				panic("unexpected tag: " + tag)
 			}
 		}
 
