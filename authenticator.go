@@ -21,6 +21,11 @@ var hashCost = 12
 // Note: The Owner is not set for a client credentials grant.
 type GrantCallback func(grant string, scopes []string, client Model, owner Model) []string
 
+// DefaultGrantCallback grants all requested scopes.
+func DefaultGrantCallback(_ string, scopes []string, _ Model, _ Model) []string {
+	return scopes
+}
+
 // AccessToken is the internal model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
@@ -113,6 +118,8 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	// TODO: Allow enabling access code flow (explicit)?
 
 	return &Authenticator{
+		GrantCallback: DefaultGrantCallback,
+
 		config:   config,
 		provider: provider.(*fosite.Fosite),
 		strategy: strategy,

@@ -279,7 +279,27 @@ authenticator.Register("auth", router)
 
 The application model requires the tags `identifiable`, `verifiable`, `grantable` and `callable` to infer the fields for the id (key), secret, scope list and callback uri. Identically, the owner model requires the tags `identifiable` and `verifiable` to infer the id (email, username) and secret.
 
-After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant()`, `EnableCredentialsGrant()` or `EnableImplicitGrant()` method before the routes are registered using `Register` on a gin router.
+After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a gin router.
+
+More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
+
+#### Scopes
+
+The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant logic can be implemented by setting a `GrantCallback`.
+
+The following callback always grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
+ 
+```go
+authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
+    list := []string{"default"}
+    
+    if owner.Attribute("admin").(bool) {
+        list = append(list, "admin")
+    }
+
+    return list
+}
+```
 
 #### Authorization
 
@@ -294,4 +314,10 @@ posts := &fire.Resource{
 
 The Authorizer accepts a list of scopes that must have been granted to the token.
 
-- The authorizer will assign the AccessToken to the context using the `fire.access_token` key.
+- The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
+
+## License
+
+The MIT License (MIT)
+
+Copyright (c) 2016 Joël Gähwiler
