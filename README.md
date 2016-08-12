@@ -166,7 +166,7 @@ type Comment struct {
 - Fields of the type `*bson.ObjectId` are treated as optional relationships
 - To one relationships can also have additional tags.
 
-_Note: To one relationship fields should be excluded from the generated attributes object by using the `json:"-"` struct tag._
+_Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
 #### Has Many Relationships
 
@@ -220,7 +220,7 @@ Multiple callbacks can be combined using `fire.Combine`:
 fire.Combine(callback1, callback2)
 ```
 
-Note: Fire comes with several built-in callbacks that provide common functionalities and are well combinable with custom callbacks. Following callbacks are available:
+Fire ships with several built-in callbacks that implement common concerns:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
 - [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
@@ -241,7 +241,7 @@ endpoint.AddResource(&fire.Resource{
 endpoint.Register("api", router)
 ````
 
-Resources can be added with `AddResource` before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+Resources can be added with `AddResource` before the routes are registered using `Register` on a gin router.
 
 ### Authenticators
 
@@ -277,7 +277,11 @@ authenticator.EnableImplicitGrant()
 authenticator.Register("auth", router)
 ```
 
-Multiple OAuth2 flows can then be enabled using the `EnableXGrant()` methods before the routes are registered on an instance that implements the `gin.IRouter` interface with `Register`.
+The application model requires the tags `identifiable`, `verifiable`, `grantable` and `callable` to infer the fields for the id (key), secret, scope list and callback uri. Identically, the owner model requires the tags `identifiable` and `verifiable` to infer the id (email, username) and secret.
+
+After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant()`, `EnableCredentialsGrant()` or `EnableImplicitGrant()` method before the routes are registered using `Register` on a gin router.
+
+#### Authorization
 
 Later on you can use the authenticator to authorize access to your resources:
 
@@ -288,6 +292,6 @@ posts := &fire.Resource{
 }
 ```
 
-The Authorizer accepts a list of scopes that must be granted by the token.
+The Authorizer accepts a list of scopes that must have been granted to the token.
 
 - The authorizer will assign the AccessToken to the context using the `fire.access_token` key.
