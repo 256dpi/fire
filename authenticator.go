@@ -12,6 +12,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var hashCost = 12
+
 // The GrantCallback is invoked by the Authenticator with the grant type,
 // requested scopes, the client and the owner before issuing an AccessToken.
 // The callback should return a list of additional scopes that should be granted.
@@ -98,7 +100,9 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// provider config
 	// TODO: Allow modifying the config for tests (hash cost).
-	config := &compose.Config{}
+	config := &compose.Config{
+		HashCost: hashCost,
+	}
 
 	// create a new token generation strategy
 	strategy := compose.NewOAuth2HMACStrategy(config, []byte(secret))

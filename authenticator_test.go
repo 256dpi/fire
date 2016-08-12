@@ -12,6 +12,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func init() {
+	hashCost = 4
+}
+
 func TestPasswordGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
