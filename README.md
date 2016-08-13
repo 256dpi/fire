@@ -12,6 +12,8 @@
 
 Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) project, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources, plays well with the [gin](https://github.com/gin-gonic/gin) framework and leverages the [fosite](https://github.com/ory-am/fosite) library to implement OAuth2 based authentication. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
 
+_The framework is still WIP and the API may be changed._
+
 # Installation
 
 Get the package using the go tool:
