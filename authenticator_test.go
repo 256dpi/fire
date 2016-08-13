@@ -265,11 +265,11 @@ func TestImplicitGrant(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:     "Test Application",
-		Key:      "key3",
-		Secret:   authenticator.MustHashPassword("secret"),
-		Scopes:   []string{"default"},
-		Callback: "https://0.0.0.0:8080/auth/callback",
+		Name:      "Test Application",
+		Key:       "key3",
+		Secret:    authenticator.MustHashPassword("secret"),
+		Scopes:    []string{"default"},
+		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user
@@ -644,11 +644,11 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:     "Test Application",
-		Key:      "key8",
-		Secret:   authenticator.MustHashPassword("secret"),
-		Scopes:   []string{"default", "admin"},
-		Callback: "https://0.0.0.0:8080/auth/callback",
+		Name:      "Test Application",
+		Key:       "key8",
+		Secret:    authenticator.MustHashPassword("secret"),
+		Scopes:    []string{"default", "admin"},
+		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user
@@ -719,11 +719,11 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:     "Test Application",
-		Key:      "key9",
-		Secret:   authenticator.MustHashPassword("secret"),
-		Scopes:   []string{"default", "admin"},
-		Callback: "https://0.0.0.0:8080/auth/callback",
+		Name:      "Test Application",
+		Key:       "key9",
+		Secret:    authenticator.MustHashPassword("secret"),
+		Scopes:    []string{"default", "admin"},
+		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user

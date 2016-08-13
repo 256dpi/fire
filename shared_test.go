@@ -3,12 +3,12 @@ package fire
 import "gopkg.in/mgo.v2/bson"
 
 type Application struct {
-	Base     `bson:",inline" fire:"application:applications"`
-	Name     string   `json:"name" valid:"required"`
-	Key      string   `json:"key" valid:"required" fire:"identifiable"`
-	Secret   []byte   `json:"secret" valid:"required" fire:"verifiable"`
-	Scopes   []string `json:"scopes" valid:"required" fire:"grantable"`
-	Callback string   `json:"callback" valid:"required" fire:"callable"`
+	Base      `bson:",inline" fire:"application:applications"`
+	Name      string   `json:"name" valid:"required"`
+	Key       string   `json:"key" valid:"required" fire:"identifiable"`
+	Secret    []byte   `json:"secret" valid:"required" fire:"verifiable"`
+	Scopes    []string `json:"scopes" valid:"required" fire:"grantable"`
+	Callbacks []string `json:"callbacks" valid:"required" fire:"callable"`
 }
 
 type User struct {
