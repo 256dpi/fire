@@ -50,6 +50,8 @@ func init() {
 type Authenticator struct {
 	GrantCallback GrantCallback
 
+	enabledGrants []string
+
 	config   *compose.Config
 	provider *fosite.Fosite
 	strategy *oauth2.HMACSHAStrategy
@@ -129,30 +131,45 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 // EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
 // Credentials Grant.
-//
-// Note: This method should only be called once.
 func (a *Authenticator) EnablePasswordGrant() {
-	handler := compose.OAuth2ResourceOwnerPasswordCredentialsFactory(a.config, a.storage, a.strategy)
-	a.provider.TokenEndpointHandlers.Append(handler.(fosite.TokenEndpointHandler))
-	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
+	if stringInList(a.enabledGrants, "password") {
+		panic("The password grant has already been enabled")
+	}
+
+	// create and register handler
+	grantHandler := compose.OAuth2ResourceOwnerPasswordCredentialsFactory(a.config, a.storage, a.strategy)
+	a.provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
+	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+
+	a.enabledGrants = append(a.enabledGrants, "password")
 }
 
 // EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
-//
-// Note: This method should only be called once.
 func (a *Authenticator) EnableCredentialsGrant() {
-	handler := compose.OAuth2ClientCredentialsGrantFactory(a.config, a.storage, a.strategy)
-	a.provider.TokenEndpointHandlers.Append(handler.(fosite.TokenEndpointHandler))
-	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
+	if stringInList(a.enabledGrants, "client_credentials") {
+		panic("The client credentials grant has already been enabled")
+	}
+
+	// create and register handler
+	grantHandler := compose.OAuth2ClientCredentialsGrantFactory(a.config, a.storage, a.strategy)
+	a.provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
+	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+
+	a.enabledGrants = append(a.enabledGrants, "client_credentials")
 }
 
 // EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
-//
-// Note: This method should only be called once.
 func (a *Authenticator) EnableImplicitGrant() {
-	handler := compose.OAuth2AuthorizeImplicitFactory(a.config, a.storage, a.strategy)
-	a.provider.AuthorizeEndpointHandlers.Append(handler.(fosite.AuthorizeEndpointHandler))
-	a.provider.TokenValidators.Append(handler.(fosite.TokenValidator))
+	if stringInList(a.enabledGrants, "implicit") {
+		panic("The implicit grant has already been enabled")
+	}
+
+	// create and register handler
+	grantHandler := compose.OAuth2AuthorizeImplicitFactory(a.config, a.storage, a.strategy)
+	a.provider.AuthorizeEndpointHandlers.Append(grantHandler.(fosite.AuthorizeEndpointHandler))
+	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+
+	a.enabledGrants = append(a.enabledGrants, "implicit")
 }
 
 // HashPassword returns an Authenticator compatible hash of the password.

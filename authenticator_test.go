@@ -16,6 +16,25 @@ func init() {
 	hashCost = 4
 }
 
+func TestEnableOnlyOnce(t *testing.T) {
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
+	authenticator.EnablePasswordGrant()
+	authenticator.EnableCredentialsGrant()
+	authenticator.EnableImplicitGrant()
+
+	assert.Panics(t, func(){
+		authenticator.EnablePasswordGrant()
+	})
+
+	assert.Panics(t, func(){
+		authenticator.EnableCredentialsGrant()
+	})
+
+	assert.Panics(t, func(){
+		authenticator.EnableImplicitGrant()
+	})
+}
+
 func TestPasswordGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
