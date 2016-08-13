@@ -8,11 +8,13 @@ import (
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/compose"
 	"github.com/ory-am/fosite/handler/oauth2"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-var hashCost = 12
+// the default hash cost that is used by the token hasher
+var hashCost = bcrypt.DefaultCost
 
 // The GrantCallback is invoked by the Authenticator with the grant type,
 // requested scopes, the client and the owner before issuing an AccessToken.
@@ -24,6 +26,17 @@ type GrantCallback func(grant string, scopes []string, client Model, owner Model
 // DefaultGrantCallback grants all requested scopes.
 func DefaultGrantCallback(_ string, scopes []string, _ Model, _ Model) []string {
 	return scopes
+}
+
+// The CompareCallback is invoked by the Authenticator with the stored password
+// hash and submitted password of a owner. The callback is responsible for
+// comparing the submitted password with the stored hash and should return an
+// error if they do not match.
+type CompareCallback func(hash, password []byte) error
+
+// DefaultCompareCallback uses bcrypt to compare the hash and the password.
+func DefaultCompareCallback(hash, password []byte) error {
+	return bcrypt.CompareHashAndPassword(hash, password)
 }
 
 // AccessToken is the internal model used to store access tokens. The model
@@ -48,7 +61,8 @@ func init() {
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
-	GrantCallback GrantCallback
+	GrantCallback   GrantCallback
+	CompareCallback CompareCallback
 
 	enabledGrants []string
 
@@ -121,7 +135,8 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create authenticator
 	a := &Authenticator{
-		GrantCallback: DefaultGrantCallback,
+		GrantCallback:   DefaultGrantCallback,
+		CompareCallback: DefaultCompareCallback,
 
 		config:   config,
 		provider: provider.(*fosite.Fosite),
@@ -176,22 +191,6 @@ func (a *Authenticator) EnableImplicitGrant() {
 	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
 
 	a.enabledGrants = append(a.enabledGrants, "implicit")
-}
-
-// HashPassword returns an Authenticator compatible hash of the password.
-func (a *Authenticator) HashPassword(password string) ([]byte, error) {
-	return a.provider.Hasher.Hash([]byte(password))
-}
-
-// MustHashPassword is the same as HashPassword except that it panics when the
-// hashing failed.
-func (a *Authenticator) MustHashPassword(password string) []byte {
-	bytes, err := a.HashPassword(password)
-	if err != nil {
-		panic(err)
-	}
-
-	return bytes
 }
 
 // Register will create all necessary routes on the passed router. If want to

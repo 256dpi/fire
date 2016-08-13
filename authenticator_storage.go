@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -140,7 +139,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// check secret
-	err := bcrypt.CompareHashAndPassword(model.Attribute(s.ownerSecretAttr.fieldName).([]byte), []byte(secret))
+	err := s.authenticator.CompareCallback(model.Attribute(s.ownerSecretAttr.fieldName).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}

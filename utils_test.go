@@ -8,6 +8,7 @@ import (
 	"github.com/appleboy/gofight"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -102,6 +103,15 @@ func bearerAuth(token string) gofight.H {
 	return gofight.H{
 		"Authorization": "Bearer " + token,
 	}
+}
+
+func hashPassword(password string) []byte {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }
 
 // cheat to get more coverage

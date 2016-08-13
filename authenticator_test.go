@@ -9,11 +9,13 @@ import (
 	"github.com/Jeffail/gabs"
 	"github.com/appleboy/gofight"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )
 
 func init() {
-	hashCost = 4
+	// override default hash cost for token generation to speedup tests
+	hashCost = bcrypt.MinCost
 }
 
 func TestEnableOnlyOnce(t *testing.T) {
@@ -22,15 +24,15 @@ func TestEnableOnlyOnce(t *testing.T) {
 	authenticator.EnableCredentialsGrant()
 	authenticator.EnableImplicitGrant()
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		authenticator.EnablePasswordGrant()
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		authenticator.EnableCredentialsGrant()
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		authenticator.EnableImplicitGrant()
 	})
 }
@@ -65,7 +67,7 @@ func TestPasswordGrant(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key1",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default"},
 	})
 
@@ -73,7 +75,7 @@ func TestPasswordGrant(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user1@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -182,7 +184,7 @@ func TestCredentialsGrant(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key2",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default"},
 	})
 
@@ -286,7 +288,7 @@ func TestImplicitGrant(t *testing.T) {
 	saveModel(db, &Application{
 		Name:      "Test Application",
 		Key:       "key3",
-		Secret:    authenticator.MustHashPassword("secret"),
+		Secret:    hashPassword("secret"),
 		Scopes:    []string{"default"},
 		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
@@ -295,7 +297,7 @@ func TestImplicitGrant(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user3@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -415,7 +417,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key4",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default", "admin"},
 	})
 
@@ -423,7 +425,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user4@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -482,7 +484,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key5",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default", "admin"},
 	})
 
@@ -490,7 +492,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user5@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -549,7 +551,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key6",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default", "admin"},
 	})
 
@@ -607,7 +609,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:   "Test Application",
 		Key:    "key7",
-		Secret: authenticator.MustHashPassword("secret"),
+		Secret: hashPassword("secret"),
 		Scopes: []string{"default", "admin"},
 	})
 
@@ -665,7 +667,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:      "Test Application",
 		Key:       "key8",
-		Secret:    authenticator.MustHashPassword("secret"),
+		Secret:    hashPassword("secret"),
 		Scopes:    []string{"default", "admin"},
 		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
@@ -674,7 +676,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user8@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
@@ -740,7 +742,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	saveModel(db, &Application{
 		Name:      "Test Application",
 		Key:       "key9",
-		Secret:    authenticator.MustHashPassword("secret"),
+		Secret:    hashPassword("secret"),
 		Scopes:    []string{"default", "admin"},
 		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
 	})
@@ -749,7 +751,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	saveModel(db, &User{
 		FullName: "Test User",
 		Email:    "user9@example.com",
-		Password: authenticator.MustHashPassword("secret"),
+		Password: hashPassword("secret"),
 	})
 
 	r := gofight.New()
