@@ -47,13 +47,11 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// initialize model
 	_client := Init(obj.(Model))
 
-	// TODO: Calculate GrantTypes based on enabled grants.
-
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
 			Secret:        _client.Attribute(s.clientSecretAttr.fieldName).([]byte),
-			GrantTypes:    []string{"password", "client_credentials", "implicit"},
+			GrantTypes:    s.authenticator.enabledGrants,
 			ResponseTypes: []string{"token"},
 			RedirectURIs:  _client.Attribute(s.clientCallableAttr.fieldName).([]string),
 			Scopes:        _client.Attribute(s.clientGrantableAttr.fieldName).([]string),

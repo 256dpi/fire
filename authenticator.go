@@ -119,7 +119,8 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	// TODO: Implement refresh tokens.
 	// TODO: Allow enabling access code flow (explicit)?
 
-	return &Authenticator{
+	// create authenticator
+	a := &Authenticator{
 		GrantCallback: DefaultGrantCallback,
 
 		config:   config,
@@ -127,6 +128,11 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		strategy: strategy,
 		storage:  storage,
 	}
+
+	// set authenticator on storage
+	storage.authenticator = a
+
+	return a
 }
 
 // EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
