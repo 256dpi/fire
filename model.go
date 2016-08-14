@@ -95,7 +95,8 @@ func (b *Base) Collection() string {
 
 // Attribute returns the value of the given attribute.
 //
-// Note: Attribute will compare against the JSON, BSON and struct field name.
+// Note: Attribute will return the first attribute that has a matching JSON,
+// BSON or struct field name and will panic if no attribute can be found.
 func (b *Base) Attribute(name string) interface{} {
 	// try to find attribute in map
 	for _, attr := range b.attributes {
@@ -106,7 +107,7 @@ func (b *Base) Attribute(name string) interface{} {
 		}
 	}
 
-	return nil
+	panic(b.singularName + ": missing attribute " + name)
 }
 
 // ReferenceID returns the ID of a to one relationship.

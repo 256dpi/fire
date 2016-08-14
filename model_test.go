@@ -123,6 +123,22 @@ func TestIDHelper(t *testing.T) {
 	assert.Equal(t, post.getBase().DocID, post.ID())
 }
 
+func TestAttributeHelper(t *testing.T) {
+	post1 := Init(&Post{})
+	assert.Equal(t, "", post1.Attribute("text_body"))
+	assert.Equal(t, "", post1.Attribute("text-body"))
+	assert.Equal(t, "", post1.Attribute("TextBody"))
+
+	post2 := Init(&Post{TextBody: "hello"})
+	assert.Equal(t, "hello", post2.Attribute("text_body"))
+	assert.Equal(t, "hello", post2.Attribute("text-body"))
+	assert.Equal(t, "hello", post2.Attribute("TextBody"))
+
+	assert.Panics(t, func(){
+		post1.Attribute("missing")
+	})
+}
+
 func TestReferenceIDHelper(t *testing.T) {
 	comment1 := Init(&Comment{})
 	assert.Equal(t, comment1.(*Comment).Parent, comment1.ReferenceID("parent"))
@@ -130,14 +146,4 @@ func TestReferenceIDHelper(t *testing.T) {
 	id := bson.NewObjectId()
 	comment2 := Init(&Comment{Parent: &id})
 	assert.Equal(t, comment2.(*Comment).Parent, comment2.ReferenceID("parent"))
-}
-
-func TestAttributeHelper(t *testing.T) {
-	post1 := Init(&Post{})
-	assert.Equal(t, post1.(*Post).Title, post1.Attribute("title"))
-	assert.Equal(t, post1.(*Post).Title, post1.Attribute("Title"))
-
-	post2 := Init(&Post{Title: "hello"})
-	assert.Equal(t, post2.(*Post).Title, post2.Attribute("title"))
-	assert.Equal(t, post2.(*Post).Title, post2.Attribute("Title"))
 }
