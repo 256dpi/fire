@@ -39,22 +39,18 @@ func DefaultCompareCallback(hash, password []byte) error {
 	return bcrypt.CompareHashAndPassword(hash, password)
 }
 
+// TODO: Rename to a more matching name?
+
 // AccessToken is the internal model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
-	Signature     string         `json:"-" valid:"required"`
+	Type          string         `json:"type"`
+	Signature     string         `json:"signature" valid:"required"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
-	ClientID      bson.ObjectId  `json:"-" valid:"-" bson:"client_id" fire:"filterable,sortable"`
-	OwnerID       *bson.ObjectId `json:"-" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
-}
-
-var accessTokenModel *AccessToken
-
-func init() {
-	accessTokenModel = &AccessToken{}
-	Init(accessTokenModel)
+	ClientID      bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id" fire:"filterable,sortable"`
+	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
 }
 
 // A Authenticator provides OAuth2 based authentication. The implementation
@@ -71,6 +67,8 @@ type Authenticator struct {
 	strategy *oauth2.HMACSHAStrategy
 	storage  *authenticatorStorage
 }
+
+// TODO: Allow passing a custom AccessToken model.
 
 // NewAuthenticator creates and returns a new Authenticator.
 func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
@@ -106,6 +104,10 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		panic("Expected to find exactly one 'callable' attribute on the passed client model")
 	}
 
+	// prepare access token model
+	accessTokenModel := &AccessToken{}
+	Init(accessTokenModel)
+
 	// create storage
 	storage := &authenticatorStorage{
 		db:                  db,
@@ -117,6 +119,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 		clientSecretAttr:    clientVerifiable[0],
 		clientGrantableAttr: clientGrantable[0],
 		clientCallableAttr:  clientCallable[0],
+		accessTokenModel:    accessTokenModel,
 	}
 
 	// provider config

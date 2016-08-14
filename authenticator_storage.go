@@ -2,6 +2,7 @@ package fire
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ory-am/fosite"
@@ -22,6 +23,7 @@ type authenticatorStorage struct {
 	clientSecretAttr    attribute
 	clientGrantableAttr attribute
 	clientCallableAttr  attribute
+	accessTokenModel    Model
 }
 
 type authenticatorClient struct {
@@ -44,18 +46,18 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	}
 
 	// initialize model
-	_client := Init(obj.(Model))
+	client := Init(obj.(Model))
 
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        _client.Attribute(s.clientSecretAttr.fieldName).([]byte),
+			Secret:        client.Attribute(s.clientSecretAttr.fieldName).([]byte),
 			GrantTypes:    s.authenticator.enabledGrants,
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  _client.Attribute(s.clientCallableAttr.fieldName).([]string),
-			Scopes:        _client.Attribute(s.clientGrantableAttr.fieldName).([]string),
+			RedirectURIs:  client.Attribute(s.clientCallableAttr.fieldName).([]string),
+			Scopes:        client.Attribute(s.clientGrantableAttr.fieldName).([]string),
 		},
-		model: _client,
+		model: client,
 	}, nil
 }
 
@@ -79,35 +81,43 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 		ownerID = &id
 	}
 
+	// prepare access token
+	accessToken := Init(newStructPointer(s.accessTokenModel).(Model))
+
 	// create access token
-	accessToken := Init(&AccessToken{
-		Signature:     signature,
-		RequestedAt:   request.GetRequestedAt(),
-		GrantedScopes: request.GetGrantedScopes(),
-		ClientID:      ctx.Value("client").(Model).ID(),
-		OwnerID:       ownerID,
-	})
+	accessToken.SetAttribute("Type", "access_token")
+	accessToken.SetAttribute("Signature", signature)
+	accessToken.SetAttribute("RequestedAt", request.GetRequestedAt())
+	accessToken.SetAttribute("GrantedScopes", request.GetGrantedScopes())
+	accessToken.SetAttribute("ClientID", ctx.Value("client").(Model).ID())
+	accessToken.SetAttribute("OwnerID", ownerID)
 
 	// save access token
-	return s.db.C(accessTokenModel.Collection()).Insert(accessToken)
+	return s.db.C(accessToken.Collection()).Insert(accessToken)
 }
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
+	// prepare object
+	obj := newStructPointer(s.accessTokenModel)
+
 	// fetch access token
-	var accessToken AccessToken
-	err := s.db.C(accessTokenModel.Collection()).Find(bson.M{
+	err := s.db.C(s.accessTokenModel.Collection()).Find(bson.M{
+		"type":      "access_token",
 		"signature": signature,
-	}).One(&accessToken)
+	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrAccessDenied
 	} else if err != nil {
 		return nil, err
 	}
 
+	// initialize access token
+	accessToken := Init(obj.(Model))
+
 	// create request
 	req := fosite.NewRequest()
-	req.RequestedAt = accessToken.RequestedAt
-	req.GrantedScopes = accessToken.GrantedScopes
+	req.RequestedAt = accessToken.Attribute("RequestedAt").(time.Time)
+	req.GrantedScopes = accessToken.Attribute("GrantedScopes").([]string)
 	req.Session = session
 
 	// assign access token to context
