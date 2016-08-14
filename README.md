@@ -44,7 +44,7 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` is used to register the resources on a gin router and make them accessible:
+Finally, an `Endpoint` is used to register the resources on a router and make them accessible:
 
 ```go
 endpoint := fire.NewEndpoint(db)
@@ -248,7 +248,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Endpoints
 
-An `Endpoint` can be created by calling `fire.NewEndpoint` with a reference to a `mgo.Database`:
+An `Endpoint` can be created by calling `fire.NewEndpoint` with a reference to a database:
 
 ```go
 endpoint := fire.NewEndpoint(db)
@@ -261,11 +261,11 @@ endpoint.AddResource(&fire.Resource{
 endpoint.Register("api", router)
 ````
 
-Resources can be added with `AddResource` before the routes are registered using `Register` on a gin router.
+Resources can be added with `AddResource` before the routes are registered using `Register` on a router.
 
 ## Authenticators
 
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a client model, a owner model and a secret:
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database, a client model, a owner model and a secret:
 
 ```go
 type Application struct {
@@ -297,9 +297,9 @@ authenticator.EnableImplicitGrant()
 authenticator.Register("auth", router)
 ```
 
-The application model requires the tags `identifiable`, `verifiable`, `grantable` and `callable` to infer the fields for the id (key), secret, scope list and callback uri. Identically, the owner model requires the tags `identifiable` and `verifiable` to infer the id (email, username) and secret.
+The client model is required to have the tags `identifiable`, `verifiable`, `grantable` and `callable` to allow reading the id (key), secret, scope list and callback list fields. Identically, the owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email, username) and secret fields.
 
-After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a gin router.
+After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a router.
 
 More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
 
