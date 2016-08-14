@@ -1,6 +1,6 @@
 PKGS=$(shell glide nv)
 
-all: fmt vet lint err toc
+all: fmt vet lint
 
 vet:
 	go vet $(PKGS)

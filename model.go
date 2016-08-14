@@ -10,6 +10,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var metaCache map[string]*meta
+
+func init() {
+	metaCache = make(map[string]*meta)
+}
+
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
@@ -61,15 +67,19 @@ type Field struct {
 	index int
 }
 
-// Base is the base for every fire model.
-type Base struct {
-	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
-
-	parentModel  interface{}
+type meta struct {
 	singularName string
 	pluralName   string
 	collection   string
 	fields       []Field
+}
+
+// Base is the base for every fire model.
+type Base struct {
+	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
+
+	model interface{}
+	meta  *meta
 }
 
 // ID returns the models id.
@@ -79,22 +89,22 @@ func (b *Base) ID() bson.ObjectId {
 
 // SingularName returns the singular name of the model.
 func (b *Base) SingularName() string {
-	return b.singularName
+	return b.meta.singularName
 }
 
 // PluralName returns the plural name of the model.
 func (b *Base) PluralName() string {
-	return b.pluralName
+	return b.meta.pluralName
 }
 
 // Collection returns the models collection.
 func (b *Base) Collection() string {
-	return b.collection
+	return b.meta.collection
 }
 
 // Fields returns the models fields.
 func (b *Base) Fields() []Field {
-	return b.fields
+	return b.meta.fields
 }
 
 // FieldsByTag returns all fields that contain the passed tag.
@@ -102,7 +112,7 @@ func (b *Base) FieldsByTag(tag string) []Field {
 	var list []Field
 
 	// find matching fields
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if stringInList(field.Tags, tag) {
 			list = append(list, field)
 		}
@@ -115,7 +125,7 @@ func (b *Base) FieldsByTag(tag string) []Field {
 //
 // Note: This method panics if no field can be found.
 func (b *Base) FieldWithTag(tag string) Field {
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if stringInList(field.Tags, tag) {
 			return field
 		}
@@ -129,15 +139,15 @@ func (b *Base) FieldWithTag(tag string) Field {
 // Note: Get will return the value of the first field that has a matching Name,
 // JSONName, or BSONName and will panic if no field can be found.
 func (b *Base) Get(name string) interface{} {
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if field.JSONName == name || field.BSONName == name || field.Name == name {
 			// read value from model struct
-			field := reflect.ValueOf(b.parentModel).Elem().Field(field.index)
+			field := reflect.ValueOf(b.model).Elem().Field(field.index)
 			return field.Interface()
 		}
 	}
 
-	panic("Missing field " + name + " on " + b.singularName)
+	panic("Missing field " + name + " on " + b.meta.singularName)
 }
 
 // Set will set given field to the the passed valued.
@@ -146,15 +156,15 @@ func (b *Base) Get(name string) interface{} {
 // JSONName, or BSONName and will panic if no field can been found. The method
 // will also panic if the type of the field and the passed value do not match.
 func (b *Base) Set(name string, value interface{}) {
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if field.JSONName == name || field.BSONName == name || field.Name == name {
 			// set the value on model struct
-			reflect.ValueOf(b.parentModel).Elem().Field(field.index).Set(reflect.ValueOf(value))
+			reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))
 			return
 		}
 	}
 
-	panic("Missing field " + name + " on " + b.singularName)
+	panic("Missing field " + name + " on " + b.meta.singularName)
 }
 
 // Validate validates the model based on the `valid:""` struct tags.
@@ -165,7 +175,7 @@ func (b *Base) Validate(fresh bool) error {
 	}
 
 	// validate parent model
-	ok, err := govalidator.ValidateStruct(b.parentModel)
+	ok, err := govalidator.ValidateStruct(b.model)
 	if err != nil {
 		return err
 	}
@@ -176,27 +186,38 @@ func (b *Base) Validate(fresh bool) error {
 	return nil
 }
 
-// TODO: Speedup parsing by caching meta data.
-
 func (b *Base) initialize(model interface{}) {
-	b.parentModel = model
+	b.model = model
 
 	// set id if missing
 	if !b.DocID.Valid() {
 		b.DocID = bson.NewObjectId()
 	}
 
-	// check if tags already have been parsed
-	if len(b.singularName) > 0 {
+	// return if tags already have been parsed
+	if b.meta != nil {
 		return
 	}
+
+	// read model name
+	modelName := reflect.TypeOf(model).String()
+
+	// check if meta has already been cached
+	modelMeta, ok := metaCache[modelName]
+	if ok {
+		b.meta = modelMeta
+		return
+	}
+
+	// create new meta
+	modelMeta = &meta{}
 
 	// get types
 	baseType := reflect.TypeOf(b).Elem()
 	toOneType := reflect.TypeOf(b.DocID)
 	optionalToOneType := reflect.TypeOf(&b.DocID)
 	hasManyType := reflect.TypeOf(HasMany{})
-	modelType := reflect.TypeOf(b.parentModel).Elem()
+	modelType := reflect.TypeOf(model).Elem()
 
 	// iterate through all fields
 	for i := 0; i < modelType.NumField(); i++ {
@@ -213,13 +234,13 @@ func (b *Base) initialize(model interface{}) {
 			}
 
 			// infer singular and plural and collection based on plural
-			b.singularName = baseTag[0]
-			b.pluralName = baseTag[1]
-			b.collection = baseTag[1]
+			modelMeta.singularName = baseTag[0]
+			modelMeta.pluralName = baseTag[1]
+			modelMeta.collection = baseTag[1]
 
 			// infer collection
 			if len(baseTag) == 3 {
-				b.collection = baseTag[2]
+				modelMeta.collection = baseTag[2]
 			}
 
 			continue
@@ -288,15 +309,21 @@ func (b *Base) initialize(model interface{}) {
 		}
 
 		// add field
-		b.fields = append(b.fields, field)
+		modelMeta.fields = append(modelMeta.fields, field)
 	}
+
+	// cache meta
+	metaCache[modelName] = modelMeta
+
+	// assign meta
+	b.meta = modelMeta
 }
 
 /* api2go.jsonapi interface */
 
 // GetName implements the jsonapi.EntityNamer interface.
 func (b *Base) GetName() string {
-	return b.pluralName
+	return b.meta.pluralName
 }
 
 // GetID implements the jsonapi.MarshalIdentifier interface.
@@ -325,7 +352,7 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	var refs []jsonapi.Reference
 
 	// add to one and has many relationships
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if field.ToOne || field.HasMany {
 			refs = append(refs, jsonapi.Reference{
 				Type:        field.RelType,
@@ -344,10 +371,10 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	var ids []jsonapi.ReferenceID
 
 	// add to one relationships
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if field.ToOne {
 			// get struct field
-			structField := reflect.ValueOf(b.parentModel).Elem().Field(field.index)
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
 
 			// prepare id
 			var id string
@@ -385,10 +412,10 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 		return errors.New("invalid id")
 	}
 
-	for _, field := range b.fields {
+	for _, field := range b.meta.fields {
 		if field.ToOne && field.RelName == name {
 			// get struct field
-			structField := reflect.ValueOf(b.parentModel).Elem().Field(field.index)
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
 
 			// create id
 			oid := bson.ObjectIdHex(id)
