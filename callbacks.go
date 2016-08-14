@@ -113,7 +113,7 @@ func VerifyReferencesValidator(references SM) Callback {
 		// check all references
 		for field, collection := range references {
 			// read referenced id
-			id := ctx.Model.Attribute(field)
+			id := ctx.Model.Get(field)
 			if id == nil {
 				continue
 			}
@@ -154,7 +154,7 @@ func MatchingReferencesValidator(collection, reference string, matcher SM) Callb
 		}
 
 		// get main reference
-		id := ctx.Model.Attribute(reference)
+		id := ctx.Model.Get(reference)
 		if id == nil {
 			// continue if relation is not set
 			return nil
@@ -167,7 +167,7 @@ func MatchingReferencesValidator(collection, reference string, matcher SM) Callb
 
 		// add other references
 		for targetField, modelField := range matcher {
-			id := ctx.Model.Attribute(modelField)
+			id := ctx.Model.Get(modelField)
 			if id == nil {
 				return errors.New("missing id")
 			}

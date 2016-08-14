@@ -14,6 +14,8 @@ import (
 type authenticatorStorage struct {
 	authenticator *Authenticator
 
+	// TODO: Remove ugly attr stuff!
+
 	db                  *mgo.Database
 	ownerModel          Model
 	ownerIDAttr         Field
@@ -51,11 +53,11 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        client.Attribute(s.clientSecretAttr.Name).([]byte),
+			Secret:        client.Get(s.clientSecretAttr.Name).([]byte),
 			GrantTypes:    s.authenticator.enabledGrants,
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  client.Attribute(s.clientCallableAttr.Name).([]string),
-			Scopes:        client.Attribute(s.clientGrantableAttr.Name).([]string),
+			RedirectURIs:  client.Get(s.clientCallableAttr.Name).([]string),
+			Scopes:        client.Get(s.clientGrantableAttr.Name).([]string),
 		},
 		model: client,
 	}, nil
@@ -85,12 +87,12 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	accessToken := Init(newStructPointer(s.accessTokenModel).(Model))
 
 	// create access token
-	accessToken.SetAttribute("Type", "access_token")
-	accessToken.SetAttribute("Signature", signature)
-	accessToken.SetAttribute("RequestedAt", request.GetRequestedAt())
-	accessToken.SetAttribute("GrantedScopes", request.GetGrantedScopes())
-	accessToken.SetAttribute("ClientID", ctx.Value("client").(Model).ID())
-	accessToken.SetAttribute("OwnerID", ownerID)
+	accessToken.Set("Type", "access_token")
+	accessToken.Set("Signature", signature)
+	accessToken.Set("RequestedAt", request.GetRequestedAt())
+	accessToken.Set("GrantedScopes", request.GetGrantedScopes())
+	accessToken.Set("ClientID", ctx.Value("client").(Model).ID())
+	accessToken.Set("OwnerID", ownerID)
 
 	// save access token
 	return s.db.C(accessToken.Collection()).Insert(accessToken)
@@ -116,8 +118,8 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 
 	// create request
 	req := fosite.NewRequest()
-	req.RequestedAt = accessToken.Attribute("RequestedAt").(time.Time)
-	req.GrantedScopes = accessToken.Attribute("GrantedScopes").([]string)
+	req.RequestedAt = accessToken.Get("RequestedAt").(time.Time)
+	req.GrantedScopes = accessToken.Get("GrantedScopes").([]string)
 	req.Session = session
 
 	// assign access token to context
@@ -149,7 +151,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// check secret
-	err := s.authenticator.CompareCallback(model.Attribute(s.ownerSecretAttr.Name).([]byte), []byte(secret))
+	err := s.authenticator.CompareCallback(model.Get(s.ownerSecretAttr.Name).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}

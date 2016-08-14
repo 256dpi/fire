@@ -123,17 +123,17 @@ comment.ReferenceID("post")
 
 - The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id.
  
-#### Attributes
+#### Fields
 
-The `Attribute` and `SetAttribute` functions can be used to get and set any attribute on the model:
+The `Get` and `Set` functions can be used to get and set any field on the model:
 
 ```go
-title := post.Attribute("title")
-post.SetAttribut("title", "New Title")
+title := post.Get("title")
+post.Set("title", "New Title")
 ```
 
 - Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
-- Calling `SetAttribute` with a different type than the field causes a panic.
+- Calling `Set` with a different type than the field causes a panic.
 
 #### Validation
 

@@ -77,29 +77,29 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	Init(clientModel)
 
 	// extract attributes from owner
-	ownerIdentifiable := ownerModel.getBase().attributesByTag("identifiable")
+	ownerIdentifiable := ownerModel.getBase().fieldsByTag("identifiable")
 	if len(ownerIdentifiable) != 1 {
 		panic("Expected to find exactly one 'identifiable' attribute on the passed owner model")
 	}
-	ownerVerifiable := ownerModel.getBase().attributesByTag("verifiable")
+	ownerVerifiable := ownerModel.getBase().fieldsByTag("verifiable")
 	if len(ownerVerifiable) != 1 {
 		panic("Expected to find exactly one 'verifiable' attribute on the passed owner model")
 	}
 
 	// extract attributes from client
-	clientIdentifiable := clientModel.getBase().attributesByTag("identifiable")
+	clientIdentifiable := clientModel.getBase().fieldsByTag("identifiable")
 	if len(clientIdentifiable) != 1 {
 		panic("Expected to find exactly one 'identifiable' attribute on the passed client model")
 	}
-	clientVerifiable := clientModel.getBase().attributesByTag("verifiable")
+	clientVerifiable := clientModel.getBase().fieldsByTag("verifiable")
 	if len(clientVerifiable) != 1 {
 		panic("Expected to find exactly one 'verifiable' attribute on the passed client model")
 	}
-	clientGrantable := clientModel.getBase().attributesByTag("grantable")
+	clientGrantable := clientModel.getBase().fieldsByTag("grantable")
 	if len(clientGrantable) != 1 {
 		panic("Expected to find exactly one 'grantable' attribute on the passed client model")
 	}
-	clientCallable := clientModel.getBase().attributesByTag("callable")
+	clientCallable := clientModel.getBase().fieldsByTag("callable")
 	if len(clientCallable) != 1 {
 		panic("Expected to find exactly one 'callable' attribute on the passed client model")
 	}
