@@ -1,6 +1,6 @@
 PKGS=$(shell glide nv)
 
-all: fmt vet lint err
+all: fmt vet lint err toc
 
 vet:
 	go vet $(PKGS)
@@ -13,3 +13,6 @@ lint:
 
 err:
 	errcheck -ignoretests -asserts $(PKGS)
+
+toc:
+	doctoc README.md
