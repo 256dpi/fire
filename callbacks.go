@@ -57,7 +57,16 @@ func Combine(callbacks ...Callback) Callback {
 // DependentResourcesValidator counts documents in the supplied collections
 // and returns an error if some get found. This callback is meant to protect
 // resources from breaking relations when requested to be deleted.
-func DependentResourcesValidator(relations map[string]string) Callback {
+//
+// Resources are defined by passing pairs of collections and fields where the
+// field must be a database field of the target resource model:
+//
+//		DependentResourcesValidator(SM{
+// 			"posts": "user_id",
+//			"comments": "user_id",
+// 		})
+//
+func DependentResourcesValidator(resources SM) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Action != Delete {
@@ -65,7 +74,7 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 		}
 
 		// check all relations
-		for coll, field := range relations {
+		for coll, field := range resources {
 			// count referencing documents
 			n, err := ctx.DB.C(coll).Find(bson.M{field: ctx.Query["_id"]}).Limit(1).Count()
 			if err != nil {
@@ -85,17 +94,26 @@ func DependentResourcesValidator(relations map[string]string) Callback {
 
 // VerifyReferencesValidator makes sure all references in the document are
 // existing by counting on the related collections.
-func VerifyReferencesValidator(relations map[string]string) Callback {
+//
+// References are defined by passing pairs of fields and collections where the
+// field must be a database field on the resource model:
+//
+//		VerifyReferencesValidator(SM{
+// 			"post_id": "posts",
+//			"user_id": "users",
+// 		})
+//
+func VerifyReferencesValidator(references SM) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
 			return nil
 		}
 
-		// check all relations
-		for relation, collection := range relations {
-			// read referenced fire.Resource id
-			id := ctx.Model.ReferenceID(relation)
+		// check all references
+		for field, collection := range references {
+			// read referenced id
+			id := ctx.Model.Attribute(field)
 			if id == nil {
 				continue
 			}
@@ -108,7 +126,7 @@ func VerifyReferencesValidator(relations map[string]string) Callback {
 
 			// check for existence
 			if n != 1 {
-				return errors.New("missing required relationship " + relation)
+				return errors.New("missing required relationship " + field)
 			}
 		}
 
@@ -117,9 +135,18 @@ func VerifyReferencesValidator(relations map[string]string) Callback {
 	}
 }
 
-// MatchingReferencesValidator compares the model with a referencing relation and
-// checks if they share other relations.
-func MatchingReferencesValidator(collection, referencingRelation string, matcher map[string]string) Callback {
+// MatchingReferencesValidator compares the model with a related model and
+// checks if certain references are shared.
+//
+// The target model is defined by passing its collection and the referencing
+// field on the current model. The matcher is defined by passing pairs of
+// database fields on the target and current model:
+//
+//		MatchingReferencesValidator("posts", "post_id", SM{
+// 			"user_id": "user_id",
+// 		})
+//
+func MatchingReferencesValidator(collection, reference string, matcher SM) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -127,7 +154,7 @@ func MatchingReferencesValidator(collection, referencingRelation string, matcher
 		}
 
 		// get main reference
-		id := ctx.Model.ReferenceID(referencingRelation)
+		id := ctx.Model.Attribute(reference)
 		if id == nil {
 			// continue if relation is not set
 			return nil
@@ -135,17 +162,17 @@ func MatchingReferencesValidator(collection, referencingRelation string, matcher
 
 		// prepare query
 		query := bson.M{
-			"_id": *id,
+			"_id": id,
 		}
 
 		// add other references
-		for field, relation := range matcher {
-			id := ctx.Model.ReferenceID(relation)
+		for targetField, modelField := range matcher {
+			id := ctx.Model.Attribute(modelField)
 			if id == nil {
 				return errors.New("missing id")
 			}
 
-			query[field] = *id
+			query[targetField] = id
 		}
 
 		// query db

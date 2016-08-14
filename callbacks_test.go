@@ -25,7 +25,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := DependentResourcesValidator(map[string]string{
+	validator := DependentResourcesValidator(SM{
 		"comments": "post_id",
 	})
 
@@ -57,8 +57,9 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := VerifyReferencesValidator(map[string]string{
-		"post": "posts",
+	validator := VerifyReferencesValidator(SM{
+		"parent":  "comments",
+		"post_id": "posts",
 	})
 
 	// create bad comment
@@ -77,9 +78,13 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	err := validator(ctx)
 	assert.Error(t, err)
 
+	// get id
+	comment1ID := comment1.ID()
+
 	// create post & comment
 	post := saveModel(db, &Post{})
 	comment2 := saveModel(db, &Comment{
+		Parent: &comment1ID,
 		PostID: post.ID(),
 	})
 
@@ -95,8 +100,8 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
-		"post_id": "post",
+	validator := MatchingReferencesValidator("comments", "parent", SM{
+		"post_id": "post_id",
 	})
 
 	// post id
