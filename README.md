@@ -14,7 +14,7 @@ Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go
 
 _The framework is still WIP and the API may be changed._
 
-# Installation
+## Installation
 
 Get the package using the go tool:
 
@@ -22,7 +22,7 @@ Get the package using the go tool:
 $ go get github.com/256dpi/fire
 ```
 
-# Usage
+## Usage
 
 Fire infers all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `fire` struct tag and integrates [govalidator](https://github.com/asaskevich/govalidator) which uses the `valid` struct tag.
 
