@@ -17,6 +17,7 @@ _The framework is still WIP and the API may be changed._
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Example](#example)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Models](#models)
@@ -40,6 +41,10 @@ _The framework is still WIP and the API may be changed._
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Example
+
+An example application that uses the fire framework to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/256dpi/fire-example>.
 
 ## Installation
 
