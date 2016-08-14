@@ -28,14 +28,14 @@ type Context struct {
 	// The action that has been called.
 	Action Action
 
-	// The Model that will be saved during Create and Update.
+	// The Model that will be saved during Create or Update.
 	Model Model
 
-	// The query that will be used during FindAll, FindOne, Update and Delete.
+	// The query that will be used during FindAll, FindOne, Update or Delete.
 	//
 	// Note: On FindOne, Update and Delete, the "_id" key is already set to the
-	// document ID. On FindAll all ordinary filters and relationship filters are
-	// also already present.
+	// document ID. On FindAll all field filters and relationship filters are
+	// also already set.
 	Query bson.M
 
 	// The sorting that will be used during FindAll.
