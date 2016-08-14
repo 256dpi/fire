@@ -142,14 +142,8 @@ func (b *Base) ReferenceID(name string) *bson.ObjectId {
 	// get field
 	field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
 
-	// check if field is optional
+	// return directly if field is optional
 	if rel.optional {
-		// return empty id if not set
-		if field.IsNil() {
-			return nil
-		}
-
-		// return id
 		return field.Interface().(*bson.ObjectId)
 	}
 
