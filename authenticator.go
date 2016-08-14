@@ -181,6 +181,12 @@ func (a *Authenticator) Register(prefix string, router gin.IRouter) {
 	router.POST(prefix+"/authorize", a.authorizeEndpoint)
 }
 
+// NewKeyAndSignature returns a new key with a matching signature that can be
+// used to issue custom access tokens.
+func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
+	return a.strategy.GenerateAccessToken(nil, nil)
+}
+
 // Authorizer returns a callback that can be used to protect resources by requiring
 // an access tokens with the provided scopes to be granted.
 func (a *Authenticator) Authorizer(scopes ...string) Callback {
