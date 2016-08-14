@@ -406,5 +406,3 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 
 	return errors.New("missing relationship " + name)
 }
-
-// TODO: Implement jsonapi.UnmarshalToManyRelations interface.

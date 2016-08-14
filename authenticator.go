@@ -49,8 +49,6 @@ func DefaultCompareStrategy(hash, password []byte) error {
 	return bcrypt.CompareHashAndPassword(hash, password)
 }
 
-// TODO: Rename to a more matching name?
-
 // AccessToken is the internal model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
@@ -104,9 +102,6 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create provider
 	provider := compose.Compose(config, storage, strategy)
-
-	// TODO: Implement refresh tokens.
-	// TODO: Allow enabling access code flow (explicit)?
 
 	// create authenticator
 	a := &Authenticator{
