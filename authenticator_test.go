@@ -41,13 +41,13 @@ func TestPasswordGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "password", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "password", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{
@@ -158,13 +158,13 @@ func TestCredentialsGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "client_credentials", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.Nil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "client_credentials", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.Nil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{
@@ -262,13 +262,13 @@ func TestImplicitGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "implicit", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "implicit", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{
@@ -397,11 +397,11 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "password", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "password", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
@@ -464,13 +464,13 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "password", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "password", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{
@@ -531,11 +531,11 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "client_credentials", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.Nil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "client_credentials", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.Nil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
@@ -589,13 +589,13 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "client_credentials", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.Nil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "client_credentials", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.Nil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{
@@ -647,11 +647,11 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "implicit", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "implicit", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
@@ -722,13 +722,13 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
-		assert.Equal(t, "implicit", grant)
-		assert.Equal(t, []string{"default"}, scopes)
-		assert.NotNil(t, client)
-		assert.NotNil(t, owner)
+	authenticator.GrantCallback = func(req *GrantRequest) []string {
+		assert.Equal(t, "implicit", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
 
-		return scopes
+		return req.RequestedScopes
 	}
 
 	server, db := buildServer(&Resource{

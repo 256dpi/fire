@@ -16,16 +16,24 @@ import (
 // the default hash cost that is used by the token hasher
 var hashCost = bcrypt.DefaultCost
 
+// A GrantRequest is used in conjunction with the GrantCallback.
+type GrantRequest struct {
+	GrantType       string
+	RequestedScopes []string
+	Client          Model
+	Owner           Model
+}
+
 // The GrantCallback is invoked by the Authenticator with the grant type,
 // requested scopes, the client and the owner before issuing an AccessToken.
 // The callback should return a list of additional scopes that should be granted.
 //
 // Note: The Owner is not set for a client credentials grant.
-type GrantCallback func(grant string, scopes []string, client Model, owner Model) []string
+type GrantCallback func(req *GrantRequest) []string
 
 // DefaultGrantCallback grants all requested scopes.
-func DefaultGrantCallback(_ string, scopes []string, _ Model, _ Model) []string {
-	return scopes
+func DefaultGrantCallback(req *GrantRequest) []string {
+	return req.RequestedScopes
 }
 
 // The CompareCallback is invoked by the Authenticator with the stored password
@@ -322,9 +330,16 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	a.provider.WriteAuthorizeResponse(ctx.Writer, req, res)
 }
 
-func (a *Authenticator) invokeGrantCallback(grantType string, req fosite.Requester, clientModel, ownerModel Model) {
+func (a *Authenticator) invokeGrantCallback(grantType string, req fosite.Requester, client, owner Model) {
 	if a.GrantCallback != nil {
-		for _, scope := range a.GrantCallback(grantType, req.GetRequestedScopes(), clientModel, ownerModel) {
+		grantedScopes := a.GrantCallback(&GrantRequest{
+			GrantType:       grantType,
+			RequestedScopes: req.GetRequestedScopes(),
+			Client:          client,
+			Owner:           owner,
+		})
+
+		for _, scope := range grantedScopes {
 			req.GrantScope(scope)
 		}
 	}
