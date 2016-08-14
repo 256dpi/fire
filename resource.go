@@ -296,9 +296,9 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			}
 
 			// add to one relationship filters
-			for _, rel := range r.Model.getBase().toOneRelationships {
-				if rel.name == singularName {
-					ctx.Query[rel.bsonName] = bson.M{"$in": stringsToIDs(values)}
+			for _, attr := range r.Model.getBase().attributes {
+				if attr.fieldType == toOneRel && attr.relName == singularName {
+					ctx.Query[attr.bsonName] = bson.M{"$in": stringsToIDs(values)}
 				}
 			}
 		}

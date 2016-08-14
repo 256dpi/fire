@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestTagParsing(t *testing.T) {
@@ -27,18 +26,18 @@ func TestTagParsing(t *testing.T) {
 			tags:      []string(nil),
 			index:     2,
 		},
-	}, post.getBase().attributes)
-	assert.Equal(t, map[string]relationship{}, post.getBase().toOneRelationships)
-	assert.Equal(t, map[string]relationship{
-		"comments": {
-			name:      "comments",
-			bsonName:  "",
-			fieldName: "Comments",
-			typ:       "comments",
+		"Comments": {
+			fieldType: 2,
 			optional:  false,
+			fieldName: "Comments",
+			jsonName:  "-",
+			bsonName:  "-",
+			tags:      []string(nil),
+			relName:   "comments",
+			relType:   "comments",
 			index:     3,
 		},
-	}, post.getBase().hasManyRelationships)
+	}, post.getBase().attributes)
 
 	comment := Init(&Comment{})
 	assert.Equal(t, "comments", comment.Collection())
@@ -52,70 +51,79 @@ func TestTagParsing(t *testing.T) {
 			tags:      []string(nil),
 			index:     1,
 		},
-	}, comment.getBase().attributes)
-	assert.Equal(t, map[string]relationship{
-		"parent": {
-			name:      "parent",
-			bsonName:  "parent",
-			fieldName: "Parent",
-			typ:       "comments",
+		"Parent": {
+			fieldType: 1,
 			optional:  true,
+			fieldName: "Parent",
+			jsonName:  "-",
+			bsonName:  "parent",
+			tags:      []string(nil),
+			relName:   "parent",
+			relType:   "comments",
 			index:     2,
 		},
-		"post": {
-			name:      "post",
-			bsonName:  "post_id",
-			fieldName: "PostID",
-			typ:       "posts",
+		"PostID": {
+			fieldType: 1,
 			optional:  false,
+			fieldName: "PostID",
+			jsonName:  "-",
+			bsonName:  "post_id",
+			tags:      []string(nil),
+			relName:   "post",
+			relType:   "posts",
 			index:     3,
 		},
-	}, comment.getBase().toOneRelationships)
-	assert.Equal(t, map[string]relationship{}, comment.getBase().hasManyRelationships)
+	}, comment.getBase().attributes)
 
 	accessToken := Init(&AccessToken{})
 	assert.Equal(t, "access_tokens", accessToken.Collection())
 	assert.Equal(t, "access-token", accessToken.getBase().singularName)
 	assert.Equal(t, "access-tokens", accessToken.getBase().pluralName)
 	assert.Equal(t, map[string]attribute{
+		"Type": {
+			jsonName:  "type",
+			bsonName:  "type",
+			fieldName: "Type",
+			tags:      []string(nil),
+			index:     1,
+		},
 		"Signature": {
-			jsonName:  "-",
+			jsonName:  "signature",
 			bsonName:  "signature",
 			fieldName: "Signature",
 			tags:      []string(nil),
-			index:     1,
+			index:     2,
 		},
 		"RequestedAt": {
 			jsonName:  "requested-at",
 			bsonName:  "requested_at",
 			fieldName: "RequestedAt",
 			tags:      []string(nil),
-			index:     2,
+			index:     3,
 		},
 		"GrantedScopes": {
 			jsonName:  "granted-scopes",
 			bsonName:  "granted_scopes",
 			fieldName: "GrantedScopes",
 			tags:      []string(nil),
-			index:     3,
+			index:     4,
 		},
 		"ClientID": {
-			jsonName:  "-",
+			jsonName:  "client-id",
 			bsonName:  "client_id",
 			fieldName: "ClientID",
 			tags:      []string{"filterable", "sortable"},
-			index:     4,
-		},
-		"OwnerID": {
-			jsonName:  "-",
-			bsonName:  "owner_id",
-			fieldName: "OwnerID",
-			tags:      []string{"optional", "filterable", "sortable"},
 			index:     5,
 		},
+		"OwnerID": {
+			optional:  true,
+			jsonName:  "owner-id",
+			bsonName:  "owner_id",
+			fieldName: "OwnerID",
+			tags:      []string{"filterable", "sortable"},
+			index:     6,
+		},
 	}, accessToken.getBase().attributes)
-	assert.Equal(t, map[string]relationship{}, accessToken.getBase().toOneRelationships)
-	assert.Equal(t, map[string]relationship{}, accessToken.getBase().hasManyRelationships)
 }
 
 func TestIDHelper(t *testing.T) {
@@ -158,13 +166,4 @@ func TestSetAttributeHelper(t *testing.T) {
 	assert.Panics(t, func() {
 		post.SetAttribute("TextBody", 1)
 	})
-}
-
-func TestReferenceIDHelper(t *testing.T) {
-	comment1 := Init(&Comment{})
-	assert.Equal(t, comment1.(*Comment).Parent, comment1.ReferenceID("parent"))
-
-	id := bson.NewObjectId()
-	comment2 := Init(&Comment{Parent: &id})
-	assert.Equal(t, comment2.(*Comment).Parent, comment2.ReferenceID("parent"))
 }

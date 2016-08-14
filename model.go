@@ -16,7 +16,6 @@ type Model interface {
 	Collection() string
 	Attribute(string) interface{}
 	SetAttribute(string, interface{})
-	ReferenceID(string) *bson.ObjectId
 	Validate(bool) error
 
 	getBase() *Base
@@ -43,20 +42,25 @@ var supportedTags = []string{
 	"callable",
 }
 
+type fieldType int
+
+const (
+	attr fieldType = iota
+	toOneRel
+	hasManyRel
+)
+
+// TODO: Rename attribute to field?
+
 type attribute struct {
+	fieldType fieldType
+	optional  bool
+	fieldName string
 	jsonName  string
 	bsonName  string
-	fieldName string
 	tags      []string
-	index     int
-}
-
-type relationship struct {
-	name      string
-	bsonName  string
-	fieldName string
-	typ       string
-	optional  bool
+	relName   string
+	relType   string
 	index     int
 }
 
@@ -64,13 +68,11 @@ type relationship struct {
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
 
-	parentModel          interface{}
-	singularName         string
-	pluralName           string
-	collection           string
-	attributes           map[string]attribute
-	toOneRelationships   map[string]relationship
-	hasManyRelationships map[string]relationship
+	parentModel  interface{}
+	singularName string
+	pluralName   string
+	collection   string
+	attributes   map[string]attribute
 }
 
 func (b *Base) initialize(model interface{}) {
@@ -129,31 +131,6 @@ func (b *Base) SetAttribute(name string, value interface{}) {
 	panic(b.singularName + ":missing attribute " + name)
 }
 
-// TODO: ReferenceID should be handled by Attribute and SetAttribute.
-
-// ReferenceID returns the ID of a to one relationship.
-//
-// Note: ReferenceID will panic if the relationship does not exist.
-func (b *Base) ReferenceID(name string) *bson.ObjectId {
-	// try to find field in relationships map
-	rel, ok := b.toOneRelationships[name]
-	if !ok {
-		panic(b.singularName + ": missing to one relationship " + name)
-	}
-
-	// get field
-	field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
-
-	// return directly if field is optional
-	if rel.optional {
-		return field.Interface().(*bson.ObjectId)
-	}
-
-	// return id
-	id := field.Interface().(bson.ObjectId)
-	return &id
-}
-
 // Validate validates the model based on the `valid:""` struct tags.
 func (b *Base) Validate(fresh bool) error {
 	// validate id
@@ -183,10 +160,8 @@ func (b *Base) parseTags() {
 		return
 	}
 
-	// prepare storage
+	// prepare attributes
 	b.attributes = make(map[string]attribute)
-	b.toOneRelationships = make(map[string]relationship)
-	b.hasManyRelationships = make(map[string]relationship)
 
 	// get types
 	baseType := reflect.TypeOf(b).Elem()
@@ -201,10 +176,6 @@ func (b *Base) parseTags() {
 
 		// get fire tag
 		fireStructTag := field.Tag.Get("fire")
-
-		// get field names
-		jsonName := getJSONFieldName(&field)
-		bsonName := getBSONFieldName(&field)
 
 		// check if field is the Base
 		if field.Type == baseType {
@@ -232,58 +203,55 @@ func (b *Base) parseTags() {
 			fireTags = nil
 		}
 
-		// check if field is marked as a ToOne relationship
-		if field.Type == toOneType || field.Type == optionalToOneType {
-			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
-				if strings.Count(fireTags[0], ":") > 1 {
-					panic("Expected to find a tag of the form fire:\"name:type\" on ToOne relationship")
-				}
-
-				toOneTag := strings.Split(fireTags[0], ":")
-				b.toOneRelationships[toOneTag[0]] = relationship{
-					name:      toOneTag[0],
-					bsonName:  bsonName,
-					fieldName: field.Name,
-					typ:       toOneTag[1],
-					optional:  field.Type == optionalToOneType,
-					index:     i,
-				}
-
-				continue
-			}
-		}
-
-		// check if field is marked as a HasMany relationship
-		if field.Type == hasManyType {
-			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
-				panic("Expected to find a tag of the form fire:\"name:type\" on HasMany relationship")
-			}
-
-			hasManyTag := strings.Split(fireTags[0], ":")
-			b.hasManyRelationships[hasManyTag[0]] = relationship{
-				name:      hasManyTag[0],
-				fieldName: field.Name,
-				typ:       hasManyTag[1],
-				index:     i,
-			}
-
-			continue
-		}
-
-		// create attribute
+		// prepare attribute
 		attr := attribute{
-			jsonName:  jsonName,
-			bsonName:  bsonName,
+			fieldType: attr,
+			optional:  field.Type.Kind() == reflect.Ptr,
+			jsonName:  getJSONFieldName(&field),
+			bsonName:  getBSONFieldName(&field),
 			fieldName: field.Name,
 			index:     i,
 		}
 
-		// check if optional
-		if field.Type.Kind() == reflect.Ptr {
-			attr.tags = append(attr.tags, "optional")
+		// check if field is a valid to one relationship
+		if field.Type == toOneType || field.Type == optionalToOneType {
+			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				if strings.Count(fireTags[0], ":") > 1 {
+					panic("Expected to find a tag of the form fire:\"name:type\" on to one relationship")
+				}
+
+				// parse special to one relationship tag
+				toOneTag := strings.Split(fireTags[0], ":")
+
+				// set attributes
+				attr.fieldType = toOneRel
+				attr.relName = toOneTag[0]
+				attr.relType = toOneTag[1]
+
+				// remove tag
+				fireTags = fireTags[1:]
+			}
 		}
 
-		// add tags
+		// check if field is a valid has many relationship
+		if field.Type == hasManyType {
+			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
+				panic("Expected to find a tag of the form fire:\"name:type\" on has many relationship")
+			}
+
+			// parse special has many relationship tag
+			hasManyTag := strings.Split(fireTags[0], ":")
+
+			// set attributes
+			attr.fieldType = hasManyRel
+			attr.relName = hasManyTag[0]
+			attr.relType = hasManyTag[1]
+
+			// remove tag
+			fireTags = fireTags[1:]
+		}
+
+		// add comma separated tags
 		for _, tag := range fireTags {
 			if stringInList(supportedTags, tag) {
 				attr.tags = append(attr.tags, tag)
@@ -342,22 +310,15 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	// prepare result
 	var refs []jsonapi.Reference
 
-	// add to one relationships
-	for _, rel := range b.toOneRelationships {
-		refs = append(refs, jsonapi.Reference{
-			Type:        rel.typ,
-			Name:        rel.name,
-			IsNotLoaded: true,
-		})
-	}
-
-	// add has many relationships
-	for _, rel := range b.hasManyRelationships {
-		refs = append(refs, jsonapi.Reference{
-			Type:        rel.typ,
-			Name:        rel.name,
-			IsNotLoaded: true,
-		})
+	// add to one and has many relationships
+	for _, attr := range b.attributes {
+		if attr.fieldType == toOneRel || attr.fieldType == hasManyRel {
+			refs = append(refs, jsonapi.Reference{
+				Type:        attr.relType,
+				Name:        attr.relName,
+				IsNotLoaded: true,
+			})
+		}
 	}
 
 	return refs
@@ -369,32 +330,34 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	var ids []jsonapi.ReferenceID
 
 	// add to one relationships
-	for _, rel := range b.toOneRelationships {
-		field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
+	for _, attr := range b.attributes {
+		if attr.fieldType == toOneRel {
+			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
 
-		// prepare id
-		var id string
+			// prepare id
+			var id string
 
-		// check if field is optional
-		if rel.optional {
-			// continue if id is not set
-			if field.IsNil() {
-				continue
+			// check if field is optional
+			if attr.optional {
+				// continue if id is not set
+				if field.IsNil() {
+					continue
+				}
+
+				// get id
+				id = field.Interface().(*bson.ObjectId).Hex()
+			} else {
+				// get id
+				id = field.Interface().(bson.ObjectId).Hex()
 			}
 
-			// get id
-			id = field.Elem().Interface().(bson.ObjectId).Hex()
-		} else {
-			// get id
-			id = field.Interface().(bson.ObjectId).Hex()
+			// append reference id
+			ids = append(ids, jsonapi.ReferenceID{
+				ID:   id,
+				Type: attr.relType,
+				Name: attr.relName,
+			})
 		}
-
-		// append reference id
-		ids = append(ids, jsonapi.ReferenceID{
-			ID:   id,
-			Type: rel.typ,
-			Name: rel.name,
-		})
 	}
 
 	return ids
@@ -407,26 +370,26 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 		return errInvalidID
 	}
 
-	// try to find field in relationships map
-	rel, ok := b.toOneRelationships[name]
-	if !ok {
-		return errors.New("missing relationship " + name)
+	for _, attr := range b.attributes {
+		if attr.fieldType == toOneRel && attr.relName == name {
+			// get field
+			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
+
+			// create id
+			oid := bson.ObjectIdHex(id)
+
+			// check if optional
+			if attr.optional {
+				field.Set(reflect.ValueOf(&oid))
+			} else {
+				field.Set(reflect.ValueOf(oid))
+			}
+
+			return nil
+		}
 	}
 
-	// get field
-	field := reflect.ValueOf(b.parentModel).Elem().Field(rel.index)
-
-	// create id
-	oid := bson.ObjectIdHex(id)
-
-	// check if optional
-	if rel.optional {
-		field.Set(reflect.ValueOf(&oid))
-	} else {
-		field.Set(reflect.ValueOf(oid))
-	}
-
-	return nil
+	return errors.New("missing relationship " + name)
 }
 
 // TODO: Implement jsonapi.UnmarshalToManyRelations interface.
