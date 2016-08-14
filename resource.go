@@ -23,25 +23,20 @@ const (
 	Delete
 )
 
-// A Context provides useful contextual information to callbacks.
+// A Context provides useful contextual information.
 type Context struct {
-	// The action that has been called.
+	// The current action in process.
 	Action Action
 
 	// The Model that will be saved during Create or Update.
 	Model Model
 
 	// The query that will be used during FindAll, FindOne, Update or Delete.
-	//
-	// Note: On FindOne, Update and Delete, the "_id" key is already set to the
-	// document ID. On FindAll all field filters and relationship filters are
-	// also already set.
+	// On FindOne, Update and Delete, the "_id" key is preset to the document ID.
+	// On FindAll all field filters and relationship filters are preset.
 	Query bson.M
 
 	// The sorting that will be used during FindAll.
-	//
-	// Note: This list will already include allowed sorting parameters passed
-	// in the query parameters.
 	Sorting []string
 
 	// The db used to query.
@@ -50,7 +45,7 @@ type Context struct {
 	// The underlying gin.context.
 	GinContext *gin.Context
 
-	// The underlying api2go.Request
+	// The underlying api2go.Request.
 	API2GoReq *api2go.Request
 }
 

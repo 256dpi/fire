@@ -171,6 +171,8 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
+More information about filter and sorting can be found here: <http://jsonapi.org/format/#fetching-sorting>.
+
 ### To One Relationships
 
 Fields of the type `bson.ObjectId` or `*bson.ObjectId` can be marked as to one relationships using the `fire:"name:type"` struct tag:
@@ -335,6 +337,11 @@ posts := &fire.Resource{
 The Authorizer accepts a list of scopes that must have been granted to the token.
 
 - The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
+
+## Missing
+
+- Sparse Fieldsets
+- Custom AccessToken Generation
 
 ## License
 
