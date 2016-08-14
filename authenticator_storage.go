@@ -14,10 +14,10 @@ import (
 type authenticatorStorage struct {
 	authenticator *Authenticator
 
-	db                  *mgo.Database
-	ownerModel          Model
-	clientModel         Model
-	accessTokenModel    Model
+	db               *mgo.Database
+	ownerModel       Model
+	clientModel      Model
+	accessTokenModel Model
 }
 
 type authenticatorClient struct {

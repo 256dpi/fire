@@ -92,7 +92,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// add filters
 	for _, field := range r.Model.FieldsByTag("filterable") {
-		if values, ok := ctx.API2GoReq.QueryParams["filter["+ field.JSONName+"]"]; ok {
+		if values, ok := ctx.API2GoReq.QueryParams["filter["+field.JSONName+"]"]; ok {
 			ctx.Query[field.BSONName] = bson.M{"$in": values}
 		}
 	}
@@ -101,7 +101,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	if sortParam, ok := req.QueryParams["sort"]; ok {
 		for _, params := range sortParam {
 			for _, field := range r.Model.FieldsByTag("sortable") {
-				if params == field.BSONName || params == "-"+ field.BSONName {
+				if params == field.BSONName || params == "-"+field.BSONName {
 					ctx.Sorting = append(ctx.Sorting, params)
 				}
 			}

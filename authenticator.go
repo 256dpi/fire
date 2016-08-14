@@ -82,10 +82,10 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create storage
 	storage := &authenticatorStorage{
-		db:                  db,
-		ownerModel:          ownerModel,
-		clientModel:         clientModel,
-		accessTokenModel:    accessTokenModel,
+		db:               db,
+		ownerModel:       ownerModel,
+		clientModel:      clientModel,
+		accessTokenModel: accessTokenModel,
 	}
 
 	// provider config
