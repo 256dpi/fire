@@ -14,6 +14,33 @@ Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go
 
 _The framework is still WIP and the API may be changed._
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Models](#models)
+  - [Basics](#basics)
+  - [Helpers](#helpers)
+  - [Getter & Setter](#getter-&-setter)
+  - [Fields](#fields)
+  - [Validation](#validation)
+  - [Filtering & Sorting](#filtering-&-sorting)
+  - [To One Relationships](#to-one-relationships)
+  - [Has Many Relationships](#has-many-relationships)
+- [Resources](#resources)
+  - [Basics](#basics-1)
+  - [Callbacks](#callbacks)
+  - [Built-in Callbacks](#built-in-callbacks)
+- [Endpoints](#endpoints)
+- [Authenticators](#authenticators)
+  - [Scopes](#scopes)
+  - [Authorization](#authorization)
+- [Missing](#missing)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Installation
 
 Get the package using the go tool:
