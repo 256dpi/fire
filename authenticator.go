@@ -68,12 +68,12 @@ type Authenticator struct {
 	GrantStrategy   GrantStrategy
 	CompareStrategy CompareStrategy
 
-	enabledGrants   []string
+	enabledGrants []string
 
-	config          *compose.Config
-	provider        *fosite.Fosite
-	strategy        *oauth2.HMACSHAStrategy
-	storage         *authenticatorStorage
+	config   *compose.Config
+	provider *fosite.Fosite
+	strategy *oauth2.HMACSHAStrategy
+	storage  *authenticatorStorage
 }
 
 // TODO: Allow passing a custom AccessToken model.
