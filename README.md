@@ -248,7 +248,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Endpoints
 
-An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`:
+An `Endpoint` can be created by calling `fire.NewEndpoint` with a reference to a `mgo.Database`:
 
 ```go
 endpoint := fire.NewEndpoint(db)
@@ -305,12 +305,12 @@ More information about OAuth2 can be found here: <https://www.digitalocean.com/c
 
 ### Scopes
 
-The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant logic can be implemented by setting a `GrantCallback`.
+The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant strategy can be implemented by setting a `GrantStrategy`.
 
-The following callback always grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
+The following callback grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
  
 ```go
-authenticator.GrantCallback = func(req *GrantRequest) []string {
+authenticator.GrantStrategy = func(req *GrantRequest) []string {
     list := []string{"default"}
     
     if req.Owner != nil && req.Owner.(*User).Admin {

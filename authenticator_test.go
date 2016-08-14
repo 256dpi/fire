@@ -41,7 +41,7 @@ func TestPasswordGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "password", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -158,7 +158,7 @@ func TestCredentialsGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "client_credentials", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -262,7 +262,7 @@ func TestImplicitGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "implicit", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -397,7 +397,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "password", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -464,7 +464,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnablePasswordGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "password", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -531,7 +531,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "client_credentials", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -589,7 +589,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableCredentialsGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "client_credentials", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -647,7 +647,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "implicit", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
@@ -722,7 +722,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
 	authenticator.EnableImplicitGrant()
 
-	authenticator.GrantCallback = func(req *GrantRequest) []string {
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
 		assert.Equal(t, "implicit", req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)

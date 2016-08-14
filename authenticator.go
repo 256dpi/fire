@@ -16,7 +16,7 @@ import (
 // the default hash cost that is used by the token hasher
 var hashCost = bcrypt.DefaultCost
 
-// A GrantRequest is used in conjunction with the GrantCallback.
+// A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
 	GrantType       string
 	RequestedScopes []string
@@ -24,15 +24,15 @@ type GrantRequest struct {
 	Owner           Model
 }
 
-// The GrantCallback is invoked by the Authenticator with the grant type,
+// The GrantStrategy is invoked by the Authenticator with the grant type,
 // requested scopes, the client and the owner before issuing an AccessToken.
 // The callback should return a list of additional scopes that should be granted.
 //
 // Note: The Owner is not set for a client credentials grant.
-type GrantCallback func(req *GrantRequest) []string
+type GrantStrategy func(req *GrantRequest) []string
 
-// DefaultGrantCallback grants all requested scopes.
-func DefaultGrantCallback(req *GrantRequest) []string {
+// DefaultGrantStrategy grants all requested scopes.
+func DefaultGrantStrategy(req *GrantRequest) []string {
 	return req.RequestedScopes
 }
 
@@ -65,15 +65,15 @@ type AccessToken struct {
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
-	GrantCallback   GrantCallback
+	GrantStrategy   GrantStrategy
 	CompareCallback CompareCallback
 
-	enabledGrants []string
+	enabledGrants   []string
 
-	config   *compose.Config
-	provider *fosite.Fosite
-	strategy *oauth2.HMACSHAStrategy
-	storage  *authenticatorStorage
+	config          *compose.Config
+	provider        *fosite.Fosite
+	strategy        *oauth2.HMACSHAStrategy
+	storage         *authenticatorStorage
 }
 
 // TODO: Allow passing a custom AccessToken model.
@@ -112,7 +112,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create authenticator
 	a := &Authenticator{
-		GrantCallback:   DefaultGrantCallback,
+		GrantStrategy:   DefaultGrantStrategy,
 		CompareCallback: DefaultCompareCallback,
 
 		config:   config,
@@ -245,7 +245,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	ctx.Set("client", client)
 
 	// grant additional scopes if the grant callback is present
-	a.invokeGrantCallback(grantType, req, client, owner)
+	a.invokeGrantStrategy(grantType, req, client, owner)
 
 	// obtain access response
 	res, err := a.provider.NewAccessResponse(ctx, ctx.Request, req)
@@ -310,7 +310,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// grant additional scopes if the grant callback is present
-	a.invokeGrantCallback("implicit", req, client, owner)
+	a.invokeGrantStrategy("implicit", req, client, owner)
 
 	// create new session
 	session := &oauth2.HMACSession{}
@@ -330,9 +330,9 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	a.provider.WriteAuthorizeResponse(ctx.Writer, req, res)
 }
 
-func (a *Authenticator) invokeGrantCallback(grantType string, req fosite.Requester, client, owner Model) {
-	if a.GrantCallback != nil {
-		grantedScopes := a.GrantCallback(&GrantRequest{
+func (a *Authenticator) invokeGrantStrategy(grantType string, req fosite.Requester, client, owner Model) {
+	if a.GrantStrategy != nil {
+		grantedScopes := a.GrantStrategy(&GrantRequest{
 			GrantType:       grantType,
 			RequestedScopes: req.GetRequestedScopes(),
 			Client:          client,
