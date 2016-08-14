@@ -76,34 +76,6 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	Init(ownerModel)
 	Init(clientModel)
 
-	// extract attributes from owner
-	ownerIdentifiable := ownerModel.getBase().fieldsByTag("identifiable")
-	if len(ownerIdentifiable) != 1 {
-		panic("Expected to find exactly one 'identifiable' attribute on the passed owner model")
-	}
-	ownerVerifiable := ownerModel.getBase().fieldsByTag("verifiable")
-	if len(ownerVerifiable) != 1 {
-		panic("Expected to find exactly one 'verifiable' attribute on the passed owner model")
-	}
-
-	// extract attributes from client
-	clientIdentifiable := clientModel.getBase().fieldsByTag("identifiable")
-	if len(clientIdentifiable) != 1 {
-		panic("Expected to find exactly one 'identifiable' attribute on the passed client model")
-	}
-	clientVerifiable := clientModel.getBase().fieldsByTag("verifiable")
-	if len(clientVerifiable) != 1 {
-		panic("Expected to find exactly one 'verifiable' attribute on the passed client model")
-	}
-	clientGrantable := clientModel.getBase().fieldsByTag("grantable")
-	if len(clientGrantable) != 1 {
-		panic("Expected to find exactly one 'grantable' attribute on the passed client model")
-	}
-	clientCallable := clientModel.getBase().fieldsByTag("callable")
-	if len(clientCallable) != 1 {
-		panic("Expected to find exactly one 'callable' attribute on the passed client model")
-	}
-
 	// prepare access token model
 	accessTokenModel := &AccessToken{}
 	Init(accessTokenModel)
@@ -112,13 +84,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	storage := &authenticatorStorage{
 		db:                  db,
 		ownerModel:          ownerModel,
-		ownerIDAttr:         ownerIdentifiable[0],
-		ownerSecretAttr:     ownerVerifiable[0],
 		clientModel:         clientModel,
-		clientIDAttr:        clientIdentifiable[0],
-		clientSecretAttr:    clientVerifiable[0],
-		clientGrantableAttr: clientGrantable[0],
-		clientCallableAttr:  clientCallable[0],
 		accessTokenModel:    accessTokenModel,
 	}
 
