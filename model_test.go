@@ -134,7 +134,7 @@ func TestAttributeHelper(t *testing.T) {
 	assert.Equal(t, "hello", post2.Attribute("text-body"))
 	assert.Equal(t, "hello", post2.Attribute("TextBody"))
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		post1.Attribute("missing")
 	})
 }
@@ -151,11 +151,11 @@ func TestSetAttributeHelper(t *testing.T) {
 	post.SetAttribute("TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		post.SetAttribute("missing", "-")
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		post.SetAttribute("TextBody", 1)
 	})
 }
