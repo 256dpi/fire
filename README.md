@@ -37,7 +37,6 @@ _The framework is still WIP and the API may be changed._
 - [Authenticators](#authenticators)
   - [Scopes](#scopes)
   - [Authorization](#authorization)
-- [Missing](#missing)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -387,11 +386,6 @@ posts := &fire.Resource{
 The Authorizer accepts a list of scopes that must have been granted to the token.
 
 - The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
-
-## Missing
-
-- Sparse Fieldsets
-- Custom AccessToken Generation
 
 ## License
 
