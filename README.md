@@ -104,8 +104,7 @@ type Post struct {
 
 - If the collection is not explicitly set the plural name is used instead.
 - The plural name of the model is also the type for to one and has many relationships.
-
-_Note: Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name._
+- Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
 
 _Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
