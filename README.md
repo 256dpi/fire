@@ -310,10 +310,10 @@ The authenticator grants by default all requested scopes if the client satisfies
 The following callback always grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
  
 ```go
-authenticator.GrantCallback = func(grant string, scopes []string, client Model, owner Model) []string {
+authenticator.GrantCallback = func(req *GrantRequest) []string {
     list := []string{"default"}
     
-    if owner.Attribute("admin").(bool) {
+    if req.Owner != nil && req.Owner.(*User).Admin {
         list = append(list, "admin")
     }
 
