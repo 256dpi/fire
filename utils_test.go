@@ -48,7 +48,7 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
 	db := getDB()
 
 	// create new router and endpoint
-	router := gin.Default()
+	router := gin.New()
 	endpoint := NewEndpoint(db)
 
 	// add all supplied resources
