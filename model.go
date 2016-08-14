@@ -129,6 +129,8 @@ func (b *Base) SetAttribute(name string, value interface{}) {
 	panic(b.singularName + ":missing attribute " + name)
 }
 
+// TODO: ReferenceID should be handled by Attribute and SetAttribute.
+
 // ReferenceID returns the ID of a to one relationship.
 //
 // Note: ReferenceID will panic if the relationship does not exist.

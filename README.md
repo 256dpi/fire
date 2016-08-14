@@ -113,17 +113,27 @@ _Note: Ember Data requires you to use dashed names for multi-word model names li
 
 #### Getters
 
-The `ID`, `Collection`, `Attribute` and `ReferenceID` functions are short-hands to access the document id, collection name, attributes and to one relationships:
+The `ID`, `Collection` and `ReferenceID` functions are short-hands to access the document id, collection name and to one relationships:
 
 ```go
 post.ID()
 post.Collection()
-post.Attribute("title")
 comment.ReferenceID("post")
 ```
 
-- The method `Attribute` uses the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value.
-- The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id. 
+- The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id.
+ 
+#### Attributes
+
+The `Attribute` and `SetAttribute` functions can be used to get and set any attribute on the model:
+
+```go
+title := post.Attribute("title")
+post.SetAttribut("title", "New Title")
+```
+
+- Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
+- Calling `SetAttribute` with a different type than the field causes a panic.
 
 #### Validation
 
