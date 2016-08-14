@@ -110,11 +110,13 @@ func (b *Base) Attribute(name string) interface{} {
 }
 
 // ReferenceID returns the ID of a to one relationship.
+//
+// Note: ReferenceID will panic if the relationship does not exist.
 func (b *Base) ReferenceID(name string) *bson.ObjectId {
 	// try to find field in relationships map
 	rel, ok := b.toOneRelationships[name]
 	if !ok {
-		return nil
+		panic(b.singularName + ": missing to one relationship " + name)
 	}
 
 	// get field
