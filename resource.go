@@ -131,7 +131,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		Init(s.Index(i).Interface().(Model))
 	}
 
-	return &response{Data: slice}, nil
+	return &api2go.Response{Res: slice, Code: http.StatusOK}, nil
 }
 
 // FindOne implements a part of the api2go.CRUD interface.
@@ -164,7 +164,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	// initialize model
 	model := Init(obj.(Model))
 
-	return &response{Data: model}, nil
+	return &api2go.Response{Res: model, Code: http.StatusOK}, nil
 }
 
 // Create implements a part of the api2go.CRUD interface.
@@ -195,7 +195,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 		return nil, api2go.NewHTTPError(err, "error while saving resource", http.StatusInternalServerError)
 	}
 
-	return &response{Data: ctx.Model, Code: http.StatusCreated}, nil
+	return &api2go.Response{Res: ctx.Model, Code: http.StatusCreated}, nil
 }
 
 // Update implements a part of the api2go.CRUD interface.
@@ -227,7 +227,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}
 
-	return &response{Data: ctx.Model}, nil
+	return &api2go.Response{Res: ctx.Model, Code: http.StatusOK}, nil
 }
 
 // Delete implements a part of the api2go.CRUD interface.
@@ -257,7 +257,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 		return nil, api2go.NewHTTPError(err, "error while deleting resource", http.StatusInternalServerError)
 	}
 
-	return &response{Code: http.StatusNoContent}, nil
+	return &api2go.Response{Code: http.StatusNoContent}, nil
 }
 
 func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
