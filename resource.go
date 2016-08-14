@@ -92,7 +92,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// add filters
 	for _, field := range r.Model.FieldsByTag("filterable") {
-		if values, ok := ctx.API2GoReq.QueryParams["filter["+field.JSONName+"]"]; ok {
+		if values, ok := req.QueryParams["filter["+field.JSONName+"]"]; ok {
 			ctx.Query[field.BSONName] = bson.M{"$in": values}
 		}
 	}
