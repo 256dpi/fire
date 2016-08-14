@@ -258,6 +258,8 @@ fire.Combine(callback1, callback2)
 
 - Execution of combined callbacks continues until an error is returned.
 
+### Built-in Callbacks
+
 Fire ships with several built-in callbacks that implement common concerns:
 
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
