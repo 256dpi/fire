@@ -30,7 +30,7 @@ func (e *Endpoint) AddResource(resource *Resource) {
 	Init(resource.Model)
 
 	// create entry in name map
-	e.nameMap[resource.Model.getBase().pluralName] = resource.Model.getBase().singularName
+	e.nameMap[resource.Model.PluralName()] = resource.Model.SingularName()
 
 	// add resource to internal list
 	resource.endpoint = e

@@ -291,7 +291,7 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			}
 
 			// check if self referencing
-			if singularName == r.Model.getBase().singularName {
+			if singularName == r.Model.SingularName() {
 				ctx.Query["_id"] = bson.M{"$in": stringsToIDs(values)}
 			}
 

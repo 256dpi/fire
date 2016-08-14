@@ -9,8 +9,8 @@ import (
 func TestTagParsing(t *testing.T) {
 	post := Init(&Post{})
 	assert.Equal(t, "posts", post.Collection())
-	assert.Equal(t, "post", post.getBase().singularName)
-	assert.Equal(t, "posts", post.getBase().pluralName)
+	assert.Equal(t, "post", post.SingularName())
+	assert.Equal(t, "posts", post.PluralName())
 	assert.Equal(t, []Field{
 		{
 			Name:     "Title",
@@ -41,8 +41,8 @@ func TestTagParsing(t *testing.T) {
 
 	comment := Init(&Comment{})
 	assert.Equal(t, "comments", comment.Collection())
-	assert.Equal(t, "comment", comment.getBase().singularName)
-	assert.Equal(t, "comments", comment.getBase().pluralName)
+	assert.Equal(t, "comment", comment.SingularName())
+	assert.Equal(t, "comments", comment.PluralName())
 	assert.Equal(t, []Field{
 		{
 			Name:     "Message",
@@ -77,8 +77,8 @@ func TestTagParsing(t *testing.T) {
 
 	accessToken := Init(&AccessToken{})
 	assert.Equal(t, "access_tokens", accessToken.Collection())
-	assert.Equal(t, "access-token", accessToken.getBase().singularName)
-	assert.Equal(t, "access-tokens", accessToken.getBase().pluralName)
+	assert.Equal(t, "access-token", accessToken.SingularName())
+	assert.Equal(t, "access-tokens", accessToken.PluralName())
 	assert.Equal(t, []Field{
 		{
 			Name:     "Type",
@@ -127,8 +127,8 @@ func TestTagParsing(t *testing.T) {
 }
 
 func TestIDHelper(t *testing.T) {
-	post := Init(&Post{})
-	assert.Equal(t, post.getBase().DocID, post.ID())
+	post := Init(&Post{}).(*Post)
+	assert.Equal(t, post.DocID, post.ID())
 }
 
 func TestGetHelper(t *testing.T) {

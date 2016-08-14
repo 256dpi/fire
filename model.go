@@ -13,6 +13,8 @@ import (
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
+	SingularName() string
+	PluralName() string
 	Collection() string
 
 	Fields() []Field
@@ -23,7 +25,6 @@ type Model interface {
 	Set(string, interface{})
 	Validate(bool) error
 
-	getBase() *Base
 	initialize(interface{})
 }
 
@@ -71,20 +72,19 @@ type Base struct {
 	fields       []Field
 }
 
-func (b *Base) initialize(model interface{}) {
-	b.parentModel = model
-
-	// set id if missing
-	if !b.DocID.Valid() {
-		b.DocID = bson.NewObjectId()
-	}
-
-	b.parseTags()
-}
-
 // ID returns the models id.
 func (b *Base) ID() bson.ObjectId {
 	return b.DocID
+}
+
+// SingularName returns the singular name of the model.
+func (b *Base) SingularName() string {
+	return b.singularName
+}
+
+// PluralName returns the plural name of the model.
+func (b *Base) PluralName() string {
+	return b.pluralName
 }
 
 // Collection returns the models collection.
@@ -176,11 +176,14 @@ func (b *Base) Validate(fresh bool) error {
 	return nil
 }
 
-func (b *Base) getBase() *Base {
-	return b
-}
+func (b *Base) initialize(model interface{}) {
+	b.parentModel = model
 
-func (b *Base) parseTags() {
+	// set id if missing
+	if !b.DocID.Valid() {
+		b.DocID = bson.NewObjectId()
+	}
+
 	// check if tags already have been parsed
 	if len(b.singularName) > 0 {
 		return

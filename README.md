@@ -111,17 +111,16 @@ _Note: Fire will use the `bson` struct tag to automatically infer the database f
 
 _Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
-#### Getters
+#### Helpers
 
-The `ID`, `Collection` and `ReferenceID` functions are short-hands to access the document id, collection name and to one relationships:
+The `ID`, `SingularName`, `PluralName` `Collection` functions are helper methods to access the document id, singular name, plural name and collection of a model:
 
 ```go
 post.ID()
+post.SingularName()
+post.PluralName()
 post.Collection()
-comment.ReferenceID("post")
 ```
-
-- The method `ReferenceID` uses the relationship name (e.g. `parent` or `post`) to find the id.
  
 #### Fields
 
