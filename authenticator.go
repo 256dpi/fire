@@ -210,18 +210,18 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	session := &oauth2.HMACSession{}
 
 	// prepare optional owner
-	var ownerModel Model
+	var owner Model
 
 	// retrieve owner
 	if ctx.Request.FormValue("grant_type") == "password" {
-		ownerModel, err = a.storage.getOwner(ctx.Request.FormValue("username"))
+		owner, err = a.storage.getOwner(ctx.Request.FormValue("username"))
 		if err != nil {
 			a.provider.WriteAccessError(ctx.Writer, nil, err)
 			return
 		}
 
 		// assign owner to context
-		ctx.Set("owner", ownerModel)
+		ctx.Set("owner", owner)
 	}
 
 	// obtain access request
@@ -239,13 +239,13 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	grantType := req.GetGrantTypes()[0]
 
 	// retrieve client
-	clientModel := req.GetClient().(*authenticatorClient).model
+	client := req.GetClient().(*authenticatorClient).model
 
 	// set client
-	ctx.Set("client", clientModel)
+	ctx.Set("client", client)
 
 	// grant additional scopes if the grant callback is present
-	a.invokeGrantCallback(grantType, req, clientModel, ownerModel)
+	a.invokeGrantCallback(grantType, req, client, owner)
 
 	// obtain access response
 	res, err := a.provider.NewAccessResponse(ctx, ctx.Request, req)
@@ -279,14 +279,14 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	password := ctx.Request.FormValue("password")
 
 	// retrieve owner
-	ownerModel, err := a.storage.getOwner(username)
+	owner, err := a.storage.getOwner(username)
 	if err != nil {
 		a.provider.WriteAuthorizeError(ctx.Writer, req, fosite.ErrAccessDenied)
 		return
 	}
 
 	// assign owner to context
-	ctx.Set("owner", ownerModel)
+	ctx.Set("owner", owner)
 
 	// authenticate user
 	err = a.storage.Authenticate(ctx, username, password)
@@ -296,10 +296,10 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// retrieve client
-	clientModel := req.GetClient().(*authenticatorClient).model
+	client := req.GetClient().(*authenticatorClient).model
 
 	// set client
-	ctx.Set("client", clientModel)
+	ctx.Set("client", client)
 
 	// check if client has all scopes
 	for _, scope := range req.GetRequestedScopes() {
@@ -310,7 +310,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// grant additional scopes if the grant callback is present
-	a.invokeGrantCallback("implicit", req, clientModel, ownerModel)
+	a.invokeGrantCallback("implicit", req, client, owner)
 
 	// create new session
 	session := &oauth2.HMACSession{}
