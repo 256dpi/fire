@@ -171,7 +171,7 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
-More information about filter and sorting can be found here: <http://jsonapi.org/format/#fetching-sorting>.
+More information about filtering and sorting can be found here: <http://jsonapi.org/format/#fetching-sorting>.
 
 ### To One Relationships
 
@@ -186,7 +186,7 @@ type Comment struct {
 ```
 
 - Fields of the type `*bson.ObjectId` are treated as optional relationships
-- To one relationships can also have additional tags.
+- To one relationships can also have additional tags following the special relationship tag.
 
 _Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
@@ -206,7 +206,7 @@ Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they
 
 ## Resources
 
-This section describes the construction of fire resources that provide access to models.
+This section describes the construction of fire resources that expose the models as JSON APIs.
 
 ### Basics
 
@@ -220,7 +220,7 @@ posts := &fire.Resource{
 
 ### Callbacks
 
-Fire allows the definition of two callbacks.
+Fire allows the definition of two callbacks that are called while processing the requests:
 
 ```go
 posts := &fire.Resource{
@@ -236,11 +236,27 @@ posts := &fire.Resource{
 
 The `Authorizer` is run after inferring all available data from the request and is therefore perfectly suited to do a general user authentication. The `Validator` is only run before creating, updating or deleting a model and is ideal to protect resources from certain actions.
 
+Errors returned by the callback are serialize to an JSON API compliant error object and yield an 401 (Unauthorized) status code from an Authorizer and a 400 (Bad Request) status code from a Validator.
+
+If errors are marked as fatal a 500 (Internal Server Error) status code is returned without serializing the error to protect eventual private information:
+
+```go
+func(ctx *fire.Context) error {
+    // ...
+    if err != nil {
+        return fire.Fatal(err)
+    }
+    // ...
+}
+```
+
 Multiple callbacks can be combined using `fire.Combine`:
 
 ```go
 fire.Combine(callback1, callback2)
 ```
+
+- Execution of combined callbacks continues until an error is returned.
 
 Fire ships with several built-in callbacks that implement common concerns:
 
