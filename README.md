@@ -87,13 +87,11 @@ PATCH  /comments/:id
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
 
-## API
-
-### Models
+## Models
 
 This section describes the configuration of fire models using the right combination of struct tags.
 
-#### Basics
+### Basics
 
 The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name and collection via the `fire:"singular:plural[:collection]"` struct tag:
 
@@ -111,7 +109,7 @@ _Note: Fire will use the `bson` struct tag to automatically infer the database f
 
 _Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
-#### Helpers
+### Helpers
 
 The `ID`, `SingularName`, `PluralName` `Collection` functions are helper methods to access the document id, singular name, plural name and collection of a model:
 
@@ -122,7 +120,7 @@ post.PluralName()
 post.Collection()
 ```
  
-#### Getter & Setter
+### Getter & Setter
 
 The `Get` and `Set` functions can be used to get and set any field on the model:
 
@@ -134,7 +132,7 @@ post.Set("title", "New Title")
 - Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
 - Calling `Set` with a different type than the field causes a panic.
 
-#### Fields
+### Fields
 
 The fields of a model can be queried using the following methods:
 
@@ -146,7 +144,7 @@ post.FieldWithTag()
 
 More information about the `Field` type can be found here: <https://godoc.org/github.com/256dpi/fire#Field>. 
 
-#### Validation
+### Validation
 
 The `Validate` method can be overridden per model to implement custom validations:
 
@@ -160,7 +158,7 @@ func (p *Post) Validate(fresh bool) error {
 
 - The argument `fresh` indicates if the model has been just created.
 
-#### Filtering & Sorting
+### Filtering & Sorting
 
 Fields can be annotated with the `fire:"filterable"` struct tag to allow filtering and with the `fire:"sortable"` struct tag to allow sorting:
 
@@ -174,7 +172,7 @@ type Post struct {
 
 Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
 
-#### To One Relationships
+### To One Relationships
 
 Fields of the type `bson.ObjectId` or `*bson.ObjectId` can be marked as to one relationships using the `fire:"name:type"` struct tag:
 
@@ -191,7 +189,7 @@ type Comment struct {
 
 _Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
-#### Has Many Relationships
+### Has Many Relationships
 
 Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type"` struct tag:
 
@@ -205,11 +203,11 @@ type Post struct {
 
 Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
-### Resources
+## Resources
 
 This section describes the construction of fire resources that provide access to models.
 
-#### Basics
+### Basics
 
 Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model`:
 
@@ -219,7 +217,7 @@ posts := &fire.Resource{
 }
 ```
 
-#### Callbacks
+### Callbacks
 
 Fire allows the definition of two callbacks.
 
@@ -249,7 +247,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
 - [MatchingReferencesValidator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)
 
-### Endpoints
+## Endpoints
 
 An `Endpoint` can be creating by calling `fire.NewEndpoint` with a reference to a `mgo.Database`:
 
@@ -266,7 +264,7 @@ endpoint.Register("api", router)
 
 Resources can be added with `AddResource` before the routes are registered using `Register` on a gin router.
 
-### Authenticators
+## Authenticators
 
 An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a `mgo.Database`, a client model, a owner model and a secret:
 
@@ -306,7 +304,7 @@ After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordG
 
 More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
 
-#### Scopes
+### Scopes
 
 The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant logic can be implemented by setting a `GrantCallback`.
 
@@ -324,7 +322,7 @@ authenticator.GrantCallback = func(grant string, scopes []string, client Model, 
 }
 ```
 
-#### Authorization
+### Authorization
 
 Later on you can use the authenticator to authorize access to your resources:
 
