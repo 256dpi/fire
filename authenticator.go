@@ -36,14 +36,14 @@ func DefaultGrantStrategy(req *GrantRequest) []string {
 	return req.RequestedScopes
 }
 
-// The CompareCallback is invoked by the Authenticator with the stored password
+// The CompareStrategy is invoked by the Authenticator with the stored password
 // hash and submitted password of a owner. The callback is responsible for
 // comparing the submitted password with the stored hash and should return an
 // error if they do not match.
-type CompareCallback func(hash, password []byte) error
+type CompareStrategy func(hash, password []byte) error
 
-// DefaultCompareCallback uses bcrypt to compare the hash and the password.
-func DefaultCompareCallback(hash, password []byte) error {
+// DefaultCompareStrategy uses bcrypt to compare the hash and the password.
+func DefaultCompareStrategy(hash, password []byte) error {
 	return bcrypt.CompareHashAndPassword(hash, password)
 }
 
@@ -66,7 +66,7 @@ type AccessToken struct {
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
 	GrantStrategy   GrantStrategy
-	CompareCallback CompareCallback
+	CompareStrategy CompareStrategy
 
 	enabledGrants   []string
 
@@ -113,7 +113,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	// create authenticator
 	a := &Authenticator{
 		GrantStrategy:   DefaultGrantStrategy,
-		CompareCallback: DefaultCompareCallback,
+		CompareStrategy: DefaultCompareStrategy,
 
 		config:   config,
 		provider: provider.(*fosite.Fosite),

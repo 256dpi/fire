@@ -152,7 +152,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	ownerSecretField := s.ownerModel.FieldWithTag("verifiable")
 
 	// check secret
-	err := s.authenticator.CompareCallback(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
+	err := s.authenticator.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
