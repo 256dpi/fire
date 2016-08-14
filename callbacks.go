@@ -14,6 +14,9 @@ import (
 // are serialized to an error object and returned.
 type Callback func(*Context) error
 
+// SM is a general purpose string map.
+type SM map[string]string
+
 type fatalError struct {
 	err error
 }
@@ -35,6 +38,8 @@ func isFatal(err error) bool {
 }
 
 // Combine combines multiple callbacks to one.
+//
+// Note: Execution will be stopped if a callback returns and error.
 func Combine(callbacks ...Callback) Callback {
 	return func(ctx *Context) error {
 		// call all callbacks
