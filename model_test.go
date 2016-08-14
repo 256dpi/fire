@@ -139,6 +139,27 @@ func TestAttributeHelper(t *testing.T) {
 	})
 }
 
+func TestSetAttributeHelper(t *testing.T) {
+	post := Init(&Post{}).(*Post)
+
+	post.SetAttribute("text_body", "1")
+	assert.Equal(t, "1", post.TextBody)
+
+	post.SetAttribute("text-body", "2")
+	assert.Equal(t, "2", post.TextBody)
+
+	post.SetAttribute("TextBody", "3")
+	assert.Equal(t, "3", post.TextBody)
+
+	assert.Panics(t, func(){
+		post.SetAttribute("missing", "-")
+	})
+
+	assert.Panics(t, func(){
+		post.SetAttribute("TextBody", 1)
+	})
+}
+
 func TestReferenceIDHelper(t *testing.T) {
 	comment1 := Init(&Comment{})
 	assert.Equal(t, comment1.(*Comment).Parent, comment1.ReferenceID("parent"))

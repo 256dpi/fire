@@ -15,6 +15,7 @@ type Model interface {
 	ID() bson.ObjectId
 	Collection() string
 	Attribute(string) interface{}
+	SetAttribute(string, interface{})
 	ReferenceID(string) *bson.ObjectId
 	Validate(bool) error
 
@@ -108,6 +109,24 @@ func (b *Base) Attribute(name string) interface{} {
 	}
 
 	panic(b.singularName + ": missing attribute " + name)
+}
+
+// SetAttribute will set given attribute to the the passed valued.
+//
+// Note: SetAttribute will set the first attribute that has a matching JSON,
+// BSON or struct field name and will panic if none has been found. The method
+// will also panic if the type of the attribute and the passed value do not match.
+func (b *Base) SetAttribute(name string, value interface{}) {
+	// try to find attribute in map
+	for _, attr := range b.attributes {
+		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
+			// set the value on model struct
+			reflect.ValueOf(b.parentModel).Elem().Field(attr.index).Set(reflect.ValueOf(value))
+			return
+		}
+	}
+
+	panic(b.singularName + ":missing attribute " + name)
 }
 
 // ReferenceID returns the ID of a to one relationship.
