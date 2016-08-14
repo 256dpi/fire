@@ -176,6 +176,8 @@ func (b *Base) Validate(fresh bool) error {
 	return nil
 }
 
+// TODO: Speedup parsing by caching meta data.
+
 func (b *Base) initialize(model interface{}) {
 	b.parentModel = model
 

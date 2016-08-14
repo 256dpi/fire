@@ -122,7 +122,7 @@ post.PluralName()
 post.Collection()
 ```
  
-#### Fields
+#### Getter & Setter
 
 The `Get` and `Set` functions can be used to get and set any field on the model:
 
@@ -133,6 +133,18 @@ post.Set("title", "New Title")
 
 - Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
 - Calling `Set` with a different type than the field causes a panic.
+
+#### Fields
+
+The fields of a model can be queried using the following methods:
+
+```go
+post.Fields()
+post.FieldsByTag()
+post.FieldWithTag()
+```
+
+More information about the `Field` type can be found here: <https://godoc.org/github.com/256dpi/fire#Field>. 
 
 #### Validation
 
