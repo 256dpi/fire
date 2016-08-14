@@ -10,6 +10,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// TODO: Is it really a model?
+
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
@@ -42,26 +44,19 @@ var supportedTags = []string{
 	"callable",
 }
 
-type fieldType int
+// A Field contains the meta information about a single field of a model.
+type Field struct {
+	Name     string
+	JSONName string
+	BSONName string
+	Optional bool
+	Tags     []string
+	ToOne    bool
+	HasMany  bool
+	RelName  string
+	RelType  string
 
-const (
-	attr fieldType = iota
-	toOneRel
-	hasManyRel
-)
-
-// TODO: Rename attribute to field?
-
-type attribute struct {
-	fieldType fieldType
-	optional  bool
-	fieldName string
-	jsonName  string
-	bsonName  string
-	tags      []string
-	relName   string
-	relType   string
-	index     int
+	index int
 }
 
 // Base is the base for every fire model.
@@ -72,7 +67,7 @@ type Base struct {
 	singularName string
 	pluralName   string
 	collection   string
-	attributes   map[string]attribute
+	fields       []Field
 }
 
 func (b *Base) initialize(model interface{}) {
@@ -102,8 +97,8 @@ func (b *Base) Collection() string {
 // BSON or struct field name and will panic if no attribute can be found.
 func (b *Base) Attribute(name string) interface{} {
 	// try to find attribute in map
-	for _, attr := range b.attributes {
-		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
+	for _, attr := range b.fields {
+		if attr.JSONName == name || attr.BSONName == name || attr.Name == name {
 			// read value from model struct
 			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
 			return field.Interface()
@@ -120,8 +115,8 @@ func (b *Base) Attribute(name string) interface{} {
 // will also panic if the type of the attribute and the passed value do not match.
 func (b *Base) SetAttribute(name string, value interface{}) {
 	// try to find attribute in map
-	for _, attr := range b.attributes {
-		if attr.jsonName == name || attr.bsonName == name || attr.fieldName == name {
+	for _, attr := range b.fields {
+		if attr.JSONName == name || attr.BSONName == name || attr.Name == name {
 			// set the value on model struct
 			reflect.ValueOf(b.parentModel).Elem().Field(attr.index).Set(reflect.ValueOf(value))
 			return
@@ -159,9 +154,6 @@ func (b *Base) parseTags() {
 	if len(b.singularName) > 0 {
 		return
 	}
-
-	// prepare attributes
-	b.attributes = make(map[string]attribute)
 
 	// get types
 	baseType := reflect.TypeOf(b).Elem()
@@ -204,13 +196,12 @@ func (b *Base) parseTags() {
 		}
 
 		// prepare attribute
-		attr := attribute{
-			fieldType: attr,
-			optional:  field.Type.Kind() == reflect.Ptr,
-			jsonName:  getJSONFieldName(&field),
-			bsonName:  getBSONFieldName(&field),
-			fieldName: field.Name,
-			index:     i,
+		attr := Field{
+			Optional: field.Type.Kind() == reflect.Ptr,
+			JSONName: getJSONFieldName(&field),
+			BSONName: getBSONFieldName(&field),
+			Name:     field.Name,
+			index:    i,
 		}
 
 		// check if field is a valid to one relationship
@@ -224,9 +215,9 @@ func (b *Base) parseTags() {
 				toOneTag := strings.Split(fireTags[0], ":")
 
 				// set attributes
-				attr.fieldType = toOneRel
-				attr.relName = toOneTag[0]
-				attr.relType = toOneTag[1]
+				attr.ToOne = true
+				attr.RelName = toOneTag[0]
+				attr.RelType = toOneTag[1]
 
 				// remove tag
 				fireTags = fireTags[1:]
@@ -243,9 +234,9 @@ func (b *Base) parseTags() {
 			hasManyTag := strings.Split(fireTags[0], ":")
 
 			// set attributes
-			attr.fieldType = hasManyRel
-			attr.relName = hasManyTag[0]
-			attr.relType = hasManyTag[1]
+			attr.HasMany = true
+			attr.RelName = hasManyTag[0]
+			attr.RelType = hasManyTag[1]
 
 			// remove tag
 			fireTags = fireTags[1:]
@@ -254,23 +245,23 @@ func (b *Base) parseTags() {
 		// add comma separated tags
 		for _, tag := range fireTags {
 			if stringInList(supportedTags, tag) {
-				attr.tags = append(attr.tags, tag)
+				attr.Tags = append(attr.Tags, tag)
 			} else {
 				panic("unexpected tag: " + tag)
 			}
 		}
 
 		// add attribute
-		b.attributes[field.Name] = attr
+		b.fields = append(b.fields, attr)
 	}
 }
 
-func (b *Base) attributesByTag(tag string) []attribute {
-	var list []attribute
+func (b *Base) attributesByTag(tag string) []Field {
+	var list []Field
 
 	// find identifiable and verifiable attributes
-	for _, attr := range b.attributes {
-		if stringInList(attr.tags, tag) {
+	for _, attr := range b.fields {
+		if stringInList(attr.Tags, tag) {
 			list = append(list, attr)
 		}
 	}
@@ -311,11 +302,11 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	var refs []jsonapi.Reference
 
 	// add to one and has many relationships
-	for _, attr := range b.attributes {
-		if attr.fieldType == toOneRel || attr.fieldType == hasManyRel {
+	for _, attr := range b.fields {
+		if attr.ToOne || attr.HasMany {
 			refs = append(refs, jsonapi.Reference{
-				Type:        attr.relType,
-				Name:        attr.relName,
+				Type:        attr.RelType,
+				Name:        attr.RelName,
 				IsNotLoaded: true,
 			})
 		}
@@ -330,15 +321,15 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	var ids []jsonapi.ReferenceID
 
 	// add to one relationships
-	for _, attr := range b.attributes {
-		if attr.fieldType == toOneRel {
+	for _, attr := range b.fields {
+		if attr.ToOne {
 			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
 
 			// prepare id
 			var id string
 
 			// check if field is optional
-			if attr.optional {
+			if attr.Optional {
 				// continue if id is not set
 				if field.IsNil() {
 					continue
@@ -354,8 +345,8 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 			// append reference id
 			ids = append(ids, jsonapi.ReferenceID{
 				ID:   id,
-				Type: attr.relType,
-				Name: attr.relName,
+				Type: attr.RelType,
+				Name: attr.RelName,
 			})
 		}
 	}
@@ -370,8 +361,8 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 		return errInvalidID
 	}
 
-	for _, attr := range b.attributes {
-		if attr.fieldType == toOneRel && attr.relName == name {
+	for _, attr := range b.fields {
+		if attr.ToOne && attr.RelName == name {
 			// get field
 			field := reflect.ValueOf(b.parentModel).Elem().Field(attr.index)
 
@@ -379,7 +370,7 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 			oid := bson.ObjectIdHex(id)
 
 			// check if optional
-			if attr.optional {
+			if attr.Optional {
 				field.Set(reflect.ValueOf(&oid))
 			} else {
 				field.Set(reflect.ValueOf(oid))

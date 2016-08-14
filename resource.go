@@ -92,8 +92,8 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// add filters
 	for _, attr := range r.Model.getBase().attributesByTag("filterable") {
-		if values, ok := ctx.API2GoReq.QueryParams["filter["+attr.jsonName+"]"]; ok {
-			ctx.Query[attr.bsonName] = bson.M{"$in": values}
+		if values, ok := ctx.API2GoReq.QueryParams["filter["+attr.JSONName+"]"]; ok {
+			ctx.Query[attr.BSONName] = bson.M{"$in": values}
 		}
 	}
 
@@ -101,7 +101,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	if fields, ok := req.QueryParams["sort"]; ok {
 		for _, field := range fields {
 			for _, attr := range r.Model.getBase().attributesByTag("sortable") {
-				if field == attr.bsonName || field == "-"+attr.bsonName {
+				if field == attr.BSONName || field == "-"+attr.BSONName {
 					ctx.Sorting = append(ctx.Sorting, field)
 				}
 			}
@@ -296,9 +296,9 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			}
 
 			// add to one relationship filters
-			for _, attr := range r.Model.getBase().attributes {
-				if attr.fieldType == toOneRel && attr.relName == singularName {
-					ctx.Query[attr.bsonName] = bson.M{"$in": stringsToIDs(values)}
+			for _, attr := range r.Model.getBase().fields {
+				if attr.ToOne && attr.RelName == singularName {
+					ctx.Query[attr.BSONName] = bson.M{"$in": stringsToIDs(values)}
 				}
 			}
 		}

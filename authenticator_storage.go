@@ -16,13 +16,13 @@ type authenticatorStorage struct {
 
 	db                  *mgo.Database
 	ownerModel          Model
-	ownerIDAttr         attribute
-	ownerSecretAttr     attribute
+	ownerIDAttr         Field
+	ownerSecretAttr     Field
 	clientModel         Model
-	clientIDAttr        attribute
-	clientSecretAttr    attribute
-	clientGrantableAttr attribute
-	clientCallableAttr  attribute
+	clientIDAttr        Field
+	clientSecretAttr    Field
+	clientGrantableAttr Field
+	clientCallableAttr  Field
 	accessTokenModel    Model
 }
 
@@ -37,7 +37,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 
 	// query db
 	err := s.db.C(s.clientModel.Collection()).Find(bson.M{
-		s.clientIDAttr.bsonName: id,
+		s.clientIDAttr.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidClient
@@ -51,11 +51,11 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        client.Attribute(s.clientSecretAttr.fieldName).([]byte),
+			Secret:        client.Attribute(s.clientSecretAttr.Name).([]byte),
 			GrantTypes:    s.authenticator.enabledGrants,
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  client.Attribute(s.clientCallableAttr.fieldName).([]string),
-			Scopes:        client.Attribute(s.clientGrantableAttr.fieldName).([]string),
+			RedirectURIs:  client.Attribute(s.clientCallableAttr.Name).([]string),
+			Scopes:        client.Attribute(s.clientGrantableAttr.Name).([]string),
 		},
 		model: client,
 	}, nil
@@ -149,7 +149,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// check secret
-	err := s.authenticator.CompareCallback(model.Attribute(s.ownerSecretAttr.fieldName).([]byte), []byte(secret))
+	err := s.authenticator.CompareCallback(model.Attribute(s.ownerSecretAttr.Name).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
@@ -163,7 +163,7 @@ func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 
 	// query db
 	err := s.db.C(s.ownerModel.Collection()).Find(bson.M{
-		s.ownerIDAttr.bsonName: id,
+		s.ownerIDAttr.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidRequest
