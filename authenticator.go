@@ -67,18 +67,19 @@ type AccessToken struct {
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
-	GrantStrategy   GrantStrategy
-	CompareStrategy CompareStrategy
+	GrantStrategy    GrantStrategy
+	CompareStrategy  CompareStrategy
+	OwnerModel       Model
+	ClientModel      Model
+	AccessTokenModel Model
 
+	db            *mgo.Database
+	config        *compose.Config
+	provider      *fosite.Fosite
+	strategy      *oauth2.HMACSHAStrategy
+	storage       *authenticatorStorage
 	enabledGrants []string
-
-	config   *compose.Config
-	provider *fosite.Fosite
-	strategy *oauth2.HMACSHAStrategy
-	storage  *authenticatorStorage
 }
-
-// TODO: Allow passing a custom AccessToken model.
 
 // NewAuthenticator creates and returns a new Authenticator.
 func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
@@ -91,12 +92,7 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	Init(accessTokenModel)
 
 	// create storage
-	storage := &authenticatorStorage{
-		db:               db,
-		ownerModel:       ownerModel,
-		clientModel:      clientModel,
-		accessTokenModel: accessTokenModel,
-	}
+	storage := &authenticatorStorage{}
 
 	// provider config
 	config := &compose.Config{
@@ -114,9 +110,13 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create authenticator
 	a := &Authenticator{
-		GrantStrategy:   DefaultGrantStrategy,
-		CompareStrategy: DefaultCompareStrategy,
+		GrantStrategy:    DefaultGrantStrategy,
+		CompareStrategy:  DefaultCompareStrategy,
+		OwnerModel:       ownerModel,
+		ClientModel:      clientModel,
+		AccessTokenModel: accessTokenModel,
 
+		db:       db,
 		config:   config,
 		provider: provider.(*fosite.Fosite),
 		strategy: strategy,
@@ -359,11 +359,6 @@ func (a *Authenticator) isFatalError(err error) bool {
 
 type authenticatorStorage struct {
 	authenticator *Authenticator
-
-	db               *mgo.Database
-	ownerModel       Model
-	clientModel      Model
-	accessTokenModel Model
 }
 
 type authenticatorClient struct {
@@ -373,16 +368,16 @@ type authenticatorClient struct {
 
 func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
-	obj := newStructPointer(s.clientModel)
+	obj := newStructPointer(s.authenticator.ClientModel)
 
 	// read fields
-	clientIDField := s.clientModel.FieldWithTag("identifiable")
-	clientSecretField := s.clientModel.FieldWithTag("verifiable")
-	clientCallableField := s.clientModel.FieldWithTag("callable")
-	clientGrantableField := s.clientModel.FieldWithTag("grantable")
+	clientIDField := s.authenticator.ClientModel.FieldWithTag("identifiable")
+	clientSecretField := s.authenticator.ClientModel.FieldWithTag("verifiable")
+	clientCallableField := s.authenticator.ClientModel.FieldWithTag("callable")
+	clientGrantableField := s.authenticator.ClientModel.FieldWithTag("grantable")
 
 	// query db
-	err := s.db.C(s.clientModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.ClientModel.Collection()).Find(bson.M{
 		clientIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -428,7 +423,7 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	}
 
 	// prepare access token
-	accessToken := Init(newStructPointer(s.accessTokenModel).(Model))
+	accessToken := Init(newStructPointer(s.authenticator.AccessTokenModel).(Model))
 
 	// create access token
 	accessToken.Set("Type", "access_token")
@@ -439,15 +434,15 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	accessToken.Set("OwnerID", ownerID)
 
 	// save access token
-	return s.db.C(accessToken.Collection()).Insert(accessToken)
+	return s.authenticator.db.C(accessToken.Collection()).Insert(accessToken)
 }
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
 	// prepare object
-	obj := newStructPointer(s.accessTokenModel)
+	obj := newStructPointer(s.authenticator.AccessTokenModel)
 
 	// fetch access token
-	err := s.db.C(s.accessTokenModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.AccessTokenModel.Collection()).Find(bson.M{
 		"type":      "access_token",
 		"signature": signature,
 	}).One(obj)
@@ -495,7 +490,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// get secret field
-	ownerSecretField := s.ownerModel.FieldWithTag("verifiable")
+	ownerSecretField := s.authenticator.OwnerModel.FieldWithTag("verifiable")
 
 	// check secret
 	err := s.authenticator.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
@@ -508,13 +503,13 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 
 func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	// prepare object
-	obj := newStructPointer(s.ownerModel)
+	obj := newStructPointer(s.authenticator.OwnerModel)
 
 	// get id field
-	ownerIDField := s.ownerModel.FieldWithTag("identifiable")
+	ownerIDField := s.authenticator.OwnerModel.FieldWithTag("identifiable")
 
 	// query db
-	err := s.db.C(s.ownerModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.OwnerModel.Collection()).Find(bson.M{
 		ownerIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
