@@ -37,7 +37,7 @@ func TestTagParsing(t *testing.T) {
 			RelType:  "comments",
 			index:    3,
 		},
-	}, post.getBase().fields)
+	}, post.Fields())
 
 	comment := Init(&Comment{})
 	assert.Equal(t, "comments", comment.Collection())
@@ -73,7 +73,7 @@ func TestTagParsing(t *testing.T) {
 			RelType:  "posts",
 			index:    3,
 		},
-	}, comment.getBase().fields)
+	}, comment.Fields())
 
 	accessToken := Init(&AccessToken{})
 	assert.Equal(t, "access_tokens", accessToken.Collection())
@@ -123,7 +123,7 @@ func TestTagParsing(t *testing.T) {
 			Tags:     []string{"filterable", "sortable"},
 			index:    6,
 		},
-	}, accessToken.getBase().fields)
+	}, accessToken.Fields())
 }
 
 func TestIDHelper(t *testing.T) {

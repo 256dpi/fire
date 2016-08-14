@@ -14,6 +14,11 @@ import (
 type Model interface {
 	ID() bson.ObjectId
 	Collection() string
+
+	Fields() []Field
+	FieldsByTag(string) []Field
+	FieldWithTag(string) Field
+
 	Get(string) interface{}
 	Set(string, interface{})
 	Validate(bool) error
@@ -85,6 +90,38 @@ func (b *Base) ID() bson.ObjectId {
 // Collection returns the models collection.
 func (b *Base) Collection() string {
 	return b.collection
+}
+
+// Fields returns the models fields.
+func (b *Base) Fields() []Field {
+	return b.fields
+}
+
+// FieldsByTag returns all fields that contain the passed tag.
+func (b *Base) FieldsByTag(tag string) []Field {
+	var list []Field
+
+	// find matching fields
+	for _, field := range b.fields {
+		if stringInList(field.Tags, tag) {
+			list = append(list, field)
+		}
+	}
+
+	return list
+}
+
+// FieldWithTag returns the first field that matches the passed tag.
+//
+// Note: This method panics if no field can be found.
+func (b *Base) FieldWithTag(tag string) Field {
+	for _, field := range b.fields {
+		if stringInList(field.Tags, tag) {
+			return field
+		}
+	}
+
+	panic("Expected to find a field with the tag " + tag)
 }
 
 // Get returns the value of the given field.
@@ -248,19 +285,6 @@ func (b *Base) parseTags() {
 		// add field
 		b.fields = append(b.fields, field)
 	}
-}
-
-func (b *Base) fieldsByTag(tag string) []Field {
-	var list []Field
-
-	// find matching fields
-	for _, field := range b.fields {
-		if stringInList(field.Tags, tag) {
-			list = append(list, field)
-		}
-	}
-
-	return list
 }
 
 /* api2go.jsonapi interface */
