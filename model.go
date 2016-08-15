@@ -3,18 +3,11 @@ package fire
 import (
 	"errors"
 	"reflect"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/manyminds/api2go/jsonapi"
 	"gopkg.in/mgo.v2/bson"
 )
-
-var metaCache map[string]*Meta
-
-func init() {
-	metaCache = make(map[string]*Meta)
-}
 
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
@@ -24,75 +17,13 @@ type Model interface {
 	Validate(bool) error
 	Meta() *Meta
 
-	initialize(interface{})
+	initialize(Model)
 }
 
 // Init initializes the internals of a model and should be called first.
 func Init(model Model) Model {
 	model.initialize(model)
 	return model
-}
-
-// The HasMany type denotes a has many relationship in a model declaration.
-type HasMany struct{}
-
-var supportedTags = []string{
-	"filterable",
-	"sortable",
-	"identifiable",
-	"verifiable",
-	"grantable",
-	"callable",
-}
-
-// A Field contains the meta information about a single field of a model.
-type Field struct {
-	Name     string
-	JSONName string
-	BSONName string
-	Optional bool
-	Tags     []string
-	ToOne    bool
-	HasMany  bool
-	RelName  string
-	RelType  string
-
-	index int
-}
-
-// Meta stores extracted meta data from a model.
-type Meta struct {
-	SingularName string
-	PluralName   string
-	Collection   string
-	Fields       []Field
-}
-
-// FieldsByTag returns all fields that contain the passed tag.
-func (m *Meta) FieldsByTag(tag string) []Field {
-	var list []Field
-
-	// find matching fields
-	for _, field := range m.Fields {
-		if stringInList(field.Tags, tag) {
-			list = append(list, field)
-		}
-	}
-
-	return list
-}
-
-// FieldWithTag returns the first field that matches the passed tag.
-//
-// Note: This method panics if no field can be found.
-func (m *Meta) FieldWithTag(tag string) Field {
-	for _, field := range m.Fields {
-		if stringInList(field.Tags, tag) {
-			return field
-		}
-	}
-
-	panic("Expected to find a field with the tag " + tag)
 }
 
 // Base is the base for every fire model.
@@ -165,7 +96,7 @@ func (b *Base) Meta() *Meta {
 	return b.meta
 }
 
-func (b *Base) initialize(model interface{}) {
+func (b *Base) initialize(model Model) {
 	b.model = model
 
 	// set id if missing
@@ -173,129 +104,8 @@ func (b *Base) initialize(model interface{}) {
 		b.DocID = bson.NewObjectId()
 	}
 
-	// return if tags already have been parsed
-	if b.meta != nil {
-		return
-	}
-
-	// read model name
-	modelName := reflect.TypeOf(model).String()
-
-	// check if meta has already been cached
-	modelMeta, ok := metaCache[modelName]
-	if ok {
-		b.meta = modelMeta
-		return
-	}
-
-	// create new meta
-	modelMeta = &Meta{}
-
-	// get types
-	baseType := reflect.TypeOf(b).Elem()
-	toOneType := reflect.TypeOf(b.DocID)
-	optionalToOneType := reflect.TypeOf(&b.DocID)
-	hasManyType := reflect.TypeOf(HasMany{})
-	modelType := reflect.TypeOf(model).Elem()
-
-	// iterate through all fields
-	for i := 0; i < modelType.NumField(); i++ {
-		structField := modelType.Field(i)
-
-		// get fire tag
-		fireStructTag := structField.Tag.Get("fire")
-
-		// check if field is the Base
-		if structField.Type == baseType {
-			baseTag := strings.Split(fireStructTag, ":")
-			if len(baseTag) < 2 || len(baseTag) > 3 {
-				panic("Expected to find a tag of the form fire:\"singular:plural[:collection]\"")
-			}
-
-			// infer singular and plural and collection based on plural
-			modelMeta.SingularName = baseTag[0]
-			modelMeta.PluralName = baseTag[1]
-			modelMeta.Collection = baseTag[1]
-
-			// infer collection
-			if len(baseTag) == 3 {
-				modelMeta.Collection = baseTag[2]
-			}
-
-			continue
-		}
-
-		// parse individual tags
-		fireTags := strings.Split(fireStructTag, ",")
-		if len(fireStructTag) == 0 {
-			fireTags = nil
-		}
-
-		// prepare field
-		field := Field{
-			Optional: structField.Type.Kind() == reflect.Ptr,
-			JSONName: getJSONFieldName(&structField),
-			BSONName: getBSONFieldName(&structField),
-			Name:     structField.Name,
-			index:    i,
-		}
-
-		// check if field is a valid to one relationship
-		if structField.Type == toOneType || structField.Type == optionalToOneType {
-			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
-				if strings.Count(fireTags[0], ":") > 1 {
-					panic("Expected to find a tag of the form fire:\"name:type\" on to one relationship")
-				}
-
-				// parse special to one relationship tag
-				toOneTag := strings.Split(fireTags[0], ":")
-
-				// set relationship data
-				field.ToOne = true
-				field.RelName = toOneTag[0]
-				field.RelType = toOneTag[1]
-
-				// remove tag
-				fireTags = fireTags[1:]
-			}
-		}
-
-		// check if field is a valid has many relationship
-		if structField.Type == hasManyType {
-			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
-				panic("Expected to find a tag of the form fire:\"name:type\" on has many relationship")
-			}
-
-			// parse special has many relationship tag
-			hasManyTag := strings.Split(fireTags[0], ":")
-
-			// set relationship data
-			field.HasMany = true
-			field.RelName = hasManyTag[0]
-			field.RelType = hasManyTag[1]
-
-			// remove tag
-			fireTags = fireTags[1:]
-		}
-
-		// add comma separated tags
-		for _, tag := range fireTags {
-			if stringInList(supportedTags, tag) {
-				field.Tags = append(field.Tags, tag)
-			} else {
-				panic("Unexpected tag: " + tag)
-			}
-		}
-
-		// add field
-		modelMeta.Fields = append(modelMeta.Fields, field)
-	}
-
-	// cache meta
-	metaCache[modelName] = modelMeta
-
 	// assign meta
-	b.meta = modelMeta
+	b.meta = NewMeta(model)
 }
 
 /* api2go.jsonapi interface */
