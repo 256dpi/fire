@@ -159,3 +159,9 @@ func TestMeta(t *testing.T) {
 		},
 	}, Init(&AccessToken{}).Meta())
 }
+
+func BenchmarkNewMeta(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		NewMeta(&Post{})
+	}
+}

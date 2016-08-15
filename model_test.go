@@ -47,9 +47,3 @@ func TestSetHelper(t *testing.T) {
 		post.Set("TextBody", 1)
 	})
 }
-
-func BenchmarkInitialize(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Init(&Post{})
-	}
-}
