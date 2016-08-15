@@ -77,16 +77,13 @@ func (b *Base) Set(name string, value interface{}) {
 func (b *Base) Validate(fresh bool) error {
 	// validate id
 	if !b.DocID.Valid() {
-		return errors.New("invalid id")
+		return errors.New("Invalid id")
 	}
 
 	// validate parent model
-	ok, err := govalidator.ValidateStruct(b.model)
+	_, err := govalidator.ValidateStruct(b.model)
 	if err != nil {
 		return err
-	}
-	if !ok {
-		return errors.New("validation failed")
 	}
 
 	return nil
@@ -135,7 +132,7 @@ func (b *Base) SetID(id string) error {
 	}
 
 	if !bson.IsObjectIdHex(id) {
-		return errors.New("invalid id")
+		return errors.New("Invalid id")
 	}
 
 	b.DocID = bson.ObjectIdHex(id)
@@ -211,7 +208,7 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 func (b *Base) SetToOneReferenceID(name, id string) error {
 	// check object id
 	if !bson.IsObjectIdHex(id) {
-		return errors.New("invalid id")
+		return errors.New("Invalid id")
 	}
 
 	for _, field := range b.meta.Fields {
@@ -233,5 +230,5 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 		}
 	}
 
-	return errors.New("missing relationship " + name)
+	return errors.New("Missing relationship " + name)
 }

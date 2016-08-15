@@ -4,14 +4,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
-func TestIDHelper(t *testing.T) {
+type validatableModel struct {
+	Base `fire:"foo:foos"`
+	Test string `valid:"required"`
+}
+
+func TestBaseID(t *testing.T) {
 	post := Init(&Post{}).(*Post)
 	assert.Equal(t, post.DocID, post.ID())
 }
 
-func TestGetHelper(t *testing.T) {
+func TestBaseGet(t *testing.T) {
 	post1 := Init(&Post{})
 	assert.Equal(t, "", post1.Get("text_body"))
 	assert.Equal(t, "", post1.Get("text-body"))
@@ -27,7 +33,7 @@ func TestGetHelper(t *testing.T) {
 	})
 }
 
-func TestSetHelper(t *testing.T) {
+func TestBaseSet(t *testing.T) {
 	post := Init(&Post{}).(*Post)
 
 	post.Set("text_body", "1")
@@ -46,4 +52,17 @@ func TestSetHelper(t *testing.T) {
 	assert.Panics(t, func() {
 		post.Set("TextBody", 1)
 	})
+}
+
+func TestBaseValidate(t *testing.T) {
+	model := Init(&validatableModel{}).(*validatableModel)
+
+	model.DocID = ""
+	assert.Error(t, model.Validate(true))
+
+	model.DocID = bson.NewObjectId()
+	assert.Error(t, model.Validate(true))
+
+	model.Test = "foo"
+	assert.NoError(t, model.Validate(true))
 }

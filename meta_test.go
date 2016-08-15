@@ -57,19 +57,19 @@ type unexpectedTag struct {
 }
 
 func TestNewMeta(t *testing.T) {
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		NewMeta(&malformedBase{})
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		NewMeta(&malformedToOne{})
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		NewMeta(&malformedHasMany{})
 	})
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		NewMeta(&unexpectedTag{})
 	})
 }
@@ -226,7 +226,7 @@ func TestMetaFieldWithTag(t *testing.T) {
 		index:    2,
 	}, Init(&User{}).Meta().FieldWithTag("identifiable"))
 
-	assert.Panics(t, func(){
+	assert.Panics(t, func() {
 		Init(&Post{}).Meta().FieldWithTag("foo")
 	})
 }
