@@ -485,7 +485,7 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	req.Session = session
 
 	// assign access token to context
-	ctx.(*gin.Context).Set("fire.access_token", &accessToken)
+	ctx.(*gin.Context).Set("fire.access_token", accessToken)
 
 	return req, nil
 }
