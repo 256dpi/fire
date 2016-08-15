@@ -163,7 +163,7 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	return refs
 }
 
-// GetReferencesIDs returns list of references ids.
+// GetReferencedIDs returns list of references ids.s
 //
 // This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#MarshalLinkedRelations.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {

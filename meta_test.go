@@ -160,6 +160,36 @@ func TestMeta(t *testing.T) {
 	}, Init(&AccessToken{}).Meta())
 }
 
+func TestMetaFieldsByTag(t *testing.T) {
+	assert.Equal(t, []Field{{
+		Name:     "Title",
+		JSONName: "title",
+		BSONName: "title",
+		Optional: false,
+		Tags:     []string{"filterable", "sortable"},
+		ToOne:    false,
+		HasMany:  false,
+		RelName:  "",
+		RelType:  "",
+		index:    1,
+	}}, Init(&Post{}).Meta().FieldsByTag("filterable"))
+}
+
+func TestMetaFieldWithTag(t *testing.T) {
+	assert.Equal(t, Field{
+		Name:     "Email",
+		JSONName: "email",
+		BSONName: "email",
+		Optional: false,
+		Tags:     []string{"identifiable"},
+		ToOne:    false,
+		HasMany:  false,
+		RelName:  "",
+		RelType:  "",
+		index:    2,
+	}, Init(&User{}).Meta().FieldWithTag("identifiable"))
+}
+
 func BenchmarkNewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		NewMeta(&Post{})
