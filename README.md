@@ -313,15 +313,6 @@ Resources can be added with `AddResource` before the routes are registered using
 An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database, a client model, a owner model and a secret:
 
 ```go
-type Application struct {
-	Base     `bson:",inline" fire:"application:applications"`
-	Name     string   `json:"name" valid:"required"`
-	Key      string   `json:"key" valid:"required" fire:"identifiable"`
-	Secret   []byte   `json:"secret" valid:"required" fire:"verifiable"`
-	Scopes   []string `json:"scopes" valid:"required" fire:"grantable"`
-	Callback string   `json:"callback" valid:"required" fire:"callable"`
-}
-
 type User struct {
 	Base     `bson:",inline" fire:"user:users"`
 	FullName string `json:"full_name" valid:"required"`
@@ -331,7 +322,7 @@ type User struct {
 
 authenticator := fire.NewAuthenticator(db, "a-very-long-secret", time.Hour)
 
-authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+authenticator.SetModels(&User{}, &fire.Application{}, &fire.AccessToken{})
 authenticator.EnablePasswordGrant()
 authenticator.EnableCredentialsGrant()
 authenticator.EnableImplicitGrant()
@@ -339,7 +330,7 @@ authenticator.EnableImplicitGrant()
 authenticator.Register("auth", router)
 ```
 
-The client model is required to have the tags `identifiable`, `verifiable`, `grantable` and `callable` to allow reading the id (key), secret, scope list and callback list fields. Identically, the owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email, username) and secret fields.
+The owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email or username) and secret (password hash) fields.
 
 After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a router.
 

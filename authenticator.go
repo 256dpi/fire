@@ -60,6 +60,15 @@ type AccessToken struct {
 	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
 }
 
+type Application struct {
+	Base      `bson:",inline" fire:"application:applications"`
+	Name      string   `json:"name" valid:"required"`
+	Key       string   `json:"key" valid:"required"`
+	Secret    []byte   `json:"secret" valid:"required"`
+	Scopes    []string `json:"scopes" valid:"required"`
+	Callbacks []string `json:"callbacks" valid:"required"`
+}
+
 // A Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
@@ -114,9 +123,9 @@ func NewAuthenticator(db *mgo.Database, secret string, lifespan time.Duration) *
 }
 
 // SetModels will associate the models to be used with the authenticator.
-func (a *Authenticator) SetModels(client, owner, accessToken Model) {
-	a.clientModel = Init(client)
+func (a *Authenticator) SetModels(owner, client, accessToken Model) {
 	a.ownerModel = Init(owner)
+	a.clientModel = Init(client)
 	a.accessTokenModel = Init(accessToken)
 }
 
@@ -386,15 +395,9 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
 	obj := newStructPointer(s.authenticator.clientModel)
 
-	// read fields
-	clientIDField := s.authenticator.clientModel.Meta().FieldWithTag("identifiable")
-	clientSecretField := s.authenticator.clientModel.Meta().FieldWithTag("verifiable")
-	clientCallableField := s.authenticator.clientModel.Meta().FieldWithTag("callable")
-	clientGrantableField := s.authenticator.clientModel.Meta().FieldWithTag("grantable")
-
 	// query db
 	err := s.authenticator.db.C(s.authenticator.clientModel.Meta().Collection).Find(bson.M{
-		clientIDField.BSONName: id,
+		"key": id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidClient
@@ -408,11 +411,11 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        client.Get(clientSecretField.Name).([]byte),
+			Secret:        client.Get("Secret").([]byte),
 			GrantTypes:    s.authenticator.enabledGrants,
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  client.Get(clientCallableField.Name).([]string),
-			Scopes:        client.Get(clientGrantableField.Name).([]string),
+			RedirectURIs:  client.Get("Callbacks").([]string),
+			Scopes:        client.Get("Scopes").([]string),
 		},
 		model: client,
 	}, nil

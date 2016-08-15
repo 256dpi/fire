@@ -21,7 +21,7 @@ func init() {
 
 func TestEnableOnlyOnce(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnablePasswordGrant()
 	authenticator.EnableCredentialsGrant()
 	authenticator.EnableImplicitGrant()
@@ -41,7 +41,7 @@ func TestEnableOnlyOnce(t *testing.T) {
 
 func TestPasswordGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnablePasswordGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -159,7 +159,7 @@ func TestPasswordGrant(t *testing.T) {
 
 func TestCredentialsGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableCredentialsGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -264,7 +264,7 @@ func TestCredentialsGrant(t *testing.T) {
 
 func TestImplicitGrant(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableImplicitGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -400,7 +400,7 @@ func TestImplicitGrant(t *testing.T) {
 
 func TestPasswordGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnablePasswordGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -468,7 +468,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 
 func TestPasswordGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnablePasswordGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -536,7 +536,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 
 func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableCredentialsGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -595,7 +595,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 
 func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableCredentialsGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -654,7 +654,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 
 func TestImplicitGrantAdditionalScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableImplicitGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -730,7 +730,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 
 func TestImplicitGrantInsufficientScope(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnableImplicitGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {
@@ -806,7 +806,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 
 func TestGinAuthorizer(t *testing.T) {
 	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 	authenticator.EnablePasswordGrant()
 
 	authenticator.GrantStrategy = func(req *GrantRequest) []string {

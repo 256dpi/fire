@@ -9,15 +9,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Application struct {
-	Base      `bson:",inline" fire:"application:applications"`
-	Name      string   `json:"name" valid:"required"`
-	Key       string   `json:"key" valid:"required" fire:"identifiable"`
-	Secret    []byte   `json:"secret" valid:"required" fire:"verifiable"`
-	Scopes    []string `json:"scopes" valid:"required" fire:"grantable"`
-	Callbacks []string `json:"callbacks" valid:"required" fire:"callable"`
-}
-
 type User struct {
 	Base     `bson:",inline" fire:"user:users"`
 	FullName string `json:"full_name" valid:"required"`
@@ -56,7 +47,7 @@ func Example() {
 	authenticator := NewAuthenticator(db, "a-very-long-secret", time.Hour)
 
 	// set models
-	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
+	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
 
 	// create endpoint
 	endpoint := NewEndpoint(db)
