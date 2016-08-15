@@ -49,7 +49,7 @@ func DefaultCompareStrategy(hash, password []byte) error {
 	return bcrypt.CompareHashAndPassword(hash, password)
 }
 
-// AccessToken is the internal model used to store access tokens. The model
+// AccessToken is the built-in model used to store access tokens. The model
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
@@ -60,13 +60,16 @@ type AccessToken struct {
 	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
 }
 
+// Application is the built-in model used to store clients. The model can be
+// mounted as a fire Resource to become manageable via the API.
 type Application struct {
-	Base      `bson:",inline" fire:"application:applications"`
-	Name      string   `json:"name" valid:"required"`
-	Key       string   `json:"key" valid:"required"`
-	Secret    []byte   `json:"secret" valid:"required"`
-	Scopes    []string `json:"scopes" valid:"required"`
-	Callbacks []string `json:"callbacks" valid:"required"`
+	Base       `bson:",inline" fire:"application:applications"`
+	Name       string   `json:"name" valid:"required"`
+	Key        string   `json:"key" valid:"required"`
+	Secret     []byte   `json:"secret" valid:"required"`
+	Scopes     []string `json:"scopes" valid:"required"`
+	GrantTypes []string `json:"grant-types" valid:"required" bson:"grant_types"`
+	Callbacks  []string `json:"callbacks" valid:"required"`
 }
 
 // A Authenticator provides OAuth2 based authentication. The implementation
@@ -412,7 +415,7 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
 			Secret:        client.Get("Secret").([]byte),
-			GrantTypes:    s.authenticator.enabledGrants,
+			GrantTypes:    client.Get("GrantTypes").([]string),
 			ResponseTypes: []string{"token"},
 			RedirectURIs:  client.Get("Callbacks").([]string),
 			Scopes:        client.Get("Scopes").([]string),

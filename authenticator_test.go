@@ -68,10 +68,11 @@ func TestPasswordGrant(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key1",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default"},
+		Name:       "Test Application",
+		Key:        "key1",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default"},
+		GrantTypes: []string{"password"},
 	})
 
 	// create user
@@ -186,10 +187,11 @@ func TestCredentialsGrant(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key2",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default"},
+		Name:       "Test Application",
+		Key:        "key2",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default"},
+		GrantTypes: []string{"client_credentials"},
 	})
 
 	r := gofight.New()
@@ -291,11 +293,12 @@ func TestImplicitGrant(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:      "Test Application",
-		Key:       "key3",
-		Secret:    hashPassword("secret"),
-		Scopes:    []string{"default"},
-		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
+		Name:       "Test Application",
+		Key:        "key3",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default"},
+		GrantTypes: []string{"implicit"},
+		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user
@@ -421,10 +424,11 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key4",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default", "admin"},
+		Name:       "Test Application",
+		Key:        "key4",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"password"},
 	})
 
 	// create user
@@ -489,10 +493,11 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key5",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default", "admin"},
+		Name:       "Test Application",
+		Key:        "key5",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"password"},
 	})
 
 	// create user
@@ -557,10 +562,11 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key6",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default", "admin"},
+		Name:       "Test Application",
+		Key:        "key6",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"client_credentials"},
 	})
 
 	r := gofight.New()
@@ -616,10 +622,11 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key7",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default", "admin"},
+		Name:       "Test Application",
+		Key:        "key7",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"client_credentials"},
 	})
 
 	r := gofight.New()
@@ -675,11 +682,12 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:      "Test Application",
-		Key:       "key8",
-		Secret:    hashPassword("secret"),
-		Scopes:    []string{"default", "admin"},
-		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
+		Name:       "Test Application",
+		Key:        "key8",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"implicit"},
+		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user
@@ -751,11 +759,12 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:      "Test Application",
-		Key:       "key9",
-		Secret:    hashPassword("secret"),
-		Scopes:    []string{"default", "admin"},
-		Callbacks: []string{"https://0.0.0.0:8080/auth/callback"},
+		Name:       "Test Application",
+		Key:        "key9",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default", "admin"},
+		GrantTypes: []string{"implicit"},
+		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
 	// create user
@@ -827,10 +836,11 @@ func TestGinAuthorizer(t *testing.T) {
 
 	// create application
 	saveModel(db, &Application{
-		Name:   "Test Application",
-		Key:    "key10",
-		Secret: hashPassword("secret"),
-		Scopes: []string{"default"},
+		Name:       "Test Application",
+		Key:        "key10",
+		Secret:     hashPassword("secret"),
+		Scopes:     []string{"default"},
+		GrantTypes: []string{"password"},
 	})
 
 	// create user
