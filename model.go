@@ -20,7 +20,8 @@ type Model interface {
 	initialize(Model)
 }
 
-// Init initializes the internals of a model and should be called first.
+// Init initializes the internals of a model and should be called before using
+// a newly created Model.
 func Init(model Model) Model {
 	model.initialize(model)
 	return model
@@ -112,21 +113,21 @@ func (b *Base) initialize(model Model) {
 
 // GetName returns the plural name of the Model.
 //
-// This methods is required by the jsonapi.EntityNamer interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#EntityNamer.
 func (b *Base) GetName() string {
 	return b.meta.PluralName
 }
 
 // GetID returns the id of the Model.
 //
-// This methods is required by the jsonapi.MarshalIdentifier interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#MarshalIdentifier.
 func (b *Base) GetID() string {
 	return b.DocID.Hex()
 }
 
 // SetID sets the id of the Model.
 //
-// This methods is required by the jsonapi.UnmarshalIdentifier interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#UnmarshalIdentifier.
 func (b *Base) SetID(id string) error {
 	if len(id) == 0 {
 		b.DocID = bson.NewObjectId()
@@ -143,7 +144,7 @@ func (b *Base) SetID(id string) error {
 
 // GetReferences returns a list of the available references.
 //
-// This methods is required by the jsonapi.MarshalReferences interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#MarshalReferences.
 func (b *Base) GetReferences() []jsonapi.Reference {
 	// prepare result
 	var refs []jsonapi.Reference
@@ -164,7 +165,7 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 
 // GetReferencesIDs returns list of references ids.
 //
-// This methods is required by the jsonapi.MarshalLinkedRelations interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#MarshalLinkedRelations.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	// prepare result
 	var ids []jsonapi.ReferenceID
@@ -206,7 +207,7 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 
 // SetToOneReferenceID sets a reference to the passed id.
 //
-// This methods is required by the jsonapi.UnmarshalToOneRelations interface.
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#UnmarshalToOneRelations.
 func (b *Base) SetToOneReferenceID(name, id string) error {
 	// check object id
 	if !bson.IsObjectIdHex(id) {
