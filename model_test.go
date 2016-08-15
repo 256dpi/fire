@@ -37,124 +37,127 @@ type Comment struct {
 	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-func TestTagParsing(t *testing.T) {
-	post := Init(&Post{})
-	assert.Equal(t, "posts", post.Collection())
-	assert.Equal(t, "post", post.SingularName())
-	assert.Equal(t, "posts", post.PluralName())
-	assert.Equal(t, []Field{
-		{
-			Name:     "Title",
-			JSONName: "title",
-			BSONName: "title",
-			Tags:     []string{"filterable", "sortable"},
-			index:    1,
+func TestMeta(t *testing.T) {
+	assert.Equal(t, &Meta{
+		Collection:   "posts",
+		SingularName: "post",
+		PluralName:   "posts",
+		Fields: []Field{
+			{
+				Name:     "Title",
+				JSONName: "title",
+				BSONName: "title",
+				Tags:     []string{"filterable", "sortable"},
+				index:    1,
+			},
+			{
+				Name:     "TextBody",
+				JSONName: "text-body",
+				BSONName: "text_body",
+				Tags:     []string(nil),
+				index:    2,
+			},
+			{
+				Name:     "Comments",
+				JSONName: "-",
+				BSONName: "-",
+				Optional: false,
+				Tags:     []string(nil),
+				HasMany:  true,
+				RelName:  "comments",
+				RelType:  "comments",
+				index:    3,
+			},
 		},
-		{
-			Name:     "TextBody",
-			JSONName: "text-body",
-			BSONName: "text_body",
-			Tags:     []string(nil),
-			index:    2,
-		},
-		{
-			Name:     "Comments",
-			JSONName: "-",
-			BSONName: "-",
-			Optional: false,
-			Tags:     []string(nil),
-			HasMany:  true,
-			RelName:  "comments",
-			RelType:  "comments",
-			index:    3,
-		},
-	}, post.Fields())
+	}, Init(&Post{}).Meta())
 
-	comment := Init(&Comment{})
-	assert.Equal(t, "comments", comment.Collection())
-	assert.Equal(t, "comment", comment.SingularName())
-	assert.Equal(t, "comments", comment.PluralName())
-	assert.Equal(t, []Field{
-		{
-			Name:     "Message",
-			JSONName: "message",
-			BSONName: "message",
-			Tags:     []string(nil),
-			index:    1,
+	assert.Equal(t, &Meta{
+		Collection:   "comments",
+		SingularName: "comment",
+		PluralName:   "comments",
+		Fields: []Field{
+			{
+				Name:     "Message",
+				JSONName: "message",
+				BSONName: "message",
+				Tags:     []string(nil),
+				index:    1,
+			},
+			{
+				Name:     "Parent",
+				JSONName: "-",
+				BSONName: "parent",
+				Optional: true,
+				Tags:     []string(nil),
+				ToOne:    true,
+				RelName:  "parent",
+				RelType:  "comments",
+				index:    2,
+			},
+			{
+				Name:     "PostID",
+				JSONName: "-",
+				BSONName: "post_id",
+				Optional: false,
+				Tags:     []string(nil),
+				ToOne:    true,
+				RelName:  "post",
+				RelType:  "posts",
+				index:    3,
+			},
 		},
-		{
-			Name:     "Parent",
-			JSONName: "-",
-			BSONName: "parent",
-			Optional: true,
-			Tags:     []string(nil),
-			ToOne:    true,
-			RelName:  "parent",
-			RelType:  "comments",
-			index:    2,
-		},
-		{
-			Name:     "PostID",
-			JSONName: "-",
-			BSONName: "post_id",
-			Optional: false,
-			Tags:     []string(nil),
-			ToOne:    true,
-			RelName:  "post",
-			RelType:  "posts",
-			index:    3,
-		},
-	}, comment.Fields())
+	}, Init(&Comment{}).Meta())
 
-	accessToken := Init(&AccessToken{})
-	assert.Equal(t, "access_tokens", accessToken.Collection())
-	assert.Equal(t, "access-token", accessToken.SingularName())
-	assert.Equal(t, "access-tokens", accessToken.PluralName())
-	assert.Equal(t, []Field{
-		{
-			Name:     "Type",
-			JSONName: "type",
-			BSONName: "type",
-			Tags:     []string(nil),
-			index:    1,
+	assert.Equal(t, &Meta{
+		Collection:   "access_tokens",
+		SingularName: "access-token",
+		PluralName:   "access-tokens",
+		Fields: []Field{
+			{
+				Name:     "Type",
+				JSONName: "type",
+				BSONName: "type",
+				Tags:     []string(nil),
+				index:    1,
+			},
+			{
+				Name:     "Signature",
+				JSONName: "signature",
+				BSONName: "signature",
+				Tags:     []string(nil),
+				index:    2,
+			},
+			{
+				JSONName: "requested-at",
+				BSONName: "requested_at",
+				Name:     "RequestedAt",
+				Tags:     []string(nil),
+				index:    3,
+			},
+			{
+				Name:     "GrantedScopes",
+				JSONName: "granted-scopes",
+				BSONName: "granted_scopes",
+				Tags:     []string(nil),
+				index:    4,
+			},
+			{
+				JSONName: "client-id",
+				BSONName: "client_id",
+				Name:     "ClientID",
+				Tags:     []string{"filterable", "sortable"},
+				index:    5,
+			},
+			{
+				Name:     "OwnerID",
+				JSONName: "owner-id",
+				BSONName: "owner_id",
+				Optional: true,
+				Tags:     []string{"filterable", "sortable"},
+				index:    6,
+			},
 		},
-		{
-			Name:     "Signature",
-			JSONName: "signature",
-			BSONName: "signature",
-			Tags:     []string(nil),
-			index:    2,
-		},
-		{
-			JSONName: "requested-at",
-			BSONName: "requested_at",
-			Name:     "RequestedAt",
-			Tags:     []string(nil),
-			index:    3,
-		},
-		{
-			Name:     "GrantedScopes",
-			JSONName: "granted-scopes",
-			BSONName: "granted_scopes",
-			Tags:     []string(nil),
-			index:    4,
-		},
-		{
-			JSONName: "client-id",
-			BSONName: "client_id",
-			Name:     "ClientID",
-			Tags:     []string{"filterable", "sortable"},
-			index:    5,
-		},
-		{
-			Name:     "OwnerID",
-			JSONName: "owner-id",
-			BSONName: "owner_id",
-			Optional: true,
-			Tags:     []string{"filterable", "sortable"},
-			index:    6,
-		},
-	}, accessToken.Fields())
+	}, Init(&AccessToken{}).Meta())
 }
 
 func TestIDHelper(t *testing.T) {

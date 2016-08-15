@@ -366,13 +366,13 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	obj := newStructPointer(s.authenticator.ClientModel)
 
 	// read fields
-	clientIDField := s.authenticator.ClientModel.FieldWithTag("identifiable")
-	clientSecretField := s.authenticator.ClientModel.FieldWithTag("verifiable")
-	clientCallableField := s.authenticator.ClientModel.FieldWithTag("callable")
-	clientGrantableField := s.authenticator.ClientModel.FieldWithTag("grantable")
+	clientIDField := s.authenticator.ClientModel.Meta().FieldWithTag("identifiable")
+	clientSecretField := s.authenticator.ClientModel.Meta().FieldWithTag("verifiable")
+	clientCallableField := s.authenticator.ClientModel.Meta().FieldWithTag("callable")
+	clientGrantableField := s.authenticator.ClientModel.Meta().FieldWithTag("grantable")
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.ClientModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.ClientModel.Meta().Collection).Find(bson.M{
 		clientIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -429,7 +429,7 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	accessToken.Set("OwnerID", ownerID)
 
 	// save access token
-	return s.authenticator.db.C(accessToken.Collection()).Insert(accessToken)
+	return s.authenticator.db.C(accessToken.Meta().Collection).Insert(accessToken)
 }
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
@@ -437,7 +437,7 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	obj := newStructPointer(s.authenticator.AccessTokenModel)
 
 	// fetch access token
-	err := s.authenticator.db.C(s.authenticator.AccessTokenModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.AccessTokenModel.Meta().Collection).Find(bson.M{
 		"type":      "access_token",
 		"signature": signature,
 	}).One(obj)
@@ -485,7 +485,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// get secret field
-	ownerSecretField := s.authenticator.OwnerModel.FieldWithTag("verifiable")
+	ownerSecretField := s.authenticator.OwnerModel.Meta().FieldWithTag("verifiable")
 
 	// check secret
 	err := s.authenticator.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
@@ -501,10 +501,10 @@ func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	obj := newStructPointer(s.authenticator.OwnerModel)
 
 	// get id field
-	ownerIDField := s.authenticator.OwnerModel.FieldWithTag("identifiable")
+	ownerIDField := s.authenticator.OwnerModel.Meta().FieldWithTag("identifiable")
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.OwnerModel.Collection()).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.OwnerModel.Meta().Collection).Find(bson.M{
 		ownerIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {

@@ -86,7 +86,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	r.setRelationshipFilters(ctx)
 
 	// add filters
-	for _, field := range r.Model.FieldsByTag("filterable") {
+	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
 		if values, ok := req.QueryParams["filter["+field.JSONName+"]"]; ok {
 			ctx.Query[field.BSONName] = bson.M{"$in": values}
 		}
@@ -95,7 +95,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// add sorting
 	if sortParam, ok := req.QueryParams["sort"]; ok {
 		for _, params := range sortParam {
-			for _, field := range r.Model.FieldsByTag("sortable") {
+			for _, field := range r.Model.Meta().FieldsByTag("sortable") {
 				if params == field.BSONName || params == "-"+field.BSONName {
 					ctx.Sorting = append(ctx.Sorting, params)
 				}
@@ -112,7 +112,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	pointer := newSlicePointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Model.Collection()).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
+	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
@@ -149,7 +149,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	obj := newStructPointer(r.Model)
 
 	// query db
-	err := r.endpoint.db.C(r.Model.Collection()).Find(ctx.Query).One(obj)
+	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, api2go.NewHTTPError(err, "resource not found", http.StatusNotFound)
 	} else if err != nil {
@@ -185,7 +185,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Collection()).Insert(ctx.Model)
+	err = r.endpoint.db.C(r.Model.Meta().Collection).Insert(ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while saving resource", http.StatusInternalServerError)
 	}
@@ -217,7 +217,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Collection()).Update(ctx.Query, ctx.Model)
+	err = r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
 	}
@@ -247,7 +247,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	}
 
 	// query db
-	err := r.endpoint.db.C(r.Model.Collection()).Remove(ctx.Query)
+	err := r.endpoint.db.C(r.Model.Meta().Collection).Remove(ctx.Query)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while deleting resource", http.StatusInternalServerError)
 	}
@@ -286,12 +286,12 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 			}
 
 			// check if self referencing
-			if singularName == r.Model.SingularName() {
+			if singularName == r.Model.Meta().SingularName {
 				ctx.Query["_id"] = bson.M{"$in": stringsToIDs(values)}
 			}
 
 			// add to one relationship filters
-			for _, field := range r.Model.Fields() {
+			for _, field := range r.Model.Meta().Fields {
 				if field.ToOne && field.RelName == singularName {
 					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
 				}

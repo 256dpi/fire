@@ -66,7 +66,7 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
 func saveModel(db *mgo.Database, model Model) Model {
 	Init(model)
 
-	err := db.C(model.Collection()).Insert(model)
+	err := db.C(model.Meta().Collection).Insert(model)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func saveModel(db *mgo.Database, model Model) Model {
 func findModel(db *mgo.Database, model Model, query bson.M) Model {
 	Init(model)
 
-	err := db.C(model.Collection()).Find(query).One(model)
+	err := db.C(model.Meta().Collection).Find(query).One(model)
 	if err != nil {
 		panic(err)
 	}
