@@ -152,6 +152,7 @@ func TestMeta(t *testing.T) {
 				JSONName: "client-id",
 				BSONName: "client_id",
 				Name:     "ClientID",
+				Optional: true,
 				Tags:     []string{"filterable", "sortable"},
 				index:    5,
 			},

@@ -57,7 +57,7 @@ type AccessToken struct {
 	Signature     string         `json:"signature" valid:"required"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
-	ClientID      bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id" fire:"filterable,sortable"`
+	ClientID      *bson.ObjectId `json:"client-id" valid:"-" bson:"client_id" fire:"filterable,sortable"`
 	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
 }
 
@@ -410,6 +410,9 @@ func (s *authenticatorStorage) DeleteAuthorizeCodeSession(ctx context.Context, c
 }
 
 func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
+	// retrieve client id
+	clientID := ctx.Value("client").(Model).ID()
+
 	// retrieve optional owner id
 	var ownerID *bson.ObjectId
 	if ctx.Value("owner") != nil {
@@ -425,7 +428,7 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	accessToken.Set("Signature", signature)
 	accessToken.Set("RequestedAt", request.GetRequestedAt())
 	accessToken.Set("GrantedScopes", request.GetGrantedScopes())
-	accessToken.Set("ClientID", ctx.Value("client").(Model).ID())
+	accessToken.Set("ClientID", &clientID)
 	accessToken.Set("OwnerID", ownerID)
 
 	// save access token
