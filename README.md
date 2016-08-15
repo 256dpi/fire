@@ -23,7 +23,6 @@ _The framework is still WIP and the API may be changed._
 - [Models](#models)
   - [Basics](#basics)
   - [Helpers](#helpers)
-  - [Getter & Setter](#getter-&-setter)
   - [Fields](#fields)
   - [Validation](#validation)
   - [Filtering & Sorting](#filtering-&-sorting)
@@ -149,8 +148,8 @@ post.SingularName()
 post.PluralName()
 post.Collection()
 ```
- 
-### Getter & Setter
+
+### Fields
 
 The `Get` and `Set` functions can be used to get and set any field on the model:
 
@@ -161,8 +160,6 @@ post.Set("title", "New Title")
 
 - Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
 - Calling `Set` with a different type than the field causes a panic.
-
-### Fields
 
 The fields of a model can be queried using the following methods:
 
