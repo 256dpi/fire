@@ -110,17 +110,23 @@ func (b *Base) initialize(model Model) {
 
 /* api2go.jsonapi interface */
 
-// GetName implements the jsonapi.EntityNamer interface.
+// GetName returns the plural name of the Model.
+//
+// This methods is required by the jsonapi.EntityNamer interface.
 func (b *Base) GetName() string {
 	return b.meta.PluralName
 }
 
-// GetID implements the jsonapi.MarshalIdentifier interface.
+// GetID returns the id of the Model.
+//
+// This methods is required by the jsonapi.MarshalIdentifier interface.
 func (b *Base) GetID() string {
 	return b.DocID.Hex()
 }
 
-// SetID implements the jsonapi.UnmarshalIdentifier interface.
+// SetID sets the id of the Model.
+//
+// This methods is required by the jsonapi.UnmarshalIdentifier interface.
 func (b *Base) SetID(id string) error {
 	if len(id) == 0 {
 		b.DocID = bson.NewObjectId()
@@ -135,7 +141,9 @@ func (b *Base) SetID(id string) error {
 	return nil
 }
 
-// GetReferences implements the jsonapi.MarshalReferences interface.
+// GetReferences returns a list of the available references.
+//
+// This methods is required by the jsonapi.MarshalReferences interface.
 func (b *Base) GetReferences() []jsonapi.Reference {
 	// prepare result
 	var refs []jsonapi.Reference
@@ -154,7 +162,9 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	return refs
 }
 
-// GetReferencedIDs implements the jsonapi.MarshalLinkedRelations interface.
+// GetReferencesIDs returns list of references ids.
+//
+// This methods is required by the jsonapi.MarshalLinkedRelations interface.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	// prepare result
 	var ids []jsonapi.ReferenceID
@@ -194,7 +204,9 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 	return ids
 }
 
-// SetToOneReferenceID implements the jsonapi.UnmarshalToOneRelations interface.
+// SetToOneReferenceID sets a reference to the passed id.
+//
+// This methods is required by the jsonapi.UnmarshalToOneRelations interface.
 func (b *Base) SetToOneReferenceID(name, id string) error {
 	// check object id
 	if !bson.IsObjectIdHex(id) {
