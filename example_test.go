@@ -1,10 +1,10 @@
 package fire
 
 import (
-	"gopkg.in/mgo.v2/bson"
-	"gopkg.in/mgo.v2"
-	"github.com/gin-gonic/gin"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Application struct {
@@ -62,13 +62,13 @@ func Example() {
 
 	// add post
 	endpoint.AddResource(&Resource{
-		Model: &Post{},
+		Model:      &Post{},
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
 	// add comment
 	endpoint.AddResource(&Resource{
-		Model: &Comment{},
+		Model:      &Comment{},
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 

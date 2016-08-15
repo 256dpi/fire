@@ -8,6 +8,7 @@ import (
 
 	"github.com/Jeffail/gabs"
 	"github.com/appleboy/gofight"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
@@ -791,4 +792,87 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 			assert.Equal(t, http.StatusUnauthorized, r.Code)
 			assert.NotEmpty(t, r.Body.String())
 		})
+}
+
+func TestGinAuthorizer(t *testing.T) {
+	authenticator := NewAuthenticator(getDB(), &User{}, &Application{}, secret)
+	authenticator.EnablePasswordGrant()
+
+	authenticator.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, "password", req.GrantType)
+		assert.Equal(t, []string{"default"}, req.RequestedScopes)
+		assert.NotNil(t, req.Client)
+		assert.NotNil(t, req.Owner)
+
+		return req.RequestedScopes
+	}
+
+	server, db := buildServer()
+	server.GET("/foo", authenticator.GinAuthorizer("default"), func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "OK")
+	})
+
+	authenticator.Register("auth", server)
+
+	// create application
+	saveModel(db, &Application{
+		Name:   "Test Application",
+		Key:    "key10",
+		Secret: hashPassword("secret"),
+		Scopes: []string{"default"},
+	})
+
+	// create user
+	saveModel(db, &User{
+		FullName: "Test User",
+		Email:    "user10@example.com",
+		Password: hashPassword("secret"),
+	})
+
+	r := gofight.New()
+
+	// missing auth
+	r.GET("/foo").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusUnauthorized, r.Code)
+			assert.Empty(t, r.Body.String())
+		})
+
+	var token string
+
+	// get access token
+	r.POST("/auth/token").
+		SetHeader(basicAuth("key10", "secret")).
+		SetForm(gofight.H{
+			"grant_type": "password",
+			"username":   "user10@example.com",
+			"password":   "secret",
+			"scope":      "default",
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
+			assert.Equal(t, "default", json.Path("scope").Data().(string))
+			assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+
+			token = json.Path("access_token").Data().(string)
+		})
+
+	// get empty list of posts
+	r.GET("/foo").
+		SetHeader(bearerAuth(token)).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "OK", r.Body.String())
+		})
+
+	// check issued access token
+	accessToken := &AccessToken{}
+	findModel(db, accessToken, bson.M{
+		"signature": strings.Split(token, ".")[1],
+	})
+	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+	assert.True(t, accessToken.ClientID.Valid())
+	assert.True(t, accessToken.OwnerID.Valid())
 }

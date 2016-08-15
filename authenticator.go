@@ -181,27 +181,52 @@ func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
 	return a.strategy.GenerateAccessToken(nil, nil)
 }
 
-// Authorizer returns a callback that can be used to protect resources by requiring
-// an access tokens with the provided scopes to be granted.
+// Authorize can used to authorize a request by requiring an access token with
+// the provided scopes to be granted.
+func (a *Authenticator) Authorize(ctx *gin.Context, scopes []string) error {
+	// create new session
+	session := &oauth2.HMACSession{}
+
+	// get token
+	token := fosite.AccessTokenFromRequest(ctx.Request)
+
+	// validate request
+	_, err := a.provider.ValidateToken(ctx, token, fosite.AccessToken, session, scopes...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Authorizer returns a callback that can be used to protect resources by
+// requiring an access token with the provided scopes to be granted.
 func (a *Authenticator) Authorizer(scopes ...string) Callback {
 	if len(scopes) < 1 {
 		panic("Authorizer must be called with at least one scope")
 	}
 
 	return func(ctx *Context) error {
-		// create new session
-		session := &oauth2.HMACSession{}
+		return a.Authorize(ctx.GinContext, scopes)
+	}
+}
 
-		// get token
-		token := fosite.AccessTokenFromRequest(ctx.GinContext.Request)
+// Authorize can be used to protect plain handler by requiring an access token
+// with the provided scopes to be granted.
+func (a *Authenticator) GinAuthorizer(scopes ...string) gin.HandlerFunc {
+	if len(scopes) < 1 {
+		panic("GinAuthorizer must be called with at least one scope")
+	}
 
-		// validate request
-		_, err := a.provider.ValidateToken(ctx.GinContext, token, fosite.AccessToken, session, scopes...)
+	return func(ctx *gin.Context) {
+		err := a.Authorize(ctx, scopes)
 		if err != nil {
-			return err
+			ctx.AbortWithError(http.StatusUnauthorized, err)
+			return
 		}
 
-		return nil
+		// call next handler
+		ctx.Next()
 	}
 }
 
