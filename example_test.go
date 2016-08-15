@@ -2,6 +2,8 @@ package fire
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -51,11 +53,10 @@ func Example() {
 	db := sess.DB("")
 
 	// create authenticator
-	authenticator := NewAuthenticator(db,
-		&User{},
-		&Application{},
-		"a-very-long-secret",
-	)
+	authenticator := NewAuthenticator(db, "a-very-long-secret", time.Hour)
+
+	// set models
+	authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
 
 	// create endpoint
 	endpoint := NewEndpoint(db)

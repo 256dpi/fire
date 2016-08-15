@@ -64,36 +64,29 @@ type AccessToken struct {
 // currently supports the Resource Owner Credentials, Client Credentials and
 // Implicit Grant flows. The flows can be enabled using their respective methods.
 type Authenticator struct {
-	GrantStrategy    GrantStrategy
-	CompareStrategy  CompareStrategy
-	OwnerModel       Model
-	ClientModel      Model
-	AccessTokenModel Model
+	GrantStrategy   GrantStrategy
+	CompareStrategy CompareStrategy
 
-	db            *mgo.Database
-	config        *compose.Config
-	provider      *fosite.Fosite
-	strategy      *oauth2.HMACSHAStrategy
-	storage       *authenticatorStorage
-	enabledGrants []string
+	db               *mgo.Database
+	config           *compose.Config
+	provider         *fosite.Fosite
+	strategy         *oauth2.HMACSHAStrategy
+	storage          *authenticatorStorage
+	ownerModel       Model
+	clientModel      Model
+	accessTokenModel Model
+	enabledGrants    []string
 }
 
 // NewAuthenticator creates and returns a new Authenticator.
-func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret string) *Authenticator {
-	// initialize models
-	Init(ownerModel)
-	Init(clientModel)
-
-	// prepare access token model
-	accessTokenModel := &AccessToken{}
-	Init(accessTokenModel)
-
+func NewAuthenticator(db *mgo.Database, secret string, lifespan time.Duration) *Authenticator {
 	// create storage
 	storage := &authenticatorStorage{}
 
 	// provider config
 	config := &compose.Config{
-		HashCost: hashCost,
+		AccessTokenLifespan: lifespan,
+		HashCost:            hashCost,
 	}
 
 	// create a new token generation strategy
@@ -104,11 +97,8 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 
 	// create authenticator
 	a := &Authenticator{
-		GrantStrategy:    DefaultGrantStrategy,
-		CompareStrategy:  DefaultCompareStrategy,
-		OwnerModel:       ownerModel,
-		ClientModel:      clientModel,
-		AccessTokenModel: accessTokenModel,
+		GrantStrategy:   DefaultGrantStrategy,
+		CompareStrategy: DefaultCompareStrategy,
 
 		db:       db,
 		config:   config,
@@ -121,6 +111,13 @@ func NewAuthenticator(db *mgo.Database, ownerModel, clientModel Model, secret st
 	storage.authenticator = a
 
 	return a
+}
+
+// SetModels will associate the models to be used with the authenticator.
+func (a *Authenticator) SetModels(client, owner, accessToken Model) {
+	a.clientModel = Init(client)
+	a.ownerModel = Init(owner)
+	a.accessTokenModel = Init(accessToken)
 }
 
 // EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
@@ -211,7 +208,7 @@ func (a *Authenticator) Authorizer(scopes ...string) Callback {
 	}
 }
 
-// Authorize can be used to protect plain handler by requiring an access token
+// GinAuthorizer can be used to protect plain handler by requiring an access token
 // with the provided scopes to be granted.
 func (a *Authenticator) GinAuthorizer(scopes ...string) gin.HandlerFunc {
 	if len(scopes) < 1 {
@@ -387,16 +384,16 @@ type authenticatorClient struct {
 
 func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
-	obj := newStructPointer(s.authenticator.ClientModel)
+	obj := newStructPointer(s.authenticator.clientModel)
 
 	// read fields
-	clientIDField := s.authenticator.ClientModel.Meta().FieldWithTag("identifiable")
-	clientSecretField := s.authenticator.ClientModel.Meta().FieldWithTag("verifiable")
-	clientCallableField := s.authenticator.ClientModel.Meta().FieldWithTag("callable")
-	clientGrantableField := s.authenticator.ClientModel.Meta().FieldWithTag("grantable")
+	clientIDField := s.authenticator.clientModel.Meta().FieldWithTag("identifiable")
+	clientSecretField := s.authenticator.clientModel.Meta().FieldWithTag("verifiable")
+	clientCallableField := s.authenticator.clientModel.Meta().FieldWithTag("callable")
+	clientGrantableField := s.authenticator.clientModel.Meta().FieldWithTag("grantable")
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.ClientModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.clientModel.Meta().Collection).Find(bson.M{
 		clientIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -445,10 +442,10 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	}
 
 	// make sure the model is initialized
-	Init(s.authenticator.AccessTokenModel)
+	Init(s.authenticator.accessTokenModel)
 
 	// prepare access token
-	accessToken := Init(newStructPointer(s.authenticator.AccessTokenModel).(Model))
+	accessToken := Init(newStructPointer(s.authenticator.accessTokenModel).(Model))
 
 	// create access token
 	accessToken.Set("Signature", signature)
@@ -463,13 +460,13 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
 	// make sure the model is initialized
-	Init(s.authenticator.AccessTokenModel)
+	Init(s.authenticator.accessTokenModel)
 
 	// prepare object
-	obj := newStructPointer(s.authenticator.AccessTokenModel)
+	obj := newStructPointer(s.authenticator.accessTokenModel)
 
 	// fetch access token
-	err := s.authenticator.db.C(s.authenticator.AccessTokenModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.accessTokenModel.Meta().Collection).Find(bson.M{
 		"signature": signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -516,7 +513,7 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// get secret field
-	ownerSecretField := s.authenticator.OwnerModel.Meta().FieldWithTag("verifiable")
+	ownerSecretField := s.authenticator.ownerModel.Meta().FieldWithTag("verifiable")
 
 	// check secret
 	err := s.authenticator.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
@@ -529,13 +526,13 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 
 func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	// prepare object
-	obj := newStructPointer(s.authenticator.OwnerModel)
+	obj := newStructPointer(s.authenticator.ownerModel)
 
 	// get id field
-	ownerIDField := s.authenticator.OwnerModel.Meta().FieldWithTag("identifiable")
+	ownerIDField := s.authenticator.ownerModel.Meta().FieldWithTag("identifiable")
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.OwnerModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.ownerModel.Meta().Collection).Find(bson.M{
 		ownerIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {

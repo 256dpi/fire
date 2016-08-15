@@ -329,12 +329,9 @@ type User struct {
 	Password []byte `json:"-" valid:"required" fire:"verifiable"`
 }
 
-authenticator := fire.NewAuthenticator(db,
-    &User{},
-    &Application{},
-    "a-very-long-secret"
-) 
+authenticator := fire.NewAuthenticator(db, "a-very-long-secret", time.Hour)
 
+authenticator.SetModels(&Application{}, &User{}, &AccessToken{})
 authenticator.EnablePasswordGrant()
 authenticator.EnableCredentialsGrant()
 authenticator.EnableImplicitGrant()
