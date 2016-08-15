@@ -121,32 +121,25 @@ func TestMeta(t *testing.T) {
 		PluralName:   "access-tokens",
 		Fields: []Field{
 			{
-				Name:     "Type",
-				JSONName: "type",
-				BSONName: "type",
-				Tags:     []string(nil),
-				index:    1,
-			},
-			{
 				Name:     "Signature",
 				JSONName: "signature",
 				BSONName: "signature",
 				Tags:     []string(nil),
-				index:    2,
+				index:    1,
 			},
 			{
 				JSONName: "requested-at",
 				BSONName: "requested_at",
 				Name:     "RequestedAt",
 				Tags:     []string(nil),
-				index:    3,
+				index:    2,
 			},
 			{
 				Name:     "GrantedScopes",
 				JSONName: "granted-scopes",
 				BSONName: "granted_scopes",
 				Tags:     []string(nil),
-				index:    4,
+				index:    3,
 			},
 			{
 				JSONName: "client-id",
@@ -154,7 +147,7 @@ func TestMeta(t *testing.T) {
 				Name:     "ClientID",
 				Optional: true,
 				Tags:     []string{"filterable", "sortable"},
-				index:    5,
+				index:    4,
 			},
 			{
 				Name:     "OwnerID",
@@ -162,7 +155,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "owner_id",
 				Optional: true,
 				Tags:     []string{"filterable", "sortable"},
-				index:    6,
+				index:    5,
 			},
 		},
 	}, Init(&AccessToken{}).Meta())

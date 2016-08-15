@@ -53,7 +53,6 @@ func DefaultCompareStrategy(hash, password []byte) error {
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
-	Type          string         `json:"type"`
 	Signature     string         `json:"signature" valid:"required"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
@@ -424,7 +423,6 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	accessToken := Init(newStructPointer(s.authenticator.AccessTokenModel).(Model))
 
 	// create access token
-	accessToken.Set("Type", "access_token")
 	accessToken.Set("Signature", signature)
 	accessToken.Set("RequestedAt", request.GetRequestedAt())
 	accessToken.Set("GrantedScopes", request.GetGrantedScopes())
@@ -441,7 +439,6 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 
 	// fetch access token
 	err := s.authenticator.db.C(s.authenticator.AccessTokenModel.Meta().Collection).Find(bson.M{
-		"type":      "access_token",
 		"signature": signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
