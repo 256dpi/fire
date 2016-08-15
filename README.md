@@ -310,7 +310,7 @@ Resources can be added with `AddResource` before the routes are registered using
 
 ## Authenticators
 
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database, a client model, a owner model and a secret:
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database, a secret and the default access token lifespan:
 
 ```go
 type User struct {
@@ -330,7 +330,7 @@ authenticator.EnableImplicitGrant()
 authenticator.Register("auth", router)
 ```
 
-The owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email or username) and secret (password hash) fields.
+The owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email or username) and secret (password hash) fields. Fire provides built-in client (application) and access token models. These models can be extended but must have exactly the same fields as the built-in ones.
 
 After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a router.
 
@@ -368,6 +368,20 @@ posts := &fire.Resource{
 The Authorizer accepts a list of scopes that must have been granted to the token.
 
 - The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
+
+You can also authorize plain gin handlers:
+ 
+```go
+router.GET("foo", authenticator.GinAuthorizer("admin"), func(ctx *gin.Context){
+    // ...
+})
+```
+
+Or use call `Authorize` while processing a request:
+
+```go
+accessToken, err := authenticator.Authorize(ctx, "admin")
+```
 
 ## License
 
