@@ -54,6 +54,8 @@ type Meta struct {
 }
 
 // NewMeta returns the Meta structure for the passed Model.
+//
+// Note: This method panics if the passed Model has invalid fields and tags.
 func NewMeta(model Model) *Meta {
 	// get type and name
 	modelType := reflect.TypeOf(model).Elem()
@@ -79,7 +81,7 @@ func NewMeta(model Model) *Meta {
 		if structField.Type == baseType {
 			baseTag := strings.Split(fireStructTag, ":")
 			if len(baseTag) < 2 || len(baseTag) > 3 {
-				panic("Expected to find a tag of the form fire:\"singular:plural[:collection]\"")
+				panic("Expected to find a tag of the form fire:\"singular:plural[:collection]\" on Base")
 			}
 
 			// infer singular and plural and collection based on plural
@@ -153,7 +155,7 @@ func NewMeta(model Model) *Meta {
 			if stringInList(supportedTags, tag) {
 				field.Tags = append(field.Tags, tag)
 			} else {
-				panic("Unexpected tag: " + tag)
+				panic("Unexpected tag " + tag)
 			}
 		}
 

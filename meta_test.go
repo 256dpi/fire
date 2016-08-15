@@ -37,6 +37,43 @@ type Comment struct {
 	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
+type malformedBase struct {
+	Base
+}
+
+type malformedToOne struct {
+	Base `fire:"foo:foos"`
+	Foo  bson.ObjectId `fire:"foo:foo:foo"`
+}
+
+type malformedHasMany struct {
+	Base `fire:"foo:foos"`
+	Foo  HasMany
+}
+
+type unexpectedTag struct {
+	Base `fire:"foo:foos"`
+	Foo  string `fire:"foo"`
+}
+
+func TestNewMeta(t *testing.T) {
+	assert.Panics(t, func(){
+		NewMeta(&malformedBase{})
+	})
+
+	assert.Panics(t, func(){
+		NewMeta(&malformedToOne{})
+	})
+
+	assert.Panics(t, func(){
+		NewMeta(&malformedHasMany{})
+	})
+
+	assert.Panics(t, func(){
+		NewMeta(&unexpectedTag{})
+	})
+}
+
 func TestMeta(t *testing.T) {
 	assert.Equal(t, &Meta{
 		Collection:   "posts",
@@ -188,6 +225,10 @@ func TestMetaFieldWithTag(t *testing.T) {
 		RelType:  "",
 		index:    2,
 	}, Init(&User{}).Meta().FieldWithTag("identifiable"))
+
+	assert.Panics(t, func(){
+		Init(&Post{}).Meta().FieldWithTag("foo")
+	})
 }
 
 func BenchmarkNewMeta(b *testing.B) {
