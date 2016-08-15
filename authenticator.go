@@ -444,6 +444,9 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 		ownerID = &id
 	}
 
+	// make sure the model is initialized
+	Init(s.authenticator.AccessTokenModel)
+
 	// prepare access token
 	accessToken := Init(newStructPointer(s.authenticator.AccessTokenModel).(Model))
 
@@ -459,6 +462,9 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 }
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
+	// make sure the model is initialized
+	Init(s.authenticator.AccessTokenModel)
+
 	// prepare object
 	obj := newStructPointer(s.authenticator.AccessTokenModel)
 
