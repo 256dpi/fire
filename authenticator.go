@@ -34,7 +34,7 @@ const (
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
-	GrantType       []string
+	GrantType       string
 	RequestedScopes []string
 	Client          Model
 	Owner           Model
