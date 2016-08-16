@@ -109,7 +109,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	}
 
 	// prepare slice
-	pointer := newSlicePointer(r.Model)
+	pointer := r.Model.Meta().MakeSlice()
 
 	// query db
 	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
@@ -146,7 +146,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	}
 
 	// prepare object
-	obj := newStructPointer(r.Model)
+	obj := r.Model.Meta().Make()
 
 	// query db
 	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).One(obj)

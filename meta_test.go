@@ -45,6 +45,7 @@ func TestNewMeta(t *testing.T) {
 }
 
 func TestMeta(t *testing.T) {
+	post := Init(&Post{})
 	assert.Equal(t, &Meta{
 		Collection:   "posts",
 		SingularName: "post",
@@ -76,8 +77,10 @@ func TestMeta(t *testing.T) {
 				index:    3,
 			},
 		},
-	}, Init(&Post{}).Meta())
+		model: post.Meta().model,
+	}, post.Meta())
 
+	comment := Init(&Comment{})
 	assert.Equal(t, &Meta{
 		Collection:   "comments",
 		SingularName: "comment",
@@ -112,7 +115,8 @@ func TestMeta(t *testing.T) {
 				index:    3,
 			},
 		},
-	}, Init(&Comment{}).Meta())
+		model: comment.Meta().model,
+	}, comment.Meta())
 }
 
 func TestMetaFieldsByTag(t *testing.T) {

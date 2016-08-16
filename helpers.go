@@ -12,17 +12,6 @@ type Map map[string]interface{}
 
 /* internal */
 
-func newSlicePointer(from interface{}) interface{} {
-	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(from)), 0, 0)
-	pointer := reflect.New(slice.Type())
-	pointer.Elem().Set(slice)
-	return pointer.Interface()
-}
-
-func newStructPointer(from interface{}) interface{} {
-	return reflect.New(reflect.TypeOf(from).Elem()).Interface()
-}
-
 func sliceContent(pointer interface{}) interface{} {
 	return reflect.ValueOf(pointer).Elem().Interface()
 }

@@ -61,6 +61,8 @@ type Meta struct {
 	PluralName   string
 	Collection   string
 	Fields       []Field
+
+	model Model
 }
 
 // NewMeta returns the Meta structure for the passed Model.
@@ -78,7 +80,9 @@ func NewMeta(model Model) *Meta {
 	}
 
 	// create new meta
-	meta = &Meta{}
+	meta = &Meta{
+		model: model,
+	}
 
 	// iterate through all fields
 	for i := 0; i < modelType.NumField(); i++ {
@@ -191,4 +195,17 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 	}
 
 	return list
+}
+
+// Make returns a pointer to a new model.
+func (m *Meta) Make() interface{} {
+	return reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
+}
+
+// MakeSlice returns a new slice of the model.
+func (m *Meta) MakeSlice() interface{} {
+	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(m.model)), 0, 0)
+	pointer := reflect.New(slice.Type())
+	pointer.Elem().Set(slice)
+	return pointer.Interface()
 }
