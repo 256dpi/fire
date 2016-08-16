@@ -12,10 +12,6 @@ type Map map[string]interface{}
 
 /* internal */
 
-func sliceContent(pointer interface{}) interface{} {
-	return reflect.ValueOf(pointer).Elem().Interface()
-}
-
 func getJSONFieldName(field *reflect.StructField) string {
 	tag := field.Tag.Get("json")
 	values := strings.Split(tag, ",")

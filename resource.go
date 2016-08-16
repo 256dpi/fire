@@ -117,16 +117,13 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
 
-	// get content from pointer
-	slice := sliceContent(pointer)
-
 	// initialize each model
-	s := reflect.ValueOf(slice)
-	for i := 0; i < s.Len(); i++ {
-		Init(s.Index(i).Interface().(Model))
+	slice := reflect.ValueOf(pointer).Elem()
+	for i := 0; i < slice.Len(); i++ {
+		Init(slice.Index(i).Interface().(Model))
 	}
 
-	return &api2go.Response{Res: slice, Code: http.StatusOK}, nil
+	return &api2go.Response{Res: slice.Interface(), Code: http.StatusOK}, nil
 }
 
 // FindOne implements a part of the api2go.CRUD interface.
