@@ -67,8 +67,8 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "Comments",
-				JSONName: "-",
-				BSONName: "-",
+				JSONName: "",
+				BSONName: "",
 				Optional: false,
 				Tags:     []string(nil),
 				HasMany:  true,
@@ -95,7 +95,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "Parent",
-				JSONName: "-",
+				JSONName: "",
 				BSONName: "parent",
 				Optional: true,
 				Tags:     []string(nil),
@@ -106,7 +106,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "PostID",
-				JSONName: "-",
+				JSONName: "",
 				BSONName: "post_id",
 				Tags:     []string(nil),
 				ToOne:    true,

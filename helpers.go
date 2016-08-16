@@ -16,6 +16,11 @@ func getJSONFieldName(field *reflect.StructField) string {
 	tag := field.Tag.Get("json")
 	values := strings.Split(tag, ",")
 
+	// check for "-"
+	if tag == "-" {
+		return ""
+	}
+
 	// check first value
 	if len(tag) > 0 || len(values[0]) > 0 {
 		return values[0]
@@ -27,6 +32,11 @@ func getJSONFieldName(field *reflect.StructField) string {
 func getBSONFieldName(field *reflect.StructField) string {
 	tag := field.Tag.Get("bson")
 	values := strings.Split(tag, ",")
+
+	// check for "-"
+	if tag == "-" {
+		return ""
+	}
 
 	// check first value
 	if len(tag) > 0 || len(values[0]) > 0 {
