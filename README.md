@@ -51,7 +51,7 @@ $ go get github.com/256dpi/fire
 
 ## Add-ons
 
-- [fire-auth](https://github.com/256dpi/fire-auth)
+- [fire-auth](https://github.com/256dpi/fire-auth): OAuth2 based Authentication
 
 ## Usage
 
