@@ -19,6 +19,7 @@ _The framework is still WIP and the API may be changed._
 
 - [Example](#example)
 - [Installation](#installation)
+- [Add-ons](#add-ons)
 - [Usage](#usage)
 - [Models](#models)
   - [Basics](#basics)
@@ -38,7 +39,7 @@ _The framework is still WIP and the API may be changed._
 
 ## Example
 
-An example application that uses the fire framework to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/256dpi/fire-example>.
+An example application that uses the fire framework and the fire-auth add-on to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/256dpi/fire-example>.
 
 ## Installation
 
@@ -47,6 +48,10 @@ Get the package using the go tool:
 ```bash
 $ go get github.com/256dpi/fire
 ```
+
+## Add-ons
+
+- [fire-auth](https://github.com/256dpi/fire-auth)
 
 ## Usage
 
