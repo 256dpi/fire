@@ -127,6 +127,11 @@ func NewAuthenticator(db *mgo.Database, policy *Policy) *Authenticator {
 		panic(err)
 	}
 
+	// check secret
+	if len(policy.Secret) < 8 {
+		panic("Secret must be longer than 8 characters")
+	}
+
 	// initialize models
 	Init(policy.OwnerModel)
 	Init(policy.ClientModel)
