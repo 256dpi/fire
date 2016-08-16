@@ -25,7 +25,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := DependentResourcesValidator(M{
+	validator := DependentResourcesValidator(Map{
 		"comments": "post_id",
 		"users":    "author_id",
 	})
@@ -58,7 +58,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := VerifyReferencesValidator(M{
+	validator := VerifyReferencesValidator(Map{
 		"parent":  "comments",
 		"post_id": "posts",
 	})
@@ -103,7 +103,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	db := getDB()
 
 	// create validator
-	validator := MatchingReferencesValidator("comments", "parent", M{
+	validator := MatchingReferencesValidator("comments", "parent", Map{
 		"post_id": "post_id",
 	})
 

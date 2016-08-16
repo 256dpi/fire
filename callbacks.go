@@ -63,7 +63,7 @@ func Combine(callbacks ...Callback) Callback {
 //			"comments": "user_id",
 // 		})
 //
-func DependentResourcesValidator(resources M) Callback {
+func DependentResourcesValidator(resources Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Action != Delete {
@@ -100,7 +100,7 @@ func DependentResourcesValidator(resources M) Callback {
 //			"user_id": "users",
 // 		})
 //
-func VerifyReferencesValidator(references M) Callback {
+func VerifyReferencesValidator(references Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -143,7 +143,7 @@ func VerifyReferencesValidator(references M) Callback {
 // 			"user_id": "user_id",
 // 		})
 //
-func MatchingReferencesValidator(collection, reference string, matcher M) Callback {
+func MatchingReferencesValidator(collection, reference string, matcher Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {

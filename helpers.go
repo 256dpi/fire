@@ -7,8 +7,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// M is a general purpose map.
-type M map[string]interface{}
+// Map is a general purpose map.
+type Map map[string]interface{}
 
 /* internal */
 
