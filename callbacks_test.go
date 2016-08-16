@@ -27,7 +27,11 @@ func TestDependentResourcesValidator(t *testing.T) {
 	// create validator
 	validator := DependentResourcesValidator(SM{
 		"comments": "post_id",
+		"users":    "author_id",
 	})
+
+	// create user
+	user := saveModel(db, &User{})
 
 	// create post
 	post := saveModel(db, &Post{})
@@ -45,7 +49,8 @@ func TestDependentResourcesValidator(t *testing.T) {
 
 	// create comment
 	saveModel(db, &Comment{
-		PostID: post.ID(),
+		PostID:   post.ID(),
+		AuthorID: user.ID(),
 	})
 
 	// call validator
@@ -58,13 +63,18 @@ func TestVerifyReferencesValidator(t *testing.T) {
 
 	// create validator
 	validator := VerifyReferencesValidator(SM{
-		"parent":  "comments",
-		"post_id": "posts",
+		"parent":    "comments",
+		"post_id":   "posts",
+		"author_id": "users",
 	})
+
+	// create user
+	user := saveModel(db, &User{})
 
 	// create bad comment
 	comment1 := saveModel(db, &Comment{
-		PostID: bson.NewObjectId(),
+		PostID:   bson.NewObjectId(),
+		AuthorID: user.ID(),
 	})
 
 	// create context
@@ -81,11 +91,14 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	// get id
 	comment1ID := comment1.ID()
 
-	// create post & comment
+	// create post
 	post := saveModel(db, &Post{})
+
+	// create comment
 	comment2 := saveModel(db, &Comment{
-		Parent: &comment1ID,
-		PostID: post.ID(),
+		Parent:   &comment1ID,
+		PostID:   post.ID(),
+		AuthorID: user.ID(),
 	})
 
 	// update ctx
@@ -109,14 +122,16 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment1 := saveModel(db, &Comment{
-		PostID: postID,
+		PostID:   postID,
+		AuthorID: bson.NewObjectId(),
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
 	comment2 := saveModel(db, &Comment{
-		Parent: &parentID,
-		PostID: bson.NewObjectId(),
+		Parent:   &parentID,
+		PostID:   bson.NewObjectId(),
+		AuthorID: bson.NewObjectId(),
 	})
 
 	// create context
@@ -132,14 +147,16 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment3 := saveModel(db, &Comment{
-		PostID: postID,
+		PostID:   postID,
+		AuthorID: bson.NewObjectId(),
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
 	comment4 := saveModel(db, &Comment{
-		Parent: &parentID,
-		PostID: postID,
+		Parent:   &parentID,
+		PostID:   postID,
+		AuthorID: bson.NewObjectId(),
 	})
 
 	// update ctx

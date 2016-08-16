@@ -70,6 +70,7 @@ type Comment struct {
 	Message   string         `json:"message" valid:"required"`
 	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	AuthorID  bson.ObjectId  `json:"-" valid:"required" bson:"author_id" fire:"author:users"`
 }
 
 type User struct {
@@ -116,6 +117,9 @@ PATCH  /comments/:id/relationships/post
 GET    /comments/:id/relationships/parent
 GET    /comments/:id/parent
 PATCH  /comments/:id/relationships/parent
+GET    /comments/:id/relationships/author
+GET    /comments/:id/author
+PATCH  /comments/:id/relationships/author
 POST   /comments
 DELETE /comments/:id
 PATCH  /comments/:id

@@ -167,6 +167,12 @@ func TestHasManyRelationship(t *testing.T) {
 							"type": "posts",
 							"id": "`+id+`"
 						}
+					},
+					"author": {
+						"data": {
+							"type": "users",
+							"id": "`+bson.NewObjectId().Hex()+`"
+						}
 					}
 				}
 			}
@@ -218,12 +224,14 @@ func TestHasManyRelationshipFiltering(t *testing.T) {
 
 	// create comments
 	saveModel(db, &Comment{
-		Message: "Comment 1",
-		PostID:  post1.ID(),
+		Message:  "Comment 1",
+		PostID:   post1.ID(),
+		AuthorID: bson.NewObjectId(),
 	})
 	saveModel(db, &Comment{
-		Message: "Comment 2",
-		PostID:  post2.ID(),
+		Message:  "Comment 2",
+		PostID:   post2.ID(),
+		AuthorID: bson.NewObjectId(),
 	})
 
 	r := gofight.New()
@@ -271,6 +279,12 @@ func TestToOneRelationship(t *testing.T) {
 						"data": {
 							"type": "posts",
 							"id": "`+post.ID().Hex()+`"
+						}
+					},
+					"author": {
+						"data": {
+							"type": "users",
+							"id": "`+bson.NewObjectId().Hex()+`"
 						}
 					}
 				}

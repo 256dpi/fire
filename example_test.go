@@ -23,10 +23,11 @@ type Post struct {
 }
 
 type Comment struct {
-	Base    `bson:",inline" fire:"comment:comments"`
-	Message string         `json:"message" valid:"required"`
-	Parent  *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
-	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	Base     `bson:",inline" fire:"comment:comments"`
+	Message  string         `json:"message" valid:"required"`
+	Parent   *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
+	PostID   bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	AuthorID bson.ObjectId  `json:"-" valid:"required" bson:"author_id" fire:"author:users"`
 }
 
 func Example() {
