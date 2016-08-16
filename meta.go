@@ -197,14 +197,17 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 	return list
 }
 
-// Make returns a pointer to a new model.
+// Make returns a pointer to a new zero initialized model e.g. *Post.
 //
-// Note: Don't forget to initialize the model using Init().
-func (m *Meta) Make() interface{} {
-	return reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
+// Note: Other libraries like mgo might replace the pointer content with a new
+// structure, therefore the model eventually needs to be initialized again
+// using Init().
+func (m *Meta) Make() Model {
+	pointer := reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
+	return pointer.(Model)
 }
 
-// MakeSlice returns a new slice of the model.
+// MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.
 //
 // Note: Don't forget to initialize the slices model using Init().
 func (m *Meta) MakeSlice() interface{} {

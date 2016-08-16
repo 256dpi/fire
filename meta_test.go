@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -132,6 +133,18 @@ func TestMetaFieldsByTag(t *testing.T) {
 		RelType:  "",
 		index:    1,
 	}}, Init(&Post{}).Meta().FieldsByTag("filterable"))
+}
+
+func TestMetaMake(t *testing.T) {
+	post := Init(&Post{}).Meta().Make()
+
+	assert.Equal(t, "<*fire.Post Value>", reflect.ValueOf(post).String())
+}
+
+func TestMetaMakeSlice(t *testing.T) {
+	posts := Init(&Post{}).Meta().MakeSlice()
+
+	assert.Equal(t, "<*[]*fire.Post Value>", reflect.ValueOf(posts).String())
 }
 
 func BenchmarkNewMeta(b *testing.B) {

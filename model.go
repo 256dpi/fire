@@ -27,6 +27,16 @@ func Init(model Model) Model {
 	return model
 }
 
+// InitSlice initializes all models in a slice of the form *[]*Post.
+func InitSlice(pointer interface{}) interface{} {
+	slice := reflect.ValueOf(pointer).Elem()
+	for i := 0; i < slice.Len(); i++ {
+		Init(slice.Index(i).Interface().(Model))
+	}
+
+	return pointer
+}
+
 // Base is the base for every fire model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
