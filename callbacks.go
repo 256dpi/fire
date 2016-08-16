@@ -17,6 +17,9 @@ type Callback func(*Context) error
 // SM is a general purpose string map.
 type SM map[string]string
 
+// M is a general purpose map.
+type M map[string]interface{}
+
 type fatalError struct {
 	err error
 }

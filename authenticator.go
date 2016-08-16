@@ -67,11 +67,29 @@ func DefaultCompareStrategy(hash, password []byte) error {
 // can be mounted as a fire Resource to become manageable via the API.
 type AccessToken struct {
 	Base          `bson:",inline" fire:"access-token:access-tokens:access_tokens"`
-	Signature     string         `json:"signature" valid:"required"`
+	Signature     string         `json:"signature" valid:"required" fire:"identifiable"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
 	ClientID      *bson.ObjectId `json:"client-id" valid:"-" bson:"client_id" fire:"filterable,sortable"`
 	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
+}
+
+func accessTokenExtractor(model Model) M {
+	accessToken := model.(*AccessToken)
+
+	return M{
+		"RequestedAt":   accessToken.RequestedAt,
+		"GrantedScopes": accessToken.GrantedScopes,
+	}
+}
+
+func accessTokenInjector(model Model, data M) {
+	accessToken := model.(*AccessToken)
+	accessToken.Signature = data["Signature"].(string)
+	accessToken.RequestedAt = data["RequestedAt"].(time.Time)
+	accessToken.GrantedScopes = data["GrantedScopes"].([]string)
+	accessToken.ClientID = data["ClientID"].(*bson.ObjectId)
+	accessToken.OwnerID = data["OwnerID"].(*bson.ObjectId)
 }
 
 // Application is the built-in model used to store clients. The model can be
@@ -79,31 +97,50 @@ type AccessToken struct {
 type Application struct {
 	Base       `bson:",inline" fire:"application:applications"`
 	Name       string   `json:"name" valid:"required"`
-	Key        string   `json:"key" valid:"required"`
+	Key        string   `json:"key" valid:"required" fire:"identifiable"`
 	Secret     []byte   `json:"secret" valid:"required"`
 	Scopes     []string `json:"scopes" valid:"required"`
 	GrantTypes []string `json:"grant-types" valid:"required" bson:"grant_types"`
 	Callbacks  []string `json:"callbacks" valid:"required"`
 }
 
+func applicationExtractor(model Model) M {
+	application := model.(*Application)
+
+	return M{
+		"Key":        application.Key,
+		"Secret":     application.Secret,
+		"Scopes":     application.Scopes,
+		"GrantTypes": application.GrantTypes,
+		"Callbacks":  application.Callbacks,
+	}
+}
+
 // A Policy is used to prepare an authentication policy for an Authenticator.
 type Policy struct {
-	Secret           []byte
-	OwnerModel       Model
-	ClientModel      Model
-	AccessTokenModel Model
-	EnabledGrants    []string
-	GrantStrategy    GrantStrategy
-	CompareStrategy  CompareStrategy
-	TokenLifespan    time.Duration
+	Secret               []byte
+	OwnerModel           Model
+	ClientModel          Model
+	AccessTokenModel     Model
+	OwnerExtractor       Extractor
+	ClientExtractor      Extractor
+	AccessTokenExtractor Extractor
+	AccessTokenInjector  Injector
+	EnabledGrants        []string
+	GrantStrategy        GrantStrategy
+	CompareStrategy      CompareStrategy
+	TokenLifespan        time.Duration
 }
 
 var defaultPolicy = Policy{
-	ClientModel:      &Application{},
-	AccessTokenModel: &AccessToken{},
-	GrantStrategy:    DefaultGrantStrategy,
-	CompareStrategy:  DefaultCompareStrategy,
-	TokenLifespan:    time.Hour,
+	ClientModel:          &Application{},
+	AccessTokenModel:     &AccessToken{},
+	ClientExtractor:      applicationExtractor,
+	AccessTokenExtractor: accessTokenExtractor,
+	AccessTokenInjector:  accessTokenInjector,
+	GrantStrategy:        DefaultGrantStrategy,
+	CompareStrategy:      DefaultCompareStrategy,
+	TokenLifespan:        time.Hour,
 }
 
 // An Authenticator provides OAuth2 based authentication. The implementation
@@ -412,9 +449,12 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
 	obj := newStructPointer(s.authenticator.policy.ClientModel)
 
+	// get id field
+	idField := s.authenticator.policy.ClientModel.Meta().FieldWithTag("identifiable")
+
 	// query db
 	err := s.authenticator.db.C(s.authenticator.policy.ClientModel.Meta().Collection).Find(bson.M{
-		"key": id,
+		idField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidClient
@@ -425,14 +465,17 @@ func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// initialize model
 	client := Init(obj.(Model))
 
+	// extract client data
+	clientData := s.authenticator.policy.ClientExtractor(client)
+
 	return &authenticatorClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        client.Get("Secret").([]byte),
-			GrantTypes:    client.Get("GrantTypes").([]string),
+			Secret:        clientData["Secret"].([]byte),
+			GrantTypes:    clientData["GrantTypes"].([]string),
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  client.Get("Callbacks").([]string),
-			Scopes:        client.Get("Scopes").([]string),
+			RedirectURIs:  clientData["Callbacks"].([]string),
+			Scopes:        clientData["Scopes"].([]string),
 		},
 		model: client,
 	}, nil
@@ -467,12 +510,14 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	// prepare access token
 	accessToken := Init(newStructPointer(s.authenticator.policy.AccessTokenModel).(Model))
 
-	// create access token
-	accessToken.Set("Signature", signature)
-	accessToken.Set("RequestedAt", request.GetRequestedAt())
-	accessToken.Set("GrantedScopes", request.GetGrantedScopes())
-	accessToken.Set("ClientID", &clientID)
-	accessToken.Set("OwnerID", ownerID)
+	// inject data
+	s.authenticator.policy.AccessTokenInjector(accessToken, M{
+		"Signature":     signature,
+		"RequestedAt":   request.GetRequestedAt(),
+		"GrantedScopes": []string(request.GetGrantedScopes()),
+		"ClientID":      &clientID,
+		"OwnerID":       ownerID,
+	})
 
 	// save access token
 	return s.authenticator.db.C(accessToken.Meta().Collection).Insert(accessToken)
@@ -485,9 +530,12 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	// prepare object
 	obj := newStructPointer(s.authenticator.policy.AccessTokenModel)
 
+	// get id field
+	idField := s.authenticator.policy.AccessTokenModel.Meta().FieldWithTag("identifiable")
+
 	// fetch access token
 	err := s.authenticator.db.C(s.authenticator.policy.AccessTokenModel.Meta().Collection).Find(bson.M{
-		"signature": signature,
+		idField.BSONName: signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrAccessDenied
@@ -498,10 +546,13 @@ func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signat
 	// initialize access token
 	accessToken := Init(obj.(Model))
 
+	// extract access token data
+	accessTokenData := s.authenticator.policy.AccessTokenExtractor(accessToken)
+
 	// create request
 	req := fosite.NewRequest()
-	req.RequestedAt = accessToken.Get("RequestedAt").(time.Time)
-	req.GrantedScopes = accessToken.Get("GrantedScopes").([]string)
+	req.RequestedAt = accessTokenData["RequestedAt"].(time.Time)
+	req.GrantedScopes = accessTokenData["GrantedScopes"].([]string)
 	req.Session = session
 
 	// assign access token to context
@@ -527,16 +578,16 @@ func (s *authenticatorStorage) DeleteRefreshTokenSession(ctx context.Context, si
 }
 
 func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secret string) error {
-	var model Model
+	var owner Model
 
 	// get owner from context
-	model = ctx.Value("owner").(Model)
+	owner = ctx.Value("owner").(Model)
 
-	// get secret field
-	ownerSecretField := s.authenticator.policy.OwnerModel.Meta().FieldWithTag("verifiable")
+	// extract data from owner
+	ownerData := s.authenticator.policy.OwnerExtractor(owner)
 
 	// check secret
-	err := s.authenticator.policy.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
+	err := s.authenticator.policy.CompareStrategy(ownerData["Secret"].([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
@@ -549,11 +600,11 @@ func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	obj := newStructPointer(s.authenticator.policy.OwnerModel)
 
 	// get id field
-	ownerIDField := s.authenticator.policy.OwnerModel.Meta().FieldWithTag("identifiable")
+	idField := s.authenticator.policy.OwnerModel.Meta().FieldWithTag("identifiable")
 
 	// query db
 	err := s.authenticator.db.C(s.authenticator.policy.OwnerModel.Meta().Collection).Find(bson.M{
-		ownerIDField.BSONName: id,
+		idField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidRequest

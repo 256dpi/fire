@@ -17,7 +17,6 @@ var supportedTags = []string{
 	"filterable",
 	"sortable",
 	"identifiable",
-	"verifiable",
 }
 
 var baseType = reflect.TypeOf(Base{})

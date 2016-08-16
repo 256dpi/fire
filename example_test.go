@@ -12,7 +12,7 @@ type User struct {
 	Base     `bson:",inline" fire:"user:users"`
 	FullName string `json:"full_name" valid:"required"`
 	Email    string `json:"email" valid:"required" fire:"identifiable"`
-	Password []byte `json:"-" valid:"required" fire:"verifiable"`
+	Password []byte `json:"-" valid:"required"`
 }
 
 type Post struct {
@@ -49,7 +49,12 @@ func Example() {
 		OwnerModel:       &User{},
 		ClientModel:      &Application{},
 		AccessTokenModel: &AccessToken{},
-		EnabledGrants:    []string{PasswordGrant},
+		OwnerExtractor: func(model Model) M {
+			return M{
+				"Secret": model.(*User).Password,
+			}
+		},
+		EnabledGrants: []string{PasswordGrant},
 	})
 
 	// create endpoint

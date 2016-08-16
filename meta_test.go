@@ -133,7 +133,7 @@ func TestMeta(t *testing.T) {
 				Name:     "Signature",
 				JSONName: "signature",
 				BSONName: "signature",
-				Tags:     []string(nil),
+				Tags:     []string{"identifiable"},
 				index:    1,
 			},
 			{

@@ -24,6 +24,11 @@ var policy = &Policy{
 	OwnerModel:       &User{},
 	ClientModel:      &Application{},
 	AccessTokenModel: &AccessToken{},
+	OwnerExtractor: func(model Model) M {
+		return M{
+			"Secret": model.(*User).Password,
+		}
+	},
 }
 
 func TestPasswordGrant(t *testing.T) {
