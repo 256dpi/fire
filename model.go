@@ -27,12 +27,6 @@ func Init(model Model) Model {
 	return model
 }
 
-// An Extractor is responsible for extracting data from models.
-type Extractor func(model Model) M
-
-// An Injector is responsible for injecting data into models.
-type Injector func(model Model, data M)
-
 // Base is the base for every fire model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`

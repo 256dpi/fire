@@ -16,7 +16,6 @@ func init() {
 var supportedTags = []string{
 	"filterable",
 	"sortable",
-	"identifiable",
 }
 
 var baseType = reflect.TypeOf(Base{})
@@ -149,7 +148,7 @@ func NewMeta(model Model) *Meta {
 
 		// add comma separated tags
 		for _, tag := range fireTags {
-			if stringInList(supportedTags, tag) {
+			if StringInList(supportedTags, tag) {
 				field.Tags = append(field.Tags, tag)
 			} else {
 				panic("Unexpected tag " + tag)
@@ -172,23 +171,10 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 
 	// find matching fields
 	for _, field := range m.Fields {
-		if stringInList(field.Tags, tag) {
+		if StringInList(field.Tags, tag) {
 			list = append(list, field)
 		}
 	}
 
 	return list
-}
-
-// FieldWithTag returns the first field that matches the passed tag.
-//
-// Note: This method panics if no field can be found.
-func (m *Meta) FieldWithTag(tag string) Field {
-	for _, field := range m.Fields {
-		if stringInList(field.Tags, tag) {
-			return field
-		}
-	}
-
-	panic("Expected to find a field with the tag " + tag)
 }

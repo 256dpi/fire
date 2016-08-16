@@ -7,6 +7,25 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// SM is a general purpose string map.
+type SM map[string]string
+
+// M is a general purpose map.
+type M map[string]interface{}
+
+// StringInList returns whether the supplied strings can be found in the list.
+func StringInList(list []string, str string) bool {
+	for _, val := range list {
+		if val == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+/* internal */
+
 func newSlicePointer(from interface{}) interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(from)), 0, 0)
 	pointer := reflect.New(slice.Type())
@@ -44,16 +63,6 @@ func getBSONFieldName(field *reflect.StructField) string {
 	}
 
 	return strings.ToLower(field.Name)
-}
-
-func stringInList(list []string, str string) bool {
-	for _, val := range list {
-		if val == str {
-			return true
-		}
-	}
-
-	return false
 }
 
 func stringsToIDs(list []string) []bson.ObjectId {

@@ -30,9 +30,6 @@ func TestDependentResourcesValidator(t *testing.T) {
 		"users":    "author_id",
 	})
 
-	// create user
-	user := saveModel(db, &User{})
-
 	// create post
 	post := saveModel(db, &Post{})
 
@@ -49,8 +46,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 
 	// create comment
 	saveModel(db, &Comment{
-		PostID:   post.ID(),
-		AuthorID: user.ID(),
+		PostID: post.ID(),
 	})
 
 	// call validator
@@ -63,18 +59,13 @@ func TestVerifyReferencesValidator(t *testing.T) {
 
 	// create validator
 	validator := VerifyReferencesValidator(SM{
-		"parent":    "comments",
-		"post_id":   "posts",
-		"author_id": "users",
+		"parent":  "comments",
+		"post_id": "posts",
 	})
-
-	// create user
-	user := saveModel(db, &User{})
 
 	// create bad comment
 	comment1 := saveModel(db, &Comment{
-		PostID:   bson.NewObjectId(),
-		AuthorID: user.ID(),
+		PostID: bson.NewObjectId(),
 	})
 
 	// create context
@@ -96,9 +87,8 @@ func TestVerifyReferencesValidator(t *testing.T) {
 
 	// create comment
 	comment2 := saveModel(db, &Comment{
-		Parent:   &comment1ID,
-		PostID:   post.ID(),
-		AuthorID: user.ID(),
+		Parent: &comment1ID,
+		PostID: post.ID(),
 	})
 
 	// update ctx
@@ -122,16 +112,14 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment1 := saveModel(db, &Comment{
-		PostID:   postID,
-		AuthorID: bson.NewObjectId(),
+		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
 	comment2 := saveModel(db, &Comment{
-		Parent:   &parentID,
-		PostID:   bson.NewObjectId(),
-		AuthorID: bson.NewObjectId(),
+		Parent: &parentID,
+		PostID: bson.NewObjectId(),
 	})
 
 	// create context
@@ -147,16 +135,14 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment3 := saveModel(db, &Comment{
-		PostID:   postID,
-		AuthorID: bson.NewObjectId(),
+		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
 	comment4 := saveModel(db, &Comment{
-		Parent:   &parentID,
-		PostID:   postID,
-		AuthorID: bson.NewObjectId(),
+		Parent: &parentID,
+		PostID: postID,
 	})
 
 	// update ctx

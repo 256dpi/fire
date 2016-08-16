@@ -10,7 +10,7 @@
 
 **A small and opinionated framework for Go providing Ember compatible JSON APIs.**
 
-Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) project, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources, plays well with the [gin](https://github.com/gin-gonic/gin) framework and leverages the [fosite](https://github.com/ory-am/fosite) library to implement OAuth2 based authentication. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
+Fire is built on top of the amazing [api2go](https://github.com/manyminds/api2go) project, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
 
 _The framework is still WIP and the API may be changed._
 
@@ -32,9 +32,6 @@ _The framework is still WIP and the API may be changed._
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
 - [Endpoints](#endpoints)
-- [Authenticators](#authenticators)
-  - [Scopes](#scopes)
-  - [Authorization](#authorization)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -70,14 +67,6 @@ type Comment struct {
 	Message   string         `json:"message" valid:"required"`
 	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
-	AuthorID  bson.ObjectId  `json:"-" valid:"required" bson:"author_id" fire:"author:users"`
-}
-
-type User struct {
-	Base     `bson:",inline" fire:"user:users"`
-	FullName string `json:"full_name" valid:"required"`
-	Email    string `json:"email" valid:"required" fire:"identifiable"`
-	Password []byte `json:"-" valid:"required"`
 }
 ```
 
@@ -174,7 +163,6 @@ post.Meta().PluralName
 post.Meta().Collection
 post.Meta().Fields
 post.Meta().FieldsByTag("tag")
-post.Meta().FieldWithTag("tag")
 ```
 
 More information about the `Meta` structure can be found here: <https://godoc.org/github.com/256dpi/fire#Meta>. 
@@ -318,80 +306,6 @@ endpoint.Register("api", router)
 ````
 
 Resources can be added with `AddResource` before the routes are registered using `Register` on a router.
-
-## Authenticators
-
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database and a policy:
-
-```go
-authenticator := fire.NewAuthenticator(db, &Policy{
-    Secret:           []byte("a-very-long-secret"),
-    OwnerModel:       &User{},
-    ClientModel:      &fire.Application{},
-    AccessTokenModel: &fire.AccessToken{},
-    OwnerExtractor: func(model Model) M {
-        return M{
-            "Secret": model.(*User).Password,
-        }
-    },
-    EnabledGrants:    []string{PasswordGrant},
-})
-
-authenticator.Register("auth", router)
-```
-
-The owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email or username) and secret (password hash) fields. Fire provides built-in client (application) and access token models. These models can be extended but must have exactly the same fields as the built-in ones.
-
-After that, the necessary routes can be registered using `Register` on a router.
-
-More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
-
-### Scopes
-
-The default grant strategy grants all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant strategy can be implemented by setting a different `GrantStrategy`.
-
-The following callback grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
- 
-```go
-policy.GrantStrategy = func(req *GrantRequest) []string {
-    list := []string{"default"}
-    
-    if req.Owner != nil && req.Owner.(*User).Admin {
-        list = append(list, "admin")
-    }
-
-    return list
-}
-```
-
-### Authorization
-
-Later on you can use the authenticator to authorize access to your resources:
-
-```go
-posts := &fire.Resource{
-    // ...
-    Authorizer: authenticator.Authorizer("admin"),
-}
-```
-
-The Authorizer accepts a list of scopes that must have been granted to the token.
-
-- The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
-
-You can also authorize plain gin handlers:
- 
-```go
-router.GET("foo", authenticator.GinAuthorizer("admin"), func(ctx *gin.Context){
-    // ...
-})
-```
-
-Or use call `Authorize` while processing a request:
-
-```go
-accessToken, err := authenticator.Authorize(ctx, "admin")
-```
 
 ## License
 

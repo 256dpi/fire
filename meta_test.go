@@ -111,63 +111,8 @@ func TestMeta(t *testing.T) {
 				RelType:  "posts",
 				index:    3,
 			},
-			{
-				Name:     "AuthorID",
-				JSONName: "-",
-				BSONName: "author_id",
-				Tags:     []string(nil),
-				ToOne:    true,
-				RelName:  "author",
-				RelType:  "users",
-				index:    4,
-			},
 		},
 	}, Init(&Comment{}).Meta())
-
-	assert.Equal(t, &Meta{
-		Collection:   "access_tokens",
-		SingularName: "access-token",
-		PluralName:   "access-tokens",
-		Fields: []Field{
-			{
-				Name:     "Signature",
-				JSONName: "signature",
-				BSONName: "signature",
-				Tags:     []string{"identifiable"},
-				index:    1,
-			},
-			{
-				JSONName: "requested-at",
-				BSONName: "requested_at",
-				Name:     "RequestedAt",
-				Tags:     []string(nil),
-				index:    2,
-			},
-			{
-				Name:     "GrantedScopes",
-				JSONName: "granted-scopes",
-				BSONName: "granted_scopes",
-				Tags:     []string(nil),
-				index:    3,
-			},
-			{
-				JSONName: "client-id",
-				BSONName: "client_id",
-				Name:     "ClientID",
-				Optional: true,
-				Tags:     []string{"filterable", "sortable"},
-				index:    4,
-			},
-			{
-				Name:     "OwnerID",
-				JSONName: "owner-id",
-				BSONName: "owner_id",
-				Optional: true,
-				Tags:     []string{"filterable", "sortable"},
-				index:    5,
-			},
-		},
-	}, Init(&AccessToken{}).Meta())
 }
 
 func TestMetaFieldsByTag(t *testing.T) {
@@ -183,25 +128,6 @@ func TestMetaFieldsByTag(t *testing.T) {
 		RelType:  "",
 		index:    1,
 	}}, Init(&Post{}).Meta().FieldsByTag("filterable"))
-}
-
-func TestMetaFieldWithTag(t *testing.T) {
-	assert.Equal(t, Field{
-		Name:     "Email",
-		JSONName: "email",
-		BSONName: "email",
-		Optional: false,
-		Tags:     []string{"identifiable"},
-		ToOne:    false,
-		HasMany:  false,
-		RelName:  "",
-		RelType:  "",
-		index:    2,
-	}, Init(&User{}).Meta().FieldWithTag("identifiable"))
-
-	assert.Panics(t, func() {
-		Init(&Post{}).Meta().FieldWithTag("foo")
-	})
 }
 
 func BenchmarkNewMeta(b *testing.B) {

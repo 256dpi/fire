@@ -6,19 +6,13 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Callback is can be an Authorizer or Validator an is called during accessing
-// a resource via the API.
+// A Callback can be an Authorizer or Validator an is called during accessing a
+// resource via the API.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns
 // an InternalServerError status and the error will be logged. All other errors
 // are serialized to an error object and returned.
 type Callback func(*Context) error
-
-// SM is a general purpose string map.
-type SM map[string]string
-
-// M is a general purpose map.
-type M map[string]interface{}
 
 type fatalError struct {
 	err error
