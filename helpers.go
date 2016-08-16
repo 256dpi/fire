@@ -7,9 +7,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// SM is a general purpose string map.
-type SM map[string]string
-
 // M is a general purpose map.
 type M map[string]interface{}
 
