@@ -10,17 +10,6 @@ import (
 // M is a general purpose map.
 type M map[string]interface{}
 
-// StringInList returns whether the supplied strings can be found in the list.
-func StringInList(list []string, str string) bool {
-	for _, val := range list {
-		if val == str {
-			return true
-		}
-	}
-
-	return false
-}
-
 /* internal */
 
 func newSlicePointer(from interface{}) interface{} {

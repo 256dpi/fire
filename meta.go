@@ -13,7 +13,7 @@ func init() {
 	metaCache = make(map[string]*Meta)
 }
 
-var supportedTags = []string{
+var supportedTags = Tags{
 	"filterable",
 	"sortable",
 }
@@ -26,13 +26,27 @@ var hasManyType = reflect.TypeOf(HasMany{})
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
+// Tags is a collection of tags.
+type Tags []string
+
+// Has returns whether the supplied tag exists in the list.
+func (t Tags) Has(tag string) bool {
+	for _, val := range t {
+		if val == tag {
+			return true
+		}
+	}
+
+	return false
+}
+
 // A Field contains the meta information about a single field of a model.
 type Field struct {
 	Name     string
 	JSONName string
 	BSONName string
 	Optional bool
-	Tags     []string
+	Tags     Tags
 	ToOne    bool
 	HasMany  bool
 	RelName  string
@@ -148,7 +162,7 @@ func NewMeta(model Model) *Meta {
 
 		// add comma separated tags
 		for _, tag := range fireTags {
-			if StringInList(supportedTags, tag) {
+			if supportedTags.Has(tag) {
 				field.Tags = append(field.Tags, tag)
 			} else {
 				panic("Unexpected tag " + tag)
@@ -171,7 +185,7 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 
 	// find matching fields
 	for _, field := range m.Fields {
-		if StringInList(field.Tags, tag) {
+		if field.Tags.Has(tag) {
 			list = append(list, field)
 		}
 	}
