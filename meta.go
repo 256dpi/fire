@@ -198,11 +198,15 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 }
 
 // Make returns a pointer to a new model.
+//
+// Note: Don't forget to initialize the model using Init().
 func (m *Meta) Make() interface{} {
 	return reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
 }
 
 // MakeSlice returns a new slice of the model.
+//
+// Note: Don't forget to initialize the slices model using Init().
 func (m *Meta) MakeSlice() interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(m.model)), 0, 0)
 	pointer := reflect.New(slice.Type())
