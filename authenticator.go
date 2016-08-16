@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/imdario/mergo"
 	"github.com/ory-am/fosite"
 	"github.com/ory-am/fosite/compose"
 	"github.com/ory-am/fosite/handler/oauth2"
@@ -18,9 +19,22 @@ import (
 // the default hash cost that is used by the token hasher
 var hashCost = bcrypt.DefaultCost
 
+const (
+	// PasswordGrant specifies the usage of the OAuth 2.0 Resource Owner Password
+	// Credentials Grant.
+	PasswordGrant = "password"
+
+	// ClientCredentialsGrant specifies the usage of the OAuth 2.0 Client
+	// Credentials Grant.
+	ClientCredentialsGrant = "client_credentials"
+
+	// ImplicitGrant specifies the usage of the OAuth 2.0 Implicit Grant.
+	ImplicitGrant = "implicit"
+)
+
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
-	GrantType       string
+	GrantType       []string
 	RequestedScopes []string
 	Client          Model
 	Owner           Model
@@ -72,49 +86,94 @@ type Application struct {
 	Callbacks  []string `json:"callbacks" valid:"required"`
 }
 
-// A Authenticator provides OAuth2 based authentication. The implementation
-// currently supports the Resource Owner Credentials, Client Credentials and
-// Implicit Grant flows. The flows can be enabled using their respective methods.
-type Authenticator struct {
-	GrantStrategy   GrantStrategy
-	CompareStrategy CompareStrategy
+// A Policy is used to prepare an authentication policy for an Authenticator.
+type Policy struct {
+	Secret           []byte
+	OwnerModel       Model
+	ClientModel      Model
+	AccessTokenModel Model
+	EnabledGrants    []string
+	GrantStrategy    GrantStrategy
+	CompareStrategy  CompareStrategy
+	TokenLifespan    time.Duration
+}
 
-	db               *mgo.Database
-	config           *compose.Config
-	provider         *fosite.Fosite
-	strategy         *oauth2.HMACSHAStrategy
-	storage          *authenticatorStorage
-	ownerModel       Model
-	clientModel      Model
-	accessTokenModel Model
-	enabledGrants    []string
+var defaultPolicy = Policy{
+	ClientModel:      &Application{},
+	AccessTokenModel: &AccessToken{},
+	GrantStrategy:    DefaultGrantStrategy,
+	CompareStrategy:  DefaultCompareStrategy,
+	TokenLifespan:    time.Hour,
+}
+
+// An Authenticator provides OAuth2 based authentication. The implementation
+// currently supports the Resource Owner Credentials Grant, Client Credentials
+// Grant and Implicit Grant flows.
+type Authenticator struct {
+	db     *mgo.Database
+	policy *Policy
+
+	config   *compose.Config
+	provider *fosite.Fosite
+	strategy *oauth2.HMACSHAStrategy
+	storage  *authenticatorStorage
 }
 
 // NewAuthenticator creates and returns a new Authenticator.
-func NewAuthenticator(db *mgo.Database, secret string, lifespan time.Duration) *Authenticator {
+func NewAuthenticator(db *mgo.Database, policy *Policy) *Authenticator {
+	// set defaults
+	err := mergo.Merge(policy, defaultPolicy)
+	if err != nil {
+		panic(err)
+	}
+
+	// initialize models
+	Init(policy.OwnerModel)
+	Init(policy.ClientModel)
+	Init(policy.AccessTokenModel)
+
 	// create storage
 	storage := &authenticatorStorage{}
 
 	// provider config
 	config := &compose.Config{
-		AccessTokenLifespan: lifespan,
+		AccessTokenLifespan: policy.TokenLifespan,
 		HashCost:            hashCost,
 	}
 
 	// create a new token generation strategy
-	strategy := compose.NewOAuth2HMACStrategy(config, []byte(secret))
+	strategy := compose.NewOAuth2HMACStrategy(config, policy.Secret)
 
 	// create provider
-	provider := compose.Compose(config, storage, strategy)
+	provider := compose.Compose(config, storage, strategy).(*fosite.Fosite)
+
+	// add password grant handler
+	if stringInList(policy.EnabledGrants, PasswordGrant) {
+		grantHandler := compose.OAuth2ResourceOwnerPasswordCredentialsFactory(config, storage, strategy)
+		provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
+		provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+	}
+
+	// add client credentials grant handler
+	if stringInList(policy.EnabledGrants, ClientCredentialsGrant) {
+		grantHandler := compose.OAuth2ClientCredentialsGrantFactory(config, storage, strategy)
+		provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
+		provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+	}
+
+	// add implicit grant handler
+	if stringInList(policy.EnabledGrants, ImplicitGrant) {
+		grantHandler := compose.OAuth2AuthorizeImplicitFactory(config, storage, strategy)
+		provider.AuthorizeEndpointHandlers.Append(grantHandler.(fosite.AuthorizeEndpointHandler))
+		provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
+	}
 
 	// create authenticator
 	a := &Authenticator{
-		GrantStrategy:   DefaultGrantStrategy,
-		CompareStrategy: DefaultCompareStrategy,
-
 		db:       db,
+		policy:   policy,
 		config:   config,
-		provider: provider.(*fosite.Fosite),
+		provider: provider,
 		strategy: strategy,
 		storage:  storage,
 	}
@@ -123,56 +182,6 @@ func NewAuthenticator(db *mgo.Database, secret string, lifespan time.Duration) *
 	storage.authenticator = a
 
 	return a
-}
-
-// SetModels will associate the models to be used with the authenticator.
-func (a *Authenticator) SetModels(owner, client, accessToken Model) {
-	a.ownerModel = Init(owner)
-	a.clientModel = Init(client)
-	a.accessTokenModel = Init(accessToken)
-}
-
-// EnablePasswordGrant enables the usage of the OAuth 2.0 Resource Owner Password
-// Credentials Grant.
-func (a *Authenticator) EnablePasswordGrant() {
-	if stringInList(a.enabledGrants, "password") {
-		panic("The password grant has already been enabled")
-	}
-
-	// create and register handler
-	grantHandler := compose.OAuth2ResourceOwnerPasswordCredentialsFactory(a.config, a.storage, a.strategy)
-	a.provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
-	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
-
-	a.enabledGrants = append(a.enabledGrants, "password")
-}
-
-// EnableCredentialsGrant enables the usage of the OAuth 2.0 Client Credentials Grant.
-func (a *Authenticator) EnableCredentialsGrant() {
-	if stringInList(a.enabledGrants, "client_credentials") {
-		panic("The client credentials grant has already been enabled")
-	}
-
-	// create and register handler
-	grantHandler := compose.OAuth2ClientCredentialsGrantFactory(a.config, a.storage, a.strategy)
-	a.provider.TokenEndpointHandlers.Append(grantHandler.(fosite.TokenEndpointHandler))
-	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
-
-	a.enabledGrants = append(a.enabledGrants, "client_credentials")
-}
-
-// EnableImplicitGrant enables the usage of the OAuth 2.0 Implicit Grant.
-func (a *Authenticator) EnableImplicitGrant() {
-	if stringInList(a.enabledGrants, "implicit") {
-		panic("The implicit grant has already been enabled")
-	}
-
-	// create and register handler
-	grantHandler := compose.OAuth2AuthorizeImplicitFactory(a.config, a.storage, a.strategy)
-	a.provider.AuthorizeEndpointHandlers.Append(grantHandler.(fosite.AuthorizeEndpointHandler))
-	a.provider.TokenValidators.Append(grantHandler.(fosite.TokenValidator))
-
-	a.enabledGrants = append(a.enabledGrants, "implicit")
 }
 
 // Register will create all necessary routes on the passed router. If want to
@@ -249,7 +258,7 @@ func (a *Authenticator) tokenEndpoint(ctx *gin.Context) {
 	var owner Model
 
 	// retrieve owner
-	if ctx.Request.FormValue("grant_type") == "password" {
+	if ctx.Request.FormValue("grant_type") == PasswordGrant {
 		owner, err = a.storage.getOwner(ctx.Request.FormValue("username"))
 		if err != nil {
 			a.provider.WriteAccessError(ctx.Writer, nil, err)
@@ -346,7 +355,7 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// grant additional scopes if the grant callback is present
-	a.invokeGrantStrategy("implicit", req, client, owner)
+	a.invokeGrantStrategy(ImplicitGrant, req, client, owner)
 
 	// create new session
 	session := &oauth2.HMACSession{}
@@ -367,8 +376,8 @@ func (a *Authenticator) authorizeEndpoint(ctx *gin.Context) {
 }
 
 func (a *Authenticator) invokeGrantStrategy(grantType string, req fosite.Requester, client, owner Model) {
-	if a.GrantStrategy != nil {
-		grantedScopes := a.GrantStrategy(&GrantRequest{
+	if a.policy.GrantStrategy != nil {
+		grantedScopes := a.policy.GrantStrategy(&GrantRequest{
 			GrantType:       grantType,
 			RequestedScopes: req.GetRequestedScopes(),
 			Client:          client,
@@ -396,10 +405,10 @@ type authenticatorClient struct {
 
 func (s *authenticatorStorage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
-	obj := newStructPointer(s.authenticator.clientModel)
+	obj := newStructPointer(s.authenticator.policy.ClientModel)
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.clientModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.policy.ClientModel.Meta().Collection).Find(bson.M{
 		"key": id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -448,10 +457,10 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 	}
 
 	// make sure the model is initialized
-	Init(s.authenticator.accessTokenModel)
+	Init(s.authenticator.policy.AccessTokenModel)
 
 	// prepare access token
-	accessToken := Init(newStructPointer(s.authenticator.accessTokenModel).(Model))
+	accessToken := Init(newStructPointer(s.authenticator.policy.AccessTokenModel).(Model))
 
 	// create access token
 	accessToken.Set("Signature", signature)
@@ -466,13 +475,13 @@ func (s *authenticatorStorage) CreateAccessTokenSession(ctx context.Context, sig
 
 func (s *authenticatorStorage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
 	// make sure the model is initialized
-	Init(s.authenticator.accessTokenModel)
+	Init(s.authenticator.policy.AccessTokenModel)
 
 	// prepare object
-	obj := newStructPointer(s.authenticator.accessTokenModel)
+	obj := newStructPointer(s.authenticator.policy.AccessTokenModel)
 
 	// fetch access token
-	err := s.authenticator.db.C(s.authenticator.accessTokenModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.policy.AccessTokenModel.Meta().Collection).Find(bson.M{
 		"signature": signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -519,10 +528,10 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 	model = ctx.Value("owner").(Model)
 
 	// get secret field
-	ownerSecretField := s.authenticator.ownerModel.Meta().FieldWithTag("verifiable")
+	ownerSecretField := s.authenticator.policy.OwnerModel.Meta().FieldWithTag("verifiable")
 
 	// check secret
-	err := s.authenticator.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
+	err := s.authenticator.policy.CompareStrategy(model.Get(ownerSecretField.Name).([]byte), []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
@@ -532,13 +541,13 @@ func (s *authenticatorStorage) Authenticate(ctx context.Context, id string, secr
 
 func (s *authenticatorStorage) getOwner(id string) (Model, error) {
 	// prepare object
-	obj := newStructPointer(s.authenticator.ownerModel)
+	obj := newStructPointer(s.authenticator.policy.OwnerModel)
 
 	// get id field
-	ownerIDField := s.authenticator.ownerModel.Meta().FieldWithTag("identifiable")
+	ownerIDField := s.authenticator.policy.OwnerModel.Meta().FieldWithTag("identifiable")
 
 	// query db
-	err := s.authenticator.db.C(s.authenticator.ownerModel.Meta().Collection).Find(bson.M{
+	err := s.authenticator.db.C(s.authenticator.policy.OwnerModel.Meta().Collection).Find(bson.M{
 		ownerIDField.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {

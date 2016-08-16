@@ -19,39 +19,26 @@ func init() {
 	hashCost = bcrypt.MinCost
 }
 
-func TestEnableOnlyOnce(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnablePasswordGrant()
-	authenticator.EnableCredentialsGrant()
-	authenticator.EnableImplicitGrant()
-
-	assert.Panics(t, func() {
-		authenticator.EnablePasswordGrant()
-	})
-
-	assert.Panics(t, func() {
-		authenticator.EnableCredentialsGrant()
-	})
-
-	assert.Panics(t, func() {
-		authenticator.EnableImplicitGrant()
-	})
+var policy = &Policy{
+	Secret:           []byte("a-very-long-secret"),
+	OwnerModel:       &User{},
+	ClientModel:      &Application{},
+	AccessTokenModel: &AccessToken{},
 }
 
 func TestPasswordGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnablePasswordGrant()
+	policy.EnabledGrants = []string{PasswordGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "password", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, PasswordGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model: &Post{},
@@ -72,7 +59,7 @@ func TestPasswordGrant(t *testing.T) {
 		Key:        "key1",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default"},
-		GrantTypes: []string{"password"},
+		GrantTypes: []string{PasswordGrant},
 	})
 
 	// create user
@@ -158,19 +145,19 @@ func TestPasswordGrant(t *testing.T) {
 	assert.True(t, accessToken.OwnerID.Valid())
 }
 
-func TestCredentialsGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableCredentialsGrant()
+func TestClientCredentialsGrant(t *testing.T) {
+	policy.EnabledGrants = []string{ClientCredentialsGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "client_credentials", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ClientCredentialsGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.Nil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model: &Post{},
@@ -191,7 +178,7 @@ func TestCredentialsGrant(t *testing.T) {
 		Key:        "key2",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default"},
-		GrantTypes: []string{"client_credentials"},
+		GrantTypes: []string{ClientCredentialsGrant},
 	})
 
 	r := gofight.New()
@@ -265,18 +252,18 @@ func TestCredentialsGrant(t *testing.T) {
 }
 
 func TestImplicitGrant(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableImplicitGrant()
+	policy.EnabledGrants = []string{ImplicitGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "implicit", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ImplicitGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model: &Post{},
@@ -297,7 +284,7 @@ func TestImplicitGrant(t *testing.T) {
 		Key:        "key3",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default"},
-		GrantTypes: []string{"implicit"},
+		GrantTypes: []string{ImplicitGrant},
 		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
@@ -402,18 +389,18 @@ func TestImplicitGrant(t *testing.T) {
 }
 
 func TestPasswordGrantAdditionalScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnablePasswordGrant()
+	policy.EnabledGrants = []string{PasswordGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "password", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, PasswordGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -428,7 +415,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 		Key:        "key4",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"password"},
+		GrantTypes: []string{PasswordGrant},
 	})
 
 	// create user
@@ -471,18 +458,18 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 }
 
 func TestPasswordGrantInsufficientScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnablePasswordGrant()
+	policy.EnabledGrants = []string{PasswordGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "password", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, PasswordGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -497,7 +484,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		Key:        "key5",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"password"},
+		GrantTypes: []string{PasswordGrant},
 	})
 
 	// create user
@@ -540,18 +527,18 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 }
 
 func TestCredentialsGrantAdditionalScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableCredentialsGrant()
+	policy.EnabledGrants = []string{ClientCredentialsGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "client_credentials", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ClientCredentialsGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.Nil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -566,7 +553,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 		Key:        "key6",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"client_credentials"},
+		GrantTypes: []string{ClientCredentialsGrant},
 	})
 
 	r := gofight.New()
@@ -600,18 +587,18 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 }
 
 func TestCredentialsGrantInsufficientScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableCredentialsGrant()
+	policy.EnabledGrants = []string{ClientCredentialsGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "client_credentials", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ClientCredentialsGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.Nil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -626,7 +613,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		Key:        "key7",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"client_credentials"},
+		GrantTypes: []string{ClientCredentialsGrant},
 	})
 
 	r := gofight.New()
@@ -660,18 +647,18 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 }
 
 func TestImplicitGrantAdditionalScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableImplicitGrant()
+	policy.EnabledGrants = []string{ImplicitGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "implicit", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ImplicitGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return []string{"default", "admin"}
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -686,7 +673,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 		Key:        "key8",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"implicit"},
+		GrantTypes: []string{ImplicitGrant},
 		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
@@ -737,18 +724,18 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 }
 
 func TestImplicitGrantInsufficientScope(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnableImplicitGrant()
+	policy.EnabledGrants = []string{ImplicitGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "implicit", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, ImplicitGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer(&Resource{
 		Model:      &Post{},
@@ -763,7 +750,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 		Key:        "key9",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default", "admin"},
-		GrantTypes: []string{"implicit"},
+		GrantTypes: []string{ImplicitGrant},
 		Callbacks:  []string{"https://0.0.0.0:8080/auth/callback"},
 	})
 
@@ -814,18 +801,18 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 }
 
 func TestGinAuthorizer(t *testing.T) {
-	authenticator := NewAuthenticator(getDB(), secret, 0)
-	authenticator.SetModels(&User{}, &Application{}, &AccessToken{})
-	authenticator.EnablePasswordGrant()
+	policy.EnabledGrants = []string{PasswordGrant}
 
-	authenticator.GrantStrategy = func(req *GrantRequest) []string {
-		assert.Equal(t, "password", req.GrantType)
+	policy.GrantStrategy = func(req *GrantRequest) []string {
+		assert.Equal(t, PasswordGrant, req.GrantType)
 		assert.Equal(t, []string{"default"}, req.RequestedScopes)
 		assert.NotNil(t, req.Client)
 		assert.NotNil(t, req.Owner)
 
 		return req.RequestedScopes
 	}
+
+	authenticator := NewAuthenticator(getDB(), policy)
 
 	server, db := buildServer()
 	server.GET("/foo", authenticator.GinAuthorizer("default"), func(ctx *gin.Context) {
@@ -840,7 +827,7 @@ func TestGinAuthorizer(t *testing.T) {
 		Key:        "key10",
 		Secret:     hashPassword("secret"),
 		Scopes:     []string{"default"},
-		GrantTypes: []string{"password"},
+		GrantTypes: []string{PasswordGrant},
 	})
 
 	// create user

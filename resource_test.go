@@ -10,8 +10,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const secret = "a-very-very-very-long-secret"
-
 func TestBasicOperations(t *testing.T) {
 	server, _ := buildServer(&Resource{
 		Model: &Post{},

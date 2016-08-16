@@ -71,6 +71,13 @@ type Comment struct {
 	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
+
+type User struct {
+	Base     `bson:",inline" fire:"user:users"`
+	FullName string `json:"full_name" valid:"required"`
+	Email    string `json:"email" valid:"required" fire:"identifiable"`
+	Password []byte `json:"-" valid:"required" fire:"verifiable"`
+}
 ```
 
 Finally, an `Endpoint` is used to register the resources on a router and make them accessible:
@@ -310,40 +317,34 @@ Resources can be added with `AddResource` before the routes are registered using
 
 ## Authenticators
 
-An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database, a secret and the default access token lifespan:
+An `Authenticator` provides authentication through OAuth2 and can be created using `fire.NewAuthenticator` with a reference to a database and a policy:
 
 ```go
-type User struct {
-	Base     `bson:",inline" fire:"user:users"`
-	FullName string `json:"full_name" valid:"required"`
-	Email    string `json:"email" valid:"required" fire:"identifiable"`
-	Password []byte `json:"-" valid:"required" fire:"verifiable"`
-}
-
-authenticator := fire.NewAuthenticator(db, "a-very-long-secret", time.Hour)
-
-authenticator.SetModels(&User{}, &fire.Application{}, &fire.AccessToken{})
-authenticator.EnablePasswordGrant()
-authenticator.EnableCredentialsGrant()
-authenticator.EnableImplicitGrant()
+authenticator := fire.NewAuthenticator(db, &Policy{
+    Secret:           []byte("a-very-long-secret"),
+    OwnerModel:       &User{},
+    ClientModel:      &fire.Application{},
+    AccessTokenModel: &fire.AccessToken{},
+    EnabledGrants:    []string{PasswordGrant},
+})
 
 authenticator.Register("auth", router)
 ```
 
 The owner model is required to have the tags `identifiable` and `verifiable` to allow reading the id (email or username) and secret (password hash) fields. Fire provides built-in client (application) and access token models. These models can be extended but must have exactly the same fields as the built-in ones.
 
-After that, multiple OAuth2 flows can then be enabled using the `EnablePasswordGrant`, `EnableCredentialsGrant` or `EnableImplicitGrant` method before the routes are registered using `Register` on a router.
+After that, the necessary routes can be registered using `Register` on a router.
 
 More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
 
 ### Scopes
 
-The authenticator grants by default all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant strategy can be implemented by setting a `GrantStrategy`.
+The default grant strategy grants all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant strategy can be implemented by setting a different `GrantStrategy`.
 
 The following callback grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
  
 ```go
-authenticator.GrantStrategy = func(req *GrantRequest) []string {
+policy.GrantStrategy = func(req *GrantRequest) []string {
     list := []string{"default"}
     
     if req.Owner != nil && req.Owner.(*User).Admin {
