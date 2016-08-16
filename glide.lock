@@ -1,5 +1,5 @@
-hash: 85812d5e89c31c0d9587e28d2ccb0752189cd1a9f5d7ddb3b9c088f7bf6fce1d
-updated: 2016-08-11T22:08:10.721465756+02:00
+hash: 3ae7c87d3f2f65e4e00e2f9528f6c7f6bf9b85c3c46f6cb5c78e994a2d3ec13a
+updated: 2016-08-16T10:43:00.01927999+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -16,12 +16,15 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
+- name: github.com/imdario/mergo
+  version: a58a1a86830982d07450dd93bed0ac3fc6ac1a9d
+  repo: git@github.com:256dpi/mergo.git
 - name: github.com/julienschmidt/httprouter
   version: d8ff598a019f2c7bad0980917a588193cf26666e
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/manyminds/api2go
-  version: 22da272c420e3e0f59a8aaa74dbd0f170053ade7
+  version: f5e0dba5f9f3c72db99541f3f543c7628c9df296
   subpackages:
   - jsonapi
   - routing
@@ -74,10 +77,6 @@ testImports:
   - spew
 - name: github.com/Jeffail/gabs
   version: 855034b6b7a3b7144977efcaefe72d2c64b0d039
-- name: github.com/kr/pretty
-  version: 737b74a46c4bf788349f72cb256fed10aea4d0ac
-- name: github.com/kr/text
-  version: 7cafcd837844e784b526369c9bce262804aebc60
 - name: github.com/labstack/echo
   version: 50fed083a734a56786826cd579a0867b97a1995c
   subpackages:

@@ -28,6 +28,10 @@ import:
 - package: github.com/julienschmidt/httprouter
   # TODO: Gin currently locks an old version.
   version: d8ff598a019f2c7bad0980917a588193cf26666e
+- package: github.com/imdario/mergo
+  # TODO: Use upstream when PR got accepted.
+  version: patch-1
+  repo: git@github.com:256dpi/mergo.git
 testImport:
 - package: github.com/Jeffail/gabs
 - package: github.com/appleboy/gofight
