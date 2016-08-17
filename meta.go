@@ -209,7 +209,8 @@ func (m *Meta) Make() Model {
 
 // MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.
 //
-// Note: Don't forget to initialize the slices model using Init().
+// Note: Don't forget to initialize the slice using InitSlice() after adding
+// elements with libraries like mgo.
 func (m *Meta) MakeSlice() interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(m.model)), 0, 0)
 	pointer := reflect.New(slice.Type())
