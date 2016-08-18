@@ -80,7 +80,7 @@ func DependentResourcesValidator(resources Map) Callback {
 
 			// immediately return if a document is found
 			if n == 1 {
-				return errors.New("resource has dependent resources")
+				return errors.New("Resource has dependent resources")
 			}
 		}
 
@@ -111,7 +111,9 @@ func VerifyReferencesValidator(references Map) Callback {
 		for field, collection := range references {
 			// read referenced id
 			id := ctx.Model.Get(field)
-			if id == nil {
+
+			// continue if reference is not set
+			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
 				continue
 			}
 
@@ -123,7 +125,7 @@ func VerifyReferencesValidator(references Map) Callback {
 
 			// check for existence
 			if n != 1 {
-				return errors.New("missing required relationship " + field)
+				return errors.New("Missing required relationship " + field)
 			}
 		}
 
@@ -152,8 +154,9 @@ func MatchingReferencesValidator(collection, reference string, matcher Map) Call
 
 		// get main reference
 		id := ctx.Model.Get(reference)
-		if id == nil {
-			// continue if relation is not set
+
+		// continue if reference is not set
+		if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
 			return nil
 		}
 
@@ -165,8 +168,10 @@ func MatchingReferencesValidator(collection, reference string, matcher Map) Call
 		// add other references
 		for targetField, modelField := range matcher {
 			id := ctx.Model.Get(modelField.(string))
-			if id == nil {
-				return errors.New("missing id")
+
+			// abort if reference is missing
+			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
+				return errors.New("Missing ID")
 			}
 
 			query[targetField] = id
@@ -180,7 +185,7 @@ func MatchingReferencesValidator(collection, reference string, matcher Map) Call
 
 		// return error if document is missing
 		if n == 0 {
-			return errors.New("references do not match")
+			return errors.New("References do not match")
 		}
 
 		return nil
