@@ -7,11 +7,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// Map is a general purpose map.
-type Map map[string]interface{}
-
-/* internal */
-
 func getJSONFieldName(field *reflect.StructField) string {
 	tag := field.Tag.Get("json")
 	values := strings.Split(tag, ",")

@@ -35,6 +35,9 @@ func isFatal(err error) bool {
 	return ok
 }
 
+// Map is a general purpose map used to configure callbacks.
+type Map map[string]interface{}
+
 // Combine combines multiple callbacks to one.
 //
 // Note: Execution will be stopped if a callback returns and error.
