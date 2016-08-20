@@ -291,6 +291,7 @@ fire.Combine(callback1, callback2)
 
 Fire ships with several built-in callbacks that implement common concerns:
 
+- [ProtectedAttributesValidator](https://godoc.org/github.com/256dpi/fire#ProtectedAttributesValidator)
 - [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
 - [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
 - [MatchingReferencesValidator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)

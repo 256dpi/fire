@@ -21,6 +21,59 @@ func TestCombine(t *testing.T) {
 	assert.Equal(t, 3, counter)
 }
 
+func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
+	validator := ProtectedAttributesValidator(Map{
+		"title": "Default Title",
+	})
+
+	post := Init(&Post{
+		Title: "Title",
+	}).(*Post)
+
+	ctx := &Context{
+		Action: Create,
+		Model:  post,
+	}
+
+	err := validator(ctx)
+	assert.Error(t, err)
+
+	post.Title = "Default Title"
+	err = validator(ctx)
+	assert.NoError(t, err)
+}
+
+func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
+	db := getDB()
+
+	validator := ProtectedAttributesValidator(Map{
+		"title": "Default Title",
+	})
+
+	savedPost := saveModel(db, &Post{
+		Title: "Another Title",
+	}).(*Post)
+
+	post := Init(&Post{
+		Title: "Title",
+	}).(*Post)
+
+	post.DocID = savedPost.DocID
+
+	ctx := &Context{
+		Action: Update,
+		Model:  post,
+		DB:     db,
+	}
+
+	err := validator(ctx)
+	assert.Error(t, err)
+
+	post.Title = "Another Title"
+	err = validator(ctx)
+	assert.NoError(t, err)
+}
+
 func TestDependentResourcesValidator(t *testing.T) {
 	db := getDB()
 

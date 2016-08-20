@@ -2,6 +2,7 @@ package fire
 
 import (
 	"errors"
+	"reflect"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -44,6 +45,51 @@ func Combine(callbacks ...Callback) Callback {
 			err := cb(ctx)
 			if err != nil {
 				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+// ProtectedAttributesValidator compares protected attributes against their
+// default (during Create) or stored value (during Update) and returns and
+// error if they have been changed.
+//
+// Attributes are defined by passing pairs of fields and default values:
+//
+//		ProtectedAttributesValidator(M{
+//			"title": "A fixed title",
+//		})
+//
+func ProtectedAttributesValidator(attributes Map) Callback {
+	return func(ctx *Context) error {
+		// only run validator on Create and Update
+		if ctx.Action != Create && ctx.Action != Update {
+			return nil
+		}
+
+		if ctx.Action == Create {
+			// check all attributes
+			for field, def := range attributes {
+				if !reflect.DeepEqual(ctx.Model.Get(field), def) {
+					return errors.New("Field " + field + " is protected")
+				}
+			}
+		}
+
+		if ctx.Action == Update {
+			// read the original
+			original, err := ctx.Original()
+			if err != nil {
+				return Fatal(err)
+			}
+
+			// check all attributes
+			for field := range attributes {
+				if !reflect.DeepEqual(ctx.Model.Get(field), original.Get(field)) {
+					return errors.New("Field " + field + " is protected")
+				}
 			}
 		}
 

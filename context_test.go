@@ -15,15 +15,15 @@ func TestContextOriginal(t *testing.T) {
 
 	saveModel(db, savedPost)
 
-	newPost := Init(&Post{
+	post := Init(&Post{
 		Title: "bar",
 	}).(*Post)
 
-	newPost.DocID = savedPost.DocID
+	post.DocID = savedPost.DocID
 
 	ctx := &Context{
 		Action: Update,
-		Model:  newPost,
+		Model:  post,
 		DB:     db,
 	}
 
