@@ -27,6 +27,7 @@ _The framework is still WIP and the API may be changed._
   - [Validation](#validation)
   - [Filtering & Sorting](#filtering-&-sorting)
   - [To One Relationships](#to-one-relationships)
+  - [To Many Relationships](#to-many-relationships)
   - [Has Many Relationships](#has-many-relationships)
 - [Resources](#resources)
   - [Basics](#basics-1)
