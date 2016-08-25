@@ -412,3 +412,81 @@ func TestSparseFieldsets(t *testing.T) {
 			assert.Equal(t, 1, countChildren(obj.Path("attributes")))
 		})
 }
+
+func TestToManyRelationship(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	}, &Resource{
+		Model: &Selection{},
+	})
+
+	// create posts
+	post1 := saveModel(db, &Post{
+		Title: "Post 1",
+	})
+	post2 := saveModel(db, &Post{
+		Title: "Post 2",
+	})
+
+	r := gofight.New()
+
+	var link string
+
+	// create selection
+	r.POST("/selections").
+		SetBody(`{
+			"data": {
+				"type": "selections",
+				"attributes": {
+			  		"name": "Frontpage"
+				},
+				"relationships": {
+					"posts": {
+						"data": [
+							{
+								"type": "posts",
+								"id": "`+post1.ID().Hex()+`"
+							},
+							{
+								"type": "posts",
+								"id": "`+post2.ID().Hex()+`"
+							}
+						]
+					}
+				}
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
+
+			assert.Equal(t, http.StatusCreated, r.Code)
+			assert.Equal(t, "selections", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "Frontpage", obj.Path("attributes.name").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj.Path("relationships.posts.data").Index(0).Path("id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.posts.data").Index(0).Path("type").Data().(string))
+			assert.Equal(t, post2.ID().Hex(), obj.Path("relationships.posts.data").Index(1).Path("id").Data().(string))
+			assert.Equal(t, "posts", obj.Path("relationships.posts.data").Index(1).Path("type").Data().(string))
+			assert.NotEmpty(t, obj.Path("relationships.posts.links.related").Data().(string))
+
+			link = obj.Path("relationships.posts.links.related").Data().(string)
+		})
+
+	// get related post
+	r.GET(link).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj1 := json.Path("data").Index(0)
+			obj2 := json.Path("data").Index(1)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 2, countChildren(json.Path("data")))
+			assert.Equal(t, "posts", obj1.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj1.Path("id").Data().(string)))
+			assert.Equal(t, "Post 1", obj1.Path("attributes.title").Data().(string))
+			assert.Equal(t, "posts", obj2.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj2.Path("id").Data().(string)))
+			assert.Equal(t, "Post 2", obj2.Path("attributes.title").Data().(string))
+		})
+}

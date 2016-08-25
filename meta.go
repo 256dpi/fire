@@ -21,6 +21,7 @@ var supportedTags = Tags{
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(bson.ObjectId(""))
 var optionalToOneType = reflect.TypeOf(new(bson.ObjectId))
+var toManyType = reflect.TypeOf(make([]bson.ObjectId, 0))
 var hasManyType = reflect.TypeOf(HasMany{})
 
 // The HasMany type denotes a has many relationship in a model declaration.
@@ -48,6 +49,7 @@ type Field struct {
 	Optional bool
 	Tags     Tags
 	ToOne    bool
+	ToMany   bool
 	HasMany  bool
 	RelName  string
 	RelType  string
@@ -140,6 +142,26 @@ func NewMeta(model Model) *Meta {
 				field.ToOne = true
 				field.RelName = toOneTag[0]
 				field.RelType = toOneTag[1]
+
+				// remove tag
+				fireTags = fireTags[1:]
+			}
+		}
+
+		// check if field is a valid to many relationship
+		if structField.Type == toManyType {
+			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				if strings.Count(fireTags[0], ":") > 1 {
+					panic("Expected to find a tag of the form fire:\"name:type\" on to many relationship")
+				}
+
+				// parse special to many relationship tag
+				toManyTag := strings.Split(fireTags[0], ":")
+
+				// set relationship data
+				field.ToMany = true
+				field.RelName = toManyTag[0]
+				field.RelType = toManyTag[1]
 
 				// remove tag
 				fireTags = fireTags[1:]

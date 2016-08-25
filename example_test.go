@@ -22,6 +22,12 @@ type Comment struct {
 	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
+type Selection struct {
+	Base    `bson:",inline" fire:"selection:selections"`
+	Name    string          `json:"name" valid:"required"`
+	PostIDs []bson.ObjectId `json:"-" valid:"-" fire:"posts:posts"`
+}
+
 func Example() {
 	// connect to database
 	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")

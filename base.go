@@ -128,9 +128,9 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	// prepare result
 	var refs []jsonapi.Reference
 
-	// add to one and has many relationships
+	// add to one, to many and has many relationships
 	for _, field := range b.meta.Fields {
-		if field.ToOne || field.HasMany {
+		if field.ToOne || field.ToMany || field.HasMany {
 			refs = append(refs, jsonapi.Reference{
 				Type:        field.RelType,
 				Name:        field.RelName,
@@ -179,6 +179,24 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 				Name: field.RelName,
 			})
 		}
+
+		if field.ToMany {
+			// get struct field
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
+
+			// get ids
+			for i := 0; i < structField.Len(); i++ {
+				// read slice value
+				id := structField.Index(i).Interface().(bson.ObjectId).Hex()
+
+				// append reference id
+				ids = append(ids, jsonapi.ReferenceID{
+					ID:   id,
+					Type: field.RelType,
+					Name: field.RelName,
+				})
+			}
+		}
 	}
 
 	return ids
@@ -206,6 +224,38 @@ func (b *Base) SetToOneReferenceID(name, id string) error {
 				structField.Set(reflect.ValueOf(&oid))
 			} else {
 				structField.Set(reflect.ValueOf(oid))
+			}
+
+			return nil
+		}
+	}
+
+	return errors.New("Missing relationship " + name)
+}
+
+// SetToManyReferenceIDs sets references to the passed ids.
+//
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#UnmarshalToOneRelations.
+func (b *Base) SetToManyReferenceIDs(name string, ids []string) error {
+	// check object ids
+	for _, id := range ids {
+		if !bson.IsObjectIdHex(id) {
+			return errors.New("Invalid id")
+		}
+	}
+
+	for _, field := range b.meta.Fields {
+		if field.ToMany && field.RelName == name {
+			// get struct field
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
+
+			// append ids
+			for _, id := range ids {
+				// create id
+				oid := bson.ObjectIdHex(id)
+
+				// append id
+				structField.Set(reflect.Append(structField, reflect.ValueOf(oid)))
 			}
 
 			return nil

@@ -219,6 +219,22 @@ type Comment struct {
 
 _Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
+### To Many Relationships
+
+Fields of the type `[]bson.ObjectId` can be marked as to many relationships using the `fire:"name:type"` struct tag:
+
+```go
+type Selection struct {
+    // ...
+	PostIDs []bson.ObjectId `json:"-" valid:"-" fire:"posts:posts"`
+	// ...
+}
+```
+
+- To many relationships can also have additional tags following the special relationship tag.
+
+_Note: To many relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
+
 ### Has Many Relationships
 
 Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type"` struct tag:
