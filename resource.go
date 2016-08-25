@@ -233,11 +233,11 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 			pluralName := strings.Replace(param, "ID", "", 1)
 
 			// ret relation name
-			relName := ctx.API2GoReq.QueryParams[pluralName + "Name"][0]
+			relName := ctx.API2GoReq.QueryParams[pluralName+"Name"][0]
 
 			// remove params in any case
 			delete(ctx.API2GoReq.QueryParams, param)
-			delete(ctx.API2GoReq.QueryParams, pluralName + "Name")
+			delete(ctx.API2GoReq.QueryParams, pluralName+"Name")
 
 			// get singular name and continue if not existing
 			singularName, ok := r.endpoint.nameMap[pluralName]
