@@ -498,3 +498,41 @@ func TestToManyRelationship(t *testing.T) {
 			assert.Equal(t, "Post 2", obj2.Path("attributes.title").Data().(string))
 		})
 }
+
+func TestEmptyToManyRelationship(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	}, &Resource{
+		Model: &Selection{},
+	})
+
+	// create posts
+	post := saveModel(db, &Post{
+		Title: "Post 1",
+	})
+
+	// create selection
+	selection := saveModel(db, &Selection{
+		Name: "Hello",
+	})
+
+	r := gofight.New()
+
+	// get related posts
+	r.GET("/selections/"+selection.ID().Hex()+"/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 0, countChildren(json.Path("data")))
+		})
+
+	// get related selections
+	r.GET("/posts/"+post.ID().Hex()+"/selections").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 0, countChildren(json.Path("data")))
+		})
+}

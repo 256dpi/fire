@@ -251,8 +251,13 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 			}
 
 			for _, field := range r.Model.Meta().Fields {
-				// add to one relationship filters
+				// add to one relationship filter
 				if field.ToOne && field.RelName == singularName {
+					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
+				}
+
+				// add to many relationship filter
+				if field.ToMany && field.RelName == pluralName {
 					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
 				}
 
@@ -286,12 +291,6 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 					}).Distinct(keyField, &ids)
 					if err != nil {
 						return api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
-					}
-
-					// FIXME: That's not a good practice.
-					// add at least one id
-					if len(ids) == 0 {
-						ids = append(ids, bson.NewObjectId())
 					}
 
 					ctx.Query["_id"] = bson.M{"$in": ids}
