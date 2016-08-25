@@ -24,7 +24,7 @@ type Comment struct {
 }
 
 type Selection struct {
-	Base    `bson:",inline" fire:"selection:selections"`
+	Base    `bson:",inline" fire:"selection:selections:selections"`
 	Name    string          `json:"name" valid:"required"`
 	PostIDs []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
 }

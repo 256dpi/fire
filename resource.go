@@ -288,6 +288,12 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 						return api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 					}
 
+					// FIXME: That's not a good practice.
+					// add at least one id
+					if len(ids) == 0 {
+						ids = append(ids, bson.NewObjectId())
+					}
+
 					ctx.Query["_id"] = bson.M{"$in": ids}
 				}
 			}
