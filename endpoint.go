@@ -9,16 +9,18 @@ import (
 
 // An Endpoint mounts and provides access to multiple resources.
 type Endpoint struct {
-	db        *mgo.Database
-	nameMap   map[string]string
-	resources []*Resource
+	db          *mgo.Database
+	nameMap     map[string]string
+	resourceMap map[string]*Resource
+	resources   []*Resource
 }
 
 // NewEndpoint returns a new fire endpoint.
 func NewEndpoint(db *mgo.Database) *Endpoint {
 	return &Endpoint{
-		db:      db,
-		nameMap: make(map[string]string),
+		db:          db,
+		nameMap:     make(map[string]string),
+		resourceMap: make(map[string]*Resource),
 	}
 }
 
@@ -31,6 +33,9 @@ func (e *Endpoint) AddResource(resource *Resource) {
 
 	// create entry in name map
 	e.nameMap[resource.Model.Meta().PluralName] = resource.Model.Meta().SingularName
+
+	// create entry in resource map
+	e.resourceMap[resource.Model.Meta().SingularName] = resource
 
 	// add resource to internal list
 	resource.endpoint = e

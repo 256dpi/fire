@@ -43,8 +43,11 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	ctx := r.buildContext(FindAll, &req)
 	ctx.Query = bson.M{}
 
-	// set self referencing and to one relationship filters
-	r.setRelationshipFilters(ctx)
+	// set relationship filters
+	err := r.setRelationshipFilters(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// add filters
 	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
@@ -73,7 +76,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	pointer := r.Model.Meta().MakeSlice()
 
 	// query db
-	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
+	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
 		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 	}
@@ -222,7 +225,7 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 	}
 }
 
-func (r *Resource) setRelationshipFilters(ctx *Context) {
+func (r *Resource) setRelationshipFilters(ctx *Context) error {
 	for param, values := range ctx.API2GoReq.QueryParams {
 		// remove *Name params as not needed
 		if strings.HasSuffix(param, "Name") {
@@ -248,14 +251,38 @@ func (r *Resource) setRelationshipFilters(ctx *Context) {
 				ctx.Query["_id"] = bson.M{"$in": stringsToIDs(values)}
 			}
 
-			// add to one relationship filters
 			for _, field := range r.Model.Meta().Fields {
+				// add to one relationship filters
 				if field.ToOne && field.RelName == singularName {
 					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
+				}
+
+				// add has many relationship filter
+				if field.HasMany && field.RelName == pluralName {
+					// get referenced resource and continue if not existing
+					resource, ok := r.endpoint.resourceMap[singularName]
+					if !ok {
+						continue
+					}
+
+					// TODO: Can we read the field using the relation name?
+
+					// read the referenced ids
+					var ids []bson.ObjectId
+					err := ctx.DB.C(resource.Model.Meta().Collection).Find(bson.M{
+						"_id": bson.M{"$in": stringsToIDs(values)},
+					}).Distinct(field.KeyField, &ids)
+					if err != nil {
+						return api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
+					}
+
+					ctx.Query["_id"] = bson.M{"$in": ids}
 				}
 			}
 		}
 	}
+
+	return nil
 }
 
 func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) *api2go.HTTPError {

@@ -113,10 +113,15 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	server, _ := buildServer(&Resource{
+	server, db := buildServer(&Resource{
 		Model: &Post{},
 	}, &Resource{
 		Model: &Comment{},
+	})
+
+	saveModel(db, &Comment{
+		Message: "Crazy stuff!",
+		PostID:  bson.NewObjectId(),
 	})
 
 	r := gofight.New()
@@ -426,6 +431,9 @@ func TestToManyRelationship(t *testing.T) {
 	})
 	post2 := saveModel(db, &Post{
 		Title: "Post 2",
+	})
+	saveModel(db, &Post{
+		Title: "Post 3",
 	})
 
 	r := gofight.New()

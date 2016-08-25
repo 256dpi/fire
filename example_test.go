@@ -9,10 +9,11 @@ import (
 )
 
 type Post struct {
-	Base     `bson:",inline" fire:"post:posts"`
-	Title    string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	TextBody string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Base       `bson:",inline" fire:"post:posts"`
+	Title      string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	TextBody   string  `json:"text-body" valid:"-" bson:"text_body"`
+	Comments   HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post_id"`
+	Selections HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections:post_ids"`
 }
 
 type Comment struct {
@@ -25,7 +26,7 @@ type Comment struct {
 type Selection struct {
 	Base    `bson:",inline" fire:"selection:selections"`
 	Name    string          `json:"name" valid:"required"`
-	PostIDs []bson.ObjectId `json:"-" valid:"-" fire:"posts:posts"`
+	PostIDs []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
 func Example() {
