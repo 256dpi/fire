@@ -75,7 +75,6 @@ func TestMeta(t *testing.T) {
 				HasMany:  true,
 				RelName:  "comments",
 				RelType:  "comments",
-				KeyField: "post_id",
 				index:    3,
 			},
 			{
@@ -87,7 +86,6 @@ func TestMeta(t *testing.T) {
 				HasMany:  true,
 				RelName:  "selections",
 				RelType:  "selections",
-				KeyField: "post_ids",
 				index:    4,
 			},
 		},

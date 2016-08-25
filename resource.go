@@ -227,18 +227,17 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 
 func (r *Resource) setRelationshipFilters(ctx *Context) error {
 	for param, values := range ctx.API2GoReq.QueryParams {
-		// remove *Name params as not needed
-		if strings.HasSuffix(param, "Name") {
-			delete(ctx.API2GoReq.QueryParams, param)
-		}
-
 		// handle *ID params
 		if strings.HasSuffix(param, "ID") {
-			// remove param in any case
-			delete(ctx.API2GoReq.QueryParams, param)
-
 			// get plural name
 			pluralName := strings.Replace(param, "ID", "", 1)
+
+			// ret relation name
+			relName := ctx.API2GoReq.QueryParams[pluralName + "Name"][0]
+
+			// remove params in any case
+			delete(ctx.API2GoReq.QueryParams, param)
+			delete(ctx.API2GoReq.QueryParams, pluralName + "Name")
 
 			// get singular name and continue if not existing
 			singularName, ok := r.endpoint.nameMap[pluralName]
@@ -265,13 +264,26 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 						continue
 					}
 
-					// TODO: Can we read the field using the relation name?
+					// prepare key field
+					var keyField string
+
+					// get foreign field
+					for _, field := range resource.Model.Meta().Fields {
+						if field.RelName == relName {
+							keyField = field.BSONName
+						}
+					}
+
+					// check key field
+					if keyField == "" {
+						return api2go.NewHTTPError(nil, "error while retrieving key field", http.StatusInternalServerError)
+					}
 
 					// read the referenced ids
 					var ids []bson.ObjectId
 					err := ctx.DB.C(resource.Model.Meta().Collection).Find(bson.M{
 						"_id": bson.M{"$in": stringsToIDs(values)},
-					}).Distinct(field.KeyField, &ids)
+					}).Distinct(keyField, &ids)
 					if err != nil {
 						return api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
 					}
