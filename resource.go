@@ -69,7 +69,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// prepare slice
@@ -103,7 +103,7 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// prepare object
@@ -131,7 +131,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// validate model
@@ -142,7 +142,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run validator if available
 	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// query db
@@ -163,7 +163,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// validate model
@@ -174,7 +174,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 
 	// run validator if available
 	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// query db
@@ -199,12 +199,12 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// run validator if available
 	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
-		return nil, *err
+		return nil, err
 	}
 
 	// query db
