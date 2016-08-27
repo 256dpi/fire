@@ -254,6 +254,11 @@ func TestToOneRelationship(t *testing.T) {
 		Model: &Comment{},
 	})
 
+	// create another post
+	saveModel(db, &Post{
+		Title: "Another Post",
+	})
+
 	// create post
 	post := saveModel(db, &Post{
 		Title: "Hello World!",
