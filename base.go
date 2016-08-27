@@ -130,7 +130,12 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 
 	// add to one, to many and has many relationships
 	for _, field := range b.meta.Fields {
-		if field.ToOne || field.ToMany || field.HasMany {
+		if field.ToOne || field.ToMany {
+			refs = append(refs, jsonapi.Reference{
+				Type: field.RelType,
+				Name: field.RelName,
+			})
+		} else if field.HasMany {
 			refs = append(refs, jsonapi.Reference{
 				Type:        field.RelType,
 				Name:        field.RelName,
@@ -142,7 +147,7 @@ func (b *Base) GetReferences() []jsonapi.Reference {
 	return refs
 }
 
-// GetReferencedIDs returns list of references ids.s
+// GetReferencedIDs returns list of references ids.
 //
 // This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#MarshalLinkedRelations.
 func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
