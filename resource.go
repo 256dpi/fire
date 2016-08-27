@@ -78,7 +78,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// query db
 	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
-		return nil, api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
+		return nil, api2go.NewHTTPError(err, "Error while retrieving resources", http.StatusInternalServerError)
 	}
 
 	// initialize slice
@@ -94,7 +94,7 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, error) {
 	// validate id
 	if !bson.IsObjectIdHex(id) {
-		return nil, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
+		return nil, api2go.NewHTTPError(nil, "Invalid id", http.StatusBadRequest)
 	}
 
 	// build context
@@ -112,9 +112,9 @@ func (r *Resource) FindOne(id string, req api2go.Request) (api2go.Responder, err
 	// query db
 	err := r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
-		return nil, api2go.NewHTTPError(err, "resource not found", http.StatusNotFound)
+		return nil, api2go.NewHTTPError(err, "Resource not found", http.StatusNotFound)
 	} else if err != nil {
-		return nil, api2go.NewHTTPError(err, "error while retrieving resource", http.StatusInternalServerError)
+		return nil, api2go.NewHTTPError(err, "Error while retrieving resource", http.StatusInternalServerError)
 	}
 
 	// initialize model
@@ -148,7 +148,7 @@ func (r *Resource) Create(obj interface{}, req api2go.Request) (api2go.Responder
 	// query db
 	err = r.endpoint.db.C(r.Model.Meta().Collection).Insert(ctx.Model)
 	if err != nil {
-		return nil, api2go.NewHTTPError(err, "error while saving resource", http.StatusInternalServerError)
+		return nil, api2go.NewHTTPError(err, "Error while saving resource", http.StatusInternalServerError)
 	}
 
 	return &api2go.Response{Res: ctx.Model, Code: http.StatusCreated}, nil
@@ -180,7 +180,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 	// query db
 	err = r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 	if err != nil {
-		return nil, api2go.NewHTTPError(err, "error while updating resource", http.StatusInternalServerError)
+		return nil, api2go.NewHTTPError(err, "Error while updating resource", http.StatusInternalServerError)
 	}
 
 	return &api2go.Response{Res: ctx.Model, Code: http.StatusOK}, nil
@@ -190,7 +190,7 @@ func (r *Resource) Update(obj interface{}, req api2go.Request) (api2go.Responder
 func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, error) {
 	// validate id
 	if !bson.IsObjectIdHex(id) {
-		return nil, api2go.NewHTTPError(nil, "invalid id", http.StatusBadRequest)
+		return nil, api2go.NewHTTPError(nil, "Invalid id", http.StatusBadRequest)
 	}
 
 	// build context
@@ -210,7 +210,7 @@ func (r *Resource) Delete(id string, req api2go.Request) (api2go.Responder, erro
 	// query db
 	err := r.endpoint.db.C(r.Model.Meta().Collection).Remove(ctx.Query)
 	if err != nil {
-		return nil, api2go.NewHTTPError(err, "error while deleting resource", http.StatusInternalServerError)
+		return nil, api2go.NewHTTPError(err, "Error while deleting resource", http.StatusInternalServerError)
 	}
 
 	return &api2go.Response{Code: http.StatusNoContent}, nil
@@ -281,7 +281,7 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 
 					// check key field
 					if keyField == "" {
-						return api2go.NewHTTPError(nil, "error while retrieving key field", http.StatusInternalServerError)
+						return api2go.NewHTTPError(nil, "Error while retrieving key field", http.StatusInternalServerError)
 					}
 
 					// read the referenced ids
@@ -290,7 +290,7 @@ func (r *Resource) setRelationshipFilters(ctx *Context) error {
 						"_id": bson.M{"$in": stringsToIDs(values)},
 					}).Distinct(keyField, &ids)
 					if err != nil {
-						return api2go.NewHTTPError(err, "error while retrieving resources", http.StatusInternalServerError)
+						return api2go.NewHTTPError(err, "Error while retrieving resources", http.StatusInternalServerError)
 					}
 
 					ctx.Query["_id"] = bson.M{"$in": ids}
@@ -308,7 +308,7 @@ func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) *api2
 		err := cb(ctx)
 		if isFatal(err) {
 			// return system error
-			httpErr := api2go.NewHTTPError(err, "internal server error", http.StatusInternalServerError)
+			httpErr := api2go.NewHTTPError(err, "Internal server error", http.StatusInternalServerError)
 			return &httpErr
 		}
 		if err != nil {
