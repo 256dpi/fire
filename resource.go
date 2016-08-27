@@ -226,6 +226,8 @@ func (r *Resource) buildContext(act Action, req *api2go.Request) *Context {
 }
 
 func (r *Resource) setRelationshipFilters(ctx *Context) error {
+	// TODO: This is very cumbersome, let's fix it upstream.
+
 	for param, values := range ctx.API2GoReq.QueryParams {
 		// handle *ID params
 		if strings.HasSuffix(param, "ID") {
