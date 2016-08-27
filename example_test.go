@@ -61,14 +61,42 @@ func Example() {
 	// register api
 	endpoint.Register("api", router)
 
-	fmt.Println("server ready to run")
+	// print routes
+	for _, route := range router.Routes() {
+		fmt.Printf("%s: %s\n", route.Method, route.Path)
+	}
 
 	// run server
-	//err = router.Run("localhost:8080")
-	//if err != nil {
-	//	panic(err)
-	//}
+	// err = router.Run("localhost:8080")
+	// if err != nil {
+	//	 panic(err)
+	// }
 
 	// Output:
-	// server ready to run
+	// OPTIONS: /api/posts
+	// OPTIONS: /api/posts/:id
+	// OPTIONS: /api/comments
+	// OPTIONS: /api/comments/:id
+	// GET: /api/posts
+	// GET: /api/posts/:id
+	// GET: /api/posts/:id/relationships/comments
+	// GET: /api/posts/:id/relationships/selections
+	// GET: /api/posts/:id/comments
+	// GET: /api/posts/:id/selections
+	// GET: /api/comments
+	// GET: /api/comments/:id
+	// GET: /api/comments/:id/relationships/parent
+	// GET: /api/comments/:id/relationships/post
+	// GET: /api/comments/:id/parent
+	// GET: /api/comments/:id/post
+	// PATCH: /api/posts/:id
+	// PATCH: /api/posts/:id/relationships/comments
+	// PATCH: /api/posts/:id/relationships/selections
+	// PATCH: /api/comments/:id
+	// PATCH: /api/comments/:id/relationships/parent
+	// PATCH: /api/comments/:id/relationships/post
+	// POST: /api/posts
+	// POST: /api/comments
+	// DELETE: /api/posts/:id
+	// DELETE: /api/comments/:id
 }
