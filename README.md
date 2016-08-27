@@ -112,9 +112,6 @@ PATCH  /comments/:id/relationships/post
 GET    /comments/:id/relationships/parent
 GET    /comments/:id/parent
 PATCH  /comments/:id/relationships/parent
-GET    /comments/:id/relationships/author
-GET    /comments/:id/author
-PATCH  /comments/:id/relationships/author
 POST   /comments
 DELETE /comments/:id
 PATCH  /comments/:id
