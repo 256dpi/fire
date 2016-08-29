@@ -24,6 +24,8 @@ func TestBasicOperations(t *testing.T) {
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
 
+	var id string
+
 	// create post
 	r.POST("/posts").
 		SetBody(`{
@@ -43,9 +45,9 @@ func TestBasicOperations(t *testing.T) {
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "Post 1", obj.Path("attributes.title").Data().(string))
 			assert.Equal(t, "", obj.Path("attributes.text-body").Data().(string))
-		})
 
-	var id string
+			id = obj.Path("id").Data().(string)
+		})
 
 	// get list of posts
 	r.GET("/posts").
@@ -55,11 +57,9 @@ func TestBasicOperations(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, id, obj.Path("id").Data().(string))
 			assert.Equal(t, "Post 1", obj.Path("attributes.title").Data().(string))
 			assert.Equal(t, "", obj.Path("attributes.text-body").Data().(string))
-
-			id = obj.Path("id").Data().(string)
 		})
 
 	// update post
@@ -79,7 +79,7 @@ func TestBasicOperations(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, id, obj.Path("id").Data().(string))
 			assert.Equal(t, "Post 1", obj.Path("attributes.title").Data().(string))
 			assert.Equal(t, "Post 1 Text", obj.Path("attributes.text-body").Data().(string))
 		})
@@ -92,7 +92,7 @@ func TestBasicOperations(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, id, obj.Path("id").Data().(string))
 			assert.Equal(t, "Post 1", obj.Path("attributes.title").Data().(string))
 			assert.Equal(t, "Post 1 Text", obj.Path("attributes.text-body").Data().(string))
 		})
@@ -159,6 +159,8 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.Equal(t, `{"data":[]}`, r.Body.String())
 		})
 
+	var id string
+
 	// create related comment
 	r.POST("/comments").
 		SetBody(`{
@@ -188,6 +190,8 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.Equal(t, post2.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
+
+			id = obj.Path("id").Data().(string)
 		})
 
 	// get list of related comments
@@ -199,14 +203,14 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, "comments", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, id, obj.Path("id").Data().(string))
 			assert.Equal(t, "Comment 2", obj.Path("attributes.message").Data().(string))
 			assert.Equal(t, post2.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
 		})
 
-	// get only relationships
+	// get only relationship links
 	r.GET("/posts/"+post2.ID().Hex()+"/relationships/comments").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
@@ -234,19 +238,17 @@ func TestToOneRelationship(t *testing.T) {
 		Model: &Comment{},
 	})
 
-	// create existing post
-	saveModel(db, &Post{
+	// create posts
+	post1 := saveModel(db, &Post{
 		Title: "Post 1",
 	})
-
-	// create parent post
-	post := saveModel(db, &Post{
+	post2 := saveModel(db, &Post{
 		Title: "Post 2",
 	})
 
 	r := gofight.New()
 
-	var link string
+	var id, link string
 
 	// create relating post
 	r.POST("/comments").
@@ -260,7 +262,7 @@ func TestToOneRelationship(t *testing.T) {
 					"post": {
 						"data": {
 							"type": "posts",
-							"id": "`+post.ID().Hex()+`"
+							"id": "`+ post1.ID().Hex()+`"
 						}
 					}
 				}
@@ -274,12 +276,15 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, "comments", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
 			assert.Equal(t, "Comment 1", obj.Path("attributes.message").Data().(string))
-			assert.Equal(t, post.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
 
+			id = obj.Path("id").Data().(string)
 			link = obj.Path("relationships.post.links.related").Data().(string)
 		})
+
+	assert.Equal(t, "/comments/" + id + "/post", link)
 
 	// get related post
 	r.GET(link).
@@ -287,12 +292,49 @@ func TestToOneRelationship(t *testing.T) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
 			obj := json.Path("data").Index(0)
 
+			// TODO: Why does the API return an array rather than an object?
+
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Post 2", obj.Path("attributes.title").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj.Path("id").Data().(string))
+			assert.Equal(t, "Post 1", obj.Path("attributes.title").Data().(string))
 		})
+
+	// get related post id only
+	r.GET("/comments/" + id + "/relationships/post").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj.Path("id").Data().(string))
+		})
+
+	// update relationship
+	r.PATCH("/comments/" + id + "/relationships/post").
+		SetBody(`{
+			"data": {
+				"type": "comments",
+				"id": "` + post2.ID().Hex() + `"
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
+
+	// fetch updated relationship
+	r.GET("/comments/" + id + "/relationships/post").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj := json.Path("data")
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, "posts", obj.Path("type").Data().(string))
+		assert.Equal(t, post2.ID().Hex(), obj.Path("id").Data().(string))
+	})
 }
 
 func TestFiltering(t *testing.T) {
