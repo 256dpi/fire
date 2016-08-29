@@ -574,20 +574,20 @@ func TestToManyRelationship(t *testing.T) {
 			]
 		}`).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusNoContent, r.Code)
-		assert.Equal(t, "", r.Body.String())
-	})
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
 
 	// get updated related post ids only
 	r.GET("/selections/"+id+"/relationships/posts").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj1 := json.Path("data").Index(0)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj1 := json.Path("data").Index(0)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "posts", obj1.Path("type").Data().(string))
-		assert.Equal(t, post3.ID().Hex(), obj1.Path("id").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "posts", obj1.Path("type").Data().(string))
+			assert.Equal(t, post3.ID().Hex(), obj1.Path("id").Data().(string))
+		})
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
