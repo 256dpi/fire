@@ -189,14 +189,10 @@ func (b *Base) GetReferencedIDs() []jsonapi.ReferenceID {
 			// get struct field
 			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
 
-			// get ids
-			for i := 0; i < structField.Len(); i++ {
-				// read slice value
-				id := structField.Index(i).Interface().(bson.ObjectId).Hex()
-
-				// append reference id
+			// append reference ids
+			for _, id := range structField.Interface().([]bson.ObjectId) {
 				ids = append(ids, jsonapi.ReferenceID{
-					ID:   id,
+					ID:   id.Hex(),
 					Type: field.RelType,
 					Name: field.RelName,
 				})
@@ -264,6 +260,91 @@ func (b *Base) SetToManyReferenceIDs(name string, ids []string) error {
 
 			// set new ids
 			structField.Set(reflect.ValueOf(oids))
+
+			return nil
+		}
+	}
+
+	return errors.New("Missing relationship " + name)
+}
+
+// AddToManyIDs adds the passed ids.
+//
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#EditToManyRelations.
+func (b *Base) AddToManyIDs(name string, ids []string) error {
+	// check object ids
+	for _, id := range ids {
+		if !bson.IsObjectIdHex(id) {
+			return errors.New("Invalid id")
+		}
+	}
+
+	for _, field := range b.meta.Fields {
+		if field.HasMany && field.RelName == name {
+			// TODO: We cannot set has many relationships here.
+			return nil
+		}
+
+		if field.ToMany && field.RelName == name {
+			// get struct field
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
+
+			// create object ids
+			oids := stringsToIDs(ids)
+
+			// append ids
+			structField.Set(reflect.AppendSlice(structField, reflect.ValueOf(oids)))
+
+			return nil
+		}
+	}
+
+	return errors.New("Missing relationship " + name)
+}
+
+// DeleteToManyIDs removes the passed ids.
+//
+// This methods is required by https://godoc.org/github.com/manyminds/api2go/jsonapi#EditToManyRelations.
+func (b *Base) DeleteToManyIDs(name string, ids []string) error {
+	// check object ids
+	for _, id := range ids {
+		if !bson.IsObjectIdHex(id) {
+			return errors.New("Invalid id")
+		}
+	}
+
+	for _, field := range b.meta.Fields {
+		if field.HasMany && field.RelName == name {
+			// TODO: We cannot set has many relationships here.
+			return nil
+		}
+
+		if field.ToMany && field.RelName == name {
+			// get struct field
+			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
+
+			// create object ids
+			oids := stringsToIDs(ids)
+
+			// new slice
+			var newSlice []bson.ObjectId
+
+			// filter ids
+			for _, id := range structField.Interface().([]bson.ObjectId) {
+				remove := false
+				for _, oid := range oids {
+					if oid == id {
+						remove = true
+					}
+				}
+
+				if !remove {
+					newSlice = append(newSlice, id)
+				}
+			}
+
+			// set filtered ids
+			structField.Set(reflect.ValueOf(newSlice))
 
 			return nil
 		}

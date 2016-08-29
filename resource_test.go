@@ -588,6 +588,63 @@ func TestToManyRelationship(t *testing.T) {
 			assert.Equal(t, "posts", obj1.Path("type").Data().(string))
 			assert.Equal(t, post3.ID().Hex(), obj1.Path("id").Data().(string))
 		})
+
+	// add relationship
+	r.POST("/selections/"+id+"/relationships/posts").
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post1.ID().Hex()+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+		assert.Equal(t, "", r.Body.String())
+	})
+
+	// get related post ids only
+	r.GET("/selections/"+id+"/relationships/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj1 := json.Path("data").Index(0)
+			obj2 := json.Path("data").Index(1)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "posts", obj1.Path("type").Data().(string))
+			assert.Equal(t, post3.ID().Hex(), obj1.Path("id").Data().(string))
+			assert.Equal(t, "posts", obj2.Path("type").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj2.Path("id").Data().(string))
+		})
+
+	// remove relationship
+	r.DELETE("/selections/"+id+"/relationships/posts").
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post3.ID().Hex()+`"
+				},
+				{
+					"type": "comments",
+					"id": "`+post1.ID().Hex()+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+		assert.Equal(t, "", r.Body.String())
+	})
+
+	// get empty related post ids list
+	r.GET("/selections/"+id+"/relationships/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 0, countChildren(json.Path("data")))
+	})
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {

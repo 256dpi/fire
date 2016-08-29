@@ -110,9 +110,18 @@ func Example() {
 	// PATCH: /api/selections/:id
 	// PATCH: /api/selections/:id/relationships/posts
 	// POST: /api/posts
+	// POST: /api/posts/:id/relationships/comments
+	// POST: /api/posts/:id/relationships/selections
 	// POST: /api/selections
+	// POST: /api/selections/:id/relationships/posts
 	// POST: /api/comments
 	// DELETE: /api/posts/:id
+	// DELETE: /api/posts/:id/relationships/comments
+	// DELETE: /api/posts/:id/relationships/selections
 	// DELETE: /api/selections/:id
+	// DELETE: /api/selections/:id/relationships/posts
 	// DELETE: /api/comments/:id
+
+	// TODO: EditToManyRelations routes should not be generated for has many
+	// relationships.
 }
