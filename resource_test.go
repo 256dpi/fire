@@ -216,11 +216,13 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.Equal(t, 2, countChildren(json.Path("links"))) // expect only related and self
 		})
 
+	// attempt to override relationship
 	r.PATCH("/posts/"+post2.ID().Hex()+"/relationships/comments").
 		SetBody(`{ "data": [] }`).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			// TODO: This should be 403 Forbidden as the reference is not loaded.
 			// See: https://github.com/manyminds/api2go/issues/260
+			// Actually we shouldn't see a route for this at all.
 			assert.Equal(t, http.StatusNoContent, r.Code)
 		})
 }
