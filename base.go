@@ -259,14 +259,11 @@ func (b *Base) SetToManyReferenceIDs(name string, ids []string) error {
 			// get struct field
 			structField := reflect.ValueOf(b.model).Elem().Field(field.index)
 
-			// append ids
-			for _, id := range ids {
-				// create id
-				oid := bson.ObjectIdHex(id)
+			// create object ids
+			oids := stringsToIDs(ids)
 
-				// append id
-				structField.Set(reflect.Append(structField, reflect.ValueOf(oid)))
-			}
+			// set new ids
+			structField.Set(reflect.ValueOf(oids))
 
 			return nil
 		}

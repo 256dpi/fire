@@ -480,13 +480,13 @@ func TestToManyRelationship(t *testing.T) {
 	post2 := saveModel(db, &Post{
 		Title: "Post 2",
 	})
-	saveModel(db, &Post{
+	post3 := saveModel(db, &Post{
 		Title: "Post 3",
 	})
 
 	r := gofight.New()
 
-	var link string
+	var id, link string
 
 	// create selection
 	r.POST("/selections").
@@ -526,8 +526,11 @@ func TestToManyRelationship(t *testing.T) {
 			assert.Equal(t, "posts", obj.Path("relationships.posts.data").Index(1).Path("type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.posts.links.related").Data().(string))
 
+			id = obj.Path("id").Data().(string)
 			link = obj.Path("relationships.posts.links.related").Data().(string)
 		})
+
+	assert.Equal(t, "/selections/"+id+"/posts", link)
 
 	// get related post
 	r.GET(link).
@@ -545,6 +548,46 @@ func TestToManyRelationship(t *testing.T) {
 			assert.True(t, bson.IsObjectIdHex(obj2.Path("id").Data().(string)))
 			assert.Equal(t, "Post 2", obj2.Path("attributes.title").Data().(string))
 		})
+
+	// get related post ids only
+	r.GET("/selections/"+id+"/relationships/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj1 := json.Path("data").Index(0)
+			obj2 := json.Path("data").Index(1)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "posts", obj1.Path("type").Data().(string))
+			assert.Equal(t, post1.ID().Hex(), obj1.Path("id").Data().(string))
+			assert.Equal(t, "posts", obj2.Path("type").Data().(string))
+			assert.Equal(t, post2.ID().Hex(), obj2.Path("id").Data().(string))
+		})
+
+	// update relationship
+	r.PATCH("/selections/"+id+"/relationships/posts").
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post3.ID().Hex()+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+		assert.Equal(t, "", r.Body.String())
+	})
+
+	// get updated related post ids only
+	r.GET("/selections/"+id+"/relationships/posts").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj1 := json.Path("data").Index(0)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, "posts", obj1.Path("type").Data().(string))
+		assert.Equal(t, post3.ID().Hex(), obj1.Path("id").Data().(string))
+	})
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
