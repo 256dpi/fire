@@ -250,7 +250,7 @@ func (b *Base) SetToManyReferenceIDs(name string, ids []string) error {
 	}
 
 	for _, field := range b.meta.Fields {
-		if field.HasMany & field.RelName == name {
+		if field.HasMany && field.RelName == name {
 			// TODO: We cannot set has many relationships here.
 			return nil
 		}
