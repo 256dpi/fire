@@ -136,42 +136,42 @@ func TestFiltering(t *testing.T) {
 	// get posts with single value filter
 	r.GET("/posts?filter[title]=post-1").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj := json.Path("data").Index(0)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 1, countChildren(json.Path("data")))
-		assert.Equal(t, "posts", obj.Path("type").Data().(string))
-		assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-		assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
+		})
 
 	// get posts with multi value filter
 	r.GET("/posts?filter[title]=post-2,post-3").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 2, countChildren(json.Path("data")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 2, countChildren(json.Path("data")))
+		})
 
 	// get posts with boolean
 	r.GET("/posts?filter[published]=true").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 2, countChildren(json.Path("data")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 2, countChildren(json.Path("data")))
+		})
 
 	// get posts with boolean
 	r.GET("/posts?filter[published]=false").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 1, countChildren(json.Path("data")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+		})
 }
 
 func TestSorting(t *testing.T) {
@@ -195,26 +195,26 @@ func TestSorting(t *testing.T) {
 	// get posts in ascending order
 	r.GET("/posts?sort=title").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 3, countChildren(json.Path("data")))
-		assert.Equal(t, "post-1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-		assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-		assert.Equal(t, "post-3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 3, countChildren(json.Path("data")))
+			assert.Equal(t, "post-1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+		})
 
 	// get posts in descending order
 	r.GET("/posts?sort=-title").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 3, countChildren(json.Path("data")))
-		assert.Equal(t, "post-3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-		assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-		assert.Equal(t, "post-1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 3, countChildren(json.Path("data")))
+			assert.Equal(t, "post-3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+		})
 }
 
 func TestSparseFieldsets(t *testing.T) {
@@ -232,13 +232,13 @@ func TestSparseFieldsets(t *testing.T) {
 	// get posts with single value filter
 	r.GET("/posts?fields[posts]=title").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj := json.Path("data").Index(0)
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data").Index(0)
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, 1, countChildren(json.Path("data")))
-		assert.Equal(t, 1, countChildren(obj.Path("attributes")))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
+			assert.Equal(t, 1, countChildren(obj.Path("attributes")))
+		})
 }
 
 func TestHasManyRelationship(t *testing.T) {
@@ -391,7 +391,7 @@ func TestToOneRelationship(t *testing.T) {
 					"post": {
 						"data": {
 							"type": "posts",
-							"id": "`+ post1.ID().Hex()+`"
+							"id": "`+post1.ID().Hex()+`"
 						}
 					}
 				}
@@ -413,7 +413,7 @@ func TestToOneRelationship(t *testing.T) {
 			link = obj.Path("relationships.post.links.related").Data().(string)
 		})
 
-	assert.Equal(t, "/comments/" + id + "/post", link)
+	assert.Equal(t, "/comments/"+id+"/post", link)
 
 	// get related post
 	r.GET(link).
@@ -431,7 +431,7 @@ func TestToOneRelationship(t *testing.T) {
 		})
 
 	// get related post id only
-	r.GET("/comments/" + id + "/relationships/post").
+	r.GET("/comments/"+id+"/relationships/post").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			json, _ := gabs.ParseJSONBuffer(r.Body)
 			obj := json.Path("data")
@@ -442,11 +442,11 @@ func TestToOneRelationship(t *testing.T) {
 		})
 
 	// update relationship
-	r.PATCH("/comments/" + id + "/relationships/post").
+	r.PATCH("/comments/"+id+"/relationships/post").
 		SetBody(`{
 			"data": {
 				"type": "comments",
-				"id": "` + post2.ID().Hex() + `"
+				"id": "`+post2.ID().Hex()+`"
 			}
 		}`).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -455,15 +455,15 @@ func TestToOneRelationship(t *testing.T) {
 		})
 
 	// fetch updated relationship
-	r.GET("/comments/" + id + "/relationships/post").
+	r.GET("/comments/"+id+"/relationships/post").
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		obj := json.Path("data")
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+			obj := json.Path("data")
 
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "posts", obj.Path("type").Data().(string))
-		assert.Equal(t, post2.ID().Hex(), obj.Path("id").Data().(string))
-	})
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "posts", obj.Path("type").Data().(string))
+			assert.Equal(t, post2.ID().Hex(), obj.Path("id").Data().(string))
+		})
 }
 
 func TestToManyRelationship(t *testing.T) {
