@@ -56,6 +56,11 @@ func Example() {
 		Model: &Comment{},
 	})
 
+	// add selection
+	endpoint.AddResource(&Resource{
+		Model: &Selection{},
+	})
+
 	// create router
 	router := gin.New()
 
@@ -78,6 +83,8 @@ func Example() {
 	// OPTIONS: /api/posts/:id
 	// OPTIONS: /api/comments
 	// OPTIONS: /api/comments/:id
+	// OPTIONS: /api/selections
+	// OPTIONS: /api/selections/:id
 	// GET: /api/posts
 	// GET: /api/posts/:id
 	// GET: /api/posts/:id/relationships/comments
@@ -90,14 +97,22 @@ func Example() {
 	// GET: /api/comments/:id/relationships/post
 	// GET: /api/comments/:id/parent
 	// GET: /api/comments/:id/post
+	// GET: /api/selections
+	// GET: /api/selections/:id
+	// GET: /api/selections/:id/relationships/posts
+	// GET: /api/selections/:id/posts
 	// PATCH: /api/posts/:id
 	// PATCH: /api/posts/:id/relationships/comments
 	// PATCH: /api/posts/:id/relationships/selections
 	// PATCH: /api/comments/:id
 	// PATCH: /api/comments/:id/relationships/parent
 	// PATCH: /api/comments/:id/relationships/post
+	// PATCH: /api/selections/:id
+	// PATCH: /api/selections/:id/relationships/posts
 	// POST: /api/posts
+	// POST: /api/selections
 	// POST: /api/comments
 	// DELETE: /api/posts/:id
+	// DELETE: /api/selections/:id
 	// DELETE: /api/comments/:id
 }
