@@ -232,14 +232,14 @@ func TestToOneRelationship(t *testing.T) {
 		Model: &Comment{},
 	})
 
-	// create another post
+	// create existing post
 	saveModel(db, &Post{
-		Title: "Another Post",
+		Title: "Post 1",
 	})
 
-	// create post
+	// create parent post
 	post := saveModel(db, &Post{
-		Title: "Hello World!",
+		Title: "Post 2",
 	})
 
 	r := gofight.New()
@@ -252,7 +252,7 @@ func TestToOneRelationship(t *testing.T) {
 			"data": {
 				"type": "comments",
 				"attributes": {
-			  		"message": "Amazing Thing!"
+			  		"message": "Comment 1"
 				},
 				"relationships": {
 					"post": {
@@ -271,7 +271,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, http.StatusCreated, r.Code)
 			assert.Equal(t, "comments", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Amazing Thing!", obj.Path("attributes.message").Data().(string))
+			assert.Equal(t, "Comment 1", obj.Path("attributes.message").Data().(string))
 			assert.Equal(t, post.ID().Hex(), obj.Path("relationships.post.data.id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.post.data.type").Data().(string))
 			assert.NotEmpty(t, obj.Path("relationships.post.links.related").Data().(string))
@@ -289,7 +289,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, 1, countChildren(json.Path("data")))
 			assert.Equal(t, "posts", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Hello World!", obj.Path("attributes.title").Data().(string))
+			assert.Equal(t, "Post 2", obj.Path("attributes.title").Data().(string))
 		})
 }
 
@@ -362,13 +362,13 @@ func TestSorting(t *testing.T) {
 
 	// create posts
 	saveModel(db, &Post{
-		Title: "2",
+		Title: "post-2",
 	})
 	saveModel(db, &Post{
-		Title: "1",
+		Title: "post-1",
 	})
 	saveModel(db, &Post{
-		Title: "3",
+		Title: "post-3",
 	})
 
 	r := gofight.New()
@@ -380,9 +380,9 @@ func TestSorting(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 3, countChildren(json.Path("data")))
-			assert.Equal(t, "1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-			assert.Equal(t, "2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-			assert.Equal(t, "3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
 		})
 
 	// get posts in descending order
@@ -392,9 +392,9 @@ func TestSorting(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 3, countChildren(json.Path("data")))
-			assert.Equal(t, "3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-			assert.Equal(t, "2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-			assert.Equal(t, "1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+			assert.Equal(t, "post-1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
 		})
 }
 
@@ -405,7 +405,7 @@ func TestSparseFieldsets(t *testing.T) {
 
 	// create posts
 	saveModel(db, &Post{
-		Title: "post-1",
+		Title: "Post 1",
 	})
 
 	r := gofight.New()
@@ -450,7 +450,7 @@ func TestToManyRelationship(t *testing.T) {
 			"data": {
 				"type": "selections",
 				"attributes": {
-			  		"name": "Frontpage"
+			  		"name": "Selection 1"
 				},
 				"relationships": {
 					"posts": {
@@ -475,7 +475,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.Equal(t, http.StatusCreated, r.Code)
 			assert.Equal(t, "selections", obj.Path("type").Data().(string))
 			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "Frontpage", obj.Path("attributes.name").Data().(string))
+			assert.Equal(t, "Selection 1", obj.Path("attributes.name").Data().(string))
 			assert.Equal(t, post1.ID().Hex(), obj.Path("relationships.posts.data").Index(0).Path("id").Data().(string))
 			assert.Equal(t, "posts", obj.Path("relationships.posts.data").Index(0).Path("type").Data().(string))
 			assert.Equal(t, post2.ID().Hex(), obj.Path("relationships.posts.data").Index(1).Path("id").Data().(string))
@@ -517,7 +517,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 
 	// create selection
 	selection := saveModel(db, &Selection{
-		Name: "Hello",
+		Name: "Selection 1",
 	})
 
 	r := gofight.New()
