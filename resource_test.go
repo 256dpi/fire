@@ -300,13 +300,16 @@ func TestFiltering(t *testing.T) {
 
 	// create posts
 	saveModel(db, &Post{
-		Title: "post-1",
+		Title:     "post-1",
+		Published: true,
 	})
 	saveModel(db, &Post{
-		Title: "post-2",
+		Title:     "post-2",
+		Published: false,
 	})
 	saveModel(db, &Post{
-		Title: "post-3",
+		Title:     "post-3",
+		Published: true,
 	})
 
 	r := gofight.New()
@@ -331,6 +334,24 @@ func TestFiltering(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, 2, countChildren(json.Path("data")))
+		})
+
+	// get posts with boolean
+	r.GET("/posts?filter[published]=true").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 2, countChildren(json.Path("data")))
+		})
+
+	// get posts with boolean
+	r.GET("/posts?filter[published]=false").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			json, _ := gabs.ParseJSONBuffer(r.Body)
+
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, 1, countChildren(json.Path("data")))
 		})
 }
 

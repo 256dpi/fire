@@ -52,6 +52,11 @@ func (r *Resource) FindAll(req api2go.Request) (api2go.Responder, error) {
 	// add filters
 	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
 		if values, ok := req.QueryParams["filter["+field.JSONName+"]"]; ok {
+			if field.Type == reflect.Bool && len(values) == 1 {
+				ctx.Query[field.BSONName] = values[0] == "true"
+				continue
+			}
+
 			ctx.Query[field.BSONName] = bson.M{"$in": values}
 		}
 	}

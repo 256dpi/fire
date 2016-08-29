@@ -11,6 +11,7 @@ import (
 type Post struct {
 	Base       `bson:",inline" fire:"post:posts"`
 	Title      string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	Published  bool    `json:"published" valid:"-" fire:"filterable"`
 	TextBody   string  `json:"text-body" valid:"-" bson:"text_body"`
 	Comments   HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
 	Selections HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections"`

@@ -61,12 +61,20 @@ func TestMeta(t *testing.T) {
 				index:    1,
 			},
 			{
+				Name:     "Published",
+				Type:     reflect.Bool,
+				JSONName: "published",
+				BSONName: "published",
+				Tags:     []string{"filterable"},
+				index:    2,
+			},
+			{
 				Name:     "TextBody",
 				Type:     reflect.String,
 				JSONName: "text-body",
 				BSONName: "text_body",
 				Tags:     []string(nil),
-				index:    2,
+				index:    3,
 			},
 			{
 				Name:     "Comments",
@@ -78,7 +86,7 @@ func TestMeta(t *testing.T) {
 				HasMany:  true,
 				RelName:  "comments",
 				RelType:  "comments",
-				index:    3,
+				index:    4,
 			},
 			{
 				Name:     "Selections",
@@ -90,7 +98,7 @@ func TestMeta(t *testing.T) {
 				HasMany:  true,
 				RelName:  "selections",
 				RelType:  "selections",
-				index:    4,
+				index:    5,
 			},
 		},
 		model: post.Meta().model,
@@ -139,19 +147,24 @@ func TestMeta(t *testing.T) {
 }
 
 func TestMetaFieldsByTag(t *testing.T) {
-	assert.Equal(t, []Field{{
-		Name:     "Title",
-		Type:     reflect.String,
-		JSONName: "title",
-		BSONName: "title",
-		Optional: false,
-		Tags:     []string{"filterable", "sortable"},
-		ToOne:    false,
-		HasMany:  false,
-		RelName:  "",
-		RelType:  "",
-		index:    1,
-	}}, Init(&Post{}).Meta().FieldsByTag("filterable"))
+	assert.Equal(t, []Field{
+		{
+			Name:     "Title",
+			Type:     reflect.String,
+			JSONName: "title",
+			BSONName: "title",
+			Tags:     []string{"filterable", "sortable"},
+			index:    1,
+		},
+		{
+			Name:     "Published",
+			Type:     reflect.Bool,
+			JSONName: "published",
+			BSONName: "published",
+			Tags:     []string{"filterable"},
+			index:    2,
+		},
+	}, Init(&Post{}).Meta().FieldsByTag("filterable"))
 }
 
 func TestMetaMake(t *testing.T) {
