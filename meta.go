@@ -44,6 +44,7 @@ func (t Tags) Has(tag string) bool {
 // A Field contains the meta information about a single field of a model.
 type Field struct {
 	Name     string
+	Type     reflect.Kind
 	JSONName string
 	BSONName string
 	Optional bool
@@ -119,12 +120,19 @@ func NewMeta(model Model) *Meta {
 			fireTags = nil
 		}
 
+		// get field type
+		fieldType := structField.Type.Kind()
+		if fieldType == reflect.Ptr {
+			fieldType = structField.Type.Elem().Kind()
+		}
+
 		// prepare field
 		field := Field{
-			Optional: structField.Type.Kind() == reflect.Ptr,
+			Name:     structField.Name,
+			Type:     fieldType,
 			JSONName: getJSONFieldName(&structField),
 			BSONName: getBSONFieldName(&structField),
-			Name:     structField.Name,
+			Optional: structField.Type.Kind() == reflect.Ptr,
 			index:    i,
 		}
 

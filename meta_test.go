@@ -54,6 +54,7 @@ func TestMeta(t *testing.T) {
 		Fields: []Field{
 			{
 				Name:     "Title",
+				Type:     reflect.String,
 				JSONName: "title",
 				BSONName: "title",
 				Tags:     []string{"filterable", "sortable"},
@@ -61,6 +62,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "TextBody",
+				Type:     reflect.String,
 				JSONName: "text-body",
 				BSONName: "text_body",
 				Tags:     []string(nil),
@@ -68,6 +70,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "Comments",
+				Type:     reflect.Struct,
 				JSONName: "",
 				BSONName: "",
 				Optional: false,
@@ -79,6 +82,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "Selections",
+				Type:     reflect.Struct,
 				JSONName: "",
 				BSONName: "",
 				Optional: false,
@@ -100,6 +104,7 @@ func TestMeta(t *testing.T) {
 		Fields: []Field{
 			{
 				Name:     "Message",
+				Type:     reflect.String,
 				JSONName: "message",
 				BSONName: "message",
 				Tags:     []string(nil),
@@ -107,6 +112,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "Parent",
+				Type:     reflect.String,
 				JSONName: "",
 				BSONName: "parent",
 				Optional: true,
@@ -118,6 +124,7 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "PostID",
+				Type:     reflect.String,
 				JSONName: "",
 				BSONName: "post_id",
 				Tags:     []string(nil),
@@ -134,6 +141,7 @@ func TestMeta(t *testing.T) {
 func TestMetaFieldsByTag(t *testing.T) {
 	assert.Equal(t, []Field{{
 		Name:     "Title",
+		Type:     reflect.String,
 		JSONName: "title",
 		BSONName: "title",
 		Optional: false,
