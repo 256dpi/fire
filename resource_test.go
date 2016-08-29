@@ -112,6 +112,135 @@ func TestBasicOperations(t *testing.T) {
 		})
 }
 
+func TestFiltering(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	})
+
+	// create posts
+	saveModel(db, &Post{
+		Title:     "post-1",
+		Published: true,
+	})
+	saveModel(db, &Post{
+		Title:     "post-2",
+		Published: false,
+	})
+	saveModel(db, &Post{
+		Title:     "post-3",
+		Published: true,
+	})
+
+	r := gofight.New()
+
+	// get posts with single value filter
+	r.GET("/posts?filter[title]=post-1").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj := json.Path("data").Index(0)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 1, countChildren(json.Path("data")))
+		assert.Equal(t, "posts", obj.Path("type").Data().(string))
+		assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
+		assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
+	})
+
+	// get posts with multi value filter
+	r.GET("/posts?filter[title]=post-2,post-3").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 2, countChildren(json.Path("data")))
+	})
+
+	// get posts with boolean
+	r.GET("/posts?filter[published]=true").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 2, countChildren(json.Path("data")))
+	})
+
+	// get posts with boolean
+	r.GET("/posts?filter[published]=false").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 1, countChildren(json.Path("data")))
+	})
+}
+
+func TestSorting(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	})
+
+	// create posts
+	saveModel(db, &Post{
+		Title: "post-2",
+	})
+	saveModel(db, &Post{
+		Title: "post-1",
+	})
+	saveModel(db, &Post{
+		Title: "post-3",
+	})
+
+	r := gofight.New()
+
+	// get posts in ascending order
+	r.GET("/posts?sort=title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 3, countChildren(json.Path("data")))
+		assert.Equal(t, "post-1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+		assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+		assert.Equal(t, "post-3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+	})
+
+	// get posts in descending order
+	r.GET("/posts?sort=-title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 3, countChildren(json.Path("data")))
+		assert.Equal(t, "post-3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
+		assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
+		assert.Equal(t, "post-1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
+	})
+}
+
+func TestSparseFieldsets(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	})
+
+	// create posts
+	saveModel(db, &Post{
+		Title: "Post 1",
+	})
+
+	r := gofight.New()
+
+	// get posts with single value filter
+	r.GET("/posts?fields[posts]=title").
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		json, _ := gabs.ParseJSONBuffer(r.Body)
+		obj := json.Path("data").Index(0)
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, 1, countChildren(json.Path("data")))
+		assert.Equal(t, 1, countChildren(obj.Path("attributes")))
+	})
+}
+
 func TestHasManyRelationship(t *testing.T) {
 	server, db := buildServer(&Resource{
 		Model: &Post{},
@@ -335,135 +464,6 @@ func TestToOneRelationship(t *testing.T) {
 		assert.Equal(t, "posts", obj.Path("type").Data().(string))
 		assert.Equal(t, post2.ID().Hex(), obj.Path("id").Data().(string))
 	})
-}
-
-func TestFiltering(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
-
-	// create posts
-	saveModel(db, &Post{
-		Title:     "post-1",
-		Published: true,
-	})
-	saveModel(db, &Post{
-		Title:     "post-2",
-		Published: false,
-	})
-	saveModel(db, &Post{
-		Title:     "post-3",
-		Published: true,
-	})
-
-	r := gofight.New()
-
-	// get posts with single value filter
-	r.GET("/posts?filter[title]=post-1").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-			obj := json.Path("data").Index(0)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 1, countChildren(json.Path("data")))
-			assert.Equal(t, "posts", obj.Path("type").Data().(string))
-			assert.True(t, bson.IsObjectIdHex(obj.Path("id").Data().(string)))
-			assert.Equal(t, "post-1", obj.Path("attributes.title").Data().(string))
-		})
-
-	// get posts with multi value filter
-	r.GET("/posts?filter[title]=post-2,post-3").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 2, countChildren(json.Path("data")))
-		})
-
-	// get posts with boolean
-	r.GET("/posts?filter[published]=true").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 2, countChildren(json.Path("data")))
-		})
-
-	// get posts with boolean
-	r.GET("/posts?filter[published]=false").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 1, countChildren(json.Path("data")))
-		})
-}
-
-func TestSorting(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
-
-	// create posts
-	saveModel(db, &Post{
-		Title: "post-2",
-	})
-	saveModel(db, &Post{
-		Title: "post-1",
-	})
-	saveModel(db, &Post{
-		Title: "post-3",
-	})
-
-	r := gofight.New()
-
-	// get posts in ascending order
-	r.GET("/posts?sort=title").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 3, countChildren(json.Path("data")))
-			assert.Equal(t, "post-1", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-			assert.Equal(t, "post-3", json.Path("data").Index(2).Path("attributes.title").Data().(string))
-		})
-
-	// get posts in descending order
-	r.GET("/posts?sort=-title").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 3, countChildren(json.Path("data")))
-			assert.Equal(t, "post-3", json.Path("data").Index(0).Path("attributes.title").Data().(string))
-			assert.Equal(t, "post-2", json.Path("data").Index(1).Path("attributes.title").Data().(string))
-			assert.Equal(t, "post-1", json.Path("data").Index(2).Path("attributes.title").Data().(string))
-		})
-}
-
-func TestSparseFieldsets(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
-
-	// create posts
-	saveModel(db, &Post{
-		Title: "Post 1",
-	})
-
-	r := gofight.New()
-
-	// get posts with single value filter
-	r.GET("/posts?fields[posts]=title").
-		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			json, _ := gabs.ParseJSONBuffer(r.Body)
-			obj := json.Path("data").Index(0)
-
-			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, 1, countChildren(json.Path("data")))
-			assert.Equal(t, 1, countChildren(obj.Path("attributes")))
-		})
 }
 
 func TestToManyRelationship(t *testing.T) {
