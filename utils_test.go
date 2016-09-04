@@ -3,7 +3,6 @@ package fire
 import (
 	"testing"
 
-	"github.com/Jeffail/gabs"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2"
@@ -68,9 +67,15 @@ func saveModel(db *mgo.Database, model Model) Model {
 	return model
 }
 
-func countChildren(c *gabs.Container) int {
-	list, _ := c.Children()
-	return len(list)
+func findLastModel(db *mgo.Database, model Model) Model {
+	Init(model)
+
+	err := db.C(model.Meta().Collection).Find(nil).Sort("-_id").One(model)
+	if err != nil {
+		panic(err)
+	}
+
+	return model
 }
 
 // cheat to get more coverage

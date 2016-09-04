@@ -18,7 +18,6 @@ import:
   # TODO: Gin currently locks an old version.
   version: d8ff598a019f2c7bad0980917a588193cf26666e
 testImport:
-- package: github.com/Jeffail/gabs
 - package: github.com/appleboy/gofight
   version: ^1.0.3
 - package: github.com/stretchr/testify

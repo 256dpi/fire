@@ -1,5 +1,5 @@
-hash: ec7d9191db98cc83b3d816a148ab0721d1436e3f335ede6b969c3c8d33332457
-updated: 2016-09-04T16:33:03.334883773+02:00
+hash: 8cfa4e37eba418d3fa22d45bd9f63d8707813cabc4ee928c4eb20a0b04dfb01b
+updated: 2016-09-04T18:40:38.499652769+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -45,8 +45,6 @@ testImports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
-- name: github.com/Jeffail/gabs
-  version: 855034b6b7a3b7144977efcaefe72d2c64b0d039
 - name: github.com/labstack/echo
   version: e918eacd9d5326f2ec6d5e9077a1f9543c4af486
   subpackages:
