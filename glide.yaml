@@ -1,4 +1,4 @@
-package: github.com/256dpi/fire
+package: github.com/gonfire/fire
 import:
 - package: github.com/asaskevich/govalidator
   version: ^4.0.0

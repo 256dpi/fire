@@ -1,12 +1,12 @@
-<img src="https://raw.githubusercontent.com/256dpi/fire/master/doc/logo.png" alt="Logo" width="256"/>
+<img src="https://raw.githubusercontent.com/gonfire/fire/master/doc/logo.png" alt="Logo" width="256"/>
 
 # fire
 
-[![Circle CI](https://img.shields.io/circleci/project/256dpi/fire.svg)](https://circleci.com/gh/256dpi/fire)
-[![Coverage Status](https://coveralls.io/repos/256dpi/fire/badge.svg?branch=master&service=github)](https://coveralls.io/github/256dpi/fire?branch=master)
-[![GoDoc](https://godoc.org/github.com/256dpi/fire?status.svg)](http://godoc.org/github.com/256dpi/fire)
-[![Release](https://img.shields.io/github/release/256dpi/fire.svg)](https://github.com/256dpi/fire/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
+[![Circle CI](https://img.shields.io/circleci/project/gonfire/fire.svg)](https://circleci.com/gh/gonfire/fire)
+[![Coverage Status](https://coveralls.io/repos/gonfire/fire/badge.svg?branch=master&service=github)](https://coveralls.io/github/gonfire/fire?branch=master)
+[![GoDoc](https://godoc.org/github.com/gonfire/fire?status.svg)](http://godoc.org/github.com/gonfire/fire)
+[![Release](https://img.shields.io/github/release/gonfire/fire.svg)](https://github.com/gonfire/fire/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gonfire/fire)](http://goreportcard.com/report/gonfire/fire)
 
 **A small and opinionated framework for Go providing Ember compatible JSON APIs.**
 
@@ -40,19 +40,19 @@ _The framework is still WIP and the API may be changed._
 
 ## Example
 
-An example application that uses the fire framework and the fire-auth add-on to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/256dpi/fire-example>.
+An example application that uses the fire framework and the auth add-on to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/gonfire/example>.
 
 ## Installation
 
 Get the package using the go tool:
 
 ```bash
-$ go get github.com/256dpi/fire
+$ go get github.com/gonfire/fire
 ```
 
 ## Add-ons
 
-- [fire-auth](https://github.com/256dpi/fire-auth): OAuth2 based Authentication
+- [auth](https://github.com/gonfire/auth): OAuth2 based Authentication
 
 ## Usage
 
@@ -168,7 +168,7 @@ post.Meta().Fields
 post.Meta().FieldsByTag("tag")
 ```
 
-More information about the `Meta` structure can be found here: <https://godoc.org/github.com/256dpi/fire#Meta>. 
+More information about the `Meta` structure can be found here: <https://godoc.org/github.com/gonfire/fire#Meta>. 
 
 ### Validation
 
@@ -305,10 +305,10 @@ fire.Combine(callback1, callback2)
 
 Fire ships with several built-in callbacks that implement common concerns:
 
-- [ProtectedAttributesValidator](https://godoc.org/github.com/256dpi/fire#ProtectedAttributesValidator)
-- [DependentResourcesValidator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
-- [VerifyReferencesValidator](https://godoc.org/github.com/256dpi/fire#VerifyReferencesValidator)
-- [MatchingReferencesValidator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)
+- [ProtectedAttributesValidator](https://godoc.org/github.com/gonfire/fire#ProtectedAttributesValidator)
+- [DependentResourcesValidator](https://godoc.org/github.com/gonfire/fire#DependentResourcesValidator)
+- [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire#VerifyReferencesValidator)
+- [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire#MatchingReferencesValidator)
 
 ## Endpoints
 

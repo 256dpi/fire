@@ -1,6 +1,6 @@
 machine:
   environment:
-    IMPORT_PATH: "/home/ubuntu/.go_workspace/src/github.com/256dpi"
+    IMPORT_PATH: "/home/ubuntu/.go_workspace/src/github.com/gonfire"
     APP_PATH: "$IMPORT_PATH/fire"
 dependencies:
   override:

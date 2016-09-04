@@ -1,5 +1,5 @@
-hash: ea0cdcf9d31f404222349c2c1cd6eb7084a8b4a0fb7f7bbeb8d254cb74c93495
-updated: 2016-08-16T13:57:25.66402593+02:00
+hash: ec7d9191db98cc83b3d816a148ab0721d1436e3f335ede6b969c3c8d33332457
+updated: 2016-09-04T16:33:03.334883773+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -19,7 +19,7 @@ imports:
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/manyminds/api2go
-  version: f5e0dba5f9f3c72db99541f3f543c7628c9df296
+  version: 878cb8bd760f2fe75e2cdab64836496b12f30f78
   subpackages:
   - jsonapi
   - routing
@@ -33,9 +33,9 @@ imports:
   version: 01084657862d7b12d3b10ffd0394357abf8f8bc2
   subpackages:
   - bson
+  - internal/json
   - internal/sasl
   - internal/scram
-  - internal/json
 - name: gopkg.in/yaml.v2
   version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
 testImports:
@@ -51,13 +51,13 @@ testImports:
   version: e918eacd9d5326f2ec6d5e9077a1f9543c4af486
   subpackages:
   - engine
-  - test
   - log
+  - test
 - name: github.com/labstack/gommon
   version: 445cf40e6de4cbef35daf3285ff5212c91e78262
   subpackages:
-  - log
   - color
+  - log
 - name: github.com/mattn/go-colorable
   version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
