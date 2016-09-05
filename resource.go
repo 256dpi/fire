@@ -163,6 +163,8 @@ func (r *Resource) listResources(ctx *Context) error {
 		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName,
 	}
 
+	// TODO: Enforce pagination automatically (20 items per page).
+
 	// write result
 	return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
 }
@@ -443,7 +445,7 @@ func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) error
 func (r *Resource) loadModel(ctx *Context) error {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.Request.ResourceID) {
-		return jsonapi.BadRequest("Invalid ID")
+		return jsonapi.BadRequest("Invalid resource ID")
 	}
 
 	// prepare context
@@ -508,6 +510,8 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 	// generate base link
 	base := r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + model.ID().Hex()
 
+	// TODO: Support included resources (one level).
+
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
 		links := &jsonapi.DocumentLinks{
@@ -557,6 +561,8 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 				Links: links,
 			}
 		} else if field.HasMany {
+			// TODO: Load has many references?
+
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
 			}
