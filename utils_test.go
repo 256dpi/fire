@@ -37,23 +37,25 @@ func buildServer() (*gin.Engine, *mgo.Database) {
 	// get db
 	db := getDB()
 
-	// create new router and endpoint
+	// create router
 	router := gin.New()
-	endpoint := NewEndpoint(db, "")
+
+	// create app
+	app := NewApplication(db, "")
 
 	// add all controllers
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Post{},
 	})
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Comment{},
 	})
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Selection{},
 	})
 
 	// register routes
-	endpoint.Register(router)
+	app.Register(router)
 
 	// return router
 	return router, db

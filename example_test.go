@@ -43,21 +43,21 @@ func Example() {
 	// get db
 	db := sess.DB("")
 
-	// create endpoint
-	endpoint := NewEndpoint(db, "api")
+	// create app
+	app := NewApplication(db, "api")
 
 	// add post
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Post{},
 	})
 
 	// add comment
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Comment{},
 	})
 
 	// add selection
-	endpoint.Mount(&Controller{
+	app.Mount(&Controller{
 		Model: &Selection{},
 	})
 
@@ -65,7 +65,7 @@ func Example() {
 	router := gin.New()
 
 	// register api
-	endpoint.Register(router)
+	app.Register(router)
 
 	// print routes
 	for _, route := range router.Routes() {

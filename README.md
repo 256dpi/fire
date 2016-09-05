@@ -33,7 +33,7 @@ _The framework is still WIP and the API may be changed._
   - [Basics](#basics-1)
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
-- [Endpoints](#endpoints)
+- [Applications](#applications)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -76,20 +76,20 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` is used to mount the controller on a router and make them accessible:
+Finally, an `Application` is used to mount the controller on a router and make them accessible:
 
 ```go
-endpoint := fire.NewEndpoint(db, "api")
+app := fire.NewApplication(db, "api")
 
-endpoint.Mount(&fire.Controller{
+app.Mount(&fire.Controller{
     Model: &Post{},
 })
 
-endpoint.Mount(&fire.Controller{
+app.Mount(&fire.Controller{
     Model: &Comment{},
 })
 
-endpoint.Register(router)
+app.Register(router)
 ```
 
 After starting the server you can inspect the created routes from the console output (simplified):
@@ -310,19 +310,19 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire#VerifyReferencesValidator)
 - [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire#MatchingReferencesValidator)
 
-## Endpoints
+## Applications
 
-An `Endpoint` can be created by calling `fire.NewEndpoint` with a reference to a database:
+An `Application` can be created by calling `fire.NewApplication` with a reference to a database and the full URL prefix:
 
 ```go
-endpoint := fire.NewEndpoint(db, "api")
+app := fire.NewApplication(db, "api")
 
-endpoint.Mount(&fire.Controller{
+app.Mount(&fire.Controller{
     Model: &Post{},
     // ...
 })
 
-endpoint.Register(router)
+app.Register(router)
 ````
 
 Controllers can be mounted with `Mount` before the routes are registered using `Register` on a router.
