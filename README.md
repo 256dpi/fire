@@ -65,7 +65,7 @@ type Post struct {
 	fire.Base `bson:",inline" fire:"post:posts"`
 	Title     string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
 	TextBody  string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments  HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Comments  HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
 }
 
 type Comment struct {
@@ -235,12 +235,12 @@ _Note: To many relationship fields should be excluded from the attributes object
 
 ### Has Many Relationships
 
-Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type"` struct tag:
+Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type:inverse"` struct tag:
 
 ```go
 type Post struct {
     // ...
-	Comments fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
+	Comments fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
 	// ...
 }
 ```
