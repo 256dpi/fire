@@ -9,7 +9,6 @@ import (
 type Application struct {
 	db            *mgo.Database
 	prefix        string
-	nameMap       map[string]string
 	controllerMap map[string]*Controller
 	controllers   []*Controller
 }
@@ -22,7 +21,6 @@ func NewApplication(db *mgo.Database, prefix string) *Application {
 	return &Application{
 		db:            db,
 		prefix:        prefix,
-		nameMap:       make(map[string]string),
 		controllerMap: make(map[string]*Controller),
 	}
 }
@@ -35,11 +33,8 @@ func (a *Application) Mount(controllers ...*Controller) {
 		// initialize model
 		Init(controller.Model)
 
-		// create entry in name map
-		a.nameMap[controller.Model.Meta().PluralName] = controller.Model.Meta().SingularName
-
 		// create entry in controller map
-		a.controllerMap[controller.Model.Meta().SingularName] = controller
+		a.controllerMap[controller.Model.Meta().PluralName] = controller
 
 		// add controller to internal list
 		controller.app = a

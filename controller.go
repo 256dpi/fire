@@ -289,10 +289,9 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		return jsonapi.BadRequest("Relationship does not exist")
 	}
 
-	// get related resource
+	// get related controller
 	pluralName := relationField.RelType
-	singularName := c.app.nameMap[pluralName]
-	relatedController := c.app.controllerMap[singularName]
+	relatedController := c.app.controllerMap[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -894,9 +893,8 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 				Links: links,
 			}
 		} else if field.HasMany {
-			// get related resource
-			singularName := c.app.nameMap[field.RelType]
-			relatedController := c.app.controllerMap[singularName]
+			// get related controller
+			relatedController := c.app.controllerMap[field.RelType]
 
 			// check existence
 			if relatedController == nil {
