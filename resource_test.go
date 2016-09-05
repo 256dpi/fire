@@ -11,9 +11,7 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
+	server, db := buildServer()
 
 	r := gofight.New()
 
@@ -233,9 +231,7 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
+	server, db := buildServer()
 
 	// create posts
 	post1 := saveModel(db, &Post{
@@ -457,9 +453,7 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	})
+	server, db := buildServer()
 
 	// create posts in random order
 	post2 := saveModel(db, &Post{
@@ -688,11 +682,7 @@ func TestSorting(t *testing.T) {
 //}
 
 func TestHasManyRelationship(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	}, &Resource{
-		Model: &Comment{},
-	})
+	server, db := buildServer()
 
 	// create existing post & comment
 	existingPost := saveModel(db, &Post{
@@ -883,11 +873,7 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	}, &Resource{
-		Model: &Comment{},
-	})
+	server, db := buildServer()
 
 	// create posts
 	post1 := saveModel(db, &Post{
@@ -1114,11 +1100,7 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	}, &Resource{
-		Model: &Selection{},
-	})
+	server, db := buildServer()
 
 	// create posts
 	post1 := saveModel(db, &Post{
@@ -1411,11 +1393,7 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	server, db := buildServer(&Resource{
-		Model: &Post{},
-	}, &Resource{
-		Model: &Selection{},
-	})
+	server, db := buildServer()
 
 	// create posts
 	post := saveModel(db, &Post{

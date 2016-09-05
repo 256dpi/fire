@@ -33,7 +33,7 @@ func getDB() *mgo.Database {
 	return db
 }
 
-func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
+func buildServer() (*gin.Engine, *mgo.Database) {
 	// get db
 	db := getDB()
 
@@ -41,10 +41,16 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
 	router := gin.New()
 	endpoint := NewEndpoint(db, "")
 
-	// add all supplied resources
-	for _, res := range resources {
-		endpoint.AddResource(res)
-	}
+	// add all resources
+	endpoint.AddResource(&Resource{
+		Model: &Post{},
+	})
+	endpoint.AddResource(&Resource{
+		Model: &Comment{},
+	})
+	endpoint.AddResource(&Resource{
+		Model: &Selection{},
+	})
 
 	// register routes
 	endpoint.Register(router)
