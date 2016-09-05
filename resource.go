@@ -567,31 +567,38 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
+		// prepare relationship links
 		links := &jsonapi.DocumentLinks{
 			Self:    base + "/relationships/" + field.RelName,
 			Related: base + "/" + field.RelName,
 		}
 
+		// handle to one relationship
 		if field.ToOne {
+			// prepare reference
 			var reference *jsonapi.Resource
 
 			if field.Optional {
+				// get and check optional field
 				oid := model.Get(field.Name).(*bson.ObjectId)
 				if oid == nil {
 					continue
 				}
 
+				// create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
 					ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
 				}
 			} else {
+				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
 					ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
 				}
 			}
 
+			// assign relationship
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Data: &jsonapi.HybridResource{
 					One: reference,
@@ -599,7 +606,10 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 				Links: links,
 			}
 		} else if field.ToMany {
+			// prepare slice of references
 			var references []*jsonapi.Resource
+
+			// add all references
 			for _, id := range model.Get(field.Name).([]bson.ObjectId) {
 				references = append(references, &jsonapi.Resource{
 					Type: field.RelType,
@@ -607,6 +617,7 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 				})
 			}
 
+			// assign relationship
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Data: &jsonapi.HybridResource{
 					Many: references,
@@ -616,6 +627,7 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 		} else if field.HasMany {
 			// TODO: Load has many references?
 
+			// only set links
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
 			}
