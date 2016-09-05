@@ -54,7 +54,7 @@ func (b *Base) Set(name string, value interface{}) {
 	panic("Missing field " + name + " on " + b.meta.SingularName)
 }
 
-// Validate validates the model based on the `valid:""` struct tags.
+// Validate validates the model based on the "valid" struct tags.
 func (b *Base) Validate(fresh bool) error {
 	// validate id
 	if !b.DocID.Valid() {
