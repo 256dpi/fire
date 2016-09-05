@@ -1096,6 +1096,21 @@ func TestToOneRelationship(t *testing.T) {
 				}
 			}`, r.Body.String())
 		})
+
+	// fetch unset related resource
+	r.GET("/comments/"+comment2+"/parent").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": null,
+				"links": {
+					"self": "/comments/`+comment2+`/parent"
+				}
+			}`, r.Body.String())
+		})
 }
 
 func TestToManyRelationship(t *testing.T) {

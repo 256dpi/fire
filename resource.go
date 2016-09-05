@@ -287,8 +287,10 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		return fmt.Errorf("related resource %s not found in map", pluralName)
 	}
 
-	// generate base link
-	base := r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + ctx.Model.ID().Hex() + "/" + ctx.Request.RelatedResource
+	// prepare links
+	links := &jsonapi.DocumentLinks{
+		Self: ctx.Request.Self(),
+	}
 
 	// zero request
 	ctx.Request.Intent = 0
@@ -310,7 +312,8 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 			if oid != nil {
 				id = oid.Hex()
 			} else {
-				// TODO: What to do here?
+				// write empty response
+				return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, nil, links)
 			}
 		} else {
 			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
@@ -331,11 +334,6 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 		// get resource
 		_resource := resource.resourceForModel(ctx2.Model)
-
-		// prepare links
-		links := &jsonapi.DocumentLinks{
-			Self: base,
-		}
 
 		// write result
 		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, _resource, links)
@@ -367,11 +365,6 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 		// get related resources
 		resources := resource.resourcesForSlice(ctx2.slice)
-
-		// prepare links
-		links := &jsonapi.DocumentLinks{
-			Self: base,
-		}
 
 		// write result
 		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
@@ -418,11 +411,6 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 		// get related resources
 		resources := resource.resourcesForSlice(ctx2.slice)
-
-		// prepare links
-		links := &jsonapi.DocumentLinks{
-			Self: base,
-		}
 
 		// write result
 		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
