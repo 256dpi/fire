@@ -384,9 +384,9 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 		// find related relationship
 		for _, field := range resource.Model.Meta().Fields {
-			// TODO: Is this handled correctly?
-
-			if field.RelType == r.Model.Meta().PluralName {
+			// find db field by comparing the relationship name wit the inverse
+			// name found on the original relationship
+			if field.RelName == relationField.RelInverse {
 				filterName = field.BSONName
 				break
 			}
@@ -394,7 +394,7 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 		// check filter name
 		if filterName == "" {
-			return fmt.Errorf("unable to determine filter name for %s on %s", r.Model.Meta().PluralName, singularName)
+			return fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse)
 		}
 
 		// modify context
@@ -767,20 +767,17 @@ func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Do
 		// handle to many relationship
 		if field.ToMany {
 			// prepare slice of ids
-			var ids []bson.ObjectId
+			ids := make([]bson.ObjectId, len(rel.Data.Many))
 
 			// range over all resources
-			for _, r := range rel.Data.Many {
-				// get id
-				id := bson.ObjectIdHex(r.ID)
+			for i, r := range rel.Data.Many {
+				// set id
+				ids[i] = bson.ObjectIdHex(r.ID)
 
 				// return error for an invalid id
-				if !id.Valid() {
+				if !ids[i].Valid() {
 					return jsonapi.BadRequest("Invalid relationship ID")
 				}
-
-				// add id to slice
-				ids = append(ids, id)
 			}
 
 			// set ids
@@ -862,15 +859,18 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 				Links: links,
 			}
 		} else if field.ToMany {
-			// prepare slice of references
-			references := make([]*jsonapi.Resource, 0)
+			// get ids
+			ids := model.Get(field.Name).([]bson.ObjectId)
 
-			// add all references
-			for _, id := range model.Get(field.Name).([]bson.ObjectId) {
-				references = append(references, &jsonapi.Resource{
+			// prepare slice of references
+			references := make([]*jsonapi.Resource, len(ids))
+
+			// set all references
+			for i, id := range ids {
+				references[i] = &jsonapi.Resource{
 					Type: field.RelType,
 					ID:   id.Hex(),
-				})
+				}
 			}
 
 			// assign relationship

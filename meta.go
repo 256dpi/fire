@@ -43,17 +43,18 @@ func (t Tags) Has(tag string) bool {
 
 // A Field contains the meta information about a single field of a model.
 type Field struct {
-	Name     string
-	Type     reflect.Kind
-	JSONName string
-	BSONName string
-	Optional bool
-	Tags     Tags
-	ToOne    bool
-	ToMany   bool
-	HasMany  bool
-	RelName  string
-	RelType  string
+	Name       string
+	Type       reflect.Kind
+	JSONName   string
+	BSONName   string
+	Optional   bool
+	Tags       Tags
+	ToOne      bool
+	ToMany     bool
+	HasMany    bool
+	RelName    string
+	RelType    string
+	RelInverse string
 
 	index int
 }
@@ -178,8 +179,8 @@ func NewMeta(model Model) *Meta {
 
 		// check if field is a valid has many relationship
 		if structField.Type == hasManyType {
-			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 1 {
-				panic("Expected to find a tag of the form fire:\"name:type\" on has many relationship")
+			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 2 {
+				panic(`Expected to find a tag of the form fire:"name:type:inverse" on has many relationship`)
 			}
 
 			// parse special has many relationship tag
@@ -189,6 +190,7 @@ func NewMeta(model Model) *Meta {
 			field.HasMany = true
 			field.RelName = hasManyTag[0]
 			field.RelType = hasManyTag[1]
+			field.RelInverse = hasManyTag[2]
 
 			// remove tag
 			fireTags = fireTags[1:]

@@ -13,8 +13,8 @@ type Post struct {
 	Title      string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
 	Published  bool    `json:"published" valid:"-" fire:"filterable"`
 	TextBody   string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments   HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments"`
-	Selections HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections"`
+	Comments   HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	Selections HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections:posts"`
 }
 
 type Comment struct {
