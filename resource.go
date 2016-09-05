@@ -473,12 +473,122 @@ func (r *Resource) setRelationship(ctx *Context, doc *jsonapi.Document) error {
 }
 
 func (r *Resource) appendToRelationship(ctx *Context, doc *jsonapi.Document) error {
+	// load model
+	err := r.loadModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// append relationships
+	for _, field := range ctx.Model.Meta().Fields {
+		// check if field matches relationship
+		if field.RelName != ctx.Request.Relationship {
+			continue
+		}
+
+		// check if field is a to many relationship
+		if !field.ToMany {
+			continue
+		}
+
+		// process all references
+		for _, ref := range doc.Data.Many {
+			// get id
+			refID := bson.ObjectIdHex(ref.ID)
+
+			// return error for an invalid id
+			if !refID.Valid() {
+				return jsonapi.BadRequest("Invalid relationship ID")
+			}
+
+			// prepare mark
+			var present bool
+
+			// get current ids
+			ids := ctx.Model.Get(field.Name).([]bson.ObjectId)
+
+			// check if id is already present
+			for _, id := range ids {
+				if id == refID {
+					present = true
+				}
+			}
+
+			// add id if not present
+			if !present {
+				ids = append(ids, refID)
+				ctx.Model.Set(field.Name, ids)
+			}
+		}
+	}
+
+	// save model
+	err = r.saveModel(ctx)
+	if err != nil {
+		return err
+	}
+
 	// write result
 	ctx.GinContext.Status(http.StatusNoContent)
 	return nil
 }
 
 func (r *Resource) removeFromRelationship(ctx *Context, doc *jsonapi.Document) error {
+	// load model
+	err := r.loadModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// remove relationships
+	for _, field := range ctx.Model.Meta().Fields {
+		// check if field matches relationship
+		if field.RelName != ctx.Request.Relationship {
+			continue
+		}
+
+		// check if field is a to many relationship
+		if !field.ToMany {
+			continue
+		}
+
+		// process all references
+		for _, ref := range doc.Data.Many {
+			// get id
+			refID := bson.ObjectIdHex(ref.ID)
+
+			// return error for an invalid id
+			if !refID.Valid() {
+				return jsonapi.BadRequest("Invalid relationship ID")
+			}
+
+			// prepare mark
+			var pos = -1
+
+			// get current ids
+			ids := ctx.Model.Get(field.Name).([]bson.ObjectId)
+
+			// check if id is already present
+			for i, id := range ids {
+				if id == refID {
+					pos = i
+				}
+			}
+
+			// remove id if present
+			if pos >= 0 {
+				ids = append(ids[:pos], ids[pos+1:]...)
+				ctx.Model.Set(field.Name, ids)
+			}
+		}
+	}
+
+	// save model
+	err = r.saveModel(ctx)
+	if err != nil {
+		return err
+	}
+
 	// write result
 	ctx.GinContext.Status(http.StatusNoContent)
 	return nil
@@ -662,7 +772,7 @@ func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Do
 			// range over all resources
 			for _, r := range rel.Data.Many {
 				// get id
-				id := bson.ObjectId(r.ID)
+				id := bson.ObjectIdHex(r.ID)
 
 				// return error for an invalid id
 				if !id.Valid() {
@@ -753,7 +863,7 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 			}
 		} else if field.ToMany {
 			// prepare slice of references
-			var references []*jsonapi.Resource
+			references := make([]*jsonapi.Resource, 0)
 
 			// add all references
 			for _, id := range model.Get(field.Name).([]bson.ObjectId) {

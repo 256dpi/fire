@@ -1056,296 +1056,349 @@ func TestToOneRelationship(t *testing.T) {
 		})
 }
 
-//func TestToManyRelationship(t *testing.T) {
-//	server, db := buildServer(&Resource{
-//		Model: &Post{},
-//	}, &Resource{
-//		Model: &Selection{},
-//	})
-//
-//	// create posts
-//	post1 := saveModel(db, &Post{
-//		Title: "Post 1",
-//	}).ID().Hex()
-//	post2 := saveModel(db, &Post{
-//		Title: "Post 2",
-//	}).ID().Hex()
-//	post3 := saveModel(db, &Post{
-//		Title: "Post 3",
-//	}).ID().Hex()
-//
-//	r := gofight.New()
-//
-//	var selection string
-//
-//	// create selection
-//	r.POST("/selections").
-//		SetBody(`{
-//			"data": {
-//				"type": "selections",
-//				"attributes": {
-//			  		"name": "Selection 1"
-//				},
-//				"relationships": {
-//					"posts": {
-//						"data": [
-//							{
-//								"type": "posts",
-//								"id": "`+post1+`"
-//							},
-//							{
-//								"type": "posts",
-//								"id": "`+post2+`"
-//							}
-//						]
-//					}
-//				}
-//			}
-//		}`).
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			selection = findLastModel(db, &Selection{}).ID().Hex()
-//
-//			assert.Equal(t, http.StatusCreated, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": {
-//					"type": "selections",
-//					"id": "`+selection+`",
-//					"attributes": {
-//						"name": "Selection 1"
-//					},
-//					"relationships": {
-//						"posts": {
-//							"data": [
-//								{
-//									"type": "posts",
-//									"id": "`+post1+`"
-//								},
-//								{
-//									"type": "posts",
-//									"id": "`+post2+`"
-//								}
-//							],
-//							"links": {
-//								"self": "/selections/`+selection+`/relationships/posts",
-//								"related": "/selections/`+selection+`/posts"
-//							}
-//						}
-//					}
-//				}
-//			}`, r.Body.String())
-//		})
-//
-//	// get related post
-//	r.GET("/selections/"+selection+"/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": [
-//					{
-//						"type": "posts",
-//						"id": "`+post1+`",
-//						"attributes": {
-//							"title": "Post 1",
-//							"published": false,
-//							"text-body": ""
-//						},
-//						"relationships": {
-//							"comments": {
-//								"links": {
-//									"self": "/posts/`+post1+`/relationships/comments",
-//									"related": "/posts/`+post1+`/comments"
-//								}
-//							},
-//							"selections": {
-//								"links": {
-//									"self": "/posts/`+post1+`/relationships/selections",
-//									"related": "/posts/`+post1+`/selections"
-//								}
-//							}
-//						}
-//					},
-//					{
-//						"type": "posts",
-//						"id": "`+post2+`",
-//						"attributes": {
-//							"title": "Post 2",
-//							"published": false,
-//							"text-body": ""
-//						},
-//						"relationships": {
-//							"comments": {
-//								"links": {
-//									"self": "/posts/`+post2+`/relationships/comments",
-//									"related": "/posts/`+post2+`/comments"
-//								}
-//							},
-//							"selections": {
-//								"links": {
-//									"self": "/posts/`+post2+`/relationships/selections",
-//									"related": "/posts/`+post2+`/selections"
-//								}
-//							}
-//						}
-//					}
-//				]
-//			}`, r.Body.String())
-//		})
-//
-//	// get related post ids only
-//	r.GET("/selections/"+selection+"/relationships/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": [
-//					{
-//						"type": "posts",
-//						"id": "`+post1+`"
-//					},
-//					{
-//						"type": "posts",
-//						"id": "`+post2+`"
-//					}
-//				],
-//				"links": {
-//					"self": "/selections/`+selection+`/relationships/posts",
-//					"related": "/selections/`+selection+`/posts"
-//				}
-//			}`, r.Body.String())
-//		})
-//
-//	// update relationship
-//	r.PATCH("/selections/"+selection+"/relationships/posts").
-//		SetBody(`{
-//			"data": [
-//				{
-//					"type": "comments",
-//					"id": "`+post3+`"
-//				}
-//			]
-//		}`).
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusNoContent, r.Code)
-//			assert.Equal(t, "", r.Body.String())
-//		})
-//
-//	// get updated related post ids only
-//	r.GET("/selections/"+selection+"/relationships/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": [
-//					{
-//						"type": "posts",
-//						"id": "`+post3+`"
-//					}
-//				],
-//				"links": {
-//					"self": "/selections/`+selection+`/relationships/posts",
-//					"related": "/selections/`+selection+`/posts"
-//				}
-//			}`, r.Body.String())
-//		})
-//
-//	// add relationship
-//	r.POST("/selections/"+selection+"/relationships/posts").
-//		SetBody(`{
-//			"data": [
-//				{
-//					"type": "comments",
-//					"id": "`+post1+`"
-//				}
-//			]
-//		}`).
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusNoContent, r.Code)
-//			assert.Equal(t, "", r.Body.String())
-//		})
-//
-//	// get related post ids only
-//	r.GET("/selections/"+selection+"/relationships/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": [
-//					{
-//						"type": "posts",
-//						"id": "`+post3+`"
-//					},
-//					{
-//						"type": "posts",
-//						"id": "`+post1+`"
-//					}
-//				],
-//				"links": {
-//					"self": "/selections/`+selection+`/relationships/posts",
-//					"related": "/selections/`+selection+`/posts"
-//				}
-//			}`, r.Body.String())
-//		})
-//
-//	// remove relationship
-//	r.DELETE("/selections/"+selection+"/relationships/posts").
-//		SetBody(`{
-//			"data": [
-//				{
-//					"type": "comments",
-//					"id": "`+post3+`"
-//				},
-//				{
-//					"type": "comments",
-//					"id": "`+post1+`"
-//				}
-//			]
-//		}`).
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusNoContent, r.Code)
-//			assert.Equal(t, "", r.Body.String())
-//		})
-//
-//	// get empty related post ids list
-//	r.GET("/selections/"+selection+"/relationships/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.JSONEq(t, `{
-//				"data": [],
-//				"links": {
-//					"self": "/selections/`+selection+`/relationships/posts",
-//					"related": "/selections/`+selection+`/posts"
-//				}
-//			}`, r.Body.String())
-//		})
-//}
-//
-//func TestEmptyToManyRelationship(t *testing.T) {
-//	server, db := buildServer(&Resource{
-//		Model: &Post{},
-//	}, &Resource{
-//		Model: &Selection{},
-//	})
-//
-//	// create posts
-//	post := saveModel(db, &Post{
-//		Title: "Post 1",
-//	}).ID().Hex()
-//
-//	// create selection
-//	selection := saveModel(db, &Selection{
-//		Name: "Selection 1",
-//	}).ID().Hex()
-//
-//	r := gofight.New()
-//
-//	// get related posts
-//	r.GET("/selections/"+selection+"/posts").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.Equal(t, `{"data":[]}`, r.Body.String())
-//		})
-//
-//	// get related selections
-//	r.GET("/posts/"+post+"/selections").
-//		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-//			assert.Equal(t, http.StatusOK, r.Code)
-//			assert.Equal(t, `{"data":[]}`, r.Body.String())
-//		})
-//}
+func TestToManyRelationship(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	}, &Resource{
+		Model: &Selection{},
+	})
+
+	// create posts
+	post1 := saveModel(db, &Post{
+		Title: "Post 1",
+	}).ID().Hex()
+	post2 := saveModel(db, &Post{
+		Title: "Post 2",
+	}).ID().Hex()
+	post3 := saveModel(db, &Post{
+		Title: "Post 3",
+	}).ID().Hex()
+
+	r := gofight.New()
+
+	var selection string
+
+	// create selection
+	r.POST("/selections").
+		SetHeader(gofight.H{
+			"Accept":       jsonapi.MediaType,
+			"Content-Type": jsonapi.MediaType,
+		}).
+		SetBody(`{
+			"data": {
+				"type": "selections",
+				"attributes": {
+			  		"name": "Selection 1"
+				},
+				"relationships": {
+					"posts": {
+						"data": [
+							{
+								"type": "posts",
+								"id": "`+post1+`"
+							},
+							{
+								"type": "posts",
+								"id": "`+post2+`"
+							}
+						]
+					}
+				}
+			}
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			selection = findLastModel(db, &Selection{}).ID().Hex()
+
+			assert.Equal(t, http.StatusCreated, r.Code)
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "selections",
+					"id": "`+selection+`",
+					"attributes": {
+						"name": "Selection 1"
+					},
+					"relationships": {
+						"posts": {
+							"data": [
+								{
+									"type": "posts",
+									"id": "`+post1+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post2+`"
+								}
+							],
+							"links": {
+								"self": "/selections/`+selection+`/relationships/posts",
+								"related": "/selections/`+selection+`/posts"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/selections/`+selection+`"
+				}
+			}`, r.Body.String())
+		})
+
+	// get related post
+	r.GET("/selections/"+selection+"/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post1+`",
+						"attributes": {
+							"title": "Post 1",
+							"published": false,
+							"text-body": ""
+						},
+						"relationships": {
+							"comments": {
+								"links": {
+									"self": "/posts/`+post1+`/relationships/comments",
+									"related": "/posts/`+post1+`/comments"
+								}
+							},
+							"selections": {
+								"links": {
+									"self": "/posts/`+post1+`/relationships/selections",
+									"related": "/posts/`+post1+`/selections"
+								}
+							}
+						}
+					},
+					{
+						"type": "posts",
+						"id": "`+post2+`",
+						"attributes": {
+							"title": "Post 2",
+							"published": false,
+							"text-body": ""
+						},
+						"relationships": {
+							"comments": {
+								"links": {
+									"self": "/posts/`+post2+`/relationships/comments",
+									"related": "/posts/`+post2+`/comments"
+								}
+							},
+							"selections": {
+								"links": {
+									"self": "/posts/`+post2+`/relationships/selections",
+									"related": "/posts/`+post2+`/selections"
+								}
+							}
+						}
+					}
+				],
+				"links": {
+					"self": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// get related post ids only
+	r.GET("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post1+`"
+					},
+					{
+						"type": "posts",
+						"id": "`+post2+`"
+					}
+				],
+				"links": {
+					"self": "/selections/`+selection+`/relationships/posts",
+					"related": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// update relationship
+	r.PATCH("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept":       jsonapi.MediaType,
+			"Content-Type": jsonapi.MediaType,
+		}).
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post3+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
+
+	// get updated related post ids only
+	r.GET("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post3+`"
+					}
+				],
+				"links": {
+					"self": "/selections/`+selection+`/relationships/posts",
+					"related": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// add relationship
+	r.POST("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept":       jsonapi.MediaType,
+			"Content-Type": jsonapi.MediaType,
+		}).
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post1+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
+
+	// get related post ids only
+	r.GET("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post3+`"
+					},
+					{
+						"type": "posts",
+						"id": "`+post1+`"
+					}
+				],
+				"links": {
+					"self": "/selections/`+selection+`/relationships/posts",
+					"related": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// remove relationship
+	r.DELETE("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept":       jsonapi.MediaType,
+			"Content-Type": jsonapi.MediaType,
+		}).
+		SetBody(`{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+post3+`"
+				},
+				{
+					"type": "comments",
+					"id": "`+post1+`"
+				}
+			]
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
+
+	// get empty related post ids list
+	r.GET("/selections/"+selection+"/relationships/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [],
+				"links": {
+					"self": "/selections/`+selection+`/relationships/posts",
+					"related": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+}
+
+func TestEmptyToManyRelationship(t *testing.T) {
+	server, db := buildServer(&Resource{
+		Model: &Post{},
+	}, &Resource{
+		Model: &Selection{},
+	})
+
+	// create posts
+	post := saveModel(db, &Post{
+		Title: "Post 1",
+	}).ID().Hex()
+
+	// create selection
+	selection := saveModel(db, &Selection{
+		Name: "Selection 1",
+	}).ID().Hex()
+
+	r := gofight.New()
+
+	// get related posts
+	r.GET("/selections/"+selection+"/posts").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data":[],
+				"links": {
+					"self": "/selections/`+selection+`/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// get related selections
+	r.GET("/posts/"+post+"/selections").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data":[],
+				"links": {
+					"self": "/posts/`+post+`/selections"
+				}
+			}`, r.Body.String())
+		})
+}
