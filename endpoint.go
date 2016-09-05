@@ -15,6 +15,9 @@ type Endpoint struct {
 }
 
 // NewEndpoint returns a new fire endpoint.
+//
+// Note: You should pass the full URL prefix of the API to allow proper
+// generation of resource links.
 func NewEndpoint(db *mgo.Database, prefix string) *Endpoint {
 	return &Endpoint{
 		db:          db,
@@ -42,11 +45,9 @@ func (e *Endpoint) AddResource(resource *Resource) {
 	e.resources = append(e.resources, resource)
 }
 
-// Register will create all necessary routes on the passed router. If want to
-// prefix your api (e.g. /api/) you need to pass it to Register. This is
-// necessary for generating the proper links in the JSON documents.
+// Register will create all necessary routes on the passed router.
 //
-// Note: This functions should only be called once after registering all resources.
+// Note: This function should only be called once.
 func (e *Endpoint) Register(router gin.IRouter) {
 	// process all resources
 	for _, r := range e.resources {
