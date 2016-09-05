@@ -894,11 +894,61 @@ func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 				Links: links,
 			}
 		} else if field.HasMany {
-			// TODO: Load has many references?
+			// get related resource
+			singularName := r.endpoint.nameMap[field.RelType]
+			relatedResource := r.endpoint.resourceMap[singularName]
+
+			// check existence
+			if relatedResource == nil {
+				panic("missing resource " + field.RelType)
+			}
+
+			// prepare filter
+			var filterName string
+
+			// find related relationship
+			for _, relatedField := range relatedResource.Model.Meta().Fields {
+				// find db field by comparing the relationship name wit the inverse
+				// name found on the original relationship
+				if relatedField.RelName == field.RelInverse {
+					filterName = relatedField.BSONName
+					break
+				}
+			}
+
+			// check filter name
+			if filterName == "" {
+				return nil, fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse)
+			}
+
+			// load all referenced ids
+			var ids []bson.ObjectId
+			err := r.endpoint.db.C(relatedResource.Model.Meta().Collection).Find(bson.M{
+				filterName: bson.M{
+					"$in": []bson.ObjectId{model.ID()},
+				},
+			}).Distinct("_id", &ids)
+			if err != nil {
+				return nil, err
+			}
+
+			// prepare references
+			references := make([]*jsonapi.Resource, len(ids))
+
+			// set all references
+			for i, id := range ids {
+				references[i] = &jsonapi.Resource{
+					Type: relatedResource.Model.Meta().PluralName,
+					ID:   id.Hex(),
+				}
+			}
 
 			// only set links
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
+				Data: &jsonapi.HybridResource{
+					Many: references,
+				},
 			}
 		}
 	}

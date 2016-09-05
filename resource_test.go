@@ -62,12 +62,14 @@ func TestBasicOperations(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/comments",
 								"related": "/posts/`+id+`/comments"
 							}
 						},
 						"selections": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/selections",
 								"related": "/posts/`+id+`/selections"
@@ -100,12 +102,14 @@ func TestBasicOperations(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+id+`/relationships/comments",
 									"related": "/posts/`+id+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+id+`/relationships/selections",
 									"related": "/posts/`+id+`/selections"
@@ -148,12 +152,14 @@ func TestBasicOperations(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/comments",
 								"related": "/posts/`+id+`/comments"
 							}
 						},
 						"selections": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/selections",
 								"related": "/posts/`+id+`/selections"
@@ -185,12 +191,14 @@ func TestBasicOperations(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/comments",
 								"related": "/posts/`+id+`/comments"
 							}
 						},
 						"selections": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+id+`/relationships/selections",
 								"related": "/posts/`+id+`/selections"
@@ -268,12 +276,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/comments",
 									"related": "/posts/`+post1+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -307,12 +317,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/comments",
 									"related": "/posts/`+post2+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -330,12 +342,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/comments",
 									"related": "/posts/`+post3+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -369,12 +383,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/comments",
 									"related": "/posts/`+post1+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -392,12 +408,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/comments",
 									"related": "/posts/`+post3+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -431,12 +449,14 @@ func TestFiltering(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/comments",
 									"related": "/posts/`+post2+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -487,12 +507,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/comments",
 									"related": "/posts/`+post1+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -510,12 +532,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/comments",
 									"related": "/posts/`+post2+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -533,12 +557,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/comments",
 									"related": "/posts/`+post3+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -572,12 +598,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/comments",
 									"related": "/posts/`+post3+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -595,12 +623,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/comments",
 									"related": "/posts/`+post2+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -618,12 +648,14 @@ func TestSorting(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/comments",
 									"related": "/posts/`+post1+`/comments"
 								}
 							},
 							"selections": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -718,12 +750,14 @@ func TestHasManyRelationship(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+post+`/relationships/comments",
 								"related": "/posts/`+post+`/comments"
 							}
 						},
 						"selections": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+post+`/relationships/selections",
 								"related": "/posts/`+post+`/selections"
@@ -856,7 +890,6 @@ func TestHasManyRelationship(t *testing.T) {
 		})
 
 	// get only relationship links
-	// TODO: We should see ids here.
 	r.GET("/posts/"+post+"/relationships/comments").
 		SetHeader(gofight.H{
 			"Accept": jsonapi.MediaType,
@@ -864,6 +897,12 @@ func TestHasManyRelationship(t *testing.T) {
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "comments",
+						"id": "`+comment+`"
+					}
+				],
 				"links": {
 					"self": "/posts/`+post+`/relationships/comments",
 					"related": "/posts/`+post+`/comments"
@@ -979,12 +1018,23 @@ func TestToOneRelationship(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
+							"data": [
+								{
+									"type": "comments",
+									"id": "`+comment1+`"
+								},
+								{
+									"type": "comments",
+									"id": "`+comment2+`"
+								}
+							],
 							"links": {
 								"self": "/posts/`+post1+`/relationships/comments",
 								"related": "/posts/`+post1+`/comments"
 							}
 						},
 						"selections": {
+							"data": [],
 							"links": {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
@@ -1200,12 +1250,19 @@ func TestToManyRelationship(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/comments",
 									"related": "/posts/`+post1+`/comments"
 								}
 							},
 							"selections": {
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -1223,12 +1280,19 @@ func TestToManyRelationship(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
+								"data": [],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/comments",
 									"related": "/posts/`+post2+`/comments"
 								}
 							},
 							"selections": {
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
