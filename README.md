@@ -95,26 +95,24 @@ app.Register(router)
 After starting the server you can inspect the created routes from the console output (simplified):
 
 ```
-GET    /posts
-GET    /posts/:id
-GET    /posts/:id/relationships/comments
-GET    /posts/:id/comments
-PATCH  /posts/:id/relationships/comments
-POST   /posts
-DELETE /posts/:id
-PATCH  /posts/:id
-
-GET    /comments
-GET    /comments/:id
-GET    /comments/:id/relationships/post
-GET    /comments/:id/post
-PATCH  /comments/:id/relationships/post
-GET    /comments/:id/relationships/parent
-GET    /comments/:id/parent
-PATCH  /comments/:id/relationships/parent
-POST   /comments
-DELETE /comments/:id
-PATCH  /comments/:id
+GET    /api/posts
+GET    /api/posts/:id
+GET    /api/posts/:id/relationships/comments
+GET    /api/posts/:id/comments
+GET    /api/comments
+GET    /api/comments/:id
+GET    /api/comments/:id/parent
+GET    /api/comments/:id/post
+GET    /api/comments/:id/relationships/parent
+GET    /api/comments/:id/relationships/post
+POST   /api/posts
+POST   /api/comments
+PATCH  /api/comments/:id
+PATCH  /api/comments/:id/relationships/parent
+PATCH  /api/comments/:id/relationships/post
+PATCH  /api/posts/:id
+DELETE /api/posts/:id
+DELETE /api/comments/:id
 ```
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
