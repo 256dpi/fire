@@ -236,7 +236,7 @@ func (m *Meta) FieldsByTag(tag string) []Field {
 // using Init().
 func (m *Meta) Make() Model {
 	pointer := reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
-	return pointer.(Model)
+	return Init(pointer.(Model))
 }
 
 // MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.

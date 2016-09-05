@@ -141,7 +141,7 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// create new model
-	ctx.Model = Init(r.Model.Meta().Make())
+	ctx.Model = r.Model.Meta().Make()
 
 	// assign attributes
 	err := r.assignData(ctx, doc.Data.One)
