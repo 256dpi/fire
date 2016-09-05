@@ -108,7 +108,7 @@ func (r *Resource) listResources(ctx *Context) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName,
+		Self: ctx.Request.Self(),
 	}
 
 	// write result
@@ -127,7 +127,7 @@ func (r *Resource) findResource(ctx *Context) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + ctx.Model.ID().Hex(),
+		Self: ctx.Request.Self(),
 	}
 
 	// write result
@@ -178,7 +178,7 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + ctx.Model.ID().Hex(),
+		Self: ctx.Request.Self() + "/" + ctx.Model.ID().Hex(),
 	}
 
 	// write result
@@ -214,7 +214,7 @@ func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + ctx.Model.ID().Hex(),
+		Self: ctx.Request.Self(),
 	}
 
 	// write result
