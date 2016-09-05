@@ -196,7 +196,7 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	ctx.Model = Init(r.Model.Meta().Make())
 
 	// assign attributes
-	err := r.assignAttributesAndRelationships(ctx, doc)
+	err := r.assignAttributesAndRelationships(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// assign attributes
-	err = r.assignAttributesAndRelationships(ctx, doc)
+	err = r.assignAttributesAndRelationships(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
@@ -476,22 +476,75 @@ func (r *Resource) loadModel(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) assignAttributesAndRelationships(ctx *Context, doc *jsonapi.Document) error {
+func (r *Resource) assignAttributesAndRelationships(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
-	err := jsonapi.MapToStruct(doc.Data.One.Attributes, ctx.Model)
+	err := jsonapi.MapToStruct(res.Attributes, ctx.Model)
 	if err != nil {
 		return err
 	}
 
 	// assign relationships
-	// TODO: Make safer.
-	for name, relationship := range doc.Data.One.Relationships {
-		if relationship.Data.One != nil {
-			ctx.Model.Set(name, relationship.Data.One.ID)
-		} else if relationship.Data.Many != nil {
-			for _, r := range relationship.Data.Many {
-				ctx.Model.Set(name, r.ID)
+	for _, field := range ctx.Model.Meta().Fields {
+		// check if field is a relationship
+		if !field.ToOne && !field.ToMany {
+			continue
+		}
+
+		// get relationship data and continue if missing
+		rel, ok := res.Relationships[field.RelName]
+		if !ok {
+			continue
+		}
+
+		// handle to one relationship
+		if field.ToOne {
+			// prepare zero value
+			var id bson.ObjectId
+
+			// set and check id if available
+			if rel.Data.One != nil {
+				id = bson.ObjectIdHex(rel.Data.One.ID)
+
+				// return error for an invalid id
+				if !id.Valid() {
+					return jsonapi.BadRequest("Invalid relationship ID")
+				}
 			}
+
+			// handle non optional field first
+			if !field.Optional {
+				ctx.Model.Set(field.Name, id)
+			}
+
+			// assign for a zero value optional field
+			if id != "" {
+				ctx.Model.Set(field.Name, &id)
+			} else {
+				ctx.Model.Set(field.Name, nil)
+			}
+		}
+
+		// handle to many relationship
+		if field.ToMany {
+			// prepare slice of ids
+			var ids []bson.ObjectId
+
+			// range over all resources
+			for _, r := range rel.Data.Many {
+				// get id
+				id := bson.ObjectId(r.ID)
+
+				// return error for an invalid id
+				if !id.Valid() {
+					return jsonapi.BadRequest("Invalid relationship ID")
+				}
+
+				// add id to slice
+				ids = append(ids, id)
+			}
+
+			// set ids
+			ctx.Model.Set(field.Name, ids)
 		}
 	}
 
