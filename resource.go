@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -54,36 +55,34 @@ func (r *Resource) generalHandler(gctx *gin.Context) {
 	switch req.Intent {
 	case jsonapi.ListResources:
 		ctx := r.buildContext(FindAll, req, gctx)
-		r.listResources(ctx)
+		err = r.listResources(ctx)
 	case jsonapi.FindResource:
 		ctx := r.buildContext(FindOne, req, gctx)
-		r.findResource(ctx)
+		err = r.findResource(ctx)
 	case jsonapi.CreateResource:
 		ctx := r.buildContext(Create, req, gctx)
-		r.createResource(ctx, doc)
+		err = r.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
 		ctx := r.buildContext(Update, req, gctx)
-		r.updateResource(ctx, doc)
+		err = r.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
 		ctx := r.buildContext(Delete, req, gctx)
-		r.deleteResource(ctx)
+		err = r.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		// TODO: Could also be a find one...
-		ctx := r.buildContext(FindAll, req, gctx)
-		r.getRelatedResources(ctx)
+		ctx := r.buildContext(0, req, gctx)
+		err = r.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		// TODO: Could also be a find one...
-		ctx := r.buildContext(FindAll, req, gctx)
-		r.getRelationship(ctx)
+		ctx := r.buildContext(0, req, gctx)
+		err = r.getRelationship(ctx)
 	case jsonapi.SetRelationship:
 		ctx := r.buildContext(Update, req, gctx)
-		r.setRelationship(ctx, doc)
+		err = r.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
 		ctx := r.buildContext(Update, req, gctx)
-		r.appendToRelationship(ctx, doc)
+		err = r.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
 		ctx := r.buildContext(Update, req, gctx)
-		r.removeFromRelationship(ctx, doc)
+		err = r.removeFromRelationship(ctx, doc)
 	}
 
 	// write any occurring errors
@@ -95,72 +94,29 @@ func (r *Resource) generalHandler(gctx *gin.Context) {
 }
 
 func (r *Resource) listResources(ctx *Context) error {
-	// prepare context
+	// prepare query
 	ctx.Query = bson.M{}
 
-	// add filters
-	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
-		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
-			if field.Type == reflect.Bool && len(values) == 1 {
-				ctx.Query[field.BSONName] = values[0] == "true"
-				continue
-			}
-
-			ctx.Query[field.BSONName] = bson.M{"$in": values}
-		}
-	}
-
-	// add sorting
-	for _, params := range ctx.Request.Sorting {
-		for _, field := range r.Model.Meta().FieldsByTag("sortable") {
-			if params == field.BSONName || params == "-"+field.BSONName {
-				ctx.Sorting = append(ctx.Sorting, params)
-			}
-		}
-	}
-
-	// run authorizer if available
-	err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized)
+	// load models
+	err := r.loadModels(ctx)
 	if err != nil {
 		return err
 	}
 
-	// prepare slice
-	pointer := r.Model.Meta().MakeSlice()
-
-	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).
-		Sort(ctx.Sorting...).All(pointer)
-	if err != nil {
-		return err
-	}
-
-	// initialize slice
-	InitSlice(pointer)
-
-	// get slice
-	slice := reflect.ValueOf(pointer).Elem()
-
-	// prepare resources
-	resources := make([]*jsonapi.Resource, 0, slice.Len())
-
-	// create resource
-	for i := 0; i < slice.Len(); i++ {
-		resources = append(resources, r.resourceForModel(slice.Index(i).Interface().(Model)))
-	}
+	// get resources
+	resources := r.resourcesForSlice(ctx.slice)
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
 		Self: r.endpoint.prefix + "/" + r.Model.Meta().PluralName,
 	}
 
-	// TODO: Enforce pagination automatically (20 items per page).
-
 	// write result
 	return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
 }
 
 func (r *Resource) findResource(ctx *Context) error {
+	// load model
 	err := r.loadModel(ctx)
 	if err != nil {
 		return err
@@ -179,6 +135,7 @@ func (r *Resource) findResource(ctx *Context) error {
 }
 
 func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
+	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
 	}
@@ -229,10 +186,12 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 }
 
 func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
+	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
 	}
 
+	// load model
 	err := r.loadModel(ctx)
 	if err != nil {
 		return err
@@ -308,11 +267,181 @@ func (r *Resource) deleteResource(ctx *Context) error {
 }
 
 func (r *Resource) getRelatedResources(ctx *Context) error {
+	// load model
+	err := r.loadModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// prepare resource type
+	var relationField *Field
+
+	// find requested relationship
+	for _, field := range r.Model.Meta().Fields {
+		if field.RelName == ctx.Request.RelatedResource {
+			relationField = &field
+			break
+		}
+	}
+
+	// check resource type
+	if relationField == nil {
+		return jsonapi.BadRequest("Relationship does not exist")
+	}
+
+	// get related resource
+	pluralName := relationField.RelType
+	singularName := r.endpoint.nameMap[pluralName]
+	resource := r.endpoint.resourceMap[singularName]
+
+	// check resource
+	if resource == nil {
+		return fmt.Errorf("related resource %s not found in map", pluralName)
+	}
+
+	// generate base link
+	base := r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + ctx.Model.ID().Hex() + "/" + ctx.Request.RelatedResource
+
+	// zero request
+	ctx.Request.Intent = 0
+	ctx.Request.ResourceType = pluralName
+	ctx.Request.ResourceID = ""
+	ctx.Request.RelatedResource = ""
+
+	// finish to one relationship
+	if relationField.ToOne {
+		// prepare id
+		var id string
+
+		// handle optional field
+		if relationField.Optional {
+			// lookup id
+			oid := ctx.Model.Get(relationField.Name).(*bson.ObjectId)
+
+			// check if missing
+			if oid == nil {
+				// TODO: What to do here?
+			}
+
+			id = string(*oid)
+		}
+
+		// modify context
+		ctx.Request.Intent = jsonapi.FindResource
+		ctx.Request.ResourceID = id
+
+		// create new request
+		ctx2 := resource.buildContext(FindOne, ctx.Request, ctx.GinContext)
+
+		// forward request
+		return resource.findResource(ctx2)
+	}
+
+	// finish to many relationship
+	if relationField.ToMany {
+		// get ids
+		ids := ctx.Model.Get(relationField.Name).([]bson.ObjectId)
+
+		// modify context
+		ctx.Request.Intent = jsonapi.ListResources
+
+		// create new request
+		ctx2 := resource.buildContext(FindAll, ctx.Request, ctx.GinContext)
+
+		// set query
+		ctx2.Query = bson.M{
+			"_id": bson.M{
+				"$in": ids,
+			},
+		}
+
+		// load related models
+		err := resource.loadModels(ctx2)
+		if err != nil {
+			return err
+		}
+
+		// get related resources
+		resources := resource.resourcesForSlice(ctx2.slice)
+
+		// prepare links
+		links := &jsonapi.DocumentLinks{
+			Self: base,
+		}
+
+		// write result
+		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
+	}
+
+	// finish has many relationship
+	if relationField.HasMany {
+		// prepare filter
+		var filterName string
+
+		// find related relationship
+		for _, field := range resource.Model.Meta().Fields {
+			// TODO: Is this handled correctly?
+
+			if field.RelType == r.Model.Meta().PluralName {
+				filterName = field.BSONName
+				break
+			}
+		}
+
+		// check filter name
+		if filterName == "" {
+			return fmt.Errorf("unable to determine filter name for %s on %s", r.Model.Meta().PluralName, singularName)
+		}
+
+		// modify context
+		ctx.Request.Intent = jsonapi.ListResources
+
+		// create new request
+		ctx2 := resource.buildContext(FindAll, ctx.Request, ctx.GinContext)
+
+		// set query
+		ctx2.Query = bson.M{
+			filterName: bson.M{
+				"$in": []bson.ObjectId{ctx.Model.ID()},
+			},
+		}
+
+		// load related models
+		err := resource.loadModels(ctx2)
+		if err != nil {
+			return err
+		}
+
+		// get related resources
+		resources := resource.resourcesForSlice(ctx2.slice)
+
+		// prepare links
+		links := &jsonapi.DocumentLinks{
+			Self: base,
+		}
+
+		// write result
+		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
+	}
+
 	return nil
 }
 
 func (r *Resource) getRelationship(ctx *Context) error {
-	return nil
+	// load model
+	err := r.loadModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// get resource
+	resource := r.resourceForModel(ctx.Model)
+
+	// get relationship
+	relationship := resource.Relationships[ctx.Request.Relationship]
+
+	// write result
+	return jsonapi.WriteResponse(ctx.GinContext.Writer, http.StatusOK, relationship)
 }
 
 func (r *Resource) setRelationship(ctx *Context, doc *jsonapi.Document) error {
@@ -470,6 +599,52 @@ func (r *Resource) loadModel(ctx *Context) error {
 	return nil
 }
 
+func (r *Resource) loadModels(ctx *Context) error {
+	// add filters
+	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
+		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
+			if field.Type == reflect.Bool && len(values) == 1 {
+				ctx.Query[field.BSONName] = values[0] == "true"
+				continue
+			}
+
+			ctx.Query[field.BSONName] = bson.M{"$in": values}
+		}
+	}
+
+	// add sorting
+	for _, params := range ctx.Request.Sorting {
+		for _, field := range r.Model.Meta().FieldsByTag("sortable") {
+			if params == field.BSONName || params == "-"+field.BSONName {
+				ctx.Sorting = append(ctx.Sorting, params)
+			}
+		}
+	}
+
+	// TODO: Enforce pagination automatically (20 items per page).
+
+	// run authorizer if available
+	err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized)
+	if err != nil {
+		return err
+	}
+
+	// prepare slice
+	ctx.slice = r.Model.Meta().MakeSlice()
+
+	// query db
+	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).
+		Sort(ctx.Sorting...).All(ctx.slice)
+	if err != nil {
+		return err
+	}
+
+	// initialize slice
+	InitSlice(ctx.slice)
+
+	return nil
+}
+
 func (r *Resource) assignAttributesAndRelationships(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
 	err := jsonapi.MapToStruct(res.Attributes, ctx.Model)
@@ -576,14 +751,13 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 			if field.Optional {
 				// get and check optional field
 				oid := model.Get(field.Name).(*bson.ObjectId)
-				if oid == nil {
-					continue
-				}
 
-				// create reference
-				reference = &jsonapi.Resource{
-					Type: field.RelType,
-					ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
+				// create reference if id is available
+				if oid != nil {
+					reference = &jsonapi.Resource{
+						Type: field.RelType,
+						ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
+					}
 				}
 			} else {
 				// directly create reference
@@ -630,4 +804,19 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 	}
 
 	return resource
+}
+
+func (r *Resource) resourcesForSlice(ptr interface{}) []*jsonapi.Resource {
+	// dereference pointer to slice
+	slice := reflect.ValueOf(ptr).Elem()
+
+	// prepare resources
+	resources := make([]*jsonapi.Resource, 0, slice.Len())
+
+	// create resource
+	for i := 0; i < slice.Len(); i++ {
+		resources = append(resources, r.resourceForModel(slice.Index(i).Interface().(Model)))
+	}
+
+	return resources
 }

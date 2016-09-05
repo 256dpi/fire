@@ -12,7 +12,8 @@ type Action int
 
 // All the available actions.
 const (
-	FindAll Action = iota
+	_ Action = iota
+	FindAll
 	FindOne
 	Create
 	Update
@@ -43,6 +44,8 @@ type Context struct {
 
 	// The underlying gin.Context.
 	GinContext *gin.Context
+
+	slice interface{}
 
 	original Model
 }
