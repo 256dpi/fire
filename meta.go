@@ -61,10 +61,9 @@ type Field struct {
 
 // Meta stores extracted meta data from a model.
 type Meta struct {
-	SingularName string
-	PluralName   string
-	Collection   string
-	Fields       []Field
+	PluralName string
+	Collection string
+	Fields     []Field
 
 	model Model
 }
@@ -98,18 +97,17 @@ func NewMeta(model Model) *Meta {
 		// check if field is the Base
 		if structField.Type == baseType {
 			baseTag := strings.Split(fireStructTag, ":")
-			if len(baseTag) < 2 || len(baseTag) > 3 {
-				panic("Expected to find a tag of the form fire:\"singular:plural[:collection]\" on Base")
+			if len(baseTag) > 2 || baseTag[0] == "" {
+				panic(`Expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
 			}
 
-			// infer singular and plural and collection based on plural
-			meta.SingularName = baseTag[0]
-			meta.PluralName = baseTag[1]
-			meta.Collection = baseTag[1]
+			// infer plural and collection names
+			meta.PluralName = baseTag[0]
+			meta.Collection = baseTag[0]
 
 			// infer collection
-			if len(baseTag) == 3 {
-				meta.Collection = baseTag[2]
+			if len(baseTag) == 2 {
+				meta.Collection = baseTag[1]
 			}
 
 			continue

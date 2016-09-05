@@ -9,7 +9,7 @@ import (
 )
 
 type malformedBase struct {
-	Base
+	Base `fire:""`
 }
 
 type malformedToOne struct {
@@ -48,9 +48,8 @@ func TestNewMeta(t *testing.T) {
 func TestMeta(t *testing.T) {
 	post := Init(&Post{})
 	assert.Equal(t, &Meta{
-		Collection:   "posts",
-		SingularName: "post",
-		PluralName:   "posts",
+		Collection: "posts",
+		PluralName: "posts",
 		Fields: []Field{
 			{
 				Name:     "Title",
@@ -108,9 +107,8 @@ func TestMeta(t *testing.T) {
 
 	comment := Init(&Comment{})
 	assert.Equal(t, &Meta{
-		Collection:   "comments",
-		SingularName: "comment",
-		PluralName:   "comments",
+		Collection: "comments",
+		PluralName: "comments",
 		Fields: []Field{
 			{
 				Name:     "Message",

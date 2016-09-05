@@ -76,7 +76,7 @@ type Comment struct {
 }
 ```
 
-Finally, an `Application` is used to mount the controller on a router and make them accessible:
+Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are in turn mounted on an `Application` that provides the necessary routing capabilities:
 
 ```go
 app := fire.NewApplication(db, "api")
@@ -125,11 +125,11 @@ This section describes the configuration of fire models using the right combinat
 
 ### Basics
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models singular and plural name and collection via the `fire:"singular:plural[:collection]"` struct tag:
+The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models plural and collection name via the `fire:"plural-name[:collection]"` struct tag:
 
 ```go
 type Post struct {
-    fire.Base `bson:",inline" fire:"post:posts"`
+    fire.Base `bson:",inline" fire:"posts"`
     // ...
 }
 ```
@@ -161,7 +161,6 @@ post.Set("title", "New Title")
 The `Meta` method can be used to get the models meta structure:
 
 ```go
-post.Meta().SingularName
 post.Meta().PluralName
 post.Meta().Collection
 post.Meta().Fields

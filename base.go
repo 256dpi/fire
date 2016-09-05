@@ -34,7 +34,7 @@ func (b *Base) Get(name string) interface{} {
 		}
 	}
 
-	panic("Missing field " + name + " on " + b.meta.SingularName)
+	panic("Missing field " + name + " on model named " + b.meta.PluralName)
 }
 
 // Set will set given field to the the passed valued.
@@ -51,7 +51,7 @@ func (b *Base) Set(name string, value interface{}) {
 		}
 	}
 
-	panic("Missing field " + name + " on " + b.meta.SingularName)
+	panic("Missing field " + name + " on model named " + b.meta.PluralName)
 }
 
 // Validate validates the model based on the "valid" struct tags.
