@@ -144,7 +144,7 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	ctx.Model = Init(r.Model.Meta().Make())
 
 	// assign attributes
-	err := r.assignAttributesAndRelationships(ctx, doc.Data.One)
+	err := r.assignData(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
@@ -198,25 +198,13 @@ func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// assign attributes
-	err = r.assignAttributesAndRelationships(ctx, doc.Data.One)
+	err = r.assignData(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
 
-	// validate model
-	err = ctx.Model.Validate(false)
-	if err != nil {
-		return jsonapi.BadRequest(err.Error())
-	}
-
-	// run validator if available
-	err = r.runCallback(r.Validator, ctx, http.StatusBadRequest)
-	if err != nil {
-		return err
-	}
-
-	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
+	// save model
+	err = r.saveModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -319,11 +307,13 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 			oid := ctx.Model.Get(relationField.Name).(*bson.ObjectId)
 
 			// check if missing
-			if oid == nil {
+			if oid != nil {
+				id = oid.Hex()
+			} else {
 				// TODO: What to do here?
 			}
-
-			id = string(*oid)
+		} else {
+			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
 		}
 
 		// modify context
@@ -333,8 +323,22 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		// create new request
 		ctx2 := resource.buildContext(FindOne, ctx.Request, ctx.GinContext)
 
-		// forward request
-		return resource.findResource(ctx2)
+		// load model
+		err := resource.loadModel(ctx2)
+		if err != nil {
+			return err
+		}
+
+		// get resource
+		_resource := resource.resourceForModel(ctx2.Model)
+
+		// prepare links
+		links := &jsonapi.DocumentLinks{
+			Self: base,
+		}
+
+		// write result
+		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, _resource, links)
 	}
 
 	// finish to many relationship
@@ -445,14 +449,38 @@ func (r *Resource) getRelationship(ctx *Context) error {
 }
 
 func (r *Resource) setRelationship(ctx *Context, doc *jsonapi.Document) error {
+	// load model
+	err := r.loadModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// assign relationship
+	err = r.assignRelationship(ctx, ctx.Request.Relationship, doc)
+	if err != nil {
+		return err
+	}
+
+	// save model
+	err = r.saveModel(ctx)
+	if err != nil {
+		return err
+	}
+
+	// write result
+	ctx.GinContext.Status(http.StatusNoContent)
 	return nil
 }
 
 func (r *Resource) appendToRelationship(ctx *Context, doc *jsonapi.Document) error {
+	// write result
+	ctx.GinContext.Status(http.StatusNoContent)
 	return nil
 }
 
 func (r *Resource) removeFromRelationship(ctx *Context, doc *jsonapi.Document) error {
+	// write result
+	ctx.GinContext.Status(http.StatusNoContent)
 	return nil
 }
 
@@ -464,85 +492,6 @@ func (r *Resource) buildContext(action Action, req *jsonapi.Request, gctx *gin.C
 		GinContext: gctx,
 	}
 }
-
-//func (r *Resource) setRelationshipFilters(ctx *Context) error {
-//	// TODO: This is very cumbersome, let's fix it upstream.
-//
-//	for param, values := range ctx.API2GoReq.QueryParams {
-//		// handle *ID params
-//		if strings.HasSuffix(param, "ID") {
-//			// get plural name
-//			pluralName := strings.Replace(param, "ID", "", 1)
-//
-//			// ret relation name
-//			relName := ctx.API2GoReq.QueryParams[pluralName+"Name"][0]
-//
-//			// remove params in any case
-//			delete(ctx.API2GoReq.QueryParams, param)
-//			delete(ctx.API2GoReq.QueryParams, pluralName+"Name")
-//
-//			// get singular name and continue if not existing
-//			singularName, ok := r.endpoint.nameMap[pluralName]
-//			if !ok {
-//				continue
-//			}
-//
-//			// check if self referencing
-//			if singularName == r.Model.Meta().SingularName {
-//				ctx.Query["_id"] = bson.M{"$in": stringsToIDs(values)}
-//			}
-//
-//			for _, field := range r.Model.Meta().Fields {
-//				// add to one relationship filter
-//				if field.ToOne && field.RelName == singularName {
-//					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
-//				}
-//
-//				// add to many relationship filter
-//				if field.ToMany && field.RelName == pluralName {
-//					ctx.Query[field.BSONName] = bson.M{"$in": stringsToIDs(values)}
-//				}
-//
-//				// add has many relationship filter
-//				if field.HasMany && field.RelName == pluralName {
-//					// get referenced resource and continue if not existing
-//					resource, ok := r.endpoint.resourceMap[singularName]
-//					if !ok {
-//						continue
-//					}
-//
-//					// prepare key field
-//					var keyField string
-//
-//					// get foreign field
-//					for _, field := range resource.Model.Meta().Fields {
-//						if field.RelName == relName {
-//							keyField = field.BSONName
-//						}
-//					}
-//
-//					// check key field
-//					if keyField == "" {
-//						return api2go.NewHTTPError(nil, "Error while retrieving key field", http.StatusInternalServerError)
-//					}
-//
-//					// read the referenced ids
-//					var ids []bson.ObjectId
-//					err := ctx.DB.C(resource.Model.Meta().Collection).Find(bson.M{
-//						"_id": bson.M{"$in": stringsToIDs(values)},
-//					}).Distinct(keyField, &ids)
-//					if err != nil {
-//						return api2go.NewHTTPError(err, "Error while retrieving resources", http.StatusInternalServerError)
-//					}
-//
-//					ctx.Query["_id"] = bson.M{"$in": ids}
-//				}
-//			}
-//		}
-//	}
-//
-//	return nil
-//}
 
 func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) error {
 	// check if callback is available
@@ -645,23 +594,34 @@ func (r *Resource) loadModels(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) assignAttributesAndRelationships(ctx *Context, res *jsonapi.Resource) error {
+func (r *Resource) assignData(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
 	err := jsonapi.MapToStruct(res.Attributes, ctx.Model)
 	if err != nil {
 		return err
 	}
 
+	// iterate relationships
+	for name, rel := range res.Relationships {
+		err = r.assignRelationship(ctx, name, rel)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) error {
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
-		// check if field is a relationship
-		if !field.ToOne && !field.ToMany {
+		// check if field matches relationship
+		if field.RelName != name {
 			continue
 		}
 
-		// get relationship data and continue if missing
-		rel, ok := res.Relationships[field.RelName]
-		if !ok {
+		// check if field is a relationship
+		if !field.ToOne && !field.ToMany {
 			continue
 		}
 
@@ -719,6 +679,23 @@ func (r *Resource) assignAttributesAndRelationships(ctx *Context, res *jsonapi.R
 	}
 
 	return nil
+}
+
+func (r *Resource) saveModel(ctx *Context) error {
+	// validate model
+	err := ctx.Model.Validate(false)
+	if err != nil {
+		return jsonapi.BadRequest(err.Error())
+	}
+
+	// run validator if available
+	err = r.runCallback(r.Validator, ctx, http.StatusBadRequest)
+	if err != nil {
+		return err
+	}
+
+	// update model
+	return r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
 func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {

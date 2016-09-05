@@ -78,9 +78,6 @@ func Example() {
 	//	 panic(err)
 	// }
 
-	// TODO: EditToManyRelations routes should not be generated for has many
-	// relationships.
-
 	// Output:
 	// GET: /api/posts
 	// GET: /api/posts/:id
