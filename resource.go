@@ -508,6 +508,7 @@ func (r *Resource) assignAttributesAndRelationships(ctx *Context, res *jsonapi.R
 			// handle non optional field first
 			if !field.Optional {
 				ctx.Model.Set(field.Name, id)
+				continue
 			}
 
 			// assign for a zero value optional field
