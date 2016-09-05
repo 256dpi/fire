@@ -104,7 +104,10 @@ func (r *Resource) listResources(ctx *Context) error {
 	}
 
 	// get resources
-	resources := r.resourcesForSlice(ctx.slice)
+	resources, err := r.resourcesForSlice(ctx.slice)
+	if err != nil {
+		return err
+	}
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -123,7 +126,10 @@ func (r *Resource) findResource(ctx *Context) error {
 	}
 
 	// get resource
-	resource := r.resourceForModel(ctx.Model)
+	resource, err := r.resourceForModel(ctx.Model)
+	if err != nil {
+		return err
+	}
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -174,7 +180,10 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// get resource
-	resource := r.resourceForModel(ctx.Model)
+	resource, err := r.resourceForModel(ctx.Model)
+	if err != nil {
+		return err
+	}
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -210,7 +219,10 @@ func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// get resource
-	resource := r.resourceForModel(ctx.Model)
+	resource, err := r.resourceForModel(ctx.Model)
+	if err != nil {
+		return err
+	}
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -333,7 +345,10 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		}
 
 		// get resource
-		_resource := resource.resourceForModel(ctx2.Model)
+		_resource, err := resource.resourceForModel(ctx2.Model)
+		if err != nil {
+			return err
+		}
 
 		// write result
 		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, _resource, links)
@@ -364,7 +379,10 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		}
 
 		// get related resources
-		resources := resource.resourcesForSlice(ctx2.slice)
+		resources, err := resource.resourcesForSlice(ctx2.slice)
+		if err != nil {
+			return err
+		}
 
 		// write result
 		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
@@ -410,7 +428,10 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		}
 
 		// get related resources
-		resources := resource.resourcesForSlice(ctx2.slice)
+		resources, err := resource.resourcesForSlice(ctx2.slice)
+		if err != nil {
+			return err
+		}
 
 		// write result
 		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
@@ -427,7 +448,10 @@ func (r *Resource) getRelationship(ctx *Context) error {
 	}
 
 	// get resource
-	resource := r.resourceForModel(ctx.Model)
+	resource, err := r.resourceForModel(ctx.Model)
+	if err != nil {
+		return err
+	}
 
 	// get relationship
 	relationship := resource.Relationships[ctx.Request.Relationship]
@@ -794,7 +818,7 @@ func (r *Resource) saveModel(ctx *Context) error {
 	return r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
-func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
+func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 	// prepare resource
 	resource := &jsonapi.Resource{
 		Type:          r.Model.Meta().PluralName,
@@ -879,10 +903,10 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 		}
 	}
 
-	return resource
+	return resource, nil
 }
 
-func (r *Resource) resourcesForSlice(ptr interface{}) []*jsonapi.Resource {
+func (r *Resource) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, error) {
 	// dereference pointer to slice
 	slice := reflect.ValueOf(ptr).Elem()
 
@@ -891,8 +915,13 @@ func (r *Resource) resourcesForSlice(ptr interface{}) []*jsonapi.Resource {
 
 	// create resource
 	for i := 0; i < slice.Len(); i++ {
-		resources = append(resources, r.resourceForModel(slice.Index(i).Interface().(Model)))
+		_resources, err := r.resourceForModel(slice.Index(i).Interface().(Model))
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, _resources)
 	}
 
-	return resources
+	return resources, nil
 }
