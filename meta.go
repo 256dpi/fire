@@ -61,6 +61,7 @@ type Field struct {
 
 // Meta stores extracted meta data from a model.
 type Meta struct {
+	Name       string
 	PluralName string
 	Collection string
 	Fields     []Field
@@ -84,6 +85,7 @@ func NewMeta(model Model) *Meta {
 
 	// create new meta
 	meta = &Meta{
+		Name:  modelName,
 		model: model,
 	}
 

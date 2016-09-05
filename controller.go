@@ -295,7 +295,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// check related controller
 	if relatedController == nil {
-		return fmt.Errorf("related controller %s not found in map", pluralName)
+		return fmt.Errorf("missing controller for %s", pluralName)
 	}
 
 	// prepare links

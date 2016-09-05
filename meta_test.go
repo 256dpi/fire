@@ -48,6 +48,7 @@ func TestNewMeta(t *testing.T) {
 func TestMeta(t *testing.T) {
 	post := Init(&Post{})
 	assert.Equal(t, &Meta{
+		Name:       "fire.Post",
 		Collection: "posts",
 		PluralName: "posts",
 		Fields: []Field{
@@ -107,6 +108,7 @@ func TestMeta(t *testing.T) {
 
 	comment := Init(&Comment{})
 	assert.Equal(t, &Meta{
+		Name:       "fire.Comment",
 		Collection: "comments",
 		PluralName: "comments",
 		Fields: []Field{

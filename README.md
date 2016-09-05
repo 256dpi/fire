@@ -161,6 +161,7 @@ post.Set("title", "New Title")
 The `Meta` method can be used to get the models meta structure:
 
 ```go
+post.Meta().Name
 post.Meta().PluralName
 post.Meta().Collection
 post.Meta().Fields
