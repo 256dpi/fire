@@ -46,18 +46,12 @@ func Example() {
 	// create app
 	app := NewApplication(db, "api")
 
-	// add post
+	// add controllers
 	app.Mount(&Controller{
 		Model: &Post{},
-	})
-
-	// add comment
-	app.Mount(&Controller{
+	}, &Controller{
 		Model: &Comment{},
-	})
-
-	// add selection
-	app.Mount(&Controller{
+	}, &Controller{
 		Model: &Selection{},
 	})
 

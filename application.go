@@ -27,22 +27,24 @@ func NewApplication(db *mgo.Database, prefix string) *Application {
 	}
 }
 
-// Mount will add a controller to the application.
+// Mount will add controllers to the application.
 //
 // Note: Each controller should only be mounted once.
-func (a *Application) Mount(controller *Controller) {
-	// initialize model
-	Init(controller.Model)
+func (a *Application) Mount(controllers ...*Controller) {
+	for _, controller := range controllers {
+		// initialize model
+		Init(controller.Model)
 
-	// create entry in name map
-	a.nameMap[controller.Model.Meta().PluralName] = controller.Model.Meta().SingularName
+		// create entry in name map
+		a.nameMap[controller.Model.Meta().PluralName] = controller.Model.Meta().SingularName
 
-	// create entry in controller map
-	a.controllerMap[controller.Model.Meta().SingularName] = controller
+		// create entry in controller map
+		a.controllerMap[controller.Model.Meta().SingularName] = controller
 
-	// add controller to internal list
-	controller.app = a
-	a.controllers = append(a.controllers, controller)
+		// add controller to internal list
+		controller.app = a
+		a.controllers = append(a.controllers, controller)
+	}
 }
 
 // Register will create all necessary routes on the passed router.

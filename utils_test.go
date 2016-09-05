@@ -43,14 +43,12 @@ func buildServer() (*gin.Engine, *mgo.Database) {
 	// create app
 	app := NewApplication(db, "")
 
-	// add all controllers
+	// add controllers
 	app.Mount(&Controller{
 		Model: &Post{},
-	})
-	app.Mount(&Controller{
+	}, &Controller{
 		Model: &Comment{},
-	})
-	app.Mount(&Controller{
+	}, &Controller{
 		Model: &Selection{},
 	})
 
