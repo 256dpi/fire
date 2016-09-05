@@ -135,6 +135,8 @@ type Post struct {
 - If the collection is not explicitly set the plural name is used instead.
 - The plural name of the model is also the type for to one, to many and has many relationships.
 
+_Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
+
 All other fields of a structs are treated as attributes except for relationships (more on that later):
  
 ```go
@@ -146,11 +148,11 @@ type Post struct {
 }
 ```
 
-- Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
+- Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
 - The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty"`.
-- Validation is provided by the [govalidator](https://github.com/asaskevich/govalidator) library and used the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).  
+- Validation is provided by [govalidator](https://github.com/asaskevich/govalidator) and uses the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).  
 
-_Note: Ember Data requires you to use dashed names for multi-word model, attribute and relationship names like `blog-posts`._
+_Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`._
 
 ### Helpers
 
@@ -229,6 +231,8 @@ type Comment struct {
 
 _Note: To one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
+_Note: Ember Data requires you to use dashed names for multi-word relationship names like `last-posts`._
+
 ### To Many Relationships
 
 Fields of the type `[]bson.ObjectId` can be marked as to many relationships using the `fire:"name:type"` struct tag:
@@ -245,6 +249,8 @@ type Selection struct {
 
 _Note: To many relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag._
 
+_Note: Ember Data requires you to use dashed names for multi-word relationship names like `favorited-posts`._
+
 ### Has Many Relationships
 
 Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type:inverse"` struct tag:
@@ -256,6 +262,8 @@ type Post struct {
 	// ...
 }
 ```
+
+_Note: Ember Data requires you to use dashed names for multi-word relationship names like `authored-posts`._
 
 Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
