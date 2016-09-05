@@ -41,7 +41,7 @@ func buildServer() (*gin.Engine, *mgo.Database) {
 	router := gin.New()
 
 	// create app
-	app := NewApplication(db, "")
+	app := New(db, "")
 
 	// add controllers
 	app.Mount(&Controller{

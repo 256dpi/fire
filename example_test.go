@@ -44,7 +44,7 @@ func Example() {
 	db := sess.DB("")
 
 	// create app
-	app := NewApplication(db, "api")
+	app := New(db, "api")
 
 	// add controllers
 	app.Mount(&Controller{

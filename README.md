@@ -79,7 +79,7 @@ type Comment struct {
 Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are in turn mounted on an `Application` that provides the necessary routing capabilities:
 
 ```go
-app := fire.NewApplication(db, "api")
+app := fire.New(db, "api")
 
 app.Mount(&fire.Controller{
     Model: &Post{},
@@ -119,7 +119,7 @@ Fire provides various advanced features to hook into the request processing flow
 
 ## Models
 
-This section describes the configuration of fire models using the right combination of struct tags.
+This section describes the configuration of models using the right combination of struct tags.
 
 ### Basics
 
@@ -197,6 +197,7 @@ func (p *Post) Validate(fresh bool) error {
 ```
 
 - The argument `fresh` indicates if the model has been just created.
+- Returned errors are serialized as a bad request error.
 
 ### Filtering & Sorting
 
@@ -269,7 +270,7 @@ Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they
 
 ## Controllers
 
-This section describes the construction of fire controllers that expose the models as JSON APIs.
+This section describes the construction of controllers that expose the models as JSON APIs.
 
 ### Basics
 
@@ -332,10 +333,10 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Applications
 
-An `Application` can be created by calling `fire.NewApplication` with a reference to a database and the full URL prefix:
+An `Application` can be created by calling `fire.New` with a reference to a database and the full URL prefix:
 
 ```go
-app := fire.NewApplication(db, "api")
+app := fire.New(db, "api")
 
 app.Mount(&fire.Controller{
     Model: &Post{},

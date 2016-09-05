@@ -12,11 +12,11 @@ type Application struct {
 	controllers map[string]*Controller
 }
 
-// NewApplication returns a new fire application.
+// New returns a new fire application.
 //
 // Note: You should pass the full URL prefix of the API to allow proper
 // generation of resource links.
-func NewApplication(db *mgo.Database, prefix string) *Application {
+func New(db *mgo.Database, prefix string) *Application {
 	return &Application{
 		db:          db,
 		prefix:      prefix,
