@@ -98,12 +98,6 @@ func (r *Resource) listResources(ctx *Context) error {
 	// prepare context
 	ctx.Query = bson.M{}
 
-	// set relationship filters
-	//err = r.setRelationshipFilters(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	// add filters
 	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
 		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
@@ -135,13 +129,10 @@ func (r *Resource) listResources(ctx *Context) error {
 	pointer := r.Model.Meta().MakeSlice()
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).Sort(ctx.Sorting...).All(pointer)
+	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).
+		Sort(ctx.Sorting...).All(pointer)
 	if err != nil {
-		return &jsonapi.Error{
-			Status: http.StatusInternalServerError,
-			Title:  "Internal Server Error",
-			Detail: "Error while retrieving resources",
-		}
+		return err
 	}
 
 	// initialize slice
@@ -290,7 +281,9 @@ func (r *Resource) deleteResource(ctx *Context) error {
 	}
 
 	// prepare context
-	ctx.Query = bson.M{"_id": bson.ObjectIdHex(ctx.Request.ResourceID)}
+	ctx.Query = bson.M{
+		"_id": bson.ObjectIdHex(ctx.Request.ResourceID),
+	}
 
 	// run authorizer if available
 	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
@@ -428,6 +421,7 @@ func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) error
 		return nil
 	}
 
+	// run callback and handle errors
 	err := cb(ctx)
 	if isFatal(err) {
 		return err
