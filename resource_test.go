@@ -7,6 +7,7 @@ import (
 	"github.com/appleboy/gofight"
 	"github.com/gonfire/jsonapi"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func TestBasicOperations(t *testing.T) {
@@ -896,9 +897,15 @@ func TestToOneRelationship(t *testing.T) {
 		Title: "Post 2",
 	}).ID().Hex()
 
+	// create comment
+	comment1 := saveModel(db, &Comment{
+		Message: "Comment 1",
+		PostID:  bson.ObjectIdHex(post1),
+	}).ID().Hex()
+
 	r := gofight.New()
 
-	var comment string
+	var comment2 string
 
 	// create relating post
 	r.POST("/comments").
@@ -910,7 +917,7 @@ func TestToOneRelationship(t *testing.T) {
 			"data": {
 				"type": "comments",
 				"attributes": {
-			  		"message": "Comment 1"
+			  		"message": "Comment 2"
 				},
 				"relationships": {
 					"post": {
@@ -918,20 +925,26 @@ func TestToOneRelationship(t *testing.T) {
 							"type": "posts",
 							"id": "`+post1+`"
 						}
+					},
+					"parent": {
+						"data": {
+							"type": "comments",
+							"id": "`+comment1+`"
+						}
 					}
 				}
 			}
 		}`).
 		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-			comment = findLastModel(db, &Comment{}).ID().Hex()
+			comment2 = findLastModel(db, &Comment{}).ID().Hex()
 
 			assert.Equal(t, http.StatusCreated, r.Code)
 			assert.JSONEq(t, `{
 				"data": {
 					"type": "comments",
-					"id": "`+comment+`",
+					"id": "`+comment2+`",
 					"attributes": {
-						"message": "Comment 1"
+						"message": "Comment 2"
 					},
 					"relationships": {
 						"post": {
@@ -940,27 +953,30 @@ func TestToOneRelationship(t *testing.T) {
 								"id": "`+post1+`"
 							},
 							"links": {
-								"self": "/comments/`+comment+`/relationships/post",
-								"related": "/comments/`+comment+`/post"
+								"self": "/comments/`+comment2+`/relationships/post",
+								"related": "/comments/`+comment2+`/post"
 							}
 						},
 						"parent": {
-							"data": null,
+							"data": {
+								"type": "comments",
+								"id": "`+comment1+`"
+							},
 							"links": {
-								"self": "/comments/`+comment+`/relationships/parent",
-								"related": "/comments/`+comment+`/parent"
+								"self": "/comments/`+comment2+`/relationships/parent",
+								"related": "/comments/`+comment2+`/parent"
 							}
 						}
 					}
 				},
 				"links": {
-					"self": "/comments/`+comment+`"
+					"self": "/comments/`+comment2+`"
 				}
 			}`, r.Body.String())
 		})
 
 	// get related post
-	r.GET("/comments/"+comment+"/post").
+	r.GET("/comments/"+comment2+"/post").
 		SetHeader(gofight.H{
 			"Accept": jsonapi.MediaType,
 		}).
@@ -991,13 +1007,13 @@ func TestToOneRelationship(t *testing.T) {
 					}
 				},
 				"links": {
-					"self": "/comments/`+comment+`/post"
+					"self": "/comments/`+comment2+`/post"
 				}
 			}`, r.Body.String())
 		})
 
 	// get related post id only
-	r.GET("/comments/"+comment+"/relationships/post").
+	r.GET("/comments/"+comment2+"/relationships/post").
 		SetHeader(gofight.H{
 			"Accept": jsonapi.MediaType,
 		}).
@@ -1009,14 +1025,14 @@ func TestToOneRelationship(t *testing.T) {
 					"id": "`+post1+`"
 				},
 				"links": {
-					"self": "/comments/`+comment+`/relationships/post",
-					"related": "/comments/`+comment+`/post"
+					"self": "/comments/`+comment2+`/relationships/post",
+					"related": "/comments/`+comment2+`/post"
 				}
 			}`, r.Body.String())
 		})
 
-	// update relationship
-	r.PATCH("/comments/"+comment+"/relationships/post").
+	// replace relationship
+	r.PATCH("/comments/"+comment2+"/relationships/post").
 		SetHeader(gofight.H{
 			"Accept":       jsonapi.MediaType,
 			"Content-Type": jsonapi.MediaType,
@@ -1032,8 +1048,8 @@ func TestToOneRelationship(t *testing.T) {
 			assert.Equal(t, "", r.Body.String())
 		})
 
-	// fetch updated relationship
-	r.GET("/comments/"+comment+"/relationships/post").
+	// fetch replaced relationship
+	r.GET("/comments/"+comment2+"/relationships/post").
 		SetHeader(gofight.H{
 			"Accept": jsonapi.MediaType,
 		}).
@@ -1045,8 +1061,38 @@ func TestToOneRelationship(t *testing.T) {
 					"id": "`+post2+`"
 				},
 				"links": {
-					"self": "/comments/`+comment+`/relationships/post",
-					"related": "/comments/`+comment+`/post"
+					"self": "/comments/`+comment2+`/relationships/post",
+					"related": "/comments/`+comment2+`/post"
+				}
+			}`, r.Body.String())
+		})
+
+	// unset relationship
+	r.PATCH("/comments/"+comment2+"/relationships/parent").
+		SetHeader(gofight.H{
+			"Accept":       jsonapi.MediaType,
+			"Content-Type": jsonapi.MediaType,
+		}).
+		SetBody(`{
+			"data": null
+		}`).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusNoContent, r.Code)
+			assert.Equal(t, "", r.Body.String())
+		})
+
+	// fetch unset relationship
+	r.GET("/comments/"+comment2+"/relationships/parent").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": null,
+				"links": {
+					"self": "/comments/`+comment2+`/relationships/parent",
+					"related": "/comments/`+comment2+`/parent"
 				}
 			}`, r.Body.String())
 		})

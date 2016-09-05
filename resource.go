@@ -741,7 +741,7 @@ func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Do
 			var id bson.ObjectId
 
 			// set and check id if available
-			if rel.Data.One != nil {
+			if rel.Data != nil && rel.Data.One != nil {
 				id = bson.ObjectIdHex(rel.Data.One.ID)
 
 				// return error for an invalid id
@@ -760,7 +760,8 @@ func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Do
 			if id != "" {
 				ctx.Model.Set(field.Name, &id)
 			} else {
-				ctx.Model.Set(field.Name, nil)
+				var nilID *bson.ObjectId
+				ctx.Model.Set(field.Name, nilID)
 			}
 		}
 
@@ -840,7 +841,7 @@ func (r *Resource) resourceForModel(model Model) *jsonapi.Resource {
 				if oid != nil {
 					reference = &jsonapi.Resource{
 						Type: field.RelType,
-						ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
+						ID:   oid.Hex(),
 					}
 				}
 			} else {
