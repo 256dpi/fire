@@ -133,10 +133,24 @@ type Post struct {
 ```
 
 - If the collection is not explicitly set the plural name is used instead.
-- The plural name of the model is also the type for to one and has many relationships.
-- Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
+- The plural name of the model is also the type for to one, to many and has many relationships.
 
-_Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
+All other fields of a structs are treated as attributes except for relationships (more on that later):
+ 
+```go
+type Post struct {
+    // ...
+    Title    string `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+    TextBody string `json:"text-body" valid:"-" bson:"text_body"`
+    // ...
+}
+```
+
+- Fire will use the `bson` struct tag to automatically infer the database field or fallback to the lowercase version of the field name.
+- The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty"`.
+- Validation is provided by the [govalidator](https://github.com/asaskevich/govalidator) library and used the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).  
+
+_Note: Ember Data requires you to use dashed names for multi-word model, attribute and relationship names like `blog-posts`._
 
 ### Helpers
 
