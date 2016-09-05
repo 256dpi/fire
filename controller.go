@@ -291,7 +291,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := c.app.controllerMap[pluralName]
+	relatedController := c.app.controllers[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -894,7 +894,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := c.app.controllerMap[field.RelType]
+			relatedController := c.app.controllers[field.RelType]
 
 			// check existence
 			if relatedController == nil {

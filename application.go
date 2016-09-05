@@ -7,10 +7,9 @@ import (
 
 // An Application mounts and manages access to multiple controllers.
 type Application struct {
-	db            *mgo.Database
-	prefix        string
-	controllerMap map[string]*Controller
-	controllers   []*Controller
+	db          *mgo.Database
+	prefix      string
+	controllers map[string]*Controller
 }
 
 // NewApplication returns a new fire application.
@@ -19,9 +18,9 @@ type Application struct {
 // generation of resource links.
 func NewApplication(db *mgo.Database, prefix string) *Application {
 	return &Application{
-		db:            db,
-		prefix:        prefix,
-		controllerMap: make(map[string]*Controller),
+		db:          db,
+		prefix:      prefix,
+		controllers: make(map[string]*Controller),
 	}
 }
 
@@ -34,11 +33,10 @@ func (a *Application) Mount(controllers ...*Controller) {
 		Init(controller.Model)
 
 		// create entry in controller map
-		a.controllerMap[controller.Model.Meta().PluralName] = controller
+		a.controllers[controller.Model.Meta().PluralName] = controller
 
-		// add controller to internal list
+		// set app on controller
 		controller.app = a
-		a.controllers = append(a.controllers, controller)
 	}
 }
 
@@ -47,18 +45,18 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Note: This function should only be called once.
 func (a *Application) Register(router gin.IRouter) {
 	// process all controllers
-	for _, r := range a.controllers {
-		pluralName := r.Model.Meta().PluralName
+	for _, c := range a.controllers {
+		pluralName := c.Model.Meta().PluralName
 
 		// add basic operations
-		router.GET(a.prefix+"/"+pluralName, r.generalHandler)
-		router.POST(a.prefix+"/"+pluralName, r.generalHandler)
-		router.GET(a.prefix+"/"+pluralName+"/:id", r.generalHandler)
-		router.PATCH(a.prefix+"/"+pluralName+"/:id", r.generalHandler)
-		router.DELETE(a.prefix+"/"+pluralName+"/:id", r.generalHandler)
+		router.GET(a.prefix+"/"+pluralName, c.generalHandler)
+		router.POST(a.prefix+"/"+pluralName, c.generalHandler)
+		router.GET(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
+		router.PATCH(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
+		router.DELETE(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
 
 		// process all relationships
-		for _, field := range r.Model.Meta().Fields {
+		for _, field := range c.Model.Meta().Fields {
 			if field.RelName == "" {
 				continue
 			}
@@ -66,17 +64,17 @@ func (a *Application) Register(router gin.IRouter) {
 			name := field.RelName
 
 			// add relationship queries
-			router.GET(a.prefix+"/"+pluralName+"/:id/"+name, r.generalHandler)
-			router.GET(a.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+			router.GET(a.prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
+			router.GET(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 
 			// add relationship management operations
 			if field.ToOne || field.ToMany {
-				router.PATCH(a.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+				router.PATCH(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 			}
 
 			if field.ToMany {
-				router.POST(a.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
-				router.DELETE(a.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+				router.POST(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+				router.DELETE(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 			}
 		}
 	}
