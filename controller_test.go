@@ -672,9 +672,7 @@ func TestSorting(t *testing.T) {
 }
 
 //func TestSparseFieldsets(t *testing.T) {
-//	server, db := buildServer(&Resource{
-//		Model: &Post{},
-//	})
+//	server, db := buildServer()
 //
 //	// create posts
 //	post := saveModel(db, &Post{

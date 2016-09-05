@@ -11,11 +11,11 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Resource provides an interface to a model.
+// A Controller provides a JSON API based interface to a model.
 //
-// Note: Resources must not be modified after adding to an Endpoint.
-type Resource struct {
-	// The model that this resource should provide (e.g. &Foo{}).
+// Note: Controllers must not be modified after adding to an Endpoint.
+type Controller struct {
+	// The model that this controller should provide (e.g. &Foo{}).
 	Model Model
 
 	// The Authorizer is run on all actions. Will return an Unauthorized status
@@ -29,9 +29,9 @@ type Resource struct {
 	endpoint *Endpoint
 }
 
-func (r *Resource) generalHandler(gctx *gin.Context) {
+func (c *Controller) generalHandler(gctx *gin.Context) {
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(gctx.Request, r.endpoint.prefix)
+	req, err := jsonapi.ParseRequest(gctx.Request, c.endpoint.prefix)
 	if err != nil {
 		jsonapi.WriteError(gctx.Writer, err)
 		gctx.Error(err)
@@ -54,35 +54,35 @@ func (r *Resource) generalHandler(gctx *gin.Context) {
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx := r.buildContext(FindAll, req, gctx)
-		err = r.listResources(ctx)
+		ctx := c.buildContext(FindAll, req, gctx)
+		err = c.listResources(ctx)
 	case jsonapi.FindResource:
-		ctx := r.buildContext(FindOne, req, gctx)
-		err = r.findResource(ctx)
+		ctx := c.buildContext(FindOne, req, gctx)
+		err = c.findResource(ctx)
 	case jsonapi.CreateResource:
-		ctx := r.buildContext(Create, req, gctx)
-		err = r.createResource(ctx, doc)
+		ctx := c.buildContext(Create, req, gctx)
+		err = c.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx := r.buildContext(Update, req, gctx)
-		err = r.updateResource(ctx, doc)
+		ctx := c.buildContext(Update, req, gctx)
+		err = c.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx := r.buildContext(Delete, req, gctx)
-		err = r.deleteResource(ctx)
+		ctx := c.buildContext(Delete, req, gctx)
+		err = c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		ctx := r.buildContext(0, req, gctx)
-		err = r.getRelatedResources(ctx)
+		ctx := c.buildContext(0, req, gctx)
+		err = c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		ctx := r.buildContext(0, req, gctx)
-		err = r.getRelationship(ctx)
+		ctx := c.buildContext(0, req, gctx)
+		err = c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		ctx := r.buildContext(Update, req, gctx)
-		err = r.setRelationship(ctx, doc)
+		ctx := c.buildContext(Update, req, gctx)
+		err = c.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx := r.buildContext(Update, req, gctx)
-		err = r.appendToRelationship(ctx, doc)
+		ctx := c.buildContext(Update, req, gctx)
+		err = c.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx := r.buildContext(Update, req, gctx)
-		err = r.removeFromRelationship(ctx, doc)
+		ctx := c.buildContext(Update, req, gctx)
+		err = c.removeFromRelationship(ctx, doc)
 	}
 
 	// write any occurring errors
@@ -93,18 +93,18 @@ func (r *Resource) generalHandler(gctx *gin.Context) {
 	}
 }
 
-func (r *Resource) listResources(ctx *Context) error {
+func (c *Controller) listResources(ctx *Context) error {
 	// prepare query
 	ctx.Query = bson.M{}
 
 	// load models
-	err := r.loadModels(ctx)
+	err := c.loadModels(ctx)
 	if err != nil {
 		return err
 	}
 
 	// get resources
-	resources, err := r.resourcesForSlice(ctx.slice)
+	resources, err := c.resourcesForSlice(ctx.slice)
 	if err != nil {
 		return err
 	}
@@ -118,15 +118,15 @@ func (r *Resource) listResources(ctx *Context) error {
 	return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
 }
 
-func (r *Resource) findResource(ctx *Context) error {
+func (c *Controller) findResource(ctx *Context) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
 
 	// get resource
-	resource, err := r.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -140,23 +140,23 @@ func (r *Resource) findResource(ctx *Context) error {
 	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
 }
 
-func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
 	}
 
 	// create new model
-	ctx.Model = r.Model.Meta().Make()
+	ctx.Model = c.Model.Meta().Make()
 
 	// assign attributes
-	err := r.assignData(ctx, doc.Data.One)
+	err := c.assignData(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
 
 	// run authorizer if available
-	err = r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized)
+	err = c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 	if err != nil {
 		return err
 	}
@@ -168,19 +168,19 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// run validator if available
-	err = r.runCallback(r.Validator, ctx, http.StatusBadRequest)
+	err = c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 	if err != nil {
 		return err
 	}
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Insert(ctx.Model)
+	err = c.endpoint.db.C(c.Model.Meta().Collection).Insert(ctx.Model)
 	if err != nil {
 		return err
 	}
 
 	// get resource
-	resource, err := r.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -194,32 +194,32 @@ func (r *Resource) createResource(ctx *Context, doc *jsonapi.Document) error {
 	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusCreated, resource, links)
 }
 
-func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
 	}
 
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
 
 	// assign attributes
-	err = r.assignData(ctx, doc.Data.One)
+	err = c.assignData(ctx, doc.Data.One)
 	if err != nil {
 		return err
 	}
 
 	// save model
-	err = r.saveModel(ctx)
+	err = c.saveModel(ctx)
 	if err != nil {
 		return err
 	}
 
 	// get resource
-	resource, err := r.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (r *Resource) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
 }
 
-func (r *Resource) deleteResource(ctx *Context) error {
+func (c *Controller) deleteResource(ctx *Context) error {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.Request.ResourceID) {
 		return jsonapi.BadRequest("Invalid ID")
@@ -245,17 +245,17 @@ func (r *Resource) deleteResource(ctx *Context) error {
 	}
 
 	// run authorizer if available
-	if err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized); err != nil {
+	if err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized); err != nil {
 		return err
 	}
 
 	// run validator if available
-	if err := r.runCallback(r.Validator, ctx, http.StatusBadRequest); err != nil {
+	if err := c.runCallback(c.Validator, ctx, http.StatusBadRequest); err != nil {
 		return err
 	}
 
 	// query db
-	err := r.endpoint.db.C(r.Model.Meta().Collection).Remove(ctx.Query)
+	err := c.endpoint.db.C(c.Model.Meta().Collection).Remove(ctx.Query)
 	if err != nil {
 		return err
 	}
@@ -266,9 +266,9 @@ func (r *Resource) deleteResource(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) getRelatedResources(ctx *Context) error {
+func (c *Controller) getRelatedResources(ctx *Context) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -277,7 +277,7 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 	var relationField *Field
 
 	// find requested relationship
-	for _, field := range r.Model.Meta().Fields {
+	for _, field := range c.Model.Meta().Fields {
 		if field.RelName == ctx.Request.RelatedResource {
 			relationField = &field
 			break
@@ -291,12 +291,12 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 
 	// get related resource
 	pluralName := relationField.RelType
-	singularName := r.endpoint.nameMap[pluralName]
-	resource := r.endpoint.resourceMap[singularName]
+	singularName := c.endpoint.nameMap[pluralName]
+	relatedController := c.endpoint.controllerMap[singularName]
 
-	// check resource
-	if resource == nil {
-		return fmt.Errorf("related resource %s not found in map", pluralName)
+	// check related controller
+	if relatedController == nil {
+		return fmt.Errorf("related controller %s not found in map", pluralName)
 	}
 
 	// prepare links
@@ -336,22 +336,22 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		ctx.Request.ResourceID = id
 
 		// create new request
-		ctx2 := resource.buildContext(FindOne, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindOne, ctx.Request, ctx.GinContext)
 
 		// load model
-		err := resource.loadModel(ctx2)
+		err := relatedController.loadModel(ctx2)
 		if err != nil {
 			return err
 		}
 
 		// get resource
-		_resource, err := resource.resourceForModel(ctx2.Model)
+		resource, err := relatedController.resourceForModel(ctx2.Model)
 		if err != nil {
 			return err
 		}
 
 		// write result
-		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, _resource, links)
+		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
 	}
 
 	// finish to many relationship
@@ -363,7 +363,7 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := resource.buildContext(FindAll, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.GinContext)
 
 		// set query
 		ctx2.Query = bson.M{
@@ -373,13 +373,13 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		}
 
 		// load related models
-		err := resource.loadModels(ctx2)
+		err := relatedController.loadModels(ctx2)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := resource.resourcesForSlice(ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2.slice)
 		if err != nil {
 			return err
 		}
@@ -394,7 +394,7 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		var filterName string
 
 		// find related relationship
-		for _, field := range resource.Model.Meta().Fields {
+		for _, field := range relatedController.Model.Meta().Fields {
 			// find db field by comparing the relationship name wit the inverse
 			// name found on the original relationship
 			if field.RelName == relationField.RelInverse {
@@ -412,7 +412,7 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := resource.buildContext(FindAll, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.GinContext)
 
 		// set query
 		ctx2.Query = bson.M{
@@ -422,13 +422,13 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 		}
 
 		// load related models
-		err := resource.loadModels(ctx2)
+		err := relatedController.loadModels(ctx2)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := resource.resourcesForSlice(ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2.slice)
 		if err != nil {
 			return err
 		}
@@ -440,15 +440,15 @@ func (r *Resource) getRelatedResources(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) getRelationship(ctx *Context) error {
+func (c *Controller) getRelationship(ctx *Context) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
 
 	// get resource
-	resource, err := r.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -460,21 +460,21 @@ func (r *Resource) getRelationship(ctx *Context) error {
 	return jsonapi.WriteResponse(ctx.GinContext.Writer, http.StatusOK, relationship)
 }
 
-func (r *Resource) setRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
 
 	// assign relationship
-	err = r.assignRelationship(ctx, ctx.Request.Relationship, doc)
+	err = c.assignRelationship(ctx, ctx.Request.Relationship, doc)
 	if err != nil {
 		return err
 	}
 
 	// save model
-	err = r.saveModel(ctx)
+	err = c.saveModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -484,9 +484,9 @@ func (r *Resource) setRelationship(ctx *Context, doc *jsonapi.Document) error {
 	return nil
 }
 
-func (r *Resource) appendToRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -535,7 +535,7 @@ func (r *Resource) appendToRelationship(ctx *Context, doc *jsonapi.Document) err
 	}
 
 	// save model
-	err = r.saveModel(ctx)
+	err = c.saveModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -545,9 +545,9 @@ func (r *Resource) appendToRelationship(ctx *Context, doc *jsonapi.Document) err
 	return nil
 }
 
-func (r *Resource) removeFromRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) error {
 	// load model
-	err := r.loadModel(ctx)
+	err := c.loadModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -596,7 +596,7 @@ func (r *Resource) removeFromRelationship(ctx *Context, doc *jsonapi.Document) e
 	}
 
 	// save model
-	err = r.saveModel(ctx)
+	err = c.saveModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -606,16 +606,16 @@ func (r *Resource) removeFromRelationship(ctx *Context, doc *jsonapi.Document) e
 	return nil
 }
 
-func (r *Resource) buildContext(action Action, req *jsonapi.Request, gctx *gin.Context) *Context {
+func (c *Controller) buildContext(action Action, req *jsonapi.Request, gctx *gin.Context) *Context {
 	return &Context{
 		Action:     action,
-		DB:         r.endpoint.db,
+		DB:         c.endpoint.db,
 		Request:    req,
 		GinContext: gctx,
 	}
 }
 
-func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) error {
+func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) error {
 	// check if callback is available
 	if cb == nil {
 		return nil
@@ -636,7 +636,7 @@ func (r *Resource) runCallback(cb Callback, ctx *Context, errorStatus int) error
 	return nil
 }
 
-func (r *Resource) loadModel(ctx *Context) error {
+func (c *Controller) loadModel(ctx *Context) error {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.Request.ResourceID) {
 		return jsonapi.BadRequest("Invalid resource ID")
@@ -648,16 +648,16 @@ func (r *Resource) loadModel(ctx *Context) error {
 	}
 
 	// run authorizer if available
-	err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized)
+	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 	if err != nil {
 		return err
 	}
 
 	// prepare object
-	obj := r.Model.Meta().Make()
+	obj := c.Model.Meta().Make()
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).One(obj)
+	err = c.endpoint.db.C(c.Model.Meta().Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
@@ -670,9 +670,9 @@ func (r *Resource) loadModel(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) loadModels(ctx *Context) error {
+func (c *Controller) loadModels(ctx *Context) error {
 	// add filters
-	for _, field := range r.Model.Meta().FieldsByTag("filterable") {
+	for _, field := range c.Model.Meta().FieldsByTag("filterable") {
 		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
 			if field.Type == reflect.Bool && len(values) == 1 {
 				ctx.Query[field.BSONName] = values[0] == "true"
@@ -685,7 +685,7 @@ func (r *Resource) loadModels(ctx *Context) error {
 
 	// add sorting
 	for _, params := range ctx.Request.Sorting {
-		for _, field := range r.Model.Meta().FieldsByTag("sortable") {
+		for _, field := range c.Model.Meta().FieldsByTag("sortable") {
 			if params == field.BSONName || params == "-"+field.BSONName {
 				ctx.Sorting = append(ctx.Sorting, params)
 			}
@@ -695,16 +695,16 @@ func (r *Resource) loadModels(ctx *Context) error {
 	// TODO: Enforce pagination automatically (20 items per page).
 
 	// run authorizer if available
-	err := r.runCallback(r.Authorizer, ctx, http.StatusUnauthorized)
+	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 	if err != nil {
 		return err
 	}
 
 	// prepare slice
-	ctx.slice = r.Model.Meta().MakeSlice()
+	ctx.slice = c.Model.Meta().MakeSlice()
 
 	// query db
-	err = r.endpoint.db.C(r.Model.Meta().Collection).Find(ctx.Query).
+	err = c.endpoint.db.C(c.Model.Meta().Collection).Find(ctx.Query).
 		Sort(ctx.Sorting...).All(ctx.slice)
 	if err != nil {
 		return err
@@ -716,7 +716,7 @@ func (r *Resource) loadModels(ctx *Context) error {
 	return nil
 }
 
-func (r *Resource) assignData(ctx *Context, res *jsonapi.Resource) error {
+func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
 	err := jsonapi.MapToStruct(res.Attributes, ctx.Model)
 	if err != nil {
@@ -725,7 +725,7 @@ func (r *Resource) assignData(ctx *Context, res *jsonapi.Resource) error {
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
-		err = r.assignRelationship(ctx, name, rel)
+		err = c.assignRelationship(ctx, name, rel)
 		if err != nil {
 			return err
 		}
@@ -734,7 +734,7 @@ func (r *Resource) assignData(ctx *Context, res *jsonapi.Resource) error {
 	return nil
 }
 
-func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) error {
+func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) error {
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
@@ -801,7 +801,7 @@ func (r *Resource) assignRelationship(ctx *Context, name string, rel *jsonapi.Do
 	return nil
 }
 
-func (r *Resource) saveModel(ctx *Context) error {
+func (c *Controller) saveModel(ctx *Context) error {
 	// validate model
 	err := ctx.Model.Validate(false)
 	if err != nil {
@@ -809,26 +809,26 @@ func (r *Resource) saveModel(ctx *Context) error {
 	}
 
 	// run validator if available
-	err = r.runCallback(r.Validator, ctx, http.StatusBadRequest)
+	err = c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 	if err != nil {
 		return err
 	}
 
 	// update model
-	return r.endpoint.db.C(r.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
+	return c.endpoint.db.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
-func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
+func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 	// prepare resource
 	resource := &jsonapi.Resource{
-		Type:          r.Model.Meta().PluralName,
+		Type:          c.Model.Meta().PluralName,
 		ID:            model.ID().Hex(),
 		Attributes:    model,
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
 	// generate base link
-	base := r.endpoint.prefix + "/" + r.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := c.endpoint.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
@@ -895,19 +895,19 @@ func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 			}
 		} else if field.HasMany {
 			// get related resource
-			singularName := r.endpoint.nameMap[field.RelType]
-			relatedResource := r.endpoint.resourceMap[singularName]
+			singularName := c.endpoint.nameMap[field.RelType]
+			relatedController := c.endpoint.controllerMap[singularName]
 
 			// check existence
-			if relatedResource == nil {
-				panic("missing resource " + field.RelType)
+			if relatedController == nil {
+				panic("missing related controller " + field.RelType)
 			}
 
 			// prepare filter
 			var filterName string
 
 			// find related relationship
-			for _, relatedField := range relatedResource.Model.Meta().Fields {
+			for _, relatedField := range relatedController.Model.Meta().Fields {
 				// find db field by comparing the relationship name wit the inverse
 				// name found on the original relationship
 				if relatedField.RelName == field.RelInverse {
@@ -923,7 +923,7 @@ func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 
 			// load all referenced ids
 			var ids []bson.ObjectId
-			err := r.endpoint.db.C(relatedResource.Model.Meta().Collection).Find(bson.M{
+			err := c.endpoint.db.C(relatedController.Model.Meta().Collection).Find(bson.M{
 				filterName: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
@@ -938,7 +938,7 @@ func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 			// set all references
 			for i, id := range ids {
 				references[i] = &jsonapi.Resource{
-					Type: relatedResource.Model.Meta().PluralName,
+					Type: relatedController.Model.Meta().PluralName,
 					ID:   id.Hex(),
 				}
 			}
@@ -956,7 +956,7 @@ func (r *Resource) resourceForModel(model Model) (*jsonapi.Resource, error) {
 	return resource, nil
 }
 
-func (r *Resource) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, error) {
+func (c *Controller) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, error) {
 	// dereference pointer to slice
 	slice := reflect.ValueOf(ptr).Elem()
 
@@ -965,7 +965,7 @@ func (r *Resource) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, erro
 
 	// create resource
 	for i := 0; i < slice.Len(); i++ {
-		_resources, err := r.resourceForModel(slice.Index(i).Interface().(Model))
+		_resources, err := c.resourceForModel(slice.Index(i).Interface().(Model))
 		if err != nil {
 			return nil, err
 		}

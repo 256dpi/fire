@@ -29,7 +29,7 @@ _The framework is still WIP and the API may be changed._
   - [To One Relationships](#to-one-relationships)
   - [To Many Relationships](#to-many-relationships)
   - [Has Many Relationships](#has-many-relationships)
-- [Resources](#resources)
+- [Controllers](#controllers)
   - [Basics](#basics-1)
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
@@ -76,20 +76,20 @@ type Comment struct {
 }
 ```
 
-Finally, an `Endpoint` is used to register the resources on a router and make them accessible:
+Finally, an `Endpoint` is used to mount the controller on a router and make them accessible:
 
 ```go
-endpoint := fire.NewEndpoint(db)
+endpoint := fire.NewEndpoint(db, "api")
 
-endpoint.AddResource(&fire.Resource{
+endpoint.Mount(&fire.Controller{
     Model: &Post{},
 })
 
-endpoint.AddResource(&fire.Resource{
+endpoint.Mount(&fire.Controller{
     Model: &Comment{},
 })
 
-endpoint.Register("api", router)
+endpoint.Register(router)
 ```
 
 After starting the server you can inspect the created routes from the console output (simplified):
@@ -247,16 +247,16 @@ type Post struct {
 
 Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
-## Resources
+## Controllers
 
-This section describes the construction of fire resources that expose the models as JSON APIs.
+This section describes the construction of fire controllers that expose the models as JSON APIs.
 
 ### Basics
 
-Resources are declared by creating an instance of the `Resource` type and providing a reference to the `Model`:
+Controllers are declared by creating an instance of the `Controller` type and providing a reference to the `Model`:
 
 ```go
-posts := &fire.Resource{
+postsController := &fire.Controller{
     Model: &Post{},
 }
 ```
@@ -266,7 +266,7 @@ posts := &fire.Resource{
 Fire allows the definition of two callbacks that are called while processing the requests:
 
 ```go
-posts := &fire.Resource{
+posts := &fire.Controller{
     // ...
     Authorizer: func(ctx *fire.Context) error {
         // ...
@@ -315,17 +315,17 @@ Fire ships with several built-in callbacks that implement common concerns:
 An `Endpoint` can be created by calling `fire.NewEndpoint` with a reference to a database:
 
 ```go
-endpoint := fire.NewEndpoint(db)
+endpoint := fire.NewEndpoint(db, "api")
 
-endpoint.AddResource(&fire.Resource{
+endpoint.Mount(&fire.Controller{
     Model: &Post{},
     // ...
 })
 
-endpoint.Register("api", router)
+endpoint.Register(router)
 ````
 
-Resources can be added with `AddResource` before the routes are registered using `Register` on a router.
+Controllers can be mounted with `Mount` before the routes are registered using `Register` on a router.
 
 ## License
 

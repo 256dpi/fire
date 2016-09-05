@@ -7,8 +7,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Callback can be an Authorizer or Validator an is called during accessing a
-// resource via the API.
+// A Callback can be an Authorizer or Validator an is called during execution of
+// a controller.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns
 // an InternalServerError status and the error will be logged. All other errors

@@ -41,14 +41,14 @@ func buildServer() (*gin.Engine, *mgo.Database) {
 	router := gin.New()
 	endpoint := NewEndpoint(db, "")
 
-	// add all resources
-	endpoint.AddResource(&Resource{
+	// add all controllers
+	endpoint.Mount(&Controller{
 		Model: &Post{},
 	})
-	endpoint.AddResource(&Resource{
+	endpoint.Mount(&Controller{
 		Model: &Comment{},
 	})
-	endpoint.AddResource(&Resource{
+	endpoint.Mount(&Controller{
 		Model: &Selection{},
 	})
 

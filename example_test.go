@@ -47,17 +47,17 @@ func Example() {
 	endpoint := NewEndpoint(db, "api")
 
 	// add post
-	endpoint.AddResource(&Resource{
+	endpoint.Mount(&Controller{
 		Model: &Post{},
 	})
 
 	// add comment
-	endpoint.AddResource(&Resource{
+	endpoint.Mount(&Controller{
 		Model: &Comment{},
 	})
 
 	// add selection
-	endpoint.AddResource(&Resource{
+	endpoint.Mount(&Controller{
 		Model: &Selection{},
 	})
 

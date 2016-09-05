@@ -5,13 +5,13 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-// An Endpoint mounts and provides access to multiple resources.
+// An Endpoint mounts and manages access to multiple controllers.
 type Endpoint struct {
-	db          *mgo.Database
-	prefix      string
-	nameMap     map[string]string
-	resourceMap map[string]*Resource
-	resources   []*Resource
+	db            *mgo.Database
+	prefix        string
+	nameMap       map[string]string
+	controllerMap map[string]*Controller
+	controllers   []*Controller
 }
 
 // NewEndpoint returns a new fire endpoint.
@@ -20,37 +20,37 @@ type Endpoint struct {
 // generation of resource links.
 func NewEndpoint(db *mgo.Database, prefix string) *Endpoint {
 	return &Endpoint{
-		db:          db,
-		prefix:      prefix,
-		nameMap:     make(map[string]string),
-		resourceMap: make(map[string]*Resource),
+		db:            db,
+		prefix:        prefix,
+		nameMap:       make(map[string]string),
+		controllerMap: make(map[string]*Controller),
 	}
 }
 
-// AddResource will add a resource to the API endpoint.
+// Mount will add a controller to the endpoint.
 //
-// Note: Each resource should only be added once.
-func (e *Endpoint) AddResource(resource *Resource) {
+// Note: Each controller should only be mounted once.
+func (e *Endpoint) Mount(controller *Controller) {
 	// initialize model
-	Init(resource.Model)
+	Init(controller.Model)
 
 	// create entry in name map
-	e.nameMap[resource.Model.Meta().PluralName] = resource.Model.Meta().SingularName
+	e.nameMap[controller.Model.Meta().PluralName] = controller.Model.Meta().SingularName
 
-	// create entry in resource map
-	e.resourceMap[resource.Model.Meta().SingularName] = resource
+	// create entry in controller map
+	e.controllerMap[controller.Model.Meta().SingularName] = controller
 
-	// add resource to internal list
-	resource.endpoint = e
-	e.resources = append(e.resources, resource)
+	// add controller to internal list
+	controller.endpoint = e
+	e.controllers = append(e.controllers, controller)
 }
 
 // Register will create all necessary routes on the passed router.
 //
 // Note: This function should only be called once.
 func (e *Endpoint) Register(router gin.IRouter) {
-	// process all resources
-	for _, r := range e.resources {
+	// process all controllers
+	for _, r := range e.controllers {
 		pluralName := r.Model.Meta().PluralName
 
 		// add basic operations
