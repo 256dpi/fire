@@ -44,7 +44,7 @@ func Example() {
 	db := sess.DB("")
 
 	// create endpoint
-	endpoint := NewEndpoint(db)
+	endpoint := NewEndpoint(db, "api")
 
 	// add post
 	endpoint.AddResource(&Resource{
@@ -65,7 +65,7 @@ func Example() {
 	router := gin.New()
 
 	// register api
-	endpoint.Register("api", router)
+	endpoint.Register(router)
 
 	// print routes
 	for _, route := range router.Routes() {
@@ -78,13 +78,10 @@ func Example() {
 	//	 panic(err)
 	// }
 
+	// TODO: EditToManyRelations routes should not be generated for has many
+	// relationships.
+
 	// Output:
-	// OPTIONS: /api/posts
-	// OPTIONS: /api/posts/:id
-	// OPTIONS: /api/comments
-	// OPTIONS: /api/comments/:id
-	// OPTIONS: /api/selections
-	// OPTIONS: /api/selections/:id
 	// GET: /api/posts
 	// GET: /api/posts/:id
 	// GET: /api/posts/:id/relationships/comments
@@ -93,35 +90,26 @@ func Example() {
 	// GET: /api/posts/:id/selections
 	// GET: /api/comments
 	// GET: /api/comments/:id
-	// GET: /api/comments/:id/relationships/parent
-	// GET: /api/comments/:id/relationships/post
 	// GET: /api/comments/:id/parent
 	// GET: /api/comments/:id/post
+	// GET: /api/comments/:id/relationships/parent
+	// GET: /api/comments/:id/relationships/post
 	// GET: /api/selections
 	// GET: /api/selections/:id
-	// GET: /api/selections/:id/relationships/posts
 	// GET: /api/selections/:id/posts
-	// PATCH: /api/posts/:id
-	// PATCH: /api/posts/:id/relationships/comments
-	// PATCH: /api/posts/:id/relationships/selections
+	// GET: /api/selections/:id/relationships/posts
+	// POST: /api/selections
+	// POST: /api/selections/:id/relationships/posts
+	// POST: /api/posts
+	// POST: /api/comments
 	// PATCH: /api/comments/:id
 	// PATCH: /api/comments/:id/relationships/parent
 	// PATCH: /api/comments/:id/relationships/post
 	// PATCH: /api/selections/:id
 	// PATCH: /api/selections/:id/relationships/posts
-	// POST: /api/posts
-	// POST: /api/posts/:id/relationships/comments
-	// POST: /api/posts/:id/relationships/selections
-	// POST: /api/selections
-	// POST: /api/selections/:id/relationships/posts
-	// POST: /api/comments
-	// DELETE: /api/posts/:id
-	// DELETE: /api/posts/:id/relationships/comments
-	// DELETE: /api/posts/:id/relationships/selections
+	// PATCH: /api/posts/:id
 	// DELETE: /api/selections/:id
 	// DELETE: /api/selections/:id/relationships/posts
+	// DELETE: /api/posts/:id
 	// DELETE: /api/comments/:id
-
-	// TODO: EditToManyRelations routes should not be generated for has many
-	// relationships.
 }

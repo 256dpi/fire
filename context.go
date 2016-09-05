@@ -2,7 +2,7 @@ package fire
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/manyminds/api2go"
+	"github.com/gonfire/jsonapi"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -38,11 +38,11 @@ type Context struct {
 	// The db used to query.
 	DB *mgo.Database
 
-	// The underlying gin.context.
-	GinContext *gin.Context
+	// The underlying JSON API request in progress.
+	Request *jsonapi.Request
 
-	// The underlying api2go.Request.
-	API2GoReq *api2go.Request
+	// The underlying gin.Context.
+	GinContext *gin.Context
 
 	original Model
 }

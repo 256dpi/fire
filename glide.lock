@@ -1,5 +1,5 @@
-hash: 8cfa4e37eba418d3fa22d45bd9f63d8707813cabc4ee928c4eb20a0b04dfb01b
-updated: 2016-09-04T18:40:38.499652769+02:00
+hash: 4a21e663f221b58b465d2225f5f13cdf585c94007bea9cb833249d2b223adadd
+updated: 2016-09-04T23:56:52.542868268+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -14,15 +14,18 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
+- name: github.com/gonfire/jsonapi
+  version: 09b52b60e6b0510b29931e8a65de34c5a703155d
 - name: github.com/julienschmidt/httprouter
   version: d8ff598a019f2c7bad0980917a588193cf26666e
+- name: github.com/kr/pretty
+  version: cfb55aafdaf3ec08f0db22699ab822c50091b1c4
+- name: github.com/kr/text
+  version: 7cafcd837844e784b526369c9bce262804aebc60
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
-- name: github.com/manyminds/api2go
-  version: 878cb8bd760f2fe75e2cdab64836496b12f30f78
-  subpackages:
-  - jsonapi
-  - routing
+- name: github.com/mitchellh/mapstructure
+  version: ca63d7c062ee3c9f34db231e352b60012b4fd0c1
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:

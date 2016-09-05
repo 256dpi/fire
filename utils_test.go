@@ -1,10 +1,7 @@
 package fire
 
 import (
-	"testing"
-
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2"
 )
 
@@ -42,7 +39,7 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
 
 	// create new router and endpoint
 	router := gin.New()
-	endpoint := NewEndpoint(db)
+	endpoint := NewEndpoint(db, "")
 
 	// add all supplied resources
 	for _, res := range resources {
@@ -50,7 +47,7 @@ func buildServer(resources ...*Resource) (*gin.Engine, *mgo.Database) {
 	}
 
 	// register routes
-	endpoint.Register("", router)
+	endpoint.Register(router)
 
 	// return router
 	return router, db
@@ -76,10 +73,4 @@ func findLastModel(db *mgo.Database, model Model) Model {
 	}
 
 	return model
-}
-
-// cheat to get more coverage
-
-func TestAdapter(t *testing.T) {
-	assert.Nil(t, (&adapter{}).Handler())
 }

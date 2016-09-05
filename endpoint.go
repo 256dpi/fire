@@ -2,23 +2,23 @@ package fire
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/jsonapi"
 	"gopkg.in/mgo.v2"
 )
 
 // An Endpoint mounts and provides access to multiple resources.
 type Endpoint struct {
 	db          *mgo.Database
+	prefix      string
 	nameMap     map[string]string
 	resourceMap map[string]*Resource
 	resources   []*Resource
 }
 
 // NewEndpoint returns a new fire endpoint.
-func NewEndpoint(db *mgo.Database) *Endpoint {
+func NewEndpoint(db *mgo.Database, prefix string) *Endpoint {
 	return &Endpoint{
 		db:          db,
+		prefix:      prefix,
 		nameMap:     make(map[string]string),
 		resourceMap: make(map[string]*Resource),
 	}
@@ -47,23 +47,39 @@ func (e *Endpoint) AddResource(resource *Resource) {
 // necessary for generating the proper links in the JSON documents.
 //
 // Note: This functions should only be called once after registering all resources.
-func (e *Endpoint) Register(prefix string, router gin.IRouter) {
-	// create gin adapter
-	adapter := newAdapter(router)
-
-	// create routing configuration using the custom gin adapter
-	api := api2go.NewAPIWithRouting(
-		prefix,
-		api2go.NewStaticResolver("/"),
-		adapter,
-	)
-
+func (e *Endpoint) Register(router gin.IRouter) {
 	// process all resources
-	for _, resource := range e.resources {
-		// assign adapter
-		resource.adapter = adapter
+	for _, r := range e.resources {
+		pluralName := r.Model.Meta().PluralName
 
-		// add resource to api
-		api.AddResource(resource.Model.(jsonapi.MarshalIdentifier), resource)
+		// add basic operations
+		router.GET(e.prefix+"/"+pluralName, r.generalHandler)
+		router.POST(e.prefix+"/"+pluralName, r.generalHandler)
+		router.GET(e.prefix+"/"+pluralName+"/:id", r.generalHandler)
+		router.PATCH(e.prefix+"/"+pluralName+"/:id", r.generalHandler)
+		router.DELETE(e.prefix+"/"+pluralName+"/:id", r.generalHandler)
+
+		// process all relationships
+		for _, field := range r.Model.Meta().Fields {
+			if field.RelName == "" {
+				continue
+			}
+
+			name := field.RelName
+
+			// add relationship queries
+			router.GET(e.prefix+"/"+pluralName+"/:id/"+name, r.generalHandler)
+			router.GET(e.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+
+			// add relationship management operations
+			if field.ToOne || field.ToMany {
+				router.PATCH(e.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+			}
+
+			if field.ToMany {
+				router.POST(e.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+				router.DELETE(e.prefix+"/"+pluralName+"/:id/relationships/"+name, r.generalHandler)
+			}
+		}
 	}
 }

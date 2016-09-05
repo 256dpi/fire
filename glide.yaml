@@ -5,18 +5,13 @@ import:
 - package: github.com/gin-gonic/gin
   # TODO: Use semver with next release.
   version: master
-- package: github.com/manyminds/api2go
-  # TODO: Use semver with next release.
-  version: master
-  subpackages:
-  - jsonapi
-  - routing
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
 - package: github.com/julienschmidt/httprouter
   # TODO: Gin currently locks an old version.
   version: d8ff598a019f2c7bad0980917a588193cf26666e
+- package: github.com/gonfire/jsonapi
 testImport:
 - package: github.com/appleboy/gofight
   version: ^1.0.3
