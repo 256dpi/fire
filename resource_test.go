@@ -252,8 +252,6 @@ func TestFiltering(t *testing.T) {
 
 	r := gofight.New()
 
-	// TODO: Should links include the filtering?
-
 	// get posts with single value filter
 	r.GET("/posts?filter[title]=post-1").
 		SetHeader(gofight.H{
@@ -474,8 +472,6 @@ func TestSorting(t *testing.T) {
 	}).ID().Hex()
 
 	r := gofight.New()
-
-	// TODO: Should links include the sorting?
 
 	// get posts in ascending order
 	r.GET("/posts?sort=title").
