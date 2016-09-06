@@ -255,6 +255,15 @@ func TestFiltering(t *testing.T) {
 		Published: true,
 	}).ID().Hex()
 
+	// create selection
+	selection := saveModel(db, &Selection{
+		PostIDs: []bson.ObjectId{
+			bson.ObjectIdHex(post1),
+			bson.ObjectIdHex(post2),
+			bson.ObjectIdHex(post3),
+		},
+	}).ID().Hex()
+
 	r := gofight.New()
 
 	// get posts with single value filter
@@ -283,7 +292,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -324,7 +338,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -349,7 +368,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -390,7 +414,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post1+`/relationships/selections",
 									"related": "/posts/`+post1+`/selections"
@@ -415,7 +444,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post3+`/relationships/selections",
 									"related": "/posts/`+post3+`/selections"
@@ -456,7 +490,12 @@ func TestFiltering(t *testing.T) {
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post2+`/relationships/selections",
 									"related": "/posts/`+post2+`/selections"
@@ -467,6 +506,52 @@ func TestFiltering(t *testing.T) {
 				],
 				"links": {
 					"self": "/posts"
+				}
+			}`, r.Body.String())
+		})
+
+	// get to many posts with boolean
+	r.GET("/selections/"+selection+"/posts?filter[published]=false").
+		SetHeader(gofight.H{
+			"Accept": jsonapi.MediaType,
+		}).
+		Run(server, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post2+`",
+						"attributes": {
+							"title": "post-2",
+							"published": false,
+							"text-body": ""
+						},
+						"relationships": {
+							"comments": {
+								"data": [],
+								"links": {
+									"self": "/posts/`+post2+`/relationships/comments",
+									"related": "/posts/`+post2+`/comments"
+								}
+							},
+							"selections": {
+								"data": [
+									{
+										"type": "selections",
+										"id": "`+selection+`"
+									}
+								],
+								"links": {
+									"self": "/posts/`+post2+`/relationships/selections",
+									"related": "/posts/`+post2+`/selections"
+								}
+							}
+						}
+					}
+				],
+				"links": {
+					"self": "/selections/`+selection+`/posts"
 				}
 			}`, r.Body.String())
 		})
