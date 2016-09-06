@@ -46,36 +46,6 @@ func (a *Application) Mount(controllers ...*Controller) {
 func (a *Application) Register(router *echo.Echo) {
 	// process all controllers
 	for _, c := range a.controllers {
-		pluralName := c.Model.Meta().PluralName
-
-		// add basic operations
-		router.GET(a.prefix+"/"+pluralName, c.generalHandler)
-		router.POST(a.prefix+"/"+pluralName, c.generalHandler)
-		router.GET(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
-		router.PATCH(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
-		router.DELETE(a.prefix+"/"+pluralName+"/:id", c.generalHandler)
-
-		// process all relationships
-		for _, field := range c.Model.Meta().Fields {
-			if field.RelName == "" {
-				continue
-			}
-
-			name := field.RelName
-
-			// add relationship queries
-			router.GET(a.prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
-			router.GET(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-
-			// add relationship management operations
-			if field.ToOne || field.ToMany {
-				router.PATCH(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-			}
-
-			if field.ToMany {
-				router.POST(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-				router.DELETE(a.prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-			}
-		}
+		c.register(router, a.prefix)
 	}
 }

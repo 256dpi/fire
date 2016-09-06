@@ -29,6 +29,40 @@ type Controller struct {
 	app *Application
 }
 
+func (c *Controller) register(router *echo.Echo, prefix string) {
+	pluralName := c.Model.Meta().PluralName
+
+	// add basic operations
+	router.GET(prefix+"/"+pluralName, c.generalHandler)
+	router.POST(prefix+"/"+pluralName, c.generalHandler)
+	router.GET(prefix+"/"+pluralName+"/:id", c.generalHandler)
+	router.PATCH(prefix+"/"+pluralName+"/:id", c.generalHandler)
+	router.DELETE(prefix+"/"+pluralName+"/:id", c.generalHandler)
+
+	// process all relationships
+	for _, field := range c.Model.Meta().Fields {
+		if field.RelName == "" {
+			continue
+		}
+
+		name := field.RelName
+
+		// add relationship queries
+		router.GET(prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
+		router.GET(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+
+		// add relationship management operations
+		if field.ToOne || field.ToMany {
+			router.PATCH(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+		}
+
+		if field.ToMany {
+			router.POST(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+			router.DELETE(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+		}
+	}
+}
+
 func (c *Controller) generalHandler(e echo.Context) error {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(e.Request(), c.app.prefix)
