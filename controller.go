@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gonfire/jsonapi"
+	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -29,68 +29,62 @@ type Controller struct {
 	app *Application
 }
 
-func (c *Controller) generalHandler(gctx *gin.Context) {
+func (c *Controller) generalHandler(e echo.Context) error {
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(gctx.Request, c.app.prefix)
+	req, err := jsonapi.ParseRequest(e.Request(), c.app.prefix)
 	if err != nil {
-		jsonapi.WriteError(gctx.Writer, err)
-		gctx.Error(err)
-		gctx.Abort()
-		return
+		return jsonapi.WriteError(e.Response(), err)
 	}
 
 	// parse body if available
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		doc, err = jsonapi.ParseBody(gctx.Request.Body)
+		doc, err = jsonapi.ParseBody(e.Request().Body())
 		if err != nil {
-			jsonapi.WriteError(gctx.Writer, err)
-			gctx.Error(err)
-			gctx.Abort()
-			return
+			return jsonapi.WriteError(e.Response(), err)
 		}
 	}
 
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx := c.buildContext(FindAll, req, gctx)
+		ctx := c.buildContext(FindAll, req, e)
 		err = c.listResources(ctx)
 	case jsonapi.FindResource:
-		ctx := c.buildContext(FindOne, req, gctx)
+		ctx := c.buildContext(FindOne, req, e)
 		err = c.findResource(ctx)
 	case jsonapi.CreateResource:
-		ctx := c.buildContext(Create, req, gctx)
+		ctx := c.buildContext(Create, req, e)
 		err = c.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx := c.buildContext(Update, req, gctx)
+		ctx := c.buildContext(Update, req, e)
 		err = c.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx := c.buildContext(Delete, req, gctx)
+		ctx := c.buildContext(Delete, req, e)
 		err = c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		ctx := c.buildContext(0, req, gctx)
+		ctx := c.buildContext(0, req, e)
 		err = c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		ctx := c.buildContext(0, req, gctx)
+		ctx := c.buildContext(0, req, e)
 		err = c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		ctx := c.buildContext(Update, req, gctx)
+		ctx := c.buildContext(Update, req, e)
 		err = c.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx := c.buildContext(Update, req, gctx)
+		ctx := c.buildContext(Update, req, e)
 		err = c.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx := c.buildContext(Update, req, gctx)
+		ctx := c.buildContext(Update, req, e)
 		err = c.removeFromRelationship(ctx, doc)
 	}
 
 	// write any occurring errors
 	if err != nil {
-		jsonapi.WriteError(gctx.Writer, err)
-		gctx.Error(err)
-		gctx.Abort()
+		return jsonapi.WriteError(e.Response(), err)
 	}
+
+	return nil
 }
 
 func (c *Controller) listResources(ctx *Context) error {
@@ -115,7 +109,7 @@ func (c *Controller) listResources(ctx *Context) error {
 	}
 
 	// write result
-	return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
+	return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
 }
 
 func (c *Controller) findResource(ctx *Context) error {
@@ -137,7 +131,7 @@ func (c *Controller) findResource(ctx *Context) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
+	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
 }
 
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
@@ -191,7 +185,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusCreated, resource, links)
+	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusCreated, resource, links)
 }
 
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
@@ -230,7 +224,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
+	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
 }
 
 func (c *Controller) deleteResource(ctx *Context) error {
@@ -261,7 +255,7 @@ func (c *Controller) deleteResource(ctx *Context) error {
 	}
 
 	// set status
-	ctx.GinContext.Status(http.StatusNoContent)
+	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
 
 	return nil
 }
@@ -324,7 +318,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 				id = oid.Hex()
 			} else {
 				// write empty response
-				return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, nil, links)
+				return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, nil, links)
 			}
 		} else {
 			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
@@ -335,7 +329,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.ResourceID = id
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindOne, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindOne, ctx.Request, ctx.Echo)
 
 		// load model
 		err := relatedController.loadModel(ctx2)
@@ -350,7 +344,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResource(ctx.GinContext.Writer, http.StatusOK, resource, links)
+		return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
 	}
 
 	// finish to many relationship
@@ -362,7 +356,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.Echo)
 
 		// set query
 		ctx2.Query = bson.M{
@@ -384,7 +378,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
+		return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
 	}
 
 	// finish has many relationship
@@ -411,7 +405,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.GinContext)
+		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.Echo)
 
 		// set query
 		ctx2.Query = bson.M{
@@ -433,7 +427,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResources(ctx.GinContext.Writer, http.StatusOK, resources, links)
+		return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
 	}
 
 	return nil
@@ -456,7 +450,7 @@ func (c *Controller) getRelationship(ctx *Context) error {
 	relationship := resource.Relationships[ctx.Request.Relationship]
 
 	// write result
-	return jsonapi.WriteResponse(ctx.GinContext.Writer, http.StatusOK, relationship)
+	return jsonapi.WriteResponse(ctx.Echo.Response(), http.StatusOK, relationship)
 }
 
 func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error {
@@ -479,7 +473,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error 
 	}
 
 	// write result
-	ctx.GinContext.Status(http.StatusNoContent)
+	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
 	return nil
 }
 
@@ -540,7 +534,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 	}
 
 	// write result
-	ctx.GinContext.Status(http.StatusNoContent)
+	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
 	return nil
 }
 
@@ -601,16 +595,16 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	}
 
 	// write result
-	ctx.GinContext.Status(http.StatusNoContent)
+	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
 	return nil
 }
 
-func (c *Controller) buildContext(action Action, req *jsonapi.Request, gctx *gin.Context) *Context {
+func (c *Controller) buildContext(action Action, req *jsonapi.Request, e echo.Context) *Context {
 	return &Context{
-		Action:     action,
-		DB:         c.app.db,
-		Request:    req,
-		GinContext: gctx,
+		Action:  action,
+		DB:      c.app.db,
+		Request: req,
+		Echo:    e,
 	}
 }
 

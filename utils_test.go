@@ -1,16 +1,17 @@
 package fire
 
 import (
-	"github.com/gin-gonic/gin"
+	"strings"
+
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/engine"
+	"github.com/labstack/echo/test"
 	"gopkg.in/mgo.v2"
 )
 
 var session *mgo.Session
 
 func init() {
-	// set test mode
-	gin.SetMode(gin.TestMode)
-
 	// connect to local mongodb
 	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
 	if err != nil {
@@ -33,12 +34,12 @@ func getDB() *mgo.Database {
 	return db
 }
 
-func buildServer() (*gin.Engine, *mgo.Database) {
+func buildServer() (*echo.Echo, *mgo.Database) {
 	// get db
 	db := getDB()
 
 	// create router
-	router := gin.New()
+	router := echo.New()
 
 	// create app
 	app := New(db, "")
@@ -57,6 +58,19 @@ func buildServer() (*gin.Engine, *mgo.Database) {
 
 	// return router
 	return router, db
+}
+
+func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*test.ResponseRecorder, engine.Request)) {
+	req := test.NewRequest(method, path, strings.NewReader(payload))
+	rec := test.NewResponseRecorder()
+
+	for k, v := range headers {
+		req.Header().Set(k, v)
+	}
+
+	e.ServeHTTP(req, rec)
+
+	callback(rec, req)
 }
 
 func saveModel(db *mgo.Database, model Model) Model {

@@ -1,8 +1,8 @@
 package fire
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/gonfire/jsonapi"
+	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -42,8 +42,8 @@ type Context struct {
 	// The underlying JSON API request in progress.
 	Request *jsonapi.Request
 
-	// The underlying gin.Context.
-	GinContext *gin.Context
+	// The underlying echo context.
+	Echo echo.Context
 
 	slice interface{}
 

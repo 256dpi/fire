@@ -2,19 +2,13 @@ package: github.com/gonfire/fire
 import:
 - package: github.com/asaskevich/govalidator
   version: ^4.0.0
-- package: github.com/gin-gonic/gin
-  # TODO: Use semver with next release.
-  version: master
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
-- package: github.com/julienschmidt/httprouter
-  # TODO: Gin currently locks an old version.
-  version: d8ff598a019f2c7bad0980917a588193cf26666e
 - package: github.com/gonfire/jsonapi
+- package: github.com/labstack/echo
+  version: ^2.0.2
 testImport:
-- package: github.com/appleboy/gofight
-  version: ^1.0.3
 - package: github.com/stretchr/testify
   version: ^1.1.3
   subpackages:

@@ -3,7 +3,7 @@ package fire
 import (
 	"fmt"
 
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -56,15 +56,12 @@ func Example() {
 	})
 
 	// create router
-	router := gin.New()
+	router := echo.New()
 
 	// register api
 	app.Register(router)
 
-	// print routes
-	for _, route := range router.Routes() {
-		fmt.Printf("%s: %s\n", route.Method, route.Path)
-	}
+	fmt.Println("ready!")
 
 	// run server
 	// err = router.Run("localhost:8080")
@@ -73,34 +70,5 @@ func Example() {
 	// }
 
 	// Output:
-	// GET: /api/posts
-	// GET: /api/posts/:id
-	// GET: /api/posts/:id/relationships/comments
-	// GET: /api/posts/:id/relationships/selections
-	// GET: /api/posts/:id/comments
-	// GET: /api/posts/:id/selections
-	// GET: /api/comments
-	// GET: /api/comments/:id
-	// GET: /api/comments/:id/parent
-	// GET: /api/comments/:id/post
-	// GET: /api/comments/:id/relationships/parent
-	// GET: /api/comments/:id/relationships/post
-	// GET: /api/selections
-	// GET: /api/selections/:id
-	// GET: /api/selections/:id/posts
-	// GET: /api/selections/:id/relationships/posts
-	// POST: /api/selections
-	// POST: /api/selections/:id/relationships/posts
-	// POST: /api/posts
-	// POST: /api/comments
-	// PATCH: /api/comments/:id
-	// PATCH: /api/comments/:id/relationships/parent
-	// PATCH: /api/comments/:id/relationships/post
-	// PATCH: /api/selections/:id
-	// PATCH: /api/selections/:id/relationships/posts
-	// PATCH: /api/posts/:id
-	// DELETE: /api/selections/:id
-	// DELETE: /api/selections/:id/relationships/posts
-	// DELETE: /api/posts/:id
-	// DELETE: /api/comments/:id
+	// ready!
 }

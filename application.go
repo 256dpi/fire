@@ -1,7 +1,7 @@
 package fire
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 )
 
@@ -43,7 +43,7 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Register will create all necessary routes on the passed router.
 //
 // Note: This function should only be called once.
-func (a *Application) Register(router gin.IRouter) {
+func (a *Application) Register(router *echo.Echo) {
 	// process all controllers
 	for _, c := range a.controllers {
 		pluralName := c.Model.Meta().PluralName

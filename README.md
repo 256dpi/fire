@@ -10,7 +10,7 @@
 
 **A small and opinionated framework for Go providing Ember compatible JSON APIs.**
 
-Fire is built on top of the powerful [jsonapi](https://github.com/gonfire/jsonapi) library, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [gin](https://github.com/gin-gonic/gin) framework. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
+Fire is built on top of the powerful [jsonapi](https://github.com/gonfire/jsonapi) library, uses the [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources and plays well with the [echo](https://github.com/labstack/echo) framework. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
 
 _The framework is still WIP and the API may be changed._
 
