@@ -40,18 +40,6 @@ func New(mongoURI, prefix string) *Application {
 	}
 }
 
-// EnableCORS will enable CORS with a general configuration.
-//
-// Note: You can always add your own CORS middleware to the router.
-func (a *Application) EnableCORS(origins ...string) {
-	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: origins,
-		// TODO: Allow "Accept, Cache-Control"?
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderAuthorization,
-			echo.HeaderContentType, echo.HeaderXHTTPMethodOverride},
-	}))
-}
-
 // Mount will add controllers to the set and register them on the router.
 //
 // Note: Each controller should only be mounted once.
@@ -64,14 +52,30 @@ func (a *Application) Router() *echo.Echo {
 	return a.router
 }
 
+// EnableCORS will enable CORS with a general configuration.
+//
+// Note: You can always add your own CORS middleware to the router.
+func (a *Application) EnableCORS(origins ...string) {
+	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: origins,
+		// TODO: Allow "Accept, Cache-Control"?
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderAuthorization,
+			echo.HeaderContentType, echo.HeaderXHTTPMethodOverride},
+	}))
+}
+
 // EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
 // header to set a request method when using the POST method.
+//
+// Note: This method must be called before calling Run or Start.
 func (a *Application) EnableMethodOverriding() {
 	a.enableMethodOverriding = true
 }
 
 // SetBodyLimit can be used to override the default body limit of 4K with a new
 // value in the form of 4K, 2M, 1G or 1P.
+//
+// Note: This method must be called before calling Run or Start.
 func (a *Application) SetBodyLimit(size string) {
 	a.bodyLimit = size
 }
