@@ -15,8 +15,9 @@ type Application struct {
 	router    *echo.Echo
 	bodyLimit string
 
-	disableCompression bool
-	disableRecovery    bool
+	enableMethodOverriding bool
+	disableCompression     bool
+	disableRecovery        bool
 }
 
 // New creates and returns a new Application.
@@ -66,7 +67,7 @@ func (a *Application) Router() *echo.Echo {
 // EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
 // header to set a request method when using the POST method.
 func (a *Application) EnableMethodOverriding() {
-	a.router.Pre(middleware.MethodOverride())
+	a.enableMethodOverriding = true
 }
 
 // SetBodyLimit can be used to override the default body limit of 4K with a new
@@ -93,6 +94,10 @@ func (a *Application) DisableRecovery() {
 func (a *Application) Run(server engine.Server) {
 	// set body limit
 	a.router.Use(middleware.BodyLimit(a.bodyLimit))
+
+	if a.enableMethodOverriding {
+		a.router.Pre(middleware.MethodOverride())
+	}
 
 	// enable gzip compression
 	if !a.disableCompression {
