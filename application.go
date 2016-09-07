@@ -61,6 +61,12 @@ func (a *Application) EnableBodyLimit(size ...string) {
 	a.router.Use(middleware.BodyLimit(limit))
 }
 
+// EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
+// header to set a request method when using the POST method.
+func (a *Application) EnableMethodOverriding() {
+	a.router.Pre(middleware.MethodOverride())
+}
+
 // Mount will add controllers to the set and register them on the router.
 //
 // Note: Each controller should only be mounted once.
