@@ -11,12 +11,6 @@ func main() {
 	// create a new app
 	app := fire.New("mongodb://0.0.0.0:27017/fire-test-app", "api")
 
-	// enable cors
-	app.EnableCORS("http://0.0.0.0:4000")
-
-	// enable body limit
-	app.EnableBodyLimit()
-
 	// create and mount controller
 	app.Mount(&fire.Controller{
 		Model: &post{},
