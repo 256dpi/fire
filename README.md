@@ -35,8 +35,7 @@ _The framework is still WIP and the API may be changed._
   - [Built-in Callbacks](#built-in-callbacks)
 - [Sets](#sets)
 - [Applications](#applications)
-  - [CORS](#cors)
-  - [Body Limit](#body-limit)
+  - [Middlewares](#middlewares)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -353,23 +352,25 @@ app.Start("0.0.0.0:4242")
 
 An application can be started using `app.Start` or `app.Run` to select a specific `echo.Server`.
 
-### CORS
+### Middlewares
 
-You can easily configure CORS by using the `app.EnableCORS` method and pass list of trusted origins:
+Every application comes with a built-in set of standard middlewares and security features that can be customized. By default an application uses cross-origin resource sharing, a body limiter, compression and common security features like XSS protection.
 
-```go
-app.EnableCORS("http://0.0.0.0:4000")
-```
-
-### Body Limit
-
-A body limiter can be enabled by using the `app.EnableBodyLimit` method and a size in the form of `4K`, `2M`, `1G` or `8P`: 
+All middlewares can be configure using the following functions:
 
 ```go
-app.EnableBodyLimit()
+app.SetAllowedOrigins(origins ...string)
+app.AddAllowedHeaders(headers ...string)
+app.DisableCORS(origins ...string)
+app.SetBodyLimit(size string)
+app.ForceEncryption()
+app.DisableCommonSecurity()
+app.DisableCompression()
+app.DisableRecovery()
+app.EnableMethodOverriding()
 ```
 
-- If no value is specified the default value of `4K` will be used instead.
+More information can be found in the [docs](https://godoc.org/github.com/gonfire/fire#Application.AddAllowedHeaders).
 
 ## License
 
