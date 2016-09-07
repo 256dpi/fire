@@ -35,6 +35,8 @@ _The framework is still WIP and the API may be changed._
   - [Built-in Callbacks](#built-in-callbacks)
 - [Sets](#sets)
 - [Applications](#applications)
+  - [CORS](#cors)
+  - [Body Limit](#body-limit)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -84,9 +86,7 @@ set := fire.NewSet(db, router, "api")
 
 set.Mount(&fire.Controller{
     Model: &Post{},
-})
-
-set.Mount(&fire.Controller{
+}, &fire.Controller{
     Model: &Comment{},
 })
 ```
@@ -97,14 +97,11 @@ To lower configuration overhead fire provides the `Application` construct that m
 app := fire.New("mongodb://localhost/my-fire-app", "api")
 
 app.EnableCORS("http://0.0.0.0:4000")
-
 app.EnableBodyLimit()
 
 app.Mount(&fire.Controller{
     Model: &Post{},
-})
-
-app.Mount(&fire.Controller{
+}, &fire.Controller{
     Model: &Comment{},
 })
 
@@ -283,7 +280,7 @@ postsController := &fire.Controller{
 Fire allows the definition of two callbacks that are called while processing the requests:
 
 ```go
-posts := &fire.Controller{
+postsController := &fire.Controller{
     // ...
     Authorizer: func(ctx *fire.Context) error {
         // ...
@@ -348,10 +345,7 @@ app := fire.New("mongodb://localhost/my-fire-app", "api")
 
 app.Mount(&fire.Controller{
     Model: &Post{},
-})
-
-app.Mount(&fire.Controller{
-    Model: &Comment{},
+    // ...
 })
 
 app.Start("0.0.0.0:4242")
