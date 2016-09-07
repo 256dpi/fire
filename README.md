@@ -130,7 +130,7 @@ type Post struct {
 _Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`._
 
 All other fields of a structs are treated as attributes except for relationships (more on that later):
- 
+
 ```go
 type Post struct {
     // ...
@@ -148,13 +148,13 @@ _Note: Ember Data requires you to use dashed names for multi-word attribute name
 
 ### Helpers
 
-The `ID` method can be used to get the document id:
+The `ID()` method can be used to get the document id:
 
 ```go
 post.ID()
 ```
 
-The `Get` and `Set` functions can be used to get and set any field on the model:
+The `Get()` and `Set()` methods can be used to get and set any field on the model:
 
 ```go
 title := post.Get("title")
@@ -162,9 +162,9 @@ post.Set("title", "New Title")
 ```
 
 - Both methods use the field name (e.g. `TextBody`), json name (e.g. `text-body`) or bson name (e.g. `text_body`) to find the value and panic if no matching field is found.
-- Calling `Set` with a different type than the field causes a panic.
+- Calling `Set()` with a different type than the field causes a panic.
 
-The `Meta` method can be used to get the models meta structure:
+The `Meta()` method can be used to get the models meta structure:
 
 ```go
 post.Meta().Name
@@ -174,11 +174,11 @@ post.Meta().Fields
 post.Meta().FieldsByTag("tag")
 ```
 
-More information about the `Meta` structure can be found here: <https://godoc.org/github.com/gonfire/fire#Meta>. 
+More information about the `Meta` structure can be found here: <https://godoc.org/github.com/gonfire/fire#Meta>.
 
 ### Validation
 
-The `Validate` method can be overridden per model to implement custom validations:
+The `Validate()` method can be overridden per model to implement custom validations:
 
 ```go
 func (p *Post) Validate(fresh bool) error {
@@ -306,7 +306,7 @@ func(ctx *fire.Context) error {
 }
 ```
 
-Multiple callbacks can be combined using `fire.Combine`:
+Multiple callbacks can be combined using `fire.Combine()`:
 
 ```go
 fire.Combine(callback1, callback2)
@@ -325,7 +325,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Sets
 
-Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix while controllers are mounted using `Mount`:
+Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet()` with a reference to a database, an echo instance and the full URL prefix while controllers are mounted using `Mount()`:
 
 ```go
 set := fire.New(db, router, "api")
@@ -337,7 +337,7 @@ set.Mount(&fire.Controller{
 ````
 ## Applications
 
-Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New` with a MongoDB URI and the full URL prefix while controllers are mounted using `Mount`:
+Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` with a MongoDB URI and the full URL prefix while controllers are mounted using `Mount()`:
 
 ```go
 app := fire.New("mongodb://localhost/my-fire-app", "api")
@@ -350,7 +350,7 @@ app.Mount(&fire.Controller{
 app.Start("0.0.0.0:4242")
 ```
 
-An application can be started using `app.Start` or `app.Run` to select a specific `echo.Server`.
+An application can be started using `app.Start()` or `app.SecureStart()`.
 
 ### Middlewares
 
