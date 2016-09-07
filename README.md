@@ -96,6 +96,8 @@ To lower configuration overhead fire provides the `Application` construct that m
 ```go
 app := fire.New("mongodb://localhost/my-fire-app", "api")
 
+app.EnableCORS("http://0.0.0.0:4000")
+
 app.Mount(&fire.Controller{
     Model: &Post{},
 })
@@ -104,7 +106,7 @@ app.Mount(&fire.Controller{
     Model: &Comment{},
 })
 
-app.Start("0.0.0.0:4242")
+app.Start("0.0.0.0:4000")
 ```
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
@@ -354,6 +356,14 @@ app.Start("0.0.0.0:4242")
 ```
 
 An application can be started using `app.Start` or `app.Run` to select a specific `echo.Server`.
+
+### CORS
+
+You can easily configure CORS by using the `app.EnableCORS` method and pass list of trusted origins:
+
+```go
+app.EnableCORS("http://0.0.0.0:4000")
+```
 
 ## License
 

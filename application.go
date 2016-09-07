@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
+	"github.com/labstack/echo/middleware"
 	"gopkg.in/mgo.v2"
 )
 
@@ -31,6 +32,18 @@ func New(mongoURI, prefix string) *Application {
 		set:    set,
 		router: router,
 	}
+}
+
+// EnableCORS will enable CORS with a general configuration.
+//
+// Note: You can always add your own CORS middleware to the router.
+func (a *Application) EnableCORS(origins ...string) {
+	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: origins,
+		// TODO: Allow "Accept, Cache-Control"?
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderAuthorization,
+			echo.HeaderContentType, echo.HeaderXHTTPMethodOverride},
+	}))
 }
 
 // Mount will add controllers to the set and register them on the router.
