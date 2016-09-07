@@ -13,8 +13,8 @@ type Action int
 // All the available actions.
 const (
 	_ Action = iota
-	FindAll
-	FindOne
+	List
+	Find
 	Create
 	Update
 	Delete
@@ -44,6 +44,8 @@ type Context struct {
 
 	// The underlying echo context.
 	Echo echo.Context
+
+	session *mgo.Session
 
 	slice interface{}
 
@@ -78,4 +80,17 @@ func (c *Context) Original() (Model, error) {
 	c.original = Init(model)
 
 	return c.original, nil
+}
+
+func (c *Context) clone() *Context {
+	return &Context{
+		DB:      c.DB,
+		Request: c.Request,
+		Echo:    c.Echo,
+		session: c.session,
+	}
+}
+
+func (c *Context) free() {
+	c.session.Close()
 }

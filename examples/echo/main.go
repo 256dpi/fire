@@ -22,14 +22,11 @@ func main() {
 	// defer close
 	defer sess.Close()
 
-	// get db
-	db := sess.DB("")
-
 	// create router
 	router := echo.New()
 
 	// create a new controller set
-	set := fire.NewSet(db, router, "api")
+	set := fire.NewSet(sess, router, "api")
 
 	// create and mount controller
 	set.Mount(&fire.Controller{

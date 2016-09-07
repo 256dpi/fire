@@ -7,19 +7,19 @@ import (
 
 // A Set manages access to multiple controllers and their interconnections.
 type Set struct {
-	db          *mgo.Database
+	session     *mgo.Session
 	router      *echo.Echo
 	prefix      string
 	controllers map[string]*Controller
 }
 
-// NewSet returns a new controller set.
+// NewSet creates and returns a new set.
 //
 // Note: You should pass the full URL prefix of the API to allow proper
 // generation of resource links.
-func NewSet(db *mgo.Database, router *echo.Echo, prefix string) *Set {
+func NewSet(session *mgo.Session, router *echo.Echo, prefix string) *Set {
 	return &Set{
-		db:          db,
+		session:     session,
 		router:      router,
 		prefix:      prefix,
 		controllers: make(map[string]*Controller),
@@ -43,4 +43,9 @@ func (s *Set) Mount(controllers ...*Controller) {
 		// register controller
 		controller.register(s.router, s.prefix)
 	}
+}
+
+func (s *Set) sessionAndDatabase() (*mgo.Session, *mgo.Database) {
+	sess := s.session.Clone()
+	return sess, sess.DB("")
 }

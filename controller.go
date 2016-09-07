@@ -79,41 +79,47 @@ func (c *Controller) generalHandler(e echo.Context) error {
 		}
 	}
 
+	// prepare context
+	var ctx *Context
+
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx := c.buildContext(FindAll, req, e)
+		ctx = c.buildContext(List, req, e)
 		err = c.listResources(ctx)
 	case jsonapi.FindResource:
-		ctx := c.buildContext(FindOne, req, e)
+		ctx = c.buildContext(Find, req, e)
 		err = c.findResource(ctx)
 	case jsonapi.CreateResource:
-		ctx := c.buildContext(Create, req, e)
+		ctx = c.buildContext(Create, req, e)
 		err = c.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx := c.buildContext(Update, req, e)
+		ctx = c.buildContext(Update, req, e)
 		err = c.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx := c.buildContext(Delete, req, e)
+		ctx = c.buildContext(Delete, req, e)
 		err = c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		ctx := c.buildContext(0, req, e)
+		ctx = c.buildContext(0, req, e)
 		err = c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		ctx := c.buildContext(0, req, e)
+		ctx = c.buildContext(0, req, e)
 		err = c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		ctx := c.buildContext(Update, req, e)
+		ctx = c.buildContext(Update, req, e)
 		err = c.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx := c.buildContext(Update, req, e)
+		ctx = c.buildContext(Update, req, e)
 		err = c.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx := c.buildContext(Update, req, e)
+		ctx = c.buildContext(Update, req, e)
 		err = c.removeFromRelationship(ctx, doc)
 	}
 
-	// write any occurring errors
+	// free context
+	ctx.free()
+
+	// write any left over errors
 	if err != nil {
 		return jsonapi.WriteError(e.Response(), err)
 	}
@@ -132,7 +138,7 @@ func (c *Controller) listResources(ctx *Context) error {
 	}
 
 	// get resources
-	resources, err := c.resourcesForSlice(ctx.slice)
+	resources, err := c.resourcesForSlice(ctx, ctx.slice)
 	if err != nil {
 		return err
 	}
@@ -154,7 +160,7 @@ func (c *Controller) findResource(ctx *Context) error {
 	}
 
 	// get resource
-	resource, err := c.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx, ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -202,13 +208,13 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// query db
-	err = c.set.db.C(c.Model.Meta().Collection).Insert(ctx.Model)
+	err = ctx.DB.C(c.Model.Meta().Collection).Insert(ctx.Model)
 	if err != nil {
 		return err
 	}
 
 	// get resource
-	resource, err := c.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx, ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -247,7 +253,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// get resource
-	resource, err := c.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx, ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -283,7 +289,7 @@ func (c *Controller) deleteResource(ctx *Context) error {
 	}
 
 	// query db
-	err := c.set.db.C(c.Model.Meta().Collection).Remove(ctx.Query)
+	err := ctx.DB.C(c.Model.Meta().Collection).Remove(ctx.Query)
 	if err != nil {
 		return err
 	}
@@ -363,7 +369,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.ResourceID = id
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindOne, ctx.Request, ctx.Echo)
+		ctx2 := ctx.clone()
+		ctx2.Action = Find
 
 		// load model
 		err := relatedController.loadModel(ctx2)
@@ -372,7 +379,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// get resource
-		resource, err := relatedController.resourceForModel(ctx2.Model)
+		resource, err := relatedController.resourceForModel(ctx2, ctx2.Model)
 		if err != nil {
 			return err
 		}
@@ -390,7 +397,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.Echo)
+		ctx2 := ctx.clone()
+		ctx2.Action = List
 
 		// set query
 		ctx2.Query = bson.M{
@@ -406,7 +414,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2, ctx2.slice)
 		if err != nil {
 			return err
 		}
@@ -439,7 +447,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		ctx.Request.Intent = jsonapi.ListResources
 
 		// create new request
-		ctx2 := relatedController.buildContext(FindAll, ctx.Request, ctx.Echo)
+		ctx2 := ctx.clone()
+		ctx2.Action = List
 
 		// set query
 		ctx2.Query = bson.M{
@@ -455,7 +464,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2, ctx2.slice)
 		if err != nil {
 			return err
 		}
@@ -475,7 +484,7 @@ func (c *Controller) getRelationship(ctx *Context) error {
 	}
 
 	// get resource
-	resource, err := c.resourceForModel(ctx.Model)
+	resource, err := c.resourceForModel(ctx, ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -634,11 +643,14 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 }
 
 func (c *Controller) buildContext(action Action, req *jsonapi.Request, e echo.Context) *Context {
+	sess, db := c.set.sessionAndDatabase()
+
 	return &Context{
 		Action:  action,
-		DB:      c.set.db,
+		DB:      db,
 		Request: req,
 		Echo:    e,
+		session: sess,
 	}
 }
 
@@ -684,7 +696,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	obj := c.Model.Meta().Make()
 
 	// query db
-	err = c.set.db.C(c.Model.Meta().Collection).Find(ctx.Query).One(obj)
+	err = ctx.DB.C(c.Model.Meta().Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
@@ -731,7 +743,7 @@ func (c *Controller) loadModels(ctx *Context) error {
 	ctx.slice = c.Model.Meta().MakeSlice()
 
 	// query db
-	err = c.set.db.C(c.Model.Meta().Collection).Find(ctx.Query).
+	err = ctx.DB.C(c.Model.Meta().Collection).Find(ctx.Query).
 		Sort(ctx.Sorting...).All(ctx.slice)
 	if err != nil {
 		return err
@@ -842,10 +854,10 @@ func (c *Controller) saveModel(ctx *Context) error {
 	}
 
 	// update model
-	return c.set.db.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
+	return ctx.DB.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
-func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
+func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
 	// prepare resource
 	resource := &jsonapi.Resource{
 		Type:          c.Model.Meta().PluralName,
@@ -949,7 +961,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 
 			// load all referenced ids
 			var ids []bson.ObjectId
-			err := c.set.db.C(relatedController.Model.Meta().Collection).Find(bson.M{
+			err := ctx.DB.C(relatedController.Model.Meta().Collection).Find(bson.M{
 				filterName: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
@@ -982,7 +994,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 	return resource, nil
 }
 
-func (c *Controller) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, error) {
+func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonapi.Resource, error) {
 	// dereference pointer to slice
 	slice := reflect.ValueOf(ptr).Elem()
 
@@ -991,7 +1003,7 @@ func (c *Controller) resourcesForSlice(ptr interface{}) ([]*jsonapi.Resource, er
 
 	// create resource
 	for i := 0; i < slice.Len(); i++ {
-		_resources, err := c.resourceForModel(slice.Index(i).Interface().(Model))
+		_resources, err := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
 		if err != nil {
 			return nil, err
 		}

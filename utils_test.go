@@ -22,7 +22,7 @@ func init() {
 	session = sess
 }
 
-func getDB() *mgo.Database {
+func getDB() (*mgo.Session, *mgo.Database) {
 	// get db
 	db := session.DB("")
 
@@ -31,18 +31,18 @@ func getDB() *mgo.Database {
 	db.C("comments").RemoveAll(nil)
 	db.C("selections").RemoveAll(nil)
 
-	return db
+	return session, db
 }
 
 func buildServer() (*echo.Echo, *mgo.Database) {
 	// get db
-	db := getDB()
+	sess, db := getDB()
 
 	// create router
 	router := echo.New()
 
 	// create set
-	set := NewSet(db, router, "")
+	set := NewSet(sess, router, "")
 
 	// add controllers
 	set.Mount(&Controller{

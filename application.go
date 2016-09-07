@@ -25,10 +25,7 @@ func New(mongoURI, prefix string) *Application {
 		panic(err)
 	}
 
-	// get db
-	db := sess.DB("")
-
-	set := NewSet(db, router, prefix)
+	set := NewSet(sess, router, prefix)
 
 	return &Application{
 		set:    set,

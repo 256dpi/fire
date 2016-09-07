@@ -40,14 +40,11 @@ func Example() {
 	// defer close
 	defer sess.Close()
 
-	// get db
-	db := sess.DB("")
-
 	// create router
 	router := echo.New()
 
 	// create app
-	app := NewSet(db, router, "api")
+	app := NewSet(sess, router, "api")
 
 	// add controllers
 	app.Mount(&Controller{
