@@ -76,7 +76,7 @@ type Comment struct {
 }
 ```
 
-Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are in turn mounted on an `Set` that provides the necessary routing capabilities:
+Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers can then be mounted on an `Set` that provides the necessary interconnection and integration in existing echo applications:
 
 ```go
 set := fire.NewSet(db, router, "api")
@@ -331,7 +331,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Sets
 
-A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix:
+Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix:
 
 ```go
 set := fire.New(db, router, "api")

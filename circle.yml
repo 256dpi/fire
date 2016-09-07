@@ -15,6 +15,6 @@ test:
     - ln -sf "$(pwd)" "$APP_PATH"
     - cd "$APP_PATH" && glide install
   override:
-    - cd "$APP_PATH" && go test -v -cover -race -coverprofile=/home/ubuntu/coverage.out $(glide nv)
+    - cd "$APP_PATH" && go test -v -cover -race -coverprofile=/home/ubuntu/coverage.out .
   post:
     - /home/ubuntu/.go_workspace/bin/goveralls -coverprofile=/home/ubuntu/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
