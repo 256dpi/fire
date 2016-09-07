@@ -11,11 +11,12 @@ import (
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
+	set       *Set
+	router    *echo.Echo
+	bodyLimit string
+
 	disableCompression bool
 	disableRecovery    bool
-
-	set    *Set
-	router *echo.Echo
 }
 
 // New creates and returns a new Application.
@@ -32,8 +33,9 @@ func New(mongoURI, prefix string) *Application {
 	set := NewSet(sess, router, prefix)
 
 	return &Application{
-		set:    set,
-		router: router,
+		set:       set,
+		router:    router,
+		bodyLimit: "4K",
 	}
 }
 
@@ -49,24 +51,6 @@ func (a *Application) EnableCORS(origins ...string) {
 	}))
 }
 
-// EnableBodyLimit will enable request body limitation. You can pass a size in
-// the form of 4K, 2M, 1G or 1P. If no value is specified the default value 4K
-// will be used instead.
-func (a *Application) EnableBodyLimit(size ...string) {
-	limit := "4K"
-	if len(size) > 0 {
-		limit = size[0]
-	}
-
-	a.router.Use(middleware.BodyLimit(limit))
-}
-
-// EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
-// header to set a request method when using the POST method.
-func (a *Application) EnableMethodOverriding() {
-	a.router.Pre(middleware.MethodOverride())
-}
-
 // Mount will add controllers to the set and register them on the router.
 //
 // Note: Each controller should only be mounted once.
@@ -77,6 +61,18 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Router will return the internally used echo instance.
 func (a *Application) Router() *echo.Echo {
 	return a.router
+}
+
+// EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
+// header to set a request method when using the POST method.
+func (a *Application) EnableMethodOverriding() {
+	a.router.Pre(middleware.MethodOverride())
+}
+
+// SetBodyLimit can be used to override the default body limit of 4K with a new
+// value in the form of 4K, 2M, 1G or 1P.
+func (a *Application) SetBodyLimit(size string) {
+	a.bodyLimit = size
 }
 
 // DisableCompression will turn of gzip compression.
@@ -95,6 +91,9 @@ func (a *Application) DisableRecovery() {
 
 // Run will run the application using the passed server.
 func (a *Application) Run(server engine.Server) {
+	// set body limit
+	a.router.Use(middleware.BodyLimit(a.bodyLimit))
+
 	// enable gzip compression
 	if !a.disableCompression {
 		a.router.Use(middleware.Gzip())
