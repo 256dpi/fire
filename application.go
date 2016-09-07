@@ -18,6 +18,7 @@ type Application struct {
 	enableMethodOverriding bool
 	disableCompression     bool
 	disableRecovery        bool
+	disableCommonSecurity  bool
 }
 
 // New creates and returns a new Application.
@@ -64,6 +65,11 @@ func (a *Application) EnableCORS(origins ...string) {
 	}))
 }
 
+// EnableSecurity will enable further security measures for your application.
+func (a *Application) EnableSecurity() {
+	a.router.Use()
+}
+
 // EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
 // header to set a request method when using the POST method.
 //
@@ -94,11 +100,23 @@ func (a *Application) DisableRecovery() {
 	a.disableRecovery = true
 }
 
+// DisableCommonSecurity will disable common security features including:
+// protection against cross-site scripting attacks by setting the
+// `X-XSS-Protection` header, protection against overriding Content-Type
+// header by setting the `X-Content-Type-Options` header and protection against
+// clickjacking by setting the `X-Frame-Options` header.
+//
+// Note: This method must be called before calling Run or Start.
+func (a *Application) DisableCommonSecurity() {
+	a.disableCommonSecurity = true
+}
+
 // Run will run the application using the passed server.
 func (a *Application) Run(server engine.Server) {
 	// set body limit
 	a.router.Use(middleware.BodyLimit(a.bodyLimit))
 
+	// enable method overriding
 	if a.enableMethodOverriding {
 		a.router.Pre(middleware.MethodOverride())
 	}
@@ -111,6 +129,11 @@ func (a *Application) Run(server engine.Server) {
 	// enable automatic recovery
 	if !a.disableRecovery {
 		a.router.Use(middleware.Recover())
+	}
+
+	// enable common security
+	if !a.disableCommonSecurity {
+		a.router.Use(middleware.Secure())
 	}
 
 	a.router.Run(server)
