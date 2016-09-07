@@ -21,6 +21,7 @@ type Application struct {
 	allowedOrigins []string
 	allowedHeaders []string
 
+	forceEncryption        bool
 	disableCORS            bool
 	disableCompression     bool
 	disableRecovery        bool
@@ -66,6 +67,14 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Router will return the internally used echo instance.
 func (a *Application) Router() *echo.Echo {
 	return a.router
+}
+
+// ForceEncryption will make the application enforce and only respond to
+// encrypted requests.
+//
+// Note: ForceEncryption will be automatically enabled when calling SecureStart.
+func (a *Application) ForceEncryption() {
+	a.forceEncryption = true
 }
 
 // EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
@@ -137,14 +146,23 @@ func (a *Application) Start(addr string) {
 	a.run(standard.New(addr))
 }
 
-// Start will run the application on the specified address using a SSL certificate.
-func (a *Application) StartSecure(addr, certFile, keyFile string) {
+// SecureStart will run the application on the specified address using a TLS
+// certificate.
+func (a *Application) SecureStart(addr, certFile, keyFile string) {
+	a.forceEncryption = true
+
 	a.run(standard.WithTLS(addr, certFile, keyFile))
 }
 
 func (a *Application) run(server engine.Server) {
 	// set body limit
 	a.router.Use(middleware.BodyLimit(a.bodyLimit))
+
+	// force encryption
+	if a.forceEncryption {
+		// TODO: register https redirect middleware with next release
+		// a.router.Pre(middleware.HTTPSRedirect())
+	}
 
 	// enable cors
 	if !a.disableCORS {
@@ -176,7 +194,16 @@ func (a *Application) run(server engine.Server) {
 
 	// enable common security
 	if !a.disableCommonSecurity {
-		a.router.Use(middleware.Secure())
+		config := middleware.DefaultSecureConfig
+
+		// keep using TLS for 60 minutes on just that domain
+		// TODO: Make that configurable.
+		if a.forceEncryption {
+			config.HSTSMaxAge = 3600
+			config.HSTSExcludeSubdomains = true
+		}
+
+		a.router.Use(config)
 	}
 
 	// enable method overriding
