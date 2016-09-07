@@ -68,11 +68,6 @@ func (a *Application) Router() *echo.Echo {
 	return a.router
 }
 
-// EnableSecurity will enable further security measures for your application.
-func (a *Application) EnableSecurity() {
-	a.router.Use()
-}
-
 // EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
 // header to set a request method when using the POST method.
 //
