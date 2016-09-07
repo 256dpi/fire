@@ -46,6 +46,18 @@ func (a *Application) EnableCORS(origins ...string) {
 	}))
 }
 
+// EnableBodyLimit will enable request body limitation. You can pass a size in
+// the form of 4K, 2M, 1G or 1P. If no value is specified the default value 4K
+// will be used instead.
+func (a *Application) EnableBodyLimit(size ...string) {
+	limit := "4K"
+	if len(size) > 0 {
+		limit = size[0]
+	}
+
+	a.router.Use(middleware.BodyLimit(limit))
+}
+
 // Mount will add controllers to the set and register them on the router.
 //
 // Note: Each controller should only be mounted once.

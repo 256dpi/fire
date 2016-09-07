@@ -98,6 +98,8 @@ app := fire.New("mongodb://localhost/my-fire-app", "api")
 
 app.EnableCORS("http://0.0.0.0:4000")
 
+app.EnableBodyLimit()
+
 app.Mount(&fire.Controller{
     Model: &Post{},
 })
@@ -364,6 +366,16 @@ You can easily configure CORS by using the `app.EnableCORS` method and pass list
 ```go
 app.EnableCORS("http://0.0.0.0:4000")
 ```
+
+### Body Limit
+
+A body limiter can be enabled by using the `app.EnableBodyLimit` method and a size in the form of `4K`, `2M`, `1G` or `8P`: 
+
+```go
+app.EnableBodyLimit()
+```
+
+- If no value is specified the default value of `4K` will be used instead.
 
 ## License
 

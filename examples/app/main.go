@@ -14,6 +14,9 @@ func main() {
 	// enable cors
 	app.EnableCORS("http://0.0.0.0:4000")
 
+	// enable body limit
+	app.EnableBodyLimit()
+
 	// create and mount controller
 	app.Mount(&fire.Controller{
 		Model: &post{},
