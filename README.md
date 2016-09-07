@@ -34,6 +34,7 @@ _The framework is still WIP and the API may be changed._
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
 - [Sets](#sets)
+- [Applications](#applications)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
