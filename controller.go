@@ -26,7 +26,7 @@ type Controller struct {
 	// return a Bad Request status if an user error is returned.
 	Validator Callback
 
-	app *Application
+	set *Set
 }
 
 func (c *Controller) register(router *echo.Echo, prefix string) {
@@ -65,7 +65,7 @@ func (c *Controller) register(router *echo.Echo, prefix string) {
 
 func (c *Controller) generalHandler(e echo.Context) error {
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(e.Request(), c.app.prefix)
+	req, err := jsonapi.ParseRequest(e.Request(), c.set.prefix)
 	if err != nil {
 		return jsonapi.WriteError(e.Response(), err)
 	}
@@ -202,7 +202,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// query db
-	err = c.app.db.C(c.Model.Meta().Collection).Insert(ctx.Model)
+	err = c.set.db.C(c.Model.Meta().Collection).Insert(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func (c *Controller) deleteResource(ctx *Context) error {
 	}
 
 	// query db
-	err := c.app.db.C(c.Model.Meta().Collection).Remove(ctx.Query)
+	err := c.set.db.C(c.Model.Meta().Collection).Remove(ctx.Query)
 	if err != nil {
 		return err
 	}
@@ -319,7 +319,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := c.app.controllers[pluralName]
+	relatedController := c.set.controllers[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -636,7 +636,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 func (c *Controller) buildContext(action Action, req *jsonapi.Request, e echo.Context) *Context {
 	return &Context{
 		Action:  action,
-		DB:      c.app.db,
+		DB:      c.set.db,
 		Request: req,
 		Echo:    e,
 	}
@@ -684,7 +684,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	obj := c.Model.Meta().Make()
 
 	// query db
-	err = c.app.db.C(c.Model.Meta().Collection).Find(ctx.Query).One(obj)
+	err = c.set.db.C(c.Model.Meta().Collection).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
@@ -731,7 +731,7 @@ func (c *Controller) loadModels(ctx *Context) error {
 	ctx.slice = c.Model.Meta().MakeSlice()
 
 	// query db
-	err = c.app.db.C(c.Model.Meta().Collection).Find(ctx.Query).
+	err = c.set.db.C(c.Model.Meta().Collection).Find(ctx.Query).
 		Sort(ctx.Sorting...).All(ctx.slice)
 	if err != nil {
 		return err
@@ -842,7 +842,7 @@ func (c *Controller) saveModel(ctx *Context) error {
 	}
 
 	// update model
-	return c.app.db.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
+	return c.set.db.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
 func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
@@ -855,7 +855,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 	}
 
 	// generate base link
-	base := c.app.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := c.set.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
@@ -922,7 +922,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := c.app.controllers[field.RelType]
+			relatedController := c.set.controllers[field.RelType]
 
 			// check existence
 			if relatedController == nil {
@@ -949,7 +949,7 @@ func (c *Controller) resourceForModel(model Model) (*jsonapi.Resource, error) {
 
 			// load all referenced ids
 			var ids []bson.ObjectId
-			err := c.app.db.C(relatedController.Model.Meta().Collection).Find(bson.M{
+			err := c.set.db.C(relatedController.Model.Meta().Collection).Find(bson.M{
 				filterName: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},

@@ -43,8 +43,11 @@ func Example() {
 	// get db
 	db := sess.DB("")
 
+	// create router
+	router := echo.New()
+
 	// create app
-	app := New(db, "api")
+	app := NewSet(db, router, "api")
 
 	// add controllers
 	app.Mount(&Controller{
@@ -54,12 +57,6 @@ func Example() {
 	}, &Controller{
 		Model: &Selection{},
 	})
-
-	// create router
-	router := echo.New()
-
-	// register api
-	app.Register(router)
 
 	fmt.Println("ready!")
 

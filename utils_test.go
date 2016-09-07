@@ -41,20 +41,17 @@ func buildServer() (*echo.Echo, *mgo.Database) {
 	// create router
 	router := echo.New()
 
-	// create app
-	app := New(db, "")
+	// create set
+	set := NewSet(db, router, "")
 
 	// add controllers
-	app.Mount(&Controller{
+	set.Mount(&Controller{
 		Model: &Post{},
 	}, &Controller{
 		Model: &Comment{},
 	}, &Controller{
 		Model: &Selection{},
 	})
-
-	// register routes
-	app.Register(router)
 
 	// return router
 	return router, db

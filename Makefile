@@ -1,18 +1,19 @@
-PKGS=$(shell glide nv)
-
 all: fmt vet lint
 
 vet:
-	go vet $(PKGS)
+	go vet .
+	go vet ./examples/echo
 
 fmt:
-	go fmt $(PKGS)
+	go fmt .
+	go fmt ./examples/echo
 
 lint:
-	golint $(PKGS)
+	golint .
+	golint ./examples/echo
 
 err:
-	errcheck -ignoretests -asserts $(PKGS)
+	errcheck -ignoretests -asserts .
 
 toc:
 	doctoc README.md

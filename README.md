@@ -33,7 +33,7 @@ _The framework is still WIP and the API may be changed._
   - [Basics](#basics-1)
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
-- [Applications](#applications)
+- [Sets](#sets)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -76,20 +76,18 @@ type Comment struct {
 }
 ```
 
-Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are in turn mounted on an `Application` that provides the necessary routing capabilities:
+Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are in turn mounted on an `Set` that provides the necessary routing capabilities:
 
 ```go
-app := fire.New(db, "api")
+set := fire.NewSet(db, router, "api")
 
-app.Mount(&fire.Controller{
+set.Mount(&fire.Controller{
     Model: &Post{},
 })
 
-app.Mount(&fire.Controller{
+set.Mount(&fire.Controller{
     Model: &Comment{},
 })
-
-app.Register(router)
 ```
 
 After starting the server you can inspect the created routes from the console output (simplified):
@@ -331,22 +329,20 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire#VerifyReferencesValidator)
 - [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire#MatchingReferencesValidator)
 
-## Applications
+## Sets
 
-An `Application` can be created by calling `fire.New` with a reference to a database and the full URL prefix:
+A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix:
 
 ```go
-app := fire.New(db, "api")
+set := fire.New(db, router, "api")
 
-app.Mount(&fire.Controller{
+set.Mount(&fire.Controller{
     Model: &Post{},
     // ...
 })
-
-app.Register(router)
 ````
 
-Controllers can be mounted with `Mount` before the routes are registered using `Register` on a router.
+Controllers can be mounted with using `Mount`.
 
 ## License
 
