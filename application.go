@@ -14,14 +14,18 @@ import (
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
-	set       *Set
-	router    *echo.Echo
-	bodyLimit string
+	set    *Set
+	router *echo.Echo
 
-	enableMethodOverriding bool
+	bodyLimit      string
+	allowedOrigins []string
+	allowedHeaders []string
+
+	disableCORS            bool
 	disableCompression     bool
 	disableRecovery        bool
 	disableCommonSecurity  bool
+	enableMethodOverriding bool
 	enableDevMode          bool
 }
 
@@ -36,12 +40,19 @@ func New(mongoURI, prefix string) *Application {
 		panic(err)
 	}
 
+	// create controller set
 	set := NewSet(sess, router, prefix)
 
 	return &Application{
-		set:       set,
-		router:    router,
-		bodyLimit: "4K",
+		set:            set,
+		router:         router,
+		bodyLimit:      "4K",
+		allowedOrigins: []string{"*"},
+		allowedHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAuthorization,
+		},
 	}
 }
 
@@ -55,18 +66,6 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Router will return the internally used echo instance.
 func (a *Application) Router() *echo.Echo {
 	return a.router
-}
-
-// EnableCORS will enable CORS with a general configuration.
-//
-// Note: You can always add your own CORS middleware to the router.
-func (a *Application) EnableCORS(origins ...string) {
-	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: origins,
-		// TODO: Allow "Accept, Cache-Control"?
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderAuthorization,
-			echo.HeaderContentType, echo.HeaderXHTTPMethodOverride},
-	}))
 }
 
 // EnableSecurity will enable further security measures for your application.
@@ -88,6 +87,23 @@ func (a *Application) EnableMethodOverriding() {
 // Note: This method must be called before calling Run or Start.
 func (a *Application) SetBodyLimit(size string) {
 	a.bodyLimit = size
+}
+
+// SetAllowedOrigins will replace the default allowed origin set `*`.
+func (a *Application) SetAllowedOrigins(origins ...string) {
+	a.allowedOrigins = origins
+}
+
+// AddAllowedHeaders will allow additional headers.
+func (a *Application) AddAllowedHeaders(headers ...string) {
+	a.allowedHeaders = append(a.allowedHeaders, headers)
+}
+
+// DisableCORS will turn off CORS support.
+//
+// Note: This method must be called before calling Run or Start.
+func (a *Application) DisableCORS(origins ...string) {
+	a.disableCORS = true
 }
 
 // DisableCompression will turn of gzip compression.
@@ -126,9 +142,22 @@ func (a *Application) Run(server engine.Server) {
 	// set body limit
 	a.router.Use(middleware.BodyLimit(a.bodyLimit))
 
-	// enable method overriding
-	if a.enableMethodOverriding {
-		a.router.Pre(middleware.MethodOverride())
+	// enable cors
+	if !a.disableCORS {
+		allowedHeaders := a.allowedHeaders
+
+		// add method override header if enabled
+		if a.enableMethodOverriding {
+			allowedHeaders = append(allowedHeaders, echo.HeaderXHTTPMethodOverride)
+		}
+
+		// add cors middleware
+		a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins: a.allowedOrigins,
+			AllowMethods: []string{echo.GET, echo.POST, echo.PATCH, echo.DELETE},
+			AllowHeaders: allowedHeaders,
+			MaxAge:       60,
+		}))
 	}
 
 	// enable gzip compression
@@ -144,6 +173,11 @@ func (a *Application) Run(server engine.Server) {
 	// enable common security
 	if !a.disableCommonSecurity {
 		a.router.Use(middleware.Secure())
+	}
+
+	// enable method overriding
+	if a.enableMethodOverriding {
+		a.router.Pre(middleware.MethodOverride())
 	}
 
 	// enable dev mode
