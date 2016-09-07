@@ -91,7 +91,7 @@ func (a *Application) SetAllowedOrigins(origins ...string) {
 
 // AddAllowedHeaders will allow additional headers.
 func (a *Application) AddAllowedHeaders(headers ...string) {
-	a.allowedHeaders = append(a.allowedHeaders, headers)
+	a.allowedHeaders = append(a.allowedHeaders, headers...)
 }
 
 // DisableCORS will turn off CORS support.
@@ -132,8 +132,17 @@ func (a *Application) EnableDevMode() {
 	a.enableDevMode = true
 }
 
-// Run will run the application using the passed server.
-func (a *Application) Run(server engine.Server) {
+// Start will run the application on the specified address.
+func (a *Application) Start(addr string) {
+	a.run(standard.New(addr))
+}
+
+// Start will run the application on the specified address using a SSL certificate.
+func (a *Application) StartSecure(addr, certFile, keyFile string) {
+	a.run(standard.WithTLS(addr, certFile, keyFile))
+}
+
+func (a *Application) run(server engine.Server) {
 	// set body limit
 	a.router.Use(middleware.BodyLimit(a.bodyLimit))
 
@@ -182,11 +191,6 @@ func (a *Application) Run(server engine.Server) {
 	}
 
 	a.router.Run(server)
-}
-
-// Start will run the application on the specified address.
-func (a *Application) Start(addr string) {
-	a.Run(standard.New(addr))
 }
 
 func (a *Application) printInfo() {
