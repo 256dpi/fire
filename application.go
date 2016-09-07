@@ -203,7 +203,7 @@ func (a *Application) run(server engine.Server) {
 			config.HSTSExcludeSubdomains = true
 		}
 
-		a.router.Use(config)
+		a.router.Use(middleware.SecureWithConfig(config))
 	}
 
 	// enable method overriding
