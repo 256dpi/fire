@@ -7,16 +7,14 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-type Post struct {
+type post struct {
 	fire.Base `bson:",inline" fire:"posts"`
 	Title     string `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	Published bool   `json:"published" valid:"-" fire:"filterable"`
-	TextBody  string `json:"text-body" valid:"-" bson:"text_body"`
 }
 
 func main() {
 	// connect to database
-	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
+	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire-test-echo")
 	if err != nil {
 		panic(err)
 	}
@@ -31,11 +29,11 @@ func main() {
 	router := echo.New()
 
 	// create a new controller set
-	set := fire.NewSet(db, router, "")
+	set := fire.NewSet(db, router, "api")
 
 	// create and mount controller
 	set.Mount(&fire.Controller{
-		Model: &Post{},
+		Model: &post{},
 	})
 
 	// run server

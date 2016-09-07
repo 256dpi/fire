@@ -90,27 +90,20 @@ set.Mount(&fire.Controller{
 })
 ```
 
-After starting the server you can inspect the created routes from the console output (simplified):
+To lower configuration overhead fire provides the `Application` construct that manages all the details around your API:
 
-```
-GET    /api/posts
-GET    /api/posts/:id
-GET    /api/posts/:id/relationships/comments
-GET    /api/posts/:id/comments
-GET    /api/comments
-GET    /api/comments/:id
-GET    /api/comments/:id/parent
-GET    /api/comments/:id/post
-GET    /api/comments/:id/relationships/parent
-GET    /api/comments/:id/relationships/post
-POST   /api/posts
-POST   /api/comments
-PATCH  /api/comments/:id
-PATCH  /api/comments/:id/relationships/parent
-PATCH  /api/comments/:id/relationships/post
-PATCH  /api/posts/:id
-DELETE /api/posts/:id
-DELETE /api/comments/:id
+```go
+app := fire.New("mongodb://localhost/my-fire-app", "api")
+
+app.Mount(&fire.Controller{
+    Model: &Post{},
+})
+
+app.Mount(&fire.Controller{
+    Model: &Comment{},
+})
+
+app.Start("0.0.0.0:4242")
 ```
 
 Fire provides various advanced features to hook into the request processing flow and add for example authentication or more complex validation of models. Please read the following API documentation carefully to get an overview of all available features.
@@ -341,6 +334,25 @@ set.Mount(&fire.Controller{
     // ...
 })
 ````
+## Applications
+
+Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New` with a MongoDB URI and the full URL prefix while controllers are mounted using `Mount`:
+
+```go
+app := fire.New("mongodb://localhost/my-fire-app", "api")
+
+app.Mount(&fire.Controller{
+    Model: &Post{},
+})
+
+app.Mount(&fire.Controller{
+    Model: &Comment{},
+})
+
+app.Start("0.0.0.0:4242")
+```
+
+An application can be started using `app.Start` or `app.Run` to select a specific `echo.Server`.
 
 ## License
 
