@@ -331,7 +331,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Sets
 
-Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix:
+Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet` with a reference to a database, an echo instance and the full URL prefix while controllers are mounted using `Mount`:
 
 ```go
 set := fire.New(db, router, "api")
@@ -341,8 +341,6 @@ set.Mount(&fire.Controller{
     // ...
 })
 ````
-
-Controllers can be mounted with using `Mount`.
 
 ## License
 
