@@ -11,6 +11,9 @@ import (
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
+	disableCompression bool
+	disableRecovery    bool
+
 	set    *Set
 	router *echo.Echo
 }
@@ -70,8 +73,32 @@ func (a *Application) Router() *echo.Echo {
 	return a.router
 }
 
+// DisableCompression will turn of gzip compression.
+//
+// Note: This method must be called before calling Run or Start.
+func (a *Application) DisableCompression() {
+	a.disableCompression = true
+}
+
+// DisableRecovery will disable the automatic recover mechanism.
+//
+// Note: This method must be called before calling Run or Start.
+func (a *Application) DisableRecovery() {
+	a.disableRecovery = true
+}
+
 // Run will run the application using the passed server.
 func (a *Application) Run(server engine.Server) {
+	// enable gzip compression
+	if !a.disableCompression {
+		a.router.Use(middleware.Gzip())
+	}
+
+	// enable automatic recovery
+	if !a.disableRecovery {
+		a.router.Use(middleware.Recover())
+	}
+
 	a.router.Run(server)
 }
 
