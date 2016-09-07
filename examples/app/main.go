@@ -16,6 +16,9 @@ func main() {
 		Model: &post{},
 	})
 
+	// enable dev mode
+	app.EnableDevMode()
+
 	// run server
 	app.Start("0.0.0.0:4000")
 }

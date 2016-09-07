@@ -1,6 +1,9 @@
 package fire
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
@@ -19,6 +22,7 @@ type Application struct {
 	disableCompression     bool
 	disableRecovery        bool
 	disableCommonSecurity  bool
+	enableDevMode          bool
 }
 
 // New creates and returns a new Application.
@@ -111,6 +115,12 @@ func (a *Application) DisableCommonSecurity() {
 	a.disableCommonSecurity = true
 }
 
+// EnableDevMode will enable the development mode that prints all registered
+// handlers on boot and all incoming requests.
+func (a *Application) EnableDevMode() {
+	a.enableDevMode = true
+}
+
 // Run will run the application using the passed server.
 func (a *Application) Run(server engine.Server) {
 	// set body limit
@@ -136,10 +146,50 @@ func (a *Application) Run(server engine.Server) {
 		a.router.Use(middleware.Secure())
 	}
 
+	// enable dev mode
+	if a.enableDevMode {
+		a.printInfo()
+		a.router.Use(a.logger)
+	}
+
 	a.router.Run(server)
 }
 
 // Start will run the application on the specified address.
 func (a *Application) Start(addr string) {
 	a.Run(standard.New(addr))
+}
+
+func (a *Application) printInfo() {
+	fmt.Println("==> Fire application starting...")
+	fmt.Println("==> Registered routes:")
+
+	for _, route := range a.router.Routes() {
+		fmt.Printf("%6s  %-30s  %s\n", route.Method, route.Path, route.Handler)
+	}
+
+	fmt.Println("==> Ready to go!")
+}
+
+func (a *Application) logger(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) (err error) {
+		req := c.Request()
+		res := c.Response()
+
+		start := time.Now()
+		if err = next(c); err != nil {
+			c.Error(err)
+		}
+
+		duration := time.Since(start).String()
+
+		path := req.URL().Path()
+		if path == "" {
+			path = "/"
+		}
+
+		fmt.Printf("%6s  %-30s  %d  %s\n", req.Method(), path, res.Status(), duration)
+
+		return
+	}
 }
