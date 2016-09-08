@@ -225,7 +225,7 @@ func (a *Application) printInfo() {
 	fmt.Println("==> Registered routes:")
 
 	for _, route := range a.router.Routes() {
-		fmt.Printf("%6s  %-30s  %s\n", route.Method, route.Path, route.Handler)
+		fmt.Printf("%6s  %-30s\n", route.Method, route.Path)
 	}
 
 	fmt.Println("==> Ready to go!")

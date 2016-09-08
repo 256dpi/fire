@@ -142,7 +142,7 @@ type Post struct {
 
 - Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
 - The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty"`.
-- Validation is provided by [govalidator](https://github.com/asaskevich/govalidator) and uses the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).  
+- Validation is provided by [govalidator](https://github.com/asaskevich/govalidator) and uses the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).
 
 _Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`._
 
