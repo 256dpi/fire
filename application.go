@@ -224,6 +224,8 @@ func (a *Application) printInfo() {
 	fmt.Println("==> Fire application starting...")
 	fmt.Println("==> Registered routes:")
 
+	// TODO: Order routes.
+
 	for _, route := range a.router.Routes() {
 		fmt.Printf("%6s  %-30s\n", route.Method, route.Path)
 	}
