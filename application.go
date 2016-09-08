@@ -14,8 +14,9 @@ import (
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
-	set    *Set
-	router *echo.Echo
+	set     *Set
+	router  *echo.Echo
+	session *mgo.Session
 
 	bodyLimit      string
 	allowedOrigins []string
@@ -47,6 +48,7 @@ func New(mongoURI, prefix string) *Application {
 	return &Application{
 		set:            set,
 		router:         router,
+		session:        sess,
 		bodyLimit:      "4K",
 		allowedOrigins: []string{"*"},
 		allowedHeaders: []string{
@@ -67,6 +69,13 @@ func (a *Application) Mount(controllers ...*Controller) {
 // Router will return the internally used echo instance.
 func (a *Application) Router() *echo.Echo {
 	return a.router
+}
+
+// CloneSession will return a freshly cloned session.
+//
+// Note: You need to close the session when finished.
+func (a *Application) CloneSession() *mgo.Session {
+	return a.session.Clone()
 }
 
 // ForceEncryption will make the application enforce and only respond to
