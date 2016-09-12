@@ -595,12 +595,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 	// append relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
-		if field.RelName != ctx.Request.Relationship {
-			continue
-		}
-
-		// check if field is a to many relationship
-		if !field.ToMany {
+		if !field.ToMany || field.RelName != ctx.Request.Relationship {
 			continue
 		}
 
@@ -656,12 +651,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	// remove relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
-		if field.RelName != ctx.Request.Relationship {
-			continue
-		}
-
-		// check if field is a to many relationship
-		if !field.ToMany {
+		if !field.ToMany || field.RelName != ctx.Request.Relationship {
 			continue
 		}
 
@@ -815,10 +805,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 		return nil, err
 	}
 
-	// initialize slice
-	InitSlice(slice)
-
-	return slice, nil
+	return InitSlice(slice), nil
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
@@ -843,12 +830,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
-		if field.RelName != name {
-			continue
-		}
-
-		// check if field is a relationship
-		if !field.ToOne && !field.ToMany {
+		if field.RelName != name || (!field.ToOne && !field.ToMany) {
 			continue
 		}
 
