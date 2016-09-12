@@ -7,7 +7,7 @@ import (
 )
 
 func TestProtector(t *testing.T) {
-	p := NewProtector()
+	p := DefaultProtector()
 	r := echo.New()
 
 	p.Register(r)

@@ -23,11 +23,14 @@ func main() {
 		Pool:  pool,
 	})
 
+	// mount protector
+	app.Mount(fire.DefaultProtector())
+
 	// mount group
 	app.Mount(group)
 
-	// enable dev mode
-	app.EnableDevMode()
+	// mount inspector
+	app.Mount(fire.DefaultInspector())
 
 	// run server
 	app.Start("0.0.0.0:4000")

@@ -94,7 +94,7 @@ commentsController := &fire.Controller{
 }
 ```
 
-A `NewClonePool()` returns a `Pool` that manages access to the database for the controllers. 
+The method `NewClonePool()` returns a `Pool` that manages access to the database for the controllers. 
  
 In a next step, multiple controllers are combined to a `ControllerGroup` that provides the necessary interconnection and integration with applications:
 

@@ -33,8 +33,8 @@ type Protector struct {
 	DisableAutomaticRecovery bool
 }
 
-// NewProtector returns a protector that is optimized to be used with JSON APIs.
-func NewProtector() *Protector {
+// DefaultProtector returns a protector that is tailored to be used for JSON APIs.
+func DefaultProtector() *Protector {
 	return &Protector{
 		BodyLimit:             "4K",
 		AllowMethodOverriding: false,
