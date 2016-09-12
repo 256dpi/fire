@@ -171,7 +171,6 @@ post.Meta().Name
 post.Meta().PluralName
 post.Meta().Collection
 post.Meta().Fields
-post.Meta().FieldsByTag("tag")
 ```
 
 More information about the `Meta` structure can be found here: <https://godoc.org/github.com/gonfire/fire#Meta>.

@@ -3,8 +3,6 @@ package fire
 import (
 	"reflect"
 	"strings"
-
-	"gopkg.in/mgo.v2/bson"
 )
 
 func getJSONFieldName(field *reflect.StructField) string {
@@ -41,14 +39,12 @@ func getBSONFieldName(field *reflect.StructField) string {
 	return strings.ToLower(field.Name)
 }
 
-func stringsToIDs(list []string) []bson.ObjectId {
-	var ids []bson.ObjectId
-
-	for _, str := range list {
-		if bson.IsObjectIdHex(str) {
-			ids = append(ids, bson.ObjectIdHex(str))
+func stringInList(str string, list []string) bool {
+	for _, val := range list {
+		if val == str {
+			return true
 		}
 	}
 
-	return ids
+	return false
 }

@@ -13,11 +13,6 @@ func init() {
 	metaCache = make(map[string]*Meta)
 }
 
-var supportedTags = Tags{
-	"filterable",
-	"sortable",
-}
-
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(bson.ObjectId(""))
 var optionalToOneType = reflect.TypeOf(new(bson.ObjectId))
@@ -27,20 +22,6 @@ var hasManyType = reflect.TypeOf(HasMany{})
 // The HasMany type denotes a has many relationship in a model declaration.
 type HasMany struct{}
 
-// Tags is a collection of tags.
-type Tags []string
-
-// Has returns whether the supplied tag exists in the list.
-func (t Tags) Has(tag string) bool {
-	for _, val := range t {
-		if val == tag {
-			return true
-		}
-	}
-
-	return false
-}
-
 // A Field contains the meta information about a single field of a model.
 type Field struct {
 	Name       string
@@ -48,7 +29,8 @@ type Field struct {
 	JSONName   string
 	BSONName   string
 	Optional   bool
-	Tags       Tags
+	Filterable bool
+	Sortable   bool
 	ToOne      bool
 	ToMany     bool
 	HasMany    bool
@@ -213,8 +195,10 @@ func NewMeta(model Model) *Meta {
 
 		// add comma separated tags
 		for _, tag := range fireTags {
-			if supportedTags.Has(tag) {
-				field.Tags = append(field.Tags, tag)
+			if tag == "filterable" {
+				field.Filterable = true
+			} else if tag == "sortable" {
+				field.Sortable = true
 			} else {
 				panic("Unexpected tag " + tag)
 			}
@@ -228,20 +212,6 @@ func NewMeta(model Model) *Meta {
 	metaCache[modelName] = meta
 
 	return meta
-}
-
-// FieldsByTag returns all fields that contain the passed tag.
-func (m *Meta) FieldsByTag(tag string) []Field {
-	var list []Field
-
-	// find matching fields
-	for _, field := range m.Fields {
-		if field.Tags.Has(tag) {
-			list = append(list, field)
-		}
-	}
-
-	return list
 }
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.

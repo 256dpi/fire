@@ -53,27 +53,27 @@ func TestMeta(t *testing.T) {
 		PluralName: "posts",
 		Fields: []Field{
 			{
-				Name:     "Title",
-				Type:     reflect.String,
-				JSONName: "title",
-				BSONName: "title",
-				Tags:     []string{"filterable", "sortable"},
-				index:    1,
+				Name:       "Title",
+				Type:       reflect.String,
+				JSONName:   "title",
+				BSONName:   "title",
+				Filterable: true,
+				Sortable:   true,
+				index:      1,
 			},
 			{
-				Name:     "Published",
-				Type:     reflect.Bool,
-				JSONName: "published",
-				BSONName: "published",
-				Tags:     []string{"filterable"},
-				index:    2,
+				Name:       "Published",
+				Type:       reflect.Bool,
+				JSONName:   "published",
+				BSONName:   "published",
+				Filterable: true,
+				index:      2,
 			},
 			{
 				Name:     "TextBody",
 				Type:     reflect.String,
 				JSONName: "text-body",
 				BSONName: "text_body",
-				Tags:     []string(nil),
 				index:    3,
 			},
 			{
@@ -82,7 +82,6 @@ func TestMeta(t *testing.T) {
 				JSONName:   "",
 				BSONName:   "",
 				Optional:   false,
-				Tags:       []string(nil),
 				HasMany:    true,
 				RelName:    "comments",
 				RelType:    "comments",
@@ -95,7 +94,6 @@ func TestMeta(t *testing.T) {
 				JSONName:   "",
 				BSONName:   "",
 				Optional:   false,
-				Tags:       []string(nil),
 				HasMany:    true,
 				RelName:    "selections",
 				RelType:    "selections",
@@ -117,7 +115,6 @@ func TestMeta(t *testing.T) {
 				Type:     reflect.String,
 				JSONName: "message",
 				BSONName: "message",
-				Tags:     []string(nil),
 				index:    1,
 			},
 			{
@@ -126,7 +123,6 @@ func TestMeta(t *testing.T) {
 				JSONName: "",
 				BSONName: "parent",
 				Optional: true,
-				Tags:     []string(nil),
 				ToOne:    true,
 				RelName:  "parent",
 				RelType:  "comments",
@@ -137,7 +133,6 @@ func TestMeta(t *testing.T) {
 				Type:     reflect.String,
 				JSONName: "",
 				BSONName: "post_id",
-				Tags:     []string(nil),
 				ToOne:    true,
 				RelName:  "post",
 				RelType:  "posts",
@@ -146,27 +141,6 @@ func TestMeta(t *testing.T) {
 		},
 		model: comment.Meta().model,
 	}, comment.Meta())
-}
-
-func TestMetaFieldsByTag(t *testing.T) {
-	assert.Equal(t, []Field{
-		{
-			Name:     "Title",
-			Type:     reflect.String,
-			JSONName: "title",
-			BSONName: "title",
-			Tags:     []string{"filterable", "sortable"},
-			index:    1,
-		},
-		{
-			Name:     "Published",
-			Type:     reflect.Bool,
-			JSONName: "published",
-			BSONName: "published",
-			Tags:     []string{"filterable"},
-			index:    2,
-		},
-	}, Init(&Post{}).Meta().FieldsByTag("filterable"))
 }
 
 func TestMetaMake(t *testing.T) {
