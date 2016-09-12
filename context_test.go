@@ -32,3 +32,31 @@ func TestContextOriginal(t *testing.T) {
 	assert.Equal(t, savedPost.ID(), model.ID())
 	assert.Equal(t, savedPost.Get("Title"), model.Get("Title"))
 }
+
+func TestContextOriginalWrongAction(t *testing.T) {
+	ctx := &Context{
+		Action: Find,
+	}
+
+	assert.Panics(t, func() {
+		ctx.Original()
+	})
+}
+
+func TestContextOriginalNonExisting(t *testing.T) {
+	db := getCleanDB()
+
+	post := Init(&Post{
+		Title: "foo",
+	}).(*Post)
+
+	ctx := &Context{
+		Action: Update,
+		Model:  post,
+		DB:     db,
+	}
+
+	model, err := ctx.Original()
+	assert.Error(t, err)
+	assert.Nil(t, model)
+}
