@@ -721,45 +721,49 @@ func TestSorting(t *testing.T) {
 	})
 }
 
-//func TestSparseFieldsets(t *testing.T) {
-//	server, db := buildServer()
-//
-//	// create posts
-//	post := saveModel(db, &Post{
-//		Title: "Post 1",
-//	}).ID().Hex()
-//
-//	r := gofight.New()
-//
-//	// get posts with single value filter
-//	testRequest(server, "GET", "/posts/"+post+"?fields[posts]=title").
-//		RunEcho(server, func(r *test.ResponseRecorder, rq engine.Request) {
-//			assert.Equal(t, http.StatusOK, r.Status())
-//			assert.JSONEq(t, `{
-//				"data": {
-//					"type": "posts",
-//					"id": "`+post+`",
-//					"attributes": {
-//						"title": "Post 1"
-//					},
-//					"relationships": {
-//						"comments": {
-//							"links": {
-//								"self": "/posts/`+post+`/relationships/comments",
-//								"related": "/posts/`+post+`/comments"
-//							}
-//						},
-//						"selections": {
-//							"links": {
-//								"self": "/posts/`+post+`/relationships/selections",
-//								"related": "/posts/`+post+`/selections"
-//							}
-//						}
-//					}
-//				}
-//			}`, r.Body.String())
-//		})
-//}
+func TestSparseFieldsets(t *testing.T) {
+	server, db := buildServer()
+
+	// create posts
+	post := saveModel(db, &Post{
+		Title: "Post 1",
+	}).ID().Hex()
+
+	// get posts with single value filter
+	testRequest(server, "GET", "/posts/"+post+"?fields[posts]=title", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post+`",
+				"attributes": {
+					"title": "Post 1"
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+post+`/relationships/comments",
+							"related": "/posts/`+post+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+post+`/relationships/selections",
+							"related": "/posts/`+post+`/selections"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+post+`"
+			}
+		}`, r.Body.String())
+	})
+}
 
 func TestHasManyRelationship(t *testing.T) {
 	server, db := buildServer()
