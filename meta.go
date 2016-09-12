@@ -7,11 +7,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var metaCache map[string]*Meta
-
-func init() {
-	metaCache = make(map[string]*Meta)
-}
+var metaCache = make(map[string]*Meta)
 
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(bson.ObjectId(""))
