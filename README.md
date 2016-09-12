@@ -36,7 +36,6 @@ _The framework is still WIP and the API may be changed._
   - [Built-in Callbacks](#built-in-callbacks)
 - [Sets](#sets)
 - [Applications](#applications)
-  - [Middlewares](#middlewares)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -360,26 +359,6 @@ app.Start("0.0.0.0:4242")
 ```
 
 An application can be started using `app.Start()` or `app.SecureStart()`.
-
-### Middlewares
-
-Every application comes with a built-in set of standard middlewares and security features that can be customized. By default an application uses cross-origin resource sharing, a body limiter, compression and common security features like XSS protection.
-
-All middlewares can be configure using the following functions:
-
-```go
-app.SetAllowedOrigins(origins ...string)
-app.AddAllowedHeaders(headers ...string)
-app.DisableCORS(origins ...string)
-app.SetBodyLimit(size string)
-app.ForceEncryption()
-app.DisableCommonSecurity()
-app.DisableCompression()
-app.DisableRecovery()
-app.EnableMethodOverriding()
-```
-
-More information can be found in the [docs](https://godoc.org/github.com/gonfire/fire#Application.AddAllowedHeaders).
 
 ## License
 
