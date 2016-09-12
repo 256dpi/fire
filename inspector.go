@@ -30,6 +30,7 @@ func DefaultInspector() *Inspector {
 func (i *Inspector) Register(router *echo.Echo) {
 	i.inspectRoutingTable(router)
 	router.Use(i.requestLogger)
+	router.SetHTTPErrorHandler(i.errorHandler)
 }
 
 func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
@@ -84,4 +85,8 @@ func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return nil
 	}
+}
+
+func (i *Inspector) errorHandler(err error, ctx echo.Context) {
+	fmt.Fprintf(i.Writer, "   ERR  \"%s\"\n", err)
 }
