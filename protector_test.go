@@ -8,6 +8,9 @@ import (
 
 func TestProtector(t *testing.T) {
 	p := DefaultProtector()
+	p.AllowMethodOverriding = true
+	p.OverrideXFrameOptions = "DENY"
+
 	r := echo.New()
 
 	p.Register(r)
