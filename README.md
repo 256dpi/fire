@@ -26,6 +26,7 @@ _The framework is still WIP and the API may be changed._
   - [Helpers](#helpers)
   - [Validation](#validation)
   - [Filtering & Sorting](#filtering-&-sorting)
+  - [Sparse Fieldsets](#sparse-fieldsets)
   - [To One Relationships](#to-one-relationships)
   - [To Many Relationships](#to-many-relationships)
   - [Has Many Relationships](#has-many-relationships)
@@ -203,9 +204,17 @@ type Post struct {
 }
 ```
 
-Filters can be activated using the `/foos?filter[field]=bar` query parameter while sorting can be specified with the `/foos?sort=field` (ascending) or `/foos?sort=-field` (descending) query parameter.
+Filters can be activated using the `/posts?filter[published]=true` query parameter while sorting can be specified with the `/posts?sort=created-at` (ascending) or `/posts?sort=-created-at` (descending) query parameter.
+
+_Note: `true` and `false` are automatically converted to boolean values if the field has the `bool` type._
 
 More information about filtering and sorting can be found here: <http://jsonapi.org/format/#fetching-sorting>.
+
+### Sparse Fieldsets
+
+Sparse Fieldsets are automatically supported on all responses an can be activated using the `/posts?fields[posts]=bar` query parameter.
+
+More information about sparse fieldsets can be found here: <http://jsonapi.org/format/#fetching-sparse-fieldsets>.
 
 ### To One Relationships
 
