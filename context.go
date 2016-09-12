@@ -25,13 +25,13 @@ type Context struct {
 	// The current action in process.
 	Action Action
 
-	// The Model that will be saved during Create or Update.
-	Model Model
-
 	// The query that will be used during FindAll, FindOne, Update or Delete.
 	// On FindOne, Update and Delete, the "_id" key is preset to the document ID.
 	// On FindAll all field filters and relationship filters are preset.
 	Query bson.M
+
+	// The Model that will be saved during Create or Update.
+	Model Model
 
 	// The sorting that will be used during FindAll.
 	Sorting []string
@@ -39,7 +39,7 @@ type Context struct {
 	// The db used to query.
 	DB *mgo.Database
 
-	// The underlying JSON API request in progress.
+	// The underlying JSON API request.
 	Request *jsonapi.Request
 
 	// The underlying echo context.
