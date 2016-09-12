@@ -2,6 +2,8 @@ language: go
 go:
   - 1.7
   - tip
+services:
+  - mongodb
 before_install:
   - go get github.com/modocache/gover
   - go get github.com/mattn/goveralls
