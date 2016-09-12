@@ -9,7 +9,7 @@ import (
 
 type post struct {
 	fire.Base `json:"-" bson:",inline" fire:"posts"`
-	Title     string `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	Title     string `json:"title" valid:"required" fire:"filterable,sortable"`
 }
 
 func main() {
