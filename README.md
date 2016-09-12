@@ -2,7 +2,7 @@
 
 # fire
 
-[![Circle CI](https://img.shields.io/circleci/project/gonfire/fire.svg)](https://circleci.com/gh/gonfire/fire)
+[![Build Status](https://travis-ci.org/gonfire/fire.svg?branch=master)](https://travis-ci.org/gonfire/fire)
 [![Coverage Status](https://coveralls.io/repos/gonfire/fire/badge.svg?branch=master&service=github)](https://coveralls.io/github/gonfire/fire?branch=master)
 [![GoDoc](https://godoc.org/github.com/gonfire/fire?status.svg)](http://godoc.org/github.com/gonfire/fire)
 [![Release](https://img.shields.io/github/release/gonfire/fire.svg)](https://github.com/gonfire/fire/releases)
