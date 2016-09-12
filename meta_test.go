@@ -8,13 +8,26 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type malformedBase struct {
-	Base `json:"-" bson:",inline" fire:""`
+type malformedBase1 struct {
+	Base
+}
+
+type malformedBase2 struct {
+	Base `json:"-"`
+}
+
+type malformedBase3 struct {
+	Base `json:"-" bson:",inline"`
 }
 
 type malformedToOne struct {
 	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Foo  bson.ObjectId `fire:"foo:foo:foo"`
+}
+
+type malformedToMany struct {
+	Base `json:"-" bson:",inline" fire:"foo:foos"`
+	Foo  []bson.ObjectId `fire:"foo:foo:foo"`
 }
 
 type malformedHasMany struct {
@@ -29,11 +42,23 @@ type unexpectedTag struct {
 
 func TestNewMeta(t *testing.T) {
 	assert.Panics(t, func() {
-		NewMeta(&malformedBase{})
+		NewMeta(&malformedBase1{})
+	})
+
+	assert.Panics(t, func() {
+		NewMeta(&malformedBase2{})
+	})
+
+	assert.Panics(t, func() {
+		NewMeta(&malformedBase3{})
 	})
 
 	assert.Panics(t, func() {
 		NewMeta(&malformedToOne{})
+	})
+
+	assert.Panics(t, func() {
+		NewMeta(&malformedToMany{})
 	})
 
 	assert.Panics(t, func() {

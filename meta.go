@@ -78,11 +78,6 @@ func NewMeta(model Model) *Meta {
 		if structField.Type == baseType {
 			baseTag := strings.Split(fireStructTag, ":")
 
-			// check tag
-			if len(baseTag) > 2 || baseTag[0] == "" {
-				panic(`Expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
-			}
-
 			// check json tag
 			if structField.Tag.Get("json") != "-" {
 				panic(`Expected to find a tag of the form json:"-" on Base`)
@@ -91,6 +86,11 @@ func NewMeta(model Model) *Meta {
 			// check bson tag
 			if structField.Tag.Get("bson") != ",inline" {
 				panic(`Expected to find a tag of the form bson:",inline" on Base`)
+			}
+
+			// check tag
+			if len(baseTag) > 2 || baseTag[0] == "" {
+				panic(`Expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
 			}
 
 			// infer plural and collection names
