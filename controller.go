@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/gonfire/jsonapi"
+	"github.com/gonfire/jsonapi/adapter"
 	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -64,18 +65,21 @@ func (c *Controller) register(router *echo.Echo, prefix string) {
 }
 
 func (c *Controller) generalHandler(e echo.Context) error {
+	r := adapter.BridgeRequest(e.Request())
+	w := adapter.BridgeResponse(e.Response())
+
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(e.Request(), c.set.prefix)
+	req, err := jsonapi.ParseRequest(r, c.set.prefix)
 	if err != nil {
-		return jsonapi.WriteError(e.Response(), err)
+		return jsonapi.WriteError(w, err)
 	}
 
 	// parse body if available
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		doc, err = jsonapi.ParseBody(e.Request().Body())
+		doc, err = jsonapi.ParseDocument(e.Request().Body())
 		if err != nil {
-			return jsonapi.WriteError(e.Response(), err)
+			return jsonapi.WriteError(w, err)
 		}
 	}
 
@@ -121,13 +125,15 @@ func (c *Controller) generalHandler(e echo.Context) error {
 
 	// write any left over errors
 	if err != nil {
-		return jsonapi.WriteError(e.Response(), err)
+		return jsonapi.WriteError(w, err)
 	}
 
 	return nil
 }
 
 func (c *Controller) listResources(ctx *Context) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// prepare query
 	ctx.Query = bson.M{}
 
@@ -149,10 +155,12 @@ func (c *Controller) listResources(ctx *Context) error {
 	}
 
 	// write result
-	return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
+	return jsonapi.WriteResources(w, http.StatusOK, resources, links)
 }
 
 func (c *Controller) findResource(ctx *Context) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -171,10 +179,12 @@ func (c *Controller) findResource(ctx *Context) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
+	return jsonapi.WriteResource(w, http.StatusOK, resource, links)
 }
 
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
@@ -225,10 +235,12 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusCreated, resource, links)
+	return jsonapi.WriteResource(w, http.StatusCreated, resource, links)
 }
 
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
@@ -264,7 +276,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// write result
-	return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
+	return jsonapi.WriteResource(w, http.StatusOK, resource, links)
 }
 
 func (c *Controller) deleteResource(ctx *Context) error {
@@ -301,6 +313,8 @@ func (c *Controller) deleteResource(ctx *Context) error {
 }
 
 func (c *Controller) getRelatedResources(ctx *Context) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -358,7 +372,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 				id = oid.Hex()
 			} else {
 				// write empty response
-				return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, nil, links)
+				return jsonapi.WriteResource(w, http.StatusOK, nil, links)
 			}
 		} else {
 			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
@@ -385,7 +399,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResource(ctx.Echo.Response(), http.StatusOK, resource, links)
+		return jsonapi.WriteResource(w, http.StatusOK, resource, links)
 	}
 
 	// finish to many relationship
@@ -420,7 +434,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
+		return jsonapi.WriteResources(w, http.StatusOK, resources, links)
 	}
 
 	// finish has many relationship
@@ -470,13 +484,15 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// write result
-		return jsonapi.WriteResources(ctx.Echo.Response(), http.StatusOK, resources, links)
+		return jsonapi.WriteResources(w, http.StatusOK, resources, links)
 	}
 
 	return nil
 }
 
 func (c *Controller) getRelationship(ctx *Context) error {
+	w := adapter.BridgeResponse(ctx.Echo.Response())
+
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -493,7 +509,7 @@ func (c *Controller) getRelationship(ctx *Context) error {
 	relationship := resource.Relationships[ctx.Request.Relationship]
 
 	// write result
-	return jsonapi.WriteResponse(ctx.Echo.Response(), http.StatusOK, relationship)
+	return jsonapi.WriteResponse(w, http.StatusOK, relationship)
 }
 
 func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error {
@@ -757,7 +773,7 @@ func (c *Controller) loadModels(ctx *Context) error {
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
-	err := jsonapi.MapToStruct(res.Attributes, ctx.Model)
+	err := res.Attributes.Assign(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -862,7 +878,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 	resource := &jsonapi.Resource{
 		Type:          c.Model.Meta().PluralName,
 		ID:            model.ID().Hex(),
-		Attributes:    model,
+		Attributes:    jsonapi.StructToMap(model, ctx.Request.Fields[c.Model.Meta().PluralName]),
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 

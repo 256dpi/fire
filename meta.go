@@ -99,8 +99,20 @@ func NewMeta(model Model) *Meta {
 		// check if field is the Base
 		if structField.Type == baseType {
 			baseTag := strings.Split(fireStructTag, ":")
+
+			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
 				panic(`Expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
+			}
+
+			// check json tag
+			if structField.Tag.Get("json") != "-" {
+				panic(`Expected to find a tag of the form json:"-" on Base`)
+			}
+
+			// check bson tag
+			if structField.Tag.Get("bson") != ",inline" {
+				panic(`Expected to find a tag of the form bson:",inline" on Base`)
 			}
 
 			// infer plural and collection names
@@ -140,6 +152,7 @@ func NewMeta(model Model) *Meta {
 		// check if field is a valid to one relationship
 		if structField.Type == toOneType || structField.Type == optionalToOneType {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
 					panic("Expected to find a tag of the form fire:\"name:type\" on to one relationship")
 				}
@@ -160,6 +173,7 @@ func NewMeta(model Model) *Meta {
 		// check if field is a valid to many relationship
 		if structField.Type == toManyType {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
 					panic("Expected to find a tag of the form fire:\"name:type\" on to many relationship")
 				}
@@ -179,6 +193,7 @@ func NewMeta(model Model) *Meta {
 
 		// check if field is a valid has many relationship
 		if structField.Type == hasManyType {
+			// check tag
 			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 2 {
 				panic(`Expected to find a tag of the form fire:"name:type:inverse" on has many relationship`)
 			}

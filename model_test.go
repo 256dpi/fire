@@ -8,7 +8,7 @@ import (
 )
 
 type validatableModel struct {
-	Base `fire:"foo:foos"`
+	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Test string `valid:"required"`
 }
 

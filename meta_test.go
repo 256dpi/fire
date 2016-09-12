@@ -9,21 +9,21 @@ import (
 )
 
 type malformedBase struct {
-	Base `fire:""`
+	Base `json:"-" bson:",inline" fire:""`
 }
 
 type malformedToOne struct {
-	Base `fire:"foo:foos"`
+	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Foo  bson.ObjectId `fire:"foo:foo:foo"`
 }
 
 type malformedHasMany struct {
-	Base `fire:"foo:foos"`
+	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Foo  HasMany
 }
 
 type unexpectedTag struct {
-	Base `fire:"foo:foos"`
+	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Foo  string `fire:"foo"`
 }
 

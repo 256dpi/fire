@@ -1,12 +1,16 @@
-hash: c0985f6bf49f7a7e3b7120513747ebeb20befe75b4965b1ae2b91e83e92c302d
-updated: 2016-09-07T20:33:24.888755194+02:00
+hash: 847be0b5369f863fd8a31cfd424ac8c22a34b97a989268096b52f5594f9bb7e9
+updated: 2016-09-12T10:06:51.064085315+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+- name: github.com/fatih/structs
+  version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gonfire/jsonapi
-  version: c1a5edbd10942e206f44514e5062f331a73ad94f
+  version: 464a3795378ba788b08e3e6cfc31ca773bd8b874
+  subpackages:
+  - adapter
 - name: github.com/labstack/echo
   version: fbcdf70c52c155ae9aa58e72ee0532fa2f1cad2e
   subpackages:

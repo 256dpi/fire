@@ -3,7 +3,7 @@ package main
 import "github.com/gonfire/fire"
 
 type post struct {
-	fire.Base `bson:",inline" fire:"posts"`
+	fire.Base `json:"-" bson:",inline" fire:"posts"`
 	Title     string `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
 }
 

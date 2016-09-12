@@ -6,6 +6,7 @@ import:
   subpackages:
   - bson
 - package: github.com/gonfire/jsonapi
+  version: ^0.3.0
 - package: github.com/labstack/echo
   version: ^2.0.2
 testImport:
