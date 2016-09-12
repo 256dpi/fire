@@ -78,25 +78,37 @@ type Comment struct {
 }
 ```
 
-Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are combined to a `ControllerGroup` that provides the necessary interconnection and integration with applications:
+Every resource is managed by a `Controller` which provides the JSON API compliant interface:
 
 ```go
-group := fire.NewControllerGroup(db, "api")
+pool := NewClonePool("mongodb://localhost/my-app")
 
-group.Add(&fire.Controller{
+postsController := &fire.Controller{
     Model: &Post{},
-}, &fire.Controller{
+    Pool: pool,
+}
+
+commentsController := &fire.Controller{
     Model: &Comment{},
-})
+    Pool: pool,
+}
+```
+
+A `NewClonePool()` returns a `Pool` that manages access to the database for the controllers. 
+ 
+In a next step, multiple controllers are combined to a `ControllerGroup` that provides the necessary interconnection and integration with applications:
+
+```go
+group := fire.NewControllerGroup("api")
+
+group.Add(postsController)
+group.Add(commentsController)
 ```
 
 To lower configuration overhead fire provides the `Application` construct which manages all the details around your API and is able to mount the `ControllerGroup` and other components of an application:
 
 ```go
-app := fire.New("mongodb://localhost/my-fire-app", "api")
-
-app.EnableCORS("http://0.0.0.0:4000")
-app.EnableBodyLimit()
+app := fire.New()
 
 app.Mount(group)
 
@@ -269,11 +281,13 @@ This section describes the construction of controllers that expose the models as
 
 ### Basics
 
-Controllers are declared by creating a `Controller` and providing a reference to the `Model`:
+Controllers are declared by creating a `Controller` and providing a reference to the `Model` and a pool to obtain database connections from:
 
 ```go
 postsController := &fire.Controller{
     Model: &Post{},
+    Pool: pool,
+    // ...
 }
 ```
 
@@ -328,27 +342,24 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Controller Groups
 
-Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `fire.NewControllerGroup()` with a reference to a database and the URL prefix while controllers are added using `Add()`:
+Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `fire.NewControllerGroup()` with a URL prefix while controllers are added using `Add()`:
 
 ```go
-group := fire.NewControllerGroup(db, "api")
+group := fire.NewControllerGroup("api")
 
-group.Add(&fire.Controller{
-    Model: &Post{},
-    // ...
-})
+group.Add(myController)
 
 group.Regsiter(router)
 ````
 
-Finally, the group can be registered on a standard echo router using `Register()`.
+Optionally, the group can be directly registered on a standard echo router using `Register()`.
 
 ## Applications
 
-Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` with a MongoDB URI and the full URL prefix while components are mounted using `Mount()`:
+Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` while components are mounted using `Mount()`:
 
 ```go
-app := fire.New("mongodb://localhost/my-fire-app", "api")
+app := fire.New(")
 
 app.Mount(group)
 
