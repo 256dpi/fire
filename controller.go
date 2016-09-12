@@ -1067,14 +1067,14 @@ func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonap
 	// prepare resources
 	resources := make([]*jsonapi.Resource, 0, slice.Len())
 
-	// create resource
+	// create resources
 	for i := 0; i < slice.Len(); i++ {
-		_resources, err := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
+		resource, err := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
 		if err != nil {
 			return nil, err
 		}
 
-		resources = append(resources, _resources)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
