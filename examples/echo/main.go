@@ -25,11 +25,11 @@ func main() {
 	// create router
 	router := echo.New()
 
-	// create a new controller set
-	set := fire.NewSet(sess, router, "api")
+	// create a new controller group
+	group := fire.NewControllerGroup(sess, "api")
 
 	// create and mount controller
-	set.Mount(&fire.Controller{
+	group.Add(&fire.Controller{
 		Model: &post{},
 	})
 

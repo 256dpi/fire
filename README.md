@@ -78,19 +78,19 @@ type Comment struct {
 }
 ```
 
-Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers can then be mounted on an `Set` that provides the necessary interconnection and integration in existing echo applications:
+Every resource is managed by a `Controller` which provides the JSON API compliant interface. Multiple controllers are combined to a `ControllerGroup` that provides the necessary interconnection and integration with applications:
 
 ```go
-set := fire.NewSet(db, router, "api")
+group := fire.NewControllerGroup(db, "api")
 
-set.Mount(&fire.Controller{
+group.Add(&fire.Controller{
     Model: &Post{},
 }, &fire.Controller{
     Model: &Comment{},
 })
 ```
 
-To lower configuration overhead fire provides the `Application` construct that manages all the details around your API:
+To lower configuration overhead fire provides the `Application` construct which manages all the details around your API and is able to mount the `ControllerGroup` and other components of an application:
 
 ```go
 app := fire.New("mongodb://localhost/my-fire-app", "api")
@@ -98,11 +98,7 @@ app := fire.New("mongodb://localhost/my-fire-app", "api")
 app.EnableCORS("http://0.0.0.0:4000")
 app.EnableBodyLimit()
 
-app.Mount(&fire.Controller{
-    Model: &Post{},
-}, &fire.Controller{
-    Model: &Comment{},
-})
+app.Mount(group)
 
 app.Start("0.0.0.0:4000")
 ```
@@ -330,29 +326,31 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire#VerifyReferencesValidator)
 - [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire#MatchingReferencesValidator)
 
-## Sets
+## Controller Groups
 
-Sets provide the necessary interconnection between controllers and the integration into existing echo applications. A `Set` can be created by calling `fire.NewSet()` with a reference to a database, an echo instance and the full URL prefix while controllers are mounted using `Mount()`:
+Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `fire.NewControllerGroup()` with a reference to a database and the URL prefix while controllers are added using `Add()`:
 
 ```go
-set := fire.New(db, router, "api")
+group := fire.NewControllerGroup(db, "api")
 
-set.Mount(&fire.Controller{
+group.Add(&fire.Controller{
     Model: &Post{},
     // ...
 })
+
+group.Regsiter(router)
 ````
+
+Finally, the group can be registered on a standard echo router using `Register()`.
+
 ## Applications
 
-Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` with a MongoDB URI and the full URL prefix while controllers are mounted using `Mount()`:
+Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` with a MongoDB URI and the full URL prefix while components are mounted using `Mount()`:
 
 ```go
 app := fire.New("mongodb://localhost/my-fire-app", "api")
 
-app.Mount(&fire.Controller{
-    Model: &Post{},
-    // ...
-})
+app.Mount(group)
 
 app.Start("0.0.0.0:4242")
 ```

@@ -61,13 +61,18 @@ func DefaultPolicy() Policy {
 	}
 }
 
+// A Component can be mounted on an application.
+type Component interface {
+	Register(router *echo.Echo)
+}
+
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
-	set     *Set
-	policy  Policy
-	router  *echo.Echo
-	session *mgo.Session
+	components []Component
+	policy     Policy
+	router     *echo.Echo
+	session    *mgo.Session
 
 	enableDevMode bool
 }
@@ -83,11 +88,7 @@ func New(mongoURI, prefix string) *Application {
 		panic(err)
 	}
 
-	// create controller set
-	set := NewSet(sess, router, prefix)
-
 	return &Application{
-		set:     set,
 		policy:  DefaultPolicy(),
 		router:  router,
 		session: sess,
@@ -101,11 +102,12 @@ func (a *Application) SetPolicy(policy Policy) {
 	a.policy = policy
 }
 
-// Mount will add controllers to the set and register them on the router.
+// Mount will mount the passed Component in the application using the passed
+// prefix.
 //
-// Note: Each controller should only be mounted once before calling Run or Start.
-func (a *Application) Mount(controllers ...*Controller) {
-	a.set.Mount(controllers...)
+// Note: Each component should only be mounted once before calling Run or Start.
+func (a *Application) Mount(component Component) {
+	component.Register(a.router)
 }
 
 // CloneSession will return a freshly cloned session.

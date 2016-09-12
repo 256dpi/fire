@@ -35,21 +35,17 @@ type Selection struct {
 var session *mgo.Session
 
 func init() {
-	// connect to local mongodb
 	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
 	if err != nil {
 		panic(err)
 	}
 
-	// store session globally
 	session = sess
 }
 
 func getDB() (*mgo.Session, *mgo.Database) {
-	// get db
 	db := session.DB("")
 
-	// clean database by removing all documents
 	db.C("posts").RemoveAll(nil)
 	db.C("comments").RemoveAll(nil)
 	db.C("selections").RemoveAll(nil)
@@ -58,17 +54,11 @@ func getDB() (*mgo.Session, *mgo.Database) {
 }
 
 func buildServer() (*echo.Echo, *mgo.Database) {
-	// get db
 	sess, db := getDB()
-
-	// create router
 	router := echo.New()
+	group := NewControllerGroup(sess, "")
 
-	// create set
-	set := NewSet(sess, router, "")
-
-	// add controllers
-	set.Mount(&Controller{
+	group.Add(&Controller{
 		Model: &Post{},
 	}, &Controller{
 		Model: &Comment{},
@@ -76,7 +66,8 @@ func buildServer() (*echo.Echo, *mgo.Database) {
 		Model: &Selection{},
 	})
 
-	// return router
+	group.Register(router)
+
 	return router, db
 }
 

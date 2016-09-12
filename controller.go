@@ -27,7 +27,7 @@ type Controller struct {
 	// return a Bad Request status if an user error is returned.
 	Validator Callback
 
-	set *Set
+	group *ControllerGroup
 }
 
 func (c *Controller) register(router *echo.Echo, prefix string) {
@@ -69,7 +69,7 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	w := adapter.BridgeResponse(e.Response())
 
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(r, c.set.prefix)
+	req, err := jsonapi.ParseRequest(r, c.group.prefix)
 	if err != nil {
 		return jsonapi.WriteError(w, err)
 	}
@@ -339,7 +339,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := c.set.controllers[pluralName]
+	relatedController := c.group.controllers[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -659,7 +659,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 }
 
 func (c *Controller) buildContext(action Action, req *jsonapi.Request, e echo.Context) *Context {
-	sess, db := c.set.sessionAndDatabase()
+	sess, db := c.group.sessionAndDatabase()
 
 	return &Context{
 		Action:  action,
@@ -887,7 +887,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 	}
 
 	// generate base link
-	base := c.set.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := c.group.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
@@ -954,7 +954,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := c.set.controllers[field.RelType]
+			relatedController := c.group.controllers[field.RelType]
 
 			// check existence
 			if relatedController == nil {
