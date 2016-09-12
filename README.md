@@ -34,7 +34,7 @@ _The framework is still WIP and the API may be changed._
   - [Basics](#basics-1)
   - [Callbacks](#callbacks)
   - [Built-in Callbacks](#built-in-callbacks)
-- [Sets](#sets)
+- [Controller Groups](#controller-groups)
 - [Applications](#applications)
 - [License](#license)
 
