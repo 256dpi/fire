@@ -269,7 +269,7 @@ This section describes the construction of controllers that expose the models as
 
 ### Basics
 
-Controllers are declared by creating an instance of the `Controller` type and providing a reference to the `Model`:
+Controllers are declared by creating a `Controller` and providing a reference to the `Model`:
 
 ```go
 postsController := &fire.Controller{
