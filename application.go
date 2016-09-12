@@ -2,33 +2,74 @@ package fire
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
 	"gopkg.in/mgo.v2"
 )
 
+// A Policy provides the security policy under which an applications is
+// operating.
+type Policy struct {
+	// BodyLimit defines the maximum size of a request body in the form of 4K,
+	// 2M, 1G or 1P.
+	BodyLimit string
+
+	// AllowMethodOverriding will allow the usage of the X-HTTP-Method-Override
+	// header to set a request method when using the POST method.
+	AllowMethodOverriding bool
+
+	// AllowedCORSOrigins specifies the allowed origins when CORS.
+	AllowedCORSOrigins []string
+
+	// AllowedCORSHeaders specifies the allowed headers when CORS.
+	AllowedCORSHeaders []string
+
+	// AllowedCORSMethods specifies the allowed methods when CORS.
+	AllowedCORSMethods []string
+
+	// OverrideXFrameOptions can be set to override the default value
+	// "SAMEORIGIN" for the "X-Frame-Option" header.
+	OverrideXFrameOptions string
+
+	// DisableAutomaticRecover will turn of automatic recover for panics.
+	DisableAutomaticRecovery bool
+}
+
+// DefaultPolicy returns the default policy used by newly created applications.
+func DefaultPolicy() Policy {
+	return Policy{
+		BodyLimit:             "4K",
+		AllowMethodOverriding: false,
+		AllowedCORSOrigins: []string{
+			"*",
+		},
+		AllowedCORSHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAuthorization,
+		},
+		AllowedCORSMethods: []string{
+			echo.GET,
+			echo.POST,
+			echo.PATCH,
+			echo.DELETE,
+		},
+	}
+}
+
 // An Application provides an out-of-the-box configuration of components to
 // get started with building JSON APIs.
 type Application struct {
 	set     *Set
+	policy  Policy
 	router  *echo.Echo
 	session *mgo.Session
 
-	bodyLimit      string
-	allowedOrigins []string
-	allowedHeaders []string
-
-	forceEncryption        bool
-	disableCORS            bool
-	disableCompression     bool
-	disableRecovery        bool
-	disableCommonSecurity  bool
-	enableMethodOverriding bool
-	enableDevMode          bool
+	enableDevMode bool
 }
 
 // New creates and returns a new Application.
@@ -46,29 +87,25 @@ func New(mongoURI, prefix string) *Application {
 	set := NewSet(sess, router, prefix)
 
 	return &Application{
-		set:            set,
-		router:         router,
-		session:        sess,
-		bodyLimit:      "4K",
-		allowedOrigins: []string{"*"},
-		allowedHeaders: []string{
-			echo.HeaderOrigin,
-			echo.HeaderContentType,
-			echo.HeaderAuthorization,
-		},
+		set:     set,
+		policy:  DefaultPolicy(),
+		router:  router,
+		session: sess,
 	}
+}
+
+// SetPolicy will set a new policy.
+//
+// Note: This method must be called before calling Run or Start.
+func (a *Application) SetPolicy(policy Policy) {
+	a.policy = policy
 }
 
 // Mount will add controllers to the set and register them on the router.
 //
-// Note: Each controller should only be mounted once.
+// Note: Each controller should only be mounted once before calling Run or Start.
 func (a *Application) Mount(controllers ...*Controller) {
 	a.set.Mount(controllers...)
-}
-
-// Router will return the internally used echo instance.
-func (a *Application) Router() *echo.Echo {
-	return a.router
 }
 
 // CloneSession will return a freshly cloned session.
@@ -76,72 +113,6 @@ func (a *Application) Router() *echo.Echo {
 // Note: You need to close the session when finished.
 func (a *Application) CloneSession() *mgo.Session {
 	return a.session.Clone()
-}
-
-// ForceEncryption will make the application enforce and only respond to
-// encrypted requests.
-//
-// Note: ForceEncryption will be automatically enabled when calling SecureStart.
-func (a *Application) ForceEncryption() {
-	a.forceEncryption = true
-}
-
-// EnableMethodOverriding will enable the usage of the X-HTTP-Method-Override
-// header to set a request method when using the POST method.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) EnableMethodOverriding() {
-	a.enableMethodOverriding = true
-}
-
-// SetBodyLimit can be used to override the default body limit of 4K with a new
-// value in the form of 4K, 2M, 1G or 1P.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) SetBodyLimit(size string) {
-	a.bodyLimit = size
-}
-
-// SetAllowedOrigins will replace the default allowed origin set `*`.
-func (a *Application) SetAllowedOrigins(origins ...string) {
-	a.allowedOrigins = origins
-}
-
-// AddAllowedHeaders will allow additional headers.
-func (a *Application) AddAllowedHeaders(headers ...string) {
-	a.allowedHeaders = append(a.allowedHeaders, headers...)
-}
-
-// DisableCORS will turn off CORS support.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) DisableCORS(origins ...string) {
-	a.disableCORS = true
-}
-
-// DisableCompression will turn of gzip compression.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) DisableCompression() {
-	a.disableCompression = true
-}
-
-// DisableRecovery will disable the automatic recover mechanism.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) DisableRecovery() {
-	a.disableRecovery = true
-}
-
-// DisableCommonSecurity will disable common security features including:
-// protection against cross-site scripting attacks by setting the
-// `X-XSS-Protection` header, protection against overriding Content-Type
-// header by setting the `X-Content-Type-Options` header and protection against
-// clickjacking by setting the `X-Frame-Options` header.
-//
-// Note: This method must be called before calling Run or Start.
-func (a *Application) DisableCommonSecurity() {
-	a.disableCommonSecurity = true
 }
 
 // EnableDevMode will enable the development mode that prints all registered
@@ -152,93 +123,100 @@ func (a *Application) EnableDevMode() {
 
 // Start will run the application on the specified address.
 func (a *Application) Start(addr string) {
-	a.run(standard.New(addr))
+	a.prepare()
+	a.printDevInfo()
+	a.router.Run(standard.New(addr))
 }
 
 // SecureStart will run the application on the specified address using a TLS
 // certificate.
 func (a *Application) SecureStart(addr, certFile, keyFile string) {
-	a.forceEncryption = true
-
-	a.run(standard.WithTLS(addr, certFile, keyFile))
+	a.prepare()
+	a.printDevInfo()
+	a.router.Run(standard.WithTLS(addr, certFile, keyFile))
 }
 
-func (a *Application) run(server engine.Server) {
+func (a *Application) prepare() {
 	// set body limit
-	a.router.Use(middleware.BodyLimit(a.bodyLimit))
+	a.router.Use(middleware.BodyLimit(a.policy.BodyLimit))
 
-	// force encryption
-	if a.forceEncryption {
-		// TODO: register https redirect middleware with next release
-		// a.router.Pre(middleware.HTTPSRedirect())
-	}
-
-	// enable cors
-	if !a.disableCORS {
-		allowedHeaders := a.allowedHeaders
-
-		// add method override header if enabled
-		if a.enableMethodOverriding {
-			allowedHeaders = append(allowedHeaders, echo.HeaderXHTTPMethodOverride)
-		}
-
-		// add cors middleware
-		a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins: a.allowedOrigins,
-			AllowMethods: []string{echo.GET, echo.POST, echo.PATCH, echo.DELETE},
-			AllowHeaders: allowedHeaders,
-			MaxAge:       60,
-		}))
-	}
-
-	// enable gzip compression
-	if !a.disableCompression {
-		a.router.Use(middleware.Gzip())
-	}
-
-	// enable automatic recovery
-	if !a.disableRecovery {
-		a.router.Use(middleware.Recover())
-	}
-
-	// enable common security
-	if !a.disableCommonSecurity {
-		config := middleware.DefaultSecureConfig
-
-		// keep using TLS for 60 minutes on just that domain
-		// TODO: Make that configurable.
-		if a.forceEncryption {
-			config.HSTSMaxAge = 3600
-			config.HSTSExcludeSubdomains = true
-		}
-
-		a.router.Use(middleware.SecureWithConfig(config))
-	}
+	// add gzip compression
+	a.router.Use(middleware.Gzip())
 
 	// enable method overriding
-	if a.enableMethodOverriding {
+	if a.policy.AllowMethodOverriding {
 		a.router.Pre(middleware.MethodOverride())
 	}
 
-	// enable dev mode
-	if a.enableDevMode {
-		a.printInfo()
-		a.router.Use(a.logger)
+	// prepare allowed cors headers
+	allowedHeaders := a.policy.AllowedCORSHeaders
+
+	// add method override header if enabled
+	if a.policy.AllowMethodOverriding {
+		allowedHeaders = append(allowedHeaders, echo.HeaderXHTTPMethodOverride)
 	}
 
-	a.router.Run(server)
+	// add cors middleware
+	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: a.policy.AllowedCORSOrigins,
+		AllowMethods: a.policy.AllowedCORSMethods,
+		AllowHeaders: allowedHeaders,
+		MaxAge:       60,
+	}))
+
+	// enable automatic recovery
+	if !a.policy.DisableAutomaticRecovery {
+		a.router.Use(middleware.Recover())
+	}
+
+	// prepare secure config
+	config := middleware.DefaultSecureConfig
+
+	// override X-Frame-Options if available
+	if len(a.policy.OverrideXFrameOptions) > 0 {
+		config.XFrameOptions = a.policy.OverrideXFrameOptions
+	}
+
+	// TODO: Configure HSTS header.
+
+	// TODO: Force SSL by redirection.
+
+	// add the secure middleware
+	a.router.Use(middleware.SecureWithConfig(config))
+
+	// enable dev mode
+	if a.enableDevMode {
+		a.router.Use(a.logger)
+	}
 }
 
-func (a *Application) printInfo() {
+func (a *Application) printDevInfo() {
+	// return if not enabled
+	if !a.enableDevMode {
+		return
+	}
+
+	// print header
 	fmt.Println("==> Fire application starting...")
 	fmt.Println("==> Registered routes:")
 
-	// TODO: Order routes.
+	// prepare routes
+	var routes []string
 
+	// add all routes as string
 	for _, route := range a.router.Routes() {
-		fmt.Printf("%6s  %-30s\n", route.Method, route.Path)
+		routes = append(routes, fmt.Sprintf("%6s  %-30s", route.Method, route.Path))
 	}
 
+	// sort routes
+	sort.Strings(routes)
+
+	// print routes
+	for _, route := range routes {
+		fmt.Println(route)
+	}
+
+	// print footer
 	fmt.Println("==> Ready to go!")
 }
 
@@ -247,18 +225,24 @@ func (a *Application) logger(next echo.HandlerFunc) echo.HandlerFunc {
 		req := c.Request()
 		res := c.Response()
 
+		// save start
 		start := time.Now()
+
+		// call next handler
 		if err = next(c); err != nil {
 			c.Error(err)
 		}
 
+		// get request duration
 		duration := time.Since(start).String()
 
+		// fix path
 		path := req.URL().Path()
 		if path == "" {
 			path = "/"
 		}
 
+		// log request
 		fmt.Printf("%6s  %-30s  %d  %s\n", req.Method(), path, res.Status(), duration)
 
 		return
