@@ -187,13 +187,13 @@ func (c *Controller) listResources(ctx *Context) error {
 	ctx.Query = bson.M{}
 
 	// load models
-	err := c.loadModels(ctx)
+	slice, err := c.loadModels(ctx)
 	if err != nil {
 		return err
 	}
 
 	// get resources
-	resources, err := c.resourcesForSlice(ctx, ctx.slice)
+	resources, err := c.resourcesForSlice(ctx, slice)
 	if err != nil {
 		return err
 	}
@@ -471,13 +471,13 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// load related models
-		err := relatedController.loadModels(ctx2)
+		slice, err := relatedController.loadModels(ctx2)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2, ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2, slice)
 		if err != nil {
 			return err
 		}
@@ -521,13 +521,13 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// load related models
-		err := relatedController.loadModels(ctx2)
+		slice, err := relatedController.loadModels(ctx2)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2, ctx2.slice)
+		resources, err := relatedController.resourcesForSlice(ctx2, slice)
 		if err != nil {
 			return err
 		}
@@ -771,7 +771,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	return nil
 }
 
-func (c *Controller) loadModels(ctx *Context) error {
+func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// add filters
 	for _, field := range c.Model.Meta().Fields {
 		if field.Filterable {
@@ -802,23 +802,23 @@ func (c *Controller) loadModels(ctx *Context) error {
 	// run authorizer if available
 	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// prepare slice
-	ctx.slice = c.Model.Meta().MakeSlice()
+	slice := c.Model.Meta().MakeSlice()
 
 	// query db
 	err = ctx.DB.C(c.Model.Meta().Collection).Find(ctx.Query).
-		Sort(ctx.Sorting...).All(ctx.slice)
+		Sort(ctx.Sorting...).All(slice)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// initialize slice
-	InitSlice(ctx.slice)
+	InitSlice(slice)
 
-	return nil
+	return slice, nil
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {

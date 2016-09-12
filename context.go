@@ -45,8 +45,6 @@ type Context struct {
 	// The underlying echo context.
 	Echo echo.Context
 
-	slice interface{}
-
 	original Model
 }
 
