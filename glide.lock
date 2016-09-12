@@ -1,5 +1,5 @@
 hash: 847be0b5369f863fd8a31cfd424ac8c22a34b97a989268096b52f5594f9bb7e9
-updated: 2016-09-12T10:06:51.064085315+02:00
+updated: 2016-09-12T13:06:00.834802988+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -8,7 +8,7 @@ imports:
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gonfire/jsonapi
-  version: 464a3795378ba788b08e3e6cfc31ca773bd8b874
+  version: a22393bcaa396a3459f3f8db8d0359c1965b4958
   subpackages:
   - adapter
 - name: github.com/labstack/echo
