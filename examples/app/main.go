@@ -8,13 +8,23 @@ type post struct {
 }
 
 func main() {
-	// create a new app
-	app := fire.New("mongodb://0.0.0.0:27017/fire-test-app", "api")
+	// create pool
+	pool := fire.NewClonePool("mongodb://0.0.0.0:27017/fire-test-echo")
 
-	// create and mount controller
-	app.Mount(&fire.Controller{
+	// create a new app
+	app := fire.New()
+
+	// create a new controller group
+	group := fire.NewControllerGroup("api")
+
+	// add controller
+	group.Add(&fire.Controller{
 		Model: &post{},
+		Pool:  pool,
 	})
+
+	// mount group
+	app.Mount(group)
 
 	// enable dev mode
 	app.EnableDevMode()

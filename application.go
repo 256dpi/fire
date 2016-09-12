@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
-	"gopkg.in/mgo.v2"
 )
 
 // A Policy provides the security policy under which an applications is
@@ -71,27 +70,13 @@ type Component interface {
 type Application struct {
 	components []Component
 	policy     Policy
-	router     *echo.Echo
-	session    *mgo.Session
-
-	enableDevMode bool
+	devMode    bool
 }
 
 // New creates and returns a new Application.
-func New(mongoURI, prefix string) *Application {
-	// create router
-	router := echo.New()
-
-	// connect to database
-	sess, err := mgo.Dial(mongoURI)
-	if err != nil {
-		panic(err)
-	}
-
+func New() *Application {
 	return &Application{
-		policy:  DefaultPolicy(),
-		router:  router,
-		session: sess,
+		policy: DefaultPolicy(),
 	}
 }
 
@@ -107,47 +92,46 @@ func (a *Application) SetPolicy(policy Policy) {
 //
 // Note: Each component should only be mounted once before calling Run or Start.
 func (a *Application) Mount(component Component) {
-	component.Register(a.router)
-}
-
-// CloneSession will return a freshly cloned session.
-//
-// Note: You need to close the session when finished.
-func (a *Application) CloneSession() *mgo.Session {
-	return a.session.Clone()
+	a.components = append(a.components, component)
 }
 
 // EnableDevMode will enable the development mode that prints all registered
 // handlers on boot and all incoming requests.
 func (a *Application) EnableDevMode() {
-	a.enableDevMode = true
+	a.devMode = true
 }
 
 // Start will run the application on the specified address.
 func (a *Application) Start(addr string) {
-	a.prepare()
-	a.printDevInfo()
-	a.router.Run(standard.New(addr))
+	router := echo.New()
+
+	a.prepare(router)
+	a.printDevInfo(router)
+
+	router.Run(standard.New(addr))
 }
 
 // SecureStart will run the application on the specified address using a TLS
 // certificate.
 func (a *Application) SecureStart(addr, certFile, keyFile string) {
-	a.prepare()
-	a.printDevInfo()
-	a.router.Run(standard.WithTLS(addr, certFile, keyFile))
+	router := echo.New()
+
+	a.prepare(router)
+	a.printDevInfo(router)
+
+	router.Run(standard.WithTLS(addr, certFile, keyFile))
 }
 
-func (a *Application) prepare() {
+func (a *Application) prepare(router *echo.Echo) {
 	// set body limit
-	a.router.Use(middleware.BodyLimit(a.policy.BodyLimit))
+	router.Use(middleware.BodyLimit(a.policy.BodyLimit))
 
 	// add gzip compression
-	a.router.Use(middleware.Gzip())
+	router.Use(middleware.Gzip())
 
 	// enable method overriding
 	if a.policy.AllowMethodOverriding {
-		a.router.Pre(middleware.MethodOverride())
+		router.Pre(middleware.MethodOverride())
 	}
 
 	// prepare allowed cors headers
@@ -159,7 +143,7 @@ func (a *Application) prepare() {
 	}
 
 	// add cors middleware
-	a.router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: a.policy.AllowedCORSOrigins,
 		AllowMethods: a.policy.AllowedCORSMethods,
 		AllowHeaders: allowedHeaders,
@@ -168,7 +152,7 @@ func (a *Application) prepare() {
 
 	// enable automatic recovery
 	if !a.policy.DisableAutomaticRecovery {
-		a.router.Use(middleware.Recover())
+		router.Use(middleware.Recover())
 	}
 
 	// prepare secure config
@@ -184,17 +168,22 @@ func (a *Application) prepare() {
 	// TODO: Force SSL by redirection.
 
 	// add the secure middleware
-	a.router.Use(middleware.SecureWithConfig(config))
+	router.Use(middleware.SecureWithConfig(config))
 
 	// enable dev mode
-	if a.enableDevMode {
-		a.router.Use(a.logger)
+	if a.devMode {
+		router.Use(a.logger)
+	}
+
+	// register components
+	for _, component := range a.components {
+		component.Register(router)
 	}
 }
 
-func (a *Application) printDevInfo() {
+func (a *Application) printDevInfo(router *echo.Echo) {
 	// return if not enabled
-	if !a.enableDevMode {
+	if !a.devMode {
 		return
 	}
 
@@ -206,7 +195,7 @@ func (a *Application) printDevInfo() {
 	var routes []string
 
 	// add all routes as string
-	for _, route := range a.router.Routes() {
+	for _, route := range router.Routes() {
 		routes = append(routes, fmt.Sprintf("%6s  %-30s", route.Method, route.Path))
 	}
 

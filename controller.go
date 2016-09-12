@@ -19,6 +19,9 @@ type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model Model
 
+	// The pool from which the database session is obtained.
+	Pool Pool
+
 	// The Authorizer is run on all actions. Will return an Unauthorized status
 	// if an user error is returned.
 	Authorizer Callback
@@ -83,45 +86,51 @@ func (c *Controller) generalHandler(e echo.Context) error {
 		}
 	}
 
+	// clone database connection
+	sess, db, err := c.Pool.Get()
+	if err != nil {
+		return jsonapi.WriteError(w, err)
+	}
+
+	// ensure session will be closed
+	defer sess.Close()
+
 	// prepare context
 	var ctx *Context
 
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx = c.buildContext(List, req, e)
+		ctx = c.buildContext(db, List, req, e)
 		err = c.listResources(ctx)
 	case jsonapi.FindResource:
-		ctx = c.buildContext(Find, req, e)
+		ctx = c.buildContext(db, Find, req, e)
 		err = c.findResource(ctx)
 	case jsonapi.CreateResource:
-		ctx = c.buildContext(Create, req, e)
+		ctx = c.buildContext(db, Create, req, e)
 		err = c.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx = c.buildContext(Update, req, e)
+		ctx = c.buildContext(db, Update, req, e)
 		err = c.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx = c.buildContext(Delete, req, e)
+		ctx = c.buildContext(db, Delete, req, e)
 		err = c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		ctx = c.buildContext(0, req, e)
+		ctx = c.buildContext(db, 0, req, e)
 		err = c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		ctx = c.buildContext(0, req, e)
+		ctx = c.buildContext(db, 0, req, e)
 		err = c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		ctx = c.buildContext(Update, req, e)
+		ctx = c.buildContext(db, Update, req, e)
 		err = c.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx = c.buildContext(Update, req, e)
+		ctx = c.buildContext(db, Update, req, e)
 		err = c.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx = c.buildContext(Update, req, e)
+		ctx = c.buildContext(db, Update, req, e)
 		err = c.removeFromRelationship(ctx, doc)
 	}
-
-	// free context
-	ctx.free()
 
 	// write any left over errors
 	if err != nil {
@@ -658,15 +667,12 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	return nil
 }
 
-func (c *Controller) buildContext(action Action, req *jsonapi.Request, e echo.Context) *Context {
-	sess, db := c.group.sessionAndDatabase()
-
+func (c *Controller) buildContext(db *mgo.Database, action Action, req *jsonapi.Request, e echo.Context) *Context {
 	return &Context{
 		Action:  action,
 		DB:      db,
 		Request: req,
 		Echo:    e,
-		session: sess,
 	}
 }
 

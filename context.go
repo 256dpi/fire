@@ -45,8 +45,6 @@ type Context struct {
 	// The underlying echo context.
 	Echo echo.Context
 
-	session *mgo.Session
-
 	slice interface{}
 
 	original Model
@@ -87,10 +85,5 @@ func (c *Context) clone() *Context {
 		DB:      c.DB,
 		Request: c.Request,
 		Echo:    c.Echo,
-		session: c.session,
 	}
-}
-
-func (c *Context) free() {
-	c.session.Close()
 }

@@ -1,13 +1,9 @@
 package fire
 
-import (
-	"github.com/labstack/echo"
-	"gopkg.in/mgo.v2"
-)
+import "github.com/labstack/echo"
 
 // A ControllerGroup manages access to multiple controllers and their interconnections.
 type ControllerGroup struct {
-	session     *mgo.Session
 	prefix      string
 	controllers map[string]*Controller
 }
@@ -16,9 +12,8 @@ type ControllerGroup struct {
 //
 // Note: You should pass the full URL prefix of the API to allow proper
 // generation of resource links.
-func NewControllerGroup(session *mgo.Session, prefix string) *ControllerGroup {
+func NewControllerGroup(prefix string) *ControllerGroup {
 	return &ControllerGroup{
-		session:     session,
 		prefix:      prefix,
 		controllers: make(map[string]*Controller),
 	}
@@ -43,9 +38,4 @@ func (g *ControllerGroup) Register(router *echo.Echo) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)
 	}
-}
-
-func (g *ControllerGroup) sessionAndDatabase() (*mgo.Session, *mgo.Database) {
-	sess := g.session.Clone()
-	return sess, sess.DB("")
 }

@@ -44,7 +44,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
-	_, db := getDB()
+	db := getCleanDB()
 
 	validator := ProtectedAttributesValidator(Map{
 		"title": "Default Title",
@@ -75,7 +75,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 }
 
 func TestDependentResourcesValidator(t *testing.T) {
-	_, db := getDB()
+	db := getCleanDB()
 
 	// create validator
 	validator := DependentResourcesValidator(Map{
@@ -108,7 +108,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 }
 
 func TestVerifyReferencesValidator(t *testing.T) {
-	_, db := getDB()
+	db := getCleanDB()
 
 	// create validator
 	validator := VerifyReferencesValidator(Map{
@@ -153,7 +153,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
-	_, db := getDB()
+	db := getCleanDB()
 
 	// create validator
 	validator := MatchingReferencesValidator("comments", "parent", Map{

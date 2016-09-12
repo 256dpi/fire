@@ -3,7 +3,7 @@ package fire
 import "testing"
 
 func TestApplication(t *testing.T) {
-	app := New("", "")
+	app := New()
 
 	p := DefaultPolicy()
 	p.AllowMethodOverriding = true
@@ -11,5 +11,4 @@ func TestApplication(t *testing.T) {
 
 	app.EnableDevMode()
 	app.SetPolicy(p)
-	app.prepare()
 }

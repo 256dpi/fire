@@ -43,27 +43,30 @@ func init() {
 	session = sess
 }
 
-func getDB() (*mgo.Session, *mgo.Database) {
+func getCleanDB() *mgo.Database {
 	db := session.DB("")
 
 	db.C("posts").RemoveAll(nil)
 	db.C("comments").RemoveAll(nil)
 	db.C("selections").RemoveAll(nil)
 
-	return session, db
+	return db
 }
 
 func buildServer() (*echo.Echo, *mgo.Database) {
-	sess, db := getDB()
+	db := getCleanDB()
 	router := echo.New()
-	group := NewControllerGroup(sess, "")
+	group := NewControllerGroup("")
 
 	group.Add(&Controller{
 		Model: &Post{},
+		Pool:  &clonePool{root: session},
 	}, &Controller{
 		Model: &Comment{},
+		Pool:  &clonePool{root: session},
 	}, &Controller{
 		Model: &Selection{},
+		Pool:  &clonePool{root: session},
 	})
 
 	group.Register(router)

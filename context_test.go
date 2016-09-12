@@ -7,7 +7,7 @@ import (
 )
 
 func TestContextOriginal(t *testing.T) {
-	_, db := getDB()
+	db := getCleanDB()
 
 	savedPost := Init(&Post{
 		Title: "foo",
