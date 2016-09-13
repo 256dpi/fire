@@ -45,7 +45,7 @@ func (i *Inspector) Register(router *echo.Echo) {
 }
 
 // Setup implements the BootableComponent interface.
-func (i *Inspector) Setup() error {
+func (i *Inspector) Setup(router *echo.Echo) error {
 	// print header
 	fmt.Fprintln(i.Writer, "==> Fire application starting...")
 
@@ -55,7 +55,7 @@ func (i *Inspector) Setup() error {
 
 	// print routing table
 	fmt.Fprintln(i.Writer, "==> Registered routes:")
-	i.inspectRoutingTable()
+	i.inspectRoutingTable(router)
 
 	// print footer
 	fmt.Fprintln(i.Writer, "==> Ready to go!")
@@ -80,12 +80,12 @@ func (i *Inspector) inspectComponents() {
 	}
 }
 
-func (i *Inspector) inspectRoutingTable() {
+func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
 	// prepare routes
 	var routes []string
 
 	// add all routes as string
-	for _, route := range i.Application.router.Routes() {
+	for _, route := range router.Routes() {
 		routes = append(routes, fmt.Sprintf("%6s  %-30s", route.Method, route.Path))
 	}
 

@@ -55,7 +55,7 @@ func (c *testComponent) Register(router *echo.Echo) {
 	})
 }
 
-func (c *testComponent) Setup() error {
+func (c *testComponent) Setup(router *echo.Echo) error {
 	return nil
 }
 

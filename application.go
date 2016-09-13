@@ -19,7 +19,7 @@ type BootableComponent interface {
 
 	// Setup will be called before the applications starts and allows further
 	// initialization.
-	Setup() error
+	Setup(router *echo.Echo) error
 
 	// Teardown will be called after applications has stopped and allows proper
 	// cleanup.
@@ -29,14 +29,11 @@ type BootableComponent interface {
 // An Application provides a simple way to combine multiple components.
 type Application struct {
 	components []Component
-	router     *echo.Echo
 }
 
 // New creates and returns a new Application.
 func New() *Application {
-	return &Application{
-		router: echo.New(),
-	}
+	return &Application{}
 }
 
 // Mount will mount the passed Component in the application.
@@ -59,15 +56,18 @@ func (a *Application) SecureStart(addr, certFile, keyFile string) error {
 
 // Run will run the application using the specified server.
 func (a *Application) Run(server engine.Server) error {
+	// create new router
+	router := echo.New()
+
 	// register components
 	for _, component := range a.components {
-		component.Register(a.router)
+		component.Register(router)
 	}
 
 	// setup components
 	for _, component := range a.components {
 		if bootable, ok := component.(BootableComponent); ok {
-			err := bootable.Setup()
+			err := bootable.Setup(router)
 			if err != nil {
 				return err
 			}
@@ -75,7 +75,7 @@ func (a *Application) Run(server engine.Server) error {
 	}
 
 	// run router
-	a.router.Run(server)
+	router.Run(server)
 
 	// teardown components
 	for _, component := range a.components {
@@ -86,9 +86,6 @@ func (a *Application) Run(server engine.Server) error {
 			}
 		}
 	}
-
-	// remove router when server stops
-	a.router = nil
 
 	return nil
 }
