@@ -12,7 +12,7 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// get empty list of posts
 	testRequest(server, "GET", "/posts", map[string]string{
@@ -41,7 +41,7 @@ func TestBasicOperations(t *testing.T) {
 			}
 		}
 	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		post := findLastModel(db, &Post{})
+		post := findLastModel(&Post{})
 		id = post.ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Status())
@@ -222,24 +222,24 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts
-	post1 := saveModel(db, &Post{
+	post1 := saveModel(&Post{
 		Title:     "post-1",
 		Published: true,
 	}).ID().Hex()
-	post2 := saveModel(db, &Post{
+	post2 := saveModel(&Post{
 		Title:     "post-2",
 		Published: false,
 	}).ID().Hex()
-	post3 := saveModel(db, &Post{
+	post3 := saveModel(&Post{
 		Title:     "post-3",
 		Published: true,
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(db, &Selection{
+	selection := saveModel(&Selection{
 		PostIDs: []bson.ObjectId{
 			bson.ObjectIdHex(post1),
 			bson.ObjectIdHex(post2),
@@ -529,16 +529,16 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts in random order
-	post2 := saveModel(db, &Post{
+	post2 := saveModel(&Post{
 		Title: "post-2",
 	}).ID().Hex()
-	post1 := saveModel(db, &Post{
+	post1 := saveModel(&Post{
 		Title: "post-1",
 	}).ID().Hex()
-	post3 := saveModel(db, &Post{
+	post3 := saveModel(&Post{
 		Title: "post-3",
 	}).ID().Hex()
 
@@ -722,10 +722,10 @@ func TestSorting(t *testing.T) {
 }
 
 func TestSparseFieldsets(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts
-	post := saveModel(db, &Post{
+	post := saveModel(&Post{
 		Title: "Post 1",
 	}).ID().Hex()
 
@@ -766,19 +766,19 @@ func TestSparseFieldsets(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create existing post & comment
-	existingPost := saveModel(db, &Post{
+	existingPost := saveModel(&Post{
 		Title: "Post 1",
 	})
-	saveModel(db, &Comment{
+	saveModel(&Comment{
 		Message: "Comment 1",
 		PostID:  existingPost.ID(),
 	})
 
 	// create new post
-	post := saveModel(db, &Post{
+	post := saveModel(&Post{
 		Title: "Post 2",
 	}).ID().Hex()
 
@@ -854,7 +854,7 @@ func TestHasManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		comment = findLastModel(db, &Comment{}).ID().Hex()
+		comment = findLastModel(&Comment{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Status())
 		assert.JSONEq(t, `{
@@ -951,18 +951,18 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts
-	post1 := saveModel(db, &Post{
+	post1 := saveModel(&Post{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(db, &Post{
+	post2 := saveModel(&Post{
 		Title: "Post 2",
 	}).ID().Hex()
 
 	// create comment
-	comment1 := saveModel(db, &Comment{
+	comment1 := saveModel(&Comment{
 		Message: "Comment 1",
 		PostID:  bson.ObjectIdHex(post1),
 	}).ID().Hex()
@@ -995,7 +995,7 @@ func TestToOneRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		comment2 = findLastModel(db, &Comment{}).ID().Hex()
+		comment2 = findLastModel(&Comment{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Status())
 		assert.JSONEq(t, `{
@@ -1168,16 +1168,16 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts
-	post1 := saveModel(db, &Post{
+	post1 := saveModel(&Post{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(db, &Post{
+	post2 := saveModel(&Post{
 		Title: "Post 2",
 	}).ID().Hex()
-	post3 := saveModel(db, &Post{
+	post3 := saveModel(&Post{
 		Title: "Post 3",
 	}).ID().Hex()
 
@@ -1209,7 +1209,7 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		selection = findLastModel(db, &Selection{}).ID().Hex()
+		selection = findLastModel(&Selection{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Status())
 		assert.JSONEq(t, `{
@@ -1451,15 +1451,15 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	server, db := buildServer()
+	server := buildServer()
 
 	// create posts
-	post := saveModel(db, &Post{
+	post := saveModel(&Post{
 		Title: "Post 1",
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(db, &Selection{
+	selection := saveModel(&Selection{
 		Name: "Selection 1",
 	}).ID().Hex()
 

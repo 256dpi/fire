@@ -6,20 +6,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewStore(t *testing.T) {
-	p := NewStore("mongodb://localhost/fire")
+func TestCreateStore(t *testing.T) {
+	store1 := CreateStore("mongodb://localhost/fire")
+	assert.NotNil(t, store1.DB())
 
-	sess, db, err := p.Get()
-	assert.NotNil(t, sess)
-	assert.NotNil(t, db)
-	assert.NoError(t, err)
+	store2 := store1.Copy()
+	assert.NotNil(t, store2)
+
+	store2.Close()
 }
 
-func TestNewStoreError(t *testing.T) {
-	p := NewStore("mongodb://localhost/fire?make=fail")
-
-	sess, db, err := p.Get()
-	assert.Nil(t, sess)
-	assert.Nil(t, db)
-	assert.Error(t, err)
+func TestCreateStoreError(t *testing.T) {
+	assert.Panics(t, func() {
+		CreateStore("mongodb://localhost/fire?make=fail")
+	})
 }

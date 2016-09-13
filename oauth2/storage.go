@@ -26,17 +26,14 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	// prepare object
 	obj := s.authenticator.policy.ClientModel.Meta().Make()
 
-	// get database
-	sess, db, err := s.authenticator.store.Get()
-	if err != nil {
-		return nil, err
-	}
+	// get store
+	store := s.authenticator.store.Copy()
 
-	// ensure session gets closed
-	defer sess.Close()
+	// ensure store gets closed
+	defer store.Close()
 
 	// query db
-	err = db.C(s.authenticator.policy.ClientModel.Meta().Collection).Find(bson.M{
+	err := store.Coll(s.authenticator.policy.ClientModel).Find(bson.M{
 		s.authenticator.policy.ClientIDField: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -102,34 +99,28 @@ func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string
 		"OwnerID":       ownerID,
 	})
 
-	// get database
-	sess, db, err := s.authenticator.store.Get()
-	if err != nil {
-		return err
-	}
+	// get store
+	store := s.authenticator.store.Copy()
 
-	// ensure session gets closed
-	defer sess.Close()
+	// ensure store gets closed
+	defer store.Close()
 
 	// save access token
-	return db.C(accessToken.Meta().Collection).Insert(accessToken)
+	return store.Insert(accessToken)
 }
 
 func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
 	// prepare object
 	obj := s.authenticator.policy.AccessTokenModel.Meta().Make()
 
-	// get database
-	sess, db, err := s.authenticator.store.Get()
-	if err != nil {
-		return nil, err
-	}
+	// get store
+	store := s.authenticator.store.Copy()
 
-	// ensure session gets closed
-	defer sess.Close()
+	// ensure store gets closed
+	defer store.Close()
 
 	// fetch access token
-	err = db.C(s.authenticator.policy.AccessTokenModel.Meta().Collection).Find(bson.M{
+	err := store.Coll(s.authenticator.policy.AccessTokenModel).Find(bson.M{
 		s.authenticator.policy.AccessTokenIDField: signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -201,17 +192,14 @@ func (s *storage) getOwner(id string) (model.Model, error) {
 	// prepare object
 	obj := s.authenticator.policy.OwnerModel.Meta().Make()
 
-	// get database
-	sess, db, err := s.authenticator.store.Get()
-	if err != nil {
-		return nil, err
-	}
+	// get store
+	store := s.authenticator.store.Copy()
 
-	// ensure session gets closed
-	defer sess.Close()
+	// ensure store gets closed
+	defer store.Close()
 
 	// query db
-	err = db.C(s.authenticator.policy.OwnerModel.Meta().Collection).Find(bson.M{
+	err := store.Coll(s.authenticator.policy.OwnerModel).Find(bson.M{
 		s.authenticator.policy.OwnerIDField: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {

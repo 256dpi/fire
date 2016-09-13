@@ -4,7 +4,6 @@ import (
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"github.com/labstack/echo"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -47,8 +46,8 @@ type Context struct {
 	// The sorting that will be used during FindAll.
 	Sorting []string
 
-	// The db used to query.
-	DB *mgo.Database
+	// The store that is used to retrieve and persist the model.
+	Store *model.Store
 
 	// The underlying JSON API request.
 	Request *jsonapi.Request
@@ -57,6 +56,15 @@ type Context struct {
 	Echo echo.Context
 
 	original model.Model
+}
+
+func buildContext(store *model.Store, action Action, req *jsonapi.Request, e echo.Context) *Context {
+	return &Context{
+		Action:  action,
+		Store:   store,
+		Request: req,
+		Echo:    e,
+	}
 }
 
 // Original will return the stored version of the model. This method is intended
@@ -78,7 +86,7 @@ func (c *Context) Original() (model.Model, error) {
 	m := c.Model.Meta().Make()
 
 	// read original document
-	err := c.DB.C(c.Model.Meta().Collection).FindId(c.Model.ID()).One(m)
+	err := c.Store.Coll(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +99,7 @@ func (c *Context) Original() (model.Model, error) {
 
 func (c *Context) clone() *Context {
 	return &Context{
-		DB:      c.DB,
+		Store:   c.Store,
 		Request: c.Request,
 		Echo:    c.Echo,
 	}

@@ -120,7 +120,9 @@ func DependentResourcesValidator(resources fire.Map) Callback {
 		// check all relations
 		for coll, field := range resources {
 			// count referencing documents
-			n, err := ctx.DB.C(coll).Find(bson.M{field.(string): ctx.Query["_id"]}).Limit(1).Count()
+			n, err := ctx.Store.DB().C(coll).Find(bson.M{
+				field.(string): ctx.Query["_id"],
+			}).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
@@ -165,7 +167,7 @@ func VerifyReferencesValidator(references fire.Map) Callback {
 			}
 
 			// count entities in database
-			n, err := ctx.DB.C(collection.(string)).FindId(id).Limit(1).Count()
+			n, err := ctx.Store.DB().C(collection.(string)).FindId(id).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
@@ -225,7 +227,7 @@ func MatchingReferencesValidator(collection, reference string, matcher fire.Map)
 		}
 
 		// query db
-		n, err := ctx.DB.C(collection).Find(query).Limit(1).Count()
+		n, err := ctx.Store.DB().C(collection).Find(query).Limit(1).Count()
 		if err != nil {
 			return Fatal(err)
 		}

@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/test"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -33,46 +32,35 @@ type Selection struct {
 	PostIDs    []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
-var session *mgo.Session
+var testStore = model.CreateStore("mongodb://0.0.0.0:27017/fire")
 
-func init() {
-	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
-	if err != nil {
-		panic(err)
-	}
+func getCleanStore() *model.Store {
+	testStore.DB().C("posts").RemoveAll(nil)
+	testStore.DB().C("comments").RemoveAll(nil)
+	testStore.DB().C("selections").RemoveAll(nil)
 
-	session = sess
+	return testStore
 }
 
-func getCleanDB() *mgo.Database {
-	db := session.DB("")
-
-	db.C("posts").RemoveAll(nil)
-	db.C("comments").RemoveAll(nil)
-	db.C("selections").RemoveAll(nil)
-
-	return db
-}
-
-func buildServer() (*echo.Echo, *mgo.Database) {
-	db := getCleanDB()
+func buildServer() *echo.Echo {
+	store := getCleanStore()
 	router := echo.New()
 	group := New("")
 
 	group.Add(&Controller{
 		Model: &Post{},
-		Store: model.NewStoreWithSession(session),
+		Store: store,
 	}, &Controller{
 		Model: &Comment{},
-		Store: model.NewStoreWithSession(session),
+		Store: store,
 	}, &Controller{
 		Model: &Selection{},
-		Store: model.NewStoreWithSession(session),
+		Store: store,
 	})
 
 	group.Register(router)
 
-	return router, db
+	return router
 }
 
 func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*test.ResponseRecorder, engine.Request)) {
@@ -88,10 +76,10 @@ func testRequest(e *echo.Echo, method, path string, headers map[string]string, p
 	callback(rec, req)
 }
 
-func saveModel(db *mgo.Database, m model.Model) model.Model {
+func saveModel(m model.Model) model.Model {
 	model.Init(m)
 
-	err := db.C(m.Meta().Collection).Insert(m)
+	err := testStore.Insert(m)
 	if err != nil {
 		panic(err)
 	}
@@ -99,10 +87,10 @@ func saveModel(db *mgo.Database, m model.Model) model.Model {
 	return m
 }
 
-func findLastModel(db *mgo.Database, m model.Model) model.Model {
+func findLastModel(m model.Model) model.Model {
 	model.Init(m)
 
-	err := db.C(m.Meta().Collection).Find(nil).Sort("-_id").One(m)
+	err := testStore.Coll(m).Find(nil).Sort("-_id").One(m)
 	if err != nil {
 		panic(err)
 	}

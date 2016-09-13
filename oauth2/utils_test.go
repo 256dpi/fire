@@ -46,7 +46,7 @@ func init() {
 }
 
 func getStore() *model.Store {
-	return model.NewStore("mongodb://0.0.0.0:27017/fire-auth")
+	return model.CreateStore("mongodb://0.0.0.0:27017/fire-auth")
 }
 
 func getDB() *mgo.Database {

@@ -46,13 +46,13 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	validator := ProtectedAttributesValidator(fire.Map{
 		"title": "Default Title",
 	})
 
-	savedPost := saveModel(db, &Post{
+	savedPost := saveModel(&Post{
 		Title: "Another Title",
 	}).(*Post)
 
@@ -65,7 +65,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		DB:     db,
+		Store:  store,
 	}
 
 	err := validator(ctx)
@@ -77,7 +77,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 }
 
 func TestDependentResourcesValidator(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	// create validator
 	validator := DependentResourcesValidator(fire.Map{
@@ -86,13 +86,13 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(db, &Post{})
+	post := saveModel(&Post{})
 
 	// create context
 	ctx := &Context{
 		Action: Delete,
 		Query:  bson.M{"_id": post.ID()},
-		DB:     db,
+		Store:  store,
 	}
 
 	// call validator
@@ -100,7 +100,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	// create comment
-	saveModel(db, &Comment{
+	saveModel(&Comment{
 		PostID: post.ID(),
 	})
 
@@ -110,7 +110,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 }
 
 func TestVerifyReferencesValidator(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	// create validator
 	validator := VerifyReferencesValidator(fire.Map{
@@ -119,7 +119,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	})
 
 	// create bad comment
-	comment1 := saveModel(db, &Comment{
+	comment1 := saveModel(&Comment{
 		PostID: bson.NewObjectId(),
 	})
 
@@ -127,7 +127,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Create,
 		Model:  comment1,
-		DB:     db,
+		Store:  store,
 	}
 
 	// call validator
@@ -138,10 +138,10 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	comment1ID := comment1.ID()
 
 	// create post
-	post := saveModel(db, &Post{})
+	post := saveModel(&Post{})
 
 	// create comment
-	comment2 := saveModel(db, &Comment{
+	comment2 := saveModel(&Comment{
 		Parent: &comment1ID,
 		PostID: post.ID(),
 	})
@@ -155,7 +155,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	// create validator
 	validator := MatchingReferencesValidator("comments", "parent", fire.Map{
@@ -166,13 +166,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	postID := bson.NewObjectId()
 
 	// create root comment
-	comment1 := saveModel(db, &Comment{
+	comment1 := saveModel(&Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
-	comment2 := saveModel(db, &Comment{
+	comment2 := saveModel(&Comment{
 		Parent: &parentID,
 		PostID: bson.NewObjectId(),
 	})
@@ -181,7 +181,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Create,
 		Model:  comment2,
-		DB:     db,
+		Store:  store,
 	}
 
 	// call validator
@@ -189,13 +189,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// create root comment
-	comment3 := saveModel(db, &Comment{
+	comment3 := saveModel(&Comment{
 		PostID: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
-	comment4 := saveModel(db, &Comment{
+	comment4 := saveModel(&Comment{
 		Parent: &parentID,
 		PostID: postID,
 	})

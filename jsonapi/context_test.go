@@ -27,13 +27,13 @@ func TestAction(t *testing.T) {
 }
 
 func TestContextOriginal(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	savedPost := model.Init(&Post{
 		Title: "foo",
 	}).(*Post)
 
-	saveModel(db, savedPost)
+	saveModel(savedPost)
 
 	post := model.Init(&Post{
 		Title: "bar",
@@ -44,13 +44,13 @@ func TestContextOriginal(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		DB:     db,
+		Store:  store,
 	}
 
-	model, err := ctx.Original()
+	m, err := ctx.Original()
 	assert.NoError(t, err)
-	assert.Equal(t, savedPost.ID(), model.ID())
-	assert.Equal(t, savedPost.Get("Title"), model.Get("Title"))
+	assert.Equal(t, savedPost.ID(), m.ID())
+	assert.Equal(t, savedPost.Get("Title"), m.Get("Title"))
 }
 
 func TestContextOriginalWrongAction(t *testing.T) {
@@ -64,7 +64,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 }
 
 func TestContextOriginalNonExisting(t *testing.T) {
-	db := getCleanDB()
+	store := getCleanStore()
 
 	post := model.Init(&Post{
 		Title: "foo",
@@ -73,10 +73,10 @@ func TestContextOriginalNonExisting(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		DB:     db,
+		Store:  store,
 	}
 
-	model, err := ctx.Original()
+	m, err := ctx.Original()
 	assert.Error(t, err)
-	assert.Nil(t, model)
+	assert.Nil(t, m)
 }
