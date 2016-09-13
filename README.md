@@ -49,7 +49,7 @@ An example application that uses the fire framework and the auth add-on to build
 Get the package using the go tool:
 
 ```bash
-$ go get github.com/gonfire/fire
+$ go get -u github.com/gonfire/fire
 ```
 
 ## Add-ons
