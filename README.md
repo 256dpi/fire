@@ -19,7 +19,6 @@ _The framework is still WIP and the API may be changed._
 
 - [Example](#example)
 - [Installation](#installation)
-- [Add-ons](#add-ons)
 - [Usage](#usage)
 - [Models](#models)
   - [Basics](#basics)
@@ -36,6 +35,9 @@ _The framework is still WIP and the API may be changed._
   - [Built-in Callbacks](#built-in-callbacks)
 - [Controller Groups](#controller-groups)
 - [Applications](#applications)
+- [OAuth2 Authenticator](#oauth2-authenticator)
+  - [Scopes](#scopes)
+  - [Authorization](#authorization)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -363,6 +365,71 @@ app.Start("0.0.0.0:4242")
 ```
 
 An application can be started using `Start()` or `SecureStart()`.
+
+## OAuth2 Authenticator
+
+The `Authenticator` in the `oauth2` sub package provides authentication through OAuth2 and can be created using `New()` with a reference to a database, a policy and a prefix for the routes:
+
+```go
+policy := auth.DefaultPolicy()
+policy.Secret = []byte("a-very-long-secret")
+policy.PasswordGrant = true
+
+authenticator := auth.New(db, policy, "auth")
+
+authenticator.Register(router)
+```
+
+After that, the necessary routes can be registered using `Register` on a router.
+
+More information about OAuth2 can be found here: <https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2>.
+
+### Scopes
+
+The default grant strategy grants all requested scopes if the client satisfies the scopes (inferred using the `grantable` tag). However, most applications want grant scopes based on client types and owner roles. A custom grant strategy can be implemented by setting a different `GrantStrategy`.
+
+The following callback grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
+ 
+```go
+policy.GrantStrategy = func(req *oauth2.GrantRequest) []string {
+    list := []string{"default"}
+    
+    if req.Owner != nil && req.Owner.(*User).Admin {
+        list = append(list, "admin")
+    }
+
+    return list
+}
+```
+
+### Authorization
+
+Later on you can use the authenticator to authorize access to your controllers:
+
+```go
+postsController := &jsonapi.Controller{
+    // ...
+    Authorizer: authenticator.Authorizer("admin"),
+}
+```
+
+The Authorizer accepts a list of scopes that must have been granted to the token.
+
+- The authorizer will assign the AccessToken model to the context using the `fire.access_token` key.
+
+You can also authorize plain echo handlers:
+ 
+```go
+router.GET("foo", func(ctx echo.Context) error {
+    // ...
+}, authenticator.EchoAuthorizer("admin"))
+```
+
+Or use call `Authorize` while processing a request:
+
+```go
+accessToken, err := authenticator.Authorize(ctx, "admin")
+```
 
 ## License
 
