@@ -13,7 +13,7 @@ vet:
 	go vet ./jsonapi
 	go vet ./oauth2
 	go vet ./components
-	go vet ./examples/app
+	go vet ./example
 
 fmt:
 	go fmt .
@@ -21,7 +21,7 @@ fmt:
 	go fmt ./jsonapi
 	go fmt ./oauth2
 	go fmt ./components
-	go fmt ./examples/app
+	go fmt ./example
 
 lint:
 	golint .
@@ -29,7 +29,7 @@ lint:
 	golint ./jsonapi
 	golint ./oauth2
 	golint ./components
-	golint ./examples/app
+	golint ./example
 
 err:
 	errcheck -ignoretests -asserts .

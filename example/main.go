@@ -1,3 +1,5 @@
+// This example demonstrates the usage of the fire framework to build a simple
+// JSON API.
 package main
 
 import (
