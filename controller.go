@@ -816,16 +816,22 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	}
 
 	// prepare slice
-	slice := c.Model.Meta().MakeSlice()
+	slicePtr := c.Model.Meta().MakeSlice()
 
 	// query db
 	err = ctx.DB.C(c.Model.Meta().Collection).Find(ctx.Query).
-		Sort(ctx.Sorting...).All(slice)
+		Sort(ctx.Sorting...).All(slicePtr)
 	if err != nil {
 		return nil, err
 	}
 
-	return InitSlice(slice), nil
+	// init all models in slice
+	slice := reflect.ValueOf(slicePtr).Elem()
+	for i := 0; i < slice.Len(); i++ {
+		Init(slice.Index(i).Interface().(Model))
+	}
+
+	return slicePtr, nil
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
