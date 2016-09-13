@@ -72,9 +72,9 @@ type Post struct {
 
 type Comment struct {
 	model.Base `json:"-" bson:",inline" fire:"comments"`
-	Message   string         `json:"message" valid:"required"`
-	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
-	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	Message    string         `json:"message" valid:"required"`
+	Parent     *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
+	PostID     bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 ```
 
