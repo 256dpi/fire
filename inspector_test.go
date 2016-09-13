@@ -50,3 +50,17 @@ func TestInspectorError(t *testing.T) {
 
 	assert.Contains(t, buf.String(), `ERR  "error"`)
 }
+
+func TestInspectorComponent(t *testing.T) {
+	app := New()
+	buf := new(bytes.Buffer)
+
+	app.Mount(&testComponent{})
+	app.Mount(NewInspector(app, buf))
+
+	done, _ := runApp(app)
+	close(done)
+
+	assert.Contains(t, buf.String(), "testComponent")
+	assert.Contains(t, buf.String(), "foo: bar")
+}

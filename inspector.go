@@ -15,7 +15,16 @@ import (
 type InspectableComponent interface {
 	// Inspect will be called by the application to print a list of used
 	// components and their configuration.
-	Inspect() string
+	Inspect() ComponentInfo
+}
+
+// A ComponentInfo is returned by a component to describe itself.
+type ComponentInfo struct {
+	// The name of the component.
+	Name string
+
+	// The settings it is using.
+	Settings Map
 }
 
 // An Inspector can be used during development to print the applications
@@ -75,7 +84,16 @@ func (i *Inspector) inspectComponents() {
 	// inspect all components
 	for _, component := range i.Application.components {
 		if inspectable, ok := component.(InspectableComponent); ok {
-			fmt.Fprintf(i.Writer, inspectable.Inspect())
+			// get component info
+			info := inspectable.Inspect()
+
+			// print name
+			fmt.Fprintf(i.Writer, "%s:\n", info.Name)
+
+			// print settings
+			for name, value := range info.Settings {
+				fmt.Fprintf(i.Writer, "  - %s: %s\n", name, value)
+			}
 		}
 	}
 }

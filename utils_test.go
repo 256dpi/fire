@@ -63,8 +63,13 @@ func (c *testComponent) Teardown() error {
 	return nil
 }
 
-func (c *testComponent) Inspect() string {
-	return "This is a test component\n"
+func (c *testComponent) Inspect() ComponentInfo {
+	return ComponentInfo{
+		Name: "testComponent",
+		Settings: Map{
+			"foo": "bar",
+		},
+	}
 }
 
 var session *mgo.Session

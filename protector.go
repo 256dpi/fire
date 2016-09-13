@@ -107,14 +107,17 @@ func (p *Protector) Register(router *echo.Echo) {
 }
 
 // Inspect implements the InspectableComponent interface.
-func (p *Protector) Inspect() (str string) {
-	str = str + fmt.Sprintln("Protector:")
-	str = str + fmt.Sprintf("- Body Limit: %s\n", p.BodyLimit)
-	str = str + fmt.Sprintf("- Allow Method Overriding: %v\n", p.AllowMethodOverriding)
-	str = str + fmt.Sprintf("- Allowed CORS Origins: %v\n", p.AllowedCORSOrigins)
-	str = str + fmt.Sprintf("- Allowed CORS Methods: %v\n", p.AllowedCORSMethods)
-	str = str + fmt.Sprintf("- Allowed CORS Heders: %v\n", p.AllowedCORSHeaders)
-	str = str + fmt.Sprintf("- Automatic Recovery: %v\n", !p.DisableAutomaticRecovery)
-	str = str + fmt.Sprintf("- X-Frame-Options: %s\n", p.XFrameOptions)
-	return
+func (p *Protector) Inspect() ComponentInfo {
+	return ComponentInfo{
+		Name: "Protector",
+		Settings: Map{
+			"Body Limit":              p.BodyLimit,
+			"Allow Method Overriding": fmt.Sprintf("%v", p.AllowMethodOverriding),
+			"Allowed CORS Origins":    fmt.Sprintf("%v", p.AllowedCORSOrigins),
+			"Allowed CORS Methods":    fmt.Sprintf("%v", p.AllowedCORSMethods),
+			"Allowed CORS Headers":    fmt.Sprintf("%v", p.AllowedCORSHeaders),
+			"Automatic Recovery":      fmt.Sprintf("%v", !p.DisableAutomaticRecovery),
+			"X-Frame-Options":         p.XFrameOptions,
+		},
+	}
 }
