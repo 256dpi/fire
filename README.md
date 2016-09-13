@@ -81,25 +81,25 @@ type Comment struct {
 Every resource is managed by a `Controller` which provides the JSON API compliant interface:
 
 ```go
-pool := NewClonePool("mongodb://localhost/my-app")
+pool := fire.NewPool("mongodb://localhost/my-app")
 
-postsController := &fire.Controller{
+postsController := &jsonapi.Controller{
     Model: &Post{},
     Pool: pool,
 }
 
-commentsController := &fire.Controller{
+commentsController := &jsonapi.Controller{
     Model: &Comment{},
     Pool: pool,
 }
 ```
 
-The method `NewClonePool()` returns a `Pool` that manages access to the database for the controllers. 
+The method `NewPool()` returns a `Pool` that manages access to the database for the controllers. 
  
-In a next step, multiple controllers are combined to a `ControllerGroup` that provides the necessary interconnection and integration with applications:
+In a next step, multiple controllers are combined to a `Group` that provides the necessary interconnection and integration with applications:
 
 ```go
-group := fire.NewControllerGroup("api")
+group := jsonapi.New("api")
 
 group.Add(postsController)
 group.Add(commentsController)
@@ -284,7 +284,7 @@ This section describes the construction of controllers that expose the models as
 Controllers are declared by creating a `Controller` and providing a reference to the `Model` and a pool to obtain database connections from:
 
 ```go
-postsController := &fire.Controller{
+postsController := &jsonapi.Controller{
     Model: &Post{},
     Pool: pool,
     // ...
@@ -296,7 +296,7 @@ postsController := &fire.Controller{
 Fire allows the definition of two callbacks that are called while processing the requests:
 
 ```go
-postsController := &fire.Controller{
+postsController := &jsonapi.Controller{
     // ...
     Authorizer: func(ctx *fire.Context) error {
         // ...
@@ -314,7 +314,7 @@ Errors returned by the callback are serialize to an JSON API compliant error obj
 If errors are marked as fatal a 500 (Internal Server Error) status code is returned without serializing the error to protect eventual private information:
 
 ```go
-func(ctx *fire.Context) error {
+func(ctx *jsonapi.Context) error {
     // ...
     if err != nil {
         return fire.Fatal(err)
@@ -326,7 +326,7 @@ func(ctx *fire.Context) error {
 Multiple callbacks can be combined using `Combine()`:
 
 ```go
-fire.Combine(callback1, callback2)
+jsonapi.Combine(callback1, callback2)
 ```
 
 - Execution of combined callbacks continues until an error is returned.
@@ -342,10 +342,10 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Controller Groups
 
-Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `NewControllerGroup()` with a URL prefix while controllers are added using `Add()`:
+Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `New()` with a URL prefix while controllers are added using `Add()`:
 
 ```go
-group := fire.NewControllerGroup("api")
+group := jsonapi.New("api")
 
 group.Add(myController)
 
