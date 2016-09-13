@@ -13,6 +13,7 @@ install:
   - glide install
 script:
   - go test -coverprofile=fire.coverprofile
+  - go test -coverprofile=model.coverprofile ./model
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 matrix:
