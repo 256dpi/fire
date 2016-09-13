@@ -64,14 +64,14 @@ Such a declaration could look like the following two models for a blog system:
 
 ```go
 type Post struct {
-	fire.Base `json:"-" bson:",inline" fire:"posts"`
-	Title     string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	TextBody  string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments  HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	model.Base `json:"-" bson:",inline" fire:"posts"`
+	Title      string        `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	TextBody   string        `json:"text-body" valid:"-" bson:"text_body"`
+	Comments   model.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
 }
 
 type Comment struct {
-	fire.Base `json:"-" bson:",inline" fire:"comments"`
+	model.Base `json:"-" bson:",inline" fire:"comments"`
 	Message   string         `json:"message" valid:"required"`
 	Parent    *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
@@ -123,11 +123,11 @@ This section describes the configuration of models using the right combination o
 
 ### Basics
 
-The embedded struct `fire.Base` has to be present in every model as it holds the document id and defines the models plural and collection name via the `fire:"plural-name[:collection]"` struct tag:
+The embedded struct `Base` has to be present in every model as it holds the document id and defines the models plural and collection name via the `fire:"plural-name[:collection]"` struct tag:
 
 ```go
 type Post struct {
-    fire.Base `json:"-" bson:",inline" fire:"posts"`
+    model.Base `json:"-" bson:",inline" fire:"posts"`
     // ...
 }
 ```
@@ -261,12 +261,12 @@ _Note: Ember Data requires you to use dashed names for multi-word relationship n
 
 ### Has Many Relationships
 
-Fields that have a `fire.HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type:inverse"` struct tag:
+Fields that have a `HasMany` as their type define the inverse of a to one relationship and require the `fire:"name:type:inverse"` struct tag:
 
 ```go
 type Post struct {
     // ...
-	Comments fire.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	Comments model.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
 	// ...
 }
 ```
@@ -323,7 +323,7 @@ func(ctx *fire.Context) error {
 }
 ```
 
-Multiple callbacks can be combined using `fire.Combine()`:
+Multiple callbacks can be combined using `Combine()`:
 
 ```go
 fire.Combine(callback1, callback2)
@@ -342,7 +342,7 @@ Fire ships with several built-in callbacks that implement common concerns:
 
 ## Controller Groups
 
-Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `fire.NewControllerGroup()` with a URL prefix while controllers are added using `Add()`:
+Controller groups provide the necessary interconnection between controllers and the integration into existing echo applications. A `ControllerGroup` can be created by calling `NewControllerGroup()` with a URL prefix while controllers are added using `Add()`:
 
 ```go
 group := fire.NewControllerGroup("api")
@@ -356,7 +356,7 @@ Optionally, the group can be directly registered on a standard echo router using
 
 ## Applications
 
-Applications provide an easy way to get started with a project. An `Application` can be created using `fire.New()` while components are mounted using `Mount()`:
+Applications provide an easy way to get started with a project. An `Application` can be created using `New()` while components are mounted using `Mount()`:
 
 ```go
 app := fire.New(")
