@@ -31,9 +31,6 @@ type Protector struct {
 	// AllowedCORSMethods specifies the allowed methods when CORS.
 	AllowedCORSMethods []string
 
-	// XFrameOptions will set the "X-Frame-Option" header.
-	XFrameOptions string
-
 	// DisableAutomaticRecover will turn of automatic recover for panics.
 	DisableAutomaticRecovery bool
 }
@@ -57,7 +54,6 @@ func DefaultProtector() *Protector {
 			echo.PATCH,
 			echo.DELETE,
 		},
-		XFrameOptions: "SAMEORIGIN",
 	}
 }
 
@@ -97,11 +93,7 @@ func (p *Protector) Register(router *echo.Echo) {
 
 	// prepare secure config
 	config := middleware.DefaultSecureConfig
-
-	// override X-Frame-Options if available
-	if len(p.XFrameOptions) > 0 {
-		config.XFrameOptions = p.XFrameOptions
-	}
+	config.XFrameOptions = ""
 
 	// TODO: Configure HSTS header.
 	// TODO: Force SSL by redirection.
@@ -121,7 +113,6 @@ func (p *Protector) Inspect() fire.ComponentInfo {
 			"Allowed CORS Methods":    strings.Join(p.AllowedCORSMethods, ", "),
 			"Allowed CORS Headers":    strings.Join(p.AllowedCORSHeaders, ", "),
 			"Automatic Recovery":      fmt.Sprintf("%v", !p.DisableAutomaticRecovery),
-			"X-Frame-Options":         p.XFrameOptions,
 		},
 	}
 }
