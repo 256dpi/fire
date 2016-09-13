@@ -331,10 +331,10 @@ jsonapi.Combine(callback1, callback2)
 
 Fire ships with several built-in callbacks that implement common concerns:
 
-- [ProtectedAttributesValidator](https://godoc.org/github.com/gonfire/fire#ProtectedAttributesValidator)
-- [DependentResourcesValidator](https://godoc.org/github.com/gonfire/fire#DependentResourcesValidator)
-- [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire#VerifyReferencesValidator)
-- [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire#MatchingReferencesValidator)
+- [ProtectedAttributesValidator](https://godoc.org/github.com/gonfire/fire/jsonapi#ProtectedAttributesValidator)
+- [DependentResourcesValidator](https://godoc.org/github.com/gonfire/fire/jsonapi#DependentResourcesValidator)
+- [VerifyReferencesValidator](https://godoc.org/github.com/gonfire/fire/jsonapi#VerifyReferencesValidator)
+- [MatchingReferencesValidator](https://godoc.org/github.com/gonfire/fire/jsonapi#MatchingReferencesValidator)
 
 ## Controller Groups
 
@@ -355,14 +355,14 @@ Optionally, the group can be directly registered on a standard echo router using
 Applications provide an easy way to get started with a project. An `Application` can be created using `New()` while components are mounted using `Mount()`:
 
 ```go
-app := fire.New(")
+app := fire.New()
 
 app.Mount(group)
 
 app.Start("0.0.0.0:4242")
 ```
 
-An application can be started using `app.Start()` or `app.SecureStart()`.
+An application can be started using `Start()` or `SecureStart()`.
 
 ## License
 
