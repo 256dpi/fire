@@ -151,7 +151,7 @@ func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
 		duration := time.Since(start).String()
 
 		// log request
-		fmt.Fprintf(i.Writer, "%6s  %-30s  %d  %s\n", req.Method(), req.URL().Path(), res.Status(), duration)
+		fmt.Fprintf(i.Writer, "%6s  %s\n   %d  %s\n", req.Method(), req.URL().Path(), res.Status(), duration)
 
 		return nil
 	}

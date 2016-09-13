@@ -31,7 +31,7 @@ func TestInspector(t *testing.T) {
 	assert.Contains(t, buf.String(), "Fire application starting...")
 	assert.Contains(t, buf.String(), "GET  /foo")
 	assert.Contains(t, buf.String(), "Ready to go!")
-	assert.Contains(t, buf.String(), "GET  /foo                            200")
+	assert.Contains(t, buf.String(), "GET  /foo\n   200")
 }
 
 func TestInspectorError(t *testing.T) {
