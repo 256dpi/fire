@@ -1,9 +1,10 @@
-package fire
+package jsonapi
 
 import (
 	"errors"
 	"reflect"
 
+	"github.com/gonfire/fire"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -35,9 +36,6 @@ func isFatal(err error) bool {
 	return ok
 }
 
-// Map is a general purpose map used to configure callbacks.
-type Map map[string]interface{}
-
 // Combine combines multiple callbacks to one.
 //
 // Note: Execution will be stopped if a callback returns and error.
@@ -65,7 +63,7 @@ func Combine(callbacks ...Callback) Callback {
 //			"title": "A fixed title",
 //		})
 //
-func ProtectedAttributesValidator(attributes Map) Callback {
+func ProtectedAttributesValidator(attributes fire.Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -112,7 +110,7 @@ func ProtectedAttributesValidator(attributes Map) Callback {
 //			"comments": "user_id",
 // 		})
 //
-func DependentResourcesValidator(resources Map) Callback {
+func DependentResourcesValidator(resources fire.Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Action != Delete {
@@ -149,7 +147,7 @@ func DependentResourcesValidator(resources Map) Callback {
 //			"user_id": "users",
 // 		})
 //
-func VerifyReferencesValidator(references Map) Callback {
+func VerifyReferencesValidator(references fire.Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -194,7 +192,7 @@ func VerifyReferencesValidator(references Map) Callback {
 // 			"user_id": "user_id",
 // 		})
 //
-func MatchingReferencesValidator(collection, reference string, matcher Map) Callback {
+func MatchingReferencesValidator(collection, reference string, matcher fire.Map) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {

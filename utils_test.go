@@ -4,15 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
-	"github.com/labstack/echo/test"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -71,83 +68,6 @@ func (c *testComponent) Inspect() ComponentInfo {
 			"foo": "bar",
 		},
 	}
-}
-
-var session *mgo.Session
-
-func init() {
-	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire")
-	if err != nil {
-		panic(err)
-	}
-
-	session = sess
-}
-
-func getCleanDB() *mgo.Database {
-	db := session.DB("")
-
-	db.C("posts").RemoveAll(nil)
-	db.C("comments").RemoveAll(nil)
-	db.C("selections").RemoveAll(nil)
-
-	return db
-}
-
-func buildServer() (*echo.Echo, *mgo.Database) {
-	db := getCleanDB()
-	router := echo.New()
-	group := NewControllerGroup("")
-
-	group.Add(&Controller{
-		Model: &Post{},
-		Pool:  &clonePool{root: session},
-	}, &Controller{
-		Model: &Comment{},
-		Pool:  &clonePool{root: session},
-	}, &Controller{
-		Model: &Selection{},
-		Pool:  &clonePool{root: session},
-	})
-
-	group.Register(router)
-
-	return router, db
-}
-
-func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*test.ResponseRecorder, engine.Request)) {
-	req := test.NewRequest(method, path, strings.NewReader(payload))
-	rec := test.NewResponseRecorder()
-
-	for k, v := range headers {
-		req.Header().Set(k, v)
-	}
-
-	e.ServeHTTP(req, rec)
-
-	callback(rec, req)
-}
-
-func saveModel(db *mgo.Database, m model.Model) model.Model {
-	model.Init(m)
-
-	err := db.C(m.Meta().Collection).Insert(m)
-	if err != nil {
-		panic(err)
-	}
-
-	return m
-}
-
-func findLastModel(db *mgo.Database, m model.Model) model.Model {
-	model.Init(m)
-
-	err := db.C(m.Meta().Collection).Find(nil).Sort("-_id").One(m)
-	if err != nil {
-		panic(err)
-	}
-
-	return m
 }
 
 func runApp(app *Application) (chan struct{}, string) {

@@ -1,4 +1,4 @@
-package fire
+package jsonapi
 
 import (
 	"github.com/gonfire/fire/model"

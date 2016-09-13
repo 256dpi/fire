@@ -1,8 +1,9 @@
-package fire
+package jsonapi
 
 import (
 	"testing"
 
+	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
@@ -23,7 +24,7 @@ func TestCombine(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
-	validator := ProtectedAttributesValidator(Map{
+	validator := ProtectedAttributesValidator(fire.Map{
 		"title": "Default Title",
 	})
 
@@ -47,7 +48,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	db := getCleanDB()
 
-	validator := ProtectedAttributesValidator(Map{
+	validator := ProtectedAttributesValidator(fire.Map{
 		"title": "Default Title",
 	})
 
@@ -79,7 +80,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	db := getCleanDB()
 
 	// create validator
-	validator := DependentResourcesValidator(Map{
+	validator := DependentResourcesValidator(fire.Map{
 		"comments": "post_id",
 		"users":    "author_id",
 	})
@@ -112,7 +113,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	db := getCleanDB()
 
 	// create validator
-	validator := VerifyReferencesValidator(Map{
+	validator := VerifyReferencesValidator(fire.Map{
 		"parent":  "comments",
 		"post_id": "posts",
 	})
@@ -157,7 +158,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	db := getCleanDB()
 
 	// create validator
-	validator := MatchingReferencesValidator("comments", "parent", Map{
+	validator := MatchingReferencesValidator("comments", "parent", fire.Map{
 		"post_id": "post_id",
 	})
 

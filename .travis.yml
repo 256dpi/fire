@@ -15,6 +15,7 @@ script:
   - go test -coverprofile=fire.coverprofile
   - go test -coverprofile=model.coverprofile ./model
   - go test -coverprofile=components.coverprofile ./components
+  - go test -coverprofile=jsonapi.coverprofile ./jsonapi
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 matrix:

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/components"
+	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 )
 
@@ -13,16 +14,16 @@ type post struct {
 
 func main() {
 	// create pool
-	pool := fire.NewClonePool("mongodb://0.0.0.0:27017/fire-test-echo")
+	pool := fire.NewPool("mongodb://0.0.0.0:27017/fire-test-echo")
 
 	// create a new app
 	app := fire.New()
 
-	// create a new controller group
-	group := fire.NewControllerGroup("api")
+	// create a new group
+	group := jsonapi.New("api")
 
 	// add controller
-	group.Add(&fire.Controller{
+	group.Add(&jsonapi.Controller{
 		Model: &post{},
 		Pool:  pool,
 	})

@@ -1,4 +1,4 @@
-package fire
+package jsonapi
 
 import (
 	"testing"

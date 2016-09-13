@@ -7,20 +7,28 @@ type Pool interface {
 	Get() (*mgo.Session, *mgo.Database, error)
 }
 
-type clonePool struct {
+type pool struct {
 	uri  string
 	root *mgo.Session
 }
 
-// NewClonePool returns a Pool that clones sessions from a main session upon
-// request.
-func NewClonePool(uri string) Pool {
-	return &clonePool{
+// NewPool returns a Pool that clones sessions from a main session that is
+// initiated using the passed URI.
+func NewPool(uri string) Pool {
+	return &pool{
 		uri: uri,
 	}
 }
 
-func (db *clonePool) Get() (*mgo.Session, *mgo.Database, error) {
+// NewPoolWithSession returns a Pool that clones sessions the provided main
+// session.
+func NewPoolWithSession(session *mgo.Session) Pool {
+	return &pool{
+		root: session,
+	}
+}
+
+func (db *pool) Get() (*mgo.Session, *mgo.Database, error) {
 	// check for existing root session
 	if db.root == nil {
 		session, err := mgo.Dial(db.uri)

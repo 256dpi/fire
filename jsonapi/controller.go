@@ -1,11 +1,11 @@
-package fire
+package jsonapi
 
 import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 
+	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"github.com/gonfire/jsonapi/adapter"
@@ -13,64 +13,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
-
-// A ControllerGroup manages access to multiple controllers and their
-// interconnections.
-type ControllerGroup struct {
-	prefix      string
-	controllers map[string]*Controller
-}
-
-// NewControllerGroup creates and returns a new controller group.
-//
-// Note: You should pass the full URL prefix of the API to allow proper
-// generation of resource links.
-func NewControllerGroup(prefix string) *ControllerGroup {
-	return &ControllerGroup{
-		prefix:      prefix,
-		controllers: make(map[string]*Controller),
-	}
-}
-
-// Add will add a controller to the group.
-func (g *ControllerGroup) Add(controllers ...*Controller) {
-	for _, controller := range controllers {
-		// initialize model
-		model.Init(controller.Model)
-
-		// create entry in controller map
-		g.controllers[controller.Model.Meta().PluralName] = controller
-
-		// set reference on controller
-		controller.group = g
-	}
-}
-
-// Register implements the Component interface.
-func (g *ControllerGroup) Register(router *echo.Echo) {
-	for _, controller := range g.controllers {
-		controller.register(router, g.prefix)
-	}
-}
-
-// Inspect implements the InspectableComponent interface.
-func (g *ControllerGroup) Inspect() ComponentInfo {
-	// prepare resource names
-	var names []string
-
-	// add model names
-	for _, controller := range g.controllers {
-		names = append(names, controller.Model.Meta().PluralName)
-	}
-
-	return ComponentInfo{
-		Name: "Controller Group",
-		Settings: Map{
-			"Prefix":    g.prefix,
-			"Resources": strings.Join(names, ", "),
-		},
-	}
-}
 
 // A Controller provides a JSON API based interface to a model.
 //
@@ -80,7 +22,7 @@ type Controller struct {
 	Model model.Model
 
 	// The pool from which the database session is obtained.
-	Pool Pool
+	Pool fire.Pool
 
 	// The Authorizer is run on all actions. Will return an Unauthorized status
 	// if an user error is returned.
@@ -90,7 +32,7 @@ type Controller struct {
 	// return a Bad Request status if an user error is returned.
 	Validator Callback
 
-	group *ControllerGroup
+	group *Group
 }
 
 func (c *Controller) register(router *echo.Echo, prefix string) {

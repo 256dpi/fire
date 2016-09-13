@@ -7,7 +7,7 @@ import (
 )
 
 func TestClonePool(t *testing.T) {
-	p := NewClonePool("mongodb://localhost/fire")
+	p := NewPool("mongodb://localhost/fire")
 
 	sess, db, err := p.Get()
 	assert.NotNil(t, sess)
@@ -16,7 +16,7 @@ func TestClonePool(t *testing.T) {
 }
 
 func TestClonePoolError(t *testing.T) {
-	p := NewClonePool("mongodb://localhost/fire?make=fail")
+	p := NewPool("mongodb://localhost/fire?make=fail")
 
 	sess, db, err := p.Get()
 	assert.Nil(t, sess)
