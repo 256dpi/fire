@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"github.com/gonfire/jsonapi/adapter"
 	"github.com/labstack/echo"
@@ -35,7 +36,7 @@ func NewControllerGroup(prefix string) *ControllerGroup {
 func (g *ControllerGroup) Add(controllers ...*Controller) {
 	for _, controller := range controllers {
 		// initialize model
-		Init(controller.Model)
+		model.Init(controller.Model)
 
 		// create entry in controller map
 		g.controllers[controller.Model.Meta().PluralName] = controller
@@ -76,7 +77,7 @@ func (g *ControllerGroup) Inspect() ComponentInfo {
 // Note: Controllers must not be modified after adding to an application.
 type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
-	Model Model
+	Model model.Model
 
 	// The pool from which the database session is obtained.
 	Pool Pool
@@ -391,7 +392,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 	}
 
 	// prepare resource type
-	var relationField *Field
+	var relationField *model.Field
 
 	// find requested relationship
 	for _, field := range c.Model.Meta().Fields {
@@ -776,7 +777,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	}
 
 	// initialize and set model
-	ctx.Model = Init(obj.(Model))
+	ctx.Model = model.Init(obj.(model.Model))
 
 	return nil
 }
@@ -828,7 +829,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// init all models in slice
 	slice := reflect.ValueOf(slicePtr).Elem()
 	for i := 0; i < slice.Len(); i++ {
-		Init(slice.Index(i).Interface().(Model))
+		model.Init(slice.Index(i).Interface().(model.Model))
 	}
 
 	return slicePtr, nil
@@ -931,7 +932,7 @@ func (c *Controller) saveModel(ctx *Context) error {
 	return ctx.DB.C(c.Model.Meta().Collection).Update(ctx.Query, ctx.Model)
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
+func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi.Resource, error) {
 	// prepare resource
 	resource := &jsonapi.Resource{
 		Type:          c.Model.Meta().PluralName,
@@ -1077,7 +1078,7 @@ func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonap
 
 	// create resources
 	for i := 0; i < slice.Len(); i++ {
-		resource, err := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
+		resource, err := c.resourceForModel(ctx, slice.Index(i).Interface().(model.Model))
 		if err != nil {
 			return nil, err
 		}

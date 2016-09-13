@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
@@ -16,25 +17,25 @@ import (
 )
 
 type Post struct {
-	Base       `json:"-" bson:",inline" fire:"posts"`
-	Title      string  `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	Published  bool    `json:"published" valid:"-" fire:"filterable"`
-	TextBody   string  `json:"text-body" valid:"-" bson:"text_body"`
-	Comments   HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
-	Selections HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections:posts"`
+	model.Base `json:"-" bson:",inline" fire:"posts"`
+	Title      string        `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
+	Published  bool          `json:"published" valid:"-" fire:"filterable"`
+	TextBody   string        `json:"text-body" valid:"-" bson:"text_body"`
+	Comments   model.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	Selections model.HasMany `json:"-" valid:"-" bson:"-" fire:"selections:selections:posts"`
 }
 
 type Comment struct {
-	Base    `json:"-" bson:",inline" fire:"comments"`
-	Message string         `json:"message" valid:"required"`
-	Parent  *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
-	PostID  bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	model.Base `json:"-" bson:",inline" fire:"comments"`
+	Message    string         `json:"message" valid:"required"`
+	Parent     *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
+	PostID     bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
 type Selection struct {
-	Base    `json:"-" bson:",inline" fire:"selections:selections"`
-	Name    string          `json:"name" valid:"required"`
-	PostIDs []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
+	model.Base `json:"-" bson:",inline" fire:"selections:selections"`
+	Name       string          `json:"name" valid:"required"`
+	PostIDs    []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
 type testComponent struct{}
@@ -127,26 +128,26 @@ func testRequest(e *echo.Echo, method, path string, headers map[string]string, p
 	callback(rec, req)
 }
 
-func saveModel(db *mgo.Database, model Model) Model {
-	Init(model)
+func saveModel(db *mgo.Database, m model.Model) model.Model {
+	model.Init(m)
 
-	err := db.C(model.Meta().Collection).Insert(model)
+	err := db.C(m.Meta().Collection).Insert(m)
 	if err != nil {
 		panic(err)
 	}
 
-	return model
+	return m
 }
 
-func findLastModel(db *mgo.Database, model Model) Model {
-	Init(model)
+func findLastModel(db *mgo.Database, m model.Model) model.Model {
+	model.Init(m)
 
-	err := db.C(model.Meta().Collection).Find(nil).Sort("-_id").One(model)
+	err := db.C(m.Meta().Collection).Find(nil).Sort("-_id").One(m)
 	if err != nil {
 		panic(err)
 	}
 
-	return model
+	return m
 }
 
 func runApp(app *Application) (chan struct{}, string) {

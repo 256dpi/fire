@@ -1,4 +1,4 @@
-package fire
+package model
 
 import (
 	"testing"
@@ -10,6 +10,16 @@ import (
 type validatableModel struct {
 	Base `json:"-" bson:",inline" fire:"foo:foos"`
 	Test string `valid:"required"`
+}
+
+func TestInit(t *testing.T) {
+	m := Init(&Post{})
+	assert.NotNil(t, m.Meta())
+}
+
+func TestInitSlice(t *testing.T) {
+	m := InitSlice(&[]*Post{{}})
+	assert.NotNil(t, m[0].Meta())
 }
 
 func TestBaseID(t *testing.T) {

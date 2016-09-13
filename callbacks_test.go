@@ -3,6 +3,7 @@ package fire
 import (
 	"testing"
 
+	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -26,7 +27,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	post := Init(&Post{
+	post := model.Init(&Post{
 		Title: "Title",
 	}).(*Post)
 
@@ -54,7 +55,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Another Title",
 	}).(*Post)
 
-	post := Init(&Post{
+	post := model.Init(&Post{
 		Title: "Title",
 	}).(*Post)
 

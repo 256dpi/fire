@@ -3,19 +3,20 @@ package fire
 import (
 	"testing"
 
+	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestContextOriginal(t *testing.T) {
 	db := getCleanDB()
 
-	savedPost := Init(&Post{
+	savedPost := model.Init(&Post{
 		Title: "foo",
 	}).(*Post)
 
 	saveModel(db, savedPost)
 
-	post := Init(&Post{
+	post := model.Init(&Post{
 		Title: "bar",
 	}).(*Post)
 
@@ -46,7 +47,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 func TestContextOriginalNonExisting(t *testing.T) {
 	db := getCleanDB()
 
-	post := Init(&Post{
+	post := model.Init(&Post{
 		Title: "foo",
 	}).(*Post)
 

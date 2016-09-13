@@ -1,4 +1,5 @@
-package fire
+// Package model implements a basic model abstraction for structs.
+package model
 
 import (
 	"errors"
@@ -7,6 +8,42 @@ import (
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
+
+// Model is the main interface implemented by every fire model embedding Base.
+type Model interface {
+	ID() bson.ObjectId
+	Get(string) interface{}
+	Set(string, interface{})
+	Validate(bool) error
+	Meta() *Meta
+
+	initialize(Model)
+}
+
+// Init initializes the internals of a model and should be called before using
+// a newly created Model.
+func Init(model Model) Model {
+	model.initialize(model)
+	return model
+}
+
+// InitSlice initializes all models in a slice of the form *[]*Post and returns
+// a new slice that contains all initialized models.
+func InitSlice(ptr interface{}) []Model {
+	// get slice
+	slice := reflect.ValueOf(ptr).Elem()
+
+	// make model slice
+	models := make([]Model, slice.Len())
+
+	// iterate over entries
+	for i := 0; i < slice.Len(); i++ {
+		m := Init(slice.Index(i).Interface().(Model))
+		models[i] = m
+	}
+
+	return models
+}
 
 // Base is the base for every fire model.
 type Base struct {

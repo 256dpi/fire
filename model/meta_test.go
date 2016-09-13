@@ -1,4 +1,4 @@
-package fire
+package model
 
 import (
 	"reflect"
@@ -73,7 +73,7 @@ func TestNewMeta(t *testing.T) {
 func TestMeta(t *testing.T) {
 	post := Init(&Post{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.Post",
+		Name:       "model.Post",
 		Collection: "posts",
 		PluralName: "posts",
 		Fields: []Field{
@@ -131,7 +131,7 @@ func TestMeta(t *testing.T) {
 
 	comment := Init(&Comment{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.Comment",
+		Name:       "model.Comment",
 		Collection: "comments",
 		PluralName: "comments",
 		Fields: []Field{
@@ -166,18 +166,44 @@ func TestMeta(t *testing.T) {
 		},
 		model: comment.Meta().model,
 	}, comment.Meta())
+
+	selection := Init(&Selection{})
+	assert.Equal(t, &Meta{
+		Name:       "model.Selection",
+		Collection: "selections",
+		PluralName: "selections",
+		Fields: []Field{
+			{
+				Name:     "Name",
+				Type:     reflect.String,
+				JSONName: "name",
+				BSONName: "name",
+				index:    1,
+			},
+			{
+				Name:     "PostIDs",
+				Type:     reflect.Slice,
+				BSONName: "post_ids",
+				ToMany:   true,
+				RelName:  "posts",
+				RelType:  "posts",
+				index:    2,
+			},
+		},
+		model: selection.Meta().model,
+	}, selection.Meta())
 }
 
 func TestMetaMake(t *testing.T) {
 	post := Init(&Post{}).Meta().Make()
 
-	assert.Equal(t, "<*fire.Post Value>", reflect.ValueOf(post).String())
+	assert.Equal(t, "<*model.Post Value>", reflect.ValueOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
 	posts := Init(&Post{}).Meta().MakeSlice()
 
-	assert.Equal(t, "<*[]*fire.Post Value>", reflect.ValueOf(posts).String())
+	assert.Equal(t, "<*[]*model.Post Value>", reflect.ValueOf(posts).String())
 }
 
 func BenchmarkNewMeta(b *testing.B) {

@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
@@ -31,7 +32,7 @@ type Context struct {
 	Query bson.M
 
 	// The Model that will be saved during Create or Update.
-	Model Model
+	Model model.Model
 
 	// The sorting that will be used during FindAll.
 	Sorting []string
@@ -45,7 +46,7 @@ type Context struct {
 	// The underlying echo context.
 	Echo echo.Context
 
-	original Model
+	original model.Model
 }
 
 // Original will return the stored version of the model. This method is intended
@@ -53,7 +54,7 @@ type Context struct {
 //
 // Note: The method will directly return any mgo errors and panic if being used
 // during any other action than Update.
-func (c *Context) Original() (Model, error) {
+func (c *Context) Original() (model.Model, error) {
 	if c.Action != Update {
 		panic("Original can only be used during a Update action")
 	}
@@ -64,16 +65,16 @@ func (c *Context) Original() (Model, error) {
 	}
 
 	// create a new model
-	model := c.Model.Meta().Make()
+	m := c.Model.Meta().Make()
 
 	// read original document
-	err := c.DB.C(c.Model.Meta().Collection).FindId(c.Model.ID()).One(model)
+	err := c.DB.C(c.Model.Meta().Collection).FindId(c.Model.ID()).One(m)
 	if err != nil {
 		return nil, err
 	}
 
 	// cache model
-	c.original = Init(model)
+	c.original = model.Init(m)
 
 	return c.original, nil
 }
