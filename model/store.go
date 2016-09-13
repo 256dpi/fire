@@ -52,12 +52,7 @@ func (s *Store) DB() *mgo.Database {
 	return s.session.DB("")
 }
 
-// Coll will return the collection associated to the passed model.
-func (s *Store) Coll(model Model) *mgo.Collection {
+// C will return the collection associated to the passed model.
+func (s *Store) C(model Model) *mgo.Collection {
 	return s.DB().C(model.Meta().Collection)
-}
-
-// Insert will insert the passed model.
-func (s *Store) Insert(model Model) error {
-	return s.Coll(model).Insert(model)
 }

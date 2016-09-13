@@ -86,7 +86,7 @@ func (c *Context) Original() (model.Model, error) {
 	m := c.Model.Meta().Make()
 
 	// read original document
-	err := c.Store.Coll(c.Model).FindId(c.Model.ID()).One(m)
+	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
 		return nil, err
 	}

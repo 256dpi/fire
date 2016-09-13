@@ -33,7 +33,7 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	defer store.Close()
 
 	// query db
-	err := store.Coll(s.authenticator.policy.ClientModel).Find(bson.M{
+	err := store.C(s.authenticator.policy.ClientModel).Find(bson.M{
 		s.authenticator.policy.ClientIDField: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -106,7 +106,7 @@ func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string
 	defer store.Close()
 
 	// save access token
-	return store.Insert(accessToken)
+	return store.C(accessToken).Insert(accessToken)
 }
 
 func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, session interface{}) (fosite.Requester, error) {
@@ -120,7 +120,7 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	defer store.Close()
 
 	// fetch access token
-	err := store.Coll(s.authenticator.policy.AccessTokenModel).Find(bson.M{
+	err := store.C(s.authenticator.policy.AccessTokenModel).Find(bson.M{
 		s.authenticator.policy.AccessTokenIDField: signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -199,7 +199,7 @@ func (s *storage) getOwner(id string) (model.Model, error) {
 	defer store.Close()
 
 	// query db
-	err := store.Coll(s.authenticator.policy.OwnerModel).Find(bson.M{
+	err := store.C(s.authenticator.policy.OwnerModel).Find(bson.M{
 		s.authenticator.policy.OwnerIDField: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {

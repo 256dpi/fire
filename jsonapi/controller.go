@@ -227,7 +227,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// insert model
-	err = ctx.Store.Insert(ctx.Model)
+	err = ctx.Store.C(ctx.Model).Insert(ctx.Model)
 	if err != nil {
 		return err
 	}
@@ -310,7 +310,7 @@ func (c *Controller) deleteResource(ctx *Context) error {
 	}
 
 	// query db
-	err := ctx.Store.Coll(c.Model).Remove(ctx.Query)
+	err := ctx.Store.C(c.Model).Remove(ctx.Query)
 	if err != nil {
 		return err
 	}
@@ -699,7 +699,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	obj := c.Model.Meta().Make()
 
 	// query db
-	err = ctx.Store.Coll(c.Model).Find(ctx.Query).One(obj)
+	err = ctx.Store.C(c.Model).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
@@ -750,7 +750,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	slicePtr := c.Model.Meta().MakeSlice()
 
 	// query db
-	err = ctx.Store.Coll(c.Model).Find(ctx.Query).Sort(ctx.Sorting...).All(slicePtr)
+	err = ctx.Store.C(c.Model).Find(ctx.Query).Sort(ctx.Sorting...).All(slicePtr)
 	if err != nil {
 		return nil, err
 	}
@@ -858,7 +858,7 @@ func (c *Controller) saveModel(ctx *Context) error {
 	}
 
 	// update model
-	return ctx.Store.Coll(c.Model).Update(ctx.Query, ctx.Model)
+	return ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model)
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi.Resource, error) {
@@ -965,7 +965,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 
 			// load all referenced ids
 			var ids []bson.ObjectId
-			err := ctx.Store.Coll(relatedController.Model).Find(bson.M{
+			err := ctx.Store.C(relatedController.Model).Find(bson.M{
 				filterName: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
