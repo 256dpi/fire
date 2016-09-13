@@ -44,7 +44,7 @@ func (g *ControllerGroup) Add(controllers ...*Controller) {
 	}
 }
 
-// Register will register the controller group on the passed echo router.
+// Register implements the Component interface.
 func (g *ControllerGroup) Register(router *echo.Echo) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)

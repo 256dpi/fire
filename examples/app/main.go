@@ -30,7 +30,7 @@ func main() {
 	app.Mount(group)
 
 	// mount inspector
-	app.Mount(fire.DefaultInspector())
+	app.Mount(fire.DefaultInspector(app))
 
 	// run server
 	app.Start("0.0.0.0:4000")

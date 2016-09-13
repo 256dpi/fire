@@ -1,10 +1,15 @@
 package fire
 
 import (
+	"errors"
+	"fmt"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
+	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/test"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -30,6 +35,36 @@ type Selection struct {
 	Base    `json:"-" bson:",inline" fire:"selections:selections"`
 	Name    string          `json:"name" valid:"required"`
 	PostIDs []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
+}
+
+type testComponent struct{}
+
+func (c *testComponent) Register(router *echo.Echo) {
+	router.GET("/", func(ctx echo.Context) error {
+		ctx.String(200, "OK")
+		return nil
+	})
+
+	router.GET("/foo", func(ctx echo.Context) error {
+		ctx.String(200, "OK")
+		return nil
+	})
+
+	router.GET("/error", func(ctx echo.Context) error {
+		return errors.New("error")
+	})
+}
+
+func (c *testComponent) Setup() error {
+	return nil
+}
+
+func (c *testComponent) Teardown() error {
+	return nil
+}
+
+func (c *testComponent) Inspect() string {
+	return "This is a test component\n"
 }
 
 var session *mgo.Session
@@ -107,4 +142,33 @@ func findLastModel(db *mgo.Database, model Model) Model {
 	}
 
 	return model
+}
+
+func runApp(app *Application) (chan struct{}, string) {
+	listener, err := net.Listen("tcp", ":")
+	if err != nil {
+		panic(err)
+	}
+
+	server := standard.WithConfig(engine.Config{
+		Listener: listener,
+	})
+
+	go func() {
+		err := app.Run(server)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	done := make(chan struct{})
+
+	go func(done chan struct{}) {
+		<-done
+		listener.Close()
+	}(done)
+
+	time.Sleep(50 * time.Millisecond)
+
+	return done, fmt.Sprintf("http://%s", listener.Addr().String())
 }

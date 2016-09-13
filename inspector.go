@@ -10,39 +10,82 @@ import (
 	"github.com/labstack/echo"
 )
 
-// An Inspector can be used during development to print the route table and
-// handle requests to writer.
-//
-// Note: Inspectors must be mounted as the last component in an application in
-// oder to have access to the full routing table.
+// The InspectableComponent interface can be implement by a component in order to
+// be inspectable by a inspector.
+type InspectableComponent interface {
+	// Inspect will be called by the application to print a list of used
+	// components and their configuration.
+	Inspect() string
+}
+
+// An Inspector can be used during development to print the applications
+// component stack, the route table and log requests to writer.
 type Inspector struct {
-	Writer io.Writer
+	Writer      io.Writer
+	Application *Application
 }
 
 // DefaultInspector creates and returns a new inspector that writes to stdout.
-func DefaultInspector() *Inspector {
+func DefaultInspector(app *Application) *Inspector {
+	return NewInspector(app, os.Stdout)
+}
+
+// NewInspector creates and returns a new inspector.
+func NewInspector(app *Application, writer io.Writer) *Inspector {
 	return &Inspector{
-		Writer: os.Stdout,
+		Application: app,
+		Writer:      writer,
 	}
 }
 
-// Register will register the inspector on the passed echo router.
+// Register implements the Component interface.
 func (i *Inspector) Register(router *echo.Echo) {
-	i.inspectRoutingTable(router)
 	router.Use(i.requestLogger)
 	router.SetHTTPErrorHandler(i.errorHandler)
 }
 
-func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
+// Setup implements the BootableComponent interface.
+func (i *Inspector) Setup() error {
 	// print header
 	fmt.Fprintln(i.Writer, "==> Fire application starting...")
-	fmt.Fprintln(i.Writer, "==> Registered routes:")
 
+	// print component info
+	fmt.Fprintln(i.Writer, "==> Mounted components:")
+	i.inspectComponents()
+
+	// print routing table
+	fmt.Fprintln(i.Writer, "==> Registered routes:")
+	i.inspectRoutingTable()
+
+	// print footer
+	fmt.Fprintln(i.Writer, "==> Ready to go!")
+
+	return nil
+}
+
+// Teardown implements the BootableComponent interface.
+func (i *Inspector) Teardown() error {
+	// print footer
+	fmt.Fprintln(i.Writer, "==> Fire application is stopping...")
+
+	return nil
+}
+
+func (i *Inspector) inspectComponents() {
+	// inspect all components
+	for _, component := range i.Application.components {
+		if inspectable, ok := component.(InspectableComponent); ok {
+			fmt.Fprintf(i.Writer, inspectable.Inspect())
+		}
+	}
+}
+
+func (i *Inspector) inspectRoutingTable() {
 	// prepare routes
 	var routes []string
 
 	// add all routes as string
-	for _, route := range router.Routes() {
+	for _, route := range i.Application.router.Routes() {
 		routes = append(routes, fmt.Sprintf("%6s  %-30s", route.Method, route.Path))
 	}
 
@@ -53,9 +96,6 @@ func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
 	for _, route := range routes {
 		fmt.Fprintln(i.Writer, route)
 	}
-
-	// print footer
-	fmt.Fprintln(i.Writer, "==> Ready to go!")
 }
 
 func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
@@ -74,14 +114,8 @@ func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
 		// get request duration
 		duration := time.Since(start).String()
 
-		// fix path
-		path := req.URL().Path()
-		if path == "" {
-			path = "/"
-		}
-
 		// log request
-		fmt.Fprintf(i.Writer, "%6s  %-30s  %d  %s\n", req.Method(), path, res.Status(), duration)
+		fmt.Fprintf(i.Writer, "%6s  %-30s  %d  %s\n", req.Method(), req.URL().Path(), res.Status(), duration)
 
 		return nil
 	}

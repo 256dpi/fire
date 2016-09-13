@@ -9,7 +9,7 @@ import (
 func TestProtector(t *testing.T) {
 	p := DefaultProtector()
 	p.AllowMethodOverriding = true
-	p.OverrideXFrameOptions = "DENY"
+	p.XFrameOptions = "DENY"
 
 	r := echo.New()
 

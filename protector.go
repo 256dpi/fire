@@ -1,6 +1,8 @@
 package fire
 
 import (
+	"fmt"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -25,9 +27,8 @@ type Protector struct {
 	// AllowedCORSMethods specifies the allowed methods when CORS.
 	AllowedCORSMethods []string
 
-	// OverrideXFrameOptions can be set to override the default value
-	// "SAMEORIGIN" for the "X-Frame-Option" header.
-	OverrideXFrameOptions string
+	// XFrameOptions will set the "X-Frame-Option" header.
+	XFrameOptions string
 
 	// DisableAutomaticRecover will turn of automatic recover for panics.
 	DisableAutomaticRecovery bool
@@ -52,6 +53,7 @@ func DefaultProtector() *Protector {
 			echo.PATCH,
 			echo.DELETE,
 		},
+		XFrameOptions: "SAMEORIGIN",
 	}
 }
 
@@ -93,8 +95,8 @@ func (p *Protector) Register(router *echo.Echo) {
 	config := middleware.DefaultSecureConfig
 
 	// override X-Frame-Options if available
-	if len(p.OverrideXFrameOptions) > 0 {
-		config.XFrameOptions = p.OverrideXFrameOptions
+	if len(p.XFrameOptions) > 0 {
+		config.XFrameOptions = p.XFrameOptions
 	}
 
 	// TODO: Configure HSTS header.
@@ -102,4 +104,17 @@ func (p *Protector) Register(router *echo.Echo) {
 
 	// add the secure middleware
 	router.Use(middleware.SecureWithConfig(config))
+}
+
+// Inspect implements the InspectableComponent interface.
+func (p *Protector) Inspect() (str string) {
+	str = str + fmt.Sprintln("Protector:")
+	str = str + fmt.Sprintf("- Body Limit: %s\n", p.BodyLimit)
+	str = str + fmt.Sprintf("- Allow Method Overriding: %v\n", p.AllowMethodOverriding)
+	str = str + fmt.Sprintf("- Allowed CORS Origins: %v\n", p.AllowedCORSOrigins)
+	str = str + fmt.Sprintf("- Allowed CORS Methods: %v\n", p.AllowedCORSMethods)
+	str = str + fmt.Sprintf("- Allowed CORS Heders: %v\n", p.AllowedCORSHeaders)
+	str = str + fmt.Sprintf("- Automatic Recovery: %v\n", !p.DisableAutomaticRecovery)
+	str = str + fmt.Sprintf("- X-Frame-Options: %s\n", p.XFrameOptions)
+	return
 }
