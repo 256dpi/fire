@@ -72,6 +72,13 @@ func (i *Inspector) Setup(router *echo.Echo) error {
 	return nil
 }
 
+// Inspect implements the InspectableComponent interface.
+func (i *Inspector) Inspect() ComponentInfo {
+	return ComponentInfo{
+		Name: "Inspector",
+	}
+}
+
 // Teardown implements the BootableComponent interface.
 func (i *Inspector) Teardown() error {
 	// print footer
@@ -88,7 +95,7 @@ func (i *Inspector) inspectComponents() {
 			info := inspectable.Inspect()
 
 			// print name
-			fmt.Fprintf(i.Writer, "%s:\n", info.Name)
+			fmt.Fprintf(i.Writer, "[%s]\n", info.Name)
 
 			// prepare settings
 			var settings []string
