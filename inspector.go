@@ -90,9 +90,20 @@ func (i *Inspector) inspectComponents() {
 			// print name
 			fmt.Fprintf(i.Writer, "%s:\n", info.Name)
 
+			// prepare settings
+			var settings []string
+
 			// print settings
 			for name, value := range info.Settings {
-				fmt.Fprintf(i.Writer, "  - %s: %s\n", name, value)
+				settings = append(settings, fmt.Sprintf("  - %s: %s", name, value))
+			}
+
+			// sort settings
+			sort.Strings(settings)
+
+			// print settings
+			for _, setting := range settings {
+				fmt.Fprintln(i.Writer, setting)
 			}
 		}
 	}
