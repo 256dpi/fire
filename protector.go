@@ -2,6 +2,7 @@ package fire
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -113,9 +114,9 @@ func (p *Protector) Inspect() ComponentInfo {
 		Settings: Map{
 			"Body Limit":              p.BodyLimit,
 			"Allow Method Overriding": fmt.Sprintf("%v", p.AllowMethodOverriding),
-			"Allowed CORS Origins":    fmt.Sprintf("%v", p.AllowedCORSOrigins),
-			"Allowed CORS Methods":    fmt.Sprintf("%v", p.AllowedCORSMethods),
-			"Allowed CORS Headers":    fmt.Sprintf("%v", p.AllowedCORSHeaders),
+			"Allowed CORS Origins":    strings.Join(p.AllowedCORSOrigins, ", "),
+			"Allowed CORS Methods":    strings.Join(p.AllowedCORSMethods, ", "),
+			"Allowed CORS Headers":    strings.Join(p.AllowedCORSHeaders, ", "),
 			"Automatic Recovery":      fmt.Sprintf("%v", !p.DisableAutomaticRecovery),
 			"X-Frame-Options":         p.XFrameOptions,
 		},

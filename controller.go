@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/gonfire/jsonapi"
 	"github.com/gonfire/jsonapi/adapter"
@@ -48,6 +49,25 @@ func (g *ControllerGroup) Add(controllers ...*Controller) {
 func (g *ControllerGroup) Register(router *echo.Echo) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)
+	}
+}
+
+// Inspect implements the InspectableComponent interface.
+func (g *ControllerGroup) Inspect() ComponentInfo {
+	// prepare resource names
+	var names []string
+
+	// add model names
+	for _, controller := range g.controllers {
+		names = append(names, controller.Model.Meta().PluralName)
+	}
+
+	return ComponentInfo{
+		Name: "Controller Group",
+		Settings: Map{
+			"Prefix":    g.prefix,
+			"Resources": strings.Join(names, ", "),
+		},
 	}
 }
 
