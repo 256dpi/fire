@@ -1,3 +1,5 @@
+// Package oauth2 implements an authenticator component that provides OAuth2
+// compatible authentication.
 package oauth2
 
 import (

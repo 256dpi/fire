@@ -1,3 +1,4 @@
+// Package jsonapi implements components to build JSON APIs with fire.
 package jsonapi
 
 import (
