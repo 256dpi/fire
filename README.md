@@ -42,7 +42,7 @@ _The framework is still WIP and the API may be changed._
 
 ## Example
 
-An example application that uses the fire framework and the auth add-on to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/gonfire/example>.
+An example application that uses the fire framework to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/gonfire/example>.
 
 ## Installation
 
@@ -51,10 +51,6 @@ Get the package using the go tool:
 ```bash
 $ go get -u github.com/gonfire/fire
 ```
-
-## Add-ons
-
-- [auth](https://github.com/gonfire/auth): OAuth2 based Authentication
 
 ## Usage
 

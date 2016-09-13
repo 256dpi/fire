@@ -1,5 +1,5 @@
-hash: 847be0b5369f863fd8a31cfd424ac8c22a34b97a989268096b52f5594f9bb7e9
-updated: 2016-09-12T13:06:00.834802988+02:00
+hash: be940a478c6a913bfc7b8e2eec1ffc9737e71f56f80f1e16a266ef8871ab4f69
+updated: 2016-09-13T13:13:35.854351703+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -31,8 +31,29 @@ imports:
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mitchellh/mapstructure
   version: ca63d7c062ee3c9f34db231e352b60012b4fd0c1
+- name: github.com/ory-am/fosite
+  version: 76ef7ea8f51735d63476cd91e1f9a9f367d544cb
+  subpackages:
+  - compose
+  - handler/oauth2
+  - handler/openid
+  - hash
+  - rand
+  - token/hmac
+  - token/jwt
+- name: github.com/pborman/uuid
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+- name: github.com/pkg/errors
+  version: 17b591df37844cde689f4d5813e5cea0927d8dd2
+- name: github.com/Sirupsen/logrus
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
+- name: golang.org/x/crypto
+  version: a8a4eedf8c97852389ea5f2c252660d3616af041
+  subpackages:
+  - bcrypt
+  - blowfish
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
@@ -53,6 +74,8 @@ testImports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/Jeffail/gabs
+  version: 855034b6b7a3b7144977efcaefe72d2c64b0d039
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
