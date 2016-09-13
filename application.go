@@ -1,3 +1,5 @@
+// Package fire implements a small and opinionated framework for Go providing
+// Ember compatible JSON APIs.
 package fire
 
 import (
@@ -5,6 +7,9 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 )
+
+// Map is a general purpose map used for configuration.
+type Map map[string]interface{}
 
 // A Component can be mounted on an application.
 type Component interface {
