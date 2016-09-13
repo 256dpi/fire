@@ -3,23 +3,24 @@ all: test fmt vet lint
 test:
 	go test -cover .
 	go test -cover ./model
+	go test -cover ./components
 
 vet:
 	go vet .
 	go vet ./model
-	go vet ./examples/echo
+	go vet ./components
 	go vet ./examples/app
 
 fmt:
 	go fmt .
 	go fmt ./model
-	go fmt ./examples/echo
+	go fmt ./components
 	go fmt ./examples/app
 
 lint:
 	golint .
 	golint ./model
-	golint ./examples/echo
+	golint ./components
 	golint ./examples/app
 
 err:

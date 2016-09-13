@@ -1,10 +1,12 @@
-package fire
+package components
 
 import (
 	"testing"
 
 	"github.com/labstack/echo"
 )
+
+// TODO: Make tests actually test something.
 
 func TestProtector(t *testing.T) {
 	p := DefaultProtector()
@@ -14,6 +16,5 @@ func TestProtector(t *testing.T) {
 	r := echo.New()
 
 	p.Register(r)
-
-	// TODO: Make tests actually test something.
+	p.Inspect()
 }

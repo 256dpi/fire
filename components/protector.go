@@ -1,9 +1,12 @@
-package fire
+// Package components contains additional components which can be mounted in a
+// fire application.
+package components
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/gonfire/fire"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -108,10 +111,10 @@ func (p *Protector) Register(router *echo.Echo) {
 }
 
 // Inspect implements the InspectableComponent interface.
-func (p *Protector) Inspect() ComponentInfo {
-	return ComponentInfo{
+func (p *Protector) Inspect() fire.ComponentInfo {
+	return fire.ComponentInfo{
 		Name: "Protector",
-		Settings: Map{
+		Settings: fire.Map{
 			"Body Limit":              p.BodyLimit,
 			"Allow Method Overriding": fmt.Sprintf("%v", p.AllowMethodOverriding),
 			"Allowed CORS Origins":    strings.Join(p.AllowedCORSOrigins, ", "),

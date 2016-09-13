@@ -1,10 +1,14 @@
 package main
 
-import "github.com/gonfire/fire"
+import (
+	"github.com/gonfire/fire"
+	"github.com/gonfire/fire/components"
+	"github.com/gonfire/fire/model"
+)
 
 type post struct {
-	fire.Base `json:"-" bson:",inline" fire:"posts"`
-	Title     string `json:"title" valid:"required" fire:"filterable,sortable"`
+	model.Base `json:"-" bson:",inline" fire:"posts"`
+	Title      string `json:"title" valid:"required" fire:"filterable,sortable"`
 }
 
 func main() {
@@ -24,7 +28,7 @@ func main() {
 	})
 
 	// mount protector
-	app.Mount(fire.DefaultProtector())
+	app.Mount(components.DefaultProtector())
 
 	// mount group
 	app.Mount(group)
