@@ -59,7 +59,7 @@ func Combine(callbacks ...Callback) Callback {
 //
 // Attributes are defined by passing pairs of fields and default values:
 //
-//		ProtectedAttributesValidator(M{
+//		ProtectedAttributesValidator(fire.Map{
 //			"title": "A fixed title",
 //		})
 //
@@ -105,7 +105,7 @@ func ProtectedAttributesValidator(attributes fire.Map) Callback {
 // Resources are defined by passing pairs of collections and fields where the
 // field must be a database field of the target resource model:
 //
-//		DependentResourcesValidator(M{
+//		DependentResourcesValidator(fire.Map{
 // 			"posts": "user_id",
 //			"comments": "user_id",
 // 		})
@@ -142,7 +142,7 @@ func DependentResourcesValidator(resources fire.Map) Callback {
 // References are defined by passing pairs of fields and collections where the
 // field must be a database field on the resource model:
 //
-//		VerifyReferencesValidator(M{
+//		VerifyReferencesValidator(fire.Map{
 // 			"post_id": "posts",
 //			"user_id": "users",
 // 		})
@@ -188,7 +188,7 @@ func VerifyReferencesValidator(references fire.Map) Callback {
 // field on the current model. The matcher is defined by passing pairs of
 // database fields on the target and current model:
 //
-//		MatchingReferencesValidator("posts", "post_id", M{
+//		MatchingReferencesValidator("posts", "post_id", fire.Map{
 // 			"user_id": "user_id",
 // 		})
 //
