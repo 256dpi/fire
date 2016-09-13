@@ -1,14 +1,14 @@
 package jsonapi
 
 import (
-	"github.com/gonfire/fire"
+	"strings"
+
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/test"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"strings"
 )
 
 type Post struct {
@@ -61,13 +61,13 @@ func buildServer() (*echo.Echo, *mgo.Database) {
 
 	group.Add(&Controller{
 		Model: &Post{},
-		Pool:  fire.NewPoolWithSession(session),
+		Store: model.NewStoreWithSession(session),
 	}, &Controller{
 		Model: &Comment{},
-		Pool:  fire.NewPoolWithSession(session),
+		Store: model.NewStoreWithSession(session),
 	}, &Controller{
 		Model: &Selection{},
-		Pool:  fire.NewPoolWithSession(session),
+		Store: model.NewStoreWithSession(session),
 	})
 
 	group.Register(router)

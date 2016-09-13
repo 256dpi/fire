@@ -8,7 +8,7 @@ import (
 )
 
 func TestAction(t *testing.T) {
-	table := []struct{
+	table := []struct {
 		a Action
 		r bool
 		w bool

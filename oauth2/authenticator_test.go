@@ -39,11 +39,11 @@ func TestPasswordGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Pool:  getPool(),
+		Store: getStore(),
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -152,11 +152,11 @@ func TestClientCredentialsGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Pool:  getPool(),
+		Store: getStore(),
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -252,11 +252,11 @@ func TestImplicitGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Pool:  getPool(),
+		Store: getStore(),
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -386,11 +386,11 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
@@ -456,11 +456,11 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
@@ -521,11 +521,11 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
@@ -582,11 +582,11 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
@@ -638,11 +638,11 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
@@ -717,11 +717,11 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Pool:       getPool(),
+		Store:      getStore(),
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
@@ -791,7 +791,7 @@ func TestGinAuthorizer(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getPool(), policy, "auth")
+	authenticator := New(getStore(), policy, "auth")
 
 	server, db := buildServer()
 	server.GET("/foo", func(ctx echo.Context) error {

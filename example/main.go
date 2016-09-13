@@ -15,8 +15,8 @@ type post struct {
 }
 
 func main() {
-	// create pool
-	pool := fire.NewPool("mongodb://0.0.0.0:27017/fire-test-echo")
+	// create store
+	store := model.NewStore("mongodb://0.0.0.0:27017/fire-test-echo")
 
 	// create a new app
 	app := fire.New()
@@ -27,7 +27,7 @@ func main() {
 	// add controller
 	group.Add(&jsonapi.Controller{
 		Model: &post{},
-		Pool:  pool,
+		Store: store,
 	})
 
 	// mount protector

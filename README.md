@@ -79,20 +79,20 @@ type Comment struct {
 Every resource is managed by a `Controller` which provides the JSON API compliant interface:
 
 ```go
-pool := fire.NewPool("mongodb://localhost/my-app")
+store := model.NewStore("mongodb://localhost/my-app")
 
 postsController := &jsonapi.Controller{
     Model: &Post{},
-    Pool: pool,
+    Store: store,
 }
 
 commentsController := &jsonapi.Controller{
     Model: &Comment{},
-    Pool: pool,
+    Store: store,
 }
 ```
 
-The method `NewPool()` returns a `Pool` that manages access to the database for the controllers. 
+The method `NewStore()` returns a `Store` that manages access to the database for the controllers. 
  
 In a next step, multiple controllers are combined to a `Group` that provides the necessary interconnection and integration with applications:
 
@@ -279,12 +279,12 @@ This section describes the construction of controllers that expose the models as
 
 ### Basics
 
-Controllers are declared by creating a `Controller` and providing a reference to the `Model` and a pool to obtain database connections from:
+Controllers are declared by creating a `Controller` and providing a reference to the `Model` and a `Store` to obtain database connections from:
 
 ```go
 postsController := &jsonapi.Controller{
     Model: &Post{},
-    Pool: pool,
+    Store: store,
     // ...
 }
 ```

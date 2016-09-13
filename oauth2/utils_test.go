@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
@@ -46,8 +45,8 @@ func init() {
 	session = sess
 }
 
-func getPool() fire.Pool {
-	return fire.NewPool("mongodb://0.0.0.0:27017/fire-auth")
+func getStore() *model.Store {
+	return model.NewStore("mongodb://0.0.0.0:27017/fire-auth")
 }
 
 func getDB() *mgo.Database {

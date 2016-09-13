@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"github.com/gonfire/jsonapi/adapter"
@@ -22,8 +21,8 @@ type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model model.Model
 
-	// The pool from which the database session is obtained.
-	Pool fire.Pool
+	// The store that is used to retrieve and persist the model.
+	Store *model.Store
 
 	// The Authorizer is run on all actions. Will return an Unauthorized status
 	// if an user error is returned.
@@ -91,7 +90,7 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	}
 
 	// clone database connection
-	sess, db, err := c.Pool.Get()
+	sess, db, err := c.Store.Get()
 	if err != nil {
 		return jsonapi.WriteError(w, err)
 	}

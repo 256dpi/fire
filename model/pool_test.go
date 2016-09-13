@@ -1,4 +1,4 @@
-package fire
+package model
 
 import (
 	"testing"
@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClonePool(t *testing.T) {
-	p := NewPool("mongodb://localhost/fire")
+func TestNewStore(t *testing.T) {
+	p := NewStore("mongodb://localhost/fire")
 
 	sess, db, err := p.Get()
 	assert.NotNil(t, sess)
@@ -15,8 +15,8 @@ func TestClonePool(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestClonePoolError(t *testing.T) {
-	p := NewPool("mongodb://localhost/fire?make=fail")
+func TestNewStoreError(t *testing.T) {
+	p := NewStore("mongodb://localhost/fire?make=fail")
 
 	sess, db, err := p.Get()
 	assert.Nil(t, sess)

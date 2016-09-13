@@ -5,7 +5,6 @@ package oauth2
 import (
 	"net/http"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
@@ -34,7 +33,7 @@ const (
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant flows.
 type Authenticator struct {
-	pool   fire.Pool
+	store  *model.Store
 	prefix string
 	policy *Policy
 
@@ -45,7 +44,7 @@ type Authenticator struct {
 }
 
 // New creates and returns a new Authenticator.
-func New(pool fire.Pool, policy *Policy, prefix string) *Authenticator {
+func New(store *model.Store, policy *Policy, prefix string) *Authenticator {
 	// check secret
 	if len(policy.Secret) < 16 {
 		panic("Secret must be longer than 16 characters")
@@ -94,7 +93,7 @@ func New(pool fire.Pool, policy *Policy, prefix string) *Authenticator {
 
 	// create authenticator
 	a := &Authenticator{
-		pool:     pool,
+		store:    store,
 		prefix:   prefix,
 		policy:   policy,
 		config:   config,

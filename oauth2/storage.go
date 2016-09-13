@@ -27,7 +27,7 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	obj := s.authenticator.policy.ClientModel.Meta().Make()
 
 	// get database
-	sess, db, err := s.authenticator.pool.Get()
+	sess, db, err := s.authenticator.store.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string
 	})
 
 	// get database
-	sess, db, err := s.authenticator.pool.Get()
+	sess, db, err := s.authenticator.store.Get()
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	obj := s.authenticator.policy.AccessTokenModel.Meta().Make()
 
 	// get database
-	sess, db, err := s.authenticator.pool.Get()
+	sess, db, err := s.authenticator.store.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (s *storage) getOwner(id string) (model.Model, error) {
 	obj := s.authenticator.policy.OwnerModel.Meta().Make()
 
 	// get database
-	sess, db, err := s.authenticator.pool.Get()
+	sess, db, err := s.authenticator.store.Get()
 	if err != nil {
 		return nil, err
 	}

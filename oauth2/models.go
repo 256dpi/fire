@@ -9,7 +9,7 @@ import (
 )
 
 // AccessToken is the built-in model used to store access tokens. The model
-// can be mounted as a fire Resource to become manageable via the API.
+// can be mounted using a controller to become manageable an API.
 type AccessToken struct {
 	model.Base    `json:"-" bson:",inline" fire:"access-tokens:access_tokens"`
 	Signature     string         `json:"signature" valid:"required"`
