@@ -7,6 +7,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAction(t *testing.T) {
+	table := []struct{
+		a Action
+		r bool
+		w bool
+	}{
+		{List, true, false},
+		{Find, true, false},
+		{Create, false, true},
+		{Update, false, true},
+		{Delete, false, true},
+	}
+
+	for _, entry := range table {
+		assert.Equal(t, entry.r, entry.a.Read())
+		assert.Equal(t, entry.w, entry.a.Write())
+	}
+}
+
 func TestContextOriginal(t *testing.T) {
 	db := getCleanDB()
 

@@ -21,6 +21,16 @@ const (
 	Delete
 )
 
+// Read will return true when this action does only read data.
+func (a Action) Read() bool {
+	return a == List || a == Find
+}
+
+// Write will return true when this action does write data.
+func (a Action) Write() bool {
+	return a == Create || a == Update || a == Delete
+}
+
 // A Context provides useful contextual information.
 type Context struct {
 	// The current action in process.
