@@ -28,6 +28,8 @@ func init() {
 }
 
 func TestPasswordGrant(t *testing.T) {
+	store := getCleanStore()
+
 	policy.PasswordGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -39,11 +41,11 @@ func TestPasswordGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Store: getStore(),
+		Store: store,
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -56,7 +58,7 @@ func TestPasswordGrant(t *testing.T) {
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key1",
 		SecretHash: hashPassword("secret"),
@@ -65,7 +67,7 @@ func TestPasswordGrant(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user1@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -132,7 +134,7 @@ func TestPasswordGrant(t *testing.T) {
 
 	// check issued access token
 	accessToken := &AccessToken{}
-	findModel(db, accessToken, bson.M{
+	findModel(accessToken, bson.M{
 		"signature": strings.Split(token, ".")[1],
 	})
 	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
@@ -141,6 +143,8 @@ func TestPasswordGrant(t *testing.T) {
 }
 
 func TestClientCredentialsGrant(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ClientCredentialsGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -152,11 +156,11 @@ func TestClientCredentialsGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Store: getStore(),
+		Store: store,
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -169,7 +173,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key2",
 		SecretHash: hashPassword("secret"),
@@ -232,7 +236,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 
 	// check issued access token
 	accessToken := &AccessToken{}
-	findModel(db, accessToken, bson.M{
+	findModel(accessToken, bson.M{
 		"signature": strings.Split(token, ".")[1],
 	})
 	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
@@ -241,6 +245,8 @@ func TestClientCredentialsGrant(t *testing.T) {
 }
 
 func TestImplicitGrant(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ImplicitGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -252,11 +258,11 @@ func TestImplicitGrant(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model: &Post{},
-		Store: getStore(),
+		Store: store,
 		Authorizer: jsonapi.Combine(
 			authenticator.Authorizer("default"),
 			func(ctx *jsonapi.Context) error {
@@ -269,7 +275,7 @@ func TestImplicitGrant(t *testing.T) {
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key3",
 		SecretHash: hashPassword("secret"),
@@ -279,7 +285,7 @@ func TestImplicitGrant(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user3@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -366,7 +372,7 @@ func TestImplicitGrant(t *testing.T) {
 
 	// check issued access token
 	accessToken := &AccessToken{}
-	findModel(db, accessToken, bson.M{
+	findModel(accessToken, bson.M{
 		"signature": strings.Split(token, ".")[1],
 	})
 	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
@@ -375,6 +381,8 @@ func TestImplicitGrant(t *testing.T) {
 }
 
 func TestPasswordGrantAdditionalScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.PasswordGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -386,18 +394,18 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key4",
 		SecretHash: hashPassword("secret"),
@@ -406,7 +414,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user4@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -445,6 +453,8 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 }
 
 func TestPasswordGrantInsufficientScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.PasswordGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -456,18 +466,18 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key5",
 		SecretHash: hashPassword("secret"),
@@ -476,7 +486,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user5@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -510,6 +520,8 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 }
 
 func TestCredentialsGrantAdditionalScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ClientCredentialsGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -521,18 +533,18 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key6",
 		SecretHash: hashPassword("secret"),
@@ -571,6 +583,8 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 }
 
 func TestCredentialsGrantInsufficientScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ClientCredentialsGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -582,18 +596,18 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key7",
 		SecretHash: hashPassword("secret"),
@@ -627,6 +641,8 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 }
 
 func TestImplicitGrantAdditionalScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ImplicitGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -638,18 +654,18 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 		return []string{"default", "admin"}
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("default", "admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key8",
 		SecretHash: hashPassword("secret"),
@@ -659,7 +675,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user8@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -706,6 +722,8 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 }
 
 func TestImplicitGrantInsufficientScope(t *testing.T) {
+	store := getCleanStore()
+
 	policy.ImplicitGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -717,18 +735,18 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer(&jsonapi.Controller{
+	server := buildServer(&jsonapi.Controller{
 		Model:      &Post{},
-		Store:      getStore(),
+		Store:      store,
 		Authorizer: authenticator.Authorizer("admin"),
 	})
 
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key9",
 		SecretHash: hashPassword("secret"),
@@ -738,7 +756,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user9@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -780,6 +798,8 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 }
 
 func TestGinAuthorizer(t *testing.T) {
+	store := getCleanStore()
+
 	policy.PasswordGrant = true
 
 	policy.GrantStrategy = func(req *GrantRequest) []string {
@@ -791,9 +811,9 @@ func TestGinAuthorizer(t *testing.T) {
 		return req.RequestedScopes
 	}
 
-	authenticator := New(getStore(), policy, "auth")
+	authenticator := New(store, policy, "auth")
 
-	server, db := buildServer()
+	server := buildServer()
 	server.GET("/foo", func(ctx echo.Context) error {
 		return ctx.String(http.StatusOK, "OK")
 	}, authenticator.EchoAuthorizer("default"))
@@ -801,7 +821,7 @@ func TestGinAuthorizer(t *testing.T) {
 	authenticator.Register(server)
 
 	// create application
-	saveModel(db, &Application{
+	saveModel(&Application{
 		Name:       "Test Application",
 		Key:        "key10",
 		SecretHash: hashPassword("secret"),
@@ -810,7 +830,7 @@ func TestGinAuthorizer(t *testing.T) {
 	})
 
 	// create user
-	saveModel(db, &User{
+	saveModel(&User{
 		Name:         "Test User",
 		Email:        "user10@example.com",
 		PasswordHash: hashPassword("secret"),
@@ -850,7 +870,7 @@ func TestGinAuthorizer(t *testing.T) {
 
 	// check issued access token
 	accessToken := &AccessToken{}
-	findModel(db, accessToken, bson.M{
+	findModel(accessToken, bson.M{
 		"signature": strings.Split(token, ".")[1],
 	})
 	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)

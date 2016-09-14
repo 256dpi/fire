@@ -12,7 +12,6 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -30,46 +29,27 @@ type Comment struct {
 	PostID     bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-var session *mgo.Session
+var testStore = model.CreateStore("mongodb://0.0.0.0:27017/fire")
 
-func init() {
-	// connect to local mongodb
-	sess, err := mgo.Dial("mongodb://0.0.0.0:27017/fire-auth")
-	if err != nil {
-		panic(err)
-	}
+func getCleanStore() *model.Store {
+	testStore.DB().C("posts").RemoveAll(nil)
+	testStore.DB().C("comments").RemoveAll(nil)
+	testStore.DB().C("selections").RemoveAll(nil)
+	testStore.DB().C("users").RemoveAll(nil)
+	testStore.DB().C("applications").RemoveAll(nil)
+	testStore.DB().C("access_tokens").RemoveAll(nil)
 
-	// store session globally
-	session = sess
+	return testStore
 }
 
-func getStore() *model.Store {
-	return model.CreateStore("mongodb://0.0.0.0:27017/fire-auth")
-}
-
-func getDB() *mgo.Database {
-	// get db
-	db := session.DB("")
-
-	// clean database by removing all documents
-	db.C("posts").RemoveAll(nil)
-	db.C("comments").RemoveAll(nil)
-	db.C("users").RemoveAll(nil)
-	db.C("applications").RemoveAll(nil)
-	db.C("access_tokens").RemoveAll(nil)
-
-	return db
-}
-
-func buildServer(controllers ...*jsonapi.Controller) (*echo.Echo, *mgo.Database) {
-	db := getDB()
+func buildServer(controllers ...*jsonapi.Controller) *echo.Echo {
 	router := echo.New()
 
 	group := jsonapi.New("")
 	group.Add(controllers...)
 	group.Register(router)
 
-	return router, db
+	return router
 }
 
 func testRequest(e *echo.Echo, method, path string, headers map[string]string, form map[string]string, callback func(*httptest.ResponseRecorder, engine.Request)) {
@@ -98,10 +78,8 @@ func testRequest(e *echo.Echo, method, path string, headers map[string]string, f
 	callback(rec, req)
 }
 
-func saveModel(db *mgo.Database, m model.Model) model.Model {
-	model.Init(m)
-
-	err := db.C(m.Meta().Collection).Insert(m)
+func saveModel(m model.Model) model.Model {
+	err := testStore.C(m).Insert(m)
 	if err != nil {
 		panic(err)
 	}
@@ -109,10 +87,8 @@ func saveModel(db *mgo.Database, m model.Model) model.Model {
 	return m
 }
 
-func findModel(db *mgo.Database, m model.Model, query bson.M) model.Model {
-	model.Init(m)
-
-	err := db.C(m.Meta().Collection).Find(query).One(m)
+func findModel(m model.Model, query bson.M) model.Model {
+	err := testStore.C(m).Find(query).One(m)
 	if err != nil {
 		panic(err)
 	}

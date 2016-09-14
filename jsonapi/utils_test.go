@@ -66,8 +66,6 @@ func testRequest(e *echo.Echo, method, path string, headers map[string]string, p
 }
 
 func saveModel(m model.Model) model.Model {
-	model.Init(m)
-
 	err := testStore.C(m).Insert(m)
 	if err != nil {
 		panic(err)
@@ -77,8 +75,6 @@ func saveModel(m model.Model) model.Model {
 }
 
 func findLastModel(m model.Model) model.Model {
-	model.Init(m)
-
 	err := testStore.C(m).Find(nil).Sort("-_id").One(m)
 	if err != nil {
 		panic(err)
