@@ -3,6 +3,7 @@ package jsonapi
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"reflect"
 
@@ -171,9 +172,10 @@ func (c *Controller) listResources(ctx *Context) error {
 		return err
 	}
 
-	// prepare links
-	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self(),
+	// get list links
+	links, err := c.listLinks(ctx)
+	if err != nil {
+		return err
 	}
 
 	// write result
@@ -751,8 +753,6 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 		}
 	}
 
-	// TODO: Enforce pagination automatically (20 items per page).
-
 	// run authorizer if available
 	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 	if err != nil {
@@ -762,8 +762,16 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// prepare slice
 	slicePtr := c.Model.Meta().MakeSlice()
 
+	// prepare query
+	query := ctx.Store.C(c.Model).Find(ctx.Query).Sort(ctx.Sorting...)
+
+	// add pagination
+	if ctx.Request.PageNumber > 0 && ctx.Request.PageSize > 0 {
+		query = query.Limit(ctx.Request.PageSize).Skip((ctx.Request.PageNumber - 1) * ctx.Request.PageSize)
+	}
+
 	// query db
-	err = ctx.Store.C(c.Model).Find(ctx.Query).Sort(ctx.Sorting...).All(slicePtr)
+	err = query.All(slicePtr)
 	if err != nil {
 		return nil, err
 	}
@@ -1029,4 +1037,40 @@ func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonap
 	}
 
 	return resources, nil
+}
+
+func (c *Controller) listLinks(ctx *Context) (*jsonapi.DocumentLinks, error) {
+	// prepare links
+	links := &jsonapi.DocumentLinks{
+		Self: ctx.Request.Self(),
+	}
+
+	// add pagination links
+	if ctx.Request.PageNumber > 0 && ctx.Request.PageSize > 0 {
+		// get total amount of resources
+		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
+		if err != nil {
+			return nil, err
+		}
+
+		// calculate last page
+		lastPage := int(math.Ceil(float64(n) / float64(ctx.Request.PageSize)))
+
+		// add basic pagination links
+		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber, ctx.Request.PageSize)
+		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), 1, ctx.Request.PageSize)
+		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), lastPage, ctx.Request.PageSize)
+
+		// add previous link if not on first page
+		if ctx.Request.PageNumber > 1 {
+			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber-1, ctx.Request.PageSize)
+		}
+
+		// add next link if not on last page
+		if ctx.Request.PageNumber < lastPage {
+			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber+1, ctx.Request.PageSize)
+		}
+	}
+
+	return links, nil
 }

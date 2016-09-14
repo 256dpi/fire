@@ -1,5 +1,5 @@
-hash: be940a478c6a913bfc7b8e2eec1ffc9737e71f56f80f1e16a266ef8871ab4f69
-updated: 2016-09-13T13:13:35.854351703+02:00
+hash: 343ed64c779ec607e9b7a6a0516ddc10b97b31bd5aa2066c16f2a7cce75ef942
+updated: 2016-09-14T15:47:30.512987532+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -84,3 +84,7 @@ testImports:
   version: f390dcf405f7b83c997eac1b06768bb9f44dec18
   subpackages:
   - assert
+- name: github.com/tidwall/gjson
+  version: 2dec1c4e7be3fff111b388536cf94ae23c38add7
+- name: github.com/tidwall/match
+  version: 173748da739a410c5b0b813b956f89ff94730b4c

@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -1499,5 +1501,52 @@ func TestNoList(t *testing.T) {
 	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusMethodNotAllowed, r.Status())
 		assert.Contains(t, r.Body.String(), "Listing ist disabled for this resource.")
+	})
+}
+
+func TestPagination(t *testing.T) {
+	server := buildServer()
+
+	// create some posts
+	for i := 0; i < 10; i++ {
+		saveModel(&Post{
+			Title: fmt.Sprintf("Post %d", i+1),
+		})
+	}
+
+	// get first page of posts
+	testRequest(server, "GET", "/posts?page[number]=1&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/posts?page[number]=1&page[size]=5",
+			"first": "/posts?page[number]=1&page[size]=5",
+			"last": "/posts?page[number]=2&page[size]=5",
+			"next": "/posts?page[number]=2&page[size]=5"
+		}`, links)
+	})
+
+	// get second page of posts
+	testRequest(server, "GET", "/posts?page[number]=2&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 6", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/posts?page[number]=2&page[size]=5",
+			"first": "/posts?page[number]=1&page[size]=5",
+			"last": "/posts?page[number]=2&page[size]=5",
+			"prev": "/posts?page[number]=1&page[size]=5"
+		}`, links)
 	})
 }
