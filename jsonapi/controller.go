@@ -404,6 +404,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 			// lookup optional id on loaded model
 			oid := ctx.Model.Get(relationField.Name).(*bson.ObjectId)
 
+			// TODO: Test present optional id.
+
 			// check if missing
 			if oid != nil {
 				id = oid.Hex()
@@ -606,6 +608,8 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 
 			// get current ids
 			ids := ctx.Model.Get(field.Name).([]bson.ObjectId)
+
+			// TODO: Test already existing reference.
 
 			// check if id is already present
 			for _, id := range ids {

@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/gonfire/fire"
@@ -8,6 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
+
+func TestFatal(t *testing.T) {
+	err := Fatal(errors.New("hello"))
+	assert.True(t, isFatal(err))
+	assert.Equal(t, "hello", err.Error())
+
+	err = errors.New("hello")
+	assert.False(t, isFatal(err))
+	assert.Equal(t, "hello", err.Error())
+}
 
 func TestCombine(t *testing.T) {
 	// prepare fake callback

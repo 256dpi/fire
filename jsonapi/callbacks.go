@@ -28,7 +28,7 @@ func Fatal(err error) error {
 }
 
 func (err *fatalError) Error() string {
-	return "fatal: " + err.err.Error()
+	return err.err.Error()
 }
 
 func isFatal(err error) bool {
