@@ -1550,3 +1550,111 @@ func TestPagination(t *testing.T) {
 		}`, links)
 	})
 }
+
+func TestPaginationToMany(t *testing.T) {
+	server := buildServer()
+
+	// prepare ids
+	var ids []bson.ObjectId
+
+	// create some posts
+	for i := 0; i < 10; i++ {
+		ids = append(ids, saveModel(&Post{
+			Title: fmt.Sprintf("Post %d", i+1),
+		}).ID())
+	}
+
+	// create selection
+	selection := saveModel(&Selection{
+		PostIDs: ids,
+	}).ID().Hex()
+
+	// get first page of posts
+	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=1&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/selections/`+selection+`/posts?page[number]=1&page[size]=5",
+			"first": "/selections/`+selection+`/posts?page[number]=1&page[size]=5",
+			"last": "/selections/`+selection+`/posts?page[number]=2&page[size]=5",
+			"next": "/selections/`+selection+`/posts?page[number]=2&page[size]=5"
+		}`, links)
+	})
+
+	// get second page of posts
+	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=2&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 6", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/selections/`+selection+`/posts?page[number]=2&page[size]=5",
+			"first": "/selections/`+selection+`/posts?page[number]=1&page[size]=5",
+			"last": "/selections/`+selection+`/posts?page[number]=2&page[size]=5",
+			"prev": "/selections/`+selection+`/posts?page[number]=1&page[size]=5"
+		}`, links)
+	})
+}
+
+func TestPaginationHasMany(t *testing.T) {
+	server := buildServer()
+
+	// create post
+	post := saveModel(&Post{
+		Title: "Post",
+	}).ID()
+
+	// create some comments
+	for i := 0; i < 10; i++ {
+		saveModel(&Comment{
+			Message: fmt.Sprintf("Comment %d", i+1),
+			PostID:  post,
+		})
+	}
+
+	// get first page of posts
+	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Comment 1", list[0].Get("attributes.message").String())
+		assert.JSONEq(t, `{
+			"self": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5",
+			"first": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5",
+			"last": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5",
+			"next": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5"
+		}`, links)
+	})
+
+	// get second page of posts
+	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Comment 6", list[0].Get("attributes.message").String())
+		assert.JSONEq(t, `{
+			"self": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5",
+			"first": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5",
+			"last": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5",
+			"prev": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5"
+		}`, links)
+	})
+}

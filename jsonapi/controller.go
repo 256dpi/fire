@@ -173,7 +173,7 @@ func (c *Controller) listResources(ctx *Context) error {
 	}
 
 	// get list links
-	links, err := c.listLinks(ctx)
+	links, err := c.listLinks(ctx.Request.Self(), ctx)
 	if err != nil {
 		return err
 	}
@@ -370,10 +370,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		return fmt.Errorf("missing controller for %s", pluralName)
 	}
 
-	// prepare links
-	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self(),
-	}
+	// keep original self
+	originalSelf := ctx.Request.Self()
 
 	// zero request
 	ctx.Request.Intent = 0
@@ -385,6 +383,11 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 	if relationField.ToOne {
 		// prepare id
 		var id string
+
+		// prepare links
+		links := &jsonapi.DocumentLinks{
+			Self: originalSelf,
+		}
 
 		// handle optional field
 		if relationField.Optional {
@@ -457,6 +460,12 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 			return err
 		}
 
+		// get list links
+		links, err := relatedController.listLinks(originalSelf, ctx2)
+		if err != nil {
+			return err
+		}
+
 		// write result
 		return jsonapi.WriteResources(w, http.StatusOK, resources, links)
 	}
@@ -503,6 +512,12 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// get related resources
 		resources, err := relatedController.resourcesForSlice(ctx2, slice)
+		if err != nil {
+			return err
+		}
+
+		// get list links
+		links, err := relatedController.listLinks(originalSelf, ctx2)
 		if err != nil {
 			return err
 		}
@@ -1039,10 +1054,10 @@ func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonap
 	return resources, nil
 }
 
-func (c *Controller) listLinks(ctx *Context) (*jsonapi.DocumentLinks, error) {
+func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLinks, error) {
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self(),
+		Self: self,
 	}
 
 	// add pagination links
@@ -1057,18 +1072,18 @@ func (c *Controller) listLinks(ctx *Context) (*jsonapi.DocumentLinks, error) {
 		lastPage := int(math.Ceil(float64(n) / float64(ctx.Request.PageSize)))
 
 		// add basic pagination links
-		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber, ctx.Request.PageSize)
-		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), 1, ctx.Request.PageSize)
-		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), lastPage, ctx.Request.PageSize)
+		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber, ctx.Request.PageSize)
+		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, 1, ctx.Request.PageSize)
+		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, lastPage, ctx.Request.PageSize)
 
 		// add previous link if not on first page
 		if ctx.Request.PageNumber > 1 {
-			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber-1, ctx.Request.PageSize)
+			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber-1, ctx.Request.PageSize)
 		}
 
 		// add next link if not on last page
 		if ctx.Request.PageNumber < lastPage {
-			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", ctx.Request.Self(), ctx.Request.PageNumber+1, ctx.Request.PageSize)
+			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber+1, ctx.Request.PageSize)
 		}
 	}
 
