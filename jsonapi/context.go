@@ -96,11 +96,3 @@ func (c *Context) Original() (model.Model, error) {
 
 	return c.original, nil
 }
-
-func (c *Context) clone() *Context {
-	return &Context{
-		Store:   c.Store,
-		Request: c.Request,
-		Echo:    c.Echo,
-	}
-}

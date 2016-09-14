@@ -370,14 +370,20 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		return fmt.Errorf("missing controller for %s", pluralName)
 	}
 
-	// keep original self
-	originalSelf := ctx.Request.Self()
-
-	// zero request
-	ctx.Request.Intent = 0
-	ctx.Request.ResourceType = pluralName
-	ctx.Request.ResourceID = ""
-	ctx.Request.RelatedResource = ""
+	// copy context and request
+	newCtx := &Context{
+		Request: &jsonapi.Request{
+			ResourceType: pluralName,
+			Include:      ctx.Request.Include,
+			PageNumber:   ctx.Request.PageNumber,
+			PageSize:     ctx.Request.PageSize,
+			Sorting:      ctx.Request.Sorting,
+			Fields:       ctx.Request.Fields,
+			Filters:      ctx.Request.Filters,
+		},
+		Store: ctx.Store,
+		Echo:  ctx.Echo,
+	}
 
 	// finish to one relationship
 	if relationField.ToOne {
@@ -386,12 +392,12 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// prepare links
 		links := &jsonapi.DocumentLinks{
-			Self: originalSelf,
+			Self: ctx.Request.Self(),
 		}
 
-		// handle optional field
+		// lookup id of related resource
 		if relationField.Optional {
-			// lookup id
+			// lookup optional id on loaded model
 			oid := ctx.Model.Get(relationField.Name).(*bson.ObjectId)
 
 			// check if missing
@@ -402,25 +408,23 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 				return jsonapi.WriteResource(w, http.StatusOK, nil, links)
 			}
 		} else {
+			// lookup id on loaded model
 			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
 		}
 
-		// modify context
-		ctx.Request.Intent = jsonapi.FindResource
-		ctx.Request.ResourceID = id
-
-		// create new request
-		ctx2 := ctx.clone()
-		ctx2.Action = Find
+		// tweak context
+		newCtx.Action = Find
+		newCtx.Request.Intent = jsonapi.FindResource
+		newCtx.Request.ResourceID = id
 
 		// load model
-		err := relatedController.loadModel(ctx2)
+		err := relatedController.loadModel(newCtx)
 		if err != nil {
 			return err
 		}
 
 		// get resource
-		resource, err := relatedController.resourceForModel(ctx2, ctx2.Model)
+		resource, err := relatedController.resourceForModel(newCtx, newCtx.Model)
 		if err != nil {
 			return err
 		}
@@ -431,37 +435,34 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// finish to many relationship
 	if relationField.ToMany {
-		// get ids
+		// get ids from loaded model
 		ids := ctx.Model.Get(relationField.Name).([]bson.ObjectId)
 
-		// modify context
-		ctx.Request.Intent = jsonapi.ListResources
-
-		// create new request
-		ctx2 := ctx.clone()
-		ctx2.Action = List
+		// tweak context
+		newCtx.Action = List
+		newCtx.Request.Intent = jsonapi.ListResources
 
 		// set query
-		ctx2.Query = bson.M{
+		newCtx.Query = bson.M{
 			"_id": bson.M{
 				"$in": ids,
 			},
 		}
 
 		// load related models
-		slice, err := relatedController.loadModels(ctx2)
+		slice, err := relatedController.loadModels(newCtx)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2, slice)
+		resources, err := relatedController.resourcesForSlice(newCtx, slice)
 		if err != nil {
 			return err
 		}
 
 		// get list links
-		links, err := relatedController.listLinks(originalSelf, ctx2)
+		links, err := relatedController.listLinks(ctx.Request.Self(), newCtx)
 		if err != nil {
 			return err
 		}
@@ -490,34 +491,31 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 			return fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse)
 		}
 
-		// modify context
-		ctx.Request.Intent = jsonapi.ListResources
-
-		// create new request
-		ctx2 := ctx.clone()
-		ctx2.Action = List
+		// tweak context
+		newCtx.Action = List
+		newCtx.Request.Intent = jsonapi.ListResources
 
 		// set query
-		ctx2.Query = bson.M{
+		newCtx.Query = bson.M{
 			filterName: bson.M{
 				"$in": []bson.ObjectId{ctx.Model.ID()},
 			},
 		}
 
 		// load related models
-		slice, err := relatedController.loadModels(ctx2)
+		slice, err := relatedController.loadModels(newCtx)
 		if err != nil {
 			return err
 		}
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(ctx2, slice)
+		resources, err := relatedController.resourcesForSlice(newCtx, slice)
 		if err != nil {
 			return err
 		}
 
 		// get list links
-		links, err := relatedController.listLinks(originalSelf, ctx2)
+		links, err := relatedController.listLinks(ctx.Request.Self(), newCtx)
 		if err != nil {
 			return err
 		}
