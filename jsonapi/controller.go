@@ -371,7 +371,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// check related controller
 	if relatedController == nil {
-		return fmt.Errorf("missing controller for %s", pluralName)
+		panic("Missing related controller for " + pluralName)
 	}
 
 	// copy context and request
