@@ -14,7 +14,18 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// get empty list of posts
 	testRequest(server, "GET", "/posts", map[string]string{
@@ -224,7 +235,18 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts
 	post1 := saveModel(&Post{
@@ -531,7 +553,18 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts in random order
 	post2 := saveModel(&Post{
@@ -724,7 +757,18 @@ func TestSorting(t *testing.T) {
 }
 
 func TestSparseFieldsets(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts
 	post := saveModel(&Post{
@@ -768,7 +812,18 @@ func TestSparseFieldsets(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create existing post & comment
 	existingPost := saveModel(&Post{
@@ -953,7 +1008,18 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts
 	post1 := saveModel(&Post{
@@ -1170,7 +1236,18 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts
 	post1 := saveModel(&Post{
@@ -1453,7 +1530,18 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create posts
 	post := saveModel(&Post{
@@ -1493,7 +1581,19 @@ func TestEmptyToManyRelationship(t *testing.T) {
 }
 
 func TestNoList(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model:  &Comment{},
+		Store:  store,
+		NoList: true,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// attempt list comments
 	testRequest(server, "GET", "/comments", map[string]string{
@@ -1505,7 +1605,18 @@ func TestNoList(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create some posts
 	for i := 0; i < 10; i++ {
@@ -1552,7 +1663,18 @@ func TestPagination(t *testing.T) {
 }
 
 func TestPaginationToMany(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// prepare ids
 	var ids []bson.ObjectId
@@ -1607,7 +1729,18 @@ func TestPaginationToMany(t *testing.T) {
 }
 
 func TestPaginationHasMany(t *testing.T) {
-	server := buildServer()
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model: &Post{},
+		Store: store,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
 
 	// create post
 	post := saveModel(&Post{

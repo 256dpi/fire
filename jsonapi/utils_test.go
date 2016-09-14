@@ -42,23 +42,11 @@ func getCleanStore() *model.Store {
 	return testStore
 }
 
-func buildServer() *echo.Echo {
-	store := getCleanStore()
+func buildServer(controllers ...*Controller) *echo.Echo {
 	router := echo.New()
+
 	group := New("")
-
-	group.Add(&Controller{
-		Model: &Post{},
-		Store: store,
-	}, &Controller{
-		Model:  &Comment{},
-		Store:  store,
-		NoList: true,
-	}, &Controller{
-		Model: &Selection{},
-		Store: store,
-	})
-
+	group.Add(controllers...)
 	group.Register(router)
 
 	return router
