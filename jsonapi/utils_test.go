@@ -51,8 +51,9 @@ func buildServer() *echo.Echo {
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:  &Comment{},
+		Store:  store,
+		NoList: true,
 	}, &Controller{
 		Model: &Selection{},
 		Store: store,

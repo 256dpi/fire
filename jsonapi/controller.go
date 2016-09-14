@@ -32,6 +32,11 @@ type Controller struct {
 	// return a Bad Request status if an user error is returned.
 	Validator Callback
 
+	// The NoList property can be set to true if the resource is only listed
+	// through relationships from other resources. This is useful for
+	// resources like comments that should never listed without a relationship.
+	NoList bool
+
 	group *Group
 }
 
@@ -78,6 +83,14 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	req, err := jsonapi.ParseRequest(r, c.group.prefix)
 	if err != nil {
 		return jsonapi.WriteError(w, err)
+	}
+
+	// handle no list setting
+	if req.Intent == jsonapi.ListResources && c.NoList {
+		return jsonapi.WriteError(w, jsonapi.ErrorFromStatus(
+			http.StatusMethodNotAllowed,
+			"Listing ist disabled for this resource.",
+		))
 	}
 
 	// parse body if available

@@ -1489,3 +1489,15 @@ func TestEmptyToManyRelationship(t *testing.T) {
 		}`, r.Body.String())
 	})
 }
+
+func TestNoList(t *testing.T) {
+	server := buildServer()
+
+	// attempt list comments
+	testRequest(server, "GET", "/comments", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		assert.Equal(t, http.StatusMethodNotAllowed, r.Status())
+		assert.Contains(t, r.Body.String(), "Listing ist disabled for this resource.")
+	})
+}
