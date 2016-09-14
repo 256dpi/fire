@@ -11,13 +11,13 @@ import (
 )
 
 func TestFatal(t *testing.T) {
-	err := Fatal(errors.New("hello"))
+	err := Fatal(errors.New("foo"))
 	assert.True(t, isFatal(err))
-	assert.Equal(t, "hello", err.Error())
+	assert.Equal(t, "foo", err.Error())
 
-	err = errors.New("hello")
+	err = errors.New("foo")
 	assert.False(t, isFatal(err))
-	assert.Equal(t, "hello", err.Error())
+	assert.Equal(t, "foo", err.Error())
 }
 
 func TestCombine(t *testing.T) {

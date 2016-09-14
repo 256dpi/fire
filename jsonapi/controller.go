@@ -494,7 +494,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// check filter name
 		if filterName == "" {
-			return fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse)
+			return fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse)
 		}
 
 		// tweak context
@@ -995,7 +995,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 
 			// check existence
 			if relatedController == nil {
-				panic("missing related controller " + field.RelType)
+				panic("Missing related controller " + field.RelType)
 			}
 
 			// prepare filter
@@ -1013,7 +1013,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 
 			// check filter name
 			if filterName == "" {
-				return nil, fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse)
+				return nil, fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse)
 			}
 
 			// load all referenced ids
