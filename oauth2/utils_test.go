@@ -30,8 +30,6 @@ type Comment struct {
 	PostID     bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-type M map[string]string
-
 var session *mgo.Session
 
 func init() {
@@ -122,11 +120,11 @@ func findModel(db *mgo.Database, m model.Model, query bson.M) model.Model {
 	return m
 }
 
-func basicAuth(username, password string) M {
+func basicAuth(username, password string) map[string]string {
 	auth := username + ":" + password
 	auth = "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 
-	return M{
+	return map[string]string{
 		"Authorization": auth,
 	}
 }

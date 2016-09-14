@@ -78,7 +78,7 @@ func TestPasswordGrant(t *testing.T) {
 	})
 
 	// wrong secret
-	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user1@example.com",
 		"password":   "wrong-secret",
@@ -89,7 +89,7 @@ func TestPasswordGrant(t *testing.T) {
 	})
 
 	// wrong scope
-	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user1@example.com",
 		"password":   "secret",
@@ -102,7 +102,7 @@ func TestPasswordGrant(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key1", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user1@example.com",
 		"password":   "secret",
@@ -118,7 +118,7 @@ func TestPasswordGrant(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -184,7 +184,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 	})
 
 	// wrong secret
-	testRequest(server, "POST", "/auth/token", basicAuth("key2", "wrong-secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key2", "wrong-secret"), map[string]string{
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
@@ -193,7 +193,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 	})
 
 	// wrong scope
-	testRequest(server, "POST", "/auth/token", basicAuth("key2", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key2", "secret"), map[string]string{
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "wrong",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
@@ -204,7 +204,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key2", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key2", "secret"), map[string]string{
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
@@ -218,7 +218,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -292,7 +292,7 @@ func TestImplicitGrant(t *testing.T) {
 	})
 
 	// wrong secret
-	testRequest(server, "POST", "/auth/authorize", nil, M{
+	testRequest(server, "POST", "/auth/authorize", nil, map[string]string{
 		"response_type": "token",
 		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 		"client_id":     "key3",
@@ -309,7 +309,7 @@ func TestImplicitGrant(t *testing.T) {
 	})
 
 	// wrong scope
-	testRequest(server, "POST", "/auth/authorize", nil, M{
+	testRequest(server, "POST", "/auth/authorize", nil, map[string]string{
 		"response_type": "token",
 		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 		"client_id":     "key3",
@@ -328,7 +328,7 @@ func TestImplicitGrant(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/authorize", nil, M{
+	testRequest(server, "POST", "/auth/authorize", nil, map[string]string{
 		"response_type": "token",
 		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 		"client_id":     "key3",
@@ -352,7 +352,7 @@ func TestImplicitGrant(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -415,7 +415,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key4", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key4", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user4@example.com",
 		"password":   "secret",
@@ -431,7 +431,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -485,7 +485,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key5", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key5", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user5@example.com",
 		"password":   "secret",
@@ -501,7 +501,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 	})
 
 	// failing to get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
@@ -543,7 +543,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key6", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key6", "secret"), map[string]string{
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
@@ -557,7 +557,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -604,7 +604,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key7", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key7", "secret"), map[string]string{
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
@@ -618,7 +618,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 	})
 
 	// failing to get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
@@ -668,7 +668,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/authorize", nil, M{
+	testRequest(server, "POST", "/auth/authorize", nil, map[string]string{
 		"response_type": "token",
 		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 		"client_id":     "key8",
@@ -692,7 +692,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -747,7 +747,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/authorize", nil, M{
+	testRequest(server, "POST", "/auth/authorize", nil, map[string]string{
 		"response_type": "token",
 		"redirect_uri":  "https://0.0.0.0:8080/auth/callback",
 		"client_id":     "key9",
@@ -771,7 +771,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	})
 
 	// failing to get empty list of posts
-	testRequest(server, "GET", "/posts", M{
+	testRequest(server, "GET", "/posts", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
@@ -825,7 +825,7 @@ func TestGinAuthorizer(t *testing.T) {
 	var token string
 
 	// get access token
-	testRequest(server, "POST", "/auth/token", basicAuth("key10", "secret"), M{
+	testRequest(server, "POST", "/auth/token", basicAuth("key10", "secret"), map[string]string{
 		"grant_type": PasswordGrant,
 		"username":   "user10@example.com",
 		"password":   "secret",
@@ -841,7 +841,7 @@ func TestGinAuthorizer(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/foo", M{
+	testRequest(server, "GET", "/foo", map[string]string{
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
