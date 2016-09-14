@@ -1791,3 +1791,85 @@ func TestPaginationHasMany(t *testing.T) {
 		}`, links)
 	})
 }
+
+func TestForcedPagination(t *testing.T) {
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model:     &Post{},
+		Store:     store,
+		ListLimit: 5,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
+
+	// create some posts
+	for i := 0; i < 10; i++ {
+		saveModel(&Post{
+			Title: fmt.Sprintf("Post %d", i+1),
+		})
+	}
+
+	// get first page of posts
+	testRequest(server, "GET", "/posts", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/posts?page[number]=1&page[size]=5",
+			"first": "/posts?page[number]=1&page[size]=5",
+			"last": "/posts?page[number]=2&page[size]=5",
+			"next": "/posts?page[number]=2&page[size]=5"
+		}`, links)
+	})
+}
+
+func TestListLimit(t *testing.T) {
+	store := getCleanStore()
+
+	server := buildServer(&Controller{
+		Model:     &Post{},
+		Store:     store,
+		ListLimit: 5,
+	}, &Controller{
+		Model: &Comment{},
+		Store: store,
+	}, &Controller{
+		Model: &Selection{},
+		Store: store,
+	})
+
+	// create some posts
+	for i := 0; i < 10; i++ {
+		saveModel(&Post{
+			Title: fmt.Sprintf("Post %d", i+1),
+		})
+	}
+
+	// get first page of posts
+	testRequest(server, "GET", "/posts?page[number]=1&page[size]=7", map[string]string{
+		"Accept": jsonapi.MediaType,
+	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+		list := gjson.Get(r.Body.String(), "data").Array()
+		links := gjson.Get(r.Body.String(), "links").Raw
+
+		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, 5, len(list))
+		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
+		assert.JSONEq(t, `{
+			"self": "/posts?page[number]=1&page[size]=5",
+			"first": "/posts?page[number]=1&page[size]=5",
+			"last": "/posts?page[number]=2&page[size]=5",
+			"next": "/posts?page[number]=2&page[size]=5"
+		}`, links)
+	})
+}

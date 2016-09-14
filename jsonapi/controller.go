@@ -38,6 +38,10 @@ type Controller struct {
 	// resources like comments that should never listed without a relationship.
 	NoList bool
 
+	// The ListLimit can be set to a value higher than 1 to enforce paginated
+	// responses and restrain the page size to be within one and the limit.
+	ListLimit int
+
 	group *Group
 }
 
@@ -763,6 +767,17 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 					ctx.Sorting = append(ctx.Sorting, params)
 				}
 			}
+		}
+	}
+
+	// honor list limit
+	if c.ListLimit > 0 && (ctx.Request.PageSize == 0 || ctx.Request.PageSize > c.ListLimit) {
+		// restrain page size
+		ctx.Request.PageSize = c.ListLimit
+
+		// enforce pagination
+		if ctx.Request.PageNumber == 0 {
+			ctx.Request.PageNumber = 1
 		}
 	}
 
