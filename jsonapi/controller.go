@@ -130,10 +130,10 @@ func (c *Controller) generalHandler(e echo.Context) error {
 		ctx = buildContext(store, Delete, req, e)
 		err = c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		ctx = buildContext(store, 0, req, e)
+		ctx = buildContext(store, Find, req, e)
 		err = c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		ctx = buildContext(store, 0, req, e)
+		ctx = buildContext(store, Find, req, e)
 		err = c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
 		ctx = buildContext(store, Update, req, e)
