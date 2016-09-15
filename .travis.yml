@@ -12,6 +12,7 @@ before_install:
 install:
   - glide install
 script:
+  - make setup
   - go test -coverprofile=fire.coverprofile
   - go test -coverprofile=model.coverprofile ./model
   - go test -coverprofile=jsonapi.coverprofile ./jsonapi
