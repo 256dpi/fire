@@ -2,9 +2,8 @@ package oauth2
 
 import (
 	"errors"
-	"time"
+	"reflect"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
 	"github.com/ory-am/fosite"
@@ -12,6 +11,8 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+var typeOfIdentifier = reflect.TypeOf(Identifier(""))
 
 type abstractClient struct {
 	fosite.DefaultClient
@@ -32,9 +33,12 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	// ensure store gets closed
 	defer store.Close()
 
+	// get id field
+	field := s.getIdentifierField(s.authenticator.policy.ClientModel)
+
 	// query db
 	err := store.C(s.authenticator.policy.ClientModel).Find(bson.M{
-		s.authenticator.policy.ClientIDField: id,
+		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidClient
@@ -43,19 +47,19 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	}
 
 	// initialize model
-	client := model.Init(obj.(model.Model))
+	client := model.Init(obj).(ClientModel)
 
 	// extract client data
-	clientData := s.authenticator.policy.ClientExtractor(client)
+	secretHash, scopes, grantTypes, callbacks := client.GetOAuthData()
 
 	return &abstractClient{
 		DefaultClient: fosite.DefaultClient{
 			ID:            id,
-			Secret:        clientData["SecretHash"].([]byte),
-			GrantTypes:    clientData["GrantTypes"].([]string),
+			Secret:        secretHash,
+			GrantTypes:    grantTypes,
 			ResponseTypes: []string{"token"},
-			RedirectURIs:  clientData["Callbacks"].([]string),
-			Scopes:        clientData["Scopes"].([]string),
+			RedirectURIs:  callbacks,
+			Scopes:        scopes,
 		},
 		model: client,
 	}, nil
@@ -84,20 +88,17 @@ func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string
 		ownerID = &id
 	}
 
+	// prepare scopes
+	scopes := []string(request.GetGrantedScopes())
+
 	// make sure the model is initialized
 	model.Init(s.authenticator.policy.AccessTokenModel)
 
 	// prepare access token
 	accessToken := model.Init(s.authenticator.policy.AccessTokenModel.Meta().Make())
 
-	// inject data
-	s.authenticator.policy.AccessTokenInjector(accessToken, fire.Map{
-		"Signature":     signature,
-		"RequestedAt":   request.GetRequestedAt(),
-		"GrantedScopes": []string(request.GetGrantedScopes()),
-		"ClientID":      clientID,
-		"OwnerID":       ownerID,
-	})
+	// set access token data
+	accessToken.(AccessTokenModel).SetOAuthData(signature, scopes, clientID, ownerID)
 
 	// get store
 	store := s.authenticator.store.Copy()
@@ -119,9 +120,12 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	// ensure store gets closed
 	defer store.Close()
 
+	// get signature field
+	field := s.getIdentifierField(s.authenticator.policy.AccessTokenModel)
+
 	// fetch access token
 	err := store.C(s.authenticator.policy.AccessTokenModel).Find(bson.M{
-		s.authenticator.policy.AccessTokenIDField: signature,
+		field.BSONName: signature,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrAccessDenied
@@ -130,15 +134,15 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	}
 
 	// initialize access token
-	accessToken := model.Init(obj.(model.Model))
+	accessToken := model.Init(obj).(AccessTokenModel)
 
-	// extract access token data
-	accessTokenData := s.authenticator.policy.AccessTokenExtractor(accessToken)
+	// get access token data
+	requestedAt, grantedScopes := accessToken.GetOAuthData()
 
 	// create request
 	req := fosite.NewRequest()
-	req.RequestedAt = accessTokenData["RequestedAt"].(time.Time)
-	req.GrantedScopes = accessTokenData["GrantedScopes"].([]string)
+	req.RequestedAt = requestedAt
+	req.GrantedScopes = grantedScopes
 	req.Session = session
 
 	// assign access token to context
@@ -173,14 +177,11 @@ func (s *storage) Authenticate(ctx context.Context, id string, secret string) er
 	// assign owner to context
 	ctx.(echo.Context).Set("owner", owner)
 
-	// get owner from context
-	owner = ctx.Value("owner").(model.Model)
-
 	// extract data from owner
-	ownerData := s.authenticator.policy.OwnerExtractor(owner)
+	passwordHash := owner.GetOAuthData()
 
 	// check secret
-	err = s.authenticator.policy.CompareStrategy(ownerData["PasswordHash"].([]byte), []byte(secret))
+	err = s.authenticator.policy.CompareStrategy(passwordHash, []byte(secret))
 	if err != nil {
 		return fosite.ErrNotFound
 	}
@@ -188,7 +189,17 @@ func (s *storage) Authenticate(ctx context.Context, id string, secret string) er
 	return nil
 }
 
-func (s *storage) getOwner(id string) (model.Model, error) {
+func (s *storage) getIdentifierField(m model.Model) model.Field {
+	for _, field := range m.Meta().Fields {
+		if field.Type == typeOfIdentifier {
+			return field
+		}
+	}
+
+	panic("Missing Identifier field for " + m.Meta().Name)
+}
+
+func (s *storage) getOwner(id string) (OwnerModel, error) {
 	// prepare object
 	obj := s.authenticator.policy.OwnerModel.Meta().Make()
 
@@ -198,9 +209,12 @@ func (s *storage) getOwner(id string) (model.Model, error) {
 	// ensure store gets closed
 	defer store.Close()
 
+	// get id field
+	field := s.getIdentifierField(s.authenticator.policy.OwnerModel)
+
 	// query db
 	err := store.C(s.authenticator.policy.OwnerModel).Find(bson.M{
-		s.authenticator.policy.OwnerIDField: id,
+		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil, fosite.ErrInvalidRequest
@@ -209,5 +223,5 @@ func (s *storage) getOwner(id string) (model.Model, error) {
 	}
 
 	// initialize model
-	return model.Init(obj.(model.Model)), nil
+	return model.Init(obj).(OwnerModel), nil
 }

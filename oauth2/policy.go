@@ -3,16 +3,9 @@ package oauth2
 import (
 	"time"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// An Extractor is responsible for extracting data from models.
-type Extractor func(model model.Model) fire.Map
-
-// An Injector is responsible for injecting data into models.
-type Injector func(model model.Model, data fire.Map)
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
@@ -53,18 +46,9 @@ type Policy struct {
 
 	Secret []byte
 
-	OwnerModel     model.Model
-	OwnerIDField   string
-	OwnerExtractor Extractor
-
-	ClientModel     model.Model
-	ClientIDField   string
-	ClientExtractor Extractor
-
-	AccessTokenModel     model.Model
-	AccessTokenIDField   string
-	AccessTokenExtractor Extractor
-	AccessTokenInjector  Injector
+	OwnerModel       OwnerModel
+	ClientModel      ClientModel
+	AccessTokenModel AccessTokenModel
 
 	GrantStrategy   GrantStrategy
 	CompareStrategy CompareStrategy
@@ -74,21 +58,11 @@ type Policy struct {
 // DefaultPolicy returns a simple policy that provides a starting point.
 func DefaultPolicy() *Policy {
 	return &Policy{
-		OwnerModel:     &User{},
-		OwnerIDField:   "email",
-		OwnerExtractor: userExtractor,
-
-		ClientModel:     &Application{},
-		ClientIDField:   "key",
-		ClientExtractor: applicationExtractor,
-
-		AccessTokenModel:     &AccessToken{},
-		AccessTokenIDField:   "signature",
-		AccessTokenExtractor: accessTokenExtractor,
-		AccessTokenInjector:  accessTokenInjector,
-
-		GrantStrategy:   DefaultGrantStrategy,
-		CompareStrategy: DefaultCompareStrategy,
-		TokenLifespan:   time.Hour,
+		OwnerModel:       &User{},
+		ClientModel:      &Application{},
+		AccessTokenModel: &AccessToken{},
+		GrantStrategy:    DefaultGrantStrategy,
+		CompareStrategy:  DefaultCompareStrategy,
+		TokenLifespan:    time.Hour,
 	}
 }

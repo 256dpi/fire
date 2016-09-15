@@ -132,7 +132,7 @@ func TestPasswordGrant(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -243,7 +243,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -376,7 +376,7 @@ func TestImplicitGrant(t *testing.T) {
 		token = query.Get("access_token")
 
 		assert.Equal(t, http.StatusFound, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", query.Get("expires_in"))
 		assert.Equal(t, "default", query.Get("scope"))
 		assert.Equal(t, "bearer", query.Get("token_type"))
@@ -453,7 +453,7 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default admin", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -530,7 +530,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -598,7 +598,7 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default admin", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -666,7 +666,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
@@ -908,7 +908,7 @@ func TestEchoAuthorizer(t *testing.T) {
 		token = gjson.Get(r.Body.String(), "access_token").String()
 
 		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, string(accessToken.Signature), strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
 		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
 		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
