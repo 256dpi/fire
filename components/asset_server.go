@@ -52,10 +52,16 @@ func (s *AssetServer) Register(router *echo.Echo) {
 
 // Inspect implements the fire.Component interface.
 func (s *AssetServer) Inspect() fire.ComponentInfo {
+	// show root as slash
+	path := s.path
+	if path == "" {
+		path = "/"
+	}
+
 	return fire.ComponentInfo{
 		Name: "Asset Server",
 		Settings: fire.Map{
-			"Path":      s.path,
+			"Path":      path,
 			"Directory": s.directory,
 			"SPA Mode":  fmt.Sprintf("%v", s.spaMode),
 		},

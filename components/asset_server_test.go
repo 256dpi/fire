@@ -17,7 +17,7 @@ func TestDefaultAsset(t *testing.T) {
 		Name: "Asset Server",
 		Settings: fire.Map{
 			"SPA Mode":  "true",
-			"Path":      "",
+			"Path":      "/",
 			"Directory": "../.test/assets/",
 		},
 	}, as.Inspect())
