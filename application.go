@@ -15,6 +15,10 @@ type Map map[string]interface{}
 type Component interface {
 	// Register will be called by the application with a new echo router.
 	Register(router *echo.Echo)
+
+	// Inspect will be called by the Inspector to print a list of used
+	// components and their configuration.
+	Inspect() ComponentInfo
 }
 
 // A BootableComponent is an extended component with additional methods for
@@ -24,7 +28,7 @@ type BootableComponent interface {
 
 	// Setup will be called before the applications starts and allows further
 	// initialization.
-	Setup(router *echo.Echo) error
+	Setup() error
 
 	// Teardown will be called after applications has stopped and allows proper
 	// cleanup.
@@ -64,23 +68,51 @@ func (a *Application) Run(server engine.Server) error {
 	// create new router
 	router := echo.New()
 
+	// prepare inspector
+	var inspector *Inspector
+
 	// register components
 	for _, component := range a.components {
 		component.Register(router)
+
+		// set inspector when available
+		if i, ok := component.(*Inspector); ok {
+			inspector = i
+		}
+	}
+
+	// signal boot
+	if inspector != nil {
+		inspector.boot()
 	}
 
 	// setup components
 	for _, component := range a.components {
 		if bootable, ok := component.(BootableComponent); ok {
-			err := bootable.Setup(router)
+			err := bootable.Setup()
 			if err != nil {
 				return err
 			}
 		}
 	}
 
+	// signal run
+	if inspector != nil {
+		inspector.inspect(a, router)
+	}
+
+	// signal run
+	if inspector != nil {
+		inspector.run()
+	}
+
 	// run router
 	router.Run(server)
+
+	// signal run
+	if inspector != nil {
+		inspector.teardown()
+	}
 
 	// teardown components
 	for _, component := range a.components {

@@ -10,14 +10,6 @@ import (
 	"github.com/labstack/echo"
 )
 
-// The InspectableComponent interface can be implement by a component in order to
-// be inspectable by a inspector.
-type InspectableComponent interface {
-	// Inspect will be called by the application to print a list of used
-	// components and their configuration.
-	Inspect() ComponentInfo
-}
-
 // A ComponentInfo is returned by a component to describe itself.
 type ComponentInfo struct {
 	// The name of the component.
@@ -30,20 +22,18 @@ type ComponentInfo struct {
 // An Inspector can be used during development to print the applications
 // component stack, the route table and log requests to writer.
 type Inspector struct {
-	Writer      io.Writer
-	Application *Application
+	Writer io.Writer
 }
 
 // DefaultInspector creates and returns a new inspector that writes to stdout.
-func DefaultInspector(app *Application) *Inspector {
-	return NewInspector(app, os.Stdout)
+func DefaultInspector() *Inspector {
+	return NewInspector(os.Stdout)
 }
 
 // NewInspector creates and returns a new inspector.
-func NewInspector(app *Application, writer io.Writer) *Inspector {
+func NewInspector(writer io.Writer) *Inspector {
 	return &Inspector{
-		Application: app,
-		Writer:      writer,
+		Writer: writer,
 	}
 }
 
@@ -53,25 +43,6 @@ func (i *Inspector) Register(router *echo.Echo) {
 	router.SetHTTPErrorHandler(i.errorHandler)
 }
 
-// Setup implements the BootableComponent interface.
-func (i *Inspector) Setup(router *echo.Echo) error {
-	// print header
-	fmt.Fprintln(i.Writer, "==> Fire application starting...")
-
-	// print component info
-	fmt.Fprintln(i.Writer, "==> Mounted components:")
-	i.inspectComponents()
-
-	// print routing table
-	fmt.Fprintln(i.Writer, "==> Registered routes:")
-	i.inspectRoutingTable(router)
-
-	// print footer
-	fmt.Fprintln(i.Writer, "==> Ready to go!")
-
-	return nil
-}
-
 // Inspect implements the InspectableComponent interface.
 func (i *Inspector) Inspect() ComponentInfo {
 	return ComponentInfo{
@@ -79,39 +50,51 @@ func (i *Inspector) Inspect() ComponentInfo {
 	}
 }
 
-// Teardown implements the BootableComponent interface.
-func (i *Inspector) Teardown() error {
-	// print footer
-	fmt.Fprintln(i.Writer, "==> Fire application is stopping...")
-
-	return nil
+func (i *Inspector) boot() {
+	fmt.Fprintln(i.Writer, "==> Fire application starting...")
 }
 
-func (i *Inspector) inspectComponents() {
+func (i *Inspector) inspect(app *Application, router *echo.Echo) {
+	// print component info
+	fmt.Fprintln(i.Writer, "==> Mounted components:")
+	i.inspectComponents(app)
+
+	// print routing table
+	fmt.Fprintln(i.Writer, "==> Registered routes:")
+	i.inspectRoutingTable(router)
+}
+
+func (i *Inspector) run() {
+	fmt.Fprintln(i.Writer, "==> Fire application is ready to go!")
+}
+
+func (i *Inspector) teardown() {
+	fmt.Fprintln(i.Writer, "==> Fire application is stopping...")
+}
+
+func (i *Inspector) inspectComponents(app *Application) {
 	// inspect all components
-	for _, component := range i.Application.components {
-		if inspectable, ok := component.(InspectableComponent); ok {
-			// get component info
-			info := inspectable.Inspect()
+	for _, component := range app.components {
+		// get component info
+		info := component.Inspect()
 
-			// print name
-			fmt.Fprintf(i.Writer, "[%s]\n", info.Name)
+		// print name
+		fmt.Fprintf(i.Writer, "[%s]\n", info.Name)
 
-			// prepare settings
-			var settings []string
+		// prepare settings
+		var settings []string
 
-			// print settings
-			for name, value := range info.Settings {
-				settings = append(settings, fmt.Sprintf("  - %s: %s", name, value))
-			}
+		// print settings
+		for name, value := range info.Settings {
+			settings = append(settings, fmt.Sprintf("  - %s: %s", name, value))
+		}
 
-			// sort settings
-			sort.Strings(settings)
+		// sort settings
+		sort.Strings(settings)
 
-			// print settings
-			for _, setting := range settings {
-				fmt.Fprintln(i.Writer, setting)
-			}
+		// print settings
+		for _, setting := range settings {
+			fmt.Fprintln(i.Writer, setting)
 		}
 	}
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestDefaultInspector(t *testing.T) {
-	i := DefaultInspector(New())
+	i := DefaultInspector()
 	assert.Equal(t, os.Stdout, i.Writer)
 }
 
@@ -19,7 +19,7 @@ func TestInspector(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	app.Mount(&testComponent{})
-	app.Mount(NewInspector(app, buf))
+	app.Mount(NewInspector(buf))
 
 	done, base := runApp(app)
 
@@ -30,7 +30,7 @@ func TestInspector(t *testing.T) {
 
 	assert.Contains(t, buf.String(), "Fire application starting...")
 	assert.Contains(t, buf.String(), "GET  /foo")
-	assert.Contains(t, buf.String(), "Ready to go!")
+	assert.Contains(t, buf.String(), "Fire application is ready to go!")
 	assert.Contains(t, buf.String(), "GET  /foo\n   200")
 }
 
@@ -39,7 +39,7 @@ func TestInspectorError(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	app.Mount(&testComponent{})
-	app.Mount(NewInspector(app, buf))
+	app.Mount(NewInspector(buf))
 
 	done, base := runApp(app)
 
@@ -56,7 +56,7 @@ func TestInspectorComponent(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	app.Mount(&testComponent{})
-	app.Mount(NewInspector(app, buf))
+	app.Mount(NewInspector(buf))
 
 	done, _ := runApp(app)
 	close(done)
