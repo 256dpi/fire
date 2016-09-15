@@ -1,6 +1,10 @@
-all: test fmt vet lint
+all: fmt vet lint test
 
-test:
+setup:
+	mkdir -p .test/assets
+	echo '<h1>Hello</h1>' > .test/assets/index.html
+
+test: setup
 	go test -cover .
 	go test -cover ./model
 	go test -cover ./jsonapi
