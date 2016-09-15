@@ -7,13 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jeffail/gabs"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var policy *Policy
@@ -125,13 +124,18 @@ func TestPasswordGrant(t *testing.T) {
 		"password":   "secret",
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.True(t, accessToken.OwnerID.Valid())
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// get empty list of posts
@@ -140,21 +144,12 @@ func TestPasswordGrant(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
-
-	// check issued access token
-	accessToken := &AccessToken{}
-	findModel(accessToken, bson.M{
-		"signature": strings.Split(token, ".")[1],
-	})
-	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
-	assert.True(t, accessToken.ClientID.Valid())
-	assert.True(t, accessToken.OwnerID.Valid())
 }
 
 func TestClientCredentialsGrant(t *testing.T) {
@@ -240,13 +235,18 @@ func TestClientCredentialsGrant(t *testing.T) {
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.Nil(t, accessToken.OwnerID)
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// get empty list of posts
@@ -255,21 +255,12 @@ func TestClientCredentialsGrant(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
-
-	// check issued access token
-	accessToken := &AccessToken{}
-	findModel(accessToken, bson.M{
-		"signature": strings.Split(token, ".")[1],
-	})
-	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
-	assert.True(t, accessToken.ClientID.Valid())
-	assert.Nil(t, accessToken.OwnerID)
 }
 
 func TestImplicitGrant(t *testing.T) {
@@ -372,18 +363,23 @@ func TestImplicitGrant(t *testing.T) {
 		"username":      "user3@example.com",
 		"password":      "secret",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.True(t, accessToken.OwnerID.Valid())
+
 		loc, err := url.Parse(r.Header().Get("Location"))
 		assert.NoError(t, err)
-
 		query, err := url.ParseQuery(loc.Fragment)
 		assert.NoError(t, err)
 
+		token = query.Get("access_token")
+
 		assert.Equal(t, http.StatusFound, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
 		assert.Equal(t, "3600", query.Get("expires_in"))
 		assert.Equal(t, "default", query.Get("scope"))
 		assert.Equal(t, "bearer", query.Get("token_type"))
-
-		token = query.Get("access_token")
 	})
 
 	// get empty list of posts
@@ -398,15 +394,6 @@ func TestImplicitGrant(t *testing.T) {
 			}
 		}`, r.Body.String())
 	})
-
-	// check issued access token
-	accessToken := &AccessToken{}
-	findModel(accessToken, bson.M{
-		"signature": strings.Split(token, ".")[1],
-	})
-	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
-	assert.True(t, accessToken.ClientID.Valid())
-	assert.True(t, accessToken.OwnerID.Valid())
 }
 
 func TestPasswordGrantAdditionalScope(t *testing.T) {
@@ -458,13 +445,18 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 		"password":   "secret",
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default admin", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default", "admin"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.True(t, accessToken.OwnerID.Valid())
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default admin", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// get empty list of posts
@@ -530,13 +522,18 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		"password":   "secret",
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.True(t, accessToken.OwnerID.Valid())
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// failing to get empty list of posts
@@ -593,13 +590,18 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default admin", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default", "admin"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.Nil(t, accessToken.OwnerID)
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default admin", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// get empty list of posts
@@ -656,13 +658,18 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.Nil(t, accessToken.OwnerID)
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// failing to get empty list of posts
@@ -734,7 +741,6 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		loc, err := url.Parse(r.Header().Get("Location"))
 		assert.NoError(t, err)
-
 		query, err := url.ParseQuery(loc.Fragment)
 		assert.NoError(t, err)
 
@@ -815,7 +821,6 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		loc, err := url.Parse(r.Header().Get("Location"))
 		assert.NoError(t, err)
-
 		query, err := url.ParseQuery(loc.Fragment)
 		assert.NoError(t, err)
 
@@ -895,13 +900,18 @@ func TestEchoAuthorizer(t *testing.T) {
 		"password":   "secret",
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		json, _ := gabs.ParseJSONBuffer(r.Body)
-		assert.Equal(t, http.StatusOK, r.Code)
-		assert.Equal(t, "3600", json.Path("expires_in").Data().(string))
-		assert.Equal(t, "default", json.Path("scope").Data().(string))
-		assert.Equal(t, "bearer", json.Path("token_type").Data().(string))
+		accessToken := findLastModel(&AccessToken{}).(*AccessToken)
+		assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
+		assert.True(t, accessToken.ClientID.Valid())
+		assert.True(t, accessToken.OwnerID.Valid())
 
-		token = json.Path("access_token").Data().(string)
+		token = gjson.Get(r.Body.String(), "access_token").String()
+
+		assert.Equal(t, http.StatusOK, r.Code)
+		assert.Equal(t, accessToken.Signature, strings.Split(token, ".")[1])
+		assert.Equal(t, "3600", gjson.Get(r.Body.String(), "expires_in").String())
+		assert.Equal(t, "default", gjson.Get(r.Body.String(), "scope").String())
+		assert.Equal(t, "bearer", gjson.Get(r.Body.String(), "token_type").String())
 	})
 
 	// get empty list of posts
@@ -911,13 +921,4 @@ func TestEchoAuthorizer(t *testing.T) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.Equal(t, "OK", r.Body.String())
 	})
-
-	// check issued access token
-	accessToken := &AccessToken{}
-	findModel(accessToken, bson.M{
-		"signature": strings.Split(token, ".")[1],
-	})
-	assert.Equal(t, []string{"default"}, accessToken.GrantedScopes)
-	assert.True(t, accessToken.ClientID.Valid())
-	assert.True(t, accessToken.OwnerID.Valid())
 }

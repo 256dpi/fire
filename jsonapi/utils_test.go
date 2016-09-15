@@ -80,5 +80,5 @@ func findLastModel(m model.Model) model.Model {
 		panic(err)
 	}
 
-	return m
+	return model.Init(m)
 }

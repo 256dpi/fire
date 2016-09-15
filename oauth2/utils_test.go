@@ -87,13 +87,13 @@ func saveModel(m model.Model) model.Model {
 	return m
 }
 
-func findModel(m model.Model, query bson.M) model.Model {
-	err := testStore.C(m).Find(query).One(m)
+func findLastModel(m model.Model) model.Model {
+	err := testStore.C(m).Find(nil).Sort("-_id").One(m)
 	if err != nil {
 		panic(err)
 	}
 
-	return m
+	return model.Init(m)
 }
 
 func basicAuth(username, password string) map[string]string {
