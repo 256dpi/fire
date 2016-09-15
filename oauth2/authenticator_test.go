@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine"
@@ -921,4 +922,26 @@ func TestEchoAuthorizer(t *testing.T) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.Equal(t, "OK", r.Body.String())
 	})
+}
+
+func TestAuthenticatorInspect(t *testing.T) {
+	p := DefaultPolicy()
+	p.Secret = []byte("abcd1234abcd1234")
+	p.PasswordGrant = true
+
+	a := New(getCleanStore(), p, "auth")
+
+	assert.Equal(t, fire.ComponentInfo{
+		Name: "OAuth2 Authenticator",
+		Settings: fire.Map{
+			"Prefix":                         "auth",
+			"Allow Password Grant":           "true",
+			"Allow Client Credentials Grant": "false",
+			"Allow Implicit Grant":           "false",
+			"Token Lifespan":                 "1h0m0s",
+			"Access Token Model":             "oauth2.AccessToken",
+			"Client Model":                   "oauth2.Application",
+			"Owner Model":                    "oauth2.User",
+		},
+	}, a.Inspect())
 }

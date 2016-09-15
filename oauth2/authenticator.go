@@ -3,8 +3,10 @@
 package oauth2
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
@@ -169,6 +171,23 @@ func (a *Authenticator) EchoAuthorizer(scopes ...string) echo.MiddlewareFunc {
 
 			return next(ctx)
 		}
+	}
+}
+
+// Inspect implements the fire.InspectableComponent interface.
+func (a *Authenticator) Inspect() fire.ComponentInfo {
+	return fire.ComponentInfo{
+		Name: "OAuth2 Authenticator",
+		Settings: fire.Map{
+			"Prefix":                         a.prefix,
+			"Allow Password Grant":           fmt.Sprintf("%v", a.policy.PasswordGrant),
+			"Allow Client Credentials Grant": fmt.Sprintf("%v", a.policy.ClientCredentialsGrant),
+			"Allow Implicit Grant":           fmt.Sprintf("%v", a.policy.ImplicitGrant),
+			"Token Lifespan":                 a.policy.TokenLifespan.String(),
+			"Access Token Model":             a.policy.AccessTokenModel.Meta().Name,
+			"Client Model":                   a.policy.ClientModel.Meta().Name,
+			"Owner Model":                    a.policy.OwnerModel.Meta().Name,
+		},
 	}
 }
 
