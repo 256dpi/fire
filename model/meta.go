@@ -21,7 +21,8 @@ type HasMany struct{}
 // A Field contains the meta information about a single field of a model.
 type Field struct {
 	Name       string
-	Type       reflect.Kind
+	Type       reflect.Type
+	Kind       reflect.Kind
 	JSONName   string
 	BSONName   string
 	Optional   bool
@@ -112,15 +113,16 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// get field type
-		fieldType := structField.Type.Kind()
-		if fieldType == reflect.Ptr {
-			fieldType = structField.Type.Elem().Kind()
+		fieldKind := structField.Type.Kind()
+		if fieldKind == reflect.Ptr {
+			fieldKind = structField.Type.Elem().Kind()
 		}
 
 		// prepare field
 		field := Field{
 			Name:     structField.Name,
-			Type:     fieldType,
+			Type:     structField.Type,
+			Kind:     fieldKind,
 			JSONName: getJSONFieldName(&structField),
 			BSONName: getBSONFieldName(&structField),
 			Optional: structField.Type.Kind() == reflect.Ptr,

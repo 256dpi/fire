@@ -79,7 +79,8 @@ func TestMeta(t *testing.T) {
 		Fields: []Field{
 			{
 				Name:       "Title",
-				Type:       reflect.String,
+				Type:       reflect.TypeOf(""),
+				Kind:       reflect.String,
 				JSONName:   "title",
 				BSONName:   "title",
 				Filterable: true,
@@ -88,7 +89,8 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:       "Published",
-				Type:       reflect.Bool,
+				Type:       reflect.TypeOf(true),
+				Kind:       reflect.Bool,
 				JSONName:   "published",
 				BSONName:   "published",
 				Filterable: true,
@@ -96,14 +98,16 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "TextBody",
-				Type:     reflect.String,
+				Type:     reflect.TypeOf(""),
+				Kind:     reflect.String,
 				JSONName: "text-body",
 				BSONName: "text_body",
 				index:    3,
 			},
 			{
 				Name:       "Comments",
-				Type:       reflect.Struct,
+				Type:       hasManyType,
+				Kind:       reflect.Struct,
 				JSONName:   "",
 				BSONName:   "",
 				Optional:   false,
@@ -115,7 +119,8 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:       "Selections",
-				Type:       reflect.Struct,
+				Type:       hasManyType,
+				Kind:       reflect.Struct,
 				JSONName:   "",
 				BSONName:   "",
 				Optional:   false,
@@ -137,14 +142,16 @@ func TestMeta(t *testing.T) {
 		Fields: []Field{
 			{
 				Name:     "Message",
-				Type:     reflect.String,
+				Type:     reflect.TypeOf(""),
+				Kind:     reflect.String,
 				JSONName: "message",
 				BSONName: "message",
 				index:    1,
 			},
 			{
 				Name:     "Parent",
-				Type:     reflect.String,
+				Type:     optionalToOneType,
+				Kind:     reflect.String,
 				JSONName: "",
 				BSONName: "parent",
 				Optional: true,
@@ -155,7 +162,8 @@ func TestMeta(t *testing.T) {
 			},
 			{
 				Name:     "PostID",
-				Type:     reflect.String,
+				Type:     toOneType,
+				Kind:     reflect.String,
 				JSONName: "",
 				BSONName: "post_id",
 				ToOne:    true,
@@ -175,14 +183,16 @@ func TestMeta(t *testing.T) {
 		Fields: []Field{
 			{
 				Name:     "Name",
-				Type:     reflect.String,
+				Type:     reflect.TypeOf(""),
+				Kind:     reflect.String,
 				JSONName: "name",
 				BSONName: "name",
 				index:    1,
 			},
 			{
 				Name:     "PostIDs",
-				Type:     reflect.Slice,
+				Type:     toManyType,
+				Kind:     reflect.Slice,
 				BSONName: "post_ids",
 				ToMany:   true,
 				RelName:  "posts",

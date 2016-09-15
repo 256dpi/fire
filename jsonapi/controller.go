@@ -753,7 +753,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	for _, field := range c.Model.Meta().Fields {
 		if field.Filterable {
 			if values, ok := ctx.Request.Filters[field.JSONName]; ok {
-				if field.Type == reflect.Bool && len(values) == 1 {
+				if field.Kind == reflect.Bool && len(values) == 1 {
 					ctx.Query[field.BSONName] = values[0] == "true"
 					continue
 				}
