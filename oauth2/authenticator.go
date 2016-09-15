@@ -202,8 +202,8 @@ func (a *Authenticator) tokenEndpoint(ctx echo.Context) error {
 	ctx.Set("client", client)
 
 	// retrieve optional owner
-	var owner model.Model
-	if val, ok := ctx.Get("owner").(model.Model); ok {
+	var owner OwnerModel
+	if val, ok := ctx.Get("owner").(OwnerModel); ok {
 		owner = val
 	}
 
@@ -256,7 +256,7 @@ func (a *Authenticator) authorizeEndpoint(ctx echo.Context) error {
 	}
 
 	// retrieve and set models
-	owner := ctx.Get("owner").(model.Model)
+	owner := ctx.Get("owner").(OwnerModel)
 	client := req.GetClient().(*abstractClient).model
 	ctx.Set("client", client)
 
@@ -291,7 +291,7 @@ func (a *Authenticator) authorizeEndpoint(ctx echo.Context) error {
 	return nil
 }
 
-func (a *Authenticator) invokeGrantStrategy(grantType string, req fosite.Requester, client, owner model.Model) {
+func (a *Authenticator) invokeGrantStrategy(grantType string, req fosite.Requester, client ClientModel, owner OwnerModel) {
 	grantedScopes := a.policy.GrantStrategy(&GrantRequest{
 		GrantType:       grantType,
 		RequestedScopes: req.GetRequestedScopes(),

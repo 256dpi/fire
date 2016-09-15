@@ -3,7 +3,6 @@ package oauth2
 import (
 	"time"
 
-	"github.com/gonfire/fire/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -11,8 +10,8 @@ import (
 type GrantRequest struct {
 	GrantType       string
 	RequestedScopes []string
-	Client          model.Model
-	Owner           model.Model
+	Client          ClientModel
+	Owner           OwnerModel
 }
 
 // The GrantStrategy is invoked by the Authenticator with the grant type,

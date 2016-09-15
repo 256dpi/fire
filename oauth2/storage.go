@@ -16,7 +16,7 @@ var typeOfIdentifier = reflect.TypeOf(Identifier(""))
 
 type abstractClient struct {
 	fosite.DefaultClient
-	model model.Model
+	model ClientModel
 }
 
 type storage struct {
@@ -79,12 +79,12 @@ func (s *storage) DeleteAuthorizeCodeSession(ctx context.Context, code string) e
 
 func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
 	// retrieve client id
-	clientID := ctx.Value("client").(model.Model).ID()
+	clientID := ctx.Value("client").(ClientModel).ID()
 
 	// retrieve optional owner id
 	var ownerID *bson.ObjectId
 	if ctx.Value("owner") != nil {
-		id := ctx.Value("owner").(model.Model).ID()
+		id := ctx.Value("owner").(OwnerModel).ID()
 		ownerID = &id
 	}
 
