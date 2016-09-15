@@ -841,7 +841,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 	})
 }
 
-func TestGinAuthorizer(t *testing.T) {
+func TestEchoAuthorizer(t *testing.T) {
 	store := getCleanStore()
 
 	policy.PasswordGrant = true
