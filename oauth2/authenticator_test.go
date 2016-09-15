@@ -73,10 +73,17 @@ func TestPasswordGrant(t *testing.T) {
 		PasswordHash: hashPassword("secret"),
 	})
 
+	// TODO: Improve error message.
+
 	// missing auth
 	testRequest(server, "GET", "/posts", nil, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The request could not be authorized"
+			}]
+		}`, r.Body.String())
 	})
 
 	// wrong secret
@@ -87,7 +94,11 @@ func TestPasswordGrant(t *testing.T) {
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"name": "invalid_request",
+			"description": "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed",
+			"statusCode": 400
+		}`, r.Body.String())
 	})
 
 	// wrong scope
@@ -98,7 +109,11 @@ func TestPasswordGrant(t *testing.T) {
 		"scope":      "wrong",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"name":"invalid_scope",
+			"description":"The requested scope is invalid, unknown, or malformed",
+			"statusCode":400
+		}`, r.Body.String())
 	})
 
 	var token string
@@ -184,7 +199,12 @@ func TestClientCredentialsGrant(t *testing.T) {
 	// missing auth
 	testRequest(server, "GET", "/posts", nil, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The request could not be authorized"
+			}]
+		}`, r.Body.String())
 	})
 
 	// wrong secret
@@ -193,7 +213,11 @@ func TestClientCredentialsGrant(t *testing.T) {
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"name": "invalid_client",
+			"description": "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)",
+			"statusCode": 400
+		}`, r.Body.String())
 	})
 
 	// wrong scope
@@ -202,7 +226,11 @@ func TestClientCredentialsGrant(t *testing.T) {
 		"scope":      "wrong",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"name": "invalid_scope",
+			"description": "The requested scope is invalid, unknown, or malformed",
+			"statusCode": 400
+		}`, r.Body.String())
 	})
 
 	var token string
@@ -294,7 +322,12 @@ func TestImplicitGrant(t *testing.T) {
 	// missing auth
 	testRequest(server, "GET", "/posts", nil, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The request could not be authorized"
+			}]
+		}`, r.Body.String())
 	})
 
 	// wrong secret
@@ -307,11 +340,9 @@ func TestImplicitGrant(t *testing.T) {
 		"username":      "user3@example.com",
 		"password":      "wrong-secret",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		loc, err := url.Parse(r.Header().Get("Location"))
-		assert.NoError(t, err)
-
 		assert.Equal(t, http.StatusFound, r.Code)
-		assert.NotEmpty(t, loc.RawQuery)
+		assert.Empty(t, r.Body.String())
+		assert.Equal(t, "https://0.0.0.0:8080/auth/callback?error=acccess_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request&state=state1234", r.Header().Get("Location"))
 	})
 
 	// wrong scope
@@ -324,11 +355,9 @@ func TestImplicitGrant(t *testing.T) {
 		"username":      "user3@example.com",
 		"password":      "secret",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		loc, err := url.Parse(r.Header().Get("Location"))
-		assert.NoError(t, err)
-
 		assert.Equal(t, http.StatusFound, r.Code)
-		assert.NotEmpty(t, loc.RawQuery)
+		assert.Empty(t, r.Body.String())
+		assert.Equal(t, "https://0.0.0.0:8080/auth/callback?error=invalid_scope&error_description=The+requested+scope+is+invalid%2C+unknown%2C+or+malformed&state=state1234", r.Header().Get("Location"))
 	})
 
 	var token string
@@ -363,11 +392,11 @@ func TestImplicitGrant(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
 
 	// check issued access token
@@ -444,11 +473,11 @@ func TestPasswordGrantAdditionalScope(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
 }
 
@@ -515,7 +544,12 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+			}]
+		}`, r.Body.String())
 	})
 }
 
@@ -574,11 +608,11 @@ func TestCredentialsGrantAdditionalScope(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
 }
 
@@ -636,7 +670,12 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+			}]
+		}`, r.Body.String())
 	})
 }
 
@@ -713,11 +752,11 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusOK, r.Code)
 		assert.JSONEq(t, `{
-				"data":[],
-				"links": {
-					"self": "/posts"
-				}
-			}`, r.Body.String())
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String())
 	})
 }
 
@@ -793,7 +832,12 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 		"Authorization": "Bearer " + token,
 	}, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.NotEmpty(t, r.Body.String())
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "401",
+				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+			}]
+		}`, r.Body.String())
 	})
 }
 
