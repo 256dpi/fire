@@ -7,10 +7,10 @@ type Store struct {
 	session *mgo.Session
 }
 
-// CreateStore will dial the passed database and return a new store. It will
+// MustCreateStore will dial the passed database and return a new store. It will
 // panic if the initial connection failed.
-func CreateStore(uri string) *Store {
-	store, err := CreateStoreSafe(uri)
+func MustCreateStore(uri string) *Store {
+	store, err := CreateStore(uri)
 	if err != nil {
 		panic(err)
 	}
@@ -18,9 +18,9 @@ func CreateStore(uri string) *Store {
 	return store
 }
 
-// CreateStoreSafe will dial the passed database and return a new store. It will
+// CreateStore will dial the passed database and return a new store. It will
 // return an error if the initial connection failed
-func CreateStoreSafe(uri string) (*Store, error) {
+func CreateStore(uri string) (*Store, error) {
 	session, err := mgo.Dial(uri)
 	if err != nil {
 		return nil, err

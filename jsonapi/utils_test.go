@@ -32,7 +32,7 @@ type Selection struct {
 	PostIDs    []bson.ObjectId `json:"-" valid:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
-var testStore = model.CreateStore("mongodb://0.0.0.0:27017/fire")
+var testStore = model.MustCreateStore("mongodb://0.0.0.0:27017/fire")
 
 func getCleanStore() *model.Store {
 	testStore.DB().C("posts").RemoveAll(nil)

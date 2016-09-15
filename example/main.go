@@ -16,7 +16,7 @@ type post struct {
 
 func main() {
 	// create store
-	store := model.CreateStore("mongodb://0.0.0.0:27017/fire-test-echo")
+	store := model.MustCreateStore("mongodb://0.0.0.0:27017/fire-test-echo")
 
 	// create a new app
 	app := fire.New()
