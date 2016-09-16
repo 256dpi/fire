@@ -23,7 +23,6 @@ _The framework is still WIP and the API may be changed._
 - [Models](#models)
   - [Basics](#basics)
   - [Helpers](#helpers)
-  - [Validation](#validation)
   - [Filtering & Sorting](#filtering-&-sorting)
   - [Sparse Fieldsets](#sparse-fieldsets)
   - [To One Relationships](#to-one-relationships)
@@ -56,23 +55,23 @@ $ go get -u github.com/gonfire/fire
 
 ## Usage
 
-Fire infers all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `fire` struct tag and integrates [govalidator](https://github.com/asaskevich/govalidator) which uses the `valid` struct tag.
+Fire infers all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `fire` struct tag.
 
 Such a declaration could look like the following two models for a blog system:
 
 ```go
 type Post struct {
 	model.Base `json:"-" bson:",inline" fire:"posts"`
-	Title      string        `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-	TextBody   string        `json:"text-body" valid:"-" bson:"text_body"`
-	Comments   model.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	Title      string        `json:"title" bson:"title" fire:"filterable,sortable"`
+	TextBody   string        `json:"text-body" bson:"text_body"`
+	Comments   model.HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
 }
 
 type Comment struct {
 	model.Base `json:"-" bson:",inline" fire:"comments"`
-	Message    string         `json:"message" valid:"required"`
-	Parent     *bson.ObjectId `json:"-" valid:"-" fire:"parent:comments"`
-	PostID     bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	Message    string         `json:"message"`
+	Parent     *bson.ObjectId `json:"-" fire:"parent:comments"`
+	PostID     bson.ObjectId  `json:"-" bson:"post_id" fire:"post:posts"`
 }
 ```
 
@@ -140,15 +139,14 @@ All other fields of a structs are treated as attributes except for relationships
 ```go
 type Post struct {
     // ...
-    Title    string `json:"title" valid:"required" bson:"title" fire:"filterable,sortable"`
-    TextBody string `json:"text-body" valid:"-" bson:"text_body"`
+    Title    string `json:"title" bson:"title" fire:"filterable,sortable"`
+    TextBody string `json:"text-body" bson:"text_body"`
     // ...
 }
 ```
 
 - Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
 - The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty"`.
-- Validation is provided by [govalidator](https://github.com/asaskevich/govalidator) and uses the `valid` struct tag. All possible validations can be found [here](https://github.com/asaskevich/govalidator#validatestruct-2).
 
 _Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`._
 
@@ -181,21 +179,6 @@ post.Meta().Fields
 
 More information about the `Meta` structure can be found here: <https://godoc.org/github.com/gonfire/fire#Meta>.
 
-### Validation
-
-The `Validate()` method can be overridden per model to implement custom validations:
-
-```go
-func (p *Post) Validate(fresh bool) error {
-    // ...
-
-    return p.Base.Validate(fresh)
-}
-```
-
-- The argument `fresh` indicates if the model has been just created.
-- Returned errors are serialized as a bad request error.
-
 ### Filtering & Sorting
 
 Fields can be annotated with the `fire:"filterable"` struct tag to allow filtering and with the `fire:"sortable"` struct tag to allow sorting:
@@ -203,7 +186,7 @@ Fields can be annotated with the `fire:"filterable"` struct tag to allow filteri
 ```go
 type Post struct {
     // ...
-	Slug string `json:"slug" valid:"required" bson:"slug" fire:"filterable,sortable"`
+	Slug string `json:"slug" bson:"slug" fire:"filterable,sortable"`
 	// ...
 }
 ```
@@ -227,7 +210,7 @@ Fields of the type `bson.ObjectId` or `*bson.ObjectId` can be marked as to one r
 ```go
 type Comment struct {
 	// ...
-	PostID bson.ObjectId `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
+	PostID bson.ObjectId `json:"-" bson:"post_id" fire:"post:posts"`
     // ...
 }
 ```
@@ -246,7 +229,7 @@ Fields of the type `[]bson.ObjectId` can be marked as to many relationships usin
 ```go
 type Selection struct {
     // ...
-	PostIDs []bson.ObjectId `json:"-" valid:"-" fire:"posts:posts"`
+	PostIDs []bson.ObjectId `json:"-" fire:"posts:posts"`
 	// ...
 }
 ```
@@ -264,14 +247,14 @@ Fields that have a `HasMany` as their type define the inverse of a to one relati
 ```go
 type Post struct {
     // ...
-	Comments model.HasMany `json:"-" valid:"-" bson:"-" fire:"comments:comments:post"`
+	Comments model.HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
 	// ...
 }
 ```
 
 _Note: Ember Data requires you to use dashed names for multi-word relationship names like `authored-posts`._
 
-Note: These fields should have the `json:"-" valid:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
+Note: These fields should have the `json:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
 ## Controllers
 

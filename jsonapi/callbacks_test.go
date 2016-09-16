@@ -34,6 +34,26 @@ func TestCombine(t *testing.T) {
 	assert.Equal(t, 3, counter)
 }
 
+func TestModelValidator(t *testing.T) {
+	validator := ModelValidator()
+
+	post := model.Init(&Post{
+		Title: "",
+	}).(*Post)
+
+	ctx := &Context{
+		Action: Create,
+		Model:  post,
+	}
+
+	err := validator(ctx)
+	assert.Equal(t, "Title: non zero value required;", err.Error())
+
+	post.Title = "Default Title"
+	err = validator(ctx)
+	assert.NoError(t, err)
+}
+
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 	validator := ProtectedAttributesValidator(fire.Map{
 		"title": "Default Title",

@@ -2,10 +2,8 @@
 package model
 
 import (
-	"errors"
 	"reflect"
 
-	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -14,7 +12,6 @@ type Model interface {
 	ID() bson.ObjectId
 	Get(string) interface{}
 	Set(string, interface{})
-	Validate(bool) error
 	Meta() *Meta
 
 	initialize(Model)
@@ -89,22 +86,6 @@ func (b *Base) Set(name string, value interface{}) {
 	}
 
 	panic("Missing field " + name + " on " + b.meta.Name)
-}
-
-// Validate validates the model based on the "valid" struct tags.
-func (b *Base) Validate(fresh bool) error {
-	// validate id
-	if !b.DocID.Valid() {
-		return errors.New("Invalid id")
-	}
-
-	// validate parent model
-	_, err := govalidator.ValidateStruct(b.model)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Meta returns the models Meta structure.

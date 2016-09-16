@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/gonfire/fire"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -47,6 +48,32 @@ func Combine(callbacks ...Callback) Callback {
 			if err != nil {
 				return err
 			}
+		}
+
+		return nil
+	}
+}
+
+// ModelValidator uses the govalidator package to validate the model based on
+// the "valid" struct tags.
+func ModelValidator() Callback {
+	return func(ctx *Context) error {
+		// only run validator on Create and Update
+		if ctx.Action != Create && ctx.Action != Update {
+			return nil
+		}
+
+		// validate id
+		if !ctx.Model.ID().Valid() {
+			return errors.New("Invalid ID")
+		}
+
+		// TODO: Add error source pointer.
+
+		// validate model
+		_, err := govalidator.ValidateStruct(ctx.Model)
+		if err != nil {
+			return err
 		}
 
 		return nil

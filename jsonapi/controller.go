@@ -233,12 +233,6 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 		return err
 	}
 
-	// validate model
-	err = ctx.Model.Validate(true)
-	if err != nil {
-		return jsonapi.BadRequest(err.Error())
-	}
-
 	// run validator if available
 	err = c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 	if err != nil {
@@ -287,7 +281,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 	}
 
 	// save model
-	err = c.saveModel(ctx)
+	err = c.updateModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -569,7 +563,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error 
 	}
 
 	// save model
-	err = c.saveModel(ctx)
+	err = c.updateModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -627,7 +621,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 	}
 
 	// save model
-	err = c.saveModel(ctx)
+	err = c.updateModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -683,7 +677,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	}
 
 	// save model
-	err = c.saveModel(ctx)
+	err = c.updateModel(ctx)
 	if err != nil {
 		return err
 	}
@@ -897,15 +891,9 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	return nil
 }
 
-func (c *Controller) saveModel(ctx *Context) error {
-	// validate model
-	err := ctx.Model.Validate(false)
-	if err != nil {
-		return jsonapi.BadRequest(err.Error())
-	}
-
+func (c *Controller) updateModel(ctx *Context) error {
 	// run validator if available
-	err = c.runCallback(c.Validator, ctx, http.StatusBadRequest)
+	err := c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 	if err != nil {
 		return err
 	}
