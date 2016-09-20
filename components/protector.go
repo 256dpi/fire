@@ -14,9 +14,9 @@ import (
 // A Protector is a component that can be mounted in an application to enforce
 // common security concerns.
 type Protector struct {
-	// BodyLimit defines the maximum size of a request body in the form of 4K,
-	// 2M, 1G or 1P.
-	BodyLimit string
+	// RequestBodyLimit defines the maximum size of a request body in the form
+	// of 4K, 2M, 1G or 1P.
+	RequestBodyLimit string
 
 	// AllowMethodOverriding will allow the usage of the X-HTTP-Method-Override
 	// header to set a request method when using the POST method.
@@ -35,7 +35,7 @@ type Protector struct {
 // DefaultProtector returns a protector that is tailored to be used for JSON APIs.
 func DefaultProtector() *Protector {
 	return &Protector{
-		BodyLimit:             "4K",
+		RequestBodyLimit:      "4K",
 		AllowMethodOverriding: false,
 		AllowedCORSOrigins: []string{
 			"*",
@@ -57,7 +57,7 @@ func DefaultProtector() *Protector {
 // Register will register the protector on the passed echo router.
 func (p *Protector) Register(router *echo.Echo) {
 	// set body limit
-	router.Use(middleware.BodyLimit(p.BodyLimit))
+	router.Use(middleware.BodyLimit(p.RequestBodyLimit))
 
 	// add gzip compression
 	router.Use(middleware.Gzip())
@@ -99,7 +99,7 @@ func (p *Protector) Inspect() fire.ComponentInfo {
 	return fire.ComponentInfo{
 		Name: "Protector",
 		Settings: fire.Map{
-			"Body Limit":              p.BodyLimit,
+			"Request Body Limit":      p.RequestBodyLimit,
 			"Allow Method Overriding": fmt.Sprintf("%v", p.AllowMethodOverriding),
 			"Allowed CORS Origins":    strings.Join(p.AllowedCORSOrigins, ", "),
 			"Allowed CORS Methods":    strings.Join(p.AllowedCORSMethods, ", "),
