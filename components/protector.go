@@ -30,9 +30,6 @@ type Protector struct {
 
 	// AllowedCORSMethods specifies the allowed methods when CORS.
 	AllowedCORSMethods []string
-
-	// DisableAutomaticRecover will turn of automatic recover for panics.
-	DisableAutomaticRecovery bool
 }
 
 // DefaultProtector returns a protector that is tailored to be used for JSON APIs.
@@ -86,11 +83,6 @@ func (p *Protector) Register(router *echo.Echo) {
 		MaxAge:       60,
 	}))
 
-	// enable automatic recovery
-	if !p.DisableAutomaticRecovery {
-		router.Use(middleware.Recover())
-	}
-
 	// prepare secure config
 	config := middleware.DefaultSecureConfig
 	config.XFrameOptions = ""
@@ -112,7 +104,6 @@ func (p *Protector) Inspect() fire.ComponentInfo {
 			"Allowed CORS Origins":    strings.Join(p.AllowedCORSOrigins, ", "),
 			"Allowed CORS Methods":    strings.Join(p.AllowedCORSMethods, ", "),
 			"Allowed CORS Headers":    strings.Join(p.AllowedCORSHeaders, ", "),
-			"Automatic Recovery":      fmt.Sprintf("%v", !p.DisableAutomaticRecovery),
 		},
 	}
 }
