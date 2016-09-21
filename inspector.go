@@ -53,7 +53,7 @@ func (i *Inspector) Register(router *echo.Echo) {
 }
 
 // Before implements the InspectorComponent interface.
-func (i *Inspector) Before(stage Phase, app *Application, router *echo.Echo) {
+func (i *Inspector) Before(stage Phase, app *Application) {
 	switch stage {
 	case Registration:
 		fmt.Fprintln(i.Writer, color.YellowString("==> Application booting..."))
@@ -66,7 +66,7 @@ func (i *Inspector) Before(stage Phase, app *Application, router *echo.Echo) {
 		fmt.Fprintln(i.Writer, color.YellowString("==> Setting up bootable components..."))
 	case Run:
 		fmt.Fprintln(i.Writer, color.YellowString("==> Registered routes:"))
-		i.printRoutes(router)
+		i.printRoutes(app.Router())
 
 		fmt.Fprintln(i.Writer, color.YellowString("==> Application is ready to go!"))
 	case Teardown:

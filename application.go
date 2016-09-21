@@ -77,7 +77,7 @@ type InspectorComponent interface {
 	// Before is called by the application before the specified phase is
 	// initiated. The calling application and the currently used echo router
 	// are attached for convenience.
-	Before(Phase, *Application, *echo.Echo)
+	Before(Phase, *Application)
 }
 
 // A ReporterComponent is an extended component that is responsible for
@@ -97,6 +97,7 @@ type Application struct {
 	inspectors []InspectorComponent
 	reporters  []ReporterComponent
 
+	router *echo.Echo
 	mutex  sync.Mutex
 	server engine.Server
 	tomb   tomb.Tomb
@@ -104,7 +105,9 @@ type Application struct {
 
 // New creates and returns a new Application.
 func New() *Application {
-	return &Application{}
+	return &Application{
+		router: echo.New(),
+	}
 }
 
 // Mount will mount the passed Component in the application.
@@ -151,6 +154,11 @@ func (a *Application) Mount(component Component) {
 // Components will return all so far registered components.
 func (a *Application) Components() []Component {
 	return a.components
+}
+
+// Router returns the used echo router for this application.
+func (a *Application) Router() *echo.Echo {
+	return a.router
 }
 
 // Start will start the application using a new server listening on the
@@ -249,27 +257,24 @@ func (a *Application) runner() error {
 }
 
 func (a *Application) boot() error {
-	// create new router
-	router := echo.New()
-
 	// set error handler
-	router.SetHTTPErrorHandler(a.errorHandler)
+	a.router.SetHTTPErrorHandler(a.errorHandler)
 
 	// signal before register event
 	for _, i := range a.inspectors {
-		i.Before(Registration, a, router)
+		i.Before(Registration, a)
 	}
 
 	// TODO: Create group and pass group?
 
 	// register routable components
 	for _, c := range a.routables {
-		c.Register(router)
+		c.Register(a.router)
 	}
 
 	// signal before setup event
 	for _, i := range a.inspectors {
-		i.Before(Setup, a, router)
+		i.Before(Setup, a)
 	}
 
 	// setup bootable components
@@ -282,11 +287,11 @@ func (a *Application) boot() error {
 
 	// signal before run event
 	for _, i := range a.inspectors {
-		i.Before(Run, a, router)
+		i.Before(Run, a)
 	}
 
 	// run router
-	err := router.Run(a.server)
+	err := a.router.Run(a.server)
 	if err != nil {
 		select {
 		case <-a.tomb.Dying():
@@ -299,7 +304,7 @@ func (a *Application) boot() error {
 
 	// signal after run event
 	for _, i := range a.inspectors {
-		i.Before(Teardown, a, router)
+		i.Before(Teardown, a)
 	}
 
 	// teardown bootable components
@@ -312,7 +317,7 @@ func (a *Application) boot() error {
 
 	// signal after teardown event
 	for _, i := range a.inspectors {
-		i.Before(Termination, a, router)
+		i.Before(Termination, a)
 	}
 
 	return nil
