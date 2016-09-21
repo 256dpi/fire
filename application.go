@@ -47,17 +47,37 @@ type BootableComponent interface {
 	Teardown() error
 }
 
+// A Phase is used in conjunction with a InspectorComponent and denotes a phase
+// the application will undergo.
+type Phase int
+
+const (
+	// Registration is the phase in which components get registered.
+	Registration Phase = iota
+
+	// Setup is the phase in which components get set up.
+	Setup
+
+	// Run is the phase in which the application handles requests.
+	Run
+
+	// Teardown is the phase in which components get teared down.
+	Teardown
+
+	// Termination is the phase in which the applications is terminated.
+	Termination
+)
+
 // An InspectorComponent is an extended component that is able to inspect the
 // boot process of an application and inspect all used components and the router
 // instance.
 type InspectorComponent interface {
 	Component
 
-	BeforeRegister([]Component)
-	BeforeSetup([]BootableComponent)
-	BeforeRun(*echo.Echo)
-	AfterRun()
-	AfterTeardown()
+	// Before is called by the application before the specified phase is
+	// initiated. The calling application and the currently used echo router
+	// are attached for convenience.
+	Before(Phase, *Application, *echo.Echo)
 }
 
 // A ReporterComponent is an extended component that is responsible for
@@ -65,6 +85,7 @@ type InspectorComponent interface {
 type ReporterComponent interface {
 	Component
 
+	// Report is called by the application on every occurring error.
 	Report(err error) error
 }
 
@@ -125,6 +146,11 @@ func (a *Application) Mount(component Component) {
 	}
 
 	a.components = append(a.components, component)
+}
+
+// Components will return all so far registered components.
+func (a *Application) Components() []Component {
+	return a.components
 }
 
 // Start will start the application using a new server listening on the
@@ -231,7 +257,7 @@ func (a *Application) boot() error {
 
 	// signal before register event
 	for _, i := range a.inspectors {
-		i.BeforeRegister(a.components)
+		i.Before(Registration, a, router)
 	}
 
 	// TODO: Create group and pass group?
@@ -243,7 +269,7 @@ func (a *Application) boot() error {
 
 	// signal before setup event
 	for _, i := range a.inspectors {
-		i.BeforeSetup(a.bootables)
+		i.Before(Setup, a, router)
 	}
 
 	// setup bootable components
@@ -256,7 +282,7 @@ func (a *Application) boot() error {
 
 	// signal before run event
 	for _, i := range a.inspectors {
-		i.BeforeRun(router)
+		i.Before(Run, a, router)
 	}
 
 	// run router
@@ -273,7 +299,7 @@ func (a *Application) boot() error {
 
 	// signal after run event
 	for _, i := range a.inspectors {
-		i.AfterRun()
+		i.Before(Teardown, a, router)
 	}
 
 	// teardown bootable components
@@ -286,7 +312,7 @@ func (a *Application) boot() error {
 
 	// signal after teardown event
 	for _, i := range a.inspectors {
-		i.AfterTeardown()
+		i.Before(Termination, a, router)
 	}
 
 	return nil

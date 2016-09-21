@@ -28,7 +28,7 @@ func TestInspector(t *testing.T) {
 
 	close(done)
 
-	assert.Contains(t, buf.String(), "Application starting...")
+	assert.Contains(t, buf.String(), "Application booting...")
 	assert.Contains(t, buf.String(), "GET  /foo")
 	assert.Contains(t, buf.String(), "Application is ready to go!")
 	assert.Contains(t, buf.String(), "GET  /foo\n   200")

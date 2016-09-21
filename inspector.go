@@ -3,11 +3,12 @@ package fire
 import (
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/labstack/echo"
+	"github.com/mattn/go-colorable"
 )
 
 // A ComponentInfo is returned by a component to describe itself.
@@ -29,7 +30,7 @@ type Inspector struct {
 
 // DefaultInspector creates and returns a new inspector that writes to stdout.
 func DefaultInspector() *Inspector {
-	return NewInspector(os.Stdout)
+	return NewInspector(colorable.NewColorableStdout())
 }
 
 // NewInspector creates and returns a new inspector.
@@ -51,18 +52,45 @@ func (i *Inspector) Register(router *echo.Echo) {
 	router.Use(i.requestLogger)
 }
 
-// BeforeRegister implements the InspectorComponent interface.
-func (i *Inspector) BeforeRegister(components []Component) {
-	fmt.Fprintln(i.Writer, "==> Application starting...")
-	fmt.Fprintln(i.Writer, "==> Registering routable components...")
+// Before implements the InspectorComponent interface.
+func (i *Inspector) Before(stage Phase, app *Application, router *echo.Echo) {
+	switch stage {
+	case Registration:
+		fmt.Fprintln(i.Writer, color.YellowString("==> Application booting..."))
 
+		fmt.Fprintln(i.Writer, color.YellowString("==> Mounted components:"))
+		i.printComponents(app.Components())
+
+		fmt.Fprintln(i.Writer, color.YellowString("==> Registering routable components..."))
+	case Setup:
+		fmt.Fprintln(i.Writer, color.YellowString("==> Setting up bootable components..."))
+	case Run:
+		fmt.Fprintln(i.Writer, color.YellowString("==> Registered routes:"))
+		i.printRoutes(router)
+
+		fmt.Fprintln(i.Writer, color.YellowString("==> Application is ready to go!"))
+	case Teardown:
+		fmt.Fprintln(i.Writer, color.YellowString("==> Application is stopping..."))
+		fmt.Fprintln(i.Writer, color.YellowString("==> Terminating bootable components..."))
+	case Termination:
+		fmt.Fprintln(i.Writer, color.YellowString("==> Application has been terminated."))
+	}
+}
+
+// Report implements the ReporterComponent interface.
+func (i *Inspector) Report(err error) error {
+	fmt.Fprintf(i.Writer, color.RedString("   ERR  \"%s\"\n", err))
+	return nil
+}
+
+func (i *Inspector) printComponents(components []Component) {
 	// inspect all components
 	for _, component := range components {
 		// get component info
 		info := component.Describe()
 
 		// print name
-		fmt.Fprintf(i.Writer, "[%s]\n", info.Name)
+		fmt.Fprintln(i.Writer, color.CyanString("[%s]", info.Name))
 
 		// prepare settings
 		var settings []string
@@ -77,26 +105,12 @@ func (i *Inspector) BeforeRegister(components []Component) {
 
 		// print settings
 		for _, setting := range settings {
-			fmt.Fprintln(i.Writer, setting)
+			fmt.Fprintln(i.Writer, color.BlueString(setting))
 		}
 	}
 }
 
-// BeforeSetup implements the InspectorComponent interface.
-func (i *Inspector) BeforeSetup(components []BootableComponent) {
-	fmt.Fprintln(i.Writer, "==> Setting up bootable components...")
-
-	// print all components
-	for _, component := range components {
-		// get component info
-		fmt.Fprintf(i.Writer, "%s\n", component.Describe().Name)
-	}
-}
-
-// BeforeRun implements the InspectorComponent interface.
-func (i *Inspector) BeforeRun(router *echo.Echo) {
-	fmt.Fprintln(i.Writer, "==> Registered routes:")
-
+func (i *Inspector) printRoutes(router *echo.Echo) {
 	// prepare routes
 	var routes []string
 
@@ -110,26 +124,8 @@ func (i *Inspector) BeforeRun(router *echo.Echo) {
 
 	// print routes
 	for _, route := range routes {
-		fmt.Fprintln(i.Writer, route)
+		fmt.Fprintln(i.Writer, color.BlueString(route))
 	}
-
-	fmt.Fprintln(i.Writer, "==> Application is ready to go!")
-}
-
-// AfterRun implements the InspectorComponent interface.
-func (i *Inspector) AfterRun() {
-	fmt.Fprintln(i.Writer, "==> Application is stopping...")
-}
-
-// AfterTeardown implements the InspectorComponent interface.
-func (i *Inspector) AfterTeardown() {
-	fmt.Fprintln(i.Writer, "==> Application has been terminate.")
-}
-
-// Report implements the ReporterComponent interface.
-func (i *Inspector) Report(err error) error {
-	fmt.Fprintf(i.Writer, "   ERR  \"%s\"\n", err)
-	return nil
 }
 
 func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
@@ -149,7 +145,7 @@ func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
 		duration := time.Since(start).String()
 
 		// log request
-		fmt.Fprintf(i.Writer, "%6s  %s\n   %d  %s\n", req.Method(), req.URL().Path(), res.Status(), duration)
+		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", req.Method()), req.URL().Path(), color.MagentaString("%d", res.Status()), duration)
 
 		return nil
 	}

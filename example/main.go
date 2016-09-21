@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/components"
@@ -37,6 +38,9 @@ func main() {
 		Store: store,
 	})
 
+	// mount custom component
+	app.Mount(&customComponent{})
+
 	// mount protector
 	app.Mount(components.DefaultProtector())
 
@@ -57,4 +61,22 @@ func main() {
 
 	// yield app
 	app.Yield()
+}
+
+type customComponent struct{}
+
+func (c *customComponent) Describe() fire.ComponentInfo {
+	return fire.ComponentInfo{
+		Name: "Custom Component",
+	}
+}
+
+func (c *customComponent) Setup() error {
+	fmt.Println("Setting up custom component...")
+	return nil
+}
+
+func (c *customComponent) Teardown() error {
+	fmt.Println("Tearing down custom component...")
+	return nil
 }

@@ -1,10 +1,12 @@
-hash: f607407460235eef75f719f2f5cdc5493f5f7871c3f37a9fd690c9dc63275292
-updated: 2016-09-20T08:28:44.899312165+02:00
+hash: df8d613d1d6ac72b1b026b68134305bc1b9df6d27bcaeb57db745e7f8b69ba06
+updated: 2016-09-21T14:48:47.836476269+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+- name: github.com/fatih/color
+  version: 87d4004f2ab62d0d255e0a38f1680aa534549fe3
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gonfire/jsonapi
@@ -71,6 +73,8 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
+- name: gopkg.in/tomb.v2
+  version: 14b3d72120e8d10ea6e6b7f87f7175734b1faab8
 testImports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
