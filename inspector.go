@@ -19,6 +19,8 @@ type ComponentInfo struct {
 	Settings Map
 }
 
+var _ InspectorComponent = (*Inspector)(nil)
+
 // An Inspector can be used during development to print the applications
 // component stack, the route table and log requests to writer.
 type Inspector struct {
@@ -37,46 +39,27 @@ func NewInspector(writer io.Writer) *Inspector {
 	}
 }
 
-// Register implements the Component interface.
-func (i *Inspector) Register(router *echo.Echo) {
-	router.Use(i.requestLogger)
-	router.SetHTTPErrorHandler(i.errorHandler)
-}
-
-// Inspect implements the InspectableComponent interface.
-func (i *Inspector) Inspect() ComponentInfo {
+// Describe implements the Component interface.
+func (i *Inspector) Describe() ComponentInfo {
 	return ComponentInfo{
 		Name: "Inspector",
 	}
 }
 
-func (i *Inspector) boot() {
-	fmt.Fprintln(i.Writer, "==> Fire application starting...")
+// Register implements the RoutableComponent interface.
+func (i *Inspector) Register(router *echo.Echo) {
+	router.Use(i.requestLogger)
 }
 
-func (i *Inspector) inspect(app *Application, router *echo.Echo) {
-	// print component info
-	fmt.Fprintln(i.Writer, "==> Mounted components:")
-	i.inspectComponents(app)
+// BeforeRegister implements the InspectorComponent interface.
+func (i *Inspector) BeforeRegister(components []Component) {
+	fmt.Fprintln(i.Writer, "==> Application starting...")
+	fmt.Fprintln(i.Writer, "==> Registering routable components...")
 
-	// print routing table
-	fmt.Fprintln(i.Writer, "==> Registered routes:")
-	i.inspectRoutingTable(router)
-}
-
-func (i *Inspector) run() {
-	fmt.Fprintln(i.Writer, "==> Fire application is ready to go!")
-}
-
-func (i *Inspector) teardown() {
-	fmt.Fprintln(i.Writer, "==> Fire application is stopping...")
-}
-
-func (i *Inspector) inspectComponents(app *Application) {
 	// inspect all components
-	for _, component := range app.components {
+	for _, component := range components {
 		// get component info
-		info := component.Inspect()
+		info := component.Describe()
 
 		// print name
 		fmt.Fprintf(i.Writer, "[%s]\n", info.Name)
@@ -99,7 +82,21 @@ func (i *Inspector) inspectComponents(app *Application) {
 	}
 }
 
-func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
+// BeforeSetup implements the InspectorComponent interface.
+func (i *Inspector) BeforeSetup(components []BootableComponent) {
+	fmt.Fprintln(i.Writer, "==> Setting up bootable components...")
+
+	// print all components
+	for _, component := range components {
+		// get component info
+		fmt.Fprintf(i.Writer, "%s\n", component.Describe().Name)
+	}
+}
+
+// BeforeRun implements the InspectorComponent interface.
+func (i *Inspector) BeforeRun(router *echo.Echo) {
+	fmt.Fprintln(i.Writer, "==> Registered routes:")
+
 	// prepare routes
 	var routes []string
 
@@ -115,6 +112,24 @@ func (i *Inspector) inspectRoutingTable(router *echo.Echo) {
 	for _, route := range routes {
 		fmt.Fprintln(i.Writer, route)
 	}
+
+	fmt.Fprintln(i.Writer, "==> Application is ready to go!")
+}
+
+// AfterRun implements the InspectorComponent interface.
+func (i *Inspector) AfterRun() {
+	fmt.Fprintln(i.Writer, "==> Application is stopping...")
+}
+
+// AfterTeardown implements the InspectorComponent interface.
+func (i *Inspector) AfterTeardown() {
+	fmt.Fprintln(i.Writer, "==> Application has been terminate.")
+}
+
+// Report implements the ReporterComponent interface.
+func (i *Inspector) Report(err error) error {
+	fmt.Fprintf(i.Writer, "   ERR  \"%s\"\n", err)
+	return nil
 }
 
 func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
@@ -138,8 +153,4 @@ func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return nil
 	}
-}
-
-func (i *Inspector) errorHandler(err error, ctx echo.Context) {
-	fmt.Fprintf(i.Writer, "   ERR  \"%s\"\n", err)
 }

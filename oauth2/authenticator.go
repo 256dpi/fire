@@ -31,6 +31,8 @@ const (
 	ImplicitGrant = "implicit"
 )
 
+var _ fire.RoutableComponent = (*Authenticator)(nil)
+
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant flows.
@@ -110,7 +112,7 @@ func New(store *model.Store, policy *Policy, prefix string) *Authenticator {
 	return a
 }
 
-// Register will create all necessary routes on the passed router.
+// Register implements the fire.RoutableComponent interface.
 func (a *Authenticator) Register(router *echo.Echo) {
 	router.POST(a.prefix+"/token", a.tokenEndpoint)
 	router.POST(a.prefix+"/authorize", a.authorizeEndpoint)
@@ -174,8 +176,8 @@ func (a *Authenticator) EchoAuthorizer(scopes ...string) echo.MiddlewareFunc {
 	}
 }
 
-// Inspect implements the fire.InspectableComponent interface.
-func (a *Authenticator) Inspect() fire.ComponentInfo {
+// Describe implements the fire.Component interface.
+func (a *Authenticator) Describe() fire.ComponentInfo {
 	return fire.ComponentInfo{
 		Name: "OAuth2 Authenticator",
 		Settings: fire.Map{

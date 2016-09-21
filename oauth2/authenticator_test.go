@@ -943,5 +943,5 @@ func TestAuthenticatorInspect(t *testing.T) {
 			"Client Model":                   "oauth2.Application",
 			"Owner Model":                    "oauth2.User",
 		},
-	}, a.Inspect())
+	}, a.Describe())
 }

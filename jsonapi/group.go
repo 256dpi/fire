@@ -8,6 +8,8 @@ import (
 	"github.com/labstack/echo"
 )
 
+var _ fire.RoutableComponent = (*Group)(nil)
+
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
 	prefix      string
@@ -39,15 +41,15 @@ func (g *Group) Add(controllers ...*Controller) {
 	}
 }
 
-// Register implements the Component interface.
+// Register implements the fire.RoutableComponent interface.
 func (g *Group) Register(router *echo.Echo) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)
 	}
 }
 
-// Inspect implements the InspectableComponent interface.
-func (g *Group) Inspect() fire.ComponentInfo {
+// Describe implements the fire.Component interface.
+func (g *Group) Describe() fire.ComponentInfo {
 	// prepare resource names
 	var names []string
 

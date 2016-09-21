@@ -15,5 +15,5 @@ func TestProtector(t *testing.T) {
 	r := echo.New()
 
 	p.Register(r)
-	p.Inspect()
+	p.Describe()
 }

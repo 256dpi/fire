@@ -3,6 +3,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/components"
 	"github.com/gonfire/fire/jsonapi"
@@ -14,7 +16,12 @@ type post struct {
 	Title      string `json:"title" valid:"required" fire:"filterable,sortable"`
 }
 
+var inspector = flag.Bool("inspector", false, "enable inspector")
+
 func main() {
+	// parse all flags
+	flag.Parse()
+
 	// create store
 	store := model.MustCreateStore("mongodb://0.0.0.0:27017/fire-test-echo")
 
@@ -36,9 +43,18 @@ func main() {
 	// mount group
 	app.Mount(group)
 
-	// mount inspector
-	app.Mount(fire.DefaultInspector())
+	// check debug mode
+	if *inspector {
+		// mount inspector
+		app.Mount(fire.DefaultInspector())
+	} else {
+		// mount basic reporter
+		app.Mount(fire.DefaultReporter())
+	}
 
 	// run server
 	app.Start("0.0.0.0:4000")
+
+	// yield app
+	app.Yield()
 }

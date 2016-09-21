@@ -19,5 +19,5 @@ func TestGroup(t *testing.T) {
 			"Prefix":    "foo",
 			"Resources": "posts",
 		},
-	}, group.Inspect())
+	}, group.Describe())
 }

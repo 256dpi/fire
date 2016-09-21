@@ -20,7 +20,7 @@ func TestDefaultAsset(t *testing.T) {
 			"Path":      "/",
 			"Directory": "../.test/assets/",
 		},
-	}, as.Inspect())
+	}, as.Describe())
 
 	router := echo.New()
 
@@ -47,7 +47,7 @@ func TestAssetServer(t *testing.T) {
 			"Path":      "foo",
 			"Directory": "../.test/assets/",
 		},
-	}, as.Inspect())
+	}, as.Describe())
 
 	router := echo.New()
 

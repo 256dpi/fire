@@ -8,6 +8,8 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+var _ fire.RoutableComponent = (*AssetServer)(nil)
+
 // The AssetServer component server an asset directory on a specified path and
 // may optionally server the index file for not found paths which is needed to
 // run single page applications like Ember.
@@ -32,7 +34,7 @@ func NewAssetServer(path, directory string, spaMode bool) *AssetServer {
 	}
 }
 
-// Register implements the fire.Component interface.
+// Register implements the fire.RoutableComponent interface.
 func (s *AssetServer) Register(router *echo.Echo) {
 	// create handler
 	handler := middleware.StaticWithConfig(middleware.StaticConfig{
@@ -50,8 +52,8 @@ func (s *AssetServer) Register(router *echo.Echo) {
 	router.Group(s.path).Use(handler)
 }
 
-// Inspect implements the fire.Component interface.
-func (s *AssetServer) Inspect() fire.ComponentInfo {
+// Describe implements the fire.Component interface.
+func (s *AssetServer) Describe() fire.ComponentInfo {
 	// show root as slash
 	path := s.path
 	if path == "" {

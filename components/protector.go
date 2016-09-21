@@ -11,6 +11,8 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+var _ fire.RoutableComponent = (*Protector)(nil)
+
 // A Protector is a component that can be mounted in an application to enforce
 // common security concerns.
 type Protector struct {
@@ -54,7 +56,7 @@ func DefaultProtector() *Protector {
 	}
 }
 
-// Register will register the protector on the passed echo router.
+// Register implements the fire.RoutableComponent interface.
 func (p *Protector) Register(router *echo.Echo) {
 	// set body limit
 	router.Use(middleware.BodyLimit(p.RequestBodyLimit))
@@ -94,8 +96,8 @@ func (p *Protector) Register(router *echo.Echo) {
 	router.Use(middleware.SecureWithConfig(config))
 }
 
-// Inspect implements the InspectableComponent interface.
-func (p *Protector) Inspect() fire.ComponentInfo {
+// Describe implements the fire.Component interface.
+func (p *Protector) Describe() fire.ComponentInfo {
 	return fire.ComponentInfo{
 		Name: "Protector",
 		Settings: fire.Map{

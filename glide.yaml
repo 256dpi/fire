@@ -8,7 +8,8 @@ import:
 - package: github.com/gonfire/jsonapi
   version: ^0.4.0
 - package: github.com/labstack/echo
-  version: ^2.0.2
+  # TOOD: Let's use some cutting-edge technology for a moment.
+  version: master
 - package: github.com/ory-am/fosite
   version: ^0.3.0
   subpackages:
