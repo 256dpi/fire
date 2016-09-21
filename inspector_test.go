@@ -23,7 +23,7 @@ func TestInspector(t *testing.T) {
 
 	done, base := runApp(app)
 
-	_, err := http.Get(base + "/foo")
+	_, err := http.Get(base + "/test")
 	assert.NoError(t, err)
 
 	close(done)
@@ -31,7 +31,7 @@ func TestInspector(t *testing.T) {
 	assert.Contains(t, buf.String(), "Application booting...")
 	assert.Contains(t, buf.String(), "GET  /foo")
 	assert.Contains(t, buf.String(), "Application is ready to go!")
-	assert.Contains(t, buf.String(), "GET  /foo\n   200")
+	assert.Contains(t, buf.String(), "/test")
 }
 
 func TestInspectorError(t *testing.T) {
