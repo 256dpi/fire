@@ -36,6 +36,3 @@ lint:
 
 err:
 	errcheck -ignoretests -asserts .
-
-toc:
-	doctoc README.md
