@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/gonfire/fire/master/doc/logo.png" alt="Logo" width="256"/>
+<img src="https://raw.githubusercontent.com/gonfire/website/master/source/partials/_logo.svg" alt="Logo" width="256"/>
 
 # fire
 
