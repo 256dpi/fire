@@ -68,6 +68,24 @@ const (
 	Termination
 )
 
+// String returns the string representation of the phase.
+func (p Phase) String() string {
+	switch p {
+	case Registration:
+		return "Registration"
+	case Setup:
+		return "Setup"
+	case Run:
+		return "Run"
+	case Teardown:
+		return "Teardown"
+	case Termination:
+		return "Termination"
+	}
+
+	return ""
+}
+
 // An InspectorComponent is an extended component that is able to inspect the
 // boot process of an application and inspect all used components and the router
 // instance.

@@ -11,6 +11,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPhaseString(t *testing.T) {
+	assert.Equal(t, "Registration", Registration.String())
+	assert.Equal(t, "Setup", Setup.String())
+	assert.Equal(t, "Run", Run.String())
+	assert.Equal(t, "Teardown", Teardown.String())
+	assert.Equal(t, "Termination", Termination.String())
+	assert.Equal(t, "", Phase(-1).String())
+}
+
 func TestApplicationStart(t *testing.T) {
 	com := &testComponent{}
 
