@@ -45,7 +45,7 @@ func getCleanStore() *model.Store {
 func buildServer(controllers ...*Controller) *echo.Echo {
 	router := echo.New()
 
-	group := New("")
+	group := NewGroup("")
 	group.Add(controllers...)
 	group.Register(router)
 

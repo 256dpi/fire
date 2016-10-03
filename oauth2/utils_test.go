@@ -45,7 +45,7 @@ func getCleanStore() *model.Store {
 func buildServer(controllers ...*jsonapi.Controller) *echo.Echo {
 	router := echo.New()
 
-	group := jsonapi.New("")
+	group := jsonapi.NewGroup("")
 	group.Add(controllers...)
 	group.Register(router)
 

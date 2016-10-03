@@ -16,11 +16,11 @@ type Group struct {
 	controllers map[string]*Controller
 }
 
-// New creates and returns a new group.
+// NewGroup creates and returns a new group.
 //
 // Note: You should pass the full URL prefix of the API to allow proper
 // generation of resource links.
-func New(prefix string) *Group {
+func NewGroup(prefix string) *Group {
 	return &Group{
 		prefix:      prefix,
 		controllers: make(map[string]*Controller),

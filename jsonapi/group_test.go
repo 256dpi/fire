@@ -8,7 +8,7 @@ import (
 )
 
 func TestGroup(t *testing.T) {
-	group := New("foo")
+	group := NewGroup("foo")
 	group.Add(&Controller{
 		Model: &Post{},
 	})
