@@ -2,7 +2,6 @@ package oauth2
 
 import (
 	"errors"
-	"reflect"
 
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
@@ -11,8 +10,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
-
-var typeOfIdentifier = reflect.TypeOf(Identifier(""))
 
 type abstractClient struct {
 	fosite.DefaultClient
@@ -34,7 +31,7 @@ func (s *storage) GetClient(id string) (fosite.Client, error) {
 	defer store.Close()
 
 	// get id field
-	field := s.getIdentifierField(s.authenticator.policy.ClientModel)
+	field := s.authenticator.policy.ClientModel.Meta().FindField(s.authenticator.policy.ClientModel.OAuthIdentifier())
 
 	// query db
 	err := store.C(s.authenticator.policy.ClientModel).Find(bson.M{
@@ -121,7 +118,7 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	defer store.Close()
 
 	// get signature field
-	field := s.getIdentifierField(s.authenticator.policy.AccessTokenModel)
+	field := s.authenticator.policy.AccessTokenModel.Meta().FindField(s.authenticator.policy.AccessTokenModel.OAuthIdentifier())
 
 	// fetch access token
 	err := store.C(s.authenticator.policy.AccessTokenModel).Find(bson.M{
@@ -189,16 +186,6 @@ func (s *storage) Authenticate(ctx context.Context, id string, secret string) er
 	return nil
 }
 
-func (s *storage) getIdentifierField(m model.Model) model.Field {
-	for _, field := range m.Meta().Fields {
-		if field.Type == typeOfIdentifier {
-			return field
-		}
-	}
-
-	panic("Missing Identifier field for " + m.Meta().Name)
-}
-
 func (s *storage) getOwner(id string) (OwnerModel, error) {
 	// prepare object
 	obj := s.authenticator.policy.OwnerModel.Meta().Make()
@@ -210,7 +197,7 @@ func (s *storage) getOwner(id string) (OwnerModel, error) {
 	defer store.Close()
 
 	// get id field
-	field := s.getIdentifierField(s.authenticator.policy.OwnerModel)
+	field := s.authenticator.policy.OwnerModel.Meta().FindField(s.authenticator.policy.OwnerModel.OAuthIdentifier())
 
 	// query db
 	err := store.C(s.authenticator.policy.OwnerModel).Find(bson.M{
