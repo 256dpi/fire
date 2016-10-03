@@ -751,11 +751,9 @@ func (c *Controller) loadModel(ctx *Context) error {
 func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// add filters
 	for _, filter := range c.FilterableFields {
-		field := c.Model.Meta().Field(filter)
-		if field == nil {
-			panic("Field " + filter + " not found on " + c.Model.Meta().Name)
-		}
+		field := c.Model.Meta().MustFindField(filter)
 
+		// check if filter is present
 		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
 			if field.Kind == reflect.Bool && len(values) == 1 {
 				ctx.Query[field.BSONName] = values[0] == "true"
@@ -769,12 +767,10 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// add sorting
 	for _, params := range ctx.Request.Sorting {
 		for _, sorting := range c.SortableFields {
-			field := c.Model.Meta().Field(sorting)
-			if field == nil {
-				panic("Field " + sorting + " not found on " + c.Model.Meta().Name)
-			}
+			field := c.Model.Meta().MustFindField(sorting)
 
-			if params == field.BSONName || params == "-"+field.BSONName {
+			// check if sorting is present
+			if params == field.JSONName || params == "-"+field.JSONName {
 				ctx.Sorting = append(ctx.Sorting, params)
 			}
 		}

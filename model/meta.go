@@ -204,9 +204,9 @@ func NewMeta(model Model) *Meta {
 	return meta
 }
 
-// Field returns the first field that has a matching Name, JSONName, or BSONName.
-// It will return nil if no field has been found.
-func (m *Meta) Field(name string) *Field {
+// FindField returns the first field that has a matching Name, JSONName, or
+// BSONName. FindField will return nil if no field has been found.
+func (m *Meta) FindField(name string) *Field {
 	for _, field := range m.Fields {
 		if field.JSONName == name || field.BSONName == name || field.Name == name {
 			return &field
@@ -214,6 +214,17 @@ func (m *Meta) Field(name string) *Field {
 	}
 
 	return nil
+}
+
+// MustFindField returns the first field that has a matching Name, JSONName, or
+// BSONName. MustFindField will panic if no field has been found.
+func (m *Meta) MustFindField(name string) *Field {
+	field := m.FindField(name)
+	if field == nil {
+		panic("Field " + name + " not found on " + m.Name)
+	}
+
+	return field
 }
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.

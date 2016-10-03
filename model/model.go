@@ -60,10 +60,7 @@ func (b *Base) ID() bson.ObjectId {
 // Note: MustGet will return the value of the first field that has a matching
 // Name, JSONName, or BSONName and will panic if no field can be found.
 func (b *Base) MustGet(name string) interface{} {
-	field := b.meta.Field(name)
-	if field == nil {
-		panic("Missing field " + name + " on " + b.meta.Name)
-	}
+	field := b.meta.MustFindField(name)
 
 	// read value from model struct
 	structField := reflect.ValueOf(b.model).Elem().Field(field.index)
@@ -76,10 +73,7 @@ func (b *Base) MustGet(name string) interface{} {
 // JSONName, or BSONName and will panic if no field can been found. The method
 // will also panic if the type of the field and the passed value do not match.
 func (b *Base) MustSet(name string, value interface{}) {
-	field := b.meta.Field(name)
-	if field == nil {
-		panic("Missing field " + name + " on " + b.meta.Name)
-	}
+	field := b.meta.MustFindField(name)
 
 	// set the value on model struct
 	reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))
