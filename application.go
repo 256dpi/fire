@@ -277,12 +277,10 @@ func (a *Application) boot() error {
 	// set error handler
 	a.router.SetHTTPErrorHandler(a.errorHandler)
 
-	// signal before register event
+	// signal before registration event
 	for _, i := range a.inspectors {
 		i.Before(Registration, a)
 	}
-
-	// TODO: Create group and pass group?
 
 	// register routable components
 	for _, c := range a.routables {
