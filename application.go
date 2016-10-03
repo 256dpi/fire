@@ -75,9 +75,8 @@ type InspectorComponent interface {
 	Component
 
 	// Before is called by the application before the specified phase is
-	// initiated. The calling application and the currently used echo router
-	// are attached for convenience.
-	Before(Phase, *Application)
+	// initiated by the passed application.
+	Before(phase Phase, app *Application)
 }
 
 // A ReporterComponent is an extended component that is responsible for
