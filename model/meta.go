@@ -26,8 +26,6 @@ type Field struct {
 	JSONName   string
 	BSONName   string
 	Optional   bool
-	Filterable bool
-	Sortable   bool
 	ToOne      bool
 	ToMany     bool
 	HasMany    bool
@@ -191,15 +189,9 @@ func NewMeta(model Model) *Meta {
 			fireTags = fireTags[1:]
 		}
 
-		// add comma separated tags
+		// panic on any additional tags
 		for _, tag := range fireTags {
-			if tag == "filterable" {
-				field.Filterable = true
-			} else if tag == "sortable" {
-				field.Sortable = true
-			} else {
-				panic("Unexpected tag " + tag)
-			}
+			panic("Unexpected tag " + tag)
 		}
 
 		// add field
@@ -210,6 +202,18 @@ func NewMeta(model Model) *Meta {
 	metaCache[modelName] = meta
 
 	return meta
+}
+
+// Field returns the first field that has a matching Name, JSONName, or BSONName.
+// It will return nil if no field has been found.
+func (m *Meta) Field(name string) *Field {
+	for _, field := range m.Fields {
+		if field.JSONName == name || field.BSONName == name || field.Name == name {
+			return &field
+		}
+	}
+
+	return nil
 }
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.

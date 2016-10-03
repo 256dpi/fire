@@ -23,37 +23,37 @@ func TestBaseID(t *testing.T) {
 
 func TestBaseGet(t *testing.T) {
 	post1 := Init(&Post{})
-	assert.Equal(t, "", post1.Get("text_body"))
-	assert.Equal(t, "", post1.Get("text-body"))
-	assert.Equal(t, "", post1.Get("TextBody"))
+	assert.Equal(t, "", post1.MustGet("text_body"))
+	assert.Equal(t, "", post1.MustGet("text-body"))
+	assert.Equal(t, "", post1.MustGet("TextBody"))
 
 	post2 := Init(&Post{TextBody: "hello"})
-	assert.Equal(t, "hello", post2.Get("text_body"))
-	assert.Equal(t, "hello", post2.Get("text-body"))
-	assert.Equal(t, "hello", post2.Get("TextBody"))
+	assert.Equal(t, "hello", post2.MustGet("text_body"))
+	assert.Equal(t, "hello", post2.MustGet("text-body"))
+	assert.Equal(t, "hello", post2.MustGet("TextBody"))
 
 	assert.Panics(t, func() {
-		post1.Get("missing")
+		post1.MustGet("missing")
 	})
 }
 
 func TestBaseSet(t *testing.T) {
 	post := Init(&Post{}).(*Post)
 
-	post.Set("text_body", "1")
+	post.MustSet("text_body", "1")
 	assert.Equal(t, "1", post.TextBody)
 
-	post.Set("text-body", "2")
+	post.MustSet("text-body", "2")
 	assert.Equal(t, "2", post.TextBody)
 
-	post.Set("TextBody", "3")
+	post.MustSet("TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)
 
 	assert.Panics(t, func() {
-		post.Set("missing", "-")
+		post.MustSet("missing", "-")
 	})
 
 	assert.Panics(t, func() {
-		post.Set("TextBody", 1)
+		post.MustSet("TextBody", 1)
 	})
 }

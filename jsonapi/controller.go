@@ -22,6 +22,12 @@ type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model model.Model
 
+	// FilterableFields defines the attributes that are filterable.
+	FilterableFields []string
+
+	// SortableFields defines the attributes that are sortable.
+	SortableFields []string
+
 	// The store that is used to retrieve and persist the model.
 	Store *model.Store
 
@@ -396,7 +402,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		// lookup id of related resource
 		if relationField.Optional {
 			// lookup optional id on loaded model
-			oid := ctx.Model.Get(relationField.Name).(*bson.ObjectId)
+			oid := ctx.Model.MustGet(relationField.Name).(*bson.ObjectId)
 
 			// TODO: Test present optional id.
 
@@ -409,7 +415,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 			}
 		} else {
 			// lookup id on loaded model
-			id = ctx.Model.Get(relationField.Name).(bson.ObjectId).Hex()
+			id = ctx.Model.MustGet(relationField.Name).(bson.ObjectId).Hex()
 		}
 
 		// tweak context
@@ -436,7 +442,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 	// finish to many relationship
 	if relationField.ToMany {
 		// get ids from loaded model
-		ids := ctx.Model.Get(relationField.Name).([]bson.ObjectId)
+		ids := ctx.Model.MustGet(relationField.Name).([]bson.ObjectId)
 
 		// tweak context
 		newCtx.Action = List
@@ -601,7 +607,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 			var present bool
 
 			// get current ids
-			ids := ctx.Model.Get(field.Name).([]bson.ObjectId)
+			ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
 
 			// TODO: Test already existing reference.
 
@@ -615,7 +621,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 			// add id if not present
 			if !present {
 				ids = append(ids, refID)
-				ctx.Model.Set(field.Name, ids)
+				ctx.Model.MustSet(field.Name, ids)
 			}
 		}
 	}
@@ -659,7 +665,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 			var pos = -1
 
 			// get current ids
-			ids := ctx.Model.Get(field.Name).([]bson.ObjectId)
+			ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
 
 			// check if id is already present
 			for i, id := range ids {
@@ -671,7 +677,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 			// remove id if present
 			if pos >= 0 {
 				ids = append(ids[:pos], ids[pos+1:]...)
-				ctx.Model.Set(field.Name, ids)
+				ctx.Model.MustSet(field.Name, ids)
 			}
 		}
 	}
@@ -744,26 +750,32 @@ func (c *Controller) loadModel(ctx *Context) error {
 
 func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// add filters
-	for _, field := range c.Model.Meta().Fields {
-		if field.Filterable {
-			if values, ok := ctx.Request.Filters[field.JSONName]; ok {
-				if field.Kind == reflect.Bool && len(values) == 1 {
-					ctx.Query[field.BSONName] = values[0] == "true"
-					continue
-				}
+	for _, filter := range c.FilterableFields {
+		field := c.Model.Meta().Field(filter)
+		if field == nil {
+			panic("Field " + filter + " not found on " + c.Model.Meta().Name)
+		}
 
-				ctx.Query[field.BSONName] = bson.M{"$in": values}
+		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
+			if field.Kind == reflect.Bool && len(values) == 1 {
+				ctx.Query[field.BSONName] = values[0] == "true"
+				continue
 			}
+
+			ctx.Query[field.BSONName] = bson.M{"$in": values}
 		}
 	}
 
 	// add sorting
 	for _, params := range ctx.Request.Sorting {
-		for _, field := range c.Model.Meta().Fields {
-			if field.Sortable {
-				if params == field.BSONName || params == "-"+field.BSONName {
-					ctx.Sorting = append(ctx.Sorting, params)
-				}
+		for _, sorting := range c.SortableFields {
+			field := c.Model.Meta().Field(sorting)
+			if field == nil {
+				panic("Field " + sorting + " not found on " + c.Model.Meta().Name)
+			}
+
+			if params == field.BSONName || params == "-"+field.BSONName {
+				ctx.Sorting = append(ctx.Sorting, params)
 			}
 		}
 	}
@@ -854,16 +866,16 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 			// handle non optional field first
 			if !field.Optional {
-				ctx.Model.Set(field.Name, id)
+				ctx.Model.MustSet(field.Name, id)
 				continue
 			}
 
 			// assign for a zero value optional field
 			if id != "" {
-				ctx.Model.Set(field.Name, &id)
+				ctx.Model.MustSet(field.Name, &id)
 			} else {
 				var nilID *bson.ObjectId
-				ctx.Model.Set(field.Name, nilID)
+				ctx.Model.MustSet(field.Name, nilID)
 			}
 		}
 
@@ -884,7 +896,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			}
 
 			// set ids
-			ctx.Model.Set(field.Name, ids)
+			ctx.Model.MustSet(field.Name, ids)
 		}
 	}
 
@@ -931,7 +943,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 
 			if field.Optional {
 				// get and check optional field
-				oid := model.Get(field.Name).(*bson.ObjectId)
+				oid := model.MustGet(field.Name).(*bson.ObjectId)
 
 				// create reference if id is available
 				if oid != nil {
@@ -944,7 +956,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
-					ID:   model.Get(field.Name).(bson.ObjectId).Hex(),
+					ID:   model.MustGet(field.Name).(bson.ObjectId).Hex(),
 				}
 			}
 
@@ -957,7 +969,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 			}
 		} else if field.ToMany {
 			// get ids
-			ids := model.Get(field.Name).([]bson.ObjectId)
+			ids := model.MustGet(field.Name).([]bson.ObjectId)
 
 			// prepare slice of references
 			references := make([]*jsonapi.Resource, len(ids))

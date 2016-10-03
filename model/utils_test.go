@@ -4,8 +4,8 @@ import "gopkg.in/mgo.v2/bson"
 
 type Post struct {
 	Base       `json:"-" bson:",inline" fire:"posts"`
-	Title      string  `json:"title" bson:"title" fire:"filterable,sortable"`
-	Published  bool    `json:"published" fire:"filterable"`
+	Title      string  `json:"title" bson:"title"`
+	Published  bool    `json:"published"`
 	TextBody   string  `json:"text-body" bson:"text_body"`
 	Comments   HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
 	Selections HasMany `json:"-" bson:"-" fire:"selections:selections:posts"`

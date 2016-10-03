@@ -10,8 +10,8 @@ import (
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
-	Get(string) interface{}
-	Set(string, interface{})
+	MustGet(string) interface{}
+	MustSet(string, interface{})
 	Meta() *Meta
 
 	initialize(Model)
@@ -55,37 +55,34 @@ func (b *Base) ID() bson.ObjectId {
 	return b.DocID
 }
 
-// Get returns the value of the given field.
+// MustGet returns the value of the given field.
 //
-// Note: Get will return the value of the first field that has a matching Name,
-// JSONName, or BSONName and will panic if no field can be found.
-func (b *Base) Get(name string) interface{} {
-	for _, field := range b.meta.Fields {
-		if field.JSONName == name || field.BSONName == name || field.Name == name {
-			// read value from model struct
-			field := reflect.ValueOf(b.model).Elem().Field(field.index)
-			return field.Interface()
-		}
+// Note: MustGet will return the value of the first field that has a matching
+// Name, JSONName, or BSONName and will panic if no field can be found.
+func (b *Base) MustGet(name string) interface{} {
+	field := b.meta.Field(name)
+	if field == nil {
+		panic("Missing field " + name + " on " + b.meta.Name)
 	}
 
-	panic("Missing field " + name + " on " + b.meta.Name)
+	// read value from model struct
+	structField := reflect.ValueOf(b.model).Elem().Field(field.index)
+	return structField.Interface()
 }
 
-// Set will set given field to the the passed valued.
+// MustSet will set the given field to the the passed valued.
 //
-// Note: Set will set the value of the first field that has a matching Name,
+// Note: MustSet will set the value of the first field that has a matching Name,
 // JSONName, or BSONName and will panic if no field can been found. The method
 // will also panic if the type of the field and the passed value do not match.
-func (b *Base) Set(name string, value interface{}) {
-	for _, field := range b.meta.Fields {
-		if field.JSONName == name || field.BSONName == name || field.Name == name {
-			// set the value on model struct
-			reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))
-			return
-		}
+func (b *Base) MustSet(name string, value interface{}) {
+	field := b.meta.Field(name)
+	if field == nil {
+		panic("Missing field " + name + " on " + b.meta.Name)
 	}
 
-	panic("Missing field " + name + " on " + b.meta.Name)
+	// set the value on model struct
+	reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))
 }
 
 // Meta returns the models Meta structure.

@@ -28,8 +28,8 @@ type AccessToken struct {
 	Signature     Identifier     `json:"signature" valid:"required"`
 	RequestedAt   time.Time      `json:"requested-at" valid:"required" bson:"requested_at"`
 	GrantedScopes []string       `json:"granted-scopes" valid:"required" bson:"granted_scopes"`
-	ClientID      bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id" fire:"filterable,sortable"`
-	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id" fire:"filterable,sortable"`
+	ClientID      bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
+	OwnerID       *bson.ObjectId `json:"owner-id" valid:"-" bson:"owner_id"`
 }
 
 // GetOAuthData implements the AccessTokenModel interface.

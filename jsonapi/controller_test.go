@@ -240,6 +240,10 @@ func TestFiltering(t *testing.T) {
 	server := buildServer(&Controller{
 		Model: &Post{},
 		Store: store,
+		FilterableFields: []string{
+			"title",
+			"published",
+		},
 	}, &Controller{
 		Model: &Comment{},
 		Store: store,
@@ -558,6 +562,9 @@ func TestSorting(t *testing.T) {
 	server := buildServer(&Controller{
 		Model: &Post{},
 		Store: store,
+		SortableFields: []string{
+			"title",
+		},
 	}, &Controller{
 		Model: &Comment{},
 		Store: store,

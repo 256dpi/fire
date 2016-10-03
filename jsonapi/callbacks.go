@@ -100,7 +100,7 @@ func ProtectedAttributesValidator(attributes fire.Map) Callback {
 		if ctx.Action == Create {
 			// check all attributes
 			for field, def := range attributes {
-				if !reflect.DeepEqual(ctx.Model.Get(field), def) {
+				if !reflect.DeepEqual(ctx.Model.MustGet(field), def) {
 					return errors.New("Field " + field + " is protected")
 				}
 			}
@@ -115,7 +115,7 @@ func ProtectedAttributesValidator(attributes fire.Map) Callback {
 
 			// check all attributes
 			for field := range attributes {
-				if !reflect.DeepEqual(ctx.Model.Get(field), original.Get(field)) {
+				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
 					return errors.New("Field " + field + " is protected")
 				}
 			}
@@ -186,7 +186,7 @@ func VerifyReferencesValidator(references fire.Map) Callback {
 		// check all references
 		for field, collection := range references {
 			// read referenced id
-			id := ctx.Model.Get(field)
+			id := ctx.Model.MustGet(field)
 
 			// continue if reference is not set
 			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
@@ -229,7 +229,7 @@ func MatchingReferencesValidator(collection, reference string, matcher fire.Map)
 		}
 
 		// get main reference
-		id := ctx.Model.Get(reference)
+		id := ctx.Model.MustGet(reference)
 
 		// continue if reference is not set
 		if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
@@ -243,7 +243,7 @@ func MatchingReferencesValidator(collection, reference string, matcher fire.Map)
 
 		// add other references
 		for targetField, modelField := range matcher {
-			id := ctx.Model.Get(modelField.(string))
+			id := ctx.Model.MustGet(modelField.(string))
 
 			// abort if reference is missing
 			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
