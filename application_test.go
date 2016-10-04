@@ -121,13 +121,13 @@ func TestApplicationReportPanic(t *testing.T) {
 	app := New()
 
 	assert.Panics(t, func() {
-		app.report(errors.New("foo"))
+		app.Report(errors.New("foo"))
 	})
 
 	app.Mount(&failingReporter{})
 
 	assert.Panics(t, func() {
-		app.report(errors.New("foo"))
+		app.Report(errors.New("foo"))
 	})
 }
 

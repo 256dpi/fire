@@ -222,15 +222,40 @@ func (a *Application) StartWith(server engine.Server) {
 	a.tomb.Go(a.runner)
 }
 
-// Exec will execute the passed function in the context of the application
-// and call all reporters if an error occurs.
+// Report will report the passed error using all mounted reporter components.
 //
 // Note: If a reporter fails to report an occurring error, the current goroutine
 // will panic and print the original error and the reporter's error.
+func (a *Application) Report(err error) {
+	// prepare variable that tracks if the error has at least been reported once
+	var reportedOnce bool
+
+	// iterate over all reporters
+	for _, r := range a.reporters {
+		// attempt to report error
+		rErr := r.Report(err)
+		if rErr != nil {
+			name := r.Describe().Name
+			panic(fmt.Sprintf("%s returned '%s' while reporting '%s'", name, rErr, err))
+		}
+
+		// mark report
+		reportedOnce = true
+	}
+
+	// check tracker
+	if !reportedOnce {
+		panic(fmt.Sprintf("No reporter found to report '%s'", err))
+	}
+}
+
+// Exec will execute the passed function and report any potential errors.
+//
+// See: Report.
 func (a *Application) Exec(fn func() error) {
 	err := fn()
 	if err != nil {
-		a.report(err)
+		a.Report(err)
 	}
 }
 
@@ -350,33 +375,10 @@ func (a *Application) errorHandler(err error, ctx echo.Context) {
 	}
 
 	// report error
-	a.report(err)
+	a.Report(err)
 
 	// write response if not yet committed
 	if !ctx.Response().Committed() {
 		ctx.NoContent(http.StatusInternalServerError)
-	}
-}
-
-func (a *Application) report(err error) {
-	// prepare variable that tracks if the error has at least been reported once
-	var reportedOnce bool
-
-	// iterate over all reporters
-	for _, r := range a.reporters {
-		// attempt to report error
-		rErr := r.Report(err)
-		if rErr != nil {
-			name := r.Describe().Name
-			panic(fmt.Sprintf("%s returned '%s' while reporting '%s'", name, rErr, err))
-		}
-
-		// mark report
-		reportedOnce = true
-	}
-
-	// check tracker
-	if !reportedOnce {
-		panic(fmt.Sprintf("No reporter found to report '%s'", err))
 	}
 }
