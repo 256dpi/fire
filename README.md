@@ -1,6 +1,6 @@
 <img src="http://joel-github-static.s3.amazonaws.com/gonfire/logo.png" alt="Logo" width="256"/>
 
-# fire
+# Go on Fire
 
 [![Build Status](https://travis-ci.org/gonfire/fire.svg?branch=master)](https://travis-ci.org/gonfire/fire)
 [![Coverage Status](https://coveralls.io/repos/github/gonfire/fire/badge.svg?branch=master)](https://coveralls.io/github/gonfire/fire?branch=master)
@@ -8,23 +8,15 @@
 [![Release](https://img.shields.io/github/release/gonfire/fire.svg)](https://github.com/gonfire/fire/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gonfire/fire)](http://goreportcard.com/report/gonfire/fire)
 
-**A small and opinionated framework for Go providing Ember compatible JSON APIs.**
+**An idiomatic Go framework for building Ember.js compatible APIs.**
 
-Fire is built on top of the powerful [echo](https://github.com/labstack/echo) framework, implements the JSON API specification through the streamlined [jsonapi](https://github.com/gonfire/jsonai) library and uses the very stable [mgo](https://github.com/go-mgo/mgo) MongoDB driver for persisting resources. The tight integration of these components provides a very simple API for rapidly building backend services for your Ember projects.
+[Go on Fire](https://gonfire.org) is built on top of the powerful [echo](https://github.com/labstack/echo) HTTP routing and server framework, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/gonfire/jsonapi) library, uses the very stable [mgo](https://github.com/go-mgo/mgo) [MongoDB](https://www.mongodb.com) driver for persisting resources and leverages the [fosite](https://github.com/ory-am/fosite) library to provide out of the box support for [OAuth2](https://oauth.net/2/).
 
-_The framework is still WIP and the API may be changed._
+The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
 
-## Example
+An example application that uses Go on Fire to build an OAuth2 secured JSON API that is consumed by an Ember Application can be found here: [github.com/gonfire/example](https://github.com/gonfire/example).
 
-An example application that uses the fire framework to build an JSON API that is consumed by an Ember Application can be found here: <https://github.com/gonfire/example>.
-
-## Installation
-
-Get the package using the go tool:
-
-```bash
-$ go get -u github.com/gonfire/fire
-```
+To quickly get started with building an API with Go on Fire follow the [quickstart guide](http://gonfire.org/#quickstart), read the detailed sections in this documentation and refer to the [Package documentation](https://godoc.org/github.com/gonfire/fire) for more detailed information on the used types and methods. 
 
 ## License
 
