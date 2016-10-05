@@ -69,7 +69,7 @@ func (i *Inspector) Before(stage Phase, app *Application) {
 		i.printRoutes(app.Router())
 
 		fmt.Fprintln(i.Writer, color.YellowString("==> Application is ready to go!"))
-		fmt.Fprintln(i.Writer, color.CyanString("Visit: %s", app.BaseURL()))
+		fmt.Fprintln(i.Writer, color.YellowString("==> Visit: %s", app.BaseURL()))
 	case Teardown:
 		fmt.Fprintln(i.Writer, color.YellowString("==> Application is stopping..."))
 		fmt.Fprintln(i.Writer, color.YellowString("==> Terminating bootable components..."))
