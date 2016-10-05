@@ -27,6 +27,7 @@ func TestApplicationStart(t *testing.T) {
 	app.Mount(com)
 
 	app.Start("0.0.0.0:51234")
+	assert.Equal(t, "http://0.0.0.0:51234", app.BaseURL())
 
 	time.Sleep(50 * time.Millisecond)
 	assert.True(t, com.setupCalled)
@@ -46,6 +47,7 @@ func TestApplicationStartSecure(t *testing.T) {
 	app.Mount(com)
 
 	app.StartSecure("0.0.0.0:51235", ".test/tls/cert.pem", ".test/tls/key.pem")
+	assert.Equal(t, "https://0.0.0.0:51235", app.BaseURL())
 
 	time.Sleep(50 * time.Millisecond)
 	assert.True(t, com.setupCalled)
@@ -58,17 +60,12 @@ func TestApplicationStartSecure(t *testing.T) {
 	assert.True(t, com.teardownCalled)
 }
 
-func TestApplicationStartPanic(t *testing.T) {
+func TestApplicationStartAfterStart(t *testing.T) {
 	app := New()
-
-	assert.Panics(t, func() {
-		app.StartWith(nil)
-	})
-
 	done, _ := runApp(app)
 
 	assert.Panics(t, func() {
-		app.StartWith(nil)
+		app.Start("0.0.0.0:1234")
 	})
 
 	close(done)

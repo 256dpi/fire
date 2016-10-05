@@ -3,7 +3,6 @@ package fire
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -87,14 +86,14 @@ func runApp(app *Application) (chan struct{}, string) {
 	done := make(chan struct{})
 
 	go func() {
-		app.StartWith(server)
+		app.StartWith("http://"+listener.Addr().String(), server)
 		<-done
 		app.Stop()
 	}()
 
 	time.Sleep(50 * time.Millisecond)
 
-	return done, fmt.Sprintf("http://%s", listener.Addr().String())
+	return done, app.BaseURL()
 }
 
 func testRequest(url string) (string, *http.Response, error) {

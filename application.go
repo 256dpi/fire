@@ -114,10 +114,11 @@ type Application struct {
 	inspectors []InspectorComponent
 	reporters  []ReporterComponent
 
-	router *echo.Echo
-	mutex  sync.Mutex
-	server engine.Server
-	tomb   tomb.Tomb
+	router  *echo.Echo
+	mutex   sync.Mutex
+	server  engine.Server
+	baseURL string
+	tomb    tomb.Tomb
 }
 
 // New creates and returns a new Application.
@@ -181,26 +182,33 @@ func (a *Application) Router() *echo.Echo {
 // Start will start the application using a new server listening on the
 // specified address.
 //
-// See StartWith.
+// Note: Any errors that occur during the boot process of the application and
+// later during request processing are reported using the registered reporters.
+// If there are no reporters or one of the reporter fails to report the error,
+// the calling goroutine will panic and print the error (see Exec).
 func (a *Application) Start(addr string) {
-	a.StartWith(standard.New(addr))
+	a.StartWith("http://"+addr, standard.New(addr))
 }
 
 // StartSecure will start the application with a new server listening on the
 // specified address using the provided TLS certificate.
 //
-// See StartWith.
+// Note: Any errors that occur during the boot process of the application and
+// later during request processing are reported using the registered reporters.
+// If there are no reporters or one of the reporter fails to report the error,
+// the calling goroutine will panic and print the error (see Exec).
 func (a *Application) StartSecure(addr, certFile, keyFile string) {
-	a.StartWith(standard.WithTLS(addr, certFile, keyFile))
+	a.StartWith("https://"+addr, standard.WithTLS(addr, certFile, keyFile))
 }
 
-// StartWith will start the application using the specified server.
+// StartWith will start the application with the specified server that is
+// accessible from the passed base URL.
 //
 // Note: Any errors that occur during the boot process of the application and
 // later during request processing are reported using the registered reporters.
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
-func (a *Application) StartWith(server engine.Server) {
+func (a *Application) StartWith(baseURL string, server engine.Server) {
 	// synchronize access
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -210,16 +218,18 @@ func (a *Application) StartWith(server engine.Server) {
 		panic("Application has already been started")
 	}
 
-	// check server
-	if server == nil {
-		panic("StartWith must be called with a server")
-	}
-
-	// set server
+	// set server and base url
 	a.server = server
+	a.baseURL = baseURL
 
 	// run app
 	a.tomb.Go(a.runner)
+}
+
+// BaseURL returns the base URL of the application after it has ben started using
+// Start or StartSecure.
+func (a *Application) BaseURL() string {
+	return a.baseURL
 }
 
 // Report will report the passed error using all mounted reporter components.
