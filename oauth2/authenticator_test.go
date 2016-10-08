@@ -73,8 +73,6 @@ func TestPasswordGrant(t *testing.T) {
 		PasswordHash: hashPassword("secret"),
 	})
 
-	// TODO: Improve error message.
-
 	// missing auth
 	testRequest(server, "GET", "/posts", nil, nil, func(r *httptest.ResponseRecorder, rq engine.Request) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
