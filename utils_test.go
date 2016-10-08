@@ -86,7 +86,7 @@ func runApp(app *Application) (chan struct{}, string) {
 	done := make(chan struct{})
 
 	go func() {
-		app.StartWith("http://"+listener.Addr().String(), server)
+		app.startWith("http://"+listener.Addr().String(), server)
 		<-done
 		app.Stop()
 	}()

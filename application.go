@@ -187,7 +187,7 @@ func (a *Application) Router() *echo.Echo {
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
 func (a *Application) Start(addr string) {
-	a.StartWith("http://"+addr, standard.New(addr))
+	a.startWith("http://"+addr, standard.New(addr))
 }
 
 // StartSecure will start the application with a new server listening on the
@@ -198,32 +198,18 @@ func (a *Application) Start(addr string) {
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
 func (a *Application) StartSecure(addr, certFile, keyFile string) {
-	a.StartWith("https://"+addr, standard.WithTLS(addr, certFile, keyFile))
+	a.startWith("https://"+addr, standard.WithTLS(addr, certFile, keyFile))
 }
 
-// StartWith will start the application with the specified server that is
-// accessible from the passed base URL.
+// StartWithConfig will start the application with a new server that is
+// configured using the passed configuration.
 //
 // Note: Any errors that occur during the boot process of the application and
 // later during request processing are reported using the registered reporters.
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
-func (a *Application) StartWith(baseURL string, server engine.Server) {
-	// synchronize access
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	// check status
-	if a.server != nil {
-		panic("Application has already been started")
-	}
-
-	// set server and base url
-	a.server = server
-	a.baseURL = baseURL
-
-	// run app
-	a.tomb.Go(a.runner)
+func (a *Application) StartWithConfig(baseURL string, config engine.Config) {
+	a.startWith(baseURL, standard.WithConfig(config))
 }
 
 // BaseURL returns the base URL of the application after it has ben started using
@@ -301,6 +287,24 @@ func (a *Application) Yield() {
 	case <-a.tomb.Dead():
 		return
 	}
+}
+
+func (a *Application) startWith(baseURL string, server engine.Server) {
+	// synchronize access
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	// check status
+	if a.server != nil {
+		panic("Application has already been started")
+	}
+
+	// set server and base url
+	a.server = server
+	a.baseURL = baseURL
+
+	// run app
+	a.tomb.Go(a.runner)
 }
 
 func (a *Application) runner() error {
