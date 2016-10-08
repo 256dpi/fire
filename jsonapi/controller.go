@@ -100,7 +100,7 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	if req.Intent == jsonapi.ListResources && c.NoList {
 		return jsonapi.WriteError(w, jsonapi.ErrorFromStatus(
 			http.StatusMethodNotAllowed,
-			"Listing ist disabled for this resource.",
+			"Listing is disabled for this resource.",
 		))
 	}
 
