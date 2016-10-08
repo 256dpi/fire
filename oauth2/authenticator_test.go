@@ -81,7 +81,7 @@ func TestPasswordGrant(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The request could not be authorized"
+				"detail": "A validator returned an error: The request could not be authorized"
 			}]
 		}`, r.Body.String())
 	})
@@ -198,7 +198,7 @@ func TestClientCredentialsGrant(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The request could not be authorized"
+				"detail": "A validator returned an error: The request could not be authorized"
 			}]
 		}`, r.Body.String())
 	})
@@ -208,11 +208,11 @@ func TestClientCredentialsGrant(t *testing.T) {
 		"grant_type": ClientCredentialsGrant,
 		"scope":      "default",
 	}, func(r *httptest.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
 		assert.JSONEq(t, `{
 			"name": "invalid_client",
 			"description": "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)",
-			"statusCode": 400
+			"statusCode": 401
 		}`, r.Body.String())
 	})
 
@@ -317,7 +317,7 @@ func TestImplicitGrant(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The request could not be authorized"
+				"detail": "A validator returned an error: The request could not be authorized"
 			}]
 		}`, r.Body.String())
 	})
@@ -545,7 +545,7 @@ func TestPasswordGrantInsufficientScope(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+				"detail": "A validator returned an error: The requested scope is invalid, unknown, or malformed"
 			}]
 		}`, r.Body.String())
 	})
@@ -681,7 +681,7 @@ func TestCredentialsGrantInsufficientScope(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+				"detail": "A validator returned an error: The requested scope is invalid, unknown, or malformed"
 			}]
 		}`, r.Body.String())
 	})
@@ -747,7 +747,7 @@ func TestImplicitGrantAdditionalScope(t *testing.T) {
 
 		assert.Equal(t, http.StatusFound, r.Code)
 		assert.Equal(t, "3600", query.Get("expires_in"))
-		assert.Equal(t, "default+admin", query.Get("scope"))
+		assert.Equal(t, "default admin", query.Get("scope"))
 		assert.Equal(t, "bearer", query.Get("token_type"))
 
 		token = query.Get("access_token")
@@ -841,7 +841,7 @@ func TestImplicitGrantInsufficientScope(t *testing.T) {
 		assert.JSONEq(t, `{
 			"errors": [{
 				"status": "401",
-				"detail": "An error occurred: The requested scope is invalid, unknown, or malformed"
+				"detail": "A validator returned an error: The requested scope is invalid, unknown, or malformed"
 			}]
 		}`, r.Body.String())
 	})

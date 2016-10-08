@@ -3,11 +3,10 @@ package jsonapi
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gonfire/jsonapi"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"gopkg.in/mgo.v2/bson"
@@ -30,8 +29,9 @@ func TestBasicOperations(t *testing.T) {
 	// get empty list of posts
 	testRequest(server, "GET", "/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
@@ -53,11 +53,11 @@ func TestBasicOperations(t *testing.T) {
 				"title": "Post 1"
 			}
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		post := findLastModel(&Post{})
 		id = post.ID().Hex()
 
-		assert.Equal(t, http.StatusCreated, r.Status())
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -93,8 +93,8 @@ func TestBasicOperations(t *testing.T) {
 	// get list of posts
 	testRequest(server, "GET", "/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -141,8 +141,8 @@ func TestBasicOperations(t *testing.T) {
 				"text-body": "Post 1 Text"
 			}
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -178,8 +178,8 @@ func TestBasicOperations(t *testing.T) {
 	// get single post
 	testRequest(server, "GET", "/posts/"+id, map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -215,16 +215,16 @@ func TestBasicOperations(t *testing.T) {
 	// delete post
 	testRequest(server, "DELETE", "/posts/"+id, map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// get empty list of posts
 	testRequest(server, "GET", "/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
@@ -278,8 +278,8 @@ func TestFiltering(t *testing.T) {
 	// get posts with single value filter
 	testRequest(server, "GET", "/posts?filter[title]=post-1", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -322,8 +322,8 @@ func TestFiltering(t *testing.T) {
 	// get posts with multi value filter
 	testRequest(server, "GET", "/posts?filter[title]=post-2,post-3", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -396,8 +396,8 @@ func TestFiltering(t *testing.T) {
 	// get posts with boolean
 	testRequest(server, "GET", "/posts?filter[published]=true", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -470,8 +470,8 @@ func TestFiltering(t *testing.T) {
 	// get posts with boolean
 	testRequest(server, "GET", "/posts?filter[published]=false", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -514,8 +514,8 @@ func TestFiltering(t *testing.T) {
 	// get to many posts with boolean
 	testRequest(server, "GET", "/selections/"+selection+"/posts?filter[published]=false", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -587,8 +587,8 @@ func TestSorting(t *testing.T) {
 	// get posts in ascending order
 	testRequest(server, "GET", "/posts?sort=title", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -676,8 +676,8 @@ func TestSorting(t *testing.T) {
 	// get posts in descending order
 	testRequest(server, "GET", "/posts?sort=-title", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -785,8 +785,8 @@ func TestSparseFieldsets(t *testing.T) {
 	// get posts with single value filter
 	testRequest(server, "GET", "/posts/"+post+"?fields[posts]=title", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -849,8 +849,8 @@ func TestHasManyRelationship(t *testing.T) {
 	// get single post
 	testRequest(server, "GET", "/posts/"+post, map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -886,8 +886,8 @@ func TestHasManyRelationship(t *testing.T) {
 	// get empty list of related comments
 	testRequest(server, "GET", "/posts/"+post+"/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
@@ -917,10 +917,10 @@ func TestHasManyRelationship(t *testing.T) {
 				}
 			}
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		comment = findLastModel(&Comment{}).ID().Hex()
 
-		assert.Equal(t, http.StatusCreated, r.Status())
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "comments",
@@ -957,8 +957,8 @@ func TestHasManyRelationship(t *testing.T) {
 	// get list of related comments
 	testRequest(server, "GET", "/posts/"+post+"/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -997,8 +997,8 @@ func TestHasManyRelationship(t *testing.T) {
 	// get only relationship links
 	testRequest(server, "GET", "/posts/"+post+"/relationships/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -1069,10 +1069,10 @@ func TestToOneRelationship(t *testing.T) {
 				}
 			}
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		comment2 = findLastModel(&Comment{}).ID().Hex()
 
-		assert.Equal(t, http.StatusCreated, r.Status())
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "comments",
@@ -1112,8 +1112,8 @@ func TestToOneRelationship(t *testing.T) {
 	// get related post
 	testRequest(server, "GET", "/comments/"+comment2+"/post", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -1158,8 +1158,8 @@ func TestToOneRelationship(t *testing.T) {
 	// get related post id only
 	testRequest(server, "GET", "/comments/"+comment2+"/relationships/post", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -1181,16 +1181,16 @@ func TestToOneRelationship(t *testing.T) {
 			"type": "comments",
 			"id": "`+post2+`"
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// fetch replaced relationship
 	testRequest(server, "GET", "/comments/"+comment2+"/relationships/post", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
@@ -1209,16 +1209,16 @@ func TestToOneRelationship(t *testing.T) {
 		"Content-Type": jsonapi.MediaType,
 	}, `{
 			"data": null
-		}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// fetch unset relationship
 	testRequest(server, "GET", "/comments/"+comment2+"/relationships/parent", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": null,
 			"links": {
@@ -1231,8 +1231,8 @@ func TestToOneRelationship(t *testing.T) {
 	// fetch unset related resource
 	testRequest(server, "GET", "/comments/"+comment2+"/parent", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": null,
 			"links": {
@@ -1294,10 +1294,10 @@ func TestToManyRelationship(t *testing.T) {
 				}
 			}
 		}
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		selection = findLastModel(&Selection{}).ID().Hex()
 
-		assert.Equal(t, http.StatusCreated, r.Status())
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "selections",
@@ -1333,8 +1333,8 @@ func TestToManyRelationship(t *testing.T) {
 	// get related post
 	testRequest(server, "GET", "/selections/"+selection+"/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -1407,8 +1407,8 @@ func TestToManyRelationship(t *testing.T) {
 	// get related post ids only
 	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -1438,16 +1438,16 @@ func TestToManyRelationship(t *testing.T) {
 				"id": "`+post3+`"
 			}
 		]
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// get updated related post ids only
 	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -1473,16 +1473,16 @@ func TestToManyRelationship(t *testing.T) {
 				"id": "`+post1+`"
 			}
 		]
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// get related post ids only
 	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
 				{
@@ -1516,16 +1516,16 @@ func TestToManyRelationship(t *testing.T) {
 				"id": "`+post1+`"
 			}
 		]
-	}`, func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Status())
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// get empty related post ids list
 	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [],
 			"links": {
@@ -1563,8 +1563,8 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	// get related posts
 	testRequest(server, "GET", "/selections/"+selection+"/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
@@ -1576,8 +1576,8 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	// get related selections
 	testRequest(server, "GET", "/posts/"+post+"/selections", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusOK, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
@@ -1605,8 +1605,8 @@ func TestNoList(t *testing.T) {
 	// attempt list comments
 	testRequest(server, "GET", "/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
-		assert.Equal(t, http.StatusMethodNotAllowed, r.Status())
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode)
 		assert.Contains(t, r.Body.String(), "Listing ist disabled for this resource.")
 	})
 }
@@ -1635,11 +1635,11 @@ func TestPagination(t *testing.T) {
 	// get first page of posts
 	testRequest(server, "GET", "/posts?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{
@@ -1653,11 +1653,11 @@ func TestPagination(t *testing.T) {
 	// get second page of posts
 	testRequest(server, "GET", "/posts?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 6", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{
@@ -1701,11 +1701,11 @@ func TestPaginationToMany(t *testing.T) {
 	// get first page of posts
 	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{
@@ -1719,11 +1719,11 @@ func TestPaginationToMany(t *testing.T) {
 	// get second page of posts
 	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 6", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{
@@ -1765,11 +1765,11 @@ func TestPaginationHasMany(t *testing.T) {
 	// get first page of posts
 	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Comment 1", list[0].Get("attributes.message").String())
 		assert.JSONEq(t, `{
@@ -1783,11 +1783,11 @@ func TestPaginationHasMany(t *testing.T) {
 	// get second page of posts
 	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Comment 6", list[0].Get("attributes.message").String())
 		assert.JSONEq(t, `{
@@ -1824,11 +1824,11 @@ func TestForcedPagination(t *testing.T) {
 	// get first page of posts
 	testRequest(server, "GET", "/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{
@@ -1865,11 +1865,11 @@ func TestListLimit(t *testing.T) {
 	// get first page of posts
 	testRequest(server, "GET", "/posts?page[number]=1&page[size]=7", map[string]string{
 		"Accept": jsonapi.MediaType,
-	}, "", func(r *test.ResponseRecorder, rq engine.Request) {
+	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
-		assert.Equal(t, http.StatusOK, r.Status())
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.Equal(t, 5, len(list))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String())
 		assert.JSONEq(t, `{

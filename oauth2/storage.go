@@ -76,12 +76,15 @@ func (s *storage) DeleteAuthorizeCodeSession(ctx context.Context, code string) e
 
 func (s *storage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
 	// retrieve client id
-	clientID := ctx.Value("client").(ClientModel).ID()
+	clientID := ctx.Value("echo").(echo.Context).Get("client").(ClientModel).ID()
+
+	// prepare optional owner id
+	var ownerID *bson.ObjectId
 
 	// retrieve optional owner id
-	var ownerID *bson.ObjectId
-	if ctx.Value("owner") != nil {
-		id := ctx.Value("owner").(OwnerModel).ID()
+	owner := ctx.Value("echo").(echo.Context).Get("owner")
+	if owner != nil {
+		id := owner.(OwnerModel).ID()
 		ownerID = &id
 	}
 
@@ -143,7 +146,7 @@ func (s *storage) GetAccessTokenSession(ctx context.Context, signature string, s
 	req.Session = session
 
 	// assign access token to context
-	ctx.(echo.Context).Set("fire.access_token", accessToken)
+	ctx.Value("echo").(echo.Context).Set("fire.access_token", accessToken)
 
 	return req, nil
 }
@@ -172,7 +175,7 @@ func (s *storage) Authenticate(ctx context.Context, id string, secret string) er
 	}
 
 	// assign owner to context
-	ctx.(echo.Context).Set("owner", owner)
+	ctx.Value("echo").(echo.Context).Set("owner", owner)
 
 	// extract data from owner
 	passwordHash := owner.GetOAuthData()

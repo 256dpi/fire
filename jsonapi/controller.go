@@ -9,8 +9,8 @@ import (
 
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
-	"github.com/gonfire/jsonapi/adapter"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/engine/standard"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -87,8 +87,8 @@ func (c *Controller) register(router *echo.Echo, prefix string) {
 }
 
 func (c *Controller) generalHandler(e echo.Context) error {
-	r := adapter.BridgeRequest(e.Request())
-	w := adapter.BridgeResponse(e.Response())
+	r := e.Request().(*standard.Request).Request
+	w := e.Response().(*standard.Response).ResponseWriter
 
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, c.group.prefix)
@@ -165,7 +165,7 @@ func (c *Controller) generalHandler(e echo.Context) error {
 }
 
 func (c *Controller) listResources(ctx *Context) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// prepare query
 	ctx.Query = bson.M{}
@@ -193,7 +193,7 @@ func (c *Controller) listResources(ctx *Context) error {
 }
 
 func (c *Controller) findResource(ctx *Context) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// load model
 	err := c.loadModel(ctx)
@@ -217,7 +217,7 @@ func (c *Controller) findResource(ctx *Context) error {
 }
 
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// basic input data check
 	if doc.Data.One == nil {
@@ -267,7 +267,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 }
 
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// basic input data check
 	if doc.Data.One == nil {
@@ -341,7 +341,7 @@ func (c *Controller) deleteResource(ctx *Context) error {
 }
 
 func (c *Controller) getRelatedResources(ctx *Context) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// load model
 	err := c.loadModel(ctx)
@@ -534,7 +534,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 }
 
 func (c *Controller) getRelationship(ctx *Context) error {
-	w := adapter.BridgeResponse(ctx.Echo.Response())
+	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
 
 	// load model
 	err := c.loadModel(ctx)

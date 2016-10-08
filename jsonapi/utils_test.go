@@ -1,12 +1,13 @@
 package jsonapi
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	"github.com/gonfire/fire/model"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/test"
+	"github.com/labstack/echo/engine/standard"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -52,17 +53,21 @@ func buildServer(controllers ...*Controller) *echo.Echo {
 	return router
 }
 
-func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*test.ResponseRecorder, engine.Request)) {
-	req := test.NewRequest(method, path, strings.NewReader(payload))
-	rec := test.NewResponseRecorder()
-
-	for k, v := range headers {
-		req.Header().Set(k, v)
+func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+	r, err := http.NewRequest(method, path, strings.NewReader(payload))
+	if err != nil {
+		panic(err)
 	}
 
-	e.ServeHTTP(req, rec)
+	w := httptest.NewRecorder()
 
-	callback(rec, req)
+	for k, v := range headers {
+		r.Header.Set(k, v)
+	}
+
+	e.ServeHTTP(standard.NewRequest(r, nil), standard.NewResponse(w, nil))
+
+	callback(w, r)
 }
 
 func saveModel(m model.Model) model.Model {

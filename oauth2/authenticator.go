@@ -3,6 +3,7 @@
 package oauth2
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -137,7 +138,7 @@ func (a *Authenticator) Authorize(ctx echo.Context, scopes []string) error {
 	token := fosite.AccessTokenFromRequest(r)
 
 	// validate request
-	_, err := a.provider.ValidateToken(ctx, token, fosite.AccessToken, session, scopes...)
+	_, err := a.provider.ValidateToken(contextForContext(ctx), token, fosite.AccessToken, session, scopes...)
 	if err != nil {
 		return err
 	}
@@ -204,7 +205,7 @@ func (a *Authenticator) tokenEndpoint(ctx echo.Context) error {
 	w := ctx.Response().(*standard.Response).ResponseWriter
 
 	// obtain access request
-	req, err := a.provider.NewAccessRequest(ctx, r, session)
+	req, err := a.provider.NewAccessRequest(contextForContext(ctx), r, session)
 	if err != nil {
 		a.provider.WriteAccessError(w, req, err)
 
@@ -232,7 +233,7 @@ func (a *Authenticator) tokenEndpoint(ctx echo.Context) error {
 	a.invokeGrantStrategy(grantType, req, client, owner)
 
 	// obtain access response
-	res, err := a.provider.NewAccessResponse(ctx, r, req)
+	res, err := a.provider.NewAccessResponse(contextForContext(ctx), r, req)
 	if err != nil {
 		a.provider.WriteAccessError(w, req, err)
 
@@ -254,7 +255,7 @@ func (a *Authenticator) authorizeEndpoint(ctx echo.Context) error {
 	w := ctx.Response().(*standard.Response).ResponseWriter
 
 	// obtain authorize request
-	req, err := a.provider.NewAuthorizeRequest(ctx, r)
+	req, err := a.provider.NewAuthorizeRequest(contextForContext(ctx), r)
 	if err != nil {
 		a.provider.WriteAuthorizeError(w, req, err)
 
@@ -270,7 +271,7 @@ func (a *Authenticator) authorizeEndpoint(ctx echo.Context) error {
 	password := ctx.FormValue("password")
 
 	// authenticate user
-	err = a.storage.Authenticate(ctx, username, password)
+	err = a.storage.Authenticate(contextForContext(ctx), username, password)
 	if err != nil {
 		a.provider.WriteAuthorizeError(w, req, fosite.ErrAccessDenied)
 		return nil
@@ -296,7 +297,7 @@ func (a *Authenticator) authorizeEndpoint(ctx echo.Context) error {
 	session := &oauth2.HMACSession{}
 
 	// obtain authorize response
-	res, err := a.provider.NewAuthorizeResponse(ctx, r, req, session)
+	res, err := a.provider.NewAuthorizeResponse(contextForContext(ctx), r, req, session)
 	if err != nil {
 		a.provider.WriteAuthorizeError(w, req, err)
 
@@ -323,6 +324,10 @@ func (a *Authenticator) invokeGrantStrategy(grantType string, req fosite.Request
 	for _, scope := range grantedScopes {
 		req.GrantScope(scope)
 	}
+}
+
+func contextForContext(ctx echo.Context) context.Context {
+	return context.WithValue(ctx.StdContext(), "echo", ctx)
 }
 
 func isFatalError(err error) bool {
