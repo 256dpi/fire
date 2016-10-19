@@ -9,8 +9,7 @@ import (
 
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
+	"github.com/pressly/chi"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -51,15 +50,15 @@ type Controller struct {
 	group *Group
 }
 
-func (c *Controller) register(router *echo.Echo, prefix string) {
+func (c *Controller) register(router chi.Router, prefix string) {
 	pluralName := c.Model.Meta().PluralName
 
 	// add basic operations
-	router.GET(prefix+"/"+pluralName, c.generalHandler)
-	router.POST(prefix+"/"+pluralName, c.generalHandler)
-	router.GET(prefix+"/"+pluralName+"/:id", c.generalHandler)
-	router.PATCH(prefix+"/"+pluralName+"/:id", c.generalHandler)
-	router.DELETE(prefix+"/"+pluralName+"/:id", c.generalHandler)
+	router.Get(prefix+"/"+pluralName, c.generalHandler)
+	router.Post(prefix+"/"+pluralName, c.generalHandler)
+	router.Get(prefix+"/"+pluralName+"/:id", c.generalHandler)
+	router.Patch(prefix+"/"+pluralName+"/:id", c.generalHandler)
+	router.Delete(prefix+"/"+pluralName+"/:id", c.generalHandler)
 
 	// process all relationships
 	for _, field := range c.Model.Meta().Fields {
@@ -72,33 +71,30 @@ func (c *Controller) register(router *echo.Echo, prefix string) {
 		name := field.RelName
 
 		// add relationship queries
-		router.GET(prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
-		router.GET(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+		router.Get(prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
+		router.Get(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 
 		// add relationship management operations
 		if field.ToOne || field.ToMany {
-			router.PATCH(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+			router.Patch(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 		}
 		if field.ToMany {
-			router.POST(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-			router.DELETE(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+			router.Post(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
+			router.Delete(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
 		}
 	}
 }
 
-func (c *Controller) generalHandler(e echo.Context) error {
-	r := e.Request().(*standard.Request).Request
-	w := e.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) generalHandler(w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, c.group.prefix)
 	if err != nil {
-		return jsonapi.WriteError(w, err)
+		jsonapi.WriteError(w, err)
 	}
 
 	// handle no list setting
 	if req.Intent == jsonapi.ListResources && c.NoList {
-		return jsonapi.WriteError(w, jsonapi.ErrorFromStatus(
+		jsonapi.WriteError(w, jsonapi.ErrorFromStatus(
 			http.StatusMethodNotAllowed,
 			"Listing is disabled for this resource.",
 		))
@@ -107,9 +103,9 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	// parse body if available
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		doc, err = jsonapi.ParseDocument(e.Request().Body())
+		doc, err = jsonapi.ParseDocument(r.Body)
 		if err != nil {
-			return jsonapi.WriteError(w, err)
+			jsonapi.WriteError(w, err)
 		}
 	}
 
@@ -125,48 +121,44 @@ func (c *Controller) generalHandler(e echo.Context) error {
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx = buildContext(store, List, req, e)
-		err = c.listResources(ctx)
+		ctx = buildContext(store, List, req, r)
+		err = c.listResources(w, ctx)
 	case jsonapi.FindResource:
-		ctx = buildContext(store, Find, req, e)
-		err = c.findResource(ctx)
+		ctx = buildContext(store, Find, req, r)
+		err = c.findResource(w, ctx)
 	case jsonapi.CreateResource:
-		ctx = buildContext(store, Create, req, e)
-		err = c.createResource(ctx, doc)
+		ctx = buildContext(store, Create, req, r)
+		err = c.createResource(w, ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx = buildContext(store, Update, req, e)
-		err = c.updateResource(ctx, doc)
+		ctx = buildContext(store, Update, req, r)
+		err = c.updateResource(w, ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx = buildContext(store, Delete, req, e)
-		err = c.deleteResource(ctx)
+		ctx = buildContext(store, Delete, req, r)
+		err = c.deleteResource(w, ctx)
 	case jsonapi.GetRelatedResources:
-		ctx = buildContext(store, Find, req, e)
-		err = c.getRelatedResources(ctx)
+		ctx = buildContext(store, Find, req, r)
+		err = c.getRelatedResources(w, ctx)
 	case jsonapi.GetRelationship:
-		ctx = buildContext(store, Find, req, e)
-		err = c.getRelationship(ctx)
+		ctx = buildContext(store, Find, req, r)
+		err = c.getRelationship(w, ctx)
 	case jsonapi.SetRelationship:
-		ctx = buildContext(store, Update, req, e)
-		err = c.setRelationship(ctx, doc)
+		ctx = buildContext(store, Update, req, r)
+		err = c.setRelationship(w, ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx = buildContext(store, Update, req, e)
-		err = c.appendToRelationship(ctx, doc)
+		ctx = buildContext(store, Update, req, r)
+		err = c.appendToRelationship(w, ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx = buildContext(store, Update, req, e)
-		err = c.removeFromRelationship(ctx, doc)
+		ctx = buildContext(store, Update, req, r)
+		err = c.removeFromRelationship(w, ctx, doc)
 	}
 
 	// write any left over errors
 	if err != nil {
-		return jsonapi.WriteError(w, err)
+		jsonapi.WriteError(w, err)
 	}
-
-	return nil
 }
 
-func (c *Controller) listResources(ctx *Context) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) error {
 	// prepare query
 	ctx.Query = bson.M{}
 
@@ -183,7 +175,7 @@ func (c *Controller) listResources(ctx *Context) error {
 	}
 
 	// get list links
-	links, err := c.listLinks(ctx.Request.Self(), ctx)
+	links, err := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
 	if err != nil {
 		return err
 	}
@@ -192,9 +184,7 @@ func (c *Controller) listResources(ctx *Context) error {
 	return jsonapi.WriteResources(w, http.StatusOK, resources, links)
 }
 
-func (c *Controller) findResource(ctx *Context) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -209,16 +199,14 @@ func (c *Controller) findResource(ctx *Context) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self(),
+		Self: ctx.JSONAPIRequest.Self(),
 	}
 
 	// write result
 	return jsonapi.WriteResource(w, http.StatusOK, resource, links)
 }
 
-func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) error {
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
@@ -259,16 +247,14 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self() + "/" + ctx.Model.ID().Hex(),
+		Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
 	}
 
 	// write result
 	return jsonapi.WriteResource(w, http.StatusCreated, resource, links)
 }
 
-func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) error {
 	// basic input data check
 	if doc.Data.One == nil {
 		return jsonapi.BadRequest("Resource object expected")
@@ -300,22 +286,22 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) error {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: ctx.Request.Self(),
+		Self: ctx.JSONAPIRequest.Self(),
 	}
 
 	// write result
 	return jsonapi.WriteResource(w, http.StatusOK, resource, links)
 }
 
-func (c *Controller) deleteResource(ctx *Context) error {
+func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) error {
 	// validate id
-	if !bson.IsObjectIdHex(ctx.Request.ResourceID) {
+	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
 		return jsonapi.BadRequest("Invalid ID")
 	}
 
 	// prepare context
 	ctx.Query = bson.M{
-		"_id": bson.ObjectIdHex(ctx.Request.ResourceID),
+		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
 	}
 
 	// run authorizer if available
@@ -335,14 +321,12 @@ func (c *Controller) deleteResource(ctx *Context) error {
 	}
 
 	// set status
-	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 
 	return nil
 }
 
-func (c *Controller) getRelatedResources(ctx *Context) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -354,7 +338,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// find requested relationship
 	for _, field := range c.Model.Meta().Fields {
-		if field.RelName == ctx.Request.RelatedResource {
+		if field.RelName == ctx.JSONAPIRequest.RelatedResource {
 			relationField = &field
 			break
 		}
@@ -376,17 +360,17 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 	// copy context and request
 	newCtx := &Context{
-		Request: &jsonapi.Request{
-			ResourceType: pluralName,
-			Include:      ctx.Request.Include,
-			PageNumber:   ctx.Request.PageNumber,
-			PageSize:     ctx.Request.PageSize,
-			Sorting:      ctx.Request.Sorting,
-			Fields:       ctx.Request.Fields,
-			Filters:      ctx.Request.Filters,
-		},
 		Store: ctx.Store,
-		Echo:  ctx.Echo,
+		JSONAPIRequest: &jsonapi.Request{
+			ResourceType: pluralName,
+			Include:      ctx.JSONAPIRequest.Include,
+			PageNumber:   ctx.JSONAPIRequest.PageNumber,
+			PageSize:     ctx.JSONAPIRequest.PageSize,
+			Sorting:      ctx.JSONAPIRequest.Sorting,
+			Fields:       ctx.JSONAPIRequest.Fields,
+			Filters:      ctx.JSONAPIRequest.Filters,
+		},
+		HTTPRequest: ctx.HTTPRequest,
 	}
 
 	// finish to one relationship
@@ -396,7 +380,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// prepare links
 		links := &jsonapi.DocumentLinks{
-			Self: ctx.Request.Self(),
+			Self: ctx.JSONAPIRequest.Self(),
 		}
 
 		// lookup id of related resource
@@ -420,8 +404,8 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// tweak context
 		newCtx.Action = Find
-		newCtx.Request.Intent = jsonapi.FindResource
-		newCtx.Request.ResourceID = id
+		newCtx.JSONAPIRequest.Intent = jsonapi.FindResource
+		newCtx.JSONAPIRequest.ResourceID = id
 
 		// load model
 		err := relatedController.loadModel(newCtx)
@@ -446,7 +430,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// tweak context
 		newCtx.Action = List
-		newCtx.Request.Intent = jsonapi.ListResources
+		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set query
 		newCtx.Query = bson.M{
@@ -468,7 +452,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// get list links
-		links, err := relatedController.listLinks(ctx.Request.Self(), newCtx)
+		links, err := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 		if err != nil {
 			return err
 		}
@@ -499,7 +483,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 
 		// tweak context
 		newCtx.Action = List
-		newCtx.Request.Intent = jsonapi.ListResources
+		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set query
 		newCtx.Query = bson.M{
@@ -521,7 +505,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 		}
 
 		// get list links
-		links, err := relatedController.listLinks(ctx.Request.Self(), newCtx)
+		links, err := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 		if err != nil {
 			return err
 		}
@@ -533,9 +517,7 @@ func (c *Controller) getRelatedResources(ctx *Context) error {
 	return nil
 }
 
-func (c *Controller) getRelationship(ctx *Context) error {
-	w := ctx.Echo.Response().(*standard.Response).ResponseWriter
-
+func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -549,13 +531,13 @@ func (c *Controller) getRelationship(ctx *Context) error {
 	}
 
 	// get relationship
-	relationship := resource.Relationships[ctx.Request.Relationship]
+	relationship := resource.Relationships[ctx.JSONAPIRequest.Relationship]
 
 	// write result
 	return jsonapi.WriteResponse(w, http.StatusOK, relationship)
 }
 
-func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -563,7 +545,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error 
 	}
 
 	// assign relationship
-	err = c.assignRelationship(ctx, ctx.Request.Relationship, doc)
+	err = c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
 	if err != nil {
 		return err
 	}
@@ -575,11 +557,12 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) error 
 	}
 
 	// write result
-	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
+
 	return nil
 }
 
-func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -589,7 +572,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 	// append relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
-		if !field.ToMany || field.RelName != ctx.Request.Relationship {
+		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
 			continue
 		}
 
@@ -633,11 +616,12 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) e
 	}
 
 	// write result
-	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
+
 	return nil
 }
 
-func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) error {
+func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) error {
 	// load model
 	err := c.loadModel(ctx)
 	if err != nil {
@@ -647,7 +631,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	// remove relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
-		if !field.ToMany || field.RelName != ctx.Request.Relationship {
+		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
 			continue
 		}
 
@@ -689,7 +673,8 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	}
 
 	// write result
-	ctx.Echo.Response().WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
+
 	return nil
 }
 
@@ -716,13 +701,13 @@ func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) err
 
 func (c *Controller) loadModel(ctx *Context) error {
 	// validate id
-	if !bson.IsObjectIdHex(ctx.Request.ResourceID) {
+	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
 		return jsonapi.BadRequest("Invalid resource ID")
 	}
 
 	// prepare context
 	ctx.Query = bson.M{
-		"_id": bson.ObjectIdHex(ctx.Request.ResourceID),
+		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
 	}
 
 	// run authorizer if available
@@ -754,7 +739,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 		field := c.Model.Meta().MustFindField(filter)
 
 		// check if filter is present
-		if values, ok := ctx.Request.Filters[field.JSONName]; ok {
+		if values, ok := ctx.JSONAPIRequest.Filters[field.JSONName]; ok {
 			if field.Kind == reflect.Bool && len(values) == 1 {
 				ctx.Query[field.BSONName] = values[0] == "true"
 				continue
@@ -765,7 +750,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	}
 
 	// add sorting
-	for _, params := range ctx.Request.Sorting {
+	for _, params := range ctx.JSONAPIRequest.Sorting {
 		for _, sorting := range c.SortableFields {
 			field := c.Model.Meta().MustFindField(sorting)
 
@@ -777,13 +762,13 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	}
 
 	// honor list limit
-	if c.ListLimit > 0 && (ctx.Request.PageSize == 0 || ctx.Request.PageSize > c.ListLimit) {
+	if c.ListLimit > 0 && (ctx.JSONAPIRequest.PageSize == 0 || ctx.JSONAPIRequest.PageSize > c.ListLimit) {
 		// restrain page size
-		ctx.Request.PageSize = c.ListLimit
+		ctx.JSONAPIRequest.PageSize = c.ListLimit
 
 		// enforce pagination
-		if ctx.Request.PageNumber == 0 {
-			ctx.Request.PageNumber = 1
+		if ctx.JSONAPIRequest.PageNumber == 0 {
+			ctx.JSONAPIRequest.PageNumber = 1
 		}
 	}
 
@@ -800,8 +785,8 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	query := ctx.Store.C(c.Model).Find(ctx.Query).Sort(ctx.Sorting...)
 
 	// add pagination
-	if ctx.Request.PageNumber > 0 && ctx.Request.PageSize > 0 {
-		query = query.Limit(ctx.Request.PageSize).Skip((ctx.Request.PageNumber - 1) * ctx.Request.PageSize)
+	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
+		query = query.Limit(ctx.JSONAPIRequest.PageSize).Skip((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize)
 	}
 
 	// query db
@@ -915,7 +900,7 @@ func (c *Controller) resourceForModel(ctx *Context, model model.Model) (*jsonapi
 	resource := &jsonapi.Resource{
 		Type:          c.Model.Meta().PluralName,
 		ID:            model.ID().Hex(),
-		Attributes:    jsonapi.StructToMap(model, ctx.Request.Fields[c.Model.Meta().PluralName]),
+		Attributes:    jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName]),
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
@@ -1074,7 +1059,7 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 	}
 
 	// add pagination links
-	if ctx.Request.PageNumber > 0 && ctx.Request.PageSize > 0 {
+	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
 		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
 		if err != nil {
@@ -1082,21 +1067,21 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 		}
 
 		// calculate last page
-		lastPage := int(math.Ceil(float64(n) / float64(ctx.Request.PageSize)))
+		lastPage := int(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
 
 		// add basic pagination links
-		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber, ctx.Request.PageSize)
-		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, 1, ctx.Request.PageSize)
-		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, lastPage, ctx.Request.PageSize)
+		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber, ctx.JSONAPIRequest.PageSize)
+		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, 1, ctx.JSONAPIRequest.PageSize)
+		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, lastPage, ctx.JSONAPIRequest.PageSize)
 
 		// add previous link if not on first page
-		if ctx.Request.PageNumber > 1 {
-			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber-1, ctx.Request.PageSize)
+		if ctx.JSONAPIRequest.PageNumber > 1 {
+			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber-1, ctx.JSONAPIRequest.PageSize)
 		}
 
 		// add next link if not on last page
-		if ctx.Request.PageNumber < lastPage {
-			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.Request.PageNumber+1, ctx.Request.PageSize)
+		if ctx.JSONAPIRequest.PageNumber < lastPage {
+			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber+1, ctx.JSONAPIRequest.PageSize)
 		}
 	}
 

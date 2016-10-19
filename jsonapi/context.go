@@ -1,9 +1,10 @@
 package jsonapi
 
 import (
+	"net/http"
+
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
-	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -50,20 +51,20 @@ type Context struct {
 	Store *model.Store
 
 	// The underlying JSON API request.
-	Request *jsonapi.Request
+	JSONAPIRequest *jsonapi.Request
 
-	// The underlying echo context.
-	Echo echo.Context
+	// The underlying HTTP request.
+	HTTPRequest *http.Request
 
 	original model.Model
 }
 
-func buildContext(store *model.Store, action Action, req *jsonapi.Request, e echo.Context) *Context {
+func buildContext(store *model.Store, action Action, req *jsonapi.Request, r *http.Request) *Context {
 	return &Context{
-		Action:  action,
-		Store:   store,
-		Request: req,
-		Echo:    e,
+		Action:         action,
+		Store:          store,
+		JSONAPIRequest: req,
+		HTTPRequest:    r,
 	}
 }
 

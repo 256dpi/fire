@@ -1,5 +1,5 @@
-hash: 2bb081cc8d6b928829d1833f6d967fe8b3aac5e774bebead8e5e4f2536fef959
-updated: 2016-10-19T21:45:45.042209433+02:00
+hash: db3ef28d9a2b247b5670c9aad053d4719b367c529f546ea3451b9ec826bb5f13
+updated: 2016-10-20T00:31:52.591612356+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -32,6 +32,12 @@ imports:
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mitchellh/mapstructure
   version: a6ef2f080c66d0a2e94e97cf74f80f772855da63
+- name: github.com/pressly/chi
+  version: 2cad94402baa6eb7584258df02fed068f1502ada
+  subpackages:
+  - middleware
+- name: github.com/tylerb/graceful
+  version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: golang.org/x/crypto

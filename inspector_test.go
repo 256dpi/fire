@@ -18,8 +18,8 @@ func TestInspector(t *testing.T) {
 	app := New()
 	buf := new(bytes.Buffer)
 
-	app.Mount(&testComponent{})
 	app.Mount(NewInspector(buf))
+	app.Mount(&testComponent{})
 
 	done, base := runApp(app)
 
@@ -38,8 +38,8 @@ func TestInspectorError(t *testing.T) {
 	app := New()
 	buf := new(bytes.Buffer)
 
-	app.Mount(&testComponent{})
 	app.Mount(NewInspector(buf))
+	app.Mount(&testComponent{})
 
 	done, base := runApp(app)
 
@@ -55,8 +55,8 @@ func TestInspectorComponent(t *testing.T) {
 	app := New()
 	buf := new(bytes.Buffer)
 
-	app.Mount(&testComponent{})
 	app.Mount(NewInspector(buf))
+	app.Mount(&testComponent{})
 
 	done, _ := runApp(app)
 	close(done)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
-	"github.com/labstack/echo"
+	"github.com/pressly/chi"
 )
 
 var _ fire.RoutableComponent = (*Group)(nil)
@@ -42,7 +42,7 @@ func (g *Group) Add(controllers ...*Controller) {
 }
 
 // Register implements the fire.RoutableComponent interface.
-func (g *Group) Register(router *echo.Echo) {
+func (g *Group) Register(router chi.Router) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)
 	}

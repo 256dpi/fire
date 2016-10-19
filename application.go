@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/standard"
+	"github.com/pressly/chi"
+	"github.com/tylerb/graceful"
 	"gopkg.in/tomb.v2"
 )
 
@@ -29,8 +29,9 @@ type Component interface {
 type RoutableComponent interface {
 	Component
 
-	// Register will be called by the application with a new echo router.
-	Register(router *echo.Echo)
+	// Register will be called by the application with the chi router on
+	// which the called components can register top level routes.
+	Register(router chi.Router)
 }
 
 // A BootableComponent is an extended component with additional methods for
@@ -107,6 +108,9 @@ type ReporterComponent interface {
 }
 
 // An Application provides a simple way to combine multiple components.
+//
+// Note: An application instance is only valid for one cycle. This means it can
+// only be started and stopped once.
 type Application struct {
 	components []Component
 	routables  []RoutableComponent
@@ -114,17 +118,21 @@ type Application struct {
 	inspectors []InspectorComponent
 	reporters  []ReporterComponent
 
-	router  *echo.Echo
-	mutex   sync.Mutex
-	server  engine.Server
-	baseURL string
-	tomb    tomb.Tomb
+	router chi.Router
+
+	server   *graceful.Server
+	baseURL  string
+	certFile string
+	keyFile  string
+
+	mutex sync.Mutex
+	tomb  tomb.Tomb
 }
 
 // New creates and returns a new Application.
 func New() *Application {
 	return &Application{
-		router: echo.New(),
+		router: chi.NewRouter(),
 	}
 }
 
@@ -174,8 +182,8 @@ func (a *Application) Components() []Component {
 	return a.components
 }
 
-// Router returns the used echo router for this application.
-func (a *Application) Router() *echo.Echo {
+// Router returns the used chi router for this application.
+func (a *Application) Router() chi.Router {
 	return a.router
 }
 
@@ -187,7 +195,7 @@ func (a *Application) Router() *echo.Echo {
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
 func (a *Application) Start(addr string) {
-	a.startWith("http://"+addr, standard.New(addr))
+	a.startWith("http://"+addr, &http.Server{Addr: addr}, "", "")
 }
 
 // StartSecure will start the application with a new server listening on the
@@ -198,18 +206,7 @@ func (a *Application) Start(addr string) {
 // If there are no reporters or one of the reporter fails to report the error,
 // the calling goroutine will panic and print the error (see Exec).
 func (a *Application) StartSecure(addr, certFile, keyFile string) {
-	a.startWith("https://"+addr, standard.WithTLS(addr, certFile, keyFile))
-}
-
-// StartWithConfig will start the application with a new server that is
-// configured using the passed configuration.
-//
-// Note: Any errors that occur during the boot process of the application and
-// later during request processing are reported using the registered reporters.
-// If there are no reporters or one of the reporter fails to report the error,
-// the calling goroutine will panic and print the error (see Exec).
-func (a *Application) StartWithConfig(baseURL string, config engine.Config) {
-	a.startWith(baseURL, standard.WithConfig(config))
+	a.startWith("https://"+addr, &http.Server{Addr: addr}, certFile, keyFile)
 }
 
 // BaseURL returns the base URL of the application after it has ben started using
@@ -265,7 +262,7 @@ func (a *Application) Stop() {
 	a.tomb.Kill(nil)
 
 	// stop app by stopping the server
-	a.server.Stop()
+	a.server.Stop(a.server.Timeout)
 
 	// wait until goroutine finishes
 	a.tomb.Wait()
@@ -289,7 +286,7 @@ func (a *Application) Yield() {
 	}
 }
 
-func (a *Application) startWith(baseURL string, server engine.Server) {
+func (a *Application) startWith(baseURL string, server *http.Server, certFile, keyFile string) {
 	// synchronize access
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -299,9 +296,19 @@ func (a *Application) startWith(baseURL string, server engine.Server) {
 		panic("Application has already been started")
 	}
 
-	// set server and base url
-	a.server = server
+	// set handler on server
+	server.Handler = a.router
+
+	// create graceful server
+	a.server = &graceful.Server{
+		Timeout: 5 * time.Second,
+		Server:  server,
+	}
+
+	// base url and tls files
 	a.baseURL = baseURL
+	a.certFile = certFile
+	a.keyFile = keyFile
 
 	// run app
 	a.tomb.Go(a.runner)
@@ -313,9 +320,6 @@ func (a *Application) runner() error {
 }
 
 func (a *Application) boot() error {
-	// set error handler
-	a.router.SetHTTPErrorHandler(a.errorHandler)
-
 	// signal before registration event
 	for _, i := range a.inspectors {
 		i.Before(Registration, a)
@@ -344,8 +348,17 @@ func (a *Application) boot() error {
 		i.Before(Run, a)
 	}
 
-	// run router
-	err := a.router.Run(a.server)
+	// prepare error
+	var err error
+
+	// run server
+	if a.certFile != "" && a.keyFile != "" {
+		err = a.server.ListenAndServeTLS(a.certFile, a.keyFile)
+	} else {
+		err = a.server.ListenAndServe()
+	}
+
+	// handle error
 	if err != nil {
 		select {
 		case <-a.tomb.Dying():
@@ -375,24 +388,4 @@ func (a *Application) boot() error {
 	}
 
 	return nil
-}
-
-func (a *Application) errorHandler(err error, ctx echo.Context) {
-	// treat echo.HTTPError instances as already treated errors
-	if he, ok := err.(*echo.HTTPError); ok && http.StatusText(he.Code) != "" {
-		// write response if not yet committed
-		if !ctx.Response().Committed() {
-			ctx.NoContent(he.Code)
-		}
-
-		return
-	}
-
-	// report error
-	a.Report(err)
-
-	// write response if not yet committed
-	if !ctx.Response().Committed() {
-		ctx.NoContent(http.StatusInternalServerError)
-	}
 }

@@ -6,8 +6,7 @@ import (
 	"strings"
 
 	"github.com/gonfire/fire/model"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
+	"github.com/pressly/chi"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -43,8 +42,8 @@ func getCleanStore() *model.Store {
 	return testStore
 }
 
-func buildServer(controllers ...*Controller) *echo.Echo {
-	router := echo.New()
+func buildServer(controllers ...*Controller) chi.Router {
+	router := chi.NewRouter()
 
 	group := NewGroup("")
 	group.Add(controllers...)
@@ -53,7 +52,7 @@ func buildServer(controllers ...*Controller) *echo.Echo {
 	return router
 }
 
-func testRequest(e *echo.Echo, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+func testRequest(e chi.Router, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
 	r, err := http.NewRequest(method, path, strings.NewReader(payload))
 	if err != nil {
 		panic(err)
@@ -65,7 +64,7 @@ func testRequest(e *echo.Echo, method, path string, headers map[string]string, p
 		r.Header.Set(k, v)
 	}
 
-	e.ServeHTTP(standard.NewRequest(r, nil), standard.NewResponse(w, nil))
+	e.ServeHTTP(w, r)
 
 	callback(w, r)
 }

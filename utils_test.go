@@ -2,15 +2,12 @@ package fire
 
 import (
 	"crypto/tls"
-	"errors"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/standard"
+	"github.com/pressly/chi"
 )
 
 type testComponent struct {
@@ -28,21 +25,17 @@ func (c *testComponent) Describe() ComponentInfo {
 	}
 }
 
-func (c *testComponent) Register(router *echo.Echo) {
-	router.GET("/", func(ctx echo.Context) error {
-		return ctx.String(200, "OK")
+func (c *testComponent) Register(router chi.Router) {
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
 	})
 
-	router.GET("/foo", func(ctx echo.Context) error {
-		return ctx.String(200, "OK")
+	router.Get("/foo", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
 	})
 
-	router.GET("/error", func(ctx echo.Context) error {
-		return errors.New("error")
-	})
-
-	router.Get("/unauthorized", func(ctx echo.Context) error {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Not Authorized")
+	router.Get("/unauthorized", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
 	})
 }
 
@@ -74,19 +67,12 @@ func (r *failingReporter) Report(err error) error {
 }
 
 func runApp(app *Application) (chan struct{}, string) {
-	listener, err := net.Listen("tcp", ":")
-	if err != nil {
-		panic(err)
-	}
-
-	server := standard.WithConfig(engine.Config{
-		Listener: listener,
-	})
+	addr := freeAddr()
 
 	done := make(chan struct{})
 
 	go func() {
-		app.startWith("http://"+listener.Addr().String(), server)
+		app.Start(addr)
 		<-done
 		app.Stop()
 	}()
@@ -94,6 +80,17 @@ func runApp(app *Application) (chan struct{}, string) {
 	time.Sleep(50 * time.Millisecond)
 
 	return done, app.BaseURL()
+}
+
+func freeAddr() string {
+	listener, err := net.Listen("tcp", ":")
+	if err != nil {
+		panic(err)
+	}
+
+	listener.Close()
+
+	return listener.Addr().String()
 }
 
 func testRequest(url string) (string, *http.Response, error) {

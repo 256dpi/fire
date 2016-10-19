@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"time"
 
 	"github.com/fatih/color"
-	"github.com/labstack/echo"
 	"github.com/mattn/go-colorable"
+	"github.com/pressly/chi"
+	"github.com/pressly/chi/middleware"
 )
 
 // A ComponentInfo is returned by a component to describe itself.
@@ -48,8 +48,8 @@ func (i *Inspector) Describe() ComponentInfo {
 }
 
 // Register implements the RoutableComponent interface.
-func (i *Inspector) Register(router *echo.Echo) {
-	router.Use(i.requestLogger)
+func (i *Inspector) Register(router chi.Router) {
+	router.Use(middleware.Logger)
 }
 
 // Before implements the InspectorComponent interface.
@@ -111,13 +111,15 @@ func (i *Inspector) printComponents(components []Component) {
 	}
 }
 
-func (i *Inspector) printRoutes(router *echo.Echo) {
+func (i *Inspector) printRoutes(router chi.Router) {
 	// prepare routes
 	var routes []string
 
 	// add all routes as string
 	for _, route := range router.Routes() {
-		routes = append(routes, fmt.Sprintf("%6s  %-30s", route.Method, route.Path))
+		for method, _ := range route.Handlers {
+			routes = append(routes, fmt.Sprintf("%6s  %-30s", method, route.Pattern))
+		}
 	}
 
 	// sort routes
@@ -126,28 +128,5 @@ func (i *Inspector) printRoutes(router *echo.Echo) {
 	// print routes
 	for _, route := range routes {
 		fmt.Fprintln(i.Writer, color.BlueString(route))
-	}
-}
-
-func (i *Inspector) requestLogger(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		req := c.Request()
-		res := c.Response()
-
-		// save start
-		start := time.Now()
-
-		// call next handler
-		if err := next(c); err != nil {
-			c.Error(err)
-		}
-
-		// get request duration
-		duration := time.Since(start).String()
-
-		// log request
-		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", req.Method()), req.URL().Path(), color.MagentaString("%d", res.Status()), duration)
-
-		return nil
 	}
 }

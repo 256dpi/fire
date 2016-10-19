@@ -95,13 +95,7 @@ func TestApplicationReport(t *testing.T) {
 
 	done, base := runApp(app)
 
-	str, res, err := testRequest(base + "/error")
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
-	assert.Empty(t, str)
-	assert.Equal(t, "error", com.reportedError.Error())
-
-	str, res, err = testRequest(base + "/unauthorized")
+	str, res, err := testRequest(base + "/unauthorized")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 	assert.Empty(t, str)
@@ -109,7 +103,7 @@ func TestApplicationReport(t *testing.T) {
 	str, res, err = testRequest(base + "/missing")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
-	assert.Empty(t, str)
+	assert.Equal(t, "404 page not found\n", str)
 
 	close(done)
 }
