@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gonfire/fire"
+	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/hmacsha"
 	"github.com/gonfire/oauth2/spec"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +14,26 @@ import (
 var testSecret = []byte("abcd1234abcd1234")
 
 func TestIntegration(t *testing.T) {
+	var allowedScope = oauth2.ParseScope("foo bar")
+	var requiredScope = oauth2.ParseScope("foo")
+
 	p := DefaultPolicy(testSecret)
+
 	p.PasswordGrant = true
+	p.ClientCredentialsGrant = true
+	p.ImplicitGrant = true
+
+	p.GrantStrategy = func(req *GrantRequest) (bool, oauth2.Scope) {
+		if !allowedScope.Includes(req.Scope) {
+			return false, oauth2.Scope{}
+		}
+
+		if !req.Scope.Includes(requiredScope) {
+			return false, oauth2.Scope{}
+		}
+
+		return true, req.Scope
+	}
 
 	auth := New(getCleanStore(), p, "auth")
 
@@ -88,7 +107,7 @@ func TestIntegration(t *testing.T) {
 	config.SecondaryClientID = "app2"
 	config.SecondaryClientSecret = "foo"
 
-	config.ResourceOwnerUsername = "user1"
+	config.ResourceOwnerUsername = "user@example.com"
 	config.ResourceOwnerPassword = "foo"
 
 	config.InvalidScope = "baz"

@@ -27,6 +27,9 @@ type Token interface {
 	SetTokenData(*TokenData)
 }
 
+// TODO: We need to separate the models otherwise a refresh token can be used to
+// access data.
+
 // Credential is the built-in model used to store tokens.
 type Credential struct {
 	model.Base      `json:"-" bson:",inline" fire:"credentials"`
@@ -71,8 +74,6 @@ type Client interface {
 	ValidRedirectURI(string) bool
 	ValidSecret(string) bool
 }
-
-// TODO: Should we really store the grant types with the client?
 
 // Application is the built-in model used to store clients.
 type Application struct {

@@ -67,16 +67,16 @@ func (a *Authenticator) HandleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	// get resource owner
 	resourceOwner, err := a.Storage.GetResourceOwner(username)
 	if err != nil {
-		oauth2.WriteError(w, err)
+		oauth2.RedirectError(w, req.RedirectURI, true, err)
 		return
 	} else if resourceOwner == nil {
-		oauth2.WriteError(w, oauth2.AccessDenied(req.State, oauth2.NoDescription))
+		oauth2.RedirectError(w, req.RedirectURI, true, oauth2.AccessDenied(req.State, oauth2.NoDescription))
 		return
 	}
 
 	// validate password
 	if !resourceOwner.ValidPassword(password) {
-		oauth2.WriteError(w, oauth2.AccessDenied(req.State, oauth2.NoDescription))
+		oauth2.RedirectError(w, req.RedirectURI, true, oauth2.AccessDenied(req.State, oauth2.NoDescription))
 		return
 	}
 
@@ -129,9 +129,10 @@ func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validate confidentiality
-	if req.Confidential() && req.GrantType != oauth2.ClientCredentialsGrantType {
+	/*if req.Confidential() && req.GrantType != oauth2.ClientCredentialsGrantType {
 		oauth2.WriteError(w, oauth2.InvalidRequest(req.State, "Confidential clients are only allowed for the client credentials grant."))
-	}
+		return
+	}*/
 
 	// handle grant type
 	switch req.GrantType {
@@ -213,7 +214,7 @@ func (a *Authenticator) HandleClientCredentialsGrant(w http.ResponseWriter, req 
 	}
 
 	// issue access token
-	res, err := a.issueTokens(false, scope, req.State, client.ID(), nil)
+	res, err := a.issueTokens(true, scope, req.State, client.ID(), nil)
 	if err != nil {
 		oauth2.RedirectError(w, req.RedirectURI, true, err)
 	}
@@ -304,12 +305,9 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 	// set state
 	res.State = state
 
-	// set refresh token
-	res.RefreshToken = refreshToken.String()
-
-	// disable refresh token if not requested
-	if !issueRefreshToken {
-		refreshToken = nil
+	// set refresh token if requested
+	if issueRefreshToken {
+		res.RefreshToken = refreshToken.String()
 	}
 
 	// create access token data
@@ -321,23 +319,23 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 		ResourceOwnerID: resourceOwnerID,
 	}
 
-	// create refresh token data
-	refreshTokenData := &TokenData{
-		Signature:       refreshToken.SignatureString(),
-		Scope:           scope,
-		ExpiresAt:       time.Now().Add(a.Policy.RefreshTokenLifespan),
-		ClientID:        clientID,
-		ResourceOwnerID: resourceOwnerID,
-	}
-
 	// save access token
 	_, err = a.Storage.SaveAccessToken(accessTokenData)
 	if err != nil {
 		return nil, err
 	}
 
-	// save refresh token
-	if refreshToken != nil {
+	if issueRefreshToken {
+		// create refresh token data
+		refreshTokenData := &TokenData{
+			Signature:       refreshToken.SignatureString(),
+			Scope:           scope,
+			ExpiresAt:       time.Now().Add(a.Policy.RefreshTokenLifespan),
+			ClientID:        clientID,
+			ResourceOwnerID: resourceOwnerID,
+		}
+
+		// save refresh token
 		_, err := a.Storage.SaveRefreshToken(refreshTokenData)
 		if err != nil {
 			return nil, err
