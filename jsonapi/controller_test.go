@@ -1607,7 +1607,7 @@ func TestNoList(t *testing.T) {
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode)
-		assert.Contains(t, r.Body.String(), "Listing ist disabled for this resource.")
+		assert.Contains(t, r.Body.String(), "Listing is disabled for this resource.")
 	})
 }
 
