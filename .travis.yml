@@ -16,7 +16,6 @@ script:
   - go test -coverprofile=fire.coverprofile
   - go test -coverprofile=model.coverprofile ./model
   - go test -coverprofile=jsonapi.coverprofile ./jsonapi
-  - go test -coverprofile=oauth2.coverprofile ./oauth2
   - go test -coverprofile=components.coverprofile ./components
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci

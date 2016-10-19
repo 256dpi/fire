@@ -10,11 +10,6 @@ import:
 - package: github.com/labstack/echo
   # TOOD: Let's use some cutting-edge technology for a moment.
   version: master
-- package: github.com/ory-am/fosite
-  version: ^0.3.0
-  subpackages:
-  - compose
-  - handler/oauth2
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt

@@ -1,18 +1,18 @@
-hash: df8d613d1d6ac72b1b026b68134305bc1b9df6d27bcaeb57db745e7f8b69ba06
-updated: 2016-10-08T13:04:58.407573976+02:00
+hash: 2bb081cc8d6b928829d1833f6d967fe8b3aac5e774bebead8e5e4f2536fef959
+updated: 2016-10-19T21:45:45.042209433+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/fatih/color
-  version: 87d4004f2ab62d0d255e0a38f1680aa534549fe3
+  version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gonfire/jsonapi
   version: bc9026c0339e1d7f2686bcf0f0d764559139653c
 - name: github.com/labstack/echo
-  version: 1924528614ba26e99bd7dd91800eddb19364bed6
+  version: 1dcb7ba9ab8030aeb23e6e4d893a3efe0dc3d7a7
   subpackages:
   - context
   - engine
@@ -32,29 +32,12 @@ imports:
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mitchellh/mapstructure
   version: a6ef2f080c66d0a2e94e97cf74f80f772855da63
-- name: github.com/ory-am/fosite
-  version: 81c3cbdb6b00399219b57c9e1aa1b4cbebf888d8
-  subpackages:
-  - compose
-  - handler/oauth2
-  - handler/openid
-  - hash
-  - rand
-  - token/hmac
-  - token/jwt
-- name: github.com/pborman/uuid
-  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
-- name: github.com/pkg/errors
-  version: 17b591df37844cde689f4d5813e5cea0927d8dd2
-- name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: golang.org/x/crypto
   version: a8a4eedf8c97852389ea5f2c252660d3616af041
   subpackages:
   - bcrypt
-  - blowfish
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
@@ -74,11 +57,11 @@ imports:
   version: 14b3d72120e8d10ea6e6b7f87f7175734b1faab8
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
@@ -86,6 +69,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: 2dec1c4e7be3fff111b388536cf94ae23c38add7
+  version: 27c108f47598c262a87a2cddc9a49bd0d7c7fadc
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
