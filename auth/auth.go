@@ -4,11 +4,13 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gonfire/fire"
+	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
@@ -17,6 +19,8 @@ import (
 )
 
 var _ fire.RoutableComponent = (*Authenticator)(nil)
+
+const AccessTokenContextKey = "fire.oauth2.access_token"
 
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
@@ -117,7 +121,7 @@ func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler 
 			}
 
 			// create new context with access token
-			ctx := context.WithValue(r.Context(), "fire.oauth2.access_token", accessToken)
+			ctx := context.WithValue(r.Context(), AccessTokenContextKey, accessToken)
 
 			// call next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -127,15 +131,28 @@ func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler 
 
 // Authorizer returns a callback that can be used to protect resources by
 // requiring an access token with the provided scopes to be granted.
-//func (a *Authenticator) Authorizer(scopes ...string) jsonapi.Callback {
-//	if len(scopes) < 1 {
-//		panic("Authorizer must be called with at least one scope")
-//	}
 //
-//	return func(ctx *jsonapi.Context) error {
-//		return a.Authorize(nil, ctx.HTTPRequest, scopes)
-//	}
-//}
+// Note: Authorizer requires that the request has already been processed by
+// Authorize.
+func (a *Authenticator) Authorizer(scope string) jsonapi.Callback {
+	return func(ctx *jsonapi.Context) error {
+		// parse scope
+		s := oauth2.ParseScope(scope)
+
+		// get access token
+		accessToken := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
+		if accessToken == nil {
+			return jsonapi.Fatal(errors.New("missing access token"))
+		}
+
+		// validate scope
+		if !accessToken.GetTokenData().Scope.Includes(s) {
+			return errors.New("unauthorized")
+		}
+
+		return nil
+	}
+}
 
 // Describe implements the fire.Component interface.
 func (a *Authenticator) Describe() fire.ComponentInfo {

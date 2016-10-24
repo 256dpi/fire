@@ -128,12 +128,12 @@ func main() {
 	}, &jsonapi.Controller{
 		Model:      &user{},
 		Store:      store,
-		Authorizer: authenticator.Authorizer("default", "admin"),
+		Authorizer: authenticator.Authorizer("default admin"),
 		Validator:  jsonapi.ModelValidator(),
 	}, &jsonapi.Controller{
 		Model:      &auth.Application{},
 		Store:      store,
-		Authorizer: authenticator.Authorizer("default", "admin"),
+		Authorizer: authenticator.Authorizer("default admin"),
 		Validator:  jsonapi.ModelValidator(),
 	})
 

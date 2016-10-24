@@ -50,26 +50,7 @@ func (i *Inspector) Describe() ComponentInfo {
 
 // Register implements the RoutableComponent interface.
 func (i *Inspector) Register(_ *Application, router chi.Router) {
-	router.Use(i.Logger)
-}
-
-func (i *Inspector) Logger(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// wrap response writer
-		wrw := wrapResponseWriter(w)
-
-		// save start
-		start := time.Now()
-
-		// call next handler
-		next.ServeHTTP(wrw, r)
-
-		// get request duration
-		duration := time.Since(start).String()
-
-		// log request
-		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", r.Method), r.URL.Path, color.MagentaString("%d", wrw.Status()), duration)
-	})
+	router.Use(i.requestLogger)
 }
 
 // Before implements the InspectorComponent interface.
@@ -137,7 +118,7 @@ func (i *Inspector) printRoutes(router chi.Router) {
 
 	// add all routes as string
 	for _, route := range router.Routes() {
-		for method, _ := range route.Handlers {
+		for method := range route.Handlers {
 			routes = append(routes, fmt.Sprintf("%6s  %-30s", method, route.Pattern))
 		}
 	}
@@ -149,6 +130,25 @@ func (i *Inspector) printRoutes(router chi.Router) {
 	for _, route := range routes {
 		fmt.Fprintln(i.Writer, color.BlueString(route))
 	}
+}
+
+func (i *Inspector) requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// wrap response writer
+		wrw := wrapResponseWriter(w)
+
+		// save start
+		start := time.Now()
+
+		// call next handler
+		next.ServeHTTP(wrw, r)
+
+		// get request duration
+		duration := time.Since(start).String()
+
+		// log request
+		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", r.Method), r.URL.Path, color.MagentaString("%d", wrw.Status()), duration)
+	})
 }
 
 type wrappedResponseWriter struct {
