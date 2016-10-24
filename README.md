@@ -10,7 +10,7 @@
 
 **An idiomatic Go framework for building Ember.js compatible APIs.**
 
-[Go on Fire](https://gonfire.org) is built on top of the powerful [echo](https://github.com/labstack/echo) HTTP routing and server framework, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/gonfire/jsonapi) library, uses the very stable [mgo](https://github.com/go-mgo/mgo) [MongoDB](https://www.mongodb.com) driver for persisting resources and leverages the [fosite](https://github.com/ory-am/fosite) library to provide out of the box support for [OAuth2](https://oauth.net/2/).
+[Go on Fire](https://gonfire.org) is built on top of the wonderful [chi](https://github.com/pressly/chi) router, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/gonfire/jsonapi) library, uses the very stable [mgo](https://github.com/go-mgo/mgo) [MongoDB](https://www.mongodb.com) driver for persisting resources and leverages the dedicated [oauth2](https://github.com/gonfire/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/).
 
 The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
 

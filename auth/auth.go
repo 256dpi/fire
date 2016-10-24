@@ -8,7 +8,7 @@ import (
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/oauth2/hmacsha"
-	"github.com/labstack/echo"
+	"github.com/pressly/chi"
 )
 
 var _ fire.RoutableComponent = (*Authenticator)(nil)
@@ -47,9 +47,9 @@ func New(store *model.Store, policy *Policy, prefix string) *Authenticator {
 }
 
 // Register implements the fire.RoutableComponent interface.
-func (a *Authenticator) Register(router *echo.Echo) {
-	//router.POST(a.prefix+"/token", a.TokenEndpoint)
-	//router.POST(a.prefix+"/authorize", a.AuthorizationEndpoint)
+func (a *Authenticator) Register(_ *fire.Application, router chi.Router) {
+	router.HandleFunc(a.prefix+"/token", a.TokenEndpoint)
+	router.HandleFunc(a.prefix+"/authorize", a.AuthorizationEndpoint)
 }
 
 // NewKeyAndSignature returns a new key with a matching signature that can be
