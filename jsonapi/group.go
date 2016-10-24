@@ -42,7 +42,7 @@ func (g *Group) Add(controllers ...*Controller) {
 }
 
 // Register implements the fire.RoutableComponent interface.
-func (g *Group) Register(router chi.Router) {
+func (g *Group) Register(_ *fire.Application, router chi.Router) {
 	for _, controller := range g.controllers {
 		controller.register(router, g.prefix)
 	}

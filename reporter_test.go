@@ -21,6 +21,6 @@ func TestReporter(t *testing.T) {
 	buf := new(bytes.Buffer)
 	r := NewReporter(buf)
 
-	r.Report(errors.New("foo"))
+	r.Report(nil, errors.New("foo"))
 	assert.Equal(t, "Error: foo", buf.String())
 }

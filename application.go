@@ -31,7 +31,7 @@ type RoutableComponent interface {
 
 	// Register will be called by the application with the chi router on
 	// which the called components can register top level routes.
-	Register(router chi.Router)
+	Register(*Application, chi.Router)
 }
 
 // A BootableComponent is an extended component with additional methods for
@@ -41,11 +41,11 @@ type BootableComponent interface {
 
 	// Setup will be called before the applications starts and allows further
 	// initialization.
-	Setup() error
+	Setup(*Application) error
 
 	// Teardown will be called after applications has stopped and allows proper
 	// cleanup.
-	Teardown() error
+	Teardown(*Application) error
 }
 
 // A Phase is used in conjunction with a InspectorComponent and denotes a phase
@@ -94,8 +94,8 @@ type InspectorComponent interface {
 	Component
 
 	// Before is called by the application before the specified phase is
-	// initiated by the passed application.
-	Before(phase Phase, app *Application)
+	// initiated by the application.
+	Before(*Application, Phase)
 }
 
 // A ReporterComponent is an extended component that is responsible for
@@ -104,7 +104,7 @@ type ReporterComponent interface {
 	Component
 
 	// Report is called by the application on every occurring error.
-	Report(err error) error
+	Report(*Application, error) error
 }
 
 // An Application provides a simple way to combine multiple components.
@@ -226,7 +226,7 @@ func (a *Application) Report(err error) {
 	// iterate over all reporters
 	for _, r := range a.reporters {
 		// attempt to report error
-		rErr := r.Report(err)
+		rErr := r.Report(a, err)
 		if rErr != nil {
 			name := r.Describe().Name
 			panic(fmt.Sprintf("%s returned '%s' while reporting '%s'", name, rErr, err))
@@ -322,22 +322,22 @@ func (a *Application) runner() error {
 func (a *Application) boot() error {
 	// signal before registration event
 	for _, i := range a.inspectors {
-		i.Before(Registration, a)
+		i.Before(a, Registration)
 	}
 
 	// register routable components
 	for _, c := range a.routables {
-		c.Register(a.router)
+		c.Register(a, a.router)
 	}
 
 	// signal before setup event
 	for _, i := range a.inspectors {
-		i.Before(Setup, a)
+		i.Before(a, Setup)
 	}
 
 	// setup bootable components
 	for _, c := range a.bootables {
-		err := c.Setup()
+		err := c.Setup(a)
 		if err != nil {
 			return err
 		}
@@ -345,7 +345,7 @@ func (a *Application) boot() error {
 
 	// signal before run event
 	for _, i := range a.inspectors {
-		i.Before(Run, a)
+		i.Before(a, Run)
 	}
 
 	// prepare error
@@ -371,12 +371,12 @@ func (a *Application) boot() error {
 
 	// signal after run event
 	for _, i := range a.inspectors {
-		i.Before(Teardown, a)
+		i.Before(a, Teardown)
 	}
 
 	// teardown bootable components
 	for _, c := range a.bootables {
-		err := c.Teardown()
+		err := c.Teardown(a)
 		if err != nil {
 			return err
 		}
@@ -384,7 +384,7 @@ func (a *Application) boot() error {
 
 	// signal after teardown event
 	for _, i := range a.inspectors {
-		i.Before(Termination, a)
+		i.Before(a, Termination)
 	}
 
 	return nil

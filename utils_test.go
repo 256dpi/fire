@@ -2,6 +2,7 @@ package fire
 
 import (
 	"crypto/tls"
+	"errors"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -25,7 +26,7 @@ func (c *testComponent) Describe() ComponentInfo {
 	}
 }
 
-func (c *testComponent) Register(router chi.Router) {
+func (c *testComponent) Register(app *Application, router chi.Router) {
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
@@ -34,22 +35,26 @@ func (c *testComponent) Register(router chi.Router) {
 		w.Write([]byte("OK"))
 	})
 
+	router.Get("/error", func(w http.ResponseWriter, r *http.Request) {
+		app.Report(errors.New("error"))
+	})
+
 	router.Get("/unauthorized", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
 }
 
-func (c *testComponent) Setup() error {
+func (c *testComponent) Setup(_ *Application) error {
 	c.setupCalled = true
 	return nil
 }
 
-func (c *testComponent) Teardown() error {
+func (c *testComponent) Teardown(_ *Application) error {
 	c.teardownCalled = true
 	return nil
 }
 
-func (c *testComponent) Report(err error) error {
+func (c *testComponent) Report(_ *Application, err error) error {
 	c.reportedError = err
 	return nil
 }
@@ -62,7 +67,7 @@ func (r *failingReporter) Describe() ComponentInfo {
 	}
 }
 
-func (r *failingReporter) Report(err error) error {
+func (r *failingReporter) Report(_ *Application, err error) error {
 	return err
 }
 

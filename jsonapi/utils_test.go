@@ -47,7 +47,7 @@ func buildServer(controllers ...*Controller) chi.Router {
 
 	group := NewGroup("")
 	group.Add(controllers...)
-	group.Register(router)
+	group.Register(nil, router)
 
 	return router
 }

@@ -33,7 +33,7 @@ func (r *Reporter) Describe() ComponentInfo {
 }
 
 // Report implements the ReporterComponent interface.
-func (r *Reporter) Report(err error) error {
+func (r *Reporter) Report(_ *Application, err error) error {
 	fmt.Fprintf(r.Writer, "Error: %s", err)
 	return nil
 }

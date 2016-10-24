@@ -3,12 +3,13 @@ package fire
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
 	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
 )
 
 // A ComponentInfo is returned by a component to describe itself.
@@ -48,13 +49,32 @@ func (i *Inspector) Describe() ComponentInfo {
 }
 
 // Register implements the RoutableComponent interface.
-func (i *Inspector) Register(router chi.Router) {
-	router.Use(middleware.Logger)
+func (i *Inspector) Register(_ *Application, router chi.Router) {
+	router.Use(i.Logger)
+}
+
+func (i *Inspector) Logger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// wrap response writer
+		wrw := wrapResponseWriter(w)
+
+		// save start
+		start := time.Now()
+
+		// call next handler
+		next.ServeHTTP(wrw, r)
+
+		// get request duration
+		duration := time.Since(start).String()
+
+		// log request
+		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", r.Method), r.URL.Path, color.MagentaString("%d", wrw.Status()), duration)
+	})
 }
 
 // Before implements the InspectorComponent interface.
-func (i *Inspector) Before(stage Phase, app *Application) {
-	switch stage {
+func (i *Inspector) Before(app *Application, phase Phase) {
+	switch phase {
 	case Registration:
 		fmt.Fprintln(i.Writer, color.YellowString("==> Application booting..."))
 
@@ -79,7 +99,7 @@ func (i *Inspector) Before(stage Phase, app *Application) {
 }
 
 // Report implements the ReporterComponent interface.
-func (i *Inspector) Report(err error) error {
+func (i *Inspector) Report(_ *Application, err error) error {
 	fmt.Fprintf(i.Writer, color.RedString("   ERR  \"%s\"\n", err))
 	return nil
 }
@@ -129,4 +149,34 @@ func (i *Inspector) printRoutes(router chi.Router) {
 	for _, route := range routes {
 		fmt.Fprintln(i.Writer, color.BlueString(route))
 	}
+}
+
+type wrappedResponseWriter struct {
+	status int
+	http.ResponseWriter
+}
+
+func wrapResponseWriter(res http.ResponseWriter) *wrappedResponseWriter {
+	// default the status code to 200
+	return &wrappedResponseWriter{200, res}
+}
+
+func (w wrappedResponseWriter) Status() int {
+	return w.status
+}
+
+func (w wrappedResponseWriter) Header() http.Header {
+	return w.ResponseWriter.Header()
+}
+
+func (w wrappedResponseWriter) Write(data []byte) (int, error) {
+	return w.ResponseWriter.Write(data)
+}
+
+func (w wrappedResponseWriter) WriteHeader(statusCode int) {
+	// Store the status code
+	w.status = statusCode
+
+	// Write the status code onward.
+	w.ResponseWriter.WriteHeader(statusCode)
 }
