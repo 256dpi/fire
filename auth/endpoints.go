@@ -40,13 +40,6 @@ func (a *Authenticator) AuthorizationEndpoint(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// show notice for a GET request
-	if r.Method == "GET" {
-		w.Write([]byte("This authentication server does not provide an authorization form.\n" +
-			"Please submit the resource owners username and password in a POST request."))
-		return
-	}
-
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
@@ -61,6 +54,12 @@ func (a *Authenticator) AuthorizationEndpoint(w http.ResponseWriter, r *http.Req
 }
 
 func (a *Authenticator) HandleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
+	// check request method
+	if r.Method == "GET" {
+		oauth2.RedirectError(w, req.RedirectURI, true, oauth2.InvalidRequest(req.State, "Unallowed request method"))
+		return
+	}
+
 	// get credentials
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
@@ -128,12 +127,6 @@ func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
 		oauth2.WriteError(w, oauth2.InvalidClient(oauth2.NoState, "Unknown client"))
 		return
 	}
-
-	//// authenticate client
-	//if client.confidential && !sameHash(client.secret, req.ClientSecret) {
-	//	oauth2.WriteError(w, oauth2.InvalidClient(oauth2.NoState, "Unknown client"))
-	//	return
-	//}
 
 	// handle grant type
 	switch req.GrantType {
