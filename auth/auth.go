@@ -3,10 +3,15 @@
 package auth
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
+	"github.com/gonfire/oauth2"
+	"github.com/gonfire/oauth2/bearer"
 	"github.com/gonfire/oauth2/hmacsha"
 	"github.com/pressly/chi"
 )
@@ -63,40 +68,74 @@ func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
 	return token.String(), token.SignatureString(), nil
 }
 
-/*
 // Authorize can be used to authorize a request by requiring an access token with
-// the provided scopes to be granted.
-func (a *Authenticator) Authorize(ctx echo.Context, scopes []string) error {
-	// create new session
-	session := &oauth2.HMACSession{}
+// the provided scopes to be granted. The method returns a middleware that can be
+// called before any other routes.
+func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// parse scope
+			s := oauth2.ParseScope(scope)
 
-	// get underlying http request
-	r := ctx.Request().(*standard.Request).Request
+			// parse bearer token
+			tk, res := bearer.ParseToken(r)
+			if res != nil {
+				bearer.WriteError(w, res)
+				return
+			}
 
-	// get token
-	token := fosite.AccessTokenFromRequest(r)
+			// parse token
+			token, err := hmacsha.Parse(a.Policy.Secret, tk)
+			if err != nil {
+				bearer.WriteError(w, bearer.InvalidToken("Malformed token"))
+				return
+			}
 
-	// validate request
-	_, err := a.provider.ValidateToken(contextForContext(ctx), token, fosite.AccessToken, session, scopes...)
-	if err != nil {
-		return err
+			// get token
+			accessToken, err := a.Storage.GetAccessToken(token.SignatureString())
+			if err != nil {
+				bearer.WriteError(w, err)
+				return
+			} else if accessToken == nil {
+				bearer.WriteError(w, bearer.InvalidToken("Unkown token"))
+				return
+			}
+
+			// get additional data
+			data := accessToken.GetTokenData()
+
+			// validate expiration
+			if data.ExpiresAt.Before(time.Now()) {
+				bearer.WriteError(w, bearer.InvalidToken("Expired token"))
+				return
+			}
+
+			// validate scope
+			if !data.Scope.Includes(s) {
+				bearer.WriteError(w, bearer.InsufficientScope(s.String()))
+				return
+			}
+
+			// create new context with access token
+			ctx := context.WithValue(r.Context(), "fire.oauth2.access_token", accessToken)
+
+			// call next handler
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
-
-	return nil
 }
-*/
 
 // Authorizer returns a callback that can be used to protect resources by
 // requiring an access token with the provided scopes to be granted.
-/*func (a *Authenticator) Authorizer(scopes ...string) jsonapi.Callback {
-	if len(scopes) < 1 {
-		panic("Authorizer must be called with at least one scope")
-	}
-
-	return func(ctx *jsonapi.Context) error {
-		return a.Authorize(ctx.Echo, scopes)
-	}
-}*/
+//func (a *Authenticator) Authorizer(scopes ...string) jsonapi.Callback {
+//	if len(scopes) < 1 {
+//		panic("Authorizer must be called with at least one scope")
+//	}
+//
+//	return func(ctx *jsonapi.Context) error {
+//		return a.Authorize(nil, ctx.HTTPRequest, scopes)
+//	}
+//}
 
 // Describe implements the fire.Component interface.
 func (a *Authenticator) Describe() fire.ComponentInfo {

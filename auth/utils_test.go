@@ -2,12 +2,9 @@ package auth
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gonfire/fire/model"
-	"github.com/gonfire/oauth2"
-	"github.com/gonfire/oauth2/bearer"
-	"github.com/gonfire/oauth2/hmacsha"
+	"github.com/pressly/chi"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -40,54 +37,16 @@ func getCleanStore() *model.Store {
 }
 
 func newHandler(auth *Authenticator) http.Handler {
-	requiredScope := oauth2.ParseScope("foo")
+	router := chi.NewRouter()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/oauth2/token", auth.TokenEndpoint)
-	mux.HandleFunc("/oauth2/authorize", auth.AuthorizationEndpoint)
-	mux.HandleFunc("/api/protected", func(w http.ResponseWriter, r *http.Request) {
-		// parse bearer token
-		tk, res := bearer.ParseToken(r)
-		if res != nil {
-			bearer.WriteError(w, res)
-			return
-		}
+	auth.Register(nil, router)
 
-		// parse token
-		token, err := hmacsha.Parse(auth.Policy.Secret, tk)
-		if err != nil {
-			bearer.WriteError(w, bearer.InvalidToken("Malformed token"))
-			return
-		}
+	router.With(auth.Authorize("foo")).
+		HandleFunc("/api/protected", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("OK"))
+		})
 
-		// get token
-		accessToken, err := auth.Storage.GetAccessToken(token.SignatureString())
-		if err != nil {
-			bearer.WriteError(w, err)
-			return
-		} else if accessToken == nil {
-			bearer.WriteError(w, bearer.InvalidToken("Unkown token"))
-			return
-		}
-
-		// get additional data
-		data := accessToken.GetTokenData()
-
-		// validate expiration
-		if data.ExpiresAt.Before(time.Now()) {
-			bearer.WriteError(w, bearer.InvalidToken("Expired token"))
-			return
-		}
-
-		// validate scope
-		if !data.Scope.Includes(requiredScope) {
-			bearer.WriteError(w, bearer.InsufficientScope(requiredScope.String()))
-			return
-		}
-
-		w.Write([]byte("OK"))
-	})
-	return mux
+	return router
 }
 
 func saveModel(m model.Model) model.Model {

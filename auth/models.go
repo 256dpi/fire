@@ -77,12 +77,12 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	model.Base   `json:"-" bson:",inline" fire:"applications"`
-	Name         string   `json:"name" valid:"required"`
-	Key          string   `json:"key" valid:"required"`
-	SecretHash   []byte   `json:"-" valid:"required"`
-	Scope        string   `json:"scope" valid:"required"`
-	RedirectURIs []string `json:"redirect_uris" valid:"required"`
+	model.Base  `json:"-" bson:",inline" fire:"applications"`
+	Name        string `json:"name" valid:"required"`
+	Key         string `json:"key" valid:"required"`
+	SecretHash  []byte `json:"-" valid:"required"`
+	Scope       string `json:"scope" valid:"required"`
+	RedirectURI string `json:"redirect_uri" valid:"required"`
 }
 
 // ClientIdentifier implements the Client interface.
@@ -92,13 +92,7 @@ func (a *Application) ClientIdentifier() string {
 
 // ValidRedirectURI implements the Client interface.
 func (a *Application) ValidRedirectURI(uri string) bool {
-	for _, r := range a.RedirectURIs {
-		if r == uri {
-			return true
-		}
-	}
-
-	return false
+	return uri == a.RedirectURI
 }
 
 // ValidSecret implements the Client interface.

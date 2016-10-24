@@ -35,22 +35,22 @@ func TestIntegration(t *testing.T) {
 		return true, req.Scope
 	}
 
-	auth := New(getCleanStore(), p, "auth")
+	auth := New(getCleanStore(), p, "/oauth2")
 
 	app1 := saveModel(&Application{
-		Name:         "Application 1",
-		Key:          "app1",
-		SecretHash:   mustHash("foo"),
-		Scope:        "foo",
-		RedirectURIs: []string{"http://example.com/callback1"},
+		Name:        "Application 1",
+		Key:         "app1",
+		SecretHash:  mustHash("foo"),
+		Scope:       "foo",
+		RedirectURI: "http://example.com/callback1",
 	})
 
 	saveModel(&Application{
-		Name:         "Application 2",
-		Key:          "app2",
-		SecretHash:   mustHash("foo"),
-		Scope:        "foo",
-		RedirectURIs: []string{"http://example.com/callback2"},
+		Name:        "Application 2",
+		Key:         "app2",
+		SecretHash:  mustHash("foo"),
+		Scope:       "foo",
+		RedirectURI: "http://example.com/callback2",
 	})
 
 	saveModel(&User{
