@@ -1,4 +1,4 @@
-all: fmt vet lint # test
+all: fmt vet lint test
 
 fmt:
 	go fmt .
