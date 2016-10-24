@@ -2,10 +2,10 @@ package components
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gonfire/fire"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/pressly/chi"
 )
 
 var _ fire.RoutableComponent = (*AssetServer)(nil)
@@ -35,35 +35,50 @@ func NewAssetServer(path, directory string, spaMode bool) *AssetServer {
 }
 
 // Register implements the fire.RoutableComponent interface.
-func (s *AssetServer) Register(router *echo.Echo) {
-	// create handler
-	handler := middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:  s.directory,
-		HTML5: s.spaMode,
-	})
+func (s *AssetServer) Register(_ *fire.Application, router chi.Router) {
+	// prepare prefixed path
+	prefixedPath := s.path
 
-	// no path is set directly add handler to router
+	// check empty string and non leading string
 	if s.path == "" {
-		router.Use(handler)
-		return
+		prefixedPath = "/"
+	} else if s.path[0] != '/' {
+		prefixedPath = "/" + s.path
 	}
 
-	// create group and add handler
-	router.Group(s.path).Use(handler)
+	// create dir server
+	dir := http.Dir(s.directory)
+
+	// create file server
+	fs := http.FileServer(dir)
+
+	// prepare file handler
+	srv := fs
+
+	// add a in between handler that checks for missing files and returns
+	// the directory index
+	if s.spaMode {
+		srv = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			f, err := dir.Open(r.URL.Path)
+			if err != nil {
+				r.URL.Path = "/"
+			} else if f != nil {
+				f.Close()
+			}
+
+			fs.ServeHTTP(w, r)
+		})
+	}
+
+	router.Get(prefixedPath+"*", http.StripPrefix(s.path, srv).ServeHTTP)
 }
 
 // Describe implements the fire.Component interface.
 func (s *AssetServer) Describe() fire.ComponentInfo {
-	// show root as slash
-	path := s.path
-	if path == "" {
-		path = "/"
-	}
-
 	return fire.ComponentInfo{
 		Name: "Asset Server",
 		Settings: fire.Map{
-			"Path":      path,
+			"Path":      s.path,
 			"Directory": s.directory,
 			"SPA Mode":  fmt.Sprintf("%v", s.spaMode),
 		},

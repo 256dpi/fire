@@ -3,13 +3,9 @@ package components
 import (
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/standard"
 )
 
-func testRequest(e *echo.Echo, method, path string, callback func(*httptest.ResponseRecorder, engine.Request)) {
+func testRequest(h http.Handler, method, path string, callback func(*httptest.ResponseRecorder, *http.Request)) {
 	r, err := http.NewRequest(method, path, nil)
 	if err != nil {
 		panic(err)
@@ -17,10 +13,7 @@ func testRequest(e *echo.Echo, method, path string, callback func(*httptest.Resp
 
 	rec := httptest.NewRecorder()
 
-	req := standard.NewRequest(r, nil)
-	res := standard.NewResponse(rec, nil)
+	h.ServeHTTP(rec, r)
 
-	e.ServeHTTP(req, res)
-
-	callback(rec, req)
+	callback(rec, r)
 }
