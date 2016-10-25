@@ -1,7 +1,7 @@
 package main
 
 import (
-	"os"
+	"net/http"
 
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/components"
@@ -10,6 +10,7 @@ import (
 	"github.com/gonfire/fire/auth"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/docgen"
 )
 
 type post struct {
@@ -27,13 +28,15 @@ type user struct {
 	Admin        bool   `json:"admin" valid:"required"`
 }
 
-func (u *user) OAuthIdentifier() string {
+func (u *user) ResourceOwnerIdentifier() string {
 	return "Email"
 }
 
-func (u *user) GetOAuthData() []byte {
-	return u.PasswordHash
+func (u *user) ValidPassword(password string) bool {
+	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
 }
+
+const secret = "abcd1234abcd1234"
 
 func main() {
 	// create store
@@ -46,7 +49,7 @@ func main() {
 	store.DB().C("access_tokens").RemoveAll(nil)
 
 	// create policy
-	policy := auth.DefaultPolicy([]byte(os.Getenv("SECRET")))
+	policy := auth.DefaultPolicy([]byte(secret))
 
 	// enable OAuth2 password grant
 	policy.PasswordGrant = true
@@ -54,20 +57,8 @@ func main() {
 	// provide custom user model
 	policy.ResourceOwner = &user{}
 
-	// provide custom grant strategy
-	policy.GrantStrategy = func(req *auth.GrantRequest) []string {
-		list := []string{"default"}
-
-		// always grant the admin scope to admins
-		if user, ok := req.ResourceOwner.(*user); ok && user.Admin {
-			list = append(list, "admin")
-		}
-
-		return list
-	}
-
 	// create authenticator
-	authenticator := auth.New(store, policy, "auth")
+	authenticator := auth.New(store, policy, "oauth2")
 
 	// pre hash the password
 	password, err := bcrypt.GenerateFromPassword([]byte("abcd1234"), bcrypt.DefaultCost)
@@ -141,24 +132,23 @@ func main() {
 	// create new router
 	router := chi.NewRouter()
 
-	// mount inspector
-	app.Mount(fire.DefaultInspector())
+	router.Use(fire.RequestLogger)
 
 	// mount protector
-	app.Mount(components.DefaultProtector())
+	//app.Mount(components.DefaultProtector())
 
 	// mount authenticator
-	app.Mount(authenticator)
+	router.Handle("/oauth2", authenticator)
 
-	// mount group
-	app.Mount(group)
+	// mount controller group
+	router.Handle("/api", group)
 
 	// mount ember server
-	app.Mount(components.DefaultAssetServer("./ui/dist"))
+	router.Handle("/*", components.DefaultAssetServer("../.test/assets"))
+
+	// print routes
+	docgen.PrintRoutes(router)
 
 	// run app
-	app.StartSecure("localhost:8080", "ssl/server.crt", "ssl/server.key")
-
-	// yield app
-	app.Yield()
+	http.ListenAndServe("localhost:8080", router)
 }

@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"crypto/tls"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -19,13 +18,7 @@ func freeAddr() string {
 }
 
 func testRequest(url string) (string, *http.Response, error) {
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}}
-
-	res, err := client.Get(url)
+	res, err := http.Get(url)
 	if err != nil {
 		return "", nil, err
 	}
