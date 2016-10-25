@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"github.com/gonfire/fire/model"
+	"github.com/gonfire/fire"
 	"github.com/gonfire/oauth2"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
@@ -18,9 +18,9 @@ type TokenData struct {
 }
 
 // Token is the interface that must be implemented to provide a custom
-// access token and refresh token model.
+// access token and refresh token fire.
 type Token interface {
-	model.Model
+	fire.Model
 
 	TokenIdentifier() string
 	GetTokenData() *TokenData
@@ -32,7 +32,7 @@ type Token interface {
 
 // Credential is the built-in model used to store tokens.
 type Credential struct {
-	model.Base      `json:"-" bson:",inline" fire:"credentials"`
+	fire.Base       `json:"-" bson:",inline" fire:"credentials"`
 	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           string         `json:"scope" valid:"required" bson:"scope"`
@@ -66,9 +66,9 @@ func (c *Credential) SetTokenData(data *TokenData) {
 }
 
 // Client is the interface that must be implemented to provide a custom client
-// model.
+// fire.
 type Client interface {
-	model.Model
+	fire.Model
 
 	ClientIdentifier() string
 	ValidRedirectURI(string) bool
@@ -77,7 +77,7 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	model.Base  `json:"-" bson:",inline" fire:"applications"`
+	fire.Base   `json:"-" bson:",inline" fire:"applications"`
 	Name        string `json:"name" valid:"required"`
 	Key         string `json:"key" valid:"required"`
 	SecretHash  []byte `json:"-" valid:"required"`
@@ -101,9 +101,9 @@ func (a *Application) ValidSecret(secret string) bool {
 }
 
 // ResourceOwner is the interface that must be implemented to provide a custom
-// resource owner model.
+// resource owner fire.
 type ResourceOwner interface {
-	model.Model
+	fire.Model
 
 	ResourceOwnerIdentifier() string
 	ValidPassword(string) bool
@@ -111,7 +111,7 @@ type ResourceOwner interface {
 
 // User is the built-in model used to store resource owners.
 type User struct {
-	model.Base   `json:"-" bson:",inline" fire:"users"`
+	fire.Base    `json:"-" bson:",inline" fire:"users"`
 	Name         string `json:"name" valid:"required"`
 	Email        string `json:"email" valid:"required"`
 	PasswordHash []byte `json:"-" valid:"required"`

@@ -18,3 +18,4 @@ setup:
 
 test: setup
 	go test -cover .
+	go test -cover ./auth

@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gonfire/fire/jsonapi"
-	"github.com/gonfire/fire/model"
+	"github.com/gonfire/fire"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
 	"github.com/gonfire/oauth2/hmacsha"
@@ -29,17 +28,17 @@ type Authenticator struct {
 }
 
 // New constructs a new Authenticator.
-func New(store *model.Store, policy *Policy, prefix string) *Authenticator {
+func New(store *fire.Store, policy *Policy, prefix string) *Authenticator {
 	// check secret
 	if len(policy.Secret) < 16 {
 		panic("Secret must be longer than 16 characters")
 	}
 
 	// initialize models
-	model.Init(policy.AccessToken)
-	model.Init(policy.RefreshToken)
-	model.Init(policy.Client)
-	model.Init(policy.ResourceOwner)
+	fire.Init(policy.AccessToken)
+	fire.Init(policy.RefreshToken)
+	fire.Init(policy.Client)
+	fire.Init(policy.ResourceOwner)
 
 	// create storage
 	storage := NewStorage(policy, store)
@@ -143,15 +142,15 @@ func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler 
 //
 // Note: Authorizer requires that the request has already been processed by
 // Authorize.
-func (a *Authenticator) Authorizer(scope string) jsonapi.Callback {
-	return func(ctx *jsonapi.Context) error {
+func (a *Authenticator) Authorizer(scope string) fire.Callback {
+	return func(ctx *fire.Context) error {
 		// parse scope
 		s := oauth2.ParseScope(scope)
 
 		// get access token
 		accessToken := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
 		if accessToken == nil {
-			return jsonapi.Fatal(errors.New("missing access token"))
+			return fire.Fatal(errors.New("missing access token"))
 		}
 
 		// validate scope

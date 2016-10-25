@@ -8,10 +8,14 @@ import (
 	"time"
 )
 
+// DefaultRequestLogger constructs a handler that logs incoming requests to
+// the operating systems standard error output.
 func DefaultRequestLogger() func(http.Handler) http.Handler {
 	return NewRequestLogger(os.Stderr)
 }
 
+// NewRequestLogger constructs a handler that logs incoming requests to the
+// specified writer output.
 func NewRequestLogger(out io.Writer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

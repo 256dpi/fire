@@ -1,17 +1,17 @@
 package auth
 
 import (
-	"github.com/gonfire/fire/model"
+	"github.com/gonfire/fire"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type Storage struct {
 	policy *Policy
-	store  *model.Store
+	store  *fire.Store
 }
 
-func NewStorage(policy *Policy, store *model.Store) *Storage {
+func NewStorage(policy *Policy, store *fire.Store) *Storage {
 	return &Storage{
 		policy: policy,
 		store:  store,
@@ -42,7 +42,7 @@ func (s *Storage) GetClient(id string) (Client, error) {
 	}
 
 	// initialize model
-	client := model.Init(obj).(Client)
+	client := fire.Init(obj).(Client)
 
 	return client, nil
 }
@@ -71,7 +71,7 @@ func (s *Storage) GetResourceOwner(id string) (ResourceOwner, error) {
 	}
 
 	// initialize model
-	resourceOwner := model.Init(obj).(ResourceOwner)
+	resourceOwner := fire.Init(obj).(ResourceOwner)
 
 	return resourceOwner, nil
 }
@@ -108,7 +108,7 @@ func (s *Storage) getToken(tokenModel Token, signature string) (Token, error) {
 	}
 
 	// initialize access token
-	accessToken := model.Init(obj).(Token)
+	accessToken := fire.Init(obj).(Token)
 
 	return accessToken, nil
 }

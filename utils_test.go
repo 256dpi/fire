@@ -1,9 +1,9 @@
 package fire
 
 import (
-	"strings"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"gopkg.in/mgo.v2/bson"
 )
