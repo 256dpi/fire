@@ -2,20 +2,8 @@ package fire
 
 import (
 	"io/ioutil"
-	"net"
 	"net/http"
 )
-
-func freeAddr() string {
-	listener, err := net.Listen("tcp", ":")
-	if err != nil {
-		panic(err)
-	}
-
-	listener.Close()
-
-	return listener.Addr().String()
-}
 
 func testRequest(url string) (string, *http.Response, error) {
 	res, err := http.Get(url)

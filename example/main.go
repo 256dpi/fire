@@ -3,14 +3,12 @@ package main
 import (
 	"net/http"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/components"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/fire/auth"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/docgen"
+	"github.com/gonfire/fire"
 )
 
 type post struct {
@@ -58,7 +56,7 @@ func main() {
 	policy.ResourceOwner = &user{}
 
 	// create authenticator
-	authenticator := auth.New(store, policy, "oauth2")
+	authenticator := auth.New(store, policy, "/oauth2/")
 
 	// pre hash the password
 	password, err := bcrypt.GenerateFromPassword([]byte("abcd1234"), bcrypt.DefaultCost)
@@ -103,7 +101,7 @@ func main() {
 	}
 
 	// create group
-	group := jsonapi.NewGroup("api")
+	group := jsonapi.NewGroup("/api/")
 
 	// register post controller
 	group.Add(&jsonapi.Controller{
@@ -130,24 +128,25 @@ func main() {
 	})
 
 	// create new router
-	router := chi.NewRouter()
-
-	router.Use(fire.RequestLogger)
+	router := http.NewServeMux()
 
 	// mount protector
 	//app.Mount(components.DefaultProtector())
 
+	// get request logger
+	logger := fire.DefaultRequestLogger()
+
+	// create authorizer
+	authorizer := authenticator.Authorize("")
+
 	// mount authenticator
-	router.Handle("/oauth2", authenticator)
+	router.Handle("/oauth2/", logger(authenticator))
 
 	// mount controller group
-	router.Handle("/api", group)
+	router.Handle("/api/", logger(authorizer(group)))
 
 	// mount ember server
-	router.Handle("/*", components.DefaultAssetServer("../.test/assets"))
-
-	// print routes
-	docgen.PrintRoutes(router)
+	router.Handle("/", components.DefaultAssetServer("../.test/assets"))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)

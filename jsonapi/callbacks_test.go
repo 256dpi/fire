@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
@@ -55,7 +54,7 @@ func TestModelValidator(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
-	validator := ProtectedAttributesValidator(fire.Map{
+	validator := ProtectedAttributesValidator(map[string]interface{}{
 		"title": "Default Title",
 	})
 
@@ -79,7 +78,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	store := getCleanStore()
 
-	validator := ProtectedAttributesValidator(fire.Map{
+	validator := ProtectedAttributesValidator(map[string]interface{}{
 		"title": "Default Title",
 	})
 
@@ -111,7 +110,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	store := getCleanStore()
 
 	// create validator
-	validator := DependentResourcesValidator(fire.Map{
+	validator := DependentResourcesValidator(map[string]string{
 		"comments": "post_id",
 		"users":    "author_id",
 	})
@@ -144,7 +143,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	store := getCleanStore()
 
 	// create validator
-	validator := VerifyReferencesValidator(fire.Map{
+	validator := VerifyReferencesValidator(map[string]string{
 		"parent":  "comments",
 		"post_id": "posts",
 	})
@@ -189,7 +188,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	store := getCleanStore()
 
 	// create validator
-	validator := MatchingReferencesValidator("comments", "parent", fire.Map{
+	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
 		"post_id": "post_id",
 	})
 

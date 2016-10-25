@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/gonfire/fire"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -90,7 +89,7 @@ func ModelValidator() Callback {
 //			"title": "A fixed title",
 //		})
 //
-func ProtectedAttributesValidator(attributes fire.Map) Callback {
+func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -137,7 +136,7 @@ func ProtectedAttributesValidator(attributes fire.Map) Callback {
 //			"comments": "user_id",
 // 		})
 //
-func DependentResourcesValidator(resources fire.Map) Callback {
+func DependentResourcesValidator(resources map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Action != Delete {
@@ -148,7 +147,7 @@ func DependentResourcesValidator(resources fire.Map) Callback {
 		for coll, field := range resources {
 			// count referencing documents
 			n, err := ctx.Store.DB().C(coll).Find(bson.M{
-				field.(string): ctx.Query["_id"],
+				field: ctx.Query["_id"],
 			}).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
@@ -176,7 +175,7 @@ func DependentResourcesValidator(resources fire.Map) Callback {
 //			"user_id": "users",
 // 		})
 //
-func VerifyReferencesValidator(references fire.Map) Callback {
+func VerifyReferencesValidator(references map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -194,7 +193,7 @@ func VerifyReferencesValidator(references fire.Map) Callback {
 			}
 
 			// count entities in database
-			n, err := ctx.Store.DB().C(collection.(string)).FindId(id).Limit(1).Count()
+			n, err := ctx.Store.DB().C(collection).FindId(id).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
@@ -221,7 +220,7 @@ func VerifyReferencesValidator(references fire.Map) Callback {
 // 			"user_id": "user_id",
 // 		})
 //
-func MatchingReferencesValidator(collection, reference string, matcher fire.Map) Callback {
+func MatchingReferencesValidator(collection, reference string, matcher map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {
@@ -243,7 +242,7 @@ func MatchingReferencesValidator(collection, reference string, matcher fire.Map)
 
 		// add other references
 		for targetField, modelField := range matcher {
-			id := ctx.Model.MustGet(modelField.(string))
+			id := ctx.Model.MustGet(modelField)
 
 			// abort if reference is missing
 			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
