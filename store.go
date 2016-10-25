@@ -1,4 +1,4 @@
-package model
+package fire
 
 import "gopkg.in/mgo.v2"
 

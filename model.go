@@ -1,5 +1,4 @@
-// Package model implements a basic model abstraction for structs.
-package model
+package fire
 
 import (
 	"reflect"

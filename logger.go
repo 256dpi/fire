@@ -28,7 +28,7 @@ func NewRequestLogger(out io.Writer) func(http.Handler) http.Handler {
 			duration := time.Since(start).String()
 
 			// log request
-			fmt.Fprintf(out, "[%s] (%d) %s - %s\n", r.Method, wrw.Status(), r.URL.Path, duration)
+			fmt.Fprintf(out, "[%s] (%d) %s - %s\n", r.Method, wrw.status, r.URL.Path, duration)
 		})
 	}
 }
@@ -43,19 +43,11 @@ func wrapResponseWriter(res http.ResponseWriter) *wrappedResponseWriter {
 	return &wrappedResponseWriter{200, res}
 }
 
-func (w wrappedResponseWriter) Status() int {
-	return w.status
-}
-
-func (w wrappedResponseWriter) Header() http.Header {
-	return w.ResponseWriter.Header()
-}
-
-func (w wrappedResponseWriter) Write(data []byte) (int, error) {
+func (w *wrappedResponseWriter) Write(data []byte) (int, error) {
 	return w.ResponseWriter.Write(data)
 }
 
-func (w wrappedResponseWriter) WriteHeader(statusCode int) {
+func (w *wrappedResponseWriter) WriteHeader(statusCode int) {
 	// Store the status code
 	w.status = statusCode
 
