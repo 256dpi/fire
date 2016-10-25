@@ -9,6 +9,7 @@ import (
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/fire/auth"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/pressly/chi"
 )
 
 type post struct {
@@ -137,8 +138,8 @@ func main() {
 		Validator:  jsonapi.ModelValidator(),
 	})
 
-	// prepare app
-	app := fire.New()
+	// create new router
+	router := chi.NewRouter()
 
 	// mount inspector
 	app.Mount(fire.DefaultInspector())

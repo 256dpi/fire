@@ -5,20 +5,16 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/jsonapi"
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
 	"github.com/gonfire/oauth2/hmacsha"
-	"github.com/pressly/chi"
 )
-
-var _ fire.RoutableComponent = (*Authenticator)(nil)
 
 const AccessTokenContextKey = "fire.oauth2.access_token"
 
@@ -55,12 +51,6 @@ func New(store *model.Store, policy *Policy, prefix string) *Authenticator {
 	}
 }
 
-// Register implements the fire.RoutableComponent interface.
-func (a *Authenticator) Register(_ *fire.Application, router chi.Router) {
-	router.HandleFunc(a.prefix+"/token", a.TokenEndpoint)
-	router.HandleFunc(a.prefix+"/authorize", a.AuthorizationEndpoint)
-}
-
 // NewKeyAndSignature returns a new key with a matching signature that can be
 // used to issue custom access tokens.
 func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
@@ -70,6 +60,25 @@ func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
 	}
 
 	return token.String(), token.SignatureString(), nil
+}
+
+func (a *Authenticator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// trim and split path
+	s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, a.prefix), "/"), "/")
+
+	// try to call the controllers general handler
+	if len(s) > 0 {
+		if s[0] == "token" {
+			a.TokenEndpoint(w, r)
+			return
+		} else if s[0] == "authorize" {
+			a.AuthorizationEndpoint(w, r)
+			return
+		}
+	}
+
+	// write not found error
+	w.WriteHeader(http.StatusNotFound)
 }
 
 // Authorize can be used to authorize a request by requiring an access token with
@@ -151,24 +160,5 @@ func (a *Authenticator) Authorizer(scope string) jsonapi.Callback {
 		}
 
 		return nil
-	}
-}
-
-// Describe implements the fire.Component interface.
-func (a *Authenticator) Describe() fire.ComponentInfo {
-	return fire.ComponentInfo{
-		Name: "Authenticator",
-		Settings: fire.Map{
-			"Prefix":                         a.prefix,
-			"Allow Password Grant":           fmt.Sprintf("%v", a.Policy.PasswordGrant),
-			"Allow Client Credentials Grant": fmt.Sprintf("%v", a.Policy.ClientCredentialsGrant),
-			"Allow Implicit Grant":           fmt.Sprintf("%v", a.Policy.ImplicitGrant),
-			"Access Token Lifespan":          a.Policy.AccessTokenLifespan.String(),
-			"Refresh Token Lifespan":         a.Policy.RefreshTokenLifespan.String(),
-			"Access Token Model":             a.Policy.AccessToken.Meta().Name,
-			"Refresh Token Model":            a.Policy.RefreshToken.Meta().Name,
-			"Client Model":                   a.Policy.Client.Meta().Name,
-			"Resource Owner Model":           a.Policy.ResourceOwner.Meta().Name,
-		},
 	}
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
-	"github.com/pressly/chi"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -50,42 +49,7 @@ type Controller struct {
 	group *Group
 }
 
-func (c *Controller) register(router chi.Router, prefix string) {
-	pluralName := c.Model.Meta().PluralName
-
-	// add basic operations
-	router.Get(prefix+"/"+pluralName, c.generalHandler)
-	router.Post(prefix+"/"+pluralName, c.generalHandler)
-	router.Get(prefix+"/"+pluralName+"/:id", c.generalHandler)
-	router.Patch(prefix+"/"+pluralName+"/:id", c.generalHandler)
-	router.Delete(prefix+"/"+pluralName+"/:id", c.generalHandler)
-
-	// process all relationships
-	for _, field := range c.Model.Meta().Fields {
-		// skip if empty
-		if field.RelName == "" {
-			continue
-		}
-
-		// get name
-		name := field.RelName
-
-		// add relationship queries
-		router.Get(prefix+"/"+pluralName+"/:id/"+name, c.generalHandler)
-		router.Get(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-
-		// add relationship management operations
-		if field.ToOne || field.ToMany {
-			router.Patch(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-		}
-		if field.ToMany {
-			router.Post(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-			router.Delete(prefix+"/"+pluralName+"/:id/relationships/"+name, c.generalHandler)
-		}
-	}
-}
-
-func (c *Controller) generalHandler(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, c.group.prefix)
 	if err != nil {

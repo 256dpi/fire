@@ -1,66 +1,11 @@
 package fire
 
-import (
-	"bytes"
-	"net/http"
-	"os"
-	"testing"
+import "testing"
 
-	"github.com/stretchr/testify/assert"
-)
+func TestPrintRoutes(t *testing.T) {
 
-func TestDefaultInspector(t *testing.T) {
-	i := DefaultInspector()
-	assert.Equal(t, os.Stdout, i.Writer)
 }
 
-func TestInspector(t *testing.T) {
-	app := New()
-	buf := new(bytes.Buffer)
+func TestRequestLogger(t *testing.T) {
 
-	app.Mount(NewInspector(buf))
-	app.Mount(&testComponent{})
-
-	done, base := runApp(app)
-
-	_, err := http.Get(base + "/test")
-	assert.NoError(t, err)
-
-	close(done)
-
-	assert.Contains(t, buf.String(), "Application booting...")
-	assert.Contains(t, buf.String(), "GET  /foo")
-	assert.Contains(t, buf.String(), "Application is ready to go!")
-	assert.Contains(t, buf.String(), "/test")
-}
-
-func TestInspectorError(t *testing.T) {
-	app := New()
-	buf := new(bytes.Buffer)
-
-	app.Mount(NewInspector(buf))
-	app.Mount(&testComponent{})
-
-	done, base := runApp(app)
-
-	_, err := http.Get(base + "/error")
-	assert.NoError(t, err)
-
-	close(done)
-
-	assert.Contains(t, buf.String(), `ERR  "error"`)
-}
-
-func TestInspectorComponent(t *testing.T) {
-	app := New()
-	buf := new(bytes.Buffer)
-
-	app.Mount(NewInspector(buf))
-	app.Mount(&testComponent{})
-
-	done, _ := runApp(app)
-	close(done)
-
-	assert.Contains(t, buf.String(), "testComponent")
-	assert.Contains(t, buf.String(), "foo: bar")
 }

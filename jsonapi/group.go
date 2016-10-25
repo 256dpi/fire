@@ -1,14 +1,12 @@
 package jsonapi
 
 import (
+	"net/http"
 	"strings"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/model"
-	"github.com/pressly/chi"
+	"github.com/gonfire/jsonapi"
 )
-
-var _ fire.RoutableComponent = (*Group)(nil)
 
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
@@ -41,28 +39,18 @@ func (g *Group) Add(controllers ...*Controller) {
 	}
 }
 
-// Register implements the fire.RoutableComponent interface.
-func (g *Group) Register(_ *fire.Application, router chi.Router) {
-	for _, controller := range g.controllers {
-		controller.register(router, g.prefix)
-	}
-}
+func (g *Group) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// trim and split path
+	s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, g.prefix), "/"), "/")
 
-// Describe implements the fire.Component interface.
-func (g *Group) Describe() fire.ComponentInfo {
-	// prepare resource names
-	var names []string
-
-	// add model names
-	for _, controller := range g.controllers {
-		names = append(names, controller.Model.Meta().PluralName)
+	// try to call the controllers general handler
+	if len(s) > 0 {
+		if controller, ok := g.controllers[s[0]]; ok {
+			controller.ServeHTTP(w, r)
+			return
+		}
 	}
 
-	return fire.ComponentInfo{
-		Name: "JSON API Group",
-		Settings: fire.Map{
-			"Prefix":    g.prefix,
-			"Resources": strings.Join(names, ", "),
-		},
-	}
+	// write not found error
+	jsonapi.WriteError(w, jsonapi.NotFound("Resource not found"))
 }

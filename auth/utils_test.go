@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gonfire/fire/model"
-	"github.com/pressly/chi"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -37,14 +36,17 @@ func getCleanStore() *model.Store {
 }
 
 func newHandler(auth *Authenticator) http.Handler {
-	router := chi.NewRouter()
+	router := http.NewServeMux()
 
-	auth.Register(nil, router)
+	router.Handle("/oauth2", auth)
 
-	router.With(auth.Authorize("foo")).
-		HandleFunc("/api/protected", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("OK"))
-		})
+	authorizer := auth.Authorize("foo")
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
+	})
+
+	router.Handle("/api/protected", authorizer(handler))
 
 	return router
 }

@@ -4,11 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gonfire/fire"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/hmacsha"
 	"github.com/gonfire/oauth2/spec"
-	"github.com/stretchr/testify/assert"
 )
 
 var testSecret = []byte("abcd1234abcd1234")
@@ -114,7 +112,7 @@ func TestIntegration(t *testing.T) {
 	config.ValidScope = "foo bar"
 	config.ExceedingScope = "foo bar baz"
 
-	config.ExpectedExpireIn = int(auth.Policy.AccessTokenLifespan / time.Second)
+	config.ExpectedExpiresIn = int(auth.Policy.AccessTokenLifespan / time.Second)
 
 	config.InvalidToken = "invalid"
 	config.UnknownToken = unknownToken.String()
@@ -136,27 +134,4 @@ func TestIntegration(t *testing.T) {
 	}
 
 	spec.Run(t, config)
-}
-
-func TestAuthenticatorInspect(t *testing.T) {
-	p := DefaultPolicy(testSecret)
-	p.PasswordGrant = true
-
-	a := New(getCleanStore(), p, "auth")
-
-	assert.Equal(t, fire.ComponentInfo{
-		Name: "Authenticator",
-		Settings: fire.Map{
-			"Prefix":                         "auth",
-			"Allow Password Grant":           "true",
-			"Allow Client Credentials Grant": "false",
-			"Allow Implicit Grant":           "false",
-			"Access Token Lifespan":          "1h0m0s",
-			"Refresh Token Lifespan":         "168h0m0s",
-			"Access Token Model":             "auth.Credential",
-			"Refresh Token Model":            "auth.Credential",
-			"Client Model":                   "auth.Application",
-			"Resource Owner Model":           "auth.User",
-		},
-	}, a.Describe())
 }
