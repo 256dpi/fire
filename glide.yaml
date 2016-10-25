@@ -6,12 +6,12 @@ import:
   subpackages:
   - bson
 - package: github.com/gonfire/jsonapi
-  version: ^0.4.0
+  version: ^0.5.2
+- package: github.com/gonfire/oauth2
+  version: ^0.2.1
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt
-- package: github.com/fatih/color
-  version: ^1.0.0
 - package: github.com/pressly/chi
 - package: github.com/tylerb/graceful
   version: ^1.2.13

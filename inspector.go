@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"sort"
 	"time"
+	"os"
 
-	"github.com/fatih/color"
-	"github.com/mattn/go-colorable"
 	"github.com/pressly/chi"
 )
 
@@ -31,7 +30,7 @@ type Inspector struct {
 
 // DefaultInspector creates and returns a new inspector that writes to stdout.
 func DefaultInspector() *Inspector {
-	return NewInspector(colorable.NewColorableStdout())
+	return NewInspector(os.Stdout)
 }
 
 // NewInspector creates and returns a new inspector.
@@ -57,31 +56,31 @@ func (i *Inspector) Register(_ *Application, router chi.Router) {
 func (i *Inspector) Before(app *Application, phase Phase) {
 	switch phase {
 	case Registration:
-		fmt.Fprintln(i.Writer, color.YellowString("==> Application booting..."))
+		fmt.Fprintln(i.Writer, "==> Application booting...")
 
-		fmt.Fprintln(i.Writer, color.YellowString("==> Mounted components:"))
+		fmt.Fprintln(i.Writer, "==> Mounted components:")
 		i.printComponents(app.Components())
 
-		fmt.Fprintln(i.Writer, color.YellowString("==> Registering routable components..."))
+		fmt.Fprintln(i.Writer, "==> Registering routable components...")
 	case Setup:
-		fmt.Fprintln(i.Writer, color.YellowString("==> Setting up bootable components..."))
+		fmt.Fprintln(i.Writer, "==> Setting up bootable components...")
 	case Run:
-		fmt.Fprintln(i.Writer, color.YellowString("==> Registered routes:"))
+		fmt.Fprintln(i.Writer, "==> Registered routes:")
 		i.printRoutes(app.Router())
 
-		fmt.Fprintln(i.Writer, color.YellowString("==> Application is ready to go!"))
-		fmt.Fprintln(i.Writer, color.YellowString("==> Visit: %s", app.BaseURL()))
+		fmt.Fprintln(i.Writer, "==> Application is ready to go!")
+		fmt.Fprintln(i.Writer, "==> Visit: %s", app.BaseURL())
 	case Teardown:
-		fmt.Fprintln(i.Writer, color.YellowString("==> Application is stopping..."))
-		fmt.Fprintln(i.Writer, color.YellowString("==> Terminating bootable components..."))
+		fmt.Fprintln(i.Writer, "==> Application is stopping...")
+		fmt.Fprintln(i.Writer, "==> Terminating bootable components...")
 	case Termination:
-		fmt.Fprintln(i.Writer, color.YellowString("==> Application has been terminated."))
+		fmt.Fprintln(i.Writer, "==> Application has been terminated.")
 	}
 }
 
 // Report implements the ReporterComponent interface.
 func (i *Inspector) Report(_ *Application, err error) error {
-	fmt.Fprintf(i.Writer, color.RedString("   ERR  \"%s\"\n", err))
+	fmt.Fprintf(i.Writer, "   ERR  \"%s\"\n", err)
 	return nil
 }
 
@@ -92,7 +91,7 @@ func (i *Inspector) printComponents(components []Component) {
 		info := component.Describe()
 
 		// print name
-		fmt.Fprintln(i.Writer, color.CyanString("[%s]", info.Name))
+		fmt.Fprintln(i.Writer, "[%s]", info.Name)
 
 		// prepare settings
 		var settings []string
@@ -107,7 +106,7 @@ func (i *Inspector) printComponents(components []Component) {
 
 		// print settings
 		for _, setting := range settings {
-			fmt.Fprintln(i.Writer, color.BlueString(setting))
+			fmt.Fprintln(i.Writer, setting)
 		}
 	}
 }
@@ -128,7 +127,7 @@ func (i *Inspector) printRoutes(router chi.Router) {
 
 	// print routes
 	for _, route := range routes {
-		fmt.Fprintln(i.Writer, color.BlueString(route))
+		fmt.Fprintln(i.Writer, route)
 	}
 }
 
@@ -147,7 +146,7 @@ func (i *Inspector) requestLogger(next http.Handler) http.Handler {
 		duration := time.Since(start).String()
 
 		// log request
-		fmt.Fprintf(i.Writer, "%s  %s\n   %s  %s\n", color.GreenString("%6s", r.Method), r.URL.Path, color.MagentaString("%d", wrw.Status()), duration)
+		fmt.Fprintf(i.Writer, "%6s  %s\n   %s  %s\n", r.Method, r.URL.Path, wrw.Status(), duration)
 	})
 }
 

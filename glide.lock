@@ -1,57 +1,29 @@
-hash: db3ef28d9a2b247b5670c9aad053d4719b367c529f546ea3451b9ec826bb5f13
-updated: 2016-10-20T00:31:52.591612356+02:00
+hash: cf77087276523b3b7cd973ace9471ce3117260f90c13928215ae36adbfbe1341
+updated: 2016-10-25T13:57:45.635843071+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
-- name: github.com/dgrijalva/jwt-go
-  version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
-- name: github.com/fatih/color
-  version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/gonfire/jsonapi
-  version: bc9026c0339e1d7f2686bcf0f0d764559139653c
-- name: github.com/labstack/echo
-  version: 1dcb7ba9ab8030aeb23e6e4d893a3efe0dc3d7a7
+  version: 04ab03444898bdd66c064a98b5fd699a8488688a
+- name: github.com/gonfire/oauth2
+  version: 31755df5c70a98d86286a99674a7a42563c3f418
   subpackages:
-  - context
-  - engine
-  - engine/standard
-  - log
-  - middleware
-- name: github.com/labstack/gommon
-  version: 445cf40e6de4cbef35daf3285ff5212c91e78262
-  subpackages:
-  - bytes
-  - color
-  - log
-  - random
-- name: github.com/mattn/go-colorable
-  version: 043ae16291351db8465272edf465c9f388161627
-- name: github.com/mattn/go-isatty
-  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+  - bearer
+  - hmacsha
+  - spec
 - name: github.com/mitchellh/mapstructure
-  version: a6ef2f080c66d0a2e94e97cf74f80f772855da63
+  version: f3009df150dadf309fdee4a54ed65c124afad715
 - name: github.com/pressly/chi
-  version: 2cad94402baa6eb7584258df02fed068f1502ada
-  subpackages:
-  - middleware
+  version: f1a5099f0f1da61a5c2d5c75b0376608df0e00bd
 - name: github.com/tylerb/graceful
   version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
-- name: github.com/valyala/fasttemplate
-  version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: golang.org/x/crypto
   version: a8a4eedf8c97852389ea5f2c252660d3616af041
   subpackages:
   - bcrypt
-- name: golang.org/x/net
-  version: f315505cf3349909cdf013ea56690da34e96a451
-  subpackages:
-  - context
-- name: golang.org/x/sys
-  version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
-  subpackages:
-  - unix
+  - blowfish
 - name: gopkg.in/mgo.v2
   version: 01084657862d7b12d3b10ffd0394357abf8f8bc2
   subpackages:
