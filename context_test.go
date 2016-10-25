@@ -1,9 +1,8 @@
-package jsonapi
+package fire
 
 import (
 	"testing"
 
-	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,13 +28,13 @@ func TestAction(t *testing.T) {
 func TestContextOriginal(t *testing.T) {
 	store := getCleanStore()
 
-	savedPost := model.Init(&Post{
+	savedPost := Init(&Post{
 		Title: "foo",
 	}).(*Post)
 
 	saveModel(savedPost)
 
-	post := model.Init(&Post{
+	post := Init(&Post{
 		Title: "bar",
 	}).(*Post)
 
@@ -66,7 +65,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 func TestContextOriginalNonExisting(t *testing.T) {
 	store := getCleanStore()
 
-	post := model.Init(&Post{
+	post := Init(&Post{
 		Title: "foo",
 	}).(*Post)
 

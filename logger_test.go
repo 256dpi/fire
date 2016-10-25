@@ -21,7 +21,7 @@ func TestNewRequestLogger(t *testing.T) {
 
 	handler := logger(http.HandlerFunc(endpoint))
 
-	testRequest(handler, "GET", "/foo", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	testRequest(handler, "GET", "/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusContinue, r.Code)
 		assert.Contains(t, buf.String(), "[GET] (100) /foo - ")
 	})

@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"strings"
 	"net/http"
 	"net/http/httptest"
 
@@ -9,7 +10,7 @@ import (
 
 type Post struct {
 	Base       `json:"-" bson:",inline" fire:"posts"`
-	Title      string  `json:"title" bson:"title"`
+	Title      string  `json:"title" bson:"title" valid:"required"`
 	Published  bool    `json:"published"`
 	TextBody   string  `json:"text-body" bson:"text_body"`
 	Comments   HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
@@ -29,15 +30,53 @@ type Selection struct {
 	PostIDs []bson.ObjectId `json:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
-func testRequest(h http.Handler, method, path string, callback func(*httptest.ResponseRecorder, *http.Request)) {
-	r, err := http.NewRequest(method, path, nil)
+var testStore = MustCreateStore("mongodb://0.0.0.0:27017/fire")
+
+func getCleanStore() *Store {
+	testStore.DB().C("posts").RemoveAll(nil)
+	testStore.DB().C("comments").RemoveAll(nil)
+	testStore.DB().C("selections").RemoveAll(nil)
+
+	return testStore
+}
+
+func buildServer(controllers ...*Controller) http.Handler {
+	group := NewGroup("")
+	group.Add(controllers...)
+	return group
+}
+
+func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+	r, err := http.NewRequest(method, path, strings.NewReader(payload))
 	if err != nil {
 		panic(err)
 	}
 
-	rec := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.ServeHTTP(rec, r)
+	for k, v := range headers {
+		r.Header.Set(k, v)
+	}
 
-	callback(rec, r)
+	h.ServeHTTP(w, r)
+
+	callback(w, r)
+}
+
+func saveModel(m Model) Model {
+	err := testStore.C(m).Insert(m)
+	if err != nil {
+		panic(err)
+	}
+
+	return m
+}
+
+func findLastModel(m Model) Model {
+	err := testStore.C(m).Find(nil).Sort("-_id").One(m)
+	if err != nil {
+		panic(err)
+	}
+
+	return Init(m)
 }

@@ -11,12 +11,12 @@ import (
 func TestDefaultAsset(t *testing.T) {
 	as := DefaultAssetServer(".test/assets/")
 
-	testRequest(as, "GET", "/", func(r *httptest.ResponseRecorder, _ *http.Request) {
+	testRequest(as, "GET", "/", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
 		assert.Equal(t, 200, r.Code)
 		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
 	})
 
-	testRequest(as, "GET", "/foo", func(r *httptest.ResponseRecorder, _ *http.Request) {
+	testRequest(as, "GET", "/foo", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
 		assert.Equal(t, 200, r.Code)
 		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
 	})
@@ -25,12 +25,12 @@ func TestDefaultAsset(t *testing.T) {
 func TestAssetServer(t *testing.T) {
 	as := NewAssetServer("/foo", ".test/assets/")
 
-	testRequest(as, "GET", "/foo/", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	testRequest(as, "GET", "/foo/", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, 200, r.Code)
 		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
 	})
 
-	testRequest(as, "GET", "/foo/foo", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	testRequest(as, "GET", "/foo/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, 200, r.Code)
 		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
 	})

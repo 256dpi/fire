@@ -1,6 +1,4 @@
-// Package components contains additional components which can be mounted in a
-// fire application.
-package components
+package fire
 
 //import (
 //	"fmt"

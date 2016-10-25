@@ -1,10 +1,9 @@
-package jsonapi
+package fire
 
 import (
 	"net/http"
 	"strings"
 
-	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 )
 
@@ -29,7 +28,7 @@ func NewGroup(prefix string) *Group {
 func (g *Group) Add(controllers ...*Controller) {
 	for _, controller := range controllers {
 		// initialize model
-		model.Init(controller.Model)
+		Init(controller.Model)
 
 		// create entry in controller map
 		g.controllers[controller.Model.Meta().PluralName] = controller

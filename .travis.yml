@@ -14,8 +14,6 @@ install:
 script:
   - make setup
   - go test -coverprofile=fire.coverprofile
-  - go test -coverprofile=jsonapi.coverprofile ./jsonapi
-  - go test -coverprofile=components.coverprofile ./components
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 matrix:

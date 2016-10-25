@@ -1,9 +1,8 @@
-package jsonapi
+package fire
 
 import (
 	"net/http"
 
-	"github.com/gonfire/fire/model"
 	"github.com/gonfire/jsonapi"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -42,13 +41,13 @@ type Context struct {
 	Query bson.M
 
 	// The Model that will be saved during Create or Update.
-	Model model.Model
+	Model Model
 
 	// The sorting that will be used during FindAll.
 	Sorting []string
 
 	// The store that is used to retrieve and persist the model.
-	Store *model.Store
+	Store *Store
 
 	// The underlying JSON API request.
 	JSONAPIRequest *jsonapi.Request
@@ -56,10 +55,10 @@ type Context struct {
 	// The underlying HTTP request.
 	HTTPRequest *http.Request
 
-	original model.Model
+	original Model
 }
 
-func buildContext(store *model.Store, action Action, req *jsonapi.Request, r *http.Request) *Context {
+func buildContext(store *Store, action Action, req *jsonapi.Request, r *http.Request) *Context {
 	return &Context{
 		Action:         action,
 		Store:          store,
@@ -73,7 +72,7 @@ func buildContext(store *model.Store, action Action, req *jsonapi.Request, r *ht
 //
 // Note: The method will directly return any mgo errors and panic if being used
 // during any other action than Update.
-func (c *Context) Original() (model.Model, error) {
+func (c *Context) Original() (Model, error) {
 	if c.Action != Update {
 		panic("Original can only be used during a Update action")
 	}
@@ -93,7 +92,7 @@ func (c *Context) Original() (model.Model, error) {
 	}
 
 	// cache model
-	c.original = model.Init(m)
+	c.original = Init(m)
 
 	return c.original, nil
 }

@@ -3,23 +3,20 @@ package main
 import (
 	"net/http"
 
-	"github.com/gonfire/fire/components"
-	"github.com/gonfire/fire/jsonapi"
-	"github.com/gonfire/fire/model"
+	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/auth"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/gonfire/fire"
 )
 
 type post struct {
-	model.Base `json:"-" bson:",inline" fire:"posts"`
-	Slug       string `json:"slug" valid:"required" bson:"slug"`
-	Title      string `json:"title" valid:"required"`
-	Body       string `json:"body" valid:"-"`
+	fire.Base `json:"-" bson:",inline" fire:"posts"`
+	Slug      string `json:"slug" valid:"required" bson:"slug"`
+	Title     string `json:"title" valid:"required"`
+	Body      string `json:"body" valid:"-"`
 }
 
 type user struct {
-	model.Base   `json:"-" bson:",inline" fire:"users"`
+	fire.Base    `json:"-" bson:",inline" fire:"users"`
 	Email        string `json:"email" valid:"required,email"`
 	FullName     string `json:"full-name" valid:"required"`
 	PasswordHash []byte `json:"-" valid:"required"`
@@ -38,7 +35,7 @@ const secret = "abcd1234abcd1234"
 
 func main() {
 	// create store
-	store := model.MustCreateStore("mongodb://localhost/fire-example")
+	store := fire.MustCreateStore("mongodb://localhost/fire-example")
 
 	// clean resources
 	store.DB().C("applications").RemoveAll(nil)
@@ -65,7 +62,7 @@ func main() {
 	}
 
 	// create test client
-	client := model.Init(&auth.Application{
+	client := fire.Init(&auth.Application{
 		Name:        "test",
 		Key:         "abcd1234",
 		SecretHash:  password,
@@ -80,14 +77,14 @@ func main() {
 	}
 
 	// create test user
-	owner := model.Init(&user{
+	owner := fire.Init(&user{
 		FullName:     "Test User",
 		Email:        "test@example.com",
 		PasswordHash: password,
 	})
 
 	// create admin user
-	admin := model.Init(&user{
+	admin := fire.Init(&user{
 		FullName:     "Admin User",
 		Email:        "admin@example.com",
 		PasswordHash: password,
@@ -101,10 +98,10 @@ func main() {
 	}
 
 	// create group
-	group := jsonapi.NewGroup("/api/")
+	group := fire.NewGroup("/api/")
 
 	// register post controller
-	group.Add(&jsonapi.Controller{
+	group.Add(&fire.Controller{
 		Model: &post{},
 		Store: store,
 		FilterableFields: []string{
@@ -114,17 +111,17 @@ func main() {
 			"slug",
 		},
 		Authorizer: authenticator.Authorizer("default"),
-		Validator:  jsonapi.ModelValidator(),
-	}, &jsonapi.Controller{
+		Validator:  fire.ModelValidator(),
+	}, &fire.Controller{
 		Model:      &user{},
 		Store:      store,
 		Authorizer: authenticator.Authorizer("default admin"),
-		Validator:  jsonapi.ModelValidator(),
-	}, &jsonapi.Controller{
+		Validator:  fire.ModelValidator(),
+	}, &fire.Controller{
 		Model:      &auth.Application{},
 		Store:      store,
 		Authorizer: authenticator.Authorizer("default admin"),
-		Validator:  jsonapi.ModelValidator(),
+		Validator:  fire.ModelValidator(),
 	})
 
 	// create new router
@@ -146,7 +143,7 @@ func main() {
 	router.Handle("/api/", logger(authorizer(group)))
 
 	// mount ember server
-	router.Handle("/", components.DefaultAssetServer("../.test/assets"))
+	router.Handle("/", fire.DefaultAssetServer("../.test/assets"))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)

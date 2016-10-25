@@ -1,4 +1,4 @@
-package jsonapi
+package fire
 
 import (
 	"errors"

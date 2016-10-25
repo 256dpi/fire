@@ -1,10 +1,9 @@
-package jsonapi
+package fire
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/gonfire/fire/model"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -36,7 +35,7 @@ func TestCombine(t *testing.T) {
 func TestModelValidator(t *testing.T) {
 	validator := ModelValidator()
 
-	post := model.Init(&Post{
+	post := Init(&Post{
 		Title: "",
 	}).(*Post)
 
@@ -46,6 +45,7 @@ func TestModelValidator(t *testing.T) {
 	}
 
 	err := validator(ctx)
+	assert.Error(t, err)
 	assert.Equal(t, "Title: non zero value required;", err.Error())
 
 	post.Title = "Default Title"
@@ -58,7 +58,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	post := model.Init(&Post{
+	post := Init(&Post{
 		Title: "Title",
 	}).(*Post)
 
@@ -86,7 +86,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Another Title",
 	}).(*Post)
 
-	post := model.Init(&Post{
+	post := Init(&Post{
 		Title: "Title",
 	}).(*Post)
 
