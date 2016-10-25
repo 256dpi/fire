@@ -33,7 +33,7 @@ func TestIntegration(t *testing.T) {
 		return true, req.Scope
 	}
 
-	auth := New(getCleanStore(), p, "/oauth2")
+	auth := New(getCleanStore(), p, "/oauth2/")
 
 	app1 := saveModel(&Application{
 		Name:        "Application 1",
@@ -82,14 +82,14 @@ func TestIntegration(t *testing.T) {
 	saveModel(&Credential{
 		Signature: validRefreshToken.SignatureString(),
 		ExpiresAt: time.Now().Add(auth.Policy.AccessTokenLifespan),
-		Scope:     "foo",
+		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&Credential{
 		Signature: expiredRefreshToken.SignatureString(),
 		ExpiresAt: time.Now().Add(-auth.Policy.AccessTokenLifespan),
-		Scope:     "foo",
+		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
 
