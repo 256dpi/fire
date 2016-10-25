@@ -23,7 +23,7 @@ func TestDefaultAsset(t *testing.T) {
 }
 
 func TestAssetServer(t *testing.T) {
-	as := NewAssetServer("/foo", ".test/assets/")
+	as := NewAssetServer("/foo/", ".test/assets/")
 
 	testRequest(as, "GET", "/foo/", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, 200, r.Code)

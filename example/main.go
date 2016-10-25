@@ -130,6 +130,9 @@ func main() {
 	// mount protector
 	//app.Mount(components.DefaultProtector())
 
+	// create asset server
+	assetServer := fire.DefaultAssetServer("../.test/assets/")
+
 	// get request logger
 	logger := fire.DefaultRequestLogger()
 
@@ -143,7 +146,7 @@ func main() {
 	router.Handle("/api/", logger(authorizer(group)))
 
 	// mount ember server
-	router.Handle("/", fire.DefaultAssetServer("../.test/assets"))
+	router.Handle("/", logger(assetServer))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)

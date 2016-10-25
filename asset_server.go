@@ -15,7 +15,7 @@ type assetServer struct {
 // DefaultAssetServer constructs an AssetServer that servers the directory on
 // the root path.
 func DefaultAssetServer(directory string) http.Handler {
-	return NewAssetServer("", directory)
+	return NewAssetServer("/", directory)
 }
 
 // NewAssetServer constructs an asset server handler that serves an asset
@@ -31,20 +31,18 @@ func NewAssetServer(prefix, directory string) http.Handler {
 	// create file server
 	fs := http.FileServer(dir)
 
-	return &assetServer{
-		prefix:  prefix,
-		httpDir: dir,
-		httpFS:  fs,
-	}
-}
+	h := func(w http.ResponseWriter, r *http.Request) {
+		// pre-check if file does exist
+		f, err := dir.Open(r.URL.Path)
+		if err != nil {
+			r.URL.Path = "/"
+		} else if f != nil {
+			f.Close()
+		}
 
-func (s *assetServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	f, err := s.httpDir.Open(r.URL.Path)
-	if err != nil {
-		r.URL.Path = "/"
-	} else if f != nil {
-		f.Close()
+		// serve file
+		fs.ServeHTTP(w, r)
 	}
 
-	s.httpFS.ServeHTTP(w, r)
+	return http.StripPrefix(prefix, http.HandlerFunc(h))
 }
