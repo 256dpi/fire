@@ -1,4 +1,4 @@
-package components
+package fire
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestDefaultAsset(t *testing.T) {
-	as := DefaultAssetServer("../.test/assets/")
+	as := DefaultAssetServer(".test/assets/")
 
 	testRequest(as, "GET", "/", func(r *httptest.ResponseRecorder, _ *http.Request) {
 		assert.Equal(t, 200, r.Code)
@@ -23,7 +23,7 @@ func TestDefaultAsset(t *testing.T) {
 }
 
 func TestAssetServer(t *testing.T) {
-	as := NewAssetServer("/foo", "../.test/assets/")
+	as := NewAssetServer("/foo", ".test/assets/")
 
 	testRequest(as, "GET", "/foo/", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, 200, r.Code)
