@@ -10,7 +10,7 @@ vet:
 
 lint:
 	golint .
-	go vet ./auth
+	golint ./auth
 
 setup:
 	mkdir -p .test/assets
