@@ -45,17 +45,6 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 	}
 }
 
-// NewKeyAndSignature returns a new key with a matching signature that can be
-// used to issue custom access tokens.
-func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
-	token, err := hmacsha.Generate(a.policy.Secret, 32)
-	if err != nil {
-		return "", "", err
-	}
-
-	return token.String(), token.SignatureString(), nil
-}
-
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// trim and split path

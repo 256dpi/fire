@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gonfire/oauth2"
+	"github.com/gonfire/oauth2/hmacsha"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -71,4 +72,15 @@ func DefaultPolicy(secret string) *Policy {
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,
 	}
+}
+
+// NewKeyAndSignature returns a new key with a matching signature that can be
+// used to issue custom access tokens.
+func (p *Policy) NewKeyAndSignature() (string, string, error) {
+	token, err := hmacsha.Generate(p.Secret, 32)
+	if err != nil {
+		return "", "", err
+	}
+
+	return token.String(), token.SignatureString(), nil
 }
