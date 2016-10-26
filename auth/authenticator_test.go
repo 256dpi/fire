@@ -9,7 +9,7 @@ import (
 	"github.com/gonfire/oauth2/spec"
 )
 
-var testSecret = []byte("abcd1234abcd1234")
+var testSecret = "abcd1234abcd1234"
 
 func TestIntegration(t *testing.T) {
 	var allowedScope = oauth2.ParseScope("foo bar")
@@ -57,9 +57,9 @@ func TestIntegration(t *testing.T) {
 		PasswordHash: mustHash("foo"),
 	})
 
-	unknownToken := hmacsha.MustGenerate(testSecret, 32)
-	expiredToken := hmacsha.MustGenerate(testSecret, 32)
-	insufficientToken := hmacsha.MustGenerate(testSecret, 32)
+	unknownToken := hmacsha.MustGenerate(p.Secret, 32)
+	expiredToken := hmacsha.MustGenerate(p.Secret, 32)
+	insufficientToken := hmacsha.MustGenerate(p.Secret, 32)
 
 	saveModel(&Credential{
 		Signature: expiredToken.SignatureString(),
@@ -75,9 +75,9 @@ func TestIntegration(t *testing.T) {
 		ClientID:  app1.ID(),
 	})
 
-	unknownRefreshToken := hmacsha.MustGenerate(testSecret, 32)
-	validRefreshToken := hmacsha.MustGenerate(testSecret, 32)
-	expiredRefreshToken := hmacsha.MustGenerate(testSecret, 32)
+	unknownRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
+	validRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
+	expiredRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
 
 	saveModel(&Credential{
 		Signature: validRefreshToken.SignatureString(),

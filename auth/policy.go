@@ -59,9 +59,9 @@ type Policy struct {
 
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
-func DefaultPolicy(secret []byte) *Policy {
+func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret:               secret,
+		Secret:               []byte(secret),
 		AccessToken:          &Credential{},
 		RefreshToken:         &Credential{},
 		Client:               &Application{},
