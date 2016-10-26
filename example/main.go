@@ -48,8 +48,8 @@ func main() {
 	oauth2 := a11r.Endpoint("/oauth2/")
 	api := group.Endpoint("/api/")
 
-	// create asset server
-	assetServer := tools.DefaultAssetServer("../.test/assets/")
+	// create spa asset server
+	spa := tools.DefaultAssetServer("../.test/assets/")
 
 	// create protector, logger
 	p := tools.DefaultProtector()
@@ -61,7 +61,7 @@ func main() {
 	// mount authenticator, controller group, asset server
 	router.Handle("/oauth2/", p(l(oauth2)))
 	router.Handle("/api/", p(l(a(api))))
-	router.Handle("/", p(l(assetServer)))
+	router.Handle("/", p(l(spa)))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)
