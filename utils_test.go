@@ -40,10 +40,10 @@ func getCleanStore() *Store {
 	return testStore
 }
 
-	group := NewGroup("")
 func buildHandler(controllers ...*Controller) http.Handler {
+	group := NewGroup()
 	group.Add(controllers...)
-	return group
+	return group.Endpoint("")
 }
 
 func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {

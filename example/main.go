@@ -98,7 +98,7 @@ func main() {
 	}
 
 	// create group
-	group := fire.NewGroup("/api/")
+	group := fire.NewGroup()
 
 	// register post controller
 	group.Add(&fire.Controller{
@@ -130,6 +130,9 @@ func main() {
 	// mount protector
 	//app.Mount(components.DefaultProtector())
 
+	// create api endpoint
+	api := group.Endpoint("/api/")
+
 	// create asset server
 	assetServer := fire.DefaultAssetServer("../.test/assets/")
 
@@ -143,7 +146,7 @@ func main() {
 	router.Handle("/oauth2/", logger(authenticator))
 
 	// mount controller group
-	router.Handle("/api/", logger(authorizer(group)))
+	router.Handle("/api/", logger(authorizer(api)))
 
 	// mount ember server
 	router.Handle("/", logger(assetServer))

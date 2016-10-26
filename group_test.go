@@ -3,7 +3,7 @@ package fire
 import "testing"
 
 func TestGroup(t *testing.T) {
-	group := NewGroup("foo")
+	group := NewGroup()
 	group.Add(&Controller{
 		Model: &Post{},
 	})

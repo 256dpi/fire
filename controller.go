@@ -43,13 +43,11 @@ type Controller struct {
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit int
-
-	group *Group
 }
 
-func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(r, c.group.prefix)
+	req, err := jsonapi.ParseRequest(r, prefix)
 	if err != nil {
 		jsonapi.WriteError(w, err)
 	}
@@ -77,40 +75,40 @@ func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// ensure store will be closed
 	defer store.Close()
 
-	// prepare context
-	var ctx *Context
+	// build context
+	ctx := buildContext(prefix, group, store, req, r)
 
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx = buildContext(store, List, req, r)
+		ctx.Action = List
 		err = c.listResources(w, ctx)
 	case jsonapi.FindResource:
-		ctx = buildContext(store, Find, req, r)
+		ctx.Action = Find
 		err = c.findResource(w, ctx)
 	case jsonapi.CreateResource:
-		ctx = buildContext(store, Create, req, r)
+		ctx.Action = Create
 		err = c.createResource(w, ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx = buildContext(store, Update, req, r)
+		ctx.Action = Update
 		err = c.updateResource(w, ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx = buildContext(store, Delete, req, r)
+		ctx.Action = Delete
 		err = c.deleteResource(w, ctx)
 	case jsonapi.GetRelatedResources:
-		ctx = buildContext(store, Find, req, r)
+		ctx.Action = Find
 		err = c.getRelatedResources(w, ctx)
 	case jsonapi.GetRelationship:
-		ctx = buildContext(store, Find, req, r)
+		ctx.Action = Find
 		err = c.getRelationship(w, ctx)
 	case jsonapi.SetRelationship:
-		ctx = buildContext(store, Update, req, r)
+		ctx.Action = Update
 		err = c.setRelationship(w, ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx = buildContext(store, Update, req, r)
+		ctx.Action = Update
 		err = c.appendToRelationship(w, ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx = buildContext(store, Update, req, r)
+		ctx.Action = Update
 		err = c.removeFromRelationship(w, ctx, doc)
 	}
 
@@ -313,7 +311,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) er
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := c.group.controllers[pluralName]
+	relatedController := ctx.group.controllers[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -333,6 +331,8 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) er
 			Filters:      ctx.JSONAPIRequest.Filters,
 		},
 		HTTPRequest: ctx.HTTPRequest,
+		prefix:      ctx.prefix,
+		group:       ctx.group,
 	}
 
 	// finish to one relationship
@@ -867,7 +867,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 	}
 
 	// generate base link
-	base := c.group.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := ctx.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
@@ -934,7 +934,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := c.group.controllers[field.RelType]
+			relatedController := ctx.group.controllers[field.RelType]
 
 			// check existence
 			if relatedController == nil {

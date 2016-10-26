@@ -55,12 +55,16 @@ type Context struct {
 	// The underlying HTTP request.
 	HTTPRequest *http.Request
 
+	prefix string
+	group  *Group
+
 	original Model
 }
 
-func buildContext(store *Store, action Action, req *jsonapi.Request, r *http.Request) *Context {
+func buildContext(prefix string, group *Group, store *Store, req *jsonapi.Request, r *http.Request) *Context {
 	return &Context{
-		Action:         action,
+		prefix:         prefix,
+		group:          group,
 		Store:          store,
 		JSONAPIRequest: req,
 		HTTPRequest:    r,
