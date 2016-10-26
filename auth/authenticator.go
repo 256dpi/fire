@@ -4,7 +4,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -82,7 +81,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 // Authorize can be used to authorize a request by requiring an access token with
 // the provided scopes to be granted. The method returns a middleware that can be
 // called before any other routes.
-func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler {
+func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// parse scope
@@ -133,30 +132,5 @@ func (a *Authenticator) Authorize(scope string) func(http.Handler) http.Handler 
 			// call next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-	}
-}
-
-// Authorizer returns a callback that can be used to protect resources by
-// requiring an access token with the provided scopes to be granted.
-//
-// Note: Authorizer requires that the request has already been processed by
-// Authorize.
-func (a *Authenticator) Authorizer(scope string) fire.Callback {
-	return func(ctx *fire.Context) error {
-		// parse scope
-		s := oauth2.ParseScope(scope)
-
-		// get access token
-		accessToken := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
-		if accessToken == nil {
-			return fire.Fatal(errors.New("missing access token"))
-		}
-
-		// validate scope
-		if !accessToken.GetTokenData().Scope.Includes(s) {
-			return errors.New("unauthorized")
-		}
-
-		return nil
 	}
 }

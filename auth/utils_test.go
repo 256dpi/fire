@@ -40,7 +40,7 @@ func newHandler(auth *Authenticator) http.Handler {
 
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))
 
-	authorizer := auth.Authorize("foo")
+	authorizer := auth.Authorizer("foo")
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))

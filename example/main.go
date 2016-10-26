@@ -53,7 +53,7 @@ func main() {
 	policy.ResourceOwner = &user{}
 
 	// create authenticator
-	authenticator := auth.New(store, policy)
+	a11r := auth.New(store, policy)
 
 	// pre hash the password
 	password, err := bcrypt.GenerateFromPassword([]byte("abcd1234"), bcrypt.DefaultCost)
@@ -110,49 +110,41 @@ func main() {
 		SortableFields: []string{
 			"slug",
 		},
-		Authorizer: authenticator.Authorizer("default"),
+		Authorizer: auth.Callback("default"),
 		Validator:  fire.ModelValidator(),
 	}, &fire.Controller{
 		Model:      &user{},
 		Store:      store,
-		Authorizer: authenticator.Authorizer("default admin"),
+		Authorizer: auth.Callback("default admin"),
 		Validator:  fire.ModelValidator(),
 	}, &fire.Controller{
 		Model:      &auth.Application{},
 		Store:      store,
-		Authorizer: authenticator.Authorizer("default admin"),
+		Authorizer: auth.Callback("default admin"),
 		Validator:  fire.ModelValidator(),
 	})
 
 	// create new router
 	router := http.NewServeMux()
 
-	// mount protector
-	//app.Mount(components.DefaultProtector())
-
-	// create oauth2 endpoint
-	oauth2 := authenticator.Endpoint("/oauth2/")
-
-	// create api endpoint
+	// create oauth2 and api endpoint
+	oauth2 := a11r.Endpoint("/oauth2/")
 	api := group.Endpoint("/api/")
 
 	// create asset server
 	assetServer := fire.DefaultAssetServer("../.test/assets/")
 
-	// get request logger
-	logger := fire.DefaultRequestLogger()
+	// create protector, logger
+	p := fire.DefaultProtector()
+	l := fire.DefaultRequestLogger()
 
 	// create authorizer
-	authorizer := authenticator.Authorize("")
+	a := a11r.Authorizer("")
 
-	// mount authenticator
-	router.Handle("/oauth2/", logger(oauth2))
-
-	// mount controller group
-	router.Handle("/api/", logger(authorizer(api)))
-
-	// mount ember server
-	router.Handle("/", logger(assetServer))
+	// mount authenticator, controller group, asset server
+	router.Handle("/oauth2/", p(l(oauth2)))
+	router.Handle("/api/", p(l(a(api))))
+	router.Handle("/", p(l(assetServer)))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)
