@@ -1,4 +1,4 @@
-// Package oauth2 implements an authenticator component that provides OAuth2
+// Package auth implements an authenticator component that provides OAuth2
 // compatible authentication.
 package auth
 
@@ -12,6 +12,7 @@ import (
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
 	"github.com/gonfire/oauth2/hmacsha"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -21,8 +22,8 @@ const AccessTokenContextKey = "fire.oauth2.access_token"
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant.
 type Authenticator struct {
-	Policy  *Policy
-	Storage *Storage
+	store  *fire.Store
+	policy *Policy
 }
 
 // New constructs a new Authenticator.
@@ -38,19 +39,16 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 	fire.Init(policy.Client)
 	fire.Init(policy.ResourceOwner)
 
-	// create storage
-	storage := NewStorage(policy, store)
-
 	return &Authenticator{
-		Policy:  policy,
-		Storage: storage,
+		store:  store,
+		policy: policy,
 	}
 }
 
 // NewKeyAndSignature returns a new key with a matching signature that can be
 // used to issue custom access tokens.
 func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
-	token, err := hmacsha.Generate(a.Policy.Secret, 32)
+	token, err := hmacsha.Generate(a.policy.Secret, 32)
 	if err != nil {
 		return "", "", err
 	}
@@ -96,14 +94,14 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 			}
 
 			// parse token
-			token, err := hmacsha.Parse(a.Policy.Secret, tk)
+			token, err := hmacsha.Parse(a.policy.Secret, tk)
 			if err != nil {
 				bearer.WriteError(w, bearer.InvalidToken("Malformed token"))
 				return
 			}
 
 			// get token
-			accessToken, err := a.Storage.GetAccessToken(token.SignatureString())
+			accessToken, err := a.getAccessToken(token.SignatureString())
 			if err != nil {
 				bearer.WriteError(w, err)
 				return
@@ -151,7 +149,7 @@ func (a *Authenticator) AuthorizationEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// get client
-	client, err := a.Storage.GetClient(req.ClientID)
+	client, err := a.getClient(req.ClientID)
 	if err != nil {
 		oauth2.WriteError(w, err)
 		return
@@ -169,7 +167,7 @@ func (a *Authenticator) AuthorizationEndpoint(w http.ResponseWriter, r *http.Req
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		if a.Policy.ImplicitGrant {
+		if a.policy.ImplicitGrant {
 			a.handleImplicitGrant(w, r, req, client)
 			return
 		}
@@ -191,7 +189,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner, err := a.Storage.GetResourceOwner(username)
+	resourceOwner, err := a.getResourceOwner(username)
 	if err != nil {
 		oauth2.RedirectError(w, req.RedirectURI, true, err)
 		return
@@ -207,7 +205,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	}
 
 	// validate & grant scope
-	granted, scope := a.Policy.GrantStrategy(&GrantRequest{
+	granted, scope := a.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -245,7 +243,7 @@ func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get client
-	client, err := a.Storage.GetClient(req.ClientID)
+	client, err := a.getClient(req.ClientID)
 	if err != nil {
 		oauth2.WriteError(w, err)
 		return
@@ -257,12 +255,12 @@ func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
-		if a.Policy.PasswordGrant {
+		if a.policy.PasswordGrant {
 			a.handleResourceOwnerPasswordCredentialsGrant(w, req, client)
 			return
 		}
 	case oauth2.ClientCredentialsGrantType:
-		if a.Policy.ClientCredentialsGrant {
+		if a.policy.ClientCredentialsGrant {
 			a.handleClientCredentialsGrant(w, req, client)
 			return
 		}
@@ -277,7 +275,7 @@ func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner, err := a.Storage.GetResourceOwner(req.Username)
+	resourceOwner, err := a.getResourceOwner(req.Username)
 	if err != nil {
 		oauth2.WriteError(w, err)
 		return
@@ -293,7 +291,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	}
 
 	// validate & grant scope
-	granted, scope := a.Policy.GrantStrategy(&GrantRequest{
+	granted, scope := a.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -324,7 +322,7 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 	}
 
 	// validate & grant scope
-	granted, scope := a.Policy.GrantStrategy(&GrantRequest{
+	granted, scope := a.policy.GrantStrategy(&GrantRequest{
 		Scope:  req.Scope,
 		Client: client,
 	})
@@ -345,14 +343,14 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 
 func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// parse refresh token
-	refreshToken, err := hmacsha.Parse(a.Policy.Secret, req.RefreshToken)
+	refreshToken, err := hmacsha.Parse(a.policy.Secret, req.RefreshToken)
 	if err != nil {
 		oauth2.WriteError(w, oauth2.InvalidRequest(oauth2.NoState, err.Error()))
 		return
 	}
 
 	// get stored refresh token by signature
-	rt, err := a.Storage.GetRefreshToken(refreshToken.SignatureString())
+	rt, err := a.getRefreshToken(refreshToken.SignatureString())
 	if err != nil {
 		oauth2.WriteError(w, err)
 		return
@@ -394,7 +392,7 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	}
 
 	// delete refresh token
-	err = a.Storage.DeleteRefreshToken(refreshToken.SignatureString())
+	err = a.deleteRefreshToken(refreshToken.SignatureString())
 	if err != nil {
 		oauth2.RedirectError(w, req.RedirectURI, true, err)
 	}
@@ -405,19 +403,19 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, state string, clientID bson.ObjectId, resourceOwnerID *bson.ObjectId) (*oauth2.TokenResponse, error) {
 	// generate new access token
-	accessToken, err := hmacsha.Generate(a.Policy.Secret, 32)
+	accessToken, err := hmacsha.Generate(a.policy.Secret, 32)
 	if err != nil {
 		return nil, err
 	}
 
 	// generate new refresh token
-	refreshToken, err := hmacsha.Generate(a.Policy.Secret, 32)
+	refreshToken, err := hmacsha.Generate(a.policy.Secret, 32)
 	if err != nil {
 		return nil, err
 	}
 
 	// prepare response
-	res := bearer.NewTokenResponse(accessToken.String(), int(a.Policy.AccessTokenLifespan/time.Second))
+	res := bearer.NewTokenResponse(accessToken.String(), int(a.policy.AccessTokenLifespan/time.Second))
 
 	// set granted scope
 	res.Scope = scope
@@ -434,13 +432,13 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 	accessTokenData := &TokenData{
 		Signature:       accessToken.SignatureString(),
 		Scope:           scope,
-		ExpiresAt:       time.Now().Add(a.Policy.AccessTokenLifespan),
+		ExpiresAt:       time.Now().Add(a.policy.AccessTokenLifespan),
 		ClientID:        clientID,
 		ResourceOwnerID: resourceOwnerID,
 	}
 
 	// save access token
-	_, err = a.Storage.SaveAccessToken(accessTokenData)
+	_, err = a.saveAccessToken(accessTokenData)
 	if err != nil {
 		return nil, err
 	}
@@ -450,17 +448,173 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 		refreshTokenData := &TokenData{
 			Signature:       refreshToken.SignatureString(),
 			Scope:           scope,
-			ExpiresAt:       time.Now().Add(a.Policy.RefreshTokenLifespan),
+			ExpiresAt:       time.Now().Add(a.policy.RefreshTokenLifespan),
 			ClientID:        clientID,
 			ResourceOwnerID: resourceOwnerID,
 		}
 
 		// save refresh token
-		_, err := a.Storage.SaveRefreshToken(refreshTokenData)
+		_, err := a.saveRefreshToken(refreshTokenData)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return res, nil
+}
+
+func (a *Authenticator) getClient(id string) (Client, error) {
+	// prepare object
+	obj := a.policy.Client.Meta().Make()
+
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// get id field
+	field := a.policy.Client.Meta().FindField(a.policy.Client.ClientIdentifier())
+
+	// query db
+	err := store.C(a.policy.Client).Find(bson.M{
+		field.BSONName: id,
+	}).One(obj)
+	if err == mgo.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	// initialize model
+	client := fire.Init(obj).(Client)
+
+	return client, nil
+}
+
+func (a *Authenticator) getResourceOwner(id string) (ResourceOwner, error) {
+	// prepare object
+	obj := a.policy.ResourceOwner.Meta().Make()
+
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// get id field
+	field := a.policy.ResourceOwner.Meta().FindField(a.policy.ResourceOwner.ResourceOwnerIdentifier())
+
+	// query db
+	err := store.C(a.policy.ResourceOwner).Find(bson.M{
+		field.BSONName: id,
+	}).One(obj)
+	if err == mgo.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	// initialize model
+	resourceOwner := fire.Init(obj).(ResourceOwner)
+
+	return resourceOwner, nil
+}
+
+func (a *Authenticator) getAccessToken(signature string) (Token, error) {
+	return a.getToken(a.policy.AccessToken, signature)
+}
+
+func (a *Authenticator) getRefreshToken(signature string) (Token, error) {
+	return a.getToken(a.policy.RefreshToken, signature)
+}
+
+func (a *Authenticator) getToken(tokenModel Token, signature string) (Token, error) {
+	// prepare object
+	obj := tokenModel.Meta().Make()
+
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// get signature field
+	field := tokenModel.Meta().FindField(tokenModel.TokenIdentifier())
+
+	// fetch access token
+	err := store.C(tokenModel).Find(bson.M{
+		field.BSONName: signature,
+	}).One(obj)
+	if err == mgo.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	// initialize access token
+	accessToken := fire.Init(obj).(Token)
+
+	return accessToken, nil
+}
+
+func (a *Authenticator) saveAccessToken(data *TokenData) (Token, error) {
+	return a.saveToken(a.policy.AccessToken, data)
+}
+
+func (a *Authenticator) saveRefreshToken(data *TokenData) (Token, error) {
+	return a.saveToken(a.policy.RefreshToken, data)
+}
+
+func (a *Authenticator) saveToken(tokenModel Token, data *TokenData) (Token, error) {
+	// prepare access token
+	token := tokenModel.Meta().Make().(Token)
+
+	// set access token data
+	token.SetTokenData(data)
+
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// save access token
+	err := store.C(token).Insert(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (a *Authenticator) deleteAccessToken(signature string) error {
+	return a.deleteToken(a.policy.AccessToken, signature)
+}
+
+func (a *Authenticator) deleteRefreshToken(signature string) error {
+	return a.deleteToken(a.policy.RefreshToken, signature)
+}
+
+func (a *Authenticator) deleteToken(tokenModel Token, signature string) error {
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// get signature field
+	field := tokenModel.Meta().FindField(tokenModel.TokenIdentifier())
+
+	// fetch access token
+	err := store.C(tokenModel).Remove(bson.M{
+		field.BSONName: signature,
+	})
+	if err == mgo.ErrNotFound {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }

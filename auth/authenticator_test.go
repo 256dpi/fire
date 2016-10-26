@@ -63,14 +63,14 @@ func TestIntegration(t *testing.T) {
 
 	saveModel(&Credential{
 		Signature: expiredToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-auth.Policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
 		Scope:     "foo",
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&Credential{
 		Signature: insufficientToken.SignatureString(),
-		ExpiresAt: time.Now().Add(auth.Policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
 		Scope:     "",
 		ClientID:  app1.ID(),
 	})
@@ -81,14 +81,14 @@ func TestIntegration(t *testing.T) {
 
 	saveModel(&Credential{
 		Signature: validRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(auth.Policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
 		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&Credential{
 		Signature: expiredRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-auth.Policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
 		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
@@ -112,7 +112,7 @@ func TestIntegration(t *testing.T) {
 	config.ValidScope = "foo bar"
 	config.ExceedingScope = "foo bar baz"
 
-	config.ExpectedExpiresIn = int(auth.Policy.AccessTokenLifespan / time.Second)
+	config.ExpectedExpiresIn = int(auth.policy.AccessTokenLifespan / time.Second)
 
 	config.InvalidToken = "invalid"
 	config.UnknownToken = unknownToken.String()
