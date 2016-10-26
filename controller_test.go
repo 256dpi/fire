@@ -240,7 +240,7 @@ func TestFiltering(t *testing.T) {
 	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
-		FilterableFields: []string{
+		Filters: []string{
 			"title",
 			"published",
 		},
@@ -562,7 +562,7 @@ func TestSorting(t *testing.T) {
 	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
-		SortableFields: []string{
+		Sorters: []string{
 			"title",
 		},
 	}, &Controller{

@@ -33,10 +33,10 @@ func main() {
 
 	// register post controller
 	group.Add(&fire.Controller{
-		Model: &post{},
-		Store: store,
-		FilterableFields: []string{"slug"},
-		SortableFields: []string{"slug"},
+		Model:      &post{},
+		Store:      store,
+		Filters:    []string{"slug"},
+		Sorters:    []string{"slug"},
 		Authorizer: auth.Callback("default"),
 		Validator:  fire.ModelValidator(),
 	})

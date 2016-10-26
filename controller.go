@@ -18,11 +18,11 @@ type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model Model
 
-	// FilterableFields defines the attributes that are filterable.
-	FilterableFields []string
+	// Filters defines the attributes that are filterable.
+	Filters []string
 
-	// SortableFields defines the attributes that are sortable.
-	SortableFields []string
+	// Sorters defines the attributes that are sortable.
+	Sorters []string
 
 	// The store that is used to retrieve and persist the model.
 	Store *Store
@@ -697,7 +697,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 
 func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// add filters
-	for _, filter := range c.FilterableFields {
+	for _, filter := range c.Filters {
 		field := c.Model.Meta().MustFindField(filter)
 
 		// check if filter is present
@@ -713,8 +713,8 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 
 	// add sorting
 	for _, params := range ctx.JSONAPIRequest.Sorting {
-		for _, sorting := range c.SortableFields {
-			field := c.Model.Meta().MustFindField(sorting)
+		for _, sorter := range c.Sorters {
+			field := c.Model.Meta().MustFindField(sorter)
 
 			// check if sorting is present
 			if params == field.JSONName || params == "-"+field.JSONName {
