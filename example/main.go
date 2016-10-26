@@ -5,6 +5,7 @@ import (
 
 	"github.com/gonfire/fire"
 	"github.com/gonfire/fire/auth"
+	"github.com/gonfire/fire/tools"
 )
 
 type post struct {
@@ -48,11 +49,11 @@ func main() {
 	api := group.Endpoint("/api/")
 
 	// create asset server
-	assetServer := fire.DefaultAssetServer("../.test/assets/")
+	assetServer := tools.DefaultAssetServer("../.test/assets/")
 
 	// create protector, logger
-	p := fire.DefaultProtector()
-	l := fire.DefaultRequestLogger()
+	p := tools.DefaultProtector()
+	l := tools.DefaultRequestLogger()
 
 	// create authorizer
 	a := a11r.Authorizer("")
