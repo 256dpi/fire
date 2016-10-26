@@ -33,7 +33,7 @@ func TestIntegration(t *testing.T) {
 		return true, req.Scope
 	}
 
-	auth := New(getCleanStore(), p, "/oauth2/")
+	auth := New(getCleanStore(), p)
 
 	app1 := saveModel(&Application{
 		Name:        "Application 1",

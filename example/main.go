@@ -53,7 +53,7 @@ func main() {
 	policy.ResourceOwner = &user{}
 
 	// create authenticator
-	authenticator := auth.New(store, policy, "/oauth2/")
+	authenticator := auth.New(store, policy)
 
 	// pre hash the password
 	password, err := bcrypt.GenerateFromPassword([]byte("abcd1234"), bcrypt.DefaultCost)
@@ -130,6 +130,9 @@ func main() {
 	// mount protector
 	//app.Mount(components.DefaultProtector())
 
+	// create oauth2 endpoint
+	oauth2 := authenticator.Endpoint("/oauth2/")
+
 	// create api endpoint
 	api := group.Endpoint("/api/")
 
@@ -143,7 +146,7 @@ func main() {
 	authorizer := authenticator.Authorize("")
 
 	// mount authenticator
-	router.Handle("/oauth2/", logger(authenticator))
+	router.Handle("/oauth2/", logger(oauth2))
 
 	// mount controller group
 	router.Handle("/api/", logger(authorizer(api)))

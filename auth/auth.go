@@ -21,14 +21,12 @@ const AccessTokenContextKey = "fire.oauth2.access_token"
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant.
 type Authenticator struct {
-	prefix string
-
 	Policy  *Policy
 	Storage *Storage
 }
 
 // New constructs a new Authenticator.
-func New(store *fire.Store, policy *Policy, prefix string) *Authenticator {
+func New(store *fire.Store, policy *Policy) *Authenticator {
 	// check secret
 	if len(policy.Secret) < 16 {
 		panic("Secret must be longer than 16 characters")
@@ -44,7 +42,6 @@ func New(store *fire.Store, policy *Policy, prefix string) *Authenticator {
 	storage := NewStorage(policy, store)
 
 	return &Authenticator{
-		prefix:  prefix,
 		Policy:  policy,
 		Storage: storage,
 	}
@@ -61,23 +58,25 @@ func (a *Authenticator) NewKeyAndSignature() (string, string, error) {
 	return token.String(), token.SignatureString(), nil
 }
 
-func (a *Authenticator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// trim and split path
-	s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, a.prefix), "/"), "/")
+func (a *Authenticator) Endpoint(prefix string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// trim and split path
+		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
 
-	// try to call the controllers general handler
-	if len(s) > 0 {
-		if s[0] == "token" {
-			a.TokenEndpoint(w, r)
-			return
-		} else if s[0] == "authorize" {
-			a.AuthorizationEndpoint(w, r)
-			return
+		// try to call the controllers general handler
+		if len(s) > 0 {
+			if s[0] == "token" {
+				a.TokenEndpoint(w, r)
+				return
+			} else if s[0] == "authorize" {
+				a.AuthorizationEndpoint(w, r)
+				return
+			}
 		}
-	}
 
-	// write not found error
-	w.WriteHeader(http.StatusNotFound)
+		// write not found error
+		w.WriteHeader(http.StatusNotFound)
+	})
 }
 
 // Authorize can be used to authorize a request by requiring an access token with
