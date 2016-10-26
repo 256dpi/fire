@@ -27,12 +27,9 @@ type Token interface {
 	SetTokenData(*TokenData)
 }
 
-// TODO: We need to separate the models otherwise a refresh token can be used to
-// access data.
-
-// Credential is the built-in model used to store tokens.
-type Credential struct {
-	fire.Base       `json:"-" bson:",inline" fire:"credentials"`
+// AccessToken is the built-in model used to store access tokens.
+type AccessToken struct {
+	fire.Base       `json:"-" bson:",inline" fire:"access-tokens:access_tokens"`
 	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           string         `json:"scope" valid:"required" bson:"scope"`
@@ -41,28 +38,63 @@ type Credential struct {
 }
 
 // TokenIdentifier implements the Token interface.
-func (c *Credential) TokenIdentifier() string {
+func (t *AccessToken) TokenIdentifier() string {
 	return "Signature"
 }
 
 // GetTokenData implements the Token interface.
-func (c *Credential) GetTokenData() *TokenData {
+func (t *AccessToken) GetTokenData() *TokenData {
 	return &TokenData{
-		Signature:       c.Signature,
-		Scope:           oauth2.ParseScope(c.Scope),
-		ExpiresAt:       c.ExpiresAt,
-		ClientID:        c.ClientID,
-		ResourceOwnerID: c.ResourceOwnerID,
+		Signature:       t.Signature,
+		Scope:           oauth2.ParseScope(t.Scope),
+		ExpiresAt:       t.ExpiresAt,
+		ClientID:        t.ClientID,
+		ResourceOwnerID: t.ResourceOwnerID,
 	}
 }
 
 // SetTokenData implements the Token interface.
-func (c *Credential) SetTokenData(data *TokenData) {
-	c.Signature = data.Signature
-	c.Scope = data.Scope.String()
-	c.ExpiresAt = data.ExpiresAt
-	c.ClientID = data.ClientID
-	c.ResourceOwnerID = data.ResourceOwnerID
+func (t *AccessToken) SetTokenData(data *TokenData) {
+	t.Signature = data.Signature
+	t.Scope = data.Scope.String()
+	t.ExpiresAt = data.ExpiresAt
+	t.ClientID = data.ClientID
+	t.ResourceOwnerID = data.ResourceOwnerID
+}
+
+// RefreshToken is the built-in model used to store refresh tokens.
+type RefreshToken struct {
+	fire.Base       `json:"-" bson:",inline" fire:"refresh-tokens:refresh_tokens"`
+	Signature       string         `json:"signature" valid:"required"`
+	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
+	Scope           string         `json:"scope" valid:"required" bson:"scope"`
+	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
+	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+}
+
+// TokenIdentifier implements the Token interface.
+func (t *RefreshToken) TokenIdentifier() string {
+	return "Signature"
+}
+
+// GetTokenData implements the Token interface.
+func (t *RefreshToken) GetTokenData() *TokenData {
+	return &TokenData{
+		Signature:       t.Signature,
+		Scope:           oauth2.ParseScope(t.Scope),
+		ExpiresAt:       t.ExpiresAt,
+		ClientID:        t.ClientID,
+		ResourceOwnerID: t.ResourceOwnerID,
+	}
+}
+
+// SetTokenData implements the Token interface.
+func (t *RefreshToken) SetTokenData(data *TokenData) {
+	t.Signature = data.Signature
+	t.Scope = data.Scope.String()
+	t.ExpiresAt = data.ExpiresAt
+	t.ClientID = data.ClientID
+	t.ResourceOwnerID = data.ResourceOwnerID
 }
 
 // Client is the interface that must be implemented to provide a custom client

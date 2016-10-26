@@ -63,8 +63,8 @@ type Policy struct {
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
 		Secret:               []byte(secret),
-		AccessToken:          &Credential{},
-		RefreshToken:         &Credential{},
+		AccessToken:          &AccessToken{},
+		RefreshToken:         &RefreshToken{},
 		Client:               &Application{},
 		ResourceOwner:        &User{},
 		GrantStrategy:        DefaultGrantStrategy,

@@ -61,14 +61,14 @@ func TestIntegration(t *testing.T) {
 	expiredToken := hmacsha.MustGenerate(p.Secret, 32)
 	insufficientToken := hmacsha.MustGenerate(p.Secret, 32)
 
-	saveModel(&Credential{
+	saveModel(&AccessToken{
 		Signature: expiredToken.SignatureString(),
 		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
 		Scope:     "foo",
 		ClientID:  app1.ID(),
 	})
 
-	saveModel(&Credential{
+	saveModel(&AccessToken{
 		Signature: insufficientToken.SignatureString(),
 		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
 		Scope:     "",
@@ -79,16 +79,16 @@ func TestIntegration(t *testing.T) {
 	validRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
 	expiredRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
 
-	saveModel(&Credential{
+	saveModel(&RefreshToken{
 		Signature: validRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(auth.policy.RefreshTokenLifespan),
 		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
 
-	saveModel(&Credential{
+	saveModel(&RefreshToken{
 		Signature: expiredRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(-auth.policy.RefreshTokenLifespan),
 		Scope:     "foo bar",
 		ClientID:  app1.ID(),
 	})
