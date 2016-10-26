@@ -40,8 +40,8 @@ func getCleanStore() *Store {
 	return testStore
 }
 
-func buildServer(controllers ...*Controller) http.Handler {
 	group := NewGroup("")
+func buildHandler(controllers ...*Controller) http.Handler {
 	group.Add(controllers...)
 	return group
 }

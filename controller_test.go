@@ -15,7 +15,7 @@ import (
 func TestBasicOperations(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -237,7 +237,7 @@ func TestBasicOperations(t *testing.T) {
 func TestFiltering(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 		FilterableFields: []string{
@@ -559,7 +559,7 @@ func TestFiltering(t *testing.T) {
 func TestSorting(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 		SortableFields: []string{
@@ -766,7 +766,7 @@ func TestSorting(t *testing.T) {
 func TestSparseFieldsets(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -821,7 +821,7 @@ func TestSparseFieldsets(t *testing.T) {
 func TestHasManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1017,7 +1017,7 @@ func TestHasManyRelationship(t *testing.T) {
 func TestToOneRelationship(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1245,7 +1245,7 @@ func TestToOneRelationship(t *testing.T) {
 func TestToManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1539,7 +1539,7 @@ func TestToManyRelationship(t *testing.T) {
 func TestEmptyToManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1590,7 +1590,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 func TestNoList(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1614,7 +1614,7 @@ func TestNoList(t *testing.T) {
 func TestPagination(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1672,7 +1672,7 @@ func TestPagination(t *testing.T) {
 func TestPaginationToMany(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1738,7 +1738,7 @@ func TestPaginationToMany(t *testing.T) {
 func TestPaginationHasMany(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model: &Post{},
 		Store: store,
 	}, &Controller{
@@ -1802,7 +1802,7 @@ func TestPaginationHasMany(t *testing.T) {
 func TestForcedPagination(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model:     &Post{},
 		Store:     store,
 		ListLimit: 5,
@@ -1843,7 +1843,7 @@ func TestForcedPagination(t *testing.T) {
 func TestListLimit(t *testing.T) {
 	store := getCleanStore()
 
-	server := buildServer(&Controller{
+	server := buildHandler(&Controller{
 		Model:     &Post{},
 		Store:     store,
 		ListLimit: 5,
