@@ -78,7 +78,7 @@ func buildContext(prefix string, group *Group, store *Store, req *jsonapi.Reques
 // during any other action than Update.
 func (c *Context) Original() (Model, error) {
 	if c.Action != Update {
-		panic("Original can only be used during a Update action")
+		panic("Original can only be used during an Update action")
 	}
 
 	// return cached model

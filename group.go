@@ -23,10 +23,10 @@ func NewGroup() *Group {
 func (g *Group) Add(controllers ...*Controller) {
 	for _, controller := range controllers {
 		// initialize model
-		Init(controller.Model)
+		m := Init(controller.Model)
 
 		// create entry in controller map
-		g.controllers[controller.Model.Meta().PluralName] = controller
+		g.controllers[m.Meta().PluralName] = controller
 	}
 }
 
