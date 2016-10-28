@@ -21,16 +21,16 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
-	p.GrantStrategy = func(req *GrantRequest) (bool, oauth2.Scope) {
+	p.GrantStrategy = func(req *GrantRequest) (bool, []string) {
 		if !allowedScope.Includes(req.Scope) {
-			return false, oauth2.Scope{}
+			return false, []string{}
 		}
 
-		if !req.Scope.Includes(requiredScope) {
-			return false, oauth2.Scope{}
+		if !oauth2.Scope(req.Scope).Includes(requiredScope) {
+			return false, []string{}
 		}
 
-		return true, req.Scope
+		return true, []string(req.Scope)
 	}
 
 	auth := New(getCleanStore(), p)
@@ -64,14 +64,14 @@ func TestIntegration(t *testing.T) {
 	saveModel(&AccessToken{
 		Signature: expiredToken.SignatureString(),
 		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
-		Scope:     "foo",
+		Scope:     []string{"foo"},
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&AccessToken{
 		Signature: insufficientToken.SignatureString(),
 		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
-		Scope:     "",
+		Scope:     []string{},
 		ClientID:  app1.ID(),
 	})
 
@@ -82,14 +82,14 @@ func TestIntegration(t *testing.T) {
 	saveModel(&RefreshToken{
 		Signature: validRefreshToken.SignatureString(),
 		ExpiresAt: time.Now().Add(auth.policy.RefreshTokenLifespan),
-		Scope:     "foo bar",
+		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&RefreshToken{
 		Signature: expiredRefreshToken.SignatureString(),
 		ExpiresAt: time.Now().Add(-auth.policy.RefreshTokenLifespan),
-		Scope:     "foo bar",
+		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
 	})
 

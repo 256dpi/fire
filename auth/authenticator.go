@@ -46,7 +46,7 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 	}
 }
 
-// Endpoint returns a handler for the common token and authorze endpoint.
+// Endpoint returns a handler for the common token and authorize endpoint.
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// trim and split path
@@ -110,7 +110,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 			}
 
 			// validate scope
-			if !data.Scope.Includes(s) {
+			if !oauth2.Scope(data.Scope).Includes(s) {
 				bearer.WriteError(w, bearer.InsufficientScope(s.String()))
 				return
 			}
@@ -370,7 +370,7 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	}
 
 	// validate scope - a missing scope is always included
-	if !data.Scope.Includes(req.Scope) {
+	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
 		oauth2.WriteError(w, oauth2.InvalidScope(oauth2.NoState, "Scope exceeds the originally granted scope"))
 		return
 	}

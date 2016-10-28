@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/gonfire/fire"
-	"github.com/gonfire/oauth2"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -12,7 +11,7 @@ import (
 // TokenData is used to carry token related information.
 type TokenData struct {
 	Signature       string
-	Scope           oauth2.Scope
+	Scope           []string
 	ExpiresAt       time.Time
 	ClientID        bson.ObjectId
 	ResourceOwnerID *bson.ObjectId
@@ -33,7 +32,7 @@ type AccessToken struct {
 	fire.Base       `json:"-" bson:",inline" fire:"access-tokens:access_tokens"`
 	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope           string         `json:"scope" valid:"required" bson:"scope"`
+	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
@@ -47,7 +46,7 @@ func (t *AccessToken) TokenIdentifier() string {
 func (t *AccessToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Signature:       t.Signature,
-		Scope:           oauth2.ParseScope(t.Scope),
+		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
 		ClientID:        t.ClientID,
 		ResourceOwnerID: t.ResourceOwnerID,
@@ -57,7 +56,7 @@ func (t *AccessToken) GetTokenData() *TokenData {
 // SetTokenData implements the Token interface.
 func (t *AccessToken) SetTokenData(data *TokenData) {
 	t.Signature = data.Signature
-	t.Scope = data.Scope.String()
+	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
 	t.ClientID = data.ClientID
 	t.ResourceOwnerID = data.ResourceOwnerID
@@ -68,7 +67,7 @@ type RefreshToken struct {
 	fire.Base       `json:"-" bson:",inline" fire:"refresh-tokens:refresh_tokens"`
 	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope           string         `json:"scope" valid:"required" bson:"scope"`
+	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
@@ -82,7 +81,7 @@ func (t *RefreshToken) TokenIdentifier() string {
 func (t *RefreshToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Signature:       t.Signature,
-		Scope:           oauth2.ParseScope(t.Scope),
+		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
 		ClientID:        t.ClientID,
 		ResourceOwnerID: t.ResourceOwnerID,
@@ -92,7 +91,7 @@ func (t *RefreshToken) GetTokenData() *TokenData {
 // SetTokenData implements the Token interface.
 func (t *RefreshToken) SetTokenData(data *TokenData) {
 	t.Signature = data.Signature
-	t.Scope = data.Scope.String()
+	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
 	t.ClientID = data.ClientID
 	t.ResourceOwnerID = data.ResourceOwnerID

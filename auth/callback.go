@@ -24,7 +24,7 @@ func Callback(scope string) fire.Callback {
 		}
 
 		// validate scope
-		if !accessToken.GetTokenData().Scope.Includes(s) {
+		if !oauth2.Scope(accessToken.GetTokenData().Scope).Includes(s) {
 			return errors.New("unauthorized")
 		}
 

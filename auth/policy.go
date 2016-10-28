@@ -3,14 +3,13 @@ package auth
 import (
 	"time"
 
-	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/hmacsha"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
-	Scope         oauth2.Scope
+	Scope         []string
 	Client        Client
 	ResourceOwner ResourceOwner
 }
@@ -20,10 +19,10 @@ type GrantRequest struct {
 // token. The callback should return the scopes that should be granted.
 //
 // Note: The Owner is not set for a client credentials grant.
-type GrantStrategy func(req *GrantRequest) (bool, oauth2.Scope)
+type GrantStrategy func(req *GrantRequest) (bool, []string)
 
 // DefaultGrantStrategy grants the complete requested scope.
-func DefaultGrantStrategy(req *GrantRequest) (bool, oauth2.Scope) {
+func DefaultGrantStrategy(req *GrantRequest) (bool, []string) {
 	return true, req.Scope
 }
 
