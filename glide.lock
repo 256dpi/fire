@@ -1,5 +1,5 @@
-hash: cf77087276523b3b7cd973ace9471ce3117260f90c13928215ae36adbfbe1341
-updated: 2016-10-25T13:57:45.635843071+02:00
+hash: 387d69eea1e5444df66b0a9825fd6ce17bfd30a3a2d4dcc86b6251553990ad2f
+updated: 2016-10-28T12:20:10.753885695+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -15,10 +15,6 @@ imports:
   - spec
 - name: github.com/mitchellh/mapstructure
   version: f3009df150dadf309fdee4a54ed65c124afad715
-- name: github.com/pressly/chi
-  version: f1a5099f0f1da61a5c2d5c75b0376608df0e00bd
-- name: github.com/tylerb/graceful
-  version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
 - name: golang.org/x/crypto
   version: a8a4eedf8c97852389ea5f2c252660d3616af041
   subpackages:
@@ -31,8 +27,6 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
-- name: gopkg.in/tomb.v2
-  version: 14b3d72120e8d10ea6e6b7f87f7175734b1faab8
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
@@ -47,6 +41,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: 27c108f47598c262a87a2cddc9a49bd0d7c7fadc
+  version: 5fdbb97fe1ce31165ab8bb10911d4fd1eaebb234
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
