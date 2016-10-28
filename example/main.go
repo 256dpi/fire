@@ -26,7 +26,7 @@ func main() {
 	policy.PasswordGrant = true
 
 	// create authenticator
-	a11r := auth.New(store, policy)
+	authenticator := auth.New(store, policy)
 
 	// create group
 	group := fire.NewGroup()
@@ -45,23 +45,23 @@ func main() {
 	router := http.NewServeMux()
 
 	// create oauth2 and api endpoint
-	oauth2 := a11r.Endpoint("/oauth2/")
-	api := group.Endpoint("/api/")
+	authEndpoint := authenticator.Endpoint("/oauth2/")
+	apiEndpoint := group.Endpoint("/api/")
 
 	// create spa asset server
-	spa := tools.DefaultAssetServer("../.test/assets/")
+	spaEndpoint := tools.DefaultAssetServer("../.test/assets/")
 
 	// create protector, logger
-	p := tools.DefaultProtector()
-	l := tools.DefaultRequestLogger()
+	protector := tools.DefaultProtector()
+	logger := tools.DefaultRequestLogger()
 
 	// create authorizer
-	a := a11r.Authorizer("")
+	authorizer := authenticator.Authorizer("")
 
 	// mount authenticator, controller group, asset server
-	router.Handle("/oauth2/", p(l(oauth2)))
-	router.Handle("/api/", p(l(a(api))))
-	router.Handle("/", p(l(spa)))
+	router.Handle("/oauth2/", fire.Compose(authEndpoint, protector, logger))
+	router.Handle("/api/", fire.Compose(apiEndpoint, protector, logger, authorizer))
+	router.Handle("/", fire.Compose(spaEndpoint, protector, logger))
 
 	// run app
 	http.ListenAndServe("localhost:8080", router)
