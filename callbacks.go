@@ -53,6 +53,36 @@ func Combine(callbacks ...Callback) Callback {
 	}
 }
 
+// Only will return a callback that runs the specified callback only when one
+// of the supplied actions match.
+func Only(callback Callback, actions ...Action) Callback {
+	return func(ctx *Context) error {
+		// check action
+		for _, a := range actions {
+			if a == ctx.Action {
+				return callback(ctx)
+			}
+		}
+
+		return nil
+	}
+}
+
+// Except will return a callback that runs the specified callback only when none
+// of the supplied actions match.
+func Except(callback Callback, actions ...Action) Callback {
+	return func(ctx *Context) error {
+		// check action
+		for _, a := range actions {
+			if a == ctx.Action {
+				return nil
+			}
+		}
+
+		return callback(ctx)
+	}
+}
+
 // ModelValidator uses the govalidator package to validate the model based on
 // the "valid" struct tags.
 func ModelValidator() Callback {

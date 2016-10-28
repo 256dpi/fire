@@ -19,17 +19,59 @@ func TestFatal(t *testing.T) {
 }
 
 func TestCombine(t *testing.T) {
-	// prepare fake callback
 	var counter int
 	cb := func(ctx *Context) error {
 		counter++
 		return nil
 	}
 
-	// call combined callbacks
 	err := Combine(cb, cb, cb)(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, counter)
+}
+
+func TestOnly(t *testing.T) {
+	var counter int
+	cb := func(ctx *Context) error {
+		counter++
+		return nil
+	}
+
+	ctx := &Context{
+		Action: Find,
+	}
+
+	err := Only(cb, List, Find)(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, counter)
+
+	ctx.Action = Update
+
+	err = Only(cb, List, Find)(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, counter)
+}
+
+func TestExcept(t *testing.T) {
+	var counter int
+	cb := func(ctx *Context) error {
+		counter++
+		return nil
+	}
+
+	ctx := &Context{
+		Action: Update,
+	}
+
+	err := Except(cb, List, Find)(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, counter)
+
+	ctx.Action = Find
+
+	err = Except(cb, List, Find)(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, counter)
 }
 
 func TestModelValidator(t *testing.T) {
