@@ -9,6 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// TokenData is used to carry token related information.
 type TokenData struct {
 	Signature       string
 	Scope           oauth2.Scope

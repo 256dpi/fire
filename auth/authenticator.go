@@ -16,7 +16,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const AccessTokenContextKey = "fire.oauth2.access_token"
+// AccessTokenContextKey is the key used to save the access token in a context.
+const AccessTokenContextKey = "fire.auth.access_token"
 
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
@@ -26,7 +27,7 @@ type Authenticator struct {
 	policy *Policy
 }
 
-// New constructs a new Authenticator.
+// New constructs a new Authenticator from a store and policy.
 func New(store *fire.Store, policy *Policy) *Authenticator {
 	// check secret
 	if len(policy.Secret) < 16 {
@@ -45,6 +46,7 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 	}
 }
 
+// Endpoint returns a handler for the common token and authorze endpoint.
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// trim and split path
@@ -53,10 +55,10 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		// try to call the controllers general handler
 		if len(s) > 0 {
 			if s[0] == "token" {
-				a.TokenEndpoint(w, r)
+				a.tokenEndpoint(w, r)
 				return
 			} else if s[0] == "authorize" {
-				a.AuthorizationEndpoint(w, r)
+				a.authorizationEndpoint(w, r)
 				return
 			}
 		}
@@ -66,9 +68,8 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	})
 }
 
-// Authorize can be used to authorize a request by requiring an access token with
-// the provided scopes to be granted. The method returns a middleware that can be
-// called before any other routes.
+// Authorizer returns a middleware that can be used to authorize a request by
+// requiring an access token with the provided scopes to be granted.
 func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +124,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 	}
 }
 
-func (a *Authenticator) AuthorizationEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(r)
 	if err != nil {
@@ -217,7 +218,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	oauth2.RedirectTokenResponse(w, req.RedirectURI, res)
 }
 
-func (a *Authenticator) TokenEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(r)
 	if err != nil {
