@@ -6,23 +6,15 @@ import:
   subpackages:
   - bson
 - package: github.com/gonfire/jsonapi
-  version: ^0.4.0
-- package: github.com/labstack/echo
-  # TOOD: Let's use some cutting-edge technology for a moment.
-  version: master
-- package: github.com/ory-am/fosite
-  version: ^0.3.0
-  subpackages:
-  - compose
-  - handler/oauth2
+  version: ^0.5.2
+- package: github.com/gonfire/oauth2
+  version: ^0.2.1
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt
-- package: golang.org/x/net
-  subpackages:
-  - context
-- package: github.com/fatih/color
-  version: ^1.0.0
+- package: github.com/pressly/chi
+- package: github.com/tylerb/graceful
+  version: ^1.2.13
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.3

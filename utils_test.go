@@ -1,117 +1,82 @@
 package fire
 
 import (
-	"crypto/tls"
-	"errors"
-	"io/ioutil"
-	"net"
 	"net/http"
-	"time"
+	"net/http/httptest"
+	"strings"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/standard"
+	"gopkg.in/mgo.v2/bson"
 )
 
-type testComponent struct {
-	setupCalled    bool
-	teardownCalled bool
-	reportedError  error
+type Post struct {
+	Base       `json:"-" bson:",inline" fire:"posts"`
+	Title      string  `json:"title" bson:"title" valid:"required"`
+	Published  bool    `json:"published"`
+	TextBody   string  `json:"text-body" bson:"text_body"`
+	Comments   HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
+	Selections HasMany `json:"-" bson:"-" fire:"selections:selections:posts"`
 }
 
-func (c *testComponent) Describe() ComponentInfo {
-	return ComponentInfo{
-		Name: "testComponent",
-		Settings: Map{
-			"foo": "bar",
-		},
-	}
+type Comment struct {
+	Base    `json:"-" bson:",inline" fire:"comments"`
+	Message string         `json:"message"`
+	Parent  *bson.ObjectId `json:"-" fire:"parent:comments"`
+	PostID  bson.ObjectId  `json:"-" bson:"post_id" fire:"post:posts"`
 }
 
-func (c *testComponent) Register(router *echo.Echo) {
-	router.GET("/", func(ctx echo.Context) error {
-		return ctx.String(200, "OK")
-	})
-
-	router.GET("/foo", func(ctx echo.Context) error {
-		return ctx.String(200, "OK")
-	})
-
-	router.GET("/error", func(ctx echo.Context) error {
-		return errors.New("error")
-	})
-
-	router.Get("/unauthorized", func(ctx echo.Context) error {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Not Authorized")
-	})
+type Selection struct {
+	Base    `json:"-" bson:",inline" fire:"selections:selections"`
+	Name    string          `json:"name"`
+	PostIDs []bson.ObjectId `json:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
-func (c *testComponent) Setup() error {
-	c.setupCalled = true
-	return nil
+var testStore = MustCreateStore("mongodb://0.0.0.0:27017/fire")
+
+func getCleanStore() *Store {
+	testStore.DB().C("posts").RemoveAll(nil)
+	testStore.DB().C("comments").RemoveAll(nil)
+	testStore.DB().C("selections").RemoveAll(nil)
+
+	return testStore
 }
 
-func (c *testComponent) Teardown() error {
-	c.teardownCalled = true
-	return nil
+func buildHandler(controllers ...*Controller) http.Handler {
+	group := NewGroup()
+	group.Add(controllers...)
+	return group.Endpoint("")
 }
 
-func (c *testComponent) Report(err error) error {
-	c.reportedError = err
-	return nil
-}
-
-type failingReporter struct{}
-
-func (r *failingReporter) Describe() ComponentInfo {
-	return ComponentInfo{
-		Name: "failingReporter",
-	}
-}
-
-func (r *failingReporter) Report(err error) error {
-	return err
-}
-
-func runApp(app *Application) (chan struct{}, string) {
-	listener, err := net.Listen("tcp", ":")
+func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+	r, err := http.NewRequest(method, path, strings.NewReader(payload))
 	if err != nil {
 		panic(err)
 	}
 
-	server := standard.WithConfig(engine.Config{
-		Listener: listener,
-	})
+	w := httptest.NewRecorder()
 
-	done := make(chan struct{})
+	for k, v := range headers {
+		r.Header.Set(k, v)
+	}
 
-	go func() {
-		app.startWith("http://"+listener.Addr().String(), server)
-		<-done
-		app.Stop()
-	}()
+	h.ServeHTTP(w, r)
 
-	time.Sleep(50 * time.Millisecond)
-
-	return done, app.BaseURL()
+	callback(w, r)
 }
 
-func testRequest(url string) (string, *http.Response, error) {
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}}
-
-	res, err := client.Get(url)
+func saveModel(m Model) Model {
+	err := testStore.C(m).Insert(m)
 	if err != nil {
-		return "", nil, err
+		panic(err)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	return m
+}
+
+func findLastModel(m Model) Model {
+	err := testStore.C(m).Find(nil).Sort("-_id").One(m)
 	if err != nil {
-		return "", nil, err
+		panic(err)
 	}
 
-	return string(buf), res, nil
+	return Init(m)
 }
