@@ -93,6 +93,10 @@ func TestModelValidator(t *testing.T) {
 	post.Title = "Default Title"
 	err = validator(ctx)
 	assert.NoError(t, err)
+
+	post.Title = "error"
+	err = validator(ctx)
+	assert.Error(t, err)
 }
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {

@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,14 @@ type Post struct {
 	TextBody   string  `json:"text-body" bson:"text_body"`
 	Comments   HasMany `json:"-" bson:"-" fire:"comments:comments:post"`
 	Selections HasMany `json:"-" bson:"-" fire:"selections:selections:posts"`
+}
+
+func (p *Post) Validate(fresh bool) error {
+	if p.Title == "error" {
+		return errors.New("error")
+	}
+
+	return nil
 }
 
 type Comment struct {

@@ -16,6 +16,16 @@ type Model interface {
 	initialize(Model)
 }
 
+// The ValidatableModel interface can be additionally implemented to provide
+// a custom validation method that is used by the ModelValidator callback.
+type ValidatableModel interface {
+	Model
+
+	// The Validate method is invoked during validation with a boolean indicating
+	// if the model is fresh (being created).
+	Validate(bool) error
+}
+
 // Init initializes the internals of a model and should be called before using
 // a newly created Model.
 func Init(model Model) Model {

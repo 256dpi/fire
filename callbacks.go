@@ -84,7 +84,9 @@ func Except(callback Callback, actions ...Action) Callback {
 }
 
 // ModelValidator uses the govalidator package to validate the model based on
-// the "valid" struct tags.
+// the "valid" struct tags. If the passed model also implements the
+// ValidatableModel interface, Validate will be invoked after the struct
+// validation.
 func ModelValidator() Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
@@ -103,6 +105,14 @@ func ModelValidator() Callback {
 		_, err := govalidator.ValidateStruct(ctx.Model)
 		if err != nil {
 			return err
+		}
+
+		// invoke custom validation method when available
+		if validatableModel, ok := ctx.Model.(ValidatableModel); ok {
+			err = validatableModel.Validate(ctx.Action == Create)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
