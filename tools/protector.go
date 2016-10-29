@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/rs/cors"
+	"github.com/goware/cors"
 )
 
 // DefaultProtector constructs a middleware that by default limits the request

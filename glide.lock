@@ -1,5 +1,5 @@
-hash: bee379ff58a673bcac8795c33d611c7e94dc93e1cd73dfa753346b9c809d4d1d
-updated: 2016-10-29T11:44:26.642267868+02:00
+hash: 8581df5df61bb1f9d7f6fc1cccd5d4910122a05fb8632ee08db4abfdf1baa358
+updated: 2016-10-29T15:41:44.258684808+02:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
@@ -13,10 +13,10 @@ imports:
   - bearer
   - hmacsha
   - spec
+- name: github.com/goware/cors
+  version: 6ad15f4e1489e41776ee8b008597eafea9a67fd9
 - name: github.com/mitchellh/mapstructure
   version: f3009df150dadf309fdee4a54ed65c124afad715
-- name: github.com/rs/cors
-  version: a62a804a8a009876ca59105f7899938a1349f4b3
 - name: golang.org/x/crypto
   version: a8a4eedf8c97852389ea5f2c252660d3616af041
   subpackages:
