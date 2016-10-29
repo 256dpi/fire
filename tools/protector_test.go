@@ -1,10 +1,7 @@
 package tools
 
 import (
-	"bytes"
-	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -46,8 +43,27 @@ func TestProtectorBodyOverflow(t *testing.T) {
 	assert.Equal(t, "OK", w.Body.String())
 }
 
-func randomReader(size int) io.Reader {
-	b := make([]byte, size)
-	rand.Read(b)
-	return bytes.NewReader(b)
+func TestProtectorCORS(t *testing.T) {
+	p := DefaultProtector()
+	e := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusContinue)
+		w.Write([]byte("OK"))
+	})
+	h := p(e)
+
+	r, err := http.NewRequest("OPTIONS", "/foo", nil)
+	assert.NoError(t, err)
+
+	w := httptest.NewRecorder()
+
+	h.ServeHTTP(w, r)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.Header{
+		"Vary": []string{
+			"Origin",
+			"Access-Control-Request-Method",
+			"Access-Control-Request-Headers",
+		},
+	}, w.HeaderMap)
+	assert.Empty(t, w.Body.String())
 }

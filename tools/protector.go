@@ -3,26 +3,35 @@ package tools
 import (
 	"net/http"
 	"strconv"
+
+	"github.com/rs/cors"
 )
 
-// TODO: Add CORS?
-
 // DefaultProtector constructs a middleware that by default limits the request
-// body size to 4Ks.
+// body size to 4Ks and sets a basic CORS configuration.
 func DefaultProtector() func(http.Handler) http.Handler {
-	return NewProtector("4K")
+	return NewProtector("4K", cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedHeaders: []string{"Origin", "Accept", "Content-Type", "Authorization"},
+		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE"},
+	})
 }
 
 // NewProtector constructs a middleware that implements basic protection measures
-// for the passed endpoint. Currently the protector only limits the body size
-// to a the passed length.
-func NewProtector(maxBody string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// for the passed endpoint. Currently the protector limits the body size
+// to a the passed length and automatically handles CORS using the specified
+// options.
+func NewProtector(maxBody string, corsOptions cors.Options) func(http.Handler) http.Handler {
+	c := cors.New(corsOptions)
 
+	return func(next http.Handler) http.Handler {
+		return c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// replace read with a limited reader
 			r.Body = http.MaxBytesReader(w, r.Body, parseHumanSize(maxBody))
+
+			// call next handler
 			next.ServeHTTP(w, r)
-		})
+		}))
 	}
 }
 
