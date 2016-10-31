@@ -858,11 +858,16 @@ func (c *Controller) updateModel(ctx *Context) error {
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
+	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
+	if err != nil {
+		return nil, err
+	}
+
 	// prepare resource
 	resource := &jsonapi.Resource{
 		Type:          c.Model.Meta().PluralName,
 		ID:            model.ID().Hex(),
-		Attributes:    jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName]),
+		Attributes:    m,
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
