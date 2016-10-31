@@ -79,6 +79,11 @@ func InitSlice(ptr interface{}) []Model {
 	return models
 }
 
+// C is a short-hand function to extract the collection of a model.
+func C(m Model) string {
+	return Init(m).Meta().Collection
+}
+
 // Base is the base for every fire model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`

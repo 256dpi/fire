@@ -16,6 +16,10 @@ func TestInitSlice(t *testing.T) {
 	assert.NotNil(t, m[0].Meta())
 }
 
+func TestC(t *testing.T) {
+	assert.Equal(t, "posts", C(&Post{}))
+}
+
 func TestBaseID(t *testing.T) {
 	post := Init(&Post{}).(*Post)
 	assert.Equal(t, post.DocID, post.ID())
