@@ -1,8 +1,10 @@
 package fire
 
 import (
+	"errors"
 	"reflect"
 
+	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -17,13 +19,39 @@ type Model interface {
 }
 
 // The ValidatableModel interface can be additionally implemented to provide
-// a custom validation method that is used by the ModelValidator callback.
+// a custom validation method that is used by the Validate function.
 type ValidatableModel interface {
 	Model
 
-	// The Validate method is invoked during validation with a boolean indicating
-	// if the model is fresh (being created).
-	Validate(bool) error
+	// The Validate method that should return normal errors about invalid fields.
+	Validate() error
+}
+
+// Validate uses the govalidator package to validate the model based on
+// the "valid" struct tags. If the passed model also implements the
+// ValidatableModel interface, Validate method will be invoked after the struct
+// validation.
+func Validate(m Model) error {
+	// validate id
+	if !m.ID().Valid() {
+		return errors.New("Invalid ID")
+	}
+
+	// validate model
+	_, err := govalidator.ValidateStruct(m)
+	if err != nil {
+		return err
+	}
+
+	// invoke custom validation method when available
+	if validatableModel, ok := m.(ValidatableModel); ok {
+		err = validatableModel.Validate()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Init initializes the internals of a model and should be called before using

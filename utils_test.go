@@ -18,7 +18,7 @@ type Post struct {
 	Selections HasMany `json:"-" bson:"-" fire:"selections:selections:posts"`
 }
 
-func (p *Post) Validate(fresh bool) error {
+func (p *Post) Validate() error {
 	if p.Title == "error" {
 		return errors.New("error")
 	}
