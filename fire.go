@@ -7,13 +7,13 @@ import "net/http"
 func Compose(chain ...interface{}) http.Handler {
 	// check length
 	if len(chain) < 2 {
-		panic("expected chain to have at least two items")
+		panic("Expected chain to have at least two items")
 	}
 
 	// get handler
 	h, ok := chain[len(chain)-1].(http.Handler)
 	if !ok {
-		panic(`expected last chain item to be a "http.Handler"`)
+		panic(`Expected last chain item to be a "http.Handler"`)
 	}
 
 	// chain all middlewares
@@ -21,7 +21,7 @@ func Compose(chain ...interface{}) http.Handler {
 		// get middleware
 		m, ok := chain[i].(func(http.Handler) http.Handler)
 		if !ok {
-			panic(`expected chain item to be a "func(http.handler) http.Handler"`)
+			panic(`Expected chain item to be a "func(http.handler) http.Handler"`)
 		}
 
 		// chain
