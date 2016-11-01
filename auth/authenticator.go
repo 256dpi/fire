@@ -16,8 +16,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type ctxKex int
+
 // AccessTokenContextKey is the key used to save the access token in a context.
-const AccessTokenContextKey = "fire.auth.access_token"
+const AccessTokenContextKey ctxKex = iota
 
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
