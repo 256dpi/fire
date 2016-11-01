@@ -196,6 +196,7 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	// insert model
 	err = ctx.Store.C(ctx.Model).Insert(ctx.Model)
 	if err != nil {
+		// TODO: Report error.
 		return err
 	}
 
@@ -277,6 +278,7 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) error {
 	// query db
 	err := ctx.Store.C(c.Model).Remove(ctx.Query)
 	if err != nil {
+		// TODO: Report error.
 		return err
 	}
 
@@ -440,6 +442,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) er
 
 		// check filter name
 		if filterName == "" {
+			// TODO: Report error.
 			return fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse)
 		}
 
@@ -649,6 +652,7 @@ func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) err
 	// run callback and handle errors
 	err := cb(ctx)
 	if isFatal(err) {
+		// TODO: Report error.
 		return err
 	} else if err != nil {
 		// return user error
@@ -686,6 +690,7 @@ func (c *Controller) loadModel(ctx *Context) error {
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
+		// TODO: Report error.
 		return err
 	}
 
@@ -754,6 +759,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// query db
 	err = query.All(slicePtr)
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -770,6 +776,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
 	err := res.Attributes.Assign(ctx.Model)
 	if err != nil {
+		// TODO: Report error.
 		return err
 	}
 
@@ -854,12 +861,19 @@ func (c *Controller) updateModel(ctx *Context) error {
 	}
 
 	// update model
-	return ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model)
+	err = ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model)
+	if err != nil {
+		// TODO: Report error.
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -961,6 +975,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 
 			// check filter name
 			if filterName == "" {
+				// TODO: Report error.
 				return nil, fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse)
 			}
 
@@ -972,6 +987,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 				},
 			}).Distinct("_id", &ids)
 			if err != nil {
+				// TODO: Report error.
 				return nil, err
 			}
 
@@ -1030,6 +1046,7 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 		// get total amount of resources
 		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
 		if err != nil {
+			// TODO: Report error.
 			return nil, err
 		}
 
