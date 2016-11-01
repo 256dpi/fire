@@ -34,6 +34,9 @@ func TestIntegration(t *testing.T) {
 	}
 
 	auth := New(getCleanStore(), p)
+	auth.Reporter = func(err error) {
+		t.Error(err)
+	}
 
 	app1 := saveModel(&Application{
 		Name:        "Application 1",

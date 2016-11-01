@@ -119,6 +119,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	if err != nil {
 		// report non jsonapi errors
 		if _, ok := err.(*jsonapi.Error); !ok && c.Reporter != nil {
+			// TODO: Report error on source.
 			c.Reporter(err)
 		}
 
