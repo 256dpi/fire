@@ -92,6 +92,7 @@ func (c *Context) Original() (Model, error) {
 	// read original document
 	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 

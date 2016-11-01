@@ -63,6 +63,7 @@ func DefaultPolicy(secret string) *Policy {
 func (p *Policy) NewKeyAndSignature() (string, string, error) {
 	token, err := hmacsha.Generate(p.Secret, 32)
 	if err != nil {
+		// TODO: Report error.
 		return "", "", err
 	}
 

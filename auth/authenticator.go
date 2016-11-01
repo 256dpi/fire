@@ -395,12 +395,14 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 	// generate new access token
 	accessToken, err := hmacsha.Generate(a.policy.Secret, 32)
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
 	// generate new refresh token
 	refreshToken, err := hmacsha.Generate(a.policy.Secret, 32)
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -473,6 +475,7 @@ func (a *Authenticator) getClient(id string) (Client, error) {
 	if err == mgo.ErrNotFound {
 		return nil, nil
 	} else if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -502,6 +505,7 @@ func (a *Authenticator) getResourceOwner(id string) (ResourceOwner, error) {
 	if err == mgo.ErrNotFound {
 		return nil, nil
 	} else if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -539,6 +543,7 @@ func (a *Authenticator) getToken(tokenModel Token, signature string) (Token, err
 	if err == mgo.ErrNotFound {
 		return nil, nil
 	} else if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -572,6 +577,7 @@ func (a *Authenticator) saveToken(tokenModel Token, data *TokenData) (Token, err
 	// save access token
 	err := store.C(token).Insert(token)
 	if err != nil {
+		// TODO: Report error.
 		return nil, err
 	}
 
@@ -603,6 +609,7 @@ func (a *Authenticator) deleteToken(tokenModel Token, signature string) error {
 	if err == mgo.ErrNotFound {
 		return nil
 	} else if err != nil {
+		// TODO: Report error.
 		return err
 	}
 
