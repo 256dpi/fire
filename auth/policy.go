@@ -8,8 +8,13 @@ import (
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
-	Scope         []string
-	Client        Client
+	// The scope that has been requested.
+	Scope []string
+
+	// The client that made the access request.
+	Client Client
+
+	// The resource owner that gave his consent.
 	ResourceOwner ResourceOwner
 }
 
@@ -27,20 +32,27 @@ func DefaultGrantStrategy(req *GrantRequest) (bool, []string) {
 
 // A Policy configures the provided authentication schemes.
 type Policy struct {
+	// The shared secret which should be at least 16 characters.
 	Secret []byte
 
+	// The available grants.
 	PasswordGrant          bool
 	ClientCredentialsGrant bool
 	ImplicitGrant          bool
 
+	// The used models and strategies.
 	AccessToken   Token
 	RefreshToken  Token
 	Client        Client
 	ResourceOwner ResourceOwner
 	GrantStrategy GrantStrategy
 
+	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
 	RefreshTokenLifespan time.Duration
+
+	// The optional automated cleanup of expires tokens.
+	AutomatedCleanup bool
 }
 
 // DefaultPolicy returns a simple policy that uses all built-in models and
@@ -55,6 +67,7 @@ func DefaultPolicy(secret string) *Policy {
 		GrantStrategy:        DefaultGrantStrategy,
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,
+		AutomatedCleanup:     true,
 	}
 }
 

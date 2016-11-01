@@ -22,8 +22,13 @@ type TokenData struct {
 type Token interface {
 	fire.Model
 
-	TokenIdentifier() string
+	// DescribeToken should return the tokens identifier and expires at field.
+	DescribeToken() (string, string)
+
+	// GetTokenData should collect and return the tokens data.
 	GetTokenData() *TokenData
+
+	// SetTokenData should set the specified token data.
 	SetTokenData(*TokenData)
 }
 
@@ -37,9 +42,9 @@ type AccessToken struct {
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
-// TokenIdentifier implements the Token interface.
-func (t *AccessToken) TokenIdentifier() string {
-	return "Signature"
+// DescribeToken implements the Token interface.
+func (t *AccessToken) DescribeToken() (string, string) {
+	return "Signature", "ExpiresAt"
 }
 
 // GetTokenData implements the Token interface.
@@ -72,9 +77,9 @@ type RefreshToken struct {
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
-// TokenIdentifier implements the Token interface.
-func (t *RefreshToken) TokenIdentifier() string {
-	return "Signature"
+// DescribeToken implements the Token interface.
+func (t *RefreshToken) DescribeToken() (string, string) {
+	return "Signature", "ExpiresAt"
 }
 
 // GetTokenData implements the Token interface.
@@ -102,8 +107,18 @@ func (t *RefreshToken) SetTokenData(data *TokenData) {
 type Client interface {
 	fire.Model
 
-	ClientIdentifier() string
+	// DescribeClient should return the clients identifier field.
+	DescribeClient() string
+
+	// ValidRedirectURI should return whether the specified redirect uri can be
+	// used by this client.
+	//
+	// Note: In order to increases security the callback should only allow
+	// pre-registered redirect uris.
 	ValidRedirectURI(string) bool
+
+	// ValidSecret should determine whether the specified plain text secret
+	// matches the hashed secret.
 	ValidSecret(string) bool
 }
 
@@ -117,8 +132,8 @@ type Application struct {
 	RedirectURI string `json:"redirect_uri" valid:"required"`
 }
 
-// ClientIdentifier implements the Client interface.
-func (a *Application) ClientIdentifier() string {
+// DescribeClient implements the Client interface.
+func (a *Application) DescribeClient() string {
 	return "Key"
 }
 

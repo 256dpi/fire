@@ -461,6 +461,14 @@ func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, 
 		}
 	}
 
+	// run automated cleanup if enabled
+	if a.policy.AutomatedCleanup {
+		err = a.cleanup()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return res, nil
 }
 
@@ -475,7 +483,7 @@ func (a *Authenticator) getClient(id string) (Client, error) {
 	defer store.Close()
 
 	// get id field
-	field := a.policy.Client.Meta().FindField(a.policy.Client.ClientIdentifier())
+	field := a.policy.Client.Meta().FindField(a.policy.Client.DescribeClient())
 
 	// query db
 	err := store.C(a.policy.Client).Find(bson.M{
@@ -542,8 +550,11 @@ func (a *Authenticator) getToken(tokenModel Token, signature string) (Token, err
 	// ensure store gets closed
 	defer store.Close()
 
+	// get token id field name
+	fieldName, _ := tokenModel.DescribeToken()
+
 	// get signature field
-	field := tokenModel.Meta().FindField(tokenModel.TokenIdentifier())
+	field := tokenModel.Meta().FindField(fieldName)
 
 	// fetch access token
 	err := store.C(tokenModel).Find(bson.M{
@@ -608,8 +619,11 @@ func (a *Authenticator) deleteToken(tokenModel Token, signature string) error {
 	// ensure store gets closed
 	defer store.Close()
 
+	// get token id field name
+	fieldName, _ := tokenModel.DescribeToken()
+
 	// get signature field
-	field := tokenModel.Meta().FindField(tokenModel.TokenIdentifier())
+	field := tokenModel.Meta().FindField(fieldName)
 
 	// fetch access token
 	err := store.C(tokenModel).Remove(bson.M{
@@ -618,6 +632,49 @@ func (a *Authenticator) deleteToken(tokenModel Token, signature string) error {
 	if err == mgo.ErrNotFound {
 		return nil
 	} else if err != nil {
+		a.assert(err)
+		return err
+	}
+
+	return nil
+}
+
+func (a *Authenticator) cleanup() error {
+	// remove all expired access tokens
+	err := a.cleanupToken(a.policy.AccessToken)
+	if err != nil {
+		return err
+	}
+
+	// remove all expired refresh tokens
+	err = a.cleanupToken(a.policy.RefreshToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Authenticator) cleanupToken(tokenModel Token) error {
+	// get store
+	store := a.store.Copy()
+
+	// ensure store gets closed
+	defer store.Close()
+
+	// get access token expires at field name
+	_, fieldName := tokenModel.DescribeToken()
+
+	// get expires at field
+	field := tokenModel.Meta().FindField(fieldName)
+
+	// remove all records
+	_, err := store.C(tokenModel).RemoveAll(bson.M{
+		field.BSONName: bson.M{
+			"$lt": time.Now(),
+		},
+	})
+	if err != nil {
 		a.assert(err)
 		return err
 	}
