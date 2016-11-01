@@ -513,7 +513,7 @@ func (a *Authenticator) getResourceOwner(id string) (ResourceOwner, error) {
 	defer store.Close()
 
 	// get id field
-	field := a.policy.ResourceOwner.Meta().FindField(a.policy.ResourceOwner.ResourceOwnerIdentifier())
+	field := a.policy.ResourceOwner.Meta().FindField(a.policy.ResourceOwner.DescribeResourceOwner())
 
 	// query db
 	err := store.C(a.policy.ResourceOwner).Find(bson.M{

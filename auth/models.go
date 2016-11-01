@@ -152,7 +152,11 @@ func (a *Application) ValidSecret(secret string) bool {
 type ResourceOwner interface {
 	fire.Model
 
-	ResourceOwnerIdentifier() string
+	// DescribeResourceOwner should return the resource owners identifier field.
+	DescribeResourceOwner() string
+
+	// ValidSecret should determine whether the specified plain text password
+	// matches the hashed password.
 	ValidPassword(string) bool
 }
 
@@ -164,8 +168,8 @@ type User struct {
 	PasswordHash []byte `json:"-" valid:"required"`
 }
 
-// ResourceOwnerIdentifier implements the ResourceOwner interface.
-func (u *User) ResourceOwnerIdentifier() string {
+// DescribeResourceOwner implements the ResourceOwner interface.
+func (u *User) DescribeResourceOwner() string {
 	return "Email"
 }
 
