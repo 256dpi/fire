@@ -27,7 +27,7 @@ func TestCompose(t *testing.T) {
 		})
 	}
 
-	e := Compose(h, m1, m2)
+	e := Compose(m1, m2, h)
 
 	r, err := http.NewRequest("GET", "/foo", nil)
 	assert.NoError(t, err)
