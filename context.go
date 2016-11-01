@@ -72,10 +72,10 @@ func buildContext(prefix string, group *Group, store *Store, req *jsonapi.Reques
 }
 
 // Original will return the stored version of the model. This method is intended
-// to be used to calculate the changed fields during an Update action.
+// to be used to calculate the changed fields during an Update action. Any
+// returned error is already marked as fatal.
 //
-// Note: The method will directly return any mgo errors and panic if being used
-// during any other action than Update.
+// Note: The method will panic if being used during any other action than Update.
 func (c *Context) Original() (Model, error) {
 	if c.Action != Update {
 		panic("Original can only be used during an Update action")
@@ -92,8 +92,7 @@ func (c *Context) Original() (Model, error) {
 	// read original document
 	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
-		// TODO: Report error.
-		return nil, err
+		return nil, Fatal(err)
 	}
 
 	// cache model

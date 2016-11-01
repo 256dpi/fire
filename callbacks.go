@@ -126,7 +126,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 			// read the original
 			original, err := ctx.Original()
 			if err != nil {
-				return Fatal(err)
+				return err
 			}
 
 			// check all attributes
