@@ -43,6 +43,9 @@ type Controller struct {
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit int
+
+	// The Reporter callback is called with every unexpected error.
+	Reporter func(err error)
 }
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
@@ -112,8 +115,14 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 		err = c.removeFromRelationship(w, ctx, doc)
 	}
 
-	// write any left over errors
+	// check for error
 	if err != nil {
+		// report non jsonapi errors
+		if _, ok := err.(*jsonapi.Error); !ok && c.Reporter != nil {
+			c.Reporter(err)
+		}
+
+		// write error
 		jsonapi.WriteError(w, err)
 	}
 }
@@ -196,7 +205,6 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	// insert model
 	err = ctx.Store.C(ctx.Model).Insert(ctx.Model)
 	if err != nil {
-		// TODO: Report error.
 		return err
 	}
 
@@ -278,7 +286,6 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) error {
 	// query db
 	err := ctx.Store.C(c.Model).Remove(ctx.Query)
 	if err != nil {
-		// TODO: Report error.
 		return err
 	}
 
@@ -442,7 +449,6 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) er
 
 		// check filter name
 		if filterName == "" {
-			// TODO: Report error.
 			return fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse)
 		}
 
@@ -652,7 +658,6 @@ func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) err
 	// run callback and handle errors
 	err := cb(ctx)
 	if isFatal(err) {
-		// TODO: Report error.
 		return err
 	} else if err != nil {
 		// return user error
@@ -690,7 +695,6 @@ func (c *Controller) loadModel(ctx *Context) error {
 	if err == mgo.ErrNotFound {
 		return jsonapi.NotFound("Resource not found")
 	} else if err != nil {
-		// TODO: Report error.
 		return err
 	}
 
@@ -759,7 +763,6 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	// query db
 	err = query.All(slicePtr)
 	if err != nil {
-		// TODO: Report error.
 		return nil, err
 	}
 
@@ -776,7 +779,6 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
 	// map attributes to struct
 	err := res.Attributes.Assign(ctx.Model)
 	if err != nil {
-		// TODO: Report error.
 		return err
 	}
 
@@ -863,7 +865,6 @@ func (c *Controller) updateModel(ctx *Context) error {
 	// update model
 	err = ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model)
 	if err != nil {
-		// TODO: Report error.
 		return err
 	}
 
@@ -873,7 +874,6 @@ func (c *Controller) updateModel(ctx *Context) error {
 func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
 	if err != nil {
-		// TODO: Report error.
 		return nil, err
 	}
 
@@ -975,7 +975,6 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 
 			// check filter name
 			if filterName == "" {
-				// TODO: Report error.
 				return nil, fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse)
 			}
 
@@ -987,7 +986,6 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 				},
 			}).Distinct("_id", &ids)
 			if err != nil {
-				// TODO: Report error.
 				return nil, err
 			}
 
@@ -1046,7 +1044,6 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 		// get total amount of resources
 		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
 		if err != nil {
-			// TODO: Report error.
 			return nil, err
 		}
 
