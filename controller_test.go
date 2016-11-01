@@ -16,14 +16,17 @@ func TestBasicOperations(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// get empty list of posts
@@ -238,18 +241,21 @@ func TestFiltering(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 		Filters: []string{
 			"title",
 			"published",
 		},
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts
@@ -565,12 +571,15 @@ func TestSorting(t *testing.T) {
 		Sorters: []string{
 			"title",
 		},
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts in random order
@@ -767,14 +776,17 @@ func TestSparseFieldsets(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts
@@ -822,14 +834,17 @@ func TestHasManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create existing post & comment
@@ -1018,14 +1033,17 @@ func TestToOneRelationship(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts
@@ -1246,14 +1264,17 @@ func TestToManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts
@@ -1540,14 +1561,17 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create posts
@@ -1591,15 +1615,18 @@ func TestNoList(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model:  &Comment{},
-		Store:  store,
-		NoList: true,
+		Model:    &Comment{},
+		Store:    store,
+		NoList:   true,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// attempt list comments
@@ -1615,14 +1642,17 @@ func TestPagination(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create some posts
@@ -1673,14 +1703,17 @@ func TestPaginationToMany(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// prepare ids
@@ -1739,14 +1772,17 @@ func TestPaginationHasMany(t *testing.T) {
 	store := getCleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
-		Store: store,
+		Model:    &Post{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create post
@@ -1806,12 +1842,15 @@ func TestForcedPagination(t *testing.T) {
 		Model:     &Post{},
 		Store:     store,
 		ListLimit: 5,
+		Reporter:  testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create some posts
@@ -1847,12 +1886,15 @@ func TestListLimit(t *testing.T) {
 		Model:     &Post{},
 		Store:     store,
 		ListLimit: 5,
+		Reporter:  testReporter(t),
 	}, &Controller{
-		Model: &Comment{},
-		Store: store,
+		Model:    &Comment{},
+		Store:    store,
+		Reporter: testReporter(t),
 	}, &Controller{
-		Model: &Selection{},
-		Store: store,
+		Model:    &Selection{},
+		Store:    store,
+		Reporter: testReporter(t),
 	})
 
 	// create some posts
