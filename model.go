@@ -37,18 +37,18 @@ func Validate(m Model) error {
 		return errors.New("Invalid ID")
 	}
 
+	// invoke custom validation method when available
+	if validatableModel, ok := m.(ValidatableModel); ok {
+		err := validatableModel.Validate()
+		if err != nil {
+			return err
+		}
+	}
+
 	// validate model
 	_, err := govalidator.ValidateStruct(m)
 	if err != nil {
 		return err
-	}
-
-	// invoke custom validation method when available
-	if validatableModel, ok := m.(ValidatableModel); ok {
-		err = validatableModel.Validate()
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
