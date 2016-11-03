@@ -1,15 +1,16 @@
 hash: 1ae4a5aa975afa3d46eddf8f878e50750a93fa03d28abf01f7f8edb5b071e52c
-updated: 2016-11-02T10:13:55.818838079+01:00
+updated: 2016-11-03T09:34:49.918862461+01:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/gonfire/jsonapi
   version: 4e0cb033ff98eb02847b295e2ca463266a1326cf
 - name: github.com/gonfire/oauth2
-  version: aca398bc1cf18465c0c46eaad89022170acc3d31
+  version: 84cbc0fd707ce8f3382ab8ee7ee241f9a2fa73d3
   subpackages:
   - bearer
   - hmacsha
+  - revocation
   - spec
 - name: github.com/goware/cors
   version: 6ad15f4e1489e41776ee8b008597eafea9a67fd9
@@ -39,6 +40,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: 78babc5712902fff43fbd04a1c848ac8a98f8a03
+  version: ac4cd1ab55e6f7741d9f1440f23e10eca52a5342
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c

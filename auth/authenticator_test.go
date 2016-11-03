@@ -117,16 +117,13 @@ func TestIntegration(t *testing.T) {
 
 	config.ExpectedExpiresIn = int(auth.policy.AccessTokenLifespan / time.Second)
 
-	config.InvalidToken = "invalid"
 	config.UnknownToken = unknownToken.String()
 	config.ExpiredToken = expiredToken.String()
 	config.InsufficientToken = insufficientToken.String()
 
-	config.InvalidRedirectURI = "http://invalid.com"
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
 
-	config.InvalidRefreshToken = "invalid"
 	config.UnknownRefreshToken = unknownRefreshToken.String()
 	config.ValidRefreshToken = validRefreshToken.String()
 	config.ExpiredRefreshToken = expiredRefreshToken.String()

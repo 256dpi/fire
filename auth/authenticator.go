@@ -12,6 +12,7 @@ import (
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
 	"github.com/gonfire/oauth2/hmacsha"
+	"github.com/gonfire/oauth2/revocation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -58,11 +59,14 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 		// try to call the controllers general handler
 		if len(s) > 0 {
-			if s[0] == "token" {
+			if s[0] == "authorize" {
+				a.authorizationEndpoint(w, r)
+				return
+			} else if s[0] == "token" {
 				a.tokenEndpoint(w, r)
 				return
-			} else if s[0] == "authorize" {
-				a.authorizationEndpoint(w, r)
+			} else if s[0] == "revoke" {
+				a.revocationEndpoint(w, r)
 				return
 			}
 		}
@@ -398,6 +402,51 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 	// write response
 	a.assert(oauth2.WriteTokenResponse(w, res))
+}
+
+func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
+	// parse authorization request
+	req, err := revocation.ParseRequest(r)
+	if err != nil {
+		oauth2.WriteError(w, err)
+		return
+	}
+
+	// get client
+	client, err := a.getClient(req.ClientID)
+	if err != nil {
+		a.assert(oauth2.WriteError(w, err))
+		return
+	} else if client == nil {
+		a.assert(oauth2.WriteError(w, oauth2.InvalidClient(oauth2.NoState, "Unknown client")))
+		return
+	}
+
+	// parse token
+	token, err := hmacsha.Parse(a.policy.Secret, req.Token)
+	if err != nil {
+		// we do not care about wrong tokens
+		return
+	}
+
+	// TODO: Only revoke tokens that belong to the provided client.
+
+	// delete access token
+	err = a.deleteAccessToken(token.SignatureString())
+	if err != nil {
+		a.assert(oauth2.WriteError(w, err))
+		return
+	}
+
+	// delete refresh token
+	err = a.deleteRefreshToken(token.SignatureString())
+	if err != nil {
+		a.assert(oauth2.WriteError(w, err))
+		return
+	}
+
+	// write header
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *Authenticator) issueTokens(issueRefreshToken bool, scope oauth2.Scope, state string, clientID bson.ObjectId, resourceOwnerID *bson.ObjectId) (*oauth2.TokenResponse, error) {
