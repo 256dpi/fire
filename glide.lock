@@ -1,10 +1,10 @@
-hash: 1ae4a5aa975afa3d46eddf8f878e50750a93fa03d28abf01f7f8edb5b071e52c
-updated: 2016-11-03T09:34:49.918862461+01:00
+hash: fca8e710da5f37e8d3c99be64f0faf06d1a5bbf737e14703d43debe06cc2829b
+updated: 2016-11-03T09:54:22.860448444+01:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/gonfire/jsonapi
-  version: 4e0cb033ff98eb02847b295e2ca463266a1326cf
+  version: 330e33c91821623f477b0f812db1625ae0640dd9
 - name: github.com/gonfire/oauth2
   version: 84cbc0fd707ce8f3382ab8ee7ee241f9a2fa73d3
   subpackages:
