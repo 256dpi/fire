@@ -11,9 +11,10 @@ import (
 // Model is the main interface implemented by every fire model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
+	Meta() *Meta
+
 	MustGet(string) interface{}
 	MustSet(string, interface{})
-	Meta() *Meta
 
 	initialize(Model)
 }
