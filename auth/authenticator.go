@@ -120,7 +120,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 
 			// parse bearer token
 			tk, err := bearer.ParseToken(r)
-			fire.Assert(err)
+			fire.Assess(err)
 
 			// parse token
 			token, err := hmacsha.Parse(a.policy.Secret, tk)
@@ -159,7 +159,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(r)
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// make sure the response type is known
 	if !oauth2.KnownResponseType(req.ResponseType) {
@@ -231,13 +231,13 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	res.SetRedirect(req.RedirectURI, req.State, true)
 
 	// write response
-	fire.Assert(oauth2.WriteTokenResponse(w, res))
+	fire.Assess(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(r)
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// make sure the grant type is known
 	if !oauth2.KnownGrantType(req.GrantType) {
@@ -300,7 +300,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	res := a.issueTokens(true, scope, client.ID(), &rid)
 
 	// write response
-	fire.Assert(oauth2.WriteTokenResponse(w, res))
+	fire.Assess(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
@@ -322,7 +322,7 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 	res := a.issueTokens(true, scope, client.ID(), nil)
 
 	// write response
-	fire.Assert(oauth2.WriteTokenResponse(w, res))
+	fire.Assess(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
@@ -368,13 +368,13 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	a.deleteRefreshToken(refreshToken.SignatureString())
 
 	// write response
-	fire.Assert(oauth2.WriteTokenResponse(w, res))
+	fire.Assess(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := revocation.ParseRequest(r)
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// get client
 	client := a.getClient(req.ClientID)
@@ -404,11 +404,11 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 func (a *Authenticator) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectId, roID *bson.ObjectId) *oauth2.TokenResponse {
 	// generate new access token
 	accessToken, err := hmacsha.Generate(a.policy.Secret, 32)
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// generate new refresh token
 	refreshToken, err := hmacsha.Generate(a.policy.Secret, 32)
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// prepare response
 	res := bearer.NewTokenResponse(accessToken.String(), int(a.policy.AccessTokenLifespan/time.Second))
@@ -477,7 +477,7 @@ func (a *Authenticator) getClient(id string) Client {
 	}
 
 	// abort on error
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// initialize model
 	client := fire.Init(obj).(Client)
@@ -507,7 +507,7 @@ func (a *Authenticator) getResourceOwner(id string) ResourceOwner {
 	}
 
 	// abort on error
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// initialize model
 	resourceOwner := fire.Init(obj).(ResourceOwner)
@@ -548,7 +548,7 @@ func (a *Authenticator) getToken(t Token, signature string) Token {
 	}
 
 	// abort on error
-	fire.Assert(err)
+	fire.Assess(err)
 
 	// initialize access token
 	accessToken := fire.Init(obj).(Token)
@@ -581,7 +581,7 @@ func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
 	err := store.C(token).Insert(token)
 
 	// abort on error
-	fire.Assert(err)
+	fire.Assess(err)
 
 	return token
 }
@@ -613,7 +613,7 @@ func (a *Authenticator) deleteToken(t Token, signature string) {
 	})
 
 	// abort on critical error
-	fire.Assert(err)
+	fire.Assess(err)
 }
 
 func (a *Authenticator) cleanup() {
@@ -645,5 +645,5 @@ func (a *Authenticator) cleanupToken(t Token) {
 	})
 
 	// abort on error
-	fire.Assert(err)
+	fire.Assess(err)
 }

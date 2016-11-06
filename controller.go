@@ -48,7 +48,7 @@ type Controller struct {
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, prefix)
-	Assert(err)
+	Assess(err)
 
 	// handle no list setting
 	if req.Intent == jsonapi.ListResources && c.NoList {
@@ -62,7 +62,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
 		doc, err = jsonapi.ParseDocument(r.Body)
-		Assert(err)
+		Assess(err)
 	}
 
 	// copy store
@@ -123,7 +123,7 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	links := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
 
 	// write result
-	Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+	Assess(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 }
 
 func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
@@ -139,7 +139,7 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 	}
 
 	// write result
-	Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	Assess(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 }
 
 func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
@@ -161,7 +161,7 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// insert model
-	Assert(ctx.Store.C(ctx.Model).Insert(ctx.Model))
+	Assess(ctx.Store.C(ctx.Model).Insert(ctx.Model))
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
@@ -172,7 +172,7 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	}
 
 	// write result
-	Assert(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
+	Assess(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
 }
 
 func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
@@ -199,7 +199,7 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 	}
 
 	// write result
-	Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	Assess(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 }
 
 func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
@@ -220,7 +220,7 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// query db
-	Assert(ctx.Store.C(c.Model).Remove(ctx.Query))
+	Assess(ctx.Store.C(c.Model).Remove(ctx.Query))
 
 	// set status
 	w.WriteHeader(http.StatusNoContent)
@@ -294,7 +294,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 				id = oid.Hex()
 			} else {
 				// write empty response
-				Assert(jsonapi.WriteResource(w, http.StatusOK, nil, links))
+				Assess(jsonapi.WriteResource(w, http.StatusOK, nil, links))
 				return
 			}
 		} else {
@@ -314,7 +314,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		resource := relatedController.resourceForModel(newCtx, newCtx.Model)
 
 		// write result
-		Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+		Assess(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 	}
 
 	// finish to many relationship
@@ -343,7 +343,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 
 		// write result
-		Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+		Assess(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 	}
 
 	// finish has many relationship
@@ -387,7 +387,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 
 		// write result
-		Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+		Assess(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 	}
 }
 
@@ -402,7 +402,7 @@ func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 	relationship := resource.Relationships[ctx.JSONAPIRequest.Relationship]
 
 	// write result
-	Assert(jsonapi.WriteResponse(w, http.StatusOK, relationship))
+	Assess(jsonapi.WriteResponse(w, http.StatusOK, relationship))
 }
 
 func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
@@ -556,7 +556,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	if err == mgo.ErrNotFound {
 		Abort(jsonapi.NotFound("Resource not found"))
 	}
-	Assert(err)
+	Assess(err)
 
 	// initialize and set model
 	ctx.Model = Init(obj.(Model))
@@ -617,7 +617,7 @@ func (c *Controller) loadModels(ctx *Context) []Model {
 
 	// query db
 	err := query.All(slicePtr)
-	Assert(err)
+	Assess(err)
 
 	// init all models in slice
 	return InitSlice(slicePtr)
@@ -625,7 +625,7 @@ func (c *Controller) loadModels(ctx *Context) []Model {
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// map attributes to struct
-	Assert(res.Attributes.Assign(ctx.Model))
+	Assess(res.Attributes.Assign(ctx.Model))
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
@@ -698,12 +698,12 @@ func (c *Controller) updateModel(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	Assert(ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model))
+	Assess(ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model))
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resource {
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
-	Assert(err)
+	Assess(err)
 
 	// prepare resource
 	resource := &jsonapi.Resource{
@@ -813,7 +813,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 					"$in": []bson.ObjectId{model.ID()},
 				},
 			}).Distinct("_id", &ids)
-			Assert(err)
+			Assess(err)
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))
@@ -862,7 +862,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
 		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
-		Assert(err)
+		Assess(err)
 
 		// calculate last page
 		lastPage := int(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))

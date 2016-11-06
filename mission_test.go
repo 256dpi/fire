@@ -49,7 +49,7 @@ func TestAssert(t *testing.T) {
 			test = err
 		})
 
-		Assert(errAbortTest)
+		Assess(errAbortTest)
 	}()
 
 	assert.Equal(t, errAbortTest, test)
@@ -63,7 +63,7 @@ func TestNilAssert(t *testing.T) {
 			test = err
 		})
 
-		Assert(nil)
+		Assess(nil)
 	}()
 
 	assert.Nil(t, test)
