@@ -7,14 +7,8 @@ type Cause struct {
 
 // Assert will only abort if the supplied error is present and does not belong
 // to the specified whitelist.
-func Assert(err error, whitelist ...error) {
+func Assert(err error) {
 	if err != nil {
-		for _, allowedErr := range whitelist {
-			if err == allowedErr {
-				return
-			}
-		}
-
 		Abort(err)
 	}
 }

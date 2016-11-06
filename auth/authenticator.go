@@ -608,12 +608,12 @@ func (a *Authenticator) deleteToken(t Token, signature string) {
 	field := t.Meta().FindField(fieldName)
 
 	// fetch access token
-	err := store.C(t).Remove(bson.M{
+	_, err := store.C(t).RemoveAll(bson.M{
 		field.BSONName: signature,
 	})
 
 	// abort on critical error
-	fire.Assert(err, mgo.ErrNotFound)
+	fire.Assert(err)
 }
 
 func (a *Authenticator) cleanup() {
