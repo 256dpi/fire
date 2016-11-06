@@ -624,11 +624,6 @@ func (c *Controller) loadModels(ctx *Context) interface{} {
 
 	// init all models in slice
 	InitSlice(slicePtr)
-	// TODO: Remove if ok.
-	//slice := reflect.ValueOf(slicePtr).Elem()
-	//for i := 0; i < slice.Len(); i++ {
-	//	Init(slice.Index(i).Interface().(Model))
-	//}
 
 	return slicePtr
 }
