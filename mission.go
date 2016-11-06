@@ -1,12 +1,11 @@
 package fire
 
-// Cause is a wrapper around errors handled by Assert, Panic and Recover.
+// Cause is a wrapper around errors handled by Abort, Assert and Resume.
 type Cause struct {
 	Err error
 }
 
-// Assert will only abort if the supplied error is present and does not belong
-// to the specified whitelist.
+// Assert will only abort if the supplied error is present.
 func Assert(err error) {
 	if err != nil {
 		Abort(err)
