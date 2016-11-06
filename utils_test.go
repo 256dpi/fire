@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"testing"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -89,10 +88,4 @@ func findLastModel(m Model) Model {
 	}
 
 	return Init(m)
-}
-
-func testReporter(t *testing.T) func(error) {
-	return func(err error) {
-		t.Error(err)
-	}
 }

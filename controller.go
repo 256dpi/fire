@@ -43,36 +43,26 @@ type Controller struct {
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit int
-
-	// The Reporter callback is called with every unexpected error.
-	Reporter func(err error)
 }
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, prefix)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	Assert(err)
 
 	// handle no list setting
 	if req.Intent == jsonapi.ListResources && c.NoList {
-		c.assert(jsonapi.WriteError(w, jsonapi.ErrorFromStatus(
+		Abort(jsonapi.ErrorFromStatus(
 			http.StatusMethodNotAllowed,
 			"Listing is disabled for this resource.",
-		)))
-		return
+		))
 	}
 
 	// parse body if available
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
 		doc, err = jsonapi.ParseDocument(r.Body)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		Assert(err)
 	}
 
 	// copy store
@@ -124,44 +114,24 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	ctx.Query = bson.M{}
 
 	// load models
-	slice, err := c.loadModels(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	slice := c.loadModels(ctx)
 
 	// get resources
-	resources, err := c.resourcesForSlice(ctx, slice)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	resources := c.resourcesForSlice(ctx, slice)
 
 	// get list links
-	links, err := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	links := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
 
 	// write result
-	c.assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+	Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 }
 
 func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// get resource
-	resource, err := c.resourceForModel(ctx, ctx.Model)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	resource := c.resourceForModel(ctx, ctx.Model)
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -169,53 +139,32 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 	}
 
 	// write result
-	c.assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 }
 
 func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// basic input data check
 	if doc.Data.One == nil {
-		c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Resource object expected")))
-		return
+		Abort(jsonapi.BadRequest("Resource object expected"))
 	}
 
 	// create new model
 	ctx.Model = c.Model.Meta().Make()
 
 	// assign attributes
-	err := c.assignData(ctx, doc.Data.One)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.assignData(ctx, doc.Data.One)
 
 	// run authorizer if available
-	err = c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 
 	// run validator if available
-	err = c.runCallback(c.Validator, ctx, http.StatusBadRequest)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 
 	// insert model
-	err = ctx.Store.C(ctx.Model).Insert(ctx.Model)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	Assert(ctx.Store.C(ctx.Model).Insert(ctx.Model))
 
 	// get resource
-	resource, err := c.resourceForModel(ctx, ctx.Model)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	resource := c.resourceForModel(ctx, ctx.Model)
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -223,43 +172,26 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	}
 
 	// write result
-	c.assert(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
+	Assert(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
 }
 
 func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// basic input data check
 	if doc.Data.One == nil {
-		c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Resource object expected")))
-		return
+		Abort(jsonapi.BadRequest("Resource object expected"))
 	}
 
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// assign attributes
-	err = c.assignData(ctx, doc.Data.One)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.assignData(ctx, doc.Data.One)
 
 	// save model
-	err = c.updateModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.updateModel(ctx)
 
 	// get resource
-	resource, err := c.resourceForModel(ctx, ctx.Model)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	resource := c.resourceForModel(ctx, ctx.Model)
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -267,14 +199,13 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 	}
 
 	// write result
-	c.assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 }
 
 func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
-		c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Invalid ID")))
-		return
+		Abort(jsonapi.BadRequest("Invalid ID"))
 	}
 
 	// prepare context
@@ -283,23 +214,13 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	}
 
 	// run authorizer if available
-	if err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized); err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 
 	// run validator if available
-	if err := c.runCallback(c.Validator, ctx, http.StatusBadRequest); err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 
 	// query db
-	err := ctx.Store.C(c.Model).Remove(ctx.Query)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	Assert(ctx.Store.C(c.Model).Remove(ctx.Query))
 
 	// set status
 	w.WriteHeader(http.StatusNoContent)
@@ -307,11 +228,7 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 
 func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// prepare resource type
 	var relationField *Field
@@ -326,8 +243,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// check resource type
 	if relationField == nil {
-		c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Relationship does not exist")))
-		return
+		Abort(jsonapi.BadRequest("Relationship does not exist"))
 	}
 
 	// get related controller
@@ -336,7 +252,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// check related controller
 	if relatedController == nil {
-		panic("Missing related controller for " + pluralName)
+		Abort(fmt.Errorf("Missing related controller for %s", pluralName))
 	}
 
 	// copy context and request
@@ -378,7 +294,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 				id = oid.Hex()
 			} else {
 				// write empty response
-				c.assert(jsonapi.WriteResource(w, http.StatusOK, nil, links))
+				Assert(jsonapi.WriteResource(w, http.StatusOK, nil, links))
 				return
 			}
 		} else {
@@ -392,22 +308,13 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		newCtx.JSONAPIRequest.ResourceID = id
 
 		// load model
-		err := relatedController.loadModel(newCtx)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		relatedController.loadModel(newCtx)
 
 		// get resource
-		resource, err := relatedController.resourceForModel(newCtx, newCtx.Model)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		resource := relatedController.resourceForModel(newCtx, newCtx.Model)
 
 		// write result
-		c.assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
-		return
+		Assert(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 	}
 
 	// finish to many relationship
@@ -427,29 +334,16 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// load related models
-		slice, err := relatedController.loadModels(newCtx)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		slice := relatedController.loadModels(newCtx)
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(newCtx, slice)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		resources := relatedController.resourcesForSlice(newCtx, slice)
 
 		// get list links
-		links, err := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 
 		// write result
-		c.assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
-		return
+		Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 	}
 
 	// finish has many relationship
@@ -469,10 +363,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 		// check filter name
 		if filterName == "" {
-			err = fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse)
-			c.assert(err)
-			c.assert(jsonapi.WriteError(w, err))
-			return
+			Abort(fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse))
 		}
 
 		// tweak context
@@ -487,75 +378,42 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// load related models
-		slice, err := relatedController.loadModels(newCtx)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		slice := relatedController.loadModels(newCtx)
 
 		// get related resources
-		resources, err := relatedController.resourcesForSlice(newCtx, slice)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		resources := relatedController.resourcesForSlice(newCtx, slice)
 
 		// get list links
-		links, err := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
-		if err != nil {
-			c.assert(jsonapi.WriteError(w, err))
-			return
-		}
+		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 
 		// write result
-		c.assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
-		return
+		Assert(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 	}
 }
 
 func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// get resource
-	resource, err := c.resourceForModel(ctx, ctx.Model)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	resource := c.resourceForModel(ctx, ctx.Model)
 
 	// get relationship
 	relationship := resource.Relationships[ctx.JSONAPIRequest.Relationship]
 
 	// write result
-	c.assert(jsonapi.WriteResponse(w, http.StatusOK, relationship))
+	Assert(jsonapi.WriteResponse(w, http.StatusOK, relationship))
 }
 
 func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// assign relationship
-	err = c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
 
 	// save model
-	err = c.updateModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.updateModel(ctx)
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)
@@ -563,11 +421,7 @@ func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *j
 
 func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// append relationships
 	for _, field := range ctx.Model.Meta().Fields {
@@ -583,8 +437,7 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 
 			// return error for an invalid id
 			if !refID.Valid() {
-				c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Invalid relationship ID")))
-				return
+				Abort(jsonapi.BadRequest("Invalid relationship ID"))
 			}
 
 			// prepare mark
@@ -611,11 +464,7 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 	}
 
 	// save model
-	err = c.updateModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.updateModel(ctx)
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)
@@ -623,11 +472,7 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 
 func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// load model
-	err := c.loadModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.loadModel(ctx)
 
 	// remove relationships
 	for _, field := range ctx.Model.Meta().Fields {
@@ -643,8 +488,7 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 
 			// return error for an invalid id
 			if !refID.Valid() {
-				c.assert(jsonapi.WriteError(w, jsonapi.BadRequest("Invalid relationship ID")))
-				return
+				Abort(jsonapi.BadRequest("Invalid relationship ID"))
 			}
 
 			// prepare mark
@@ -669,42 +513,34 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 	}
 
 	// save model
-	err = c.updateModel(ctx)
-	if err != nil {
-		c.assert(jsonapi.WriteError(w, err))
-		return
-	}
+	c.updateModel(ctx)
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) error {
+func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) {
 	// check if callback is available
 	if cb == nil {
-		return nil
+		return
 	}
 
 	// run callback and handle errors
 	err := cb(ctx)
 	if isFatal(err) {
-		c.assert(err)
-		return err
+		Abort(err)
 	} else if err != nil {
-		// return user error
-		return &jsonapi.Error{
+		Abort(&jsonapi.Error{
 			Status: errorStatus,
 			Detail: err.Error(),
-		}
+		})
 	}
-
-	return nil
 }
 
-func (c *Controller) loadModel(ctx *Context) error {
+func (c *Controller) loadModel(ctx *Context) {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
-		return jsonapi.BadRequest("Invalid resource ID")
+		Abort(jsonapi.BadRequest("Invalid resource ID"))
 	}
 
 	// prepare context
@@ -713,30 +549,23 @@ func (c *Controller) loadModel(ctx *Context) error {
 	}
 
 	// run authorizer if available
-	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
-	if err != nil {
-		return err
-	}
+	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 
 	// prepare object
 	obj := c.Model.Meta().Make()
 
 	// query db
-	err = ctx.Store.C(c.Model).Find(ctx.Query).One(obj)
+	err := ctx.Store.C(c.Model).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
-		return jsonapi.NotFound("Resource not found")
-	} else if err != nil {
-		c.assert(err)
-		return err
+		Abort(jsonapi.NotFound("Resource not found"))
 	}
+	Assert(err)
 
 	// initialize and set model
 	ctx.Model = Init(obj.(Model))
-
-	return nil
 }
 
-func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
+func (c *Controller) loadModels(ctx *Context) interface{} {
 	// add filters
 	for _, filter := range c.Filters {
 		field := c.Model.Meta().MustFindField(filter)
@@ -776,10 +605,7 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	}
 
 	// run authorizer if available
-	err := c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
-	if err != nil {
-		return nil, err
-	}
+	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
 
 	// prepare slice
 	slicePtr := c.Model.Meta().MakeSlice()
@@ -793,41 +619,31 @@ func (c *Controller) loadModels(ctx *Context) (interface{}, error) {
 	}
 
 	// query db
-	err = query.All(slicePtr)
-	if err != nil {
-		c.assert(err)
-		return nil, err
-	}
+	err := query.All(slicePtr)
+	Assert(err)
 
 	// init all models in slice
-	slice := reflect.ValueOf(slicePtr).Elem()
-	for i := 0; i < slice.Len(); i++ {
-		Init(slice.Index(i).Interface().(Model))
-	}
+	InitSlice(slicePtr)
+	// TODO: Remove if ok.
+	//slice := reflect.ValueOf(slicePtr).Elem()
+	//for i := 0; i < slice.Len(); i++ {
+	//	Init(slice.Index(i).Interface().(Model))
+	//}
 
-	return slicePtr, nil
+	return slicePtr
 }
 
-func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) error {
+func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// map attributes to struct
-	err := res.Attributes.Assign(ctx.Model)
-	if err != nil {
-		c.assert(err)
-		return err
-	}
+	Assert(res.Attributes.Assign(ctx.Model))
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
-		err = c.assignRelationship(ctx, name, rel)
-		if err != nil {
-			return err
-		}
+		c.assignRelationship(ctx, name, rel)
 	}
-
-	return nil
 }
 
-func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) error {
+func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) {
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
@@ -846,7 +662,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 				// return error for an invalid id
 				if !id.Valid() {
-					return jsonapi.BadRequest("Invalid relationship ID")
+					Abort(jsonapi.BadRequest("Invalid relationship ID"))
 				}
 			}
 
@@ -877,7 +693,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 				// return error for an invalid id
 				if !ids[i].Valid() {
-					return jsonapi.BadRequest("Invalid relationship ID")
+					Abort(jsonapi.BadRequest("Invalid relationship ID"))
 				}
 			}
 
@@ -885,33 +701,19 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			ctx.Model.MustSet(field.Name, ids)
 		}
 	}
-
-	return nil
 }
 
-func (c *Controller) updateModel(ctx *Context) error {
+func (c *Controller) updateModel(ctx *Context) {
 	// run validator if available
-	err := c.runCallback(c.Validator, ctx, http.StatusBadRequest)
-	if err != nil {
-		return err
-	}
+	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
 
 	// update model
-	err = ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model)
-	if err != nil {
-		c.assert(err)
-		return err
-	}
-
-	return nil
+	Assert(ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model))
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resource, error) {
+func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resource {
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
-	if err != nil {
-		c.assert(err)
-		return nil, err
-	}
+	Assert(err)
 
 	// prepare resource
 	resource := &jsonapi.Resource{
@@ -1011,9 +813,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 
 			// check filter name
 			if filterName == "" {
-				err := fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse)
-				c.assert(err)
-				return nil, err
+				Abort(fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse))
 			}
 
 			// load all referenced ids
@@ -1023,10 +823,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 					"$in": []bson.ObjectId{model.ID()},
 				},
 			}).Distinct("_id", &ids)
-			if err != nil {
-				c.assert(err)
-				return nil, err
-			}
+			Assert(err)
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))
@@ -1049,10 +846,10 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) (*jsonapi.Resou
 		}
 	}
 
-	return resource, nil
+	return resource
 }
 
-func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonapi.Resource, error) {
+func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) []*jsonapi.Resource {
 	// dereference pointer to slice
 	slice := reflect.ValueOf(ptr).Elem()
 
@@ -1061,18 +858,14 @@ func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) ([]*jsonap
 
 	// create resources
 	for i := 0; i < slice.Len(); i++ {
-		resource, err := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
-		if err != nil {
-			return nil, err
-		}
-
+		resource := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
 		resources = append(resources, resource)
 	}
 
-	return resources, nil
+	return resources
 }
 
-func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLinks, error) {
+func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
 	// prepare links
 	links := &jsonapi.DocumentLinks{
 		Self: self,
@@ -1082,10 +875,7 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
 		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
-		if err != nil {
-			c.assert(err)
-			return nil, err
-		}
+		Assert(err)
 
 		// calculate last page
 		lastPage := int(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
@@ -1106,11 +896,5 @@ func (c *Controller) listLinks(self string, ctx *Context) (*jsonapi.DocumentLink
 		}
 	}
 
-	return links, nil
-}
-
-func (c *Controller) assert(err error) {
-	if err != nil && c.Reporter != nil {
-		c.Reporter(err)
-	}
+	return links
 }

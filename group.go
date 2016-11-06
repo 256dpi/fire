@@ -10,6 +10,8 @@ import (
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
 	controllers map[string]*Controller
+
+	Reporter func(error)
 }
 
 // NewGroup creates and returns a new group.
@@ -35,6 +37,23 @@ func (g *Group) Add(controllers ...*Controller) {
 // for the resources.
 func (g *Group) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// continue any previous aborts
+		defer Continue(func(err error) {
+			// directly write potential bearer errors
+			if jsonapiError, ok := err.(*jsonapi.Error); ok {
+				jsonapi.WriteError(w, jsonapiError)
+				return
+			}
+
+			// otherwise report critical errors
+			if g.Reporter != nil {
+				g.Reporter(err)
+			}
+
+			// ignore errors caused by writing critical errors
+			jsonapi.WriteError(w, jsonapi.InternalServerError(""))
+		})
+
 		// trim and split path
 		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
 
