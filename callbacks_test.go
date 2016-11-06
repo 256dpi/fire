@@ -18,18 +18,6 @@ func TestFatal(t *testing.T) {
 	assert.Equal(t, "foo", err.Error())
 }
 
-func TestCombine(t *testing.T) {
-	var counter int
-	cb := func(ctx *Context) error {
-		counter++
-		return nil
-	}
-
-	err := Combine(cb, cb, cb)(nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, counter)
-}
-
 func TestOnly(t *testing.T) {
 	var counter int
 	cb := func(ctx *Context) error {

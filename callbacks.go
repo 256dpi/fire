@@ -35,31 +35,14 @@ func isFatal(err error) bool {
 	return ok
 }
 
-// Combine combines multiple callbacks to one.
-//
-// Note: Execution will be stopped if a callback returns and error.
-func Combine(callbacks ...Callback) Callback {
-	return func(ctx *Context) error {
-		// call all callbacks
-		for _, cb := range callbacks {
-			err := cb(ctx)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-}
-
 // Only will return a callback that runs the specified callback only when one
 // of the supplied actions match.
-func Only(callback Callback, actions ...Action) Callback {
+func Only(cb Callback, actions ...Action) Callback {
 	return func(ctx *Context) error {
 		// check action
 		for _, a := range actions {
 			if a == ctx.Action {
-				return callback(ctx)
+				return cb(ctx)
 			}
 		}
 
@@ -69,7 +52,7 @@ func Only(callback Callback, actions ...Action) Callback {
 
 // Except will return a callback that runs the specified callback only when none
 // of the supplied actions match.
-func Except(callback Callback, actions ...Action) Callback {
+func Except(cb Callback, actions ...Action) Callback {
 	return func(ctx *Context) error {
 		// check action
 		for _, a := range actions {
@@ -78,7 +61,7 @@ func Except(callback Callback, actions ...Action) Callback {
 			}
 		}
 
-		return callback(ctx)
+		return cb(ctx)
 	}
 }
 

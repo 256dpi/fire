@@ -27,13 +27,13 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *Store
 
-	// The Authorizer is run on all actions. Will return an Unauthorized status
+	// The Authorizers are run on all actions. Will return an Unauthorized status
 	// if an user error is returned.
-	Authorizer Callback
+	Authorizers []Callback
 
-	// The Validator is run to validate Create, Update and Delete actions. Will
+	// The Validators are run to validate Create, Update and Delete actions. Will
 	// return a Bad Request status if an user error is returned.
-	Validator Callback
+	Validators []Callback
 
 	// The NoList property can be set to true if the resource is only listed
 	// through relationships from other resources. This is useful for
@@ -154,11 +154,11 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
 
-	// run authorizer if available
-	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
-	// run validator if available
-	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// insert model
 	Assert(ctx.Store.C(ctx.Model).Insert(ctx.Model))
@@ -213,11 +213,11 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
 	}
 
-	// run authorizer if available
-	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
-	// run validator if available
-	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// query db
 	Assert(ctx.Store.C(c.Model).Remove(ctx.Query))
@@ -519,21 +519,18 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) runCallback(cb Callback, ctx *Context, errorStatus int) {
-	// check if callback is available
-	if cb == nil {
-		return
-	}
-
-	// run callback and handle errors
-	err := cb(ctx)
-	if isFatal(err) {
-		Abort(err)
-	} else if err != nil {
-		Abort(&jsonapi.Error{
-			Status: errorStatus,
-			Detail: err.Error(),
-		})
+func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int) {
+	// run callbacks and handle errors
+	for _, cb := range list {
+		err := cb(ctx)
+		if isFatal(err) {
+			Abort(err)
+		} else if err != nil {
+			Abort(&jsonapi.Error{
+				Status: errorStatus,
+				Detail: err.Error(),
+			})
+		}
 	}
 }
 
@@ -548,8 +545,8 @@ func (c *Controller) loadModel(ctx *Context) {
 		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
 	}
 
-	// run authorizer if available
-	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// prepare object
 	obj := c.Model.Meta().Make()
@@ -604,8 +601,8 @@ func (c *Controller) loadModels(ctx *Context) []Model {
 		}
 	}
 
-	// run authorizer if available
-	c.runCallback(c.Authorizer, ctx, http.StatusUnauthorized)
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// prepare slice
 	slicePtr := c.Model.Meta().MakeSlice()
@@ -697,8 +694,8 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 }
 
 func (c *Controller) updateModel(ctx *Context) {
-	// run validator if available
-	c.runCallback(c.Validator, ctx, http.StatusBadRequest)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
 	Assert(ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model))
