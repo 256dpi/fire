@@ -114,10 +114,10 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	ctx.Query = bson.M{}
 
 	// load models
-	slice := c.loadModels(ctx)
+	models := c.loadModels(ctx)
 
 	// get resources
-	resources := c.resourcesForSlice(ctx, slice)
+	resources := c.resourcesForModels(ctx, models)
 
 	// get list links
 	links := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
@@ -334,10 +334,10 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// load related models
-		slice := relatedController.loadModels(newCtx)
+		models := relatedController.loadModels(newCtx)
 
 		// get related resources
-		resources := relatedController.resourcesForSlice(newCtx, slice)
+		resources := relatedController.resourcesForModels(newCtx, models)
 
 		// get list links
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
@@ -378,10 +378,10 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// load related models
-		slice := relatedController.loadModels(newCtx)
+		models := relatedController.loadModels(newCtx)
 
 		// get related resources
-		resources := relatedController.resourcesForSlice(newCtx, slice)
+		resources := relatedController.resourcesForModels(newCtx, models)
 
 		// get list links
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
@@ -565,7 +565,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Model = Init(obj.(Model))
 }
 
-func (c *Controller) loadModels(ctx *Context) interface{} {
+func (c *Controller) loadModels(ctx *Context) []Model {
 	// add filters
 	for _, filter := range c.Filters {
 		field := c.Model.Meta().MustFindField(filter)
@@ -623,9 +623,7 @@ func (c *Controller) loadModels(ctx *Context) interface{} {
 	Assert(err)
 
 	// init all models in slice
-	InitSlice(slicePtr)
-
-	return slicePtr
+	return InitSlice(slicePtr)
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
@@ -844,16 +842,13 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 	return resource
 }
 
-func (c *Controller) resourcesForSlice(ctx *Context, ptr interface{}) []*jsonapi.Resource {
-	// dereference pointer to slice
-	slice := reflect.ValueOf(ptr).Elem()
-
+func (c *Controller) resourcesForModels(ctx *Context, models []Model) []*jsonapi.Resource {
 	// prepare resources
-	resources := make([]*jsonapi.Resource, 0, slice.Len())
+	resources := make([]*jsonapi.Resource, 0, len(models))
 
 	// create resources
-	for i := 0; i < slice.Len(); i++ {
-		resource := c.resourceForModel(ctx, slice.Index(i).Interface().(Model))
+	for _, model := range models {
+		resource := c.resourceForModel(ctx, model)
 		resources = append(resources, resource)
 	}
 
