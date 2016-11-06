@@ -38,7 +38,7 @@ func (g *Group) Add(controllers ...*Controller) {
 func (g *Group) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
-		defer Continue(func(err error) {
+		defer Resume(func(err error) {
 			// directly write potential bearer errors
 			if jsonapiError, ok := err.(*jsonapi.Error); ok {
 				jsonapi.WriteError(w, jsonapiError)

@@ -13,7 +13,7 @@ func TestPanic(t *testing.T) {
 	var test error
 
 	func() {
-		defer Continue(func(err error) {
+		defer Resume(func(err error) {
 			test = err
 		})
 
@@ -31,7 +31,7 @@ func TestOtherPanic(t *testing.T) {
 	var test error
 
 	func() {
-		defer Continue(func(err error) {
+		defer Resume(func(err error) {
 			test = err
 		})
 
@@ -45,7 +45,7 @@ func TestAssert(t *testing.T) {
 	var test error
 
 	func() {
-		defer Continue(func(err error) {
+		defer Resume(func(err error) {
 			test = err
 		})
 
@@ -59,7 +59,7 @@ func TestNilAssert(t *testing.T) {
 	var test error
 
 	func() {
-		defer Continue(func(err error) {
+		defer Resume(func(err error) {
 			test = err
 		})
 

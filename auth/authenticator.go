@@ -55,7 +55,7 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
-		defer fire.Continue(func(err error) {
+		defer fire.Resume(func(err error) {
 			// directly write potential oauth2 errors
 			if oauth2Error, ok := err.(*oauth2.Error); ok {
 				oauth2.WriteError(w, oauth2Error)
@@ -99,7 +99,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// continue any previous aborts
-			defer fire.Continue(func(err error) {
+			defer fire.Resume(func(err error) {
 				// directly write potential bearer errors
 				if bearerError, ok := err.(*bearer.Error); ok {
 					bearer.WriteError(w, bearerError)
