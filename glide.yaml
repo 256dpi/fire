@@ -6,9 +6,9 @@ import:
   subpackages:
   - bson
 - package: github.com/gonfire/jsonapi
-  version: ^0.6.2
+  version: ^0.6.3
 - package: github.com/gonfire/oauth2
-  version: ^0.3.1
+  version: ^0.4.1
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt
