@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/256dpi/stack"
 	"github.com/gonfire/jsonapi"
 )
 
@@ -38,7 +39,7 @@ func (g *Group) Add(controllers ...*Controller) {
 func (g *Group) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
-		defer Resume(func(err error) {
+		defer stack.Resume(func(err error) {
 			// directly write potential bearer errors
 			if jsonapiError, ok := err.(*jsonapi.Error); ok {
 				jsonapi.WriteError(w, jsonapiError)

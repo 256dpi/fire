@@ -1,6 +1,8 @@
-hash: 2f14b48a398a80172be197e25eae70d8fd943600fe14b3673139acc549ca019f
-updated: 2016-11-06T20:14:21.933055226+01:00
+hash: e86e7447063d8b8b7994747757c680145044daccccda30f54aa421d37e6e2718
+updated: 2016-11-08T09:29:35.017831204+01:00
 imports:
+- name: github.com/256dpi/stack
+  version: 5cbe4ed1aa4fc649d5454235a36977e930f40ee9
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/gonfire/jsonapi

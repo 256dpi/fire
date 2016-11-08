@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/stack"
 	"github.com/gonfire/fire"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
@@ -55,7 +56,7 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
-		defer fire.Resume(func(err error) {
+		defer stack.Resume(func(err error) {
 			// directly write potential oauth2 errors
 			if oauth2Error, ok := err.(*oauth2.Error); ok {
 				oauth2.WriteError(w, oauth2Error)
@@ -99,7 +100,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// continue any previous aborts
-			defer fire.Resume(func(err error) {
+			defer stack.Resume(func(err error) {
 				// directly write potential bearer errors
 				if bearerError, ok := err.(*bearer.Error); ok {
 					bearer.WriteError(w, bearerError)
@@ -120,18 +121,18 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 
 			// parse bearer token
 			tk, err := bearer.ParseToken(r)
-			fire.Assess(err)
+			stack.AbortIf(err)
 
 			// parse token
 			token, err := hmacsha.Parse(a.policy.Secret, tk)
 			if err != nil {
-				fire.Abort(bearer.InvalidToken("Malformed token"))
+				stack.Abort(bearer.InvalidToken("Malformed token"))
 			}
 
 			// get token
 			accessToken := a.getAccessToken(token.SignatureString())
 			if accessToken == nil {
-				fire.Abort(bearer.InvalidToken("Unkown token"))
+				stack.Abort(bearer.InvalidToken("Unkown token"))
 			}
 
 			// get additional data
@@ -139,12 +140,12 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 
 			// validate expiration
 			if data.ExpiresAt.Before(time.Now()) {
-				fire.Abort(bearer.InvalidToken("Expired token"))
+				stack.Abort(bearer.InvalidToken("Expired token"))
 			}
 
 			// validate scope
 			if !oauth2.Scope(data.Scope).Includes(s) {
-				fire.Abort(bearer.InsufficientScope(s.String()))
+				stack.Abort(bearer.InsufficientScope(s.String()))
 			}
 
 			// create new context with access token
@@ -159,22 +160,22 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(r)
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// make sure the response type is known
 	if !oauth2.KnownResponseType(req.ResponseType) {
-		fire.Abort(oauth2.InvalidRequest("Unknown response type"))
+		stack.Abort(oauth2.InvalidRequest("Unknown response type"))
 	}
 
 	// get client
 	client := a.getClient(req.ClientID)
 	if client == nil {
-		fire.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// validate redirect uri
 	if !client.ValidRedirectURI(req.RedirectURI) {
-		fire.Abort(oauth2.InvalidRequest("Invalid redirect URI"))
+		stack.Abort(oauth2.InvalidRequest("Invalid redirect URI"))
 	}
 
 	// triage based on response type
@@ -187,13 +188,13 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// response type is unsupported
-	fire.Abort(oauth2.UnsupportedResponseType(""))
+	stack.Abort(oauth2.UnsupportedResponseType(""))
 }
 
 func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
 	// check request method
 	if r.Method == "GET" {
-		fire.Abort(oauth2.InvalidRequest("Unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
+		stack.Abort(oauth2.InvalidRequest("Unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
 	// get credentials
@@ -203,12 +204,12 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	// get resource owner
 	resourceOwner := a.getResourceOwner(username)
 	if resourceOwner == nil {
-		fire.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
 	// validate password
 	if !resourceOwner.ValidPassword(password) {
-		fire.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
 	// validate & grant scope
@@ -218,7 +219,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 		ResourceOwner: resourceOwner,
 	})
 	if !granted {
-		fire.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, true))
+		stack.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
 	// get resource owner id
@@ -231,23 +232,23 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	res.SetRedirect(req.RedirectURI, req.State, true)
 
 	// write response
-	fire.Assess(oauth2.WriteTokenResponse(w, res))
+	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(r)
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// make sure the grant type is known
 	if !oauth2.KnownGrantType(req.GrantType) {
-		fire.Abort(oauth2.InvalidRequest("Unknown grant type"))
+		stack.Abort(oauth2.InvalidRequest("Unknown grant type"))
 	}
 
 	// get client
 	client := a.getClient(req.ClientID)
 	if client == nil {
-		fire.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// handle grant type
@@ -268,19 +269,19 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// grant type is unsupported
-	fire.Abort(oauth2.UnsupportedGrantType(""))
+	stack.Abort(oauth2.UnsupportedGrantType(""))
 }
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
 	resourceOwner := a.getResourceOwner(req.Username)
 	if resourceOwner == nil {
-		fire.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied(""))
 	}
 
 	// authenticate resource owner
 	if !resourceOwner.ValidPassword(req.Password) {
-		fire.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied(""))
 	}
 
 	// validate & grant scope
@@ -290,7 +291,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 		ResourceOwner: resourceOwner,
 	})
 	if !granted {
-		fire.Abort(oauth2.InvalidScope(""))
+		stack.Abort(oauth2.InvalidScope(""))
 	}
 
 	// get resource owner id
@@ -300,13 +301,13 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	res := a.issueTokens(true, scope, client.ID(), &rid)
 
 	// write response
-	fire.Assess(oauth2.WriteTokenResponse(w, res))
+	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
-		fire.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// validate & grant scope
@@ -315,27 +316,27 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 		Client: client,
 	})
 	if !granted {
-		fire.Abort(oauth2.InvalidScope(""))
+		stack.Abort(oauth2.InvalidScope(""))
 	}
 
 	// issue access token
 	res := a.issueTokens(true, scope, client.ID(), nil)
 
 	// write response
-	fire.Assess(oauth2.WriteTokenResponse(w, res))
+	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// parse refresh token
 	refreshToken, err := hmacsha.Parse(a.policy.Secret, req.RefreshToken)
 	if err != nil {
-		fire.Abort(oauth2.InvalidRequest(err.Error()))
+		stack.Abort(oauth2.InvalidRequest(err.Error()))
 	}
 
 	// get stored refresh token by signature
 	rt := a.getRefreshToken(refreshToken.SignatureString())
 	if rt == nil {
-		fire.Abort(oauth2.InvalidGrant("Unknown refresh token"))
+		stack.Abort(oauth2.InvalidGrant("Unknown refresh token"))
 	}
 
 	// get data
@@ -343,12 +344,12 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 	// validate expiration
 	if data.ExpiresAt.Before(time.Now()) {
-		fire.Abort(oauth2.InvalidGrant("Expired refresh token"))
+		stack.Abort(oauth2.InvalidGrant("Expired refresh token"))
 	}
 
 	// validate ownership
 	if data.ClientID != client.ID() {
-		fire.Abort(oauth2.InvalidGrant("Invalid refresh token ownership"))
+		stack.Abort(oauth2.InvalidGrant("Invalid refresh token ownership"))
 	}
 
 	// inherit scope from stored refresh token
@@ -358,7 +359,7 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 	// validate scope - a missing scope is always included
 	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
-		fire.Abort(oauth2.InvalidScope("Scope exceeds the originally granted scope"))
+		stack.Abort(oauth2.InvalidScope("Scope exceeds the originally granted scope"))
 	}
 
 	// issue tokens
@@ -368,18 +369,18 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	a.deleteRefreshToken(refreshToken.SignatureString())
 
 	// write response
-	fire.Assess(oauth2.WriteTokenResponse(w, res))
+	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
 func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := revocation.ParseRequest(r)
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// get client
 	client := a.getClient(req.ClientID)
 	if client == nil {
-		fire.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// parse token
@@ -404,11 +405,11 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 func (a *Authenticator) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectId, roID *bson.ObjectId) *oauth2.TokenResponse {
 	// generate new access token
 	accessToken, err := hmacsha.Generate(a.policy.Secret, 32)
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// generate new refresh token
 	refreshToken, err := hmacsha.Generate(a.policy.Secret, 32)
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// prepare response
 	res := bearer.NewTokenResponse(accessToken.String(), int(a.policy.AccessTokenLifespan/time.Second))
@@ -477,7 +478,7 @@ func (a *Authenticator) getClient(id string) Client {
 	}
 
 	// abort on error
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// initialize model
 	client := fire.Init(obj).(Client)
@@ -507,7 +508,7 @@ func (a *Authenticator) getResourceOwner(id string) ResourceOwner {
 	}
 
 	// abort on error
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// initialize model
 	resourceOwner := fire.Init(obj).(ResourceOwner)
@@ -548,7 +549,7 @@ func (a *Authenticator) getToken(t Token, signature string) Token {
 	}
 
 	// abort on error
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	// initialize access token
 	accessToken := fire.Init(obj).(Token)
@@ -581,7 +582,7 @@ func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
 	err := store.C(token).Insert(token)
 
 	// abort on error
-	fire.Assess(err)
+	stack.AbortIf(err)
 
 	return token
 }
@@ -613,7 +614,7 @@ func (a *Authenticator) deleteToken(t Token, signature string) {
 	})
 
 	// abort on critical error
-	fire.Assess(err)
+	stack.AbortIf(err)
 }
 
 func (a *Authenticator) cleanup() {
@@ -645,5 +646,5 @@ func (a *Authenticator) cleanupToken(t Token) {
 	})
 
 	// abort on error
-	fire.Assess(err)
+	stack.AbortIf(err)
 }
