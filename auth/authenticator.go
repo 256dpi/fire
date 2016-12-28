@@ -18,10 +18,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type ctxKex int
+type ctxKey int
 
 // AccessTokenContextKey is the key used to save the access token in a context.
-const AccessTokenContextKey ctxKex = iota
+const AccessTokenContextKey ctxKey = iota
 
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
