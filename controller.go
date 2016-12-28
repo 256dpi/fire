@@ -220,18 +220,8 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 }
 
 func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
-	// validate id
-	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
-		stack.Abort(jsonapi.BadRequest("Invalid ID"))
-	}
-
-	// prepare context
-	ctx.Query = bson.M{
-		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
-	}
-
-	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+	// load model
+	c.loadModel(ctx)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)

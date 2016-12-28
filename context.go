@@ -40,7 +40,8 @@ type Context struct {
 	// On FindAll all field filters and relationship filters are preset.
 	Query bson.M
 
-	// The Model that will be saved during Create or Update.
+	// The Model that will be saved during Create, updated during Update or
+	// delete during Delete.
 	Model Model
 
 	// The sorting that will be used during FindAll.
