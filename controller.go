@@ -28,13 +28,17 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *Store
 
-	// The Authorizers are run on all actions. Will return an Unauthorized status
+	// The Authorizers are run on all actions. Will cause an Unauthorized status
 	// if an user error is returned.
 	Authorizers []Callback
 
 	// The Validators are run to validate Create, Update and Delete actions. Will
-	// return a Bad Request status if an user error is returned.
+	// cause a Bad Request status if an user error is returned.
 	Validators []Callback
+
+	// The Notifiers are run after any actions has been completed. Will cause
+	// a Internal Server Error status if an user error is returned.
+	Notifiers []Callback
 
 	// The NoList property can be set to true if the resource is only listed
 	// through relationships from other resources. This is useful for
@@ -123,6 +127,9 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	// get list links
 	links := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
 
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 	// write result
 	stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 }
@@ -138,6 +145,9 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 	links := &jsonapi.DocumentLinks{
 		Self: ctx.JSONAPIRequest.Self(),
 	}
+
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
@@ -172,6 +182,9 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 		Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
 	}
 
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 	// write result
 	stack.AbortIf(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
 }
@@ -199,6 +212,9 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 		Self: ctx.JSONAPIRequest.Self(),
 	}
 
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 	// write result
 	stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 }
@@ -222,6 +238,9 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 
 	// query db
 	stack.AbortIf(ctx.Store.C(c.Model).Remove(ctx.Query))
+
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// set status
 	w.WriteHeader(http.StatusNoContent)
@@ -314,6 +333,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		// get resource
 		resource := relatedController.resourceForModel(newCtx, newCtx.Model)
 
+		// run notifiers
+		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 		// write result
 		stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
 	}
@@ -342,6 +364,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 		// get list links
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
+
+		// run notifiers
+		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 		// write result
 		stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
@@ -387,6 +412,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		// get list links
 		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
 
+		// run notifiers
+		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 		// write result
 		stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
 	}
@@ -402,6 +430,9 @@ func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 	// get relationship
 	relationship := resource.Relationships[ctx.JSONAPIRequest.Relationship]
 
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, relationship))
 }
@@ -415,6 +446,9 @@ func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *j
 
 	// save model
 	c.updateModel(ctx)
+
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)
@@ -467,6 +501,9 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 	// save model
 	c.updateModel(ctx)
 
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
 	// write result
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -515,6 +552,9 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 
 	// save model
 	c.updateModel(ctx)
+
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)
