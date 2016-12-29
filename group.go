@@ -12,6 +12,8 @@ import (
 type Group struct {
 	controllers map[string]*Controller
 
+	// The Reporter function gets invoked by the controller with any occurring
+	// fatal errors.
 	Reporter func(error)
 }
 
