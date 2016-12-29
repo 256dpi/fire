@@ -42,7 +42,7 @@ type Controller struct {
 
 	// The NoList property can be set to true if the resource is only listed
 	// through relationships from other resources. This is useful for
-	// resources like comments that should never listed without a relationship.
+	// resources like comments that should never be listed alone.
 	NoList bool
 
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
