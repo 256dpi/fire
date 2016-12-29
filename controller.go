@@ -77,7 +77,14 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	defer store.Close()
 
 	// build context
-	ctx := buildContext(prefix, group, store, req, r)
+	ctx := &Context{
+		JSONAPIRequest: req,
+		HTTPRequest:    r,
+		prefix:         prefix,
+		Controller:     c,
+		Group:          group,
+		Store:          store,
+	}
 
 	// call specific handlers based on the request intent
 	switch req.Intent {
@@ -258,7 +265,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := ctx.group.controllers[pluralName]
+	relatedController := ctx.Group.controllers[pluralName]
 
 	// check related controller
 	if relatedController == nil {
@@ -278,8 +285,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 			Filters:      ctx.JSONAPIRequest.Filters,
 		},
 		HTTPRequest: ctx.HTTPRequest,
+		Controller:  relatedController,
+		Group:       ctx.Group,
 		prefix:      ctx.prefix,
-		group:       ctx.group,
 	}
 
 	// finish to one relationship
@@ -812,7 +820,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := ctx.group.controllers[field.RelType]
+			relatedController := ctx.Group.controllers[field.RelType]
 
 			// check existence
 			if relatedController == nil {

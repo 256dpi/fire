@@ -56,20 +56,14 @@ type Context struct {
 	// The underlying HTTP request.
 	HTTPRequest *http.Request
 
-	prefix string
-	group  *Group
+	// The Controller that is managing the request.
+	Controller *Controller
 
+	// The Group that received the request.
+	Group *Group
+
+	prefix   string
 	original Model
-}
-
-func buildContext(prefix string, group *Group, store *Store, req *jsonapi.Request, r *http.Request) *Context {
-	return &Context{
-		prefix:         prefix,
-		group:          group,
-		Store:          store,
-		JSONAPIRequest: req,
-		HTTPRequest:    r,
-	}
 }
 
 // Original will return the stored version of the model. This method is intended
