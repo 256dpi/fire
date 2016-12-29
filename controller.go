@@ -287,7 +287,6 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		HTTPRequest: ctx.HTTPRequest,
 		Controller:  relatedController,
 		Group:       ctx.Group,
-		prefix:      ctx.prefix,
 	}
 
 	// finish to one relationship
@@ -753,7 +752,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 	}
 
 	// generate base link
-	base := ctx.prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := ctx.JSONAPIRequest.Prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
