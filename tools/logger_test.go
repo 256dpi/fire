@@ -17,6 +17,8 @@ func TestNewRequestLogger(t *testing.T) {
 	endpoint := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusContinue)
 		w.Write([]byte("OK"))
+
+		assert.True(t, UnwrapResponseWriter(w) != w)
 	}
 
 	handler := logger(http.HandlerFunc(endpoint))

@@ -37,24 +37,33 @@ func NewRequestLogger(out io.Writer) func(http.Handler) http.Handler {
 	}
 }
 
-type wrappedResponseWriter struct {
-	status int
+// ResponseWriter is the ResponseWriter that wraps the original ResponseWriter
+// if the Logger middleware has been used in the chain.
+type ResponseWriter struct {
 	http.ResponseWriter
+
+	status int
 }
 
-func wrapResponseWriter(res http.ResponseWriter) *wrappedResponseWriter {
+func wrapResponseWriter(res http.ResponseWriter) *ResponseWriter {
 	// default the status code to 200
-	return &wrappedResponseWriter{200, res}
+	return &ResponseWriter{res, 200}
 }
 
-func (w *wrappedResponseWriter) Write(data []byte) (int, error) {
-	return w.ResponseWriter.Write(data)
-}
-
-func (w *wrappedResponseWriter) WriteHeader(statusCode int) {
+// WriteHeader calls the underlying ResponseWriters WriteHeader method.
+func (w *ResponseWriter) WriteHeader(statusCode int) {
 	// Store the status code
 	w.status = statusCode
 
 	// Write the status code onward.
 	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// UnwrapResponseWriter will try to unwrap the passed ResponseWriter.
+func UnwrapResponseWriter(w http.ResponseWriter) http.ResponseWriter {
+	if rw, ok := w.(*ResponseWriter); ok {
+		return rw.ResponseWriter
+	}
+
+	return w
 }
