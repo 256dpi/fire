@@ -35,6 +35,22 @@ func (g *Group) Add(controllers ...*Controller) {
 	}
 }
 
+// List will return a list of all added controllers.
+func (g *Group) List() []*Controller {
+	list := make([]*Controller, 0, len(g.controllers))
+
+	for _, c := range g.controllers {
+		list = append(list, c)
+	}
+
+	return list
+}
+
+// Find will return the controller with the matching plural name if found.
+func (g *Group) Find(pluralName string) *Controller {
+	return g.controllers[pluralName]
+}
+
 // Endpoint will return an http handler that serves requests for this controller
 // group. The specified prefix is used to parse the requests and generate urls
 // for the resources.
