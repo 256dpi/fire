@@ -2,10 +2,12 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gonfire/fire"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
+	"net/http/httptest"
 )
 
 type Post struct {
@@ -67,4 +69,21 @@ func mustHash(password string) []byte {
 	}
 
 	return hash
+}
+
+func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+	r, err := http.NewRequest(method, path, strings.NewReader(payload))
+	if err != nil {
+		panic(err)
+	}
+
+	w := httptest.NewRecorder()
+
+	for k, v := range headers {
+		r.Header.Set(k, v)
+	}
+
+	h.ServeHTTP(w, r)
+
+	callback(w, r)
 }
