@@ -835,6 +835,8 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 				stack.Abort(fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse))
 			}
 
+			// TODO: We should run the related controllers authenticator.
+
 			// load all referenced ids
 			var ids []bson.ObjectId
 			err := ctx.Store.C(relatedController.Model).Find(bson.M{
