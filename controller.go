@@ -28,16 +28,35 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *Store
 
-	// The Authorizers are run on all actions. Will cause an Unauthorized status
-	// if an user error is returned.
+	// The Authorizers authorize the requested action on the requested resource
+	// and are run before any models are loaded from the DB. Returned errors
+	// will cause the abortion of the request with an Unauthorized status.
+	//
+	// The callbacks are expected to return an error if the requester should be
+	// informed about him being unauthorized to access the resource or modify the
+	// Context's Query attribute in such a way that only accessible resources
+	// are returned. The later improves privacy as a protected resource would
+	// just appear as being not found.
 	Authorizers []Callback
 
-	// The Validators are run to validate Create, Update and Delete actions. Will
-	// cause a Bad Request status if an user error is returned.
+	// The Validators are run to validate Create, Update and Delete actions after
+	// the models are loaded from the DB and the changed attributes have been
+	// assigned during an Update. Returned errors will cause the abortion of the
+	// request with a Bad Request status.
+	//
+	// The callbacks are expected to validate the Model being created, updated or
+	// deleted and return errors if the presented attributes or relationships
+	// are invalid or do not comply with the stated requirements. The preceding
+	// authorization checks should be repeated and now also include the model's
+	// attributes and relationships.
 	Validators []Callback
 
-	// The Notifiers are run after any actions has been completed. Will cause
-	// a Internal Server Error status if an user error is returned.
+	// TODO: Notifier Callbacks should have access to the responses being written.
+
+	// The Notifiers are run before the final response is written to the client
+	// and provide a chance to notify other systems about the applied changes.
+	// Returned errors will cause the abortion of the request with an Internal
+	// Server Error status.
 	Notifiers []Callback
 
 	// The NoList property can be set to true if the resource is only listed
