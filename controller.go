@@ -251,7 +251,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 	var relationField *Field
 
 	// find requested relationship
-	for _, field := range c.Model.Meta().Fields {
+	for _, field := range ctx.Model.Meta().Fields {
 		if field.RelName == ctx.JSONAPIRequest.RelatedResource {
 			relationField = &field
 			break
@@ -736,23 +736,24 @@ func (c *Controller) updateModel(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	stack.AbortIf(ctx.Store.C(c.Model).Update(ctx.Query, ctx.Model))
+	stack.AbortIf(ctx.Store.C(ctx.Model).Update(ctx.Query, ctx.Model))
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resource {
-	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName])
+	// create map from model
+	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[model.Meta().PluralName])
 	stack.AbortIf(err)
 
 	// prepare resource
 	resource := &jsonapi.Resource{
-		Type:          c.Model.Meta().PluralName,
+		Type:          model.Meta().PluralName,
 		ID:            model.ID().Hex(),
 		Attributes:    m,
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
 	// generate base link
-	base := ctx.JSONAPIRequest.Prefix + "/" + c.Model.Meta().PluralName + "/" + model.ID().Hex()
+	base := ctx.JSONAPIRequest.Prefix + "/" + model.Meta().PluralName + "/" + model.ID().Hex()
 
 	// TODO: Support included resources (one level).
 
