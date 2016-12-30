@@ -759,6 +759,11 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
+		// check if relationship
+		if !field.ToOne && !field.ToMany && !field.HasMany {
+			continue
+		}
+
 		// prepare relationship links
 		links := &jsonapi.DocumentLinks{
 			Self:    base + "/relationships/" + field.RelName,
