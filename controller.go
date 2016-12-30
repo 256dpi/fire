@@ -883,8 +883,7 @@ func (c *Controller) resourcesForModels(ctx *Context, models []Model) []*jsonapi
 
 	// create resources
 	for _, model := range models {
-		resource := c.resourceForModel(ctx, model)
-		resources = append(resources, resource)
+		resources = append(resources, c.resourceForModel(ctx, model))
 	}
 
 	return resources
