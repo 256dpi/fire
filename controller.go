@@ -316,13 +316,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// finish to one relationship
 	if relationField.ToOne {
-		// prepare id
 		var id string
-
-		// prepare links
-		links := &jsonapi.DocumentLinks{
-			Self: ctx.JSONAPIRequest.Self(),
-		}
 
 		// lookup id of related resource
 		if relationField.Optional {
@@ -331,15 +325,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 			// TODO: Test present optional id.
 
-			// check if missing
+			// check if present
 			if oid != nil {
 				id = oid.Hex()
-			} else {
-				// TODO: Call Notifiers?
-
-				// write empty response
-				stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, nil, links))
-				return
 			}
 		} else {
 			// lookup id on loaded model
@@ -351,15 +339,23 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		newCtx.JSONAPIRequest.Intent = jsonapi.FindResource
 		newCtx.JSONAPIRequest.ResourceID = id
 
-		// load model
-		relatedController.loadModel(newCtx)
-
-		// compose response
+		// prepare response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				One: relatedController.resourceForModel(newCtx, newCtx.Model),
+				One: nil,
 			},
-			Links: links,
+			Links: &jsonapi.DocumentLinks{
+				Self: ctx.JSONAPIRequest.Self(),
+			},
+		}
+
+		// load model if id is present
+		if id != "" {
+			// load model
+			relatedController.loadModel(newCtx)
+
+			// set model
+			newCtx.Response.Data.One = relatedController.resourceForModel(newCtx, newCtx.Model)
 		}
 
 		// run notifiers
