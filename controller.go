@@ -557,21 +557,6 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int) {
-	// run callbacks and handle errors
-	for _, cb := range list {
-		err := cb(ctx)
-		if isFatal(err) {
-			stack.Abort(err)
-		} else if err != nil {
-			stack.Abort(&jsonapi.Error{
-				Status: errorStatus,
-				Detail: err.Error(),
-			})
-		}
-	}
-}
-
 func (c *Controller) loadModel(ctx *Context) {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
@@ -927,4 +912,19 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	}
 
 	return links
+}
+
+func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int) {
+	// run callbacks and handle errors
+	for _, cb := range list {
+		err := cb(ctx)
+		if isFatal(err) {
+			stack.Abort(err)
+		} else if err != nil {
+			stack.Abort(&jsonapi.Error{
+				Status: errorStatus,
+				Detail: err.Error(),
+			})
+		}
+	}
 }
