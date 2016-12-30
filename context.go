@@ -35,16 +35,18 @@ type Context struct {
 	// The current action in process.
 	Action Action
 
-	// The query that will be used during FindAll, FindOne, Update or Delete.
-	// On FindOne, Update and Delete, the "_id" key is preset to the document ID.
-	// On FindAll all field filters and relationship filters are preset.
+	// The query that will be used during List, Find, Update or Delete to fetch
+	// a list of models or the specific requested model.
+	//
+	// On Find, Update and Delete, the "_id" key is preset to the document ID
+	// while on List all field and relationship filters are preset.
 	Query bson.M
 
 	// The Model that will be saved during Create, updated during Update or
-	// delete during Delete.
+	// deleted during Delete.
 	Model Model
 
-	// The sorting that will be used during FindAll.
+	// The sorting that will be used during List.
 	Sorting []string
 
 	// The store that is used to retrieve and persist the model.
