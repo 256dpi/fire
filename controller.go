@@ -51,12 +51,10 @@ type Controller struct {
 	// attributes and relationships.
 	Validators []Callback
 
-	// TODO: Notifier Callbacks should have access to the responses being written.
-
 	// The Notifiers are run before the final response is written to the client
-	// and provide a chance to notify other systems about the applied changes.
-	// Returned errors will cause the abortion of the request with an Internal
-	// Server Error status.
+	// and provide a chance to modify the response and notify other systems
+	// about the applied changes. Returned errors will cause the abortion of the
+	// request with an Internal Server Error status.
 	Notifiers []Callback
 
 	// The NoList property can be set to true if the resource is only listed
@@ -147,36 +145,40 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	// load models
 	models := c.loadModels(ctx)
 
-	// get resources
-	resources := c.resourcesForModels(ctx, models)
-
-	// get list links
-	links := c.listLinks(ctx.JSONAPIRequest.Self(), ctx)
-
-	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
-}
-
-func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
-	// load model
-	c.loadModel(ctx)
-
-	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
-
-	// prepare links
-	links := &jsonapi.DocumentLinks{
-		Self: ctx.JSONAPIRequest.Self(),
+	// compose response
+	ctx.Response = &jsonapi.Document{
+		Data: &jsonapi.HybridResource{
+			Many: c.resourcesForModels(ctx, models),
+		},
+		Links: c.listLinks(ctx.JSONAPIRequest.Self(), ctx),
 	}
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
+}
+
+func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
+	// load model
+	c.loadModel(ctx)
+
+	// compose response
+	ctx.Response = &jsonapi.Document{
+		Data: &jsonapi.HybridResource{
+			One: c.resourceForModel(ctx, ctx.Model),
+		},
+		Links: &jsonapi.DocumentLinks{
+			Self: ctx.JSONAPIRequest.Self(),
+		},
+	}
+
+	// run notifiers
+	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
+	// write result
+	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
 }
 
 func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
@@ -200,19 +202,21 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	// insert model
 	stack.AbortIf(ctx.Store.C(ctx.Model).Insert(ctx.Model))
 
-	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
-
-	// prepare links
-	links := &jsonapi.DocumentLinks{
-		Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
+	// compose response
+	ctx.Response = &jsonapi.Document{
+		Data: &jsonapi.HybridResource{
+			One: c.resourceForModel(ctx, ctx.Model),
+		},
+		Links: &jsonapi.DocumentLinks{
+			Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
+		},
 	}
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResource(w, http.StatusCreated, resource, links))
+	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusCreated, ctx.Response))
 }
 
 func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
@@ -230,19 +234,21 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 	// save model
 	c.updateModel(ctx)
 
-	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
-
-	// prepare links
-	links := &jsonapi.DocumentLinks{
-		Self: ctx.JSONAPIRequest.Self(),
+	// compose response
+	ctx.Response = &jsonapi.Document{
+		Data: &jsonapi.HybridResource{
+			One: c.resourceForModel(ctx, ctx.Model),
+		},
+		Links: &jsonapi.DocumentLinks{
+			Self: ctx.JSONAPIRequest.Self(),
+		},
 	}
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
 }
 
 func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
@@ -329,6 +335,8 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 			if oid != nil {
 				id = oid.Hex()
 			} else {
+				// TODO: Call Notifiers?
+
 				// write empty response
 				stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, nil, links))
 				return
@@ -346,14 +354,19 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		// load model
 		relatedController.loadModel(newCtx)
 
-		// get resource
-		resource := relatedController.resourceForModel(newCtx, newCtx.Model)
+		// compose response
+		newCtx.Response = &jsonapi.Document{
+			Data: &jsonapi.HybridResource{
+				One: relatedController.resourceForModel(newCtx, newCtx.Model),
+			},
+			Links: links,
+		}
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResource(w, http.StatusOK, resource, links))
+		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 
 	// finish to many relationship
@@ -375,17 +388,19 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		// load related models
 		models := relatedController.loadModels(newCtx)
 
-		// get related resources
-		resources := relatedController.resourcesForModels(newCtx, models)
-
-		// get list links
-		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
+		// compose response
+		newCtx.Response = &jsonapi.Document{
+			Data: &jsonapi.HybridResource{
+				Many: relatedController.resourcesForModels(newCtx, models),
+			},
+			Links: relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+		}
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 
 	// finish has many relationship
@@ -422,17 +437,19 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		// load related models
 		models := relatedController.loadModels(newCtx)
 
-		// get related resources
-		resources := relatedController.resourcesForModels(newCtx, models)
-
-		// get list links
-		links := relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx)
+		// compose response
+		newCtx.Response = &jsonapi.Document{
+			Data: &jsonapi.HybridResource{
+				Many: relatedController.resourcesForModels(newCtx, models),
+			},
+			Links: relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+		}
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResources(w, http.StatusOK, resources, links))
+		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 }
 
@@ -444,13 +461,13 @@ func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 	resource := c.resourceForModel(ctx, ctx.Model)
 
 	// get relationship
-	relationship := resource.Relationships[ctx.JSONAPIRequest.Relationship]
+	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, relationship))
+	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
 }
 
 func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {

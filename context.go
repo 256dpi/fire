@@ -49,6 +49,12 @@ type Context struct {
 	// The sorting that will be used during List.
 	Sorting []string
 
+	// The document that will be written to the client during List, Find, Create
+	// and partially Update. The JSON API endpoints to modify a resources
+	// relationships do only respond with a header as no other information should
+	// be changed.
+	Response *jsonapi.Document
+
 	// The store that is used to retrieve and persist the model.
 	Store *Store
 
