@@ -9,11 +9,15 @@ import (
 )
 
 func TestDefaultReporter(t *testing.T) {
+	assert.NotNil(t, DefaultReporter())
+}
+
+func TestReporter(t *testing.T) {
 	buf := new(bytes.Buffer)
 	r := NewReporter(buf)
 
 	r(errors.New("foo"))
 	assert.Contains(t, buf.String(), "===> Begin Error: foo\n")
-	assert.Contains(t, buf.String(), "github.com/gonfire/fire/tools.TestDefaultReporter")
+	assert.Contains(t, buf.String(), "github.com/gonfire/fire/tools.TestReporter")
 	assert.Contains(t, buf.String(), "<=== End Error\n")
 }
