@@ -2,6 +2,7 @@ package fire
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"gopkg.in/mgo.v2/bson"
@@ -260,6 +261,43 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 		// return error if document is missing
 		if n == 0 {
 			return errors.New("References do not match")
+		}
+
+		return nil
+	}
+}
+
+// UniqueAttributeValidator ensures that the specified attribute of the
+// controllers Model will remain unique among the specified filters.
+//
+// The unique attribute is defines as the first argument. Filters are defined
+// by passing a list of database fields:
+//
+//		UniqueAttributeValidator("name", []string{ "user_id" })
+//
+func UniqueAttributeValidator(uniqueAttribute string, filters []string) Callback {
+	return func(ctx *Context) error {
+		// only run validator on Create and Update
+		if ctx.Action != Create && ctx.Action != Update {
+			return nil
+		}
+
+		// prepare query
+		query := bson.M{
+			uniqueAttribute: ctx.Model.MustGet(uniqueAttribute),
+		}
+
+		// add filters
+		for _, field := range filters {
+			query[field] = ctx.Model.MustGet(field)
+		}
+
+		// count
+		n, err := ctx.Store.C(ctx.Model).Find(query).Limit(1).Count()
+		if err != nil {
+			return Fatal(err)
+		} else if n != 0 {
+			return fmt.Errorf("Attribute %s is not unique", uniqueAttribute)
 		}
 
 		return nil
