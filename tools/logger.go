@@ -9,9 +9,9 @@ import (
 )
 
 // DefaultRequestLogger constructs a handler that logs incoming requests to
-// the operating systems standard error output.
+// the operating systems standard output.
 func DefaultRequestLogger() func(http.Handler) http.Handler {
-	return NewRequestLogger(os.Stderr)
+	return NewRequestLogger(os.Stdout)
 }
 
 // NewRequestLogger constructs a handler that logs incoming requests to the
