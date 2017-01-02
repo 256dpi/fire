@@ -7,8 +7,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Callback can be an Authorizer or Validator and is called during execution of
-// a controller.
+// A Callback is called during execution of a controller.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns
 // an InternalServerError status and the error will be logged. All other errors
@@ -85,7 +84,7 @@ func ModelValidator() Callback {
 //
 // Attributes are defined by passing pairs of fields and default values:
 //
-//		ProtectedAttributesValidator(fire.Map{
+//		ProtectedAttributesValidator(map[string]interface{}{
 //			"title": "A fixed title",
 //		})
 //
@@ -131,7 +130,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 // Resources are defined by passing pairs of collections and fields where the
 // field must be a database field of the target resource model:
 //
-//		DependentResourcesValidator(fire.Map{
+//		DependentResourcesValidator(map[string]string{
 // 			"posts": "user_id",
 //			"comments": "user_id",
 // 		})
@@ -170,7 +169,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 // References are defined by passing pairs of fields and collections where the
 // field must be a database field on the resource model:
 //
-//		VerifyReferencesValidator(fire.Map{
+//		VerifyReferencesValidator(map[string]string{
 // 			"post_id": "posts",
 //			"user_id": "users",
 // 		})
@@ -216,7 +215,7 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 // field on the current model. The matcher is defined by passing pairs of
 // database fields on the target and current model:
 //
-//		MatchingReferencesValidator("posts", "post_id", fire.Map{
+//		MatchingReferencesValidator("posts", "post_id", map[string]string{
 // 			"user_id": "user_id",
 // 		})
 //
