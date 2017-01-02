@@ -37,7 +37,7 @@ func getCleanStore() *fire.Store {
 	return testStore
 }
 
-func newHandler(auth *Authenticator) http.Handler {
+func newHandler(auth *Manager) http.Handler {
 	router := http.NewServeMux()
 
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))

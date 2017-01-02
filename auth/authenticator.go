@@ -1,4 +1,4 @@
-// Package auth implements an authenticator component that provides OAuth2
+// Package auth implements an authentication manager that provides OAuth2
 // compatible authentication.
 package auth
 
@@ -23,18 +23,18 @@ type ctxKey int
 // AccessTokenContextKey is the key used to save the access token in a context.
 const AccessTokenContextKey ctxKey = iota
 
-// An Authenticator provides OAuth2 based authentication. The implementation
-// currently supports the Resource Owner Credentials Grant, Client Credentials
-// Grant and Implicit Grant.
-type Authenticator struct {
+// A Manager provides OAuth2 based authentication. The implementation currently
+// supports the Resource Owner Credentials Grant, Client Credentials Grant and
+// Implicit Grant.
+type Manager struct {
 	store  *fire.Store
 	policy *Policy
 
 	Reporter func(error)
 }
 
-// New constructs a new Authenticator from a store and policy.
-func New(store *fire.Store, policy *Policy) *Authenticator {
+// New constructs a new Manager from a store and policy.
+func New(store *fire.Store, policy *Policy) *Manager {
 	// check secret
 	if len(policy.Secret) < 16 {
 		panic("Secret must be longer than 16 characters")
@@ -46,14 +46,14 @@ func New(store *fire.Store, policy *Policy) *Authenticator {
 	fire.Init(policy.Client)
 	fire.Init(policy.ResourceOwner)
 
-	return &Authenticator{
+	return &Manager{
 		store:  store,
 		policy: policy,
 	}
 }
 
 // Endpoint returns a handler for the common token and authorize endpoint.
-func (a *Authenticator) Endpoint(prefix string) http.Handler {
+func (m *Manager) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
@@ -64,8 +64,8 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			}
 
 			// otherwise report critical errors
-			if a.Reporter != nil {
-				a.Reporter(err)
+			if m.Reporter != nil {
+				m.Reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors
@@ -78,13 +78,13 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		// try to call the controllers general handler
 		if len(s) > 0 {
 			if s[0] == "authorize" {
-				a.authorizationEndpoint(w, r)
+				m.authorizationEndpoint(w, r)
 				return
 			} else if s[0] == "token" {
-				a.tokenEndpoint(w, r)
+				m.tokenEndpoint(w, r)
 				return
 			} else if s[0] == "revoke" {
-				a.revocationEndpoint(w, r)
+				m.revocationEndpoint(w, r)
 				return
 			}
 		}
@@ -96,7 +96,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 // Authorizer returns a middleware that can be used to authorize a request by
 // requiring an access token with the provided scopes to be granted.
-func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler {
+func (m *Manager) Authorizer(scope string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// continue any previous aborts
@@ -108,8 +108,8 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 				}
 
 				// otherwise report critical errors
-				if a.Reporter != nil {
-					a.Reporter(err)
+				if m.Reporter != nil {
+					m.Reporter(err)
 				}
 
 				// ignore errors caused by writing critical errors
@@ -124,13 +124,13 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 			stack.AbortIf(err)
 
 			// parse token
-			token, err := hmacsha.Parse(a.policy.Secret, tk)
+			token, err := hmacsha.Parse(m.policy.Secret, tk)
 			if err != nil {
 				stack.Abort(bearer.InvalidToken("Malformed token"))
 			}
 
 			// get token
-			accessToken := a.getAccessToken(token.SignatureString())
+			accessToken := m.getAccessToken(token.SignatureString())
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("Unkown token"))
 			}
@@ -157,7 +157,7 @@ func (a *Authenticator) Authorizer(scope string) func(http.Handler) http.Handler
 	}
 }
 
-func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(r)
 	stack.AbortIf(err)
@@ -168,7 +168,7 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// get client
-	client := a.getClient(req.ClientID)
+	client := m.getClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -181,8 +181,8 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		if a.policy.ImplicitGrant {
-			a.handleImplicitGrant(w, r, req, client)
+		if m.policy.ImplicitGrant {
+			m.handleImplicitGrant(w, r, req, client)
 			return
 		}
 	}
@@ -191,7 +191,7 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 	stack.Abort(oauth2.UnsupportedResponseType(""))
 }
 
-func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
+func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
 	// check request method
 	if r.Method == "GET" {
 		stack.Abort(oauth2.InvalidRequest("Unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
@@ -202,7 +202,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner := a.getResourceOwner(username)
+	resourceOwner := m.getResourceOwner(username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
@@ -213,7 +213,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	}
 
 	// validate & grant scope
-	granted, scope := a.policy.GrantStrategy(&GrantRequest{
+	granted, scope := m.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -226,7 +226,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	rid := resourceOwner.ID()
 
 	// issue access token
-	res := a.issueTokens(false, scope, client.ID(), &rid)
+	res := m.issueTokens(false, scope, client.ID(), &rid)
 
 	// redirect response
 	res.SetRedirect(req.RedirectURI, req.State, true)
@@ -235,7 +235,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(r)
 	stack.AbortIf(err)
@@ -246,7 +246,7 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get client
-	client := a.getClient(req.ClientID)
+	client := m.getClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -254,17 +254,17 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
-		if a.policy.PasswordGrant {
-			a.handleResourceOwnerPasswordCredentialsGrant(w, req, client)
+		if m.policy.PasswordGrant {
+			m.handleResourceOwnerPasswordCredentialsGrant(w, req, client)
 			return
 		}
 	case oauth2.ClientCredentialsGrantType:
-		if a.policy.ClientCredentialsGrant {
-			a.handleClientCredentialsGrant(w, req, client)
+		if m.policy.ClientCredentialsGrant {
+			m.handleClientCredentialsGrant(w, req, client)
 			return
 		}
 	case oauth2.RefreshTokenGrantType:
-		a.handleRefreshTokenGrant(w, req, client)
+		m.handleRefreshTokenGrant(w, req, client)
 		return
 	}
 
@@ -272,9 +272,9 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	stack.Abort(oauth2.UnsupportedGrantType(""))
 }
 
-func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner := a.getResourceOwner(req.Username)
+	resourceOwner := m.getResourceOwner(req.Username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
@@ -285,7 +285,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	}
 
 	// validate & grant scope
-	granted, scope := a.policy.GrantStrategy(&GrantRequest{
+	granted, scope := m.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -298,20 +298,20 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	rid := resourceOwner.ID()
 
 	// issue access token
-	res := a.issueTokens(true, scope, client.ID(), &rid)
+	res := m.issueTokens(true, scope, client.ID(), &rid)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (m *Manager) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// validate & grant scope
-	granted, scope := a.policy.GrantStrategy(&GrantRequest{
+	granted, scope := m.policy.GrantStrategy(&GrantRequest{
 		Scope:  req.Scope,
 		Client: client,
 	})
@@ -320,21 +320,21 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 	}
 
 	// issue access token
-	res := a.issueTokens(true, scope, client.ID(), nil)
+	res := m.issueTokens(true, scope, client.ID(), nil)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// parse refresh token
-	refreshToken, err := hmacsha.Parse(a.policy.Secret, req.RefreshToken)
+	refreshToken, err := hmacsha.Parse(m.policy.Secret, req.RefreshToken)
 	if err != nil {
 		stack.Abort(oauth2.InvalidRequest(err.Error()))
 	}
 
 	// get stored refresh token by signature
-	rt := a.getRefreshToken(refreshToken.SignatureString())
+	rt := m.getRefreshToken(refreshToken.SignatureString())
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("Unknown refresh token"))
 	}
@@ -363,28 +363,28 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	}
 
 	// issue tokens
-	res := a.issueTokens(true, req.Scope, client.ID(), data.ResourceOwnerID)
+	res := m.issueTokens(true, req.Scope, client.ID(), data.ResourceOwnerID)
 
 	// delete refresh token
-	a.deleteRefreshToken(refreshToken.SignatureString())
+	m.deleteRefreshToken(refreshToken.SignatureString())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := revocation.ParseRequest(r)
 	stack.AbortIf(err)
 
 	// get client
-	client := a.getClient(req.ClientID)
+	client := m.getClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// parse token
-	token, err := hmacsha.Parse(a.policy.Secret, req.Token)
+	token, err := hmacsha.Parse(m.policy.Secret, req.Token)
 	if err != nil {
 		return
 	}
@@ -392,26 +392,26 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 	// TODO: Only revoke tokens that belong to the provided client.
 
 	// delete access token
-	a.deleteAccessToken(token.SignatureString())
+	m.deleteAccessToken(token.SignatureString())
 
 	// delete refresh token
-	a.deleteRefreshToken(token.SignatureString())
+	m.deleteRefreshToken(token.SignatureString())
 
 	// write header
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *Authenticator) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectId, roID *bson.ObjectId) *oauth2.TokenResponse {
+func (m *Manager) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectId, roID *bson.ObjectId) *oauth2.TokenResponse {
 	// generate new access token
-	accessToken, err := hmacsha.Generate(a.policy.Secret, 32)
+	accessToken, err := hmacsha.Generate(m.policy.Secret, 32)
 	stack.AbortIf(err)
 
 	// generate new refresh token
-	refreshToken, err := hmacsha.Generate(a.policy.Secret, 32)
+	refreshToken, err := hmacsha.Generate(m.policy.Secret, 32)
 	stack.AbortIf(err)
 
 	// prepare response
-	res := bearer.NewTokenResponse(accessToken.String(), int(a.policy.AccessTokenLifespan/time.Second))
+	res := bearer.NewTokenResponse(accessToken.String(), int(m.policy.AccessTokenLifespan/time.Second))
 
 	// set granted scope
 	res.Scope = s
@@ -425,51 +425,51 @@ func (a *Authenticator) issueTokens(refreshable bool, s oauth2.Scope, cID bson.O
 	accessTokenData := &TokenData{
 		Signature:       accessToken.SignatureString(),
 		Scope:           s,
-		ExpiresAt:       time.Now().Add(a.policy.AccessTokenLifespan),
+		ExpiresAt:       time.Now().Add(m.policy.AccessTokenLifespan),
 		ClientID:        cID,
 		ResourceOwnerID: roID,
 	}
 
 	// save access token
-	a.saveAccessToken(accessTokenData)
+	m.saveAccessToken(accessTokenData)
 
 	if refreshable {
 		// create refresh token data
 		refreshTokenData := &TokenData{
 			Signature:       refreshToken.SignatureString(),
 			Scope:           s,
-			ExpiresAt:       time.Now().Add(a.policy.RefreshTokenLifespan),
+			ExpiresAt:       time.Now().Add(m.policy.RefreshTokenLifespan),
 			ClientID:        cID,
 			ResourceOwnerID: roID,
 		}
 
 		// save refresh token
-		a.saveRefreshToken(refreshTokenData)
+		m.saveRefreshToken(refreshTokenData)
 	}
 
 	// run automated cleanup if enabled
-	if a.policy.AutomatedCleanup {
-		a.cleanup()
+	if m.policy.AutomatedCleanup {
+		m.cleanup()
 	}
 
 	return res
 }
 
-func (a *Authenticator) getClient(id string) Client {
+func (m *Manager) getClient(id string) Client {
 	// prepare object
-	obj := a.policy.Client.Meta().Make()
+	obj := m.policy.Client.Meta().Make()
 
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
 
 	// get id field
-	field := a.policy.Client.Meta().FindField(a.policy.Client.DescribeClient())
+	field := m.policy.Client.Meta().FindField(m.policy.Client.DescribeClient())
 
 	// query db
-	err := store.C(a.policy.Client).Find(bson.M{
+	err := store.C(m.policy.Client).Find(bson.M{
 		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -485,21 +485,21 @@ func (a *Authenticator) getClient(id string) Client {
 	return client
 }
 
-func (a *Authenticator) getResourceOwner(id string) ResourceOwner {
+func (m *Manager) getResourceOwner(id string) ResourceOwner {
 	// prepare object
-	obj := a.policy.ResourceOwner.Meta().Make()
+	obj := m.policy.ResourceOwner.Meta().Make()
 
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
 
 	// get id field
-	field := a.policy.ResourceOwner.Meta().FindField(a.policy.ResourceOwner.DescribeResourceOwner())
+	field := m.policy.ResourceOwner.Meta().FindField(m.policy.ResourceOwner.DescribeResourceOwner())
 
 	// query db
-	err := store.C(a.policy.ResourceOwner).Find(bson.M{
+	err := store.C(m.policy.ResourceOwner).Find(bson.M{
 		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -515,20 +515,20 @@ func (a *Authenticator) getResourceOwner(id string) ResourceOwner {
 	return resourceOwner
 }
 
-func (a *Authenticator) getAccessToken(signature string) Token {
-	return a.getToken(a.policy.AccessToken, signature)
+func (m *Manager) getAccessToken(signature string) Token {
+	return m.getToken(m.policy.AccessToken, signature)
 }
 
-func (a *Authenticator) getRefreshToken(signature string) Token {
-	return a.getToken(a.policy.RefreshToken, signature)
+func (m *Manager) getRefreshToken(signature string) Token {
+	return m.getToken(m.policy.RefreshToken, signature)
 }
 
-func (a *Authenticator) getToken(t Token, signature string) Token {
+func (m *Manager) getToken(t Token, signature string) Token {
 	// prepare object
 	obj := t.Meta().Make()
 
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
@@ -556,15 +556,15 @@ func (a *Authenticator) getToken(t Token, signature string) Token {
 	return accessToken
 }
 
-func (a *Authenticator) saveAccessToken(d *TokenData) Token {
-	return a.saveToken(a.policy.AccessToken, d)
+func (m *Manager) saveAccessToken(d *TokenData) Token {
+	return m.saveToken(m.policy.AccessToken, d)
 }
 
-func (a *Authenticator) saveRefreshToken(d *TokenData) Token {
-	return a.saveToken(a.policy.RefreshToken, d)
+func (m *Manager) saveRefreshToken(d *TokenData) Token {
+	return m.saveToken(m.policy.RefreshToken, d)
 }
 
-func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
+func (m *Manager) saveToken(t Token, d *TokenData) Token {
 	// prepare access token
 	token := t.Meta().Make().(Token)
 
@@ -572,7 +572,7 @@ func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
 	token.SetTokenData(d)
 
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
@@ -586,17 +586,17 @@ func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
 	return token
 }
 
-func (a *Authenticator) deleteAccessToken(signature string) {
-	a.deleteToken(a.policy.AccessToken, signature)
+func (m *Manager) deleteAccessToken(signature string) {
+	m.deleteToken(m.policy.AccessToken, signature)
 }
 
-func (a *Authenticator) deleteRefreshToken(signature string) {
-	a.deleteToken(a.policy.RefreshToken, signature)
+func (m *Manager) deleteRefreshToken(signature string) {
+	m.deleteToken(m.policy.RefreshToken, signature)
 }
 
-func (a *Authenticator) deleteToken(t Token, signature string) {
+func (m *Manager) deleteToken(t Token, signature string) {
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
@@ -616,17 +616,17 @@ func (a *Authenticator) deleteToken(t Token, signature string) {
 	stack.AbortIf(err)
 }
 
-func (a *Authenticator) cleanup() {
+func (m *Manager) cleanup() {
 	// remove all expired access tokens
-	a.cleanupToken(a.policy.AccessToken)
+	m.cleanupToken(m.policy.AccessToken)
 
 	// remove all expired refresh tokens
-	a.cleanupToken(a.policy.RefreshToken)
+	m.cleanupToken(m.policy.RefreshToken)
 }
 
-func (a *Authenticator) cleanupToken(t Token) {
+func (m *Manager) cleanupToken(t Token) {
 	// get store
-	store := a.store.Copy()
+	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()

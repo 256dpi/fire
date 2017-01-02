@@ -18,7 +18,7 @@ type GrantRequest struct {
 	ResourceOwner ResourceOwner
 }
 
-// The GrantStrategy is invoked by the authenticator with the grant type, the
+// The GrantStrategy is invoked by the manager with the grant type, the
 // requested scope, the client and the resource owner before issuing an access
 // token. The callback should return the scopes that should be granted.
 //

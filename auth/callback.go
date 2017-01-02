@@ -11,7 +11,7 @@ import (
 // requiring an access token with the provided scopes to be granted.
 //
 // Note: It requires that the request has already been authorized using the
-// Authorizer middleware of an authenticator.
+// Authorizer middleware from a Manager.
 func Callback(scope string) fire.Callback {
 	return func(ctx *fire.Context) error {
 		// parse scope

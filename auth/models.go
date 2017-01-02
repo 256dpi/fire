@@ -17,8 +17,8 @@ type TokenData struct {
 	ResourceOwnerID *bson.ObjectId
 }
 
-// Token is the interface that must be implemented to provide a custom
-// access token and refresh token fire.
+// Token is the interface that must be implemented to provide a custom access
+// token and refresh token.
 type Token interface {
 	fire.Model
 
@@ -102,8 +102,7 @@ func (t *RefreshToken) SetTokenData(data *TokenData) {
 	t.ResourceOwnerID = data.ResourceOwnerID
 }
 
-// Client is the interface that must be implemented to provide a custom client
-// fire.
+// Client is the interface that must be implemented to provide a custom client.
 type Client interface {
 	fire.Model
 
@@ -148,7 +147,7 @@ func (a *Application) ValidSecret(secret string) bool {
 }
 
 // ResourceOwner is the interface that must be implemented to provide a custom
-// resource owner fire.
+// resource owner.
 type ResourceOwner interface {
 	fire.Model
 

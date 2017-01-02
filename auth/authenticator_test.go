@@ -33,8 +33,8 @@ func TestIntegration(t *testing.T) {
 		return true, []string(req.Scope)
 	}
 
-	auth := New(getCleanStore(), p)
-	auth.Reporter = func(err error) {
+	manager := New(getCleanStore(), p)
+	manager.Reporter = func(err error) {
 		t.Error(err)
 	}
 
@@ -66,14 +66,14 @@ func TestIntegration(t *testing.T) {
 
 	saveModel(&AccessToken{
 		Signature: expiredToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-auth.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
 		Scope:     []string{"foo"},
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&AccessToken{
 		Signature: insufficientToken.SignatureString(),
-		ExpiresAt: time.Now().Add(auth.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
 		Scope:     []string{},
 		ClientID:  app1.ID(),
 	})
@@ -84,19 +84,19 @@ func TestIntegration(t *testing.T) {
 
 	saveModel(&RefreshToken{
 		Signature: validRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(auth.policy.RefreshTokenLifespan),
+		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
 	})
 
 	saveModel(&RefreshToken{
 		Signature: expiredRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-auth.policy.RefreshTokenLifespan),
+		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
 	})
 
-	config := spec.Default(newHandler(auth))
+	config := spec.Default(newHandler(manager))
 
 	config.PasswordGrantSupport = true
 	config.ClientCredentialsGrantSupport = true
@@ -115,7 +115,7 @@ func TestIntegration(t *testing.T) {
 	config.ValidScope = "foo bar"
 	config.ExceedingScope = "foo bar baz"
 
-	config.ExpectedExpiresIn = int(auth.policy.AccessTokenLifespan / time.Second)
+	config.ExpectedExpiresIn = int(manager.policy.AccessTokenLifespan / time.Second)
 
 	config.UnknownToken = unknownToken.String()
 	config.ExpiredToken = expiredToken.String()
