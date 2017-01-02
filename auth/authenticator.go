@@ -366,7 +366,7 @@ func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.Tok
 	res := m.issueTokens(true, req.Scope, client.ID(), data.ResourceOwnerID)
 
 	// delete refresh token
-	m.deleteRefreshToken(refreshToken.SignatureString())
+	m.deleteRefreshToken(refreshToken.SignatureString(), client.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
@@ -389,13 +389,11 @@ func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Only revoke tokens that belong to the provided client.
-
 	// delete access token
-	m.deleteAccessToken(token.SignatureString())
+	m.deleteAccessToken(token.SignatureString(), client.ID())
 
 	// delete refresh token
-	m.deleteRefreshToken(token.SignatureString())
+	m.deleteRefreshToken(token.SignatureString(), client.ID())
 
 	// write header
 	w.WriteHeader(http.StatusOK)
@@ -534,7 +532,7 @@ func (m *Manager) getToken(t Token, signature string) Token {
 	defer store.Close()
 
 	// get token id field name
-	fieldName, _ := t.DescribeToken()
+	fieldName, _, _ := t.DescribeToken()
 
 	// get signature field
 	field := t.Meta().FindField(fieldName)
@@ -586,30 +584,32 @@ func (m *Manager) saveToken(t Token, d *TokenData) Token {
 	return token
 }
 
-func (m *Manager) deleteAccessToken(signature string) {
-	m.deleteToken(m.policy.AccessToken, signature)
+func (m *Manager) deleteAccessToken(signature string, clientID bson.ObjectId) {
+	m.deleteToken(m.policy.AccessToken, signature, clientID)
 }
 
-func (m *Manager) deleteRefreshToken(signature string) {
-	m.deleteToken(m.policy.RefreshToken, signature)
+func (m *Manager) deleteRefreshToken(signature string, clientID bson.ObjectId) {
+	m.deleteToken(m.policy.RefreshToken, signature, clientID)
 }
 
-func (m *Manager) deleteToken(t Token, signature string) {
+func (m *Manager) deleteToken(t Token, signature string, clientID bson.ObjectId) {
 	// get store
 	store := m.store.Copy()
 
 	// ensure store gets closed
 	defer store.Close()
 
-	// get token id field name
-	fieldName, _ := t.DescribeToken()
+	// get field names
+	signatureFieldName, clientIDFieldName, _ := t.DescribeToken()
 
-	// get signature field
-	field := t.Meta().FindField(fieldName)
+	// get fields
+	signatureField := t.Meta().FindField(signatureFieldName)
+	clientIDField := t.Meta().FindField(clientIDFieldName)
 
 	// fetch access token
 	_, err := store.C(t).RemoveAll(bson.M{
-		field.BSONName: signature,
+		signatureField.BSONName: signature,
+		clientIDField.BSONName:  clientID,
 	})
 
 	// abort on critical error
@@ -632,7 +632,7 @@ func (m *Manager) cleanupToken(t Token) {
 	defer store.Close()
 
 	// get access token expires at field name
-	_, fieldName := t.DescribeToken()
+	_, _, fieldName := t.DescribeToken()
 
 	// get expires at field
 	field := t.Meta().FindField(fieldName)

@@ -22,8 +22,8 @@ type TokenData struct {
 type Token interface {
 	fire.Model
 
-	// DescribeToken should return the tokens identifier and expires at field.
-	DescribeToken() (string, string)
+	// DescribeToken should return the tokens identifier, client id and expires at field.
+	DescribeToken() (string, string, string)
 
 	// GetTokenData should collect and return the tokens data.
 	GetTokenData() *TokenData
@@ -43,8 +43,8 @@ type AccessToken struct {
 }
 
 // DescribeToken implements the Token interface.
-func (t *AccessToken) DescribeToken() (string, string) {
-	return "Signature", "ExpiresAt"
+func (t *AccessToken) DescribeToken() (string, string, string) {
+	return "Signature", "ClientID", "ExpiresAt"
 }
 
 // GetTokenData implements the Token interface.
@@ -78,8 +78,8 @@ type RefreshToken struct {
 }
 
 // DescribeToken implements the Token interface.
-func (t *RefreshToken) DescribeToken() (string, string) {
-	return "Signature", "ExpiresAt"
+func (t *RefreshToken) DescribeToken() (string, string, string) {
+	return "Signature", "ClientID", "ExpiresAt"
 }
 
 // GetTokenData implements the Token interface.
