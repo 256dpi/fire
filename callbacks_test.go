@@ -271,3 +271,45 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	err = validator(ctx)
 	assert.NoError(t, err)
 }
+
+func TestUniqueAttributeValidator(t *testing.T) {
+	store := getCleanStore()
+
+	// create validator
+	validator := UniqueAttributeValidator("title", nil)
+
+	// create post
+	post1 := saveModel(&Post{
+		Title: "foo",
+	}).(*Post)
+
+	// create context
+	ctx := &Context{
+		Action: Update,
+		Model:  post1,
+		Store:  store,
+	}
+
+	// call validator
+	err := validator(ctx)
+	assert.NoError(t, err)
+
+	// create second post
+	saveModel(&Post{
+		Title: "bar",
+	})
+
+	// change post1
+	post1.Title = "bar"
+
+	// create context
+	ctx = &Context{
+		Action: Update,
+		Model:  post1,
+		Store:  store,
+	}
+
+	// call validator
+	err = validator(ctx)
+	assert.Error(t, err)
+}

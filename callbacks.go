@@ -282,6 +282,20 @@ func UniqueAttributeValidator(uniqueAttribute string, filters []string) Callback
 			return nil
 		}
 
+		// check if field has changed
+		if ctx.Action == Update {
+			// get original model
+			original, err := ctx.Original()
+			if err != nil {
+				return err
+			}
+
+			// return if field has not been changed
+			if ctx.Model.MustGet(uniqueAttribute) == original.MustGet(uniqueAttribute) {
+				return nil
+			}
+		}
+
 		// prepare query
 		query := bson.M{
 			uniqueAttribute: ctx.Model.MustGet(uniqueAttribute),
