@@ -386,7 +386,6 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 	// parse token
 	token, err := hmacsha.Parse(a.policy.Secret, req.Token)
 	if err != nil {
-		// we do not care about wrong tokens TODO: Sure?
 		return
 	}
 
