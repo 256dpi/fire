@@ -772,8 +772,6 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 	// generate base link
 	base := ctx.JSONAPIRequest.Prefix + "/" + model.Meta().PluralName + "/" + model.ID().Hex()
 
-	// TODO: Support included resources (one level).
-
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
 		// check if relationship
