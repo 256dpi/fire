@@ -54,5 +54,5 @@ func (s *Store) DB() *mgo.Database {
 
 // C will return the collection associated to the passed model.
 func (s *Store) C(model Model) *mgo.Collection {
-	return s.DB().C(Init(model).Meta().Collection)
+	return s.DB().C(C(model))
 }
