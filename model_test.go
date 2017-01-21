@@ -20,6 +20,14 @@ func TestC(t *testing.T) {
 	assert.Equal(t, "posts", C(&Post{}))
 }
 
+func TestF(t *testing.T) {
+	assert.Equal(t, "text_body", F(&Post{}, "TextBody"))
+}
+
+func TestA(t *testing.T) {
+	assert.Equal(t, "text-body", A(&Post{}, "TextBody"))
+}
+
 func TestBaseID(t *testing.T) {
 	post := Init(&Post{}).(*Post)
 	assert.Equal(t, post.DocID, post.ID())

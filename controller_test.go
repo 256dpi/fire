@@ -268,7 +268,7 @@ func TestFiltering(t *testing.T) {
 
 	// create selection
 	selection := saveModel(&Selection{
-		PostIDs: []bson.ObjectId{
+		Posts: []bson.ObjectId{
 			bson.ObjectIdHex(post1),
 			bson.ObjectIdHex(post2),
 			bson.ObjectIdHex(post3),
@@ -838,7 +838,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 	saveModel(&Comment{
 		Message: "Comment 1",
-		PostID:  existingPost.ID(),
+		Post:    existingPost.ID(),
 	})
 
 	// create new post
@@ -1039,7 +1039,7 @@ func TestToOneRelationship(t *testing.T) {
 	// create comment
 	comment1 := saveModel(&Comment{
 		Message: "Comment 1",
-		PostID:  bson.ObjectIdHex(post1),
+		Post:    bson.ObjectIdHex(post1),
 	}).ID().Hex()
 
 	var comment2 string
@@ -1695,7 +1695,7 @@ func TestPaginationToMany(t *testing.T) {
 
 	// create selection
 	selection := saveModel(&Selection{
-		PostIDs: ids,
+		Posts: ids,
 	}).ID().Hex()
 
 	// get first page of posts
@@ -1758,7 +1758,7 @@ func TestPaginationHasMany(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveModel(&Comment{
 			Message: fmt.Sprintf("Comment %d", i+1),
-			PostID:  post,
+			Post:    post,
 		})
 	}
 

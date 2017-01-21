@@ -71,7 +71,8 @@ func Except(cb Callback, actions ...Action) Callback {
 	}
 }
 
-// ModelValidator performs a validation of the model using the Validate function.
+// ModelValidator performs a validation of the model using the Validate
+// function.
 func ModelValidator() Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
@@ -92,9 +93,12 @@ func ModelValidator() Callback {
 // Attributes are defined by passing pairs of fields and default values:
 //
 //	ProtectedAttributesValidator(map[string]interface{}{
-//		"title":   NoDefault, // the title can only be set during Create
-//		"version": 2          // the version is fixed and cannot be changed
+//		F(&Post{}, "Title"): NoDefault, // can only be set during Create
+//		F(&Post{}, "Link"):  "",        // is fixed and cannot be changed
 //	})
+//
+// The special NoDefault value can be provided to skip the default enforcement
+// on Create.
 //
 func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 	return func(ctx *Context) error {
@@ -142,12 +146,12 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 // and returns an error if some get found. This callback is meant to protect
 // resources from breaking relations when requested to be deleted.
 //
-// Resources are defined by passing pairs of collections and fields where the
-// field must be a database field of the target resource model:
+// Dependent resources are defined by passing pairs of collections and database
+// fields that hold the current models id:
 //
 //	DependentResourcesValidator(map[string]string{
-//		C(&Post{}): "user_id",
-//		C(&Comment{}): "user_id",
+//		C(&Post{}): F(&Post{}, "Author"),
+//		C(&Comment{}): F(&Post{}, "Author"),
 //	})
 //
 func DependentResourcesValidator(resources map[string]string) Callback {
@@ -179,14 +183,14 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 }
 
 // VerifyReferencesValidator makes sure all references in the document are
-// existing by counting on the related collections.
+// existing by counting the references on the related collections.
 //
-// References are defined by passing pairs of fields and collections where the
-// field must be a database field on the resource model:
+// References are defined by passing pairs of database fields and collections of
+// models whose ids might be referenced on the current model:
 //
 //	VerifyReferencesValidator(map[string]string{
-//		"post_id": C(&Post{}),
-//		"user_id": C(&User{}),
+//		F(&Comment{}, "Post"): C(&Post{}),
+//		F(&Comment{}, "Author"): C(&User{}),
 //	})
 //
 func VerifyReferencesValidator(references map[string]string) Callback {
@@ -230,8 +234,8 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 // field on the current model. The matcher is defined by passing pairs of
 // database fields on the target and current model:
 //
-//	MatchingReferencesValidator(C(&Post{}), "post_id", map[string]string{
-//		"user_id": "user_id",
+//	MatchingReferencesValidator(C(&Blog{}), F(&Post{}, "Blog"), map[string]string{
+//		F(&Blog{}, "Owner"): F(&Post{}, "Owner"),
 //	})
 //
 func MatchingReferencesValidator(collection, reference string, matcher map[string]string) Callback {
@@ -287,9 +291,9 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 // The unique attribute is defines as the first argument. Filters are defined
 // by passing a list of database fields:
 //
-//	UniqueAttributeValidator("name", []string{ "user_id" })
+//	UniqueAttributeValidator(F(&Blog{}, "Name"), F(&Blog{}, "Creator"))
 //
-func UniqueAttributeValidator(uniqueAttribute string, filters []string) Callback {
+func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Action != Create && ctx.Action != Update {

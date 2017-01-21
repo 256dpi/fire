@@ -85,6 +85,18 @@ func C(m Model) string {
 	return Init(m).Meta().Collection
 }
 
+// F is a short-hand function to extract the BSON field name of a model
+// attribute.
+func F(m Model, field string) string {
+	return Init(m).Meta().MustFindField(field).BSONName
+}
+
+// A is a short-hand function to extract the JSON attribute name of model
+// attribute.
+func A(m Model, field string) string {
+	return Init(m).Meta().MustFindField(field).JSONName
+}
+
 // Base is the base for every fire model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`

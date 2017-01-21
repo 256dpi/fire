@@ -183,7 +183,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 
 	// create comment
 	saveModel(&Comment{
-		PostID: post.ID(),
+		Post: post.ID(),
 	})
 
 	// call validator
@@ -202,7 +202,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 
 	// create bad comment
 	comment1 := saveModel(&Comment{
-		PostID: bson.NewObjectId(),
+		Post: bson.NewObjectId(),
 	})
 
 	// create context
@@ -225,7 +225,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	// create comment
 	comment2 := saveModel(&Comment{
 		Parent: &comment1ID,
-		PostID: post.ID(),
+		Post:   post.ID(),
 	})
 
 	// update ctx
@@ -249,14 +249,14 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment1 := saveModel(&Comment{
-		PostID: postID,
+		Post: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
 	comment2 := saveModel(&Comment{
 		Parent: &parentID,
-		PostID: bson.NewObjectId(),
+		Post:   bson.NewObjectId(),
 	})
 
 	// create context
@@ -272,14 +272,14 @@ func TestMatchingReferencesValidator(t *testing.T) {
 
 	// create root comment
 	comment3 := saveModel(&Comment{
-		PostID: postID,
+		Post: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
 	comment4 := saveModel(&Comment{
 		Parent: &parentID,
-		PostID: postID,
+		Post:   postID,
 	})
 
 	// update ctx
@@ -294,7 +294,7 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	store := getCleanStore()
 
 	// create validator
-	validator := UniqueAttributeValidator("title", nil)
+	validator := UniqueAttributeValidator("title")
 
 	// create post
 	post1 := saveModel(&Post{

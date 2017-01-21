@@ -158,7 +158,7 @@ func TestMeta(t *testing.T) {
 				index:    2,
 			},
 			{
-				Name:     "PostID",
+				Name:     "Post",
 				Type:     toOneType,
 				Kind:     reflect.String,
 				JSONName: "",
@@ -187,7 +187,7 @@ func TestMeta(t *testing.T) {
 				index:    1,
 			},
 			{
-				Name:     "PostIDs",
+				Name:     "Posts",
 				Type:     toManyType,
 				Kind:     reflect.Slice,
 				BSONName: "post_ids",

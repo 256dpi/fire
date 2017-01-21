@@ -30,13 +30,13 @@ type Comment struct {
 	Base    `json:"-" bson:",inline" fire:"comments"`
 	Message string         `json:"message"`
 	Parent  *bson.ObjectId `json:"-" fire:"parent:comments"`
-	PostID  bson.ObjectId  `json:"-" bson:"post_id" fire:"post:posts"`
+	Post    bson.ObjectId  `json:"-" bson:"post_id" fire:"post:posts"`
 }
 
 type Selection struct {
-	Base    `json:"-" bson:",inline" fire:"selections:selections"`
-	Name    string          `json:"name"`
-	PostIDs []bson.ObjectId `json:"-" bson:"post_ids" fire:"posts:posts"`
+	Base  `json:"-" bson:",inline" fire:"selections:selections"`
+	Name  string          `json:"name"`
+	Posts []bson.ObjectId `json:"-" bson:"post_ids" fire:"posts:posts"`
 }
 
 var testStore = MustCreateStore("mongodb://0.0.0.0:27017/fire")
