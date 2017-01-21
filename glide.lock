@@ -1,5 +1,5 @@
 hash: 8991e3184d6823549abc4da468aa711803c0342ff87a87a760288f7de69cafe4
-updated: 2017-01-06T00:37:13.08750863+01:00
+updated: 2017-01-21T17:51:46.892810737+01:00
 imports:
 - name: github.com/256dpi/stack
   version: 5cbe4ed1aa4fc649d5454235a36977e930f40ee9
@@ -17,12 +17,12 @@ imports:
 - name: github.com/goware/cors
   version: 6ad15f4e1489e41776ee8b008597eafea9a67fd9
 - name: golang.org/x/crypto
-  version: a8a4eedf8c97852389ea5f2c252660d3616af041
+  version: c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6
   subpackages:
   - bcrypt
   - blowfish
 - name: gopkg.in/mgo.v2
-  version: 01084657862d7b12d3b10ffd0394357abf8f8bc2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
   - internal/json
@@ -42,6 +42,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: 72b0cad1c18345c48d7ddf5ade1f2c45af35b442
+  version: e3f249f4fdf33c278edeb770426a6f83c954ae64
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
