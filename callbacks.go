@@ -151,7 +151,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 //
 //	DependentResourcesValidator(map[string]string{
 //		C(&Post{}): F(&Post{}, "Author"),
-//		C(&Comment{}): F(&Post{}, "Author"),
+//		C(&Comment{}): F(&Comment{}, "Author"),
 //	})
 //
 func DependentResourcesValidator(resources map[string]string) Callback {
