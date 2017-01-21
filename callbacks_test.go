@@ -109,6 +109,24 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
+	validator := ProtectedAttributesValidator(map[string]interface{}{
+		"title": NoDefault,
+	})
+
+	post := Init(&Post{
+		Title: "Title",
+	}).(*Post)
+
+	ctx := &Context{
+		Action: Create,
+		Model:  post,
+	}
+
+	err := validator(ctx)
+	assert.NoError(t, err)
+}
+
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	store := getCleanStore()
 

@@ -35,6 +35,12 @@ func isFatal(err error) bool {
 	return ok
 }
 
+type value int
+
+// NoDefault marks the specified field to have no default that needs to be
+// enforced while executing the ProtectedAttributesValidator.
+const NoDefault value = iota
+
 // Only will return a callback that runs the specified callback only when one
 // of the supplied actions match.
 func Only(cb Callback, actions ...Action) Callback {
@@ -80,13 +86,14 @@ func ModelValidator() Callback {
 }
 
 // ProtectedAttributesValidator compares protected attributes against their
-// default (during Create) or stored value (during Update) and returns and
-// error if they have been changed.
+// default (during Create) or stored value (during Update) and returns an error
+// if they have been changed.
 //
 // Attributes are defined by passing pairs of fields and default values:
 //
 //		ProtectedAttributesValidator(map[string]interface{}{
-//			"title": "A fixed title",
+//			"title": NoDefault, // the title can only be set during Create
+//          "version": 2 // the version is fixed and cannot be changed
 //		})
 //
 func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
@@ -99,6 +106,12 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 		if ctx.Action == Create {
 			// check all attributes
 			for field, def := range attributes {
+				// skip fields that have no default
+				if def == NoDefault {
+					continue
+				}
+
+				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), def) {
 					return errors.New("Field " + field + " is protected")
 				}
@@ -114,6 +127,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 
 			// check all attributes
 			for field := range attributes {
+				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
 					return errors.New("Field " + field + " is protected")
 				}
