@@ -91,7 +91,7 @@ func F(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).BSONName
 }
 
-// A is a short-hand function to extract the JSON attribute name of model
+// A is a short-hand function to extract the JSON attribute name of a model
 // attribute.
 func A(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).JSONName
