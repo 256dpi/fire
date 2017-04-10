@@ -641,7 +641,7 @@ func (m *Manager) cleanupToken(t Token) {
 	desc := t.DescribeToken()
 
 	// get expires at field
-	field := t.Meta().FindField(desc.ExpireAtField)
+	field := t.Meta().FindField(desc.ExpiresAtField)
 
 	// remove all records
 	_, err := store.C(t).RemoveAll(bson.M{

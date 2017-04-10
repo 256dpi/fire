@@ -22,7 +22,7 @@ type TokenData struct {
 type TokenDescription struct {
 	SignatureField string
 	ClientIDField  string
-	ExpireAtField  string
+	ExpiresAtField string
 }
 
 // Token is the interface that must be implemented to provide a custom access
@@ -55,7 +55,7 @@ func (t *AccessToken) DescribeToken() TokenDescription {
 	return TokenDescription{
 		SignatureField: "Signature",
 		ClientIDField:  "ClientID",
-		ExpireAtField:  "ExpiresAt",
+		ExpiresAtField: "ExpiresAt",
 	}
 }
 
@@ -94,7 +94,7 @@ func (t *RefreshToken) DescribeToken() TokenDescription {
 	return TokenDescription{
 		SignatureField: "Signature",
 		ClientIDField:  "ClientID",
-		ExpireAtField:  "ExpiresAt",
+		ExpiresAtField: "ExpiresAt",
 	}
 }
 
