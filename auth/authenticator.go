@@ -463,8 +463,11 @@ func (m *Manager) getClient(id string) Client {
 	// ensure store gets closed
 	defer store.Close()
 
+	// get description
+	desc := m.policy.Client.DescribeClient()
+
 	// get id field
-	field := m.policy.Client.Meta().FindField(m.policy.Client.DescribeClient())
+	field := m.policy.Client.Meta().FindField(desc.IdentifierField)
 
 	// query db
 	err := store.C(m.policy.Client).Find(bson.M{
@@ -493,8 +496,11 @@ func (m *Manager) getResourceOwner(id string) ResourceOwner {
 	// ensure store gets closed
 	defer store.Close()
 
+	// get description
+	desc := m.policy.ResourceOwner.DescribeResourceOwner()
+
 	// get id field
-	field := m.policy.ResourceOwner.Meta().FindField(m.policy.ResourceOwner.DescribeResourceOwner())
+	field := m.policy.ResourceOwner.Meta().FindField(desc.IdentifierField)
 
 	// query db
 	err := store.C(m.policy.ResourceOwner).Find(bson.M{
@@ -531,11 +537,11 @@ func (m *Manager) getToken(t Token, signature string) Token {
 	// ensure store gets closed
 	defer store.Close()
 
-	// get token id field name
-	fieldName, _, _ := t.DescribeToken()
+	// get description
+	desc := t.DescribeToken()
 
 	// get signature field
-	field := t.Meta().FindField(fieldName)
+	field := t.Meta().FindField(desc.SignatureField)
 
 	// fetch access token
 	err := store.C(t).Find(bson.M{
@@ -599,12 +605,12 @@ func (m *Manager) deleteToken(t Token, signature string, clientID bson.ObjectId)
 	// ensure store gets closed
 	defer store.Close()
 
-	// get field names
-	signatureFieldName, clientIDFieldName, _ := t.DescribeToken()
+	// get description
+	desc := t.DescribeToken()
 
 	// get fields
-	signatureField := t.Meta().FindField(signatureFieldName)
-	clientIDField := t.Meta().FindField(clientIDFieldName)
+	signatureField := t.Meta().FindField(desc.SignatureField)
+	clientIDField := t.Meta().FindField(desc.ClientIDField)
 
 	// fetch access token
 	_, err := store.C(t).RemoveAll(bson.M{
@@ -631,11 +637,11 @@ func (m *Manager) cleanupToken(t Token) {
 	// ensure store gets closed
 	defer store.Close()
 
-	// get access token expires at field name
-	_, _, fieldName := t.DescribeToken()
+	// get description
+	desc := t.DescribeToken()
 
 	// get expires at field
-	field := t.Meta().FindField(fieldName)
+	field := t.Meta().FindField(desc.ExpireAtField)
 
 	// remove all records
 	_, err := store.C(t).RemoveAll(bson.M{
