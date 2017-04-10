@@ -2,9 +2,22 @@ package fire
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type postWithTimestamps struct {
+	Base      `json:"-" bson:",inline" fire:"posts"`
+	Title     string    `json:"title" bson:"title" valid:"required"`
+	CreatedAt time.Time `json:"created-at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated-at" bson:"updated_at"`
+}
+
+func (p *postWithTimestamps) Validate() error {
+	ValidateTimestamps(p, "CreatedAt", "UpdatedAt")
+	return nil
+}
 
 func TestInit(t *testing.T) {
 	m := Init(&Post{})
@@ -26,6 +39,14 @@ func TestF(t *testing.T) {
 
 func TestA(t *testing.T) {
 	assert.Equal(t, "text-body", A(&Post{}, "TextBody"))
+}
+
+func TestValidateTimestamps(t *testing.T) {
+	post := Init(&postWithTimestamps{}).(*postWithTimestamps)
+	err := post.Validate()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, post.CreatedAt)
+	assert.NotEmpty(t, post.UpdatedAt)
 }
 
 func TestBaseID(t *testing.T) {

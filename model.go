@@ -3,6 +3,7 @@ package fire
 import (
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
@@ -53,6 +54,22 @@ func Validate(m Model) error {
 	}
 
 	return nil
+}
+
+// ValidateTimestamps is a helper function that can be used inside a models
+// Validate method to maintain "created-at" and "updated-at" timestamps.
+//
+// Note: You can pass an empty string to disable certain timestamps.
+func ValidateTimestamps(m Model, createdAtField, updatedAtField string) {
+	// set the "created-at" field if present and not already set
+	if createdAtField != "" && m.MustGet(createdAtField).(time.Time).IsZero() {
+		m.MustSet(createdAtField, time.Now())
+	}
+
+	// always set the "updated-at" field if present
+	if updatedAtField != "" {
+		m.MustSet(updatedAtField, time.Now())
+	}
 }
 
 // Init initializes the internals of a model and should be called before using
