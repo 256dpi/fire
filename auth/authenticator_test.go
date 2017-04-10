@@ -42,7 +42,6 @@ func TestIntegration(t *testing.T) {
 		Name:        "Application 1",
 		Key:         "app1",
 		SecretHash:  mustHash("foo"),
-		Scope:       "foo",
 		RedirectURI: "http://example.com/callback1",
 	})
 
@@ -50,7 +49,6 @@ func TestIntegration(t *testing.T) {
 		Name:        "Application 2",
 		Key:         "app2",
 		SecretHash:  mustHash("foo"),
-		Scope:       "foo",
 		RedirectURI: "http://example.com/callback2",
 	})
 

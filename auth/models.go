@@ -149,7 +149,6 @@ type Application struct {
 	Name        string `json:"name" valid:"required"`
 	Key         string `json:"key" valid:"required"`
 	SecretHash  []byte `json:"-" valid:"required"`
-	Scope       string `json:"scope" valid:"required"`
 	RedirectURI string `json:"redirect_uri" valid:"required"`
 }
 
