@@ -221,13 +221,17 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	}
 
 	// validate & grant scope
-	granted, scope := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := m.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
 	})
-	if !granted {
+	if err == ErrGrantRejected {
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
+	} else if err == ErrInvalidScope {
 		stack.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, true))
+	} else if err != nil {
+		stack.Abort(err)
 	}
 
 	// get resource owner id
@@ -293,13 +297,17 @@ func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWri
 	}
 
 	// validate & grant scope
-	granted, scope := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := m.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
 	})
-	if !granted {
+	if err == ErrGrantRejected {
+		stack.Abort(oauth2.AccessDenied(""))
+	} else if err == ErrInvalidScope {
 		stack.Abort(oauth2.InvalidScope(""))
+	} else if err != nil {
+		stack.Abort(err)
 	}
 
 	// get resource owner id
@@ -319,12 +327,16 @@ func (m *Manager) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth
 	}
 
 	// validate & grant scope
-	granted, scope := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := m.policy.GrantStrategy(&GrantRequest{
 		Scope:  req.Scope,
 		Client: client,
 	})
-	if !granted {
+	if err == ErrGrantRejected {
+		stack.Abort(oauth2.AccessDenied(""))
+	} else if err == ErrInvalidScope {
 		stack.Abort(oauth2.InvalidScope(""))
+	} else if err != nil {
+		stack.Abort(err)
 	}
 
 	// issue access token

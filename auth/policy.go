@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gonfire/oauth2/hmacsha"
@@ -16,18 +17,27 @@ type GrantRequest struct {
 
 	// The resource owner that gave his consent.
 	//
-	// Note: The Owner is not set for a client credentials grant.
+	// Note: ResourceOwner is not set for a client credentials grant.
 	ResourceOwner ResourceOwner
 }
 
+// ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
+// of the grant based on the provided conditions.
+var ErrGrantRejected = errors.New("grant rejected")
+
+// ErrInvalidScope should be returned by the GrantStrategy to indicate that the
+// requested scope exceeds the grantable scope.
+var ErrInvalidScope = errors.New("invalid scope")
+
 // The GrantStrategy is invoked by the manager with the grant type, the
 // requested scope, the client and the resource owner before issuing an access
-// token. The callback should return the scopes that should be granted.
-type GrantStrategy func(req *GrantRequest) (bool, []string)
+// token. The callback should return no error and the scope that should be granted.
+// It can return ErrGrantRejected or ErrInvalidScope to cancel the grant request.
+type GrantStrategy func(req *GrantRequest) ([]string, error)
 
-// DefaultGrantStrategy grants the complete requested scope.
-func DefaultGrantStrategy(req *GrantRequest) (bool, []string) {
-	return true, req.Scope
+// DefaultGrantStrategy grants the requested scope.
+func DefaultGrantStrategy(req *GrantRequest) ([]string, error) {
+	return req.Scope, nil
 }
 
 // A Policy configures the provided authentication schemes.
