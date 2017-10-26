@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/hmacsha"
 )
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
 type GrantRequest struct {
 	// The scope that has been requested.
-	Scope []string
+	Scope oauth2.Scope
 
 	// The client that made the access request.
 	Client Client
@@ -33,10 +34,10 @@ var ErrInvalidScope = errors.New("invalid scope")
 // requested scope, the client and the resource owner before issuing an access
 // token. The callback should return no error and the scope that should be granted.
 // It can return ErrGrantRejected or ErrInvalidScope to cancel the grant request.
-type GrantStrategy func(req *GrantRequest) ([]string, error)
+type GrantStrategy func(req *GrantRequest) (oauth2.Scope, error)
 
 // DefaultGrantStrategy grants the requested scope.
-func DefaultGrantStrategy(req *GrantRequest) ([]string, error) {
+func DefaultGrantStrategy(req *GrantRequest) (oauth2.Scope, error) {
 	return req.Scope, nil
 }
 
