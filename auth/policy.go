@@ -41,11 +41,11 @@ type Policy struct {
 	ImplicitGrant          bool
 
 	// The used models and strategies.
-	AccessToken   Token
-	RefreshToken  Token
-	Client        Client
-	ResourceOwner ResourceOwner
-	GrantStrategy GrantStrategy
+	AccessToken    Token
+	RefreshToken   Token
+	Client         Client
+	ResourceOwners []ResourceOwner
+	GrantStrategy  GrantStrategy
 
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
@@ -63,7 +63,7 @@ func DefaultPolicy(secret string) *Policy {
 		AccessToken:          &AccessToken{},
 		RefreshToken:         &RefreshToken{},
 		Client:               &Application{},
-		ResourceOwner:        &User{},
+		ResourceOwners:       []ResourceOwner{&User{}},
 		GrantStrategy:        DefaultGrantStrategy,
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,

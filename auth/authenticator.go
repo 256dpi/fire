@@ -44,7 +44,9 @@ func New(store *fire.Store, policy *Policy) *Manager {
 	fire.Init(policy.AccessToken)
 	fire.Init(policy.RefreshToken)
 	fire.Init(policy.Client)
-	fire.Init(policy.ResourceOwner)
+	for _, model := range policy.ResourceOwners {
+		fire.Init(model)
+	}
 
 	return &Manager{
 		store:  store,
@@ -202,7 +204,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner := m.getResourceOwner(username)
+	resourceOwner := m.getFirstResourceOwner(username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
@@ -274,7 +276,7 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner := m.getResourceOwner(req.Username)
+	resourceOwner := m.getFirstResourceOwner(req.Username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
@@ -486,9 +488,20 @@ func (m *Manager) getClient(id string) Client {
 	return client
 }
 
-func (m *Manager) getResourceOwner(id string) ResourceOwner {
+func (m *Manager) getFirstResourceOwner(id string) ResourceOwner {
+	for _, model := range m.policy.ResourceOwners {
+		ro := m.getResourceOwner(model, id)
+		if ro != nil {
+			return ro
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) getResourceOwner(model ResourceOwner, id string) ResourceOwner {
 	// prepare object
-	obj := m.policy.ResourceOwner.Meta().Make()
+	obj := model.Meta().Make()
 
 	// get store
 	store := m.store.Copy()
@@ -497,13 +510,13 @@ func (m *Manager) getResourceOwner(id string) ResourceOwner {
 	defer store.Close()
 
 	// get description
-	desc := m.policy.ResourceOwner.DescribeResourceOwner()
+	desc := model.DescribeResourceOwner()
 
 	// get id field
-	field := m.policy.ResourceOwner.Meta().FindField(desc.IdentifierField)
+	field := model.Meta().FindField(desc.IdentifierField)
 
 	// query db
-	err := store.C(m.policy.ResourceOwner).Find(bson.M{
+	err := store.C(model).Find(bson.M{
 		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
