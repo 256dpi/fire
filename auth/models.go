@@ -141,10 +141,6 @@ type Client interface {
 	// ValidSecret should determine whether the specified plain text secret
 	// matches the hashed secret.
 	ValidSecret(string) bool
-
-	// AllowedResourceOwner should return whether the presented ResourceOwner is
-	// allowed to receive a Token by this Client.
-	AllowedResourceOwner(owner ResourceOwner) bool
 }
 
 // Application is the built-in model used to store clients.
@@ -171,11 +167,6 @@ func (a *Application) ValidRedirectURI(uri string) bool {
 // ValidSecret implements the Client interface.
 func (a *Application) ValidSecret(secret string) bool {
 	return bcrypt.CompareHashAndPassword(a.SecretHash, []byte(secret)) == nil
-}
-
-// AllowedResourceOwner implements the Client interface.
-func (a *Application) AllowedResourceOwner(ro ResourceOwner) bool {
-	return true
 }
 
 // A ResourceOwnerDescription is returned by a ResourceOwner model to specify

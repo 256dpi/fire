@@ -215,11 +215,6 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
-	// check if resource owner is allowed
-	if !client.AllowedResourceOwner(resourceOwner) {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
-	}
-
 	// validate password
 	if !resourceOwner.ValidPassword(password) {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
@@ -289,11 +284,6 @@ func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWri
 	// get resource owner
 	resourceOwner := m.getFirstResourceOwner(req.Username)
 	if resourceOwner == nil {
-		stack.Abort(oauth2.AccessDenied(""))
-	}
-
-	// check if resource owner is allowed
-	if !client.AllowedResourceOwner(resourceOwner) {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
 
