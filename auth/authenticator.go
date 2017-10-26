@@ -140,7 +140,7 @@ func (m *Manager) Authorizer(scope string) func(http.Handler) http.Handler {
 			// get token
 			accessToken := m.getAccessToken(token.SignatureString())
 			if accessToken == nil {
-				stack.Abort(bearer.InvalidToken("Unkown token"))
+				stack.Abort(bearer.InvalidToken("Unknown token"))
 			}
 
 			// get additional data
