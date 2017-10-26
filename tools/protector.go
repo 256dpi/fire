@@ -36,7 +36,7 @@ func NewProtector(maxBody string, corsOptions cors.Options) func(http.Handler) h
 }
 
 func parseHumanSize(str string) int64 {
-	const msg = "size must be like 4K, 20M or 5G"
+	const msg = "fire/tools: size must be like 4K, 20M or 5G"
 
 	if len(str) < 2 {
 		panic(msg)

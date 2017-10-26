@@ -844,7 +844,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 
 			// check existence
 			if relatedController == nil {
-				panic("Missing related controller " + field.RelType)
+				panic("fire: missing related controller " + field.RelType)
 			}
 
 			// prepare filter

@@ -37,7 +37,7 @@ type Manager struct {
 func New(store *fire.Store, policy *Policy) *Manager {
 	// check secret
 	if len(policy.Secret) < 16 {
-		panic("Secret must be longer than 16 characters")
+		panic("fire/auth: secret must be longer than 16 characters")
 	}
 
 	// initialize models

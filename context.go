@@ -81,7 +81,7 @@ type Context struct {
 // Note: The method will panic if being used during any other action than Update.
 func (c *Context) Original() (Model, error) {
 	if c.Action != Update {
-		panic("Original can only be used during an Update action")
+		panic(`fire: original can only be used during an "Update" action`)
 	}
 
 	// return cached model

@@ -79,17 +79,17 @@ func NewMeta(model Model) *Meta {
 
 			// check json tag
 			if structField.Tag.Get("json") != "-" {
-				panic(`Expected to find a tag of the form json:"-" on Base`)
+				panic(`fire: expected to find a tag of the form json:"-" on Base`)
 			}
 
 			// check bson tag
 			if structField.Tag.Get("bson") != ",inline" {
-				panic(`Expected to find a tag of the form bson:",inline" on Base`)
+				panic(`fire: expected to find a tag of the form bson:",inline" on Base`)
 			}
 
 			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
-				panic(`Expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
+				panic(`fire: expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
 			}
 
 			// infer plural and collection names
@@ -132,7 +132,7 @@ func NewMeta(model Model) *Meta {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
-					panic("Expected to find a tag of the form fire:\"name:type\" on to one relationship")
+					panic(`fire: expected to find a tag of the form fire:"name:type" on to one relationship`)
 				}
 
 				// parse special to one relationship tag
@@ -153,7 +153,7 @@ func NewMeta(model Model) *Meta {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
-					panic("Expected to find a tag of the form fire:\"name:type\" on to many relationship")
+					panic(`fire: expected to find a tag of the form fire:"name:type" on to many relationship`)
 				}
 
 				// parse special to many relationship tag
@@ -173,7 +173,7 @@ func NewMeta(model Model) *Meta {
 		if structField.Type == hasManyType {
 			// check tag
 			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 2 {
-				panic(`Expected to find a tag of the form fire:"name:type:inverse" on has many relationship`)
+				panic(`fire: expected to find a tag of the form fire:"name:type:inverse" on has many relationship`)
 			}
 
 			// parse special has many relationship tag
@@ -191,7 +191,7 @@ func NewMeta(model Model) *Meta {
 
 		// panic on any additional tags
 		for _, tag := range fireTags {
-			panic("Unexpected tag " + tag)
+			panic("fire: unexpected tag " + tag)
 		}
 
 		// add field
@@ -221,7 +221,7 @@ func (m *Meta) FindField(name string) *Field {
 func (m *Meta) MustFindField(name string) *Field {
 	field := m.FindField(name)
 	if field == nil {
-		panic("Field " + name + " not found on " + m.Name)
+		panic(`fire: field "` + name + `" not found on "` + m.Name + `"`)
 	}
 
 	return field
