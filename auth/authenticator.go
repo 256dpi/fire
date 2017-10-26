@@ -102,8 +102,11 @@ func (m *Manager) Endpoint(prefix string) http.Handler {
 	})
 }
 
+// TODO: Also provide a fire.Callback that takes care of the basic authentication.
+// TODO: Useful in applications where parts of the JSON-API are public.
+
 // Authorizer returns a middleware that can be used to authorize a request by
-// requiring an access token with the provided scopes to be granted.
+// requiring an access token with the provided scope to be granted.
 func (m *Manager) Authorizer(scope string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

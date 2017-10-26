@@ -8,7 +8,7 @@ import (
 )
 
 // Callback returns a callback that can be used to protect resources by
-// requiring an access token with the provided scopes to be granted.
+// requiring an access token with the provided scope to be granted.
 //
 // Note: It requires that the request has already been authorized using the
 // Authorizer middleware from a Manager.
