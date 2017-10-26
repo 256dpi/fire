@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type postWithTimestamps struct {
@@ -39,6 +40,19 @@ func TestF(t *testing.T) {
 
 func TestA(t *testing.T) {
 	assert.Equal(t, "text-body", A(&Post{}, "TextBody"))
+}
+
+func TestValidate(t *testing.T) {
+	post := Init(&Post{}).(*Post)
+
+	post.DocID = ""
+	assert.Error(t, Validate(post))
+
+	post.DocID = bson.NewObjectId()
+	assert.Error(t, Validate(post))
+
+	post.Title = "foo"
+	assert.NoError(t, Validate(post))
 }
 
 func TestValidateTimestamps(t *testing.T) {
