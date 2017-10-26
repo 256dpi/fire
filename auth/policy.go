@@ -15,14 +15,14 @@ type GrantRequest struct {
 	Client Client
 
 	// The resource owner that gave his consent.
+	//
+	// Note: The Owner is not set for a client credentials grant.
 	ResourceOwner ResourceOwner
 }
 
 // The GrantStrategy is invoked by the manager with the grant type, the
 // requested scope, the client and the resource owner before issuing an access
 // token. The callback should return the scopes that should be granted.
-//
-// Note: The Owner is not set for a client credentials grant.
 type GrantStrategy func(req *GrantRequest) (bool, []string)
 
 // DefaultGrantStrategy grants the complete requested scope.
