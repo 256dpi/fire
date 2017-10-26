@@ -43,7 +43,7 @@ type Policy struct {
 	// The used models and strategies.
 	AccessToken    Token
 	RefreshToken   Token
-	Client         Client
+	Clients        []Client
 	ResourceOwners []ResourceOwner
 	GrantStrategy  GrantStrategy
 
@@ -62,7 +62,7 @@ func DefaultPolicy(secret string) *Policy {
 		Secret:               []byte(secret),
 		AccessToken:          &AccessToken{},
 		RefreshToken:         &RefreshToken{},
-		Client:               &Application{},
+		Clients:              []Client{&Application{}},
 		ResourceOwners:       []ResourceOwner{&User{}},
 		GrantStrategy:        DefaultGrantStrategy,
 		AccessTokenLifespan:  time.Hour,

@@ -43,7 +43,13 @@ func New(store *fire.Store, policy *Policy) *Manager {
 	// initialize models
 	fire.Init(policy.AccessToken)
 	fire.Init(policy.RefreshToken)
-	fire.Init(policy.Client)
+
+	// initialize clients
+	for _, model := range policy.Clients {
+		fire.Init(model)
+	}
+
+	// initialize resource owners
 	for _, model := range policy.ResourceOwners {
 		fire.Init(model)
 	}
@@ -170,7 +176,7 @@ func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// get client
-	client := m.getClient(req.ClientID)
+	client := m.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -248,7 +254,7 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get client
-	client := m.getClient(req.ClientID)
+	client := m.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -380,7 +386,7 @@ func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	stack.AbortIf(err)
 
 	// get client
-	client := m.getClient(req.ClientID)
+	client := m.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -455,9 +461,21 @@ func (m *Manager) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectI
 	return res
 }
 
-func (m *Manager) getClient(id string) Client {
+func (m *Manager) getFirstClient(id string) Client {
+	// check all available models in order
+	for _, model := range m.policy.Clients {
+		c := m.getClient(model, id)
+		if c != nil {
+			return c
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) getClient(model Client, id string) Client {
 	// prepare object
-	obj := m.policy.Client.Meta().Make()
+	obj := model.Meta().Make()
 
 	// get store
 	store := m.store.Copy()
@@ -466,13 +484,13 @@ func (m *Manager) getClient(id string) Client {
 	defer store.Close()
 
 	// get description
-	desc := m.policy.Client.DescribeClient()
+	desc := model.DescribeClient()
 
 	// get id field
-	field := m.policy.Client.Meta().FindField(desc.IdentifierField)
+	field := model.Meta().FindField(desc.IdentifierField)
 
 	// query db
-	err := store.C(m.policy.Client).Find(bson.M{
+	err := store.C(model).Find(bson.M{
 		field.BSONName: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
@@ -489,6 +507,7 @@ func (m *Manager) getClient(id string) Client {
 }
 
 func (m *Manager) getFirstResourceOwner(id string) ResourceOwner {
+	// check all available models in order
 	for _, model := range m.policy.ResourceOwners {
 		ro := m.getResourceOwner(model, id)
 		if ro != nil {
