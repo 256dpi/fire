@@ -18,8 +18,8 @@ func Callback(scope string) fire.Callback {
 		s := oauth2.ParseScope(scope)
 
 		// get access token
-		accessToken := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
-		if accessToken == nil {
+		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
+		if !ok || accessToken == nil {
 			return fire.Fatal(errors.New("missing access token"))
 		}
 
