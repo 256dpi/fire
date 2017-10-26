@@ -8,6 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestComposePanics(t *testing.T) {
+	assert.Panics(t, func() {
+		Compose()
+	})
+
+	assert.Panics(t, func() {
+		Compose(nil, nil)
+	})
+
+	assert.Panics(t, func() {
+		Compose(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	})
+}
+
 func TestCompose(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("H"))
