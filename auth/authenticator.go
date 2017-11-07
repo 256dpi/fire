@@ -494,8 +494,6 @@ func (m *Manager) getClient(model Client, id string) Client {
 
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// get description
@@ -539,8 +537,6 @@ func (m *Manager) getResourceOwner(model ResourceOwner, id string) ResourceOwner
 
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// get description
@@ -580,8 +576,6 @@ func (m *Manager) getToken(t Token, signature string) Token {
 
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// get description
@@ -624,8 +618,6 @@ func (m *Manager) saveToken(t Token, d *TokenData) Token {
 
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// save access token
@@ -648,8 +640,6 @@ func (m *Manager) deleteRefreshToken(signature string, clientID bson.ObjectId) {
 func (m *Manager) deleteToken(t Token, signature string, clientID bson.ObjectId) {
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// get description
@@ -680,8 +670,6 @@ func (m *Manager) cleanup() {
 func (m *Manager) cleanupToken(t Token) {
 	// get store
 	store := m.store.Copy()
-
-	// ensure store gets closed
 	defer store.Close()
 
 	// get description

@@ -89,8 +89,6 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 
 	// copy store
 	store := c.Store.Copy()
-
-	// ensure store will be closed
 	defer store.Close()
 
 	// build context
