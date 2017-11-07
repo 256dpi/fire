@@ -2,6 +2,26 @@ package fire
 
 import "gopkg.in/mgo.v2"
 
+// A SubStore allows access to the database.
+type SubStore struct {
+	session *mgo.Session
+}
+
+// Close will close the store and its associated session.
+func (s *SubStore) Close() {
+	s.session.Close()
+}
+
+// DB returns the database used by this store.
+func (s *SubStore) DB() *mgo.Database {
+	return s.session.DB("")
+}
+
+// C will return the collection associated to the passed model.
+func (s *SubStore) C(model Model) *mgo.Collection {
+	return s.DB().C(C(model))
+}
+
 // A Store manages the usage of database connections.
 type Store struct {
 	session *mgo.Session
@@ -38,21 +58,11 @@ func NewStore(session *mgo.Session) *Store {
 
 // Copy will make a copy of the store and the underlying session. Copied stores
 // that are not used anymore must be closed.
-func (s *Store) Copy() *Store {
-	return NewStore(s.session.Copy())
+func (s *Store) Copy() *SubStore {
+	return &SubStore{s.session.Copy()}
 }
 
 // Close will close the store and its associated session.
 func (s *Store) Close() {
 	s.session.Close()
-}
-
-// DB returns the database used by this store.
-func (s *Store) DB() *mgo.Database {
-	return s.session.DB("")
-}
-
-// C will return the collection associated to the passed model.
-func (s *Store) C(model Model) *mgo.Collection {
-	return s.DB().C(C(model))
 }

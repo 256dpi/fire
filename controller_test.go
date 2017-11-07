@@ -13,17 +13,17 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// get empty list of posts
@@ -235,21 +235,21 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 		Filters: []string{
 			"title",
 			"published",
 		},
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts
@@ -557,20 +557,20 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 		Sorters: []string{
 			"title",
 		},
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts in random order
@@ -764,17 +764,17 @@ func TestSorting(t *testing.T) {
 }
 
 func TestSparseFieldsets(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts
@@ -819,17 +819,17 @@ func TestSparseFieldsets(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create existing post & comment
@@ -1015,17 +1015,17 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts
@@ -1243,17 +1243,17 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts
@@ -1537,17 +1537,17 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create posts
@@ -1588,18 +1588,18 @@ func TestEmptyToManyRelationship(t *testing.T) {
 }
 
 func TestNoList(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model:  &Comment{},
-		Store:  store,
+		Store:  testStore,
 		NoList: true,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// attempt list comments
@@ -1612,17 +1612,17 @@ func TestNoList(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create some posts
@@ -1670,17 +1670,17 @@ func TestPagination(t *testing.T) {
 }
 
 func TestPaginationToMany(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// prepare ids
@@ -1736,17 +1736,17 @@ func TestPaginationToMany(t *testing.T) {
 }
 
 func TestPaginationHasMany(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model: &Post{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create post
@@ -1800,18 +1800,18 @@ func TestPaginationHasMany(t *testing.T) {
 }
 
 func TestForcedPagination(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model:     &Post{},
-		Store:     store,
+		Store:     testStore,
 		ListLimit: 5,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create some posts
@@ -1841,18 +1841,18 @@ func TestForcedPagination(t *testing.T) {
 }
 
 func TestListLimit(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	server := buildHandler(&Controller{
 		Model:     &Post{},
-		Store:     store,
+		Store:     testStore,
 		ListLimit: 5,
 	}, &Controller{
 		Model: &Comment{},
-		Store: store,
+		Store: testStore,
 	}, &Controller{
 		Model: &Selection{},
-		Store: store,
+		Store: testStore,
 	})
 
 	// create some posts

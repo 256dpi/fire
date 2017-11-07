@@ -921,7 +921,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		n, err := c.Store.C(c.Model).Find(ctx.Query).Count()
+		n, err := ctx.Store.C(c.Model).Find(ctx.Query).Count()
 		stack.AbortIf(err)
 
 		// calculate last page

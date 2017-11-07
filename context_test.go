@@ -26,7 +26,7 @@ func TestAction(t *testing.T) {
 }
 
 func TestContextOriginal(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	savedPost := Init(&Post{
 		Title: "foo",
@@ -43,7 +43,7 @@ func TestContextOriginal(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	m, err := ctx.Original()
@@ -63,7 +63,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 }
 
 func TestContextOriginalNonExisting(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	post := Init(&Post{
 		Title: "foo",
@@ -72,7 +72,7 @@ func TestContextOriginalNonExisting(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	m, err := ctx.Original()

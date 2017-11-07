@@ -40,13 +40,12 @@ type Selection struct {
 }
 
 var testStore = MustCreateStore("mongodb://0.0.0.0:27017/fire")
+var testSubStore = testStore.Copy()
 
-func getCleanStore() *Store {
-	testStore.DB().C("posts").RemoveAll(nil)
-	testStore.DB().C("comments").RemoveAll(nil)
-	testStore.DB().C("selections").RemoveAll(nil)
-
-	return testStore
+func cleanStore() {
+	testSubStore.DB().C("posts").RemoveAll(nil)
+	testSubStore.DB().C("comments").RemoveAll(nil)
+	testSubStore.DB().C("selections").RemoveAll(nil)
 }
 
 func buildHandler(controllers ...*Controller) http.Handler {
@@ -73,7 +72,7 @@ func testRequest(h http.Handler, method, path string, headers map[string]string,
 }
 
 func saveModel(m Model) Model {
-	err := testStore.C(m).Insert(m)
+	err := testSubStore.C(m).Insert(m)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +81,7 @@ func saveModel(m Model) Model {
 }
 
 func findLastModel(m Model) Model {
-	err := testStore.C(m).Find(nil).Sort("-_id").One(m)
+	err := testSubStore.C(m).Find(nil).Sort("-_id").One(m)
 	if err != nil {
 		panic(err)
 	}

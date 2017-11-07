@@ -128,7 +128,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	validator := ProtectedAttributesValidator(map[string]interface{}{
 		"title": "Default Title",
@@ -147,7 +147,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	err := validator(ctx)
@@ -159,7 +159,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 }
 
 func TestDependentResourcesValidator(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	// create validator
 	validator := DependentResourcesValidator(map[string]string{
@@ -174,7 +174,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Delete,
 		Query:  bson.M{"_id": post.ID()},
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	// call validator
@@ -192,7 +192,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 }
 
 func TestVerifyReferencesValidator(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
@@ -209,7 +209,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Create,
 		Model:  comment1,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	// call validator
@@ -237,7 +237,7 @@ func TestVerifyReferencesValidator(t *testing.T) {
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	// create validator
 	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
@@ -263,7 +263,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Create,
 		Model:  comment2,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	// call validator
@@ -291,7 +291,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 }
 
 func TestUniqueAttributeValidator(t *testing.T) {
-	store := getCleanStore()
+	cleanStore()
 
 	// create validator
 	validator := UniqueAttributeValidator("title")
@@ -305,7 +305,7 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	ctx := &Context{
 		Action: Update,
 		Model:  post1,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	// call validator
@@ -324,7 +324,7 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	ctx = &Context{
 		Action: Update,
 		Model:  post1,
-		Store:  store,
+		Store:  testSubStore,
 	}
 
 	// call validator

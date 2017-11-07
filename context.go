@@ -56,7 +56,7 @@ type Context struct {
 	Response *jsonapi.Document
 
 	// The store that is used to retrieve and persist the model.
-	Store *Store
+	Store *SubStore
 
 	// The underlying JSON API request.
 	JSONAPIRequest *jsonapi.Request

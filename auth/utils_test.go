@@ -25,16 +25,15 @@ type Comment struct {
 }
 
 var testStore = fire.MustCreateStore("mongodb://0.0.0.0:27017/fire")
+var testSubStore = testStore.Copy()
 
-func getCleanStore() *fire.Store {
-	testStore.DB().C("posts").RemoveAll(nil)
-	testStore.DB().C("comments").RemoveAll(nil)
-	testStore.DB().C("selections").RemoveAll(nil)
-	testStore.DB().C("users").RemoveAll(nil)
-	testStore.DB().C("applications").RemoveAll(nil)
-	testStore.DB().C("access_tokens").RemoveAll(nil)
-
-	return testStore
+func cleanSubStore() {
+	testSubStore.DB().C("posts").RemoveAll(nil)
+	testSubStore.DB().C("comments").RemoveAll(nil)
+	testSubStore.DB().C("selections").RemoveAll(nil)
+	testSubStore.DB().C("users").RemoveAll(nil)
+	testSubStore.DB().C("applications").RemoveAll(nil)
+	testSubStore.DB().C("access_tokens").RemoveAll(nil)
 }
 
 func newHandler(auth *Manager) http.Handler {
@@ -54,7 +53,7 @@ func newHandler(auth *Manager) http.Handler {
 }
 
 func saveModel(m fire.Model) fire.Model {
-	err := testStore.C(m).Insert(m)
+	err := testSubStore.C(m).Insert(m)
 	if err != nil {
 		panic(err)
 	}

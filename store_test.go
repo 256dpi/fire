@@ -8,8 +8,7 @@ import (
 
 func TestCreateStore(t *testing.T) {
 	store1 := MustCreateStore("mongodb://localhost/fire")
-	assert.NotNil(t, store1.DB())
-	assert.NotNil(t, store1.C(&Post{}))
+	assert.NotNil(t, store1.session)
 
 	store2 := store1.Copy()
 	assert.NotNil(t, store2)

@@ -12,6 +12,8 @@ import (
 var testSecret = "abcd1234abcd1234"
 
 func TestIntegration(t *testing.T) {
+	cleanSubStore()
+
 	var allowedScope = oauth2.ParseScope("foo bar")
 	var requiredScope = oauth2.ParseScope("foo")
 
@@ -33,7 +35,7 @@ func TestIntegration(t *testing.T) {
 		return req.Scope, nil
 	}
 
-	manager := New(getCleanStore(), p)
+	manager := New(testStore, p)
 	manager.Reporter = func(err error) {
 		t.Error(err)
 	}
