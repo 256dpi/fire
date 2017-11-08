@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateStore(t *testing.T) {
-	store1 := MustCreateStore("mongodb://localhost/fire")
+	store1 := MustCreateStore("mongodb://localhost/test-fire")
 	assert.NotNil(t, store1.session)
 
 	store2 := store1.Copy()
@@ -18,6 +18,6 @@ func TestCreateStore(t *testing.T) {
 
 func TestCreateStoreError(t *testing.T) {
 	assert.Panics(t, func() {
-		MustCreateStore("mongodb://localhost/fire?make=fail")
+		MustCreateStore("mongodb://localhost/test-fire?make=fail")
 	})
 }

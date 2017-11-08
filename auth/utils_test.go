@@ -24,7 +24,7 @@ type Comment struct {
 	PostID    bson.ObjectId  `json:"-" valid:"required" bson:"post_id" fire:"post:posts"`
 }
 
-var testStore = fire.MustCreateStore("mongodb://0.0.0.0:27017/fire")
+var testStore = fire.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
 func cleanSubStore() {
