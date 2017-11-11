@@ -15,7 +15,7 @@ var optionalToOneType = reflect.TypeOf(new(bson.ObjectId))
 var toManyType = reflect.TypeOf(make([]bson.ObjectId, 0))
 var hasManyType = reflect.TypeOf(HasMany{})
 
-// The HasMany type denotes a has many relationship in a model declaration.
+// The HasMany type denotes a has-many relationship in a model declaration.
 //
 // Note: HasMany relationships will be fetched without authorization. This means
 // that the query could return ids to resources that would normally not be
@@ -131,15 +131,15 @@ func NewMeta(model Model) *Meta {
 			index:    i,
 		}
 
-		// check if field is a valid to one relationship
+		// check if field is a valid to-one relationship
 		if structField.Type == toOneType || structField.Type == optionalToOneType {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
-					panic(`fire: expected to find a tag of the form fire:"name:type" on to one relationship`)
+					panic(`fire: expected to find a tag of the form fire:"name:type" on to-one relationship`)
 				}
 
-				// parse special to one relationship tag
+				// parse special to-one relationship tag
 				toOneTag := strings.Split(fireTags[0], ":")
 
 				// set relationship data
@@ -152,15 +152,15 @@ func NewMeta(model Model) *Meta {
 			}
 		}
 
-		// check if field is a valid to many relationship
+		// check if field is a valid to-many relationship
 		if structField.Type == toManyType {
 			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(fireTags[0], ":") > 1 {
-					panic(`fire: expected to find a tag of the form fire:"name:type" on to many relationship`)
+					panic(`fire: expected to find a tag of the form fire:"name:type" on to-many relationship`)
 				}
 
-				// parse special to many relationship tag
+				// parse special to-many relationship tag
 				toManyTag := strings.Split(fireTags[0], ":")
 
 				// set relationship data
@@ -173,14 +173,14 @@ func NewMeta(model Model) *Meta {
 			}
 		}
 
-		// check if field is a valid has many relationship
+		// check if field is a valid has-many relationship
 		if structField.Type == hasManyType {
 			// check tag
 			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 2 {
-				panic(`fire: expected to find a tag of the form fire:"name:type:inverse" on has many relationship`)
+				panic(`fire: expected to find a tag of the form fire:"name:type:inverse" on has-many relationship`)
 			}
 
-			// parse special has many relationship tag
+			// parse special has-many relationship tag
 			hasManyTag := strings.Split(fireTags[0], ":")
 
 			// set relationship data

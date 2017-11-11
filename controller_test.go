@@ -511,7 +511,7 @@ func TestFiltering(t *testing.T) {
 		}`, r.Body.String())
 	})
 
-	// get to many posts with boolean
+	// get to-many posts with boolean
 	testRequest(server, "GET", "/selections/"+selection+"/posts?filter[published]=false", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {

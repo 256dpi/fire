@@ -311,7 +311,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		Group:       ctx.Group,
 	}
 
-	// finish to one relationship
+	// finish to-one relationship
 	if relationField.ToOne {
 		var id string
 
@@ -362,7 +362,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 
-	// finish to many relationship
+	// finish to-many relationship
 	if relationField.ToMany {
 		// get ids from loaded model
 		ids := ctx.Model.MustGet(relationField.Name).([]bson.ObjectId)
@@ -396,7 +396,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 
-	// finish has many relationship
+	// finish has-many relationship
 	if relationField.HasMany {
 		// prepare filter
 		var filterName string
@@ -693,7 +693,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			continue
 		}
 
-		// handle to one relationship
+		// handle to-one relationship
 		if field.ToOne {
 			// prepare zero value
 			var id bson.ObjectId
@@ -723,7 +723,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			}
 		}
 
-		// handle to many relationship
+		// handle to-many relationship
 		if field.ToMany {
 			// prepare slice of ids
 			ids := make([]bson.ObjectId, len(rel.Data.Many))
@@ -782,7 +782,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 			Related: base + "/" + field.RelName,
 		}
 
-		// handle to one relationship
+		// handle to-one relationship
 		if field.ToOne {
 			// prepare reference
 			var reference *jsonapi.Resource
