@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gonfire/oauth2"
-	"github.com/gonfire/oauth2/hmacsha"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // A GrantRequest is used in conjunction with the GrantStrategy.
@@ -82,13 +82,12 @@ func DefaultPolicy(secret string) *Policy {
 	}
 }
 
-// NewKeyAndSignature returns a new key with a matching signature that can be
-// used to issue custom access tokens.
-func (p *Policy) NewKeyAndSignature() (string, string, error) {
-	token, err := hmacsha.Generate(p.Secret, 32)
+// NewAccessToken returns a new access token for the provided information.
+func (p *Policy) NewAccessToken(id bson.ObjectId, issuedAt, expiresAt time.Time, ro ResourceOwner) (string, error) {
+	str, err := generateAccessToken(id, p.Secret, issuedAt, expiresAt, ro)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	return token.String(), token.SignatureString(), nil
+	return str, nil
 }

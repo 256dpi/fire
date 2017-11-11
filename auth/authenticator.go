@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/256dpi/stack"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gonfire/fire"
 	"github.com/gonfire/oauth2"
 	"github.com/gonfire/oauth2/bearer"
-	"github.com/gonfire/oauth2/hmacsha"
 	"github.com/gonfire/oauth2/revocation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -134,14 +134,17 @@ func (m *Manager) Authorizer(scope string) func(http.Handler) http.Handler {
 			tk, err := bearer.ParseToken(r)
 			stack.AbortIf(err)
 
-			// parse token
-			token, err := hmacsha.Parse(m.policy.Secret, tk)
-			if err != nil {
+			// parse token and check id
+			var claims accessTokenClaims
+			_, err = jwt.ParseWithClaims(tk, &claims, func(token *jwt.Token) (interface{}, error) {
+				return m.policy.Secret, nil
+			})
+			if err != nil || !bson.IsObjectIdHex(claims.Id) {
 				stack.Abort(bearer.InvalidToken("Malformed token"))
 			}
 
 			// get token
-			accessToken := m.getAccessToken(token.SignatureString())
+			accessToken := m.getAccessToken(bson.ObjectIdHex(claims.Id))
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("Unknown token"))
 			}
@@ -213,7 +216,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner := m.getFirstResourceOwner(username)
+	resourceOwner := m.findFirstResourceOwner(username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
@@ -237,11 +240,8 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 		stack.Abort(err)
 	}
 
-	// get resource owner id
-	rid := resourceOwner.ID()
-
 	// issue access token
-	res := m.issueTokens(false, scope, client.ID(), &rid)
+	res := m.issueTokens(false, scope, client, resourceOwner)
 
 	// redirect response
 	res.SetRedirect(req.RedirectURI, req.State, true)
@@ -289,7 +289,7 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner := m.getFirstResourceOwner(req.Username)
+	resourceOwner := m.findFirstResourceOwner(req.Username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
@@ -313,11 +313,8 @@ func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWri
 		stack.Abort(err)
 	}
 
-	// get resource owner id
-	rid := resourceOwner.ID()
-
 	// issue access token
-	res := m.issueTokens(true, scope, client.ID(), &rid)
+	res := m.issueTokens(true, scope, client, resourceOwner)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
@@ -343,21 +340,24 @@ func (m *Manager) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth
 	}
 
 	// issue access token
-	res := m.issueTokens(true, scope, client.ID(), nil)
+	res := m.issueTokens(true, scope, client, nil)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
 func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
-	// parse refresh token
-	refreshToken, err := hmacsha.Parse(m.policy.Secret, req.RefreshToken)
-	if err != nil {
-		stack.Abort(oauth2.InvalidRequest(err.Error()))
+	// parse token
+	var claims refreshTokenClaims
+	_, err := jwt.ParseWithClaims(req.RefreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return m.policy.Secret, nil
+	})
+	if err != nil || !bson.IsObjectIdHex(claims.Id) {
+		stack.Abort(oauth2.InvalidRequest("Malformed token"))
 	}
 
 	// get stored refresh token by signature
-	rt := m.getRefreshToken(refreshToken.SignatureString())
+	rt := m.getRefreshToken(bson.ObjectIdHex(claims.Id))
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("Unknown refresh token"))
 	}
@@ -385,11 +385,17 @@ func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.Tok
 		stack.Abort(oauth2.InvalidScope("Scope exceeds the originally granted scope"))
 	}
 
+	// get resource owner
+	var ro ResourceOwner
+	if data.ResourceOwnerID != nil {
+		ro = m.getFirstResourceOwner(*data.ResourceOwnerID)
+	}
+
 	// issue tokens
-	res := m.issueTokens(true, req.Scope, client.ID(), data.ResourceOwnerID)
+	res := m.issueTokens(true, req.Scope, client, ro)
 
 	// delete refresh token
-	m.deleteRefreshToken(refreshToken.SignatureString(), client.ID())
+	m.deleteRefreshToken(rt.ID(), client.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
@@ -407,65 +413,78 @@ func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse token
-	token, err := hmacsha.Parse(m.policy.Secret, req.Token)
-	if err != nil {
+	var claims jwt.StandardClaims
+	_, err = jwt.ParseWithClaims(req.Token, &claims, func(token *jwt.Token) (interface{}, error) {
+		return m.policy.Secret, nil
+	})
+	if err != nil || !bson.IsObjectIdHex(claims.Id) {
 		return
 	}
 
 	// delete access token
-	m.deleteAccessToken(token.SignatureString(), client.ID())
+	m.deleteAccessToken(bson.ObjectIdHex(claims.Id), client.ID())
 
 	// delete refresh token
-	m.deleteRefreshToken(token.SignatureString(), client.ID())
+	m.deleteRefreshToken(bson.ObjectIdHex(claims.Id), client.ID())
 
 	// write header
 	w.WriteHeader(http.StatusOK)
 }
 
-func (m *Manager) issueTokens(refreshable bool, s oauth2.Scope, cID bson.ObjectId, roID *bson.ObjectId) *oauth2.TokenResponse {
-	// generate new access token
-	accessToken, err := hmacsha.Generate(m.policy.Secret, 32)
-	stack.AbortIf(err)
-
-	// generate new refresh token
-	refreshToken, err := hmacsha.Generate(m.policy.Secret, 32)
-	stack.AbortIf(err)
-
-	// prepare response
-	res := bearer.NewTokenResponse(accessToken.String(), int(m.policy.AccessTokenLifespan/time.Second))
-
-	// set granted scope
-	res.Scope = s
-
-	// set refresh token if requested
-	if refreshable {
-		res.RefreshToken = refreshToken.String()
-	}
+func (m *Manager) issueTokens(refreshable bool, scope oauth2.Scope, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
+	// prepare expiration
+	atExpiry := time.Now().Add(m.policy.AccessTokenLifespan)
+	rtExpiry := time.Now().Add(m.policy.RefreshTokenLifespan)
 
 	// create access token data
 	accessTokenData := &TokenData{
-		Signature:       accessToken.SignatureString(),
-		Scope:           s,
-		ExpiresAt:       time.Now().Add(m.policy.AccessTokenLifespan),
-		ClientID:        cID,
-		ResourceOwnerID: roID,
+		Scope:     scope,
+		ExpiresAt: atExpiry,
+		ClientID:  client.ID(),
+	}
+
+	// set resource owner id if available
+	if resourceOwner != nil {
+		roID := resourceOwner.ID()
+		accessTokenData.ResourceOwnerID = &roID
 	}
 
 	// save access token
-	m.saveAccessToken(accessTokenData)
+	at := m.saveAccessToken(accessTokenData)
+
+	// generate new access token
+	atSignature, err := generateAccessToken(at.ID(), m.policy.Secret, time.Now(), atExpiry, resourceOwner)
+	stack.AbortIf(err)
+
+	// prepare response
+	res := bearer.NewTokenResponse(atSignature, int(m.policy.AccessTokenLifespan/time.Second))
+
+	// set granted scope
+	res.Scope = scope
 
 	if refreshable {
 		// create refresh token data
 		refreshTokenData := &TokenData{
-			Signature:       refreshToken.SignatureString(),
-			Scope:           s,
-			ExpiresAt:       time.Now().Add(m.policy.RefreshTokenLifespan),
-			ClientID:        cID,
-			ResourceOwnerID: roID,
+			Scope:     scope,
+			ExpiresAt: rtExpiry,
+			ClientID:  client.ID(),
+		}
+
+		// set resource owner id if available
+		if resourceOwner != nil {
+			roID := resourceOwner.ID()
+			refreshTokenData.ResourceOwnerID = &roID
 		}
 
 		// save refresh token
-		m.saveRefreshToken(refreshTokenData)
+		rt := m.saveRefreshToken(refreshTokenData)
+
+		// generate new refresh token
+		rtSignature, err := generateRefreshToken(rt.ID(), m.policy.Secret, time.Now(), rtExpiry)
+		stack.AbortIf(err)
+
+		// set refresh token
+		res.RefreshToken = rtSignature
 	}
 
 	// run automated cleanup if enabled
@@ -519,10 +538,10 @@ func (m *Manager) getClient(model Client, id string) Client {
 	return client
 }
 
-func (m *Manager) getFirstResourceOwner(id string) ResourceOwner {
+func (m *Manager) findFirstResourceOwner(id string) ResourceOwner {
 	// check all available models in order
 	for _, model := range m.policy.ResourceOwners {
-		ro := m.getResourceOwner(model, id)
+		ro := m.findResourceOwner(model, id)
 		if ro != nil {
 			return ro
 		}
@@ -531,7 +550,7 @@ func (m *Manager) getFirstResourceOwner(id string) ResourceOwner {
 	return nil
 }
 
-func (m *Manager) getResourceOwner(model ResourceOwner, id string) ResourceOwner {
+func (m *Manager) findResourceOwner(model ResourceOwner, id string) ResourceOwner {
 	// prepare object
 	obj := model.Meta().Make()
 
@@ -562,15 +581,50 @@ func (m *Manager) getResourceOwner(model ResourceOwner, id string) ResourceOwner
 	return resourceOwner
 }
 
-func (m *Manager) getAccessToken(signature string) Token {
-	return m.getToken(m.policy.AccessToken, signature)
+func (m *Manager) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
+	// check all available models in order
+	for _, model := range m.policy.ResourceOwners {
+		ro := m.getResourceOwner(model, id)
+		if ro != nil {
+			return ro
+		}
+	}
+
+	return nil
 }
 
-func (m *Manager) getRefreshToken(signature string) Token {
-	return m.getToken(m.policy.RefreshToken, signature)
+func (m *Manager) getResourceOwner(model ResourceOwner, id bson.ObjectId) ResourceOwner {
+	// prepare object
+	obj := model.Meta().Make()
+
+	// get store
+	store := m.store.Copy()
+	defer store.Close()
+
+	// query db
+	err := store.C(model).FindId(id).One(obj)
+	if err == mgo.ErrNotFound {
+		return nil
+	}
+
+	// abort on error
+	stack.AbortIf(err)
+
+	// initialize model
+	resourceOwner := fire.Init(obj).(ResourceOwner)
+
+	return resourceOwner
 }
 
-func (m *Manager) getToken(t Token, signature string) Token {
+func (m *Manager) getAccessToken(id bson.ObjectId) Token {
+	return m.getToken(m.policy.AccessToken, id)
+}
+
+func (m *Manager) getRefreshToken(id bson.ObjectId) Token {
+	return m.getToken(m.policy.RefreshToken, id)
+}
+
+func (m *Manager) getToken(t Token, id bson.ObjectId) Token {
 	// prepare object
 	obj := t.Meta().Make()
 
@@ -578,16 +632,8 @@ func (m *Manager) getToken(t Token, signature string) Token {
 	store := m.store.Copy()
 	defer store.Close()
 
-	// get description
-	desc := t.DescribeToken()
-
-	// get signature field
-	field := t.Meta().FindField(desc.SignatureField)
-
 	// fetch access token
-	err := store.C(t).Find(bson.M{
-		field.BSONName: signature,
-	}).One(obj)
+	err := store.C(t).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil
 	}
@@ -629,31 +675,24 @@ func (m *Manager) saveToken(t Token, d *TokenData) Token {
 	return token
 }
 
-func (m *Manager) deleteAccessToken(signature string, clientID bson.ObjectId) {
-	m.deleteToken(m.policy.AccessToken, signature, clientID)
+func (m *Manager) deleteAccessToken(id bson.ObjectId, clientID bson.ObjectId) {
+	m.deleteToken(m.policy.AccessToken, id, clientID)
 }
 
-func (m *Manager) deleteRefreshToken(signature string, clientID bson.ObjectId) {
-	m.deleteToken(m.policy.RefreshToken, signature, clientID)
+func (m *Manager) deleteRefreshToken(id bson.ObjectId, clientID bson.ObjectId) {
+	m.deleteToken(m.policy.RefreshToken, id, clientID)
 }
 
-func (m *Manager) deleteToken(t Token, signature string, clientID bson.ObjectId) {
+func (m *Manager) deleteToken(t Token, id bson.ObjectId, clientID bson.ObjectId) {
 	// get store
 	store := m.store.Copy()
 	defer store.Close()
 
-	// get description
-	desc := t.DescribeToken()
-
-	// get fields
-	signatureField := t.Meta().FindField(desc.SignatureField)
-	clientIDField := t.Meta().FindField(desc.ClientIDField)
-
-	// fetch access token
-	_, err := store.C(t).RemoveAll(bson.M{
-		signatureField.BSONName: signature,
-		clientIDField.BSONName:  clientID,
-	})
+	// delete token
+	err := store.C(t).RemoveId(id)
+	if err == mgo.ErrNotFound {
+		err = nil
+	}
 
 	// abort on critical error
 	stack.AbortIf(err)

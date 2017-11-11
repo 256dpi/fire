@@ -10,7 +10,6 @@ import (
 
 // TokenData is used to carry token related information.
 type TokenData struct {
-	Signature       string
 	Scope           []string
 	ExpiresAt       time.Time
 	ClientID        bson.ObjectId
@@ -20,7 +19,6 @@ type TokenData struct {
 // A TokenDescription is returned by a Token model to specify some details about
 // its implementation.
 type TokenDescription struct {
-	SignatureField string
 	ClientIDField  string
 	ExpiresAtField string
 }
@@ -43,7 +41,6 @@ type Token interface {
 // AccessToken is the built-in model used to store access tokens.
 type AccessToken struct {
 	fire.Base       `json:"-" bson:",inline" fire:"access-tokens:access_tokens"`
-	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -53,7 +50,6 @@ type AccessToken struct {
 // DescribeToken implements the Token interface.
 func (t *AccessToken) DescribeToken() TokenDescription {
 	return TokenDescription{
-		SignatureField: "Signature",
 		ClientIDField:  "ClientID",
 		ExpiresAtField: "ExpiresAt",
 	}
@@ -62,7 +58,6 @@ func (t *AccessToken) DescribeToken() TokenDescription {
 // GetTokenData implements the Token interface.
 func (t *AccessToken) GetTokenData() *TokenData {
 	return &TokenData{
-		Signature:       t.Signature,
 		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
 		ClientID:        t.ClientID,
@@ -72,7 +67,6 @@ func (t *AccessToken) GetTokenData() *TokenData {
 
 // SetTokenData implements the Token interface.
 func (t *AccessToken) SetTokenData(data *TokenData) {
-	t.Signature = data.Signature
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
 	t.ClientID = data.ClientID
@@ -82,7 +76,6 @@ func (t *AccessToken) SetTokenData(data *TokenData) {
 // RefreshToken is the built-in model used to store refresh tokens.
 type RefreshToken struct {
 	fire.Base       `json:"-" bson:",inline" fire:"refresh-tokens:refresh_tokens"`
-	Signature       string         `json:"signature" valid:"required"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -92,7 +85,6 @@ type RefreshToken struct {
 // DescribeToken implements the Token interface.
 func (t *RefreshToken) DescribeToken() TokenDescription {
 	return TokenDescription{
-		SignatureField: "Signature",
 		ClientIDField:  "ClientID",
 		ExpiresAtField: "ExpiresAt",
 	}
@@ -101,7 +93,6 @@ func (t *RefreshToken) DescribeToken() TokenDescription {
 // GetTokenData implements the Token interface.
 func (t *RefreshToken) GetTokenData() *TokenData {
 	return &TokenData{
-		Signature:       t.Signature,
 		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
 		ClientID:        t.ClientID,
@@ -111,7 +102,6 @@ func (t *RefreshToken) GetTokenData() *TokenData {
 
 // SetTokenData implements the Token interface.
 func (t *RefreshToken) SetTokenData(data *TokenData) {
-	t.Signature = data.Signature
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
 	t.ClientID = data.ClientID
@@ -186,6 +176,10 @@ type ResourceOwner interface {
 	// ValidSecret should determine whether the specified plain text password
 	// matches the hashed password.
 	ValidPassword(string) bool
+
+	// DataForAccessToken should return a map of data that should be included
+	// in the JWT token under the "dat" field.
+	DataForAccessToken() map[string]interface{}
 }
 
 // User is the built-in model used to store resource owners.
@@ -206,4 +200,11 @@ func (u *User) DescribeResourceOwner() ResourceOwnerDescription {
 // ValidPassword implements the ResourceOwner interface.
 func (u *User) ValidPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
+}
+
+// DataForAccessToken implements the ResourceOwner interface.
+func (u *User) DataForAccessToken() map[string]interface{} {
+	return map[string]interface{}{
+		"name": u.Name,
+	}
 }

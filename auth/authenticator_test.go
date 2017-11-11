@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gonfire/oauth2"
-	"github.com/gonfire/oauth2/hmacsha"
 	"github.com/gonfire/oauth2/spec"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var testSecret = "abcd1234abcd1234"
@@ -60,42 +62,6 @@ func TestIntegration(t *testing.T) {
 		PasswordHash: mustHash("foo"),
 	})
 
-	unknownToken := hmacsha.MustGenerate(p.Secret, 32)
-	expiredToken := hmacsha.MustGenerate(p.Secret, 32)
-	insufficientToken := hmacsha.MustGenerate(p.Secret, 32)
-
-	saveModel(&AccessToken{
-		Signature: expiredToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
-		Scope:     []string{"foo"},
-		ClientID:  app1.ID(),
-	})
-
-	saveModel(&AccessToken{
-		Signature: insufficientToken.SignatureString(),
-		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
-		Scope:     []string{},
-		ClientID:  app1.ID(),
-	})
-
-	unknownRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
-	validRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
-	expiredRefreshToken := hmacsha.MustGenerate(p.Secret, 32)
-
-	saveModel(&RefreshToken{
-		Signature: validRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
-		Scope:     []string{"foo", "bar"},
-		ClientID:  app1.ID(),
-	})
-
-	saveModel(&RefreshToken{
-		Signature: expiredRefreshToken.SignatureString(),
-		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
-		Scope:     []string{"foo", "bar"},
-		ClientID:  app1.ID(),
-	})
-
 	config := spec.Default(newHandler(manager))
 
 	config.PasswordGrantSupport = true
@@ -117,16 +83,40 @@ func TestIntegration(t *testing.T) {
 
 	config.ExpectedExpiresIn = int(manager.policy.AccessTokenLifespan / time.Second)
 
-	config.UnknownToken = unknownToken.String()
-	config.ExpiredToken = expiredToken.String()
-	config.InsufficientToken = insufficientToken.String()
+	expiredToken := saveModel(&AccessToken{
+		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
+		Scope:     []string{"foo"},
+		ClientID:  app1.ID(),
+	})
+
+	insufficientToken := saveModel(&AccessToken{
+		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
+		Scope:     []string{},
+		ClientID:  app1.ID(),
+	})
+
+	config.UnknownToken = mustGenerateAccessToken(bson.NewObjectId(), p.Secret, time.Now(), nil)
+	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, time.Now(), nil)
+	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, time.Now(), nil)
 
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
 
-	config.UnknownRefreshToken = unknownRefreshToken.String()
-	config.ValidRefreshToken = validRefreshToken.String()
-	config.ExpiredRefreshToken = expiredRefreshToken.String()
+	validRefreshToken := saveModel(&RefreshToken{
+		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
+		Scope:     []string{"foo", "bar"},
+		ClientID:  app1.ID(),
+	})
+
+	expiredRefreshToken := saveModel(&RefreshToken{
+		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
+		Scope:     []string{"foo", "bar"},
+		ClientID:  app1.ID(),
+	})
+
+	config.UnknownRefreshToken = mustGenerateRefreshToken(bson.NewObjectId(), p.Secret, time.Now())
+	config.ValidRefreshToken = mustGenerateRefreshToken(validRefreshToken.ID(), p.Secret, time.Now())
+	config.ExpiredRefreshToken = mustGenerateRefreshToken(expiredRefreshToken.ID(), p.Secret, time.Now())
 
 	config.AuthorizationParams = map[string]string{
 		"username": "user@example.com",
@@ -134,4 +124,43 @@ func TestIntegration(t *testing.T) {
 	}
 
 	spec.Run(t, config)
+}
+
+func TestJWTToken(t *testing.T) {
+	id := bson.NewObjectId()
+	tt := time.Now()
+	sig, err := generateAccessToken(id, []byte("abcd"), tt, tt, &User{Name: "Hello"})
+	assert.NoError(t, err)
+
+	var claims accessTokenClaims
+	token, err := jwt.ParseWithClaims(sig, &claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte("abcd"), nil
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, token)
+
+	assert.Equal(t, id.Hex(), claims.Id)
+	assert.Equal(t, tt.Unix(), claims.IssuedAt)
+	assert.Equal(t, tt.Unix(), claims.ExpiresAt)
+	assert.Equal(t, map[string]interface{}{
+		"name": "Hello",
+	}, claims.Data)
+}
+
+func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Time, ro ResourceOwner) string {
+	str, err := generateAccessToken(id, secret, time.Now(), expiresAt, ro)
+	if err != nil {
+		panic(err)
+	}
+
+	return str
+}
+
+func mustGenerateRefreshToken(id bson.ObjectId, secret []byte, expiresAt time.Time) string {
+	str, err := generateRefreshToken(id, secret, time.Now(), expiresAt)
+	if err != nil {
+		panic(err)
+	}
+
+	return str
 }

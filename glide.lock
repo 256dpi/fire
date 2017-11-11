@@ -1,23 +1,25 @@
-hash: 8991e3184d6823549abc4da468aa711803c0342ff87a87a760288f7de69cafe4
-updated: 2017-01-21T17:51:46.892810737+01:00
+hash: 8fce537ac819d47cb2f80ca8477fa312b7ec3e3aec3289b91967124df85edfcc
+updated: 2017-11-11T15:59:22.869626455+01:00
 imports:
 - name: github.com/256dpi/stack
-  version: 5cbe4ed1aa4fc649d5454235a36977e930f40ee9
+  version: 1df9ca8004638b1c19290e290c9ce971e8099cb2
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
+- name: github.com/dgrijalva/jwt-go
+  version: dbeaa9332f19a944acb5736b4456cfcc02140e29
 - name: github.com/gonfire/jsonapi
   version: 039e448fc4e0f111cc6c82166441bb489666e4e7
 - name: github.com/gonfire/oauth2
-  version: 7662b85c19a94c5f5d09a02a33241ef47d18a9bc
+  version: 3ba41c6752f31eb25dd8e50ec7dcdfd95c890bf9
   subpackages:
   - bearer
   - hmacsha
   - revocation
   - spec
 - name: github.com/goware/cors
-  version: 6ad15f4e1489e41776ee8b008597eafea9a67fd9
+  version: dba6525398619dead495962a916728e7ee2ca322
 - name: golang.org/x/crypto
-  version: c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
   - bcrypt
   - blowfish
@@ -42,6 +44,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: e3f249f4fdf33c278edeb770426a6f83c954ae64
+  version: 5a69e67cfd8f6f9b0044ed49f5079d0eeed28653
 - name: github.com/tidwall/match
-  version: 173748da739a410c5b0b813b956f89ff94730b4c
+  version: 1731857f09b1f38450e2c12409748407822dc6be
