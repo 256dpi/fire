@@ -14,6 +14,7 @@ func TestCreateStore(t *testing.T) {
 	assert.NotNil(t, store2)
 
 	store2.Close()
+	store1.Close()
 }
 
 func TestCreateStoreError(t *testing.T) {
