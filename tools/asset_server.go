@@ -5,13 +5,6 @@ import (
 	"strings"
 )
 
-// The AssetServer component
-type assetServer struct {
-	prefix  string
-	httpDir http.Dir
-	httpFS  http.Handler
-}
-
 // DefaultAssetServer constructs an AssetServer that servers the directory on
 // the root path.
 func DefaultAssetServer(directory string) http.Handler {

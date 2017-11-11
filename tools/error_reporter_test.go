@@ -9,12 +9,12 @@ import (
 )
 
 func TestDefaultReporter(t *testing.T) {
-	assert.NotNil(t, DefaultReporter())
+	assert.NotNil(t, DefaultErrorReporter())
 }
 
 func TestReporter(t *testing.T) {
 	buf := new(bytes.Buffer)
-	r := NewReporter(buf)
+	r := NewErrorReporter(buf)
 
 	r(errors.New("foo"))
 	assert.Contains(t, buf.String(), "===> Begin Error: foo\n")
