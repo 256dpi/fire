@@ -191,7 +191,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestVerifyReferencesValidator(t *testing.T) {
+func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	cleanStore()
 
 	// create validator
@@ -230,6 +230,58 @@ func TestVerifyReferencesValidator(t *testing.T) {
 
 	// update ctx
 	ctx.Model = comment2
+
+	// call validator
+	err = validator(ctx)
+	assert.NoError(t, err)
+}
+
+func TestVerifyReferencesValidatorToMany(t *testing.T) {
+	cleanStore()
+
+	// create validator
+	validator := VerifyReferencesValidator(map[string]string{
+		F(&Selection{}, "Posts"): "posts",
+	})
+
+	// create comment
+	selection1 := saveModel(&Selection{
+		Posts: nil,
+	}).(*Selection)
+
+	// create context
+	ctx := &Context{
+		Action: Create,
+		Model:  selection1,
+		Store:  testSubStore,
+	}
+
+	// call validator
+	err := validator(ctx)
+	assert.NoError(t, err)
+
+	// set some fake ids
+	selection1.Posts = []bson.ObjectId{
+		bson.NewObjectId(),
+		bson.NewObjectId(),
+	}
+
+	// create posts
+	post1 := saveModel(&Post{})
+	post2 := saveModel(&Post{})
+	post3 := saveModel(&Post{})
+
+	// create comment
+	selection2 := saveModel(&Selection{
+		Posts: []bson.ObjectId{
+			post1.ID(),
+			post2.ID(),
+			post3.ID(),
+		},
+	})
+
+	// update ctx
+	ctx.Model = selection2
 
 	// call validator
 	err = validator(ctx)

@@ -193,6 +193,9 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 //		F(&Comment{}, "Author"): C(&User{}),
 //	})
 //
+// The callbacks supports `bson.ObjectId', `*bson.ObjectId` and `[]bson.ObjectId`
+// fields.
+//
 func VerifyReferencesValidator(references map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
@@ -203,22 +206,45 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 		// check all references
 		for field, collection := range references {
 			// read referenced id
-			id := ctx.Model.MustGet(field)
+			idOrIDs := ctx.Model.MustGet(field)
 
 			// continue if reference is not set
-			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
+			if oid, ok := idOrIDs.(*bson.ObjectId); ok && oid == nil {
 				continue
 			}
 
-			// count entities in database
-			n, err := ctx.Store.DB().C(collection).FindId(id).Limit(1).Count()
-			if err != nil {
-				return Fatal(err)
+			// continue if slice is empty
+			if ids, ok := idOrIDs.([]bson.ObjectId); ok && ids == nil {
+				continue
 			}
 
-			// check for existence
-			if n != 1 {
-				return errors.New("Missing required relationship " + field)
+			// continue if slice is empty
+			if ids, ok := idOrIDs.([]bson.ObjectId); ok {
+				// count entities in database
+				n, err := ctx.Store.DB().C(collection).Find(bson.M{
+					"_id": bson.M{
+						"$in": idOrIDs,
+					},
+				}).Count()
+				if err != nil {
+					return Fatal(err)
+				}
+
+				// check for existence
+				if n != len(ids) {
+					return errors.New("Missing references for field " + field)
+				}
+			} else {
+				// count entities in database
+				n, err := ctx.Store.DB().C(collection).FindId(idOrIDs).Limit(1).Count()
+				if err != nil {
+					return Fatal(err)
+				}
+
+				// check for existence
+				if n != 1 {
+					return errors.New("Missing reference for field " + field)
+				}
 			}
 		}
 
