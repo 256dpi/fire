@@ -16,6 +16,10 @@ var toManyType = reflect.TypeOf(make([]bson.ObjectId, 0))
 var hasManyType = reflect.TypeOf(HasMany{})
 
 // The HasMany type denotes a has many relationship in a model declaration.
+//
+// Note: HasMany relationships will be fetched without authorization. This means
+// that the query could return ids to resources that would normally not be
+// accessible.
 type HasMany struct{}
 
 // A Field contains the meta information about a single field of a model.
