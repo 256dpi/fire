@@ -70,7 +70,6 @@ type Context struct {
 	// The Group that received the request.
 	Group *Group
 
-	prefix   string
 	original Model
 }
 

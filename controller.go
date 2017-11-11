@@ -95,7 +95,6 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	ctx := &Context{
 		JSONAPIRequest: req,
 		HTTPRequest:    r,
-		prefix:         prefix,
 		Controller:     c,
 		Group:          group,
 		Store:          store,
