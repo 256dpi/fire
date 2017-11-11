@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
-	"github.com/gonfire/jsonapi"
 )
 
 // A Group manages access to multiple controllers and their interconnections.

@@ -3,7 +3,7 @@ package fire
 import (
 	"net/http"
 
-	"github.com/gonfire/jsonapi"
+	"github.com/256dpi/jsonapi"
 	"gopkg.in/mgo.v2/bson"
 )
 

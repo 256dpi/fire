@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gonfire/oauth2"
+	"github.com/256dpi/oauth2"
 	"gopkg.in/mgo.v2/bson"
 )
 

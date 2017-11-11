@@ -1,21 +1,20 @@
-hash: 8fce537ac819d47cb2f80ca8477fa312b7ec3e3aec3289b91967124df85edfcc
-updated: 2017-11-11T15:59:22.869626455+01:00
+hash: 1c164fc64e41e2555e7afa8903ce391a23b602fb2416368b52348ceda244b2e3
+updated: 2017-11-11T22:34:56.71728462+01:00
 imports:
+- name: github.com/256dpi/jsonapi
+  version: b6fd250de9a690fad875d5879910997b1ea461f3
+- name: github.com/256dpi/oauth2
+  version: 893e79e85a99df8c99231a150d749bb724109642
+  subpackages:
+  - bearer
+  - revocation
+  - spec
 - name: github.com/256dpi/stack
   version: 1df9ca8004638b1c19290e290c9ce971e8099cb2
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
 - name: github.com/dgrijalva/jwt-go
   version: dbeaa9332f19a944acb5736b4456cfcc02140e29
-- name: github.com/gonfire/jsonapi
-  version: 039e448fc4e0f111cc6c82166441bb489666e4e7
-- name: github.com/gonfire/oauth2
-  version: 3ba41c6752f31eb25dd8e50ec7dcdfd95c890bf9
-  subpackages:
-  - bearer
-  - hmacsha
-  - revocation
-  - spec
 - name: github.com/goware/cors
   version: dba6525398619dead495962a916728e7ee2ca322
 - name: golang.org/x/crypto

@@ -1,14 +1,14 @@
-package: github.com/gonfire/fire
+package: github.com/256dpi/fire
 import:
 - package: github.com/asaskevich/govalidator
   version: ^4.0.0
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
-- package: github.com/gonfire/jsonapi
-  version: ^0.7.0
-- package: github.com/gonfire/oauth2
-  version: ^0.4.2
+- package: github.com/256dpi/jsonapi
+  version: ^1.0.0
+- package: github.com/256dpi/oauth2
+  version: ^1.0.0
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt

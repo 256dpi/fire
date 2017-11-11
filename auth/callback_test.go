@@ -1,11 +1,11 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
-	"context"
-	"github.com/gonfire/fire"
+	"github.com/256dpi/fire"
 	"github.com/stretchr/testify/assert"
 )
 

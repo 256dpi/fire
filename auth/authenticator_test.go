@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/spec"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gonfire/oauth2"
-	"github.com/gonfire/oauth2/spec"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )

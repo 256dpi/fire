@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"github.com/gonfire/fire"
+	"github.com/256dpi/fire"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )

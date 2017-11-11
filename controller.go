@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
-	"github.com/gonfire/jsonapi"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

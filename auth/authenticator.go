@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/fire"
+	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/bearer"
+	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gonfire/fire"
-	"github.com/gonfire/oauth2"
-	"github.com/gonfire/oauth2/bearer"
-	"github.com/gonfire/oauth2/revocation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

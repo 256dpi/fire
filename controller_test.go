@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gonfire/jsonapi"
+	"github.com/256dpi/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"gopkg.in/mgo.v2/bson"

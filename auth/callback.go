@@ -3,8 +3,8 @@ package auth
 import (
 	"errors"
 
-	"github.com/gonfire/fire"
-	"github.com/gonfire/oauth2"
+	"github.com/256dpi/fire"
+	"github.com/256dpi/oauth2"
 )
 
 // Callback returns a callback that can be used to protect resources by
