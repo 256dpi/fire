@@ -2,8 +2,8 @@ package auth
 
 import (
 	"net/http"
-	"strings"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/256dpi/fire"
 	"golang.org/x/crypto/bcrypt"
