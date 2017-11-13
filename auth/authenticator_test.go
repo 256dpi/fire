@@ -14,6 +14,7 @@ import (
 )
 
 var testSecret = "abcd1234abcd1234"
+var testPassword = "foo"
 
 func TestIntegration(t *testing.T) {
 	cleanSubStore()
@@ -47,22 +48,22 @@ func TestIntegration(t *testing.T) {
 	app1 := saveModel(&Application{
 		Name:        "Application 1",
 		Key:         "app1",
-		SecretHash:  mustHash("foo"),
+		SecretHash:  mustHash(testPassword),
 		RedirectURI: "http://example.com/callback1",
-	})
+	}).(*Application)
 
-	saveModel(&Application{
+	app2 := saveModel(&Application{
 		Name:        "Application 2",
 		Key:         "app2",
-		SecretHash:  mustHash("foo"),
+		SecretHash:  mustHash(testPassword),
 		RedirectURI: "http://example.com/callback2",
-	})
+	}).(*Application)
 
-	saveModel(&User{
+	user := saveModel(&User{
 		Name:         "User",
 		Email:        "user@example.com",
-		PasswordHash: mustHash("foo"),
-	})
+		PasswordHash: mustHash(testPassword),
+	}).(*User)
 
 	config := spec.Default(newHandler(manager, true))
 
@@ -71,13 +72,13 @@ func TestIntegration(t *testing.T) {
 	config.ImplicitGrantSupport = true
 	config.RefreshTokenGrantSupport = true
 
-	config.PrimaryClientID = "app1"
-	config.PrimaryClientSecret = "foo"
-	config.SecondaryClientID = "app2"
-	config.SecondaryClientSecret = "foo"
+	config.PrimaryClientID = app1.Key
+	config.PrimaryClientSecret = testPassword
+	config.SecondaryClientID = app2.Key
+	config.SecondaryClientSecret = testPassword
 
-	config.ResourceOwnerUsername = "user@example.com"
-	config.ResourceOwnerPassword = "foo"
+	config.ResourceOwnerUsername = user.Email
+	config.ResourceOwnerPassword = testPassword
 
 	config.InvalidScope = "baz"
 	config.ValidScope = "foo bar"
@@ -89,17 +90,17 @@ func TestIntegration(t *testing.T) {
 		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
 		Scope:     []string{"foo"},
 		ClientID:  app1.ID(),
-	})
+	}).(*AccessToken)
 
 	insufficientToken := saveModel(&AccessToken{
 		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
 		Scope:     []string{},
 		ClientID:  app1.ID(),
-	})
+	}).(*AccessToken)
 
 	config.UnknownToken = mustGenerateAccessToken(bson.NewObjectId(), p.Secret, time.Now(), nil)
-	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, time.Now(), nil)
-	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, time.Now(), nil)
+	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, expiredToken.ExpiresAt, nil)
+	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, insufficientToken.ExpiresAt, nil)
 
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
@@ -108,21 +109,21 @@ func TestIntegration(t *testing.T) {
 		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
-	})
+	}).(*RefreshToken)
 
 	expiredRefreshToken := saveModel(&RefreshToken{
 		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
-	})
+	}).(*RefreshToken)
 
 	config.UnknownRefreshToken = mustGenerateRefreshToken(bson.NewObjectId(), p.Secret, time.Now())
-	config.ValidRefreshToken = mustGenerateRefreshToken(validRefreshToken.ID(), p.Secret, time.Now())
-	config.ExpiredRefreshToken = mustGenerateRefreshToken(expiredRefreshToken.ID(), p.Secret, time.Now())
+	config.ValidRefreshToken = mustGenerateRefreshToken(validRefreshToken.ID(), p.Secret, validRefreshToken.ExpiresAt)
+	config.ExpiredRefreshToken = mustGenerateRefreshToken(expiredRefreshToken.ID(), p.Secret, expiredRefreshToken.ExpiresAt)
 
 	config.AuthorizationParams = map[string]string{
-		"username": "user@example.com",
-		"password": "foo",
+		"username": user.Email,
+		"password": testPassword,
 	}
 
 	spec.Run(t, config)
