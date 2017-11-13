@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -62,7 +64,7 @@ func TestIntegration(t *testing.T) {
 		PasswordHash: mustHash("foo"),
 	})
 
-	config := spec.Default(newHandler(manager))
+	config := spec.Default(newHandler(manager, true))
 
 	config.PasswordGrantSupport = true
 	config.ClientCredentialsGrantSupport = true
@@ -145,6 +147,15 @@ func TestJWTToken(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"name": "Hello",
 	}, claims.Data)
+}
+
+func TestPublicAccess(t *testing.T) {
+	manager := New(testStore, DefaultPolicy(testSecret))
+	handler := newHandler(manager, false)
+
+	testRequest(handler, "GET", "/api/protected", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, "OK", r.Body.String())
+	})
 }
 
 func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Time, ro ResourceOwner) string {

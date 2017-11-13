@@ -36,12 +36,12 @@ func cleanSubStore() {
 	testSubStore.DB().C("access_tokens").RemoveAll(nil)
 }
 
-func newHandler(auth *Manager) http.Handler {
+func newHandler(auth *Manager, force bool) http.Handler {
 	router := http.NewServeMux()
 
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))
 
-	authorizer := auth.Authorizer("foo")
+	authorizer := auth.Authorizer("foo", force)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
