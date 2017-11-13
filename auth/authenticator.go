@@ -356,7 +356,9 @@ func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.Tok
 	_, err := jwt.ParseWithClaims(req.RefreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		return m.policy.Secret, nil
 	})
-	if err != nil || !bson.IsObjectIdHex(claims.Id) {
+	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
+		stack.Abort(oauth2.InvalidGrant("Expired refresh token"))
+	} else if err != nil || !bson.IsObjectIdHex(claims.Id) {
 		stack.Abort(oauth2.InvalidRequest("Malformed token"))
 	}
 
