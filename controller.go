@@ -184,14 +184,14 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 		stack.Abort(jsonapi.BadRequest("Resource object expected"))
 	}
 
-	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
-
 	// create new model
 	ctx.Model = c.Model.Meta().Make()
 
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
+
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)

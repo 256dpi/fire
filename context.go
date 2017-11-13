@@ -53,6 +53,8 @@ type Context struct {
 	// and partially Update. The JSON API endpoints to modify a resources
 	// relationships do only respond with a header as no other information should
 	// be changed.
+	//
+	// Note: The document will be set before notifiers are run.
 	Response *jsonapi.Document
 
 	// The store that is used to retrieve and persist the model.
