@@ -65,9 +65,9 @@ func TestExcept(t *testing.T) {
 func TestModelValidator(t *testing.T) {
 	validator := ModelValidator()
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "",
-	}).(*Post)
+	}).(*postModel)
 
 	ctx := &Context{
 		Action: Create,
@@ -92,9 +92,9 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "Title",
-	}).(*Post)
+	}).(*postModel)
 
 	ctx := &Context{
 		Action: Create,
@@ -114,9 +114,9 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 		"title": NoDefault,
 	})
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "Title",
-	}).(*Post)
+	}).(*postModel)
 
 	ctx := &Context{
 		Action: Create,
@@ -134,13 +134,13 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	savedPost := saveModel(&Post{
+	savedPost := saveModel(&postModel{
 		Title: "Another Title",
-	}).(*Post)
+	}).(*postModel)
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "Title",
-	}).(*Post)
+	}).(*postModel)
 
 	post.DocID = savedPost.DocID
 
@@ -168,7 +168,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(&Post{})
+	post := saveModel(&postModel{})
 
 	// create context
 	ctx := &Context{
@@ -182,7 +182,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	// create comment
-	saveModel(&Comment{
+	saveModel(&commentModel{
 		Post: post.ID(),
 	})
 
@@ -201,7 +201,7 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	})
 
 	// create bad comment
-	comment1 := saveModel(&Comment{
+	comment1 := saveModel(&commentModel{
 		Post: bson.NewObjectId(),
 	})
 
@@ -220,10 +220,10 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	comment1ID := comment1.ID()
 
 	// create post
-	post := saveModel(&Post{})
+	post := saveModel(&postModel{})
 
 	// create comment
-	comment2 := saveModel(&Comment{
+	comment2 := saveModel(&commentModel{
 		Parent: &comment1ID,
 		Post:   post.ID(),
 	})
@@ -241,13 +241,13 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 
 	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
-		F(&Selection{}, "Posts"): "posts",
+		F(&selectionModel{}, "Posts"): "posts",
 	})
 
 	// create comment
-	selection1 := saveModel(&Selection{
+	selection1 := saveModel(&selectionModel{
 		Posts: nil,
-	}).(*Selection)
+	}).(*selectionModel)
 
 	// create context
 	ctx := &Context{
@@ -267,12 +267,12 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 	}
 
 	// create posts
-	post1 := saveModel(&Post{})
-	post2 := saveModel(&Post{})
-	post3 := saveModel(&Post{})
+	post1 := saveModel(&postModel{})
+	post2 := saveModel(&postModel{})
+	post3 := saveModel(&postModel{})
 
 	// create comment
-	selection2 := saveModel(&Selection{
+	selection2 := saveModel(&selectionModel{
 		Posts: []bson.ObjectId{
 			post1.ID(),
 			post2.ID(),
@@ -300,13 +300,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	postID := bson.NewObjectId()
 
 	// create root comment
-	comment1 := saveModel(&Comment{
+	comment1 := saveModel(&commentModel{
 		Post: postID,
 	})
 
 	// create leaf comment
 	parentID := comment1.ID()
-	comment2 := saveModel(&Comment{
+	comment2 := saveModel(&commentModel{
 		Parent: &parentID,
 		Post:   bson.NewObjectId(),
 	})
@@ -323,13 +323,13 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// create root comment
-	comment3 := saveModel(&Comment{
+	comment3 := saveModel(&commentModel{
 		Post: postID,
 	})
 
 	// create leaf comment
 	parentID = comment3.ID()
-	comment4 := saveModel(&Comment{
+	comment4 := saveModel(&commentModel{
 		Parent: &parentID,
 		Post:   postID,
 	})
@@ -349,9 +349,9 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	validator := UniqueAttributeValidator("title")
 
 	// create post
-	post1 := saveModel(&Post{
+	post1 := saveModel(&postModel{
 		Title: "foo",
-	}).(*Post)
+	}).(*postModel)
 
 	// create context
 	ctx := &Context{
@@ -365,7 +365,7 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	// create second post
-	saveModel(&Post{
+	saveModel(&postModel{
 		Title: "bar",
 	})
 

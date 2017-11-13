@@ -71,9 +71,9 @@ func TestNewMeta(t *testing.T) {
 }
 
 func TestMeta(t *testing.T) {
-	post := Init(&Post{})
+	post := Init(&postModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.Post",
+		Name:       "fire.postModel",
 		Collection: "posts",
 		PluralName: "posts",
 		Fields: []Field{
@@ -131,9 +131,9 @@ func TestMeta(t *testing.T) {
 		model: post.Meta().model,
 	}, post.Meta())
 
-	comment := Init(&Comment{})
+	comment := Init(&commentModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.Comment",
+		Name:       "fire.commentModel",
 		Collection: "comments",
 		PluralName: "comments",
 		Fields: []Field{
@@ -172,9 +172,9 @@ func TestMeta(t *testing.T) {
 		model: comment.Meta().model,
 	}, comment.Meta())
 
-	selection := Init(&Selection{})
+	selection := Init(&selectionModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.Selection",
+		Name:       "fire.selectionModel",
 		Collection: "selections",
 		PluralName: "selections",
 		Fields: []Field{
@@ -202,19 +202,19 @@ func TestMeta(t *testing.T) {
 }
 
 func TestMetaMake(t *testing.T) {
-	post := Init(&Post{}).Meta().Make()
+	post := Init(&postModel{}).Meta().Make()
 
-	assert.Equal(t, "<*fire.Post Value>", reflect.ValueOf(post).String())
+	assert.Equal(t, "<*fire.postModel Value>", reflect.ValueOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
-	posts := Init(&Post{}).Meta().MakeSlice()
+	posts := Init(&postModel{}).Meta().MakeSlice()
 
-	assert.Equal(t, "<*[]*fire.Post Value>", reflect.ValueOf(posts).String())
+	assert.Equal(t, "<*[]*fire.postModel Value>", reflect.ValueOf(posts).String())
 }
 
 func BenchmarkNewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		NewMeta(&Post{})
+		NewMeta(&postModel{})
 	}
 }

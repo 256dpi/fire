@@ -13,7 +13,7 @@ import (
 func TestGroup(t *testing.T) {
 	group := NewGroup()
 	controller := &Controller{
-		Model: &Post{},
+		Model: &postModel{},
 	}
 
 	group.Add(controller)
@@ -38,7 +38,7 @@ func TestGroupStackAbort(t *testing.T) {
 		close(wait)
 	}
 	group.Add(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 		Authorizers: []Callback{
 			func(*Context) error {

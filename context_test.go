@@ -28,15 +28,15 @@ func TestAction(t *testing.T) {
 func TestContextOriginal(t *testing.T) {
 	cleanStore()
 
-	savedPost := Init(&Post{
+	savedPost := Init(&postModel{
 		Title: "foo",
-	}).(*Post)
+	}).(*postModel)
 
 	saveModel(savedPost)
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "bar",
-	}).(*Post)
+	}).(*postModel)
 
 	post.DocID = savedPost.DocID
 
@@ -65,9 +65,9 @@ func TestContextOriginalWrongAction(t *testing.T) {
 func TestContextOriginalNonExisting(t *testing.T) {
 	cleanStore()
 
-	post := Init(&Post{
+	post := Init(&postModel{
 		Title: "foo",
-	}).(*Post)
+	}).(*postModel)
 
 	ctx := &Context{
 		Action: Update,

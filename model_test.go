@@ -21,29 +21,29 @@ func (p *postWithTimestamps) Validate() error {
 }
 
 func TestInit(t *testing.T) {
-	m := Init(&Post{})
+	m := Init(&postModel{})
 	assert.NotNil(t, m.Meta())
 }
 
 func TestInitSlice(t *testing.T) {
-	m := InitSlice(&[]*Post{{}})
+	m := InitSlice(&[]*postModel{{}})
 	assert.NotNil(t, m[0].Meta())
 }
 
 func TestC(t *testing.T) {
-	assert.Equal(t, "posts", C(&Post{}))
+	assert.Equal(t, "posts", C(&postModel{}))
 }
 
 func TestF(t *testing.T) {
-	assert.Equal(t, "text_body", F(&Post{}, "TextBody"))
+	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
 }
 
 func TestA(t *testing.T) {
-	assert.Equal(t, "text-body", A(&Post{}, "TextBody"))
+	assert.Equal(t, "text-body", A(&postModel{}, "TextBody"))
 }
 
 func TestValidate(t *testing.T) {
-	post := Init(&Post{}).(*Post)
+	post := Init(&postModel{}).(*postModel)
 
 	post.DocID = ""
 	assert.Error(t, Validate(post))
@@ -64,17 +64,17 @@ func TestValidateTimestamps(t *testing.T) {
 }
 
 func TestBaseID(t *testing.T) {
-	post := Init(&Post{}).(*Post)
+	post := Init(&postModel{}).(*postModel)
 	assert.Equal(t, post.DocID, post.ID())
 }
 
 func TestBaseGet(t *testing.T) {
-	post1 := Init(&Post{})
+	post1 := Init(&postModel{})
 	assert.Equal(t, "", post1.MustGet("text_body"))
 	assert.Equal(t, "", post1.MustGet("text-body"))
 	assert.Equal(t, "", post1.MustGet("TextBody"))
 
-	post2 := Init(&Post{TextBody: "hello"})
+	post2 := Init(&postModel{TextBody: "hello"})
 	assert.Equal(t, "hello", post2.MustGet("text_body"))
 	assert.Equal(t, "hello", post2.MustGet("text-body"))
 	assert.Equal(t, "hello", post2.MustGet("TextBody"))
@@ -85,7 +85,7 @@ func TestBaseGet(t *testing.T) {
 }
 
 func TestBaseSet(t *testing.T) {
-	post := Init(&Post{}).(*Post)
+	post := Init(&postModel{}).(*postModel)
 
 	post.MustSet("text_body", "1")
 	assert.Equal(t, "1", post.TextBody)

@@ -16,13 +16,13 @@ func TestBasicOperations(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
@@ -54,7 +54,7 @@ func TestBasicOperations(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		post := findLastModel(&Post{})
+		post := findLastModel(&postModel{})
 		id = post.ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
@@ -238,36 +238,36 @@ func TestFiltering(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 		Filters: []string{
 			"title",
 			"published",
 		},
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts
-	post1 := saveModel(&Post{
+	post1 := saveModel(&postModel{
 		Title:     "post-1",
 		Published: true,
 	}).ID().Hex()
-	post2 := saveModel(&Post{
+	post2 := saveModel(&postModel{
 		Title:     "post-2",
 		Published: false,
 	}).ID().Hex()
-	post3 := saveModel(&Post{
+	post3 := saveModel(&postModel{
 		Title:     "post-3",
 		Published: true,
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(&Selection{
+	selection := saveModel(&selectionModel{
 		Posts: []bson.ObjectId{
 			bson.ObjectIdHex(post1),
 			bson.ObjectIdHex(post2),
@@ -560,27 +560,27 @@ func TestSorting(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 		Sorters: []string{
 			"title",
 		},
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts in random order
-	post2 := saveModel(&Post{
+	post2 := saveModel(&postModel{
 		Title: "post-2",
 	}).ID().Hex()
-	post1 := saveModel(&Post{
+	post1 := saveModel(&postModel{
 		Title: "post-1",
 	}).ID().Hex()
-	post3 := saveModel(&Post{
+	post3 := saveModel(&postModel{
 		Title: "post-3",
 	}).ID().Hex()
 
@@ -767,18 +767,18 @@ func TestSparseFieldsets(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts
-	post := saveModel(&Post{
+	post := saveModel(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
 
@@ -822,27 +822,27 @@ func TestHasManyRelationship(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create existing post & comment
-	existingPost := saveModel(&Post{
+	existingPost := saveModel(&postModel{
 		Title: "Post 1",
 	})
-	saveModel(&Comment{
+	saveModel(&commentModel{
 		Message: "Comment 1",
 		Post:    existingPost.ID(),
 	})
 
 	// create new post
-	post := saveModel(&Post{
+	post := saveModel(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
 
@@ -918,7 +918,7 @@ func TestHasManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		comment = findLastModel(&Comment{}).ID().Hex()
+		comment = findLastModel(&commentModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -1018,26 +1018,26 @@ func TestToOneRelationship(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts
-	post1 := saveModel(&Post{
+	post1 := saveModel(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(&Post{
+	post2 := saveModel(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
 
 	// create comment
-	comment1 := saveModel(&Comment{
+	comment1 := saveModel(&commentModel{
 		Message: "Comment 1",
 		Post:    bson.ObjectIdHex(post1),
 	}).ID().Hex()
@@ -1070,7 +1070,7 @@ func TestToOneRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		comment2 = findLastModel(&Comment{}).ID().Hex()
+		comment2 = findLastModel(&commentModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -1246,24 +1246,24 @@ func TestToManyRelationship(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts
-	post1 := saveModel(&Post{
+	post1 := saveModel(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(&Post{
+	post2 := saveModel(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
-	post3 := saveModel(&Post{
+	post3 := saveModel(&postModel{
 		Title: "Post 3",
 	}).ID().Hex()
 
@@ -1295,7 +1295,7 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		selection = findLastModel(&Selection{}).ID().Hex()
+		selection = findLastModel(&selectionModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -1540,23 +1540,23 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create posts
-	post := saveModel(&Post{
+	post := saveModel(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(&Selection{
+	selection := saveModel(&selectionModel{
 		Name: "Selection 1",
 	}).ID().Hex()
 
@@ -1591,14 +1591,14 @@ func TestNoList(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model:  &Comment{},
+		Model:  &commentModel{},
 		Store:  testStore,
 		NoList: true,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
@@ -1615,19 +1615,19 @@ func TestPagination(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&Post{
+		saveModel(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}
@@ -1673,13 +1673,13 @@ func TestPaginationToMany(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
@@ -1688,13 +1688,13 @@ func TestPaginationToMany(t *testing.T) {
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		ids = append(ids, saveModel(&Post{
+		ids = append(ids, saveModel(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		}).ID())
 	}
 
 	// create selection
-	selection := saveModel(&Selection{
+	selection := saveModel(&selectionModel{
 		Posts: ids,
 	}).ID().Hex()
 
@@ -1739,24 +1739,24 @@ func TestPaginationHasMany(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model: &Post{},
+		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create post
-	post := saveModel(&Post{
+	post := saveModel(&postModel{
 		Title: "Post",
 	}).ID()
 
 	// create some comments
 	for i := 0; i < 10; i++ {
-		saveModel(&Comment{
+		saveModel(&commentModel{
 			Message: fmt.Sprintf("Comment %d", i+1),
 			Post:    post,
 		})
@@ -1803,20 +1803,20 @@ func TestForcedPagination(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model:     &Post{},
+		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&Post{
+		saveModel(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}
@@ -1844,20 +1844,20 @@ func TestListLimit(t *testing.T) {
 	cleanStore()
 
 	server := buildHandler(&Controller{
-		Model:     &Post{},
+		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
 	}, &Controller{
-		Model: &Comment{},
+		Model: &commentModel{},
 		Store: testStore,
 	}, &Controller{
-		Model: &Selection{},
+		Model: &selectionModel{},
 		Store: testStore,
 	})
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&Post{
+		saveModel(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}

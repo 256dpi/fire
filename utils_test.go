@@ -9,7 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Post struct {
+type postModel struct {
 	Base       `json:"-" bson:",inline" fire:"posts"`
 	Title      string  `json:"title" bson:"title" valid:"required"`
 	Published  bool    `json:"published"`
@@ -18,7 +18,7 @@ type Post struct {
 	Selections HasMany `json:"-" bson:"-" fire:"selections:selections:posts"`
 }
 
-func (p *Post) Validate() error {
+func (p *postModel) Validate() error {
 	if p.Title == "error" {
 		return errors.New("error")
 	}
@@ -26,14 +26,14 @@ func (p *Post) Validate() error {
 	return nil
 }
 
-type Comment struct {
+type commentModel struct {
 	Base    `json:"-" bson:",inline" fire:"comments"`
 	Message string         `json:"message"`
 	Parent  *bson.ObjectId `json:"-" fire:"parent:comments"`
 	Post    bson.ObjectId  `json:"-" bson:"post_id" fire:"post:posts"`
 }
 
-type Selection struct {
+type selectionModel struct {
 	Base  `json:"-" bson:",inline" fire:"selections:selections"`
 	Name  string          `json:"name"`
 	Posts []bson.ObjectId `json:"-" bson:"post_ids" fire:"posts:posts"`
