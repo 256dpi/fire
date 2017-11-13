@@ -180,6 +180,8 @@ type ResourceOwner interface {
 	// DataForAccessToken should return a map of data that should be included
 	// in the JWT token under the "dat" field.
 	DataForAccessToken() map[string]interface{}
+
+	// TODO: Move to policy and specify token, client and resource owner as parameter.
 }
 
 // User is the built-in model used to store resource owners.
