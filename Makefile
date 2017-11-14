@@ -7,7 +7,7 @@ vet:
 	go vet ./...
 
 lint:
-	golint $(glide novendor)
+	@$(foreach pkg, $(shell glide novendor), golint $(pkg);)
 
 setup:
 	mkdir -p .test/assets
