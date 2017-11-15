@@ -145,13 +145,13 @@ func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) 
 				return a.policy.Secret, nil
 			})
 			if err != nil || !bson.IsObjectIdHex(claims.Id) {
-				stack.Abort(bearer.InvalidToken("Malformed token"))
+				stack.Abort(bearer.InvalidToken("malformed token"))
 			}
 
 			// get token
 			accessToken := a.getAccessToken(bson.ObjectIdHex(claims.Id))
 			if accessToken == nil {
-				stack.Abort(bearer.InvalidToken("Unknown token"))
+				stack.Abort(bearer.InvalidToken("unknown token"))
 			}
 
 			// get additional data
@@ -159,7 +159,7 @@ func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) 
 
 			// validate expiration
 			if data.ExpiresAt.Before(time.Now()) {
-				stack.Abort(bearer.InvalidToken("Expired token"))
+				stack.Abort(bearer.InvalidToken("expired token"))
 			}
 
 			// validate scope
@@ -183,18 +183,18 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 
 	// make sure the response type is known
 	if !oauth2.KnownResponseType(req.ResponseType) {
-		stack.Abort(oauth2.InvalidRequest("Unknown response type"))
+		stack.Abort(oauth2.InvalidRequest("unknown response type"))
 	}
 
 	// get client
 	client := a.getFirstClient(req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// validate redirect uri
 	if !client.ValidRedirectURI(req.RedirectURI) {
-		stack.Abort(oauth2.InvalidRequest("Invalid redirect URI"))
+		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	}
 
 	// triage based on response type
@@ -213,7 +213,7 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
 	// check request method
 	if r.Method == "GET" {
-		stack.Abort(oauth2.InvalidRequest("Unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
+		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
 	}
 
 	// get credentials
@@ -262,13 +262,13 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// make sure the grant type is known
 	if !oauth2.KnownGrantType(req.GrantType) {
-		stack.Abort(oauth2.InvalidRequest("Unknown grant type"))
+		stack.Abort(oauth2.InvalidRequest("unknown grant type"))
 	}
 
 	// get client
 	client := a.getFirstClient(req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// handle grant type
@@ -328,7 +328,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// validate & grant scope
@@ -358,15 +358,15 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 		return a.policy.Secret, nil
 	})
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
-		stack.Abort(oauth2.InvalidGrant("Expired refresh token"))
+		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil || !bson.IsObjectIdHex(claims.Id) {
-		stack.Abort(oauth2.InvalidRequest("Malformed token"))
+		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
 	// get stored refresh token by signature
 	rt := a.getRefreshToken(bson.ObjectIdHex(claims.Id))
 	if rt == nil {
-		stack.Abort(oauth2.InvalidGrant("Unknown refresh token"))
+		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
 
 	// get data
@@ -374,12 +374,12 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 	// validate expiration
 	if data.ExpiresAt.Before(time.Now()) {
-		stack.Abort(oauth2.InvalidGrant("Expired refresh token"))
+		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	}
 
 	// validate ownership
 	if data.ClientID != client.ID() {
-		stack.Abort(oauth2.InvalidGrant("Invalid refresh token ownership"))
+		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
 	// inherit scope from stored refresh token
@@ -389,7 +389,7 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 
 	// validate scope - a missing scope is always included
 	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
-		stack.Abort(oauth2.InvalidScope("Scope exceeds the originally granted scope"))
+		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
@@ -416,7 +416,7 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 	// get client
 	client := a.getFirstClient(req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("Unknown client"))
+		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// parse token
