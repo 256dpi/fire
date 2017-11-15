@@ -109,7 +109,8 @@ func (t *Tester) Path(path string) string {
 	return path
 }
 
-// Request will run the specified low-level request against the current handler.
+// Request will run the specified request against the registered handler. This
+// function can be used to create custom testing facilities.
 func (t *Tester) Request(method, path string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
 	// create request
 	request, err := http.NewRequest(method, t.Path(path), strings.NewReader(payload))
@@ -127,6 +128,8 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 	if method == "POST" || method == "PATCH" || method == "DELETE" {
 		request.Header.Set("Content-Type", jsonapi.MediaType)
 	}
+
+	// TODO: Remove token as it can be set through the headers?
 
 	// add authorization header
 	if t.Token != "" {
