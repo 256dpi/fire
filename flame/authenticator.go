@@ -518,11 +518,11 @@ func (a *Authenticator) getClient(model Client, id string) Client {
 	desc := model.DescribeClient()
 
 	// get id field
-	field := model.Meta().FindField(desc.IdentifierField)
+	field := coal.F(model, desc.IdentifierField)
 
 	// query db
 	err := store.C(model).Find(bson.M{
-		field.BSONName: id,
+		field: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil
@@ -561,11 +561,11 @@ func (a *Authenticator) findResourceOwner(model ResourceOwner, id string) Resour
 	desc := model.DescribeResourceOwner()
 
 	// get id field
-	field := model.Meta().FindField(desc.IdentifierField)
+	field := coal.F(model, desc.IdentifierField)
 
 	// query db
 	err := store.C(model).Find(bson.M{
-		field.BSONName: id,
+		field: id,
 	}).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil
@@ -714,11 +714,11 @@ func (a *Authenticator) cleanupToken(t Token) {
 	desc := t.DescribeToken()
 
 	// get expires at field
-	field := t.Meta().FindField(desc.ExpiresAtField)
+	field := coal.F(t, desc.ExpiresAtField)
 
 	// remove all records
 	_, err := store.C(t).RemoveAll(bson.M{
-		field.BSONName: bson.M{
+		field: bson.M{
 			"$lt": time.Now(),
 		},
 	})
