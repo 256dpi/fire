@@ -4,8 +4,14 @@ import (
 	"errors"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
+
 	"gopkg.in/mgo.v2/bson"
 )
+
+var tester = fire.Tester{
+	Store: coal.MustCreateStore("mongodb://localhost/test-ash"),
+}
 
 func context(a fire.Action) *fire.Context {
 	return &fire.Context{

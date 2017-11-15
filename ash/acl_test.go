@@ -15,16 +15,16 @@ func TestCallback(t *testing.T) {
 		All:    L(directErrorCB),
 	})
 
-	err := cb(context(fire.List))
+	err := tester.RunAuthorizer(fire.List, nil, nil, cb)
 	assert.NoError(t, err)
 
-	err = cb(context(fire.Find))
+	err = tester.RunAuthorizer(fire.Find, nil, nil, cb)
 	assert.Equal(t, errAccessDenied, err)
 
-	err = cb(context(fire.Update))
+	err = tester.RunAuthorizer(fire.Update, nil, nil, cb)
 	assert.Equal(t, errAccessDenied, err)
 
-	err = cb(context(fire.Create))
+	err = tester.RunAuthorizer(fire.Create, nil, nil, cb)
 	assert.Error(t, err)
 }
 
@@ -38,20 +38,20 @@ func TestCallbackBubbling(t *testing.T) {
 		Bubble: true,
 	})
 
-	err := cb(context(fire.List))
+	err := tester.RunAuthorizer(fire.List, nil, nil, cb)
 	assert.NoError(t, err)
 
-	err = cb(context(fire.Find))
+	err = tester.RunAuthorizer(fire.Find, nil, nil, cb)
 	assert.NoError(t, err)
 
-	err = cb(context(fire.Create))
+	err = tester.RunAuthorizer(fire.Create, nil, nil, cb)
 	assert.Error(t, err)
 }
 
 func TestCallbackEmpty(t *testing.T) {
 	cb := Callback(&Strategy{})
 
-	err := cb(context(fire.Delete))
+	err := tester.RunAuthorizer(fire.Delete, nil, nil, cb)
 	assert.Equal(t, errAccessDenied, err)
 }
 
@@ -59,7 +59,7 @@ func TestCallbackPanic(t *testing.T) {
 	cb := Callback(&Strategy{})
 
 	assert.Panics(t, func() {
-		cb(context(fire.Action(10)))
+		tester.RunAuthorizer(fire.Action(10), nil, nil, cb)
 	})
 }
 
@@ -75,7 +75,7 @@ func TestCallbackDebugger(t *testing.T) {
 		},
 	})
 
-	err := cb(context(fire.List))
+	err := tester.RunAuthorizer(fire.List, nil, nil, cb)
 	assert.NoError(t, err)
 	assert.Equal(t, "github.com/256dpi/fire/ash.accessGrantedCB", authorizer)
 	assert.Equal(t, "github.com/256dpi/fire/ash.AccessGranted.func1", enforcer)

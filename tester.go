@@ -189,9 +189,9 @@ func (t *Tester) RunValidator(action Action, model coal.Model, validator Callbac
 
 	// create context
 	ctx := &Context{
-		Action: action,
-		Model:  model,
-		Store:  store,
+		Action:      action,
+		Model:       model,
+		Store:       store,
 		HTTPRequest: req,
 	}
 
