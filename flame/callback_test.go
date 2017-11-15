@@ -1,4 +1,4 @@
-package auth
+package flame
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/256dpi/fire"
+
 	"github.com/stretchr/testify/assert"
 )
 

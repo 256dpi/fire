@@ -1,6 +1,6 @@
-// Package auth implements an authentication manager that provides OAuth2
-// compatible authentication.
-package auth
+// Package flame implements an authentication manager that provides OAuth2
+// compatible authentication with JWT tokens.
+package flame
 
 import (
 	"context"
@@ -24,21 +24,21 @@ type ctxKey int
 // AccessTokenContextKey is the key used to save the access token in a context.
 const AccessTokenContextKey ctxKey = iota
 
-// A Manager provides OAuth2 based authentication. The implementation currently
-// supports the Resource Owner Credentials Grant, Client Credentials Grant and
-// Implicit Grant.
-type Manager struct {
+// An Authenticator provides OAuth2 based authentication. The implementation
+// currently supports the Resource Owner Credentials Grant, Client Credentials
+// Grant and Implicit Grant.
+type Authenticator struct {
 	store  *coal.Store
 	policy *Policy
 
 	Reporter func(error)
 }
 
-// New constructs a new Manager from a store and policy.
-func New(store *coal.Store, policy *Policy) *Manager {
+// NewAuthenticator constructs a new Authenticator from a store and policy.
+func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
 	// check secret
 	if len(policy.Secret) < 16 {
-		panic("fire/auth: secret must be longer than 16 characters")
+		panic("flame: secret must be longer than 16 characters")
 	}
 
 	// initialize models
@@ -55,14 +55,14 @@ func New(store *coal.Store, policy *Policy) *Manager {
 		coal.Init(model)
 	}
 
-	return &Manager{
+	return &Authenticator{
 		store:  store,
 		policy: policy,
 	}
 }
 
 // Endpoint returns a handler for the common token and authorize endpoint.
-func (m *Manager) Endpoint(prefix string) http.Handler {
+func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
@@ -73,8 +73,8 @@ func (m *Manager) Endpoint(prefix string) http.Handler {
 			}
 
 			// otherwise report critical errors
-			if m.Reporter != nil {
-				m.Reporter(err)
+			if a.Reporter != nil {
+				a.Reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors
@@ -87,13 +87,13 @@ func (m *Manager) Endpoint(prefix string) http.Handler {
 		// try to call the controllers general handler
 		if len(s) > 0 {
 			if s[0] == "authorize" {
-				m.authorizationEndpoint(w, r)
+				a.authorizationEndpoint(w, r)
 				return
 			} else if s[0] == "token" {
-				m.tokenEndpoint(w, r)
+				a.tokenEndpoint(w, r)
 				return
 			} else if s[0] == "revoke" {
-				m.revocationEndpoint(w, r)
+				a.revocationEndpoint(w, r)
 				return
 			}
 		}
@@ -105,7 +105,7 @@ func (m *Manager) Endpoint(prefix string) http.Handler {
 
 // Authorizer returns a middleware that can be used to authorize a request by
 // requiring an access token with the provided scope to be granted.
-func (m *Manager) Authorizer(scope string, force bool) func(http.Handler) http.Handler {
+func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// immediately pass on request if force is not set and there is
@@ -124,8 +124,8 @@ func (m *Manager) Authorizer(scope string, force bool) func(http.Handler) http.H
 				}
 
 				// otherwise report critical errors
-				if m.Reporter != nil {
-					m.Reporter(err)
+				if a.Reporter != nil {
+					a.Reporter(err)
 				}
 
 				// ignore errors caused by writing critical errors
@@ -142,14 +142,14 @@ func (m *Manager) Authorizer(scope string, force bool) func(http.Handler) http.H
 			// parse token and check id
 			var claims accessTokenClaims
 			_, err = jwt.ParseWithClaims(tk, &claims, func(token *jwt.Token) (interface{}, error) {
-				return m.policy.Secret, nil
+				return a.policy.Secret, nil
 			})
 			if err != nil || !bson.IsObjectIdHex(claims.Id) {
 				stack.Abort(bearer.InvalidToken("Malformed token"))
 			}
 
 			// get token
-			accessToken := m.getAccessToken(bson.ObjectIdHex(claims.Id))
+			accessToken := a.getAccessToken(bson.ObjectIdHex(claims.Id))
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("Unknown token"))
 			}
@@ -176,7 +176,7 @@ func (m *Manager) Authorizer(scope string, force bool) func(http.Handler) http.H
 	}
 }
 
-func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(r)
 	stack.AbortIf(err)
@@ -187,7 +187,7 @@ func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// get client
-	client := m.getFirstClient(req.ClientID)
+	client := a.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -200,8 +200,8 @@ func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) 
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		if m.policy.ImplicitGrant {
-			m.handleImplicitGrant(w, r, req, client)
+		if a.policy.ImplicitGrant {
+			a.handleImplicitGrant(w, r, req, client)
 			return
 		}
 	}
@@ -210,7 +210,7 @@ func (m *Manager) authorizationEndpoint(w http.ResponseWriter, r *http.Request) 
 	stack.Abort(oauth2.UnsupportedResponseType(""))
 }
 
-func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
+func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Request, req *oauth2.AuthorizationRequest, client Client) {
 	// check request method
 	if r.Method == "GET" {
 		stack.Abort(oauth2.InvalidRequest("Unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
@@ -221,7 +221,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner := m.findFirstResourceOwner(username)
+	resourceOwner := a.findFirstResourceOwner(username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
@@ -232,7 +232,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	}
 
 	// validate & grant scope
-	scope, err := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := a.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -246,7 +246,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	}
 
 	// issue access token
-	res := m.issueTokens(false, scope, client, resourceOwner)
+	res := a.issueTokens(false, scope, client, resourceOwner)
 
 	// redirect response
 	res.SetRedirect(req.RedirectURI, req.State, true)
@@ -255,7 +255,7 @@ func (m *Manager) handleImplicitGrant(w http.ResponseWriter, r *http.Request, re
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(r)
 	stack.AbortIf(err)
@@ -266,7 +266,7 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get client
-	client := m.getFirstClient(req.ClientID)
+	client := a.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -274,17 +274,17 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
-		if m.policy.PasswordGrant {
-			m.handleResourceOwnerPasswordCredentialsGrant(w, req, client)
+		if a.policy.PasswordGrant {
+			a.handleResourceOwnerPasswordCredentialsGrant(w, req, client)
 			return
 		}
 	case oauth2.ClientCredentialsGrantType:
-		if m.policy.ClientCredentialsGrant {
-			m.handleClientCredentialsGrant(w, req, client)
+		if a.policy.ClientCredentialsGrant {
+			a.handleClientCredentialsGrant(w, req, client)
 			return
 		}
 	case oauth2.RefreshTokenGrantType:
-		m.handleRefreshTokenGrant(w, req, client)
+		a.handleRefreshTokenGrant(w, req, client)
 		return
 	}
 
@@ -292,9 +292,9 @@ func (m *Manager) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	stack.Abort(oauth2.UnsupportedGrantType(""))
 }
 
-func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner := m.findFirstResourceOwner(req.Username)
+	resourceOwner := a.findFirstResourceOwner(req.Username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
@@ -305,7 +305,7 @@ func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWri
 	}
 
 	// validate & grant scope
-	scope, err := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := a.policy.GrantStrategy(&GrantRequest{
 		Scope:         req.Scope,
 		Client:        client,
 		ResourceOwner: resourceOwner,
@@ -319,20 +319,20 @@ func (m *Manager) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWri
 	}
 
 	// issue access token
-	res := m.issueTokens(true, scope, client, resourceOwner)
+	res := a.issueTokens(true, scope, client, resourceOwner)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (m *Manager) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
 
 	// validate & grant scope
-	scope, err := m.policy.GrantStrategy(&GrantRequest{
+	scope, err := a.policy.GrantStrategy(&GrantRequest{
 		Scope:  req.Scope,
 		Client: client,
 	})
@@ -345,17 +345,17 @@ func (m *Manager) handleClientCredentialsGrant(w http.ResponseWriter, req *oauth
 	}
 
 	// issue access token
-	res := m.issueTokens(true, scope, client, nil)
+	res := a.issueTokens(true, scope, client, nil)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
+func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// parse token
 	var claims refreshTokenClaims
 	_, err := jwt.ParseWithClaims(req.RefreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		return m.policy.Secret, nil
+		return a.policy.Secret, nil
 	})
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
 		stack.Abort(oauth2.InvalidGrant("Expired refresh token"))
@@ -364,7 +364,7 @@ func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.Tok
 	}
 
 	// get stored refresh token by signature
-	rt := m.getRefreshToken(bson.ObjectIdHex(claims.Id))
+	rt := a.getRefreshToken(bson.ObjectIdHex(claims.Id))
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("Unknown refresh token"))
 	}
@@ -395,26 +395,26 @@ func (m *Manager) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.Tok
 	// get resource owner
 	var ro ResourceOwner
 	if data.ResourceOwnerID != nil {
-		ro = m.getFirstResourceOwner(*data.ResourceOwnerID)
+		ro = a.getFirstResourceOwner(*data.ResourceOwnerID)
 	}
 
 	// issue tokens
-	res := m.issueTokens(true, req.Scope, client, ro)
+	res := a.issueTokens(true, req.Scope, client, ro)
 
 	// delete refresh token
-	m.deleteRefreshToken(rt.ID(), client.ID())
+	a.deleteRefreshToken(rt.ID(), client.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(w, res))
 }
 
-func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse authorization request
 	req, err := revocation.ParseRequest(r)
 	stack.AbortIf(err)
 
 	// get client
-	client := m.getFirstClient(req.ClientID)
+	client := a.getFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("Unknown client"))
 	}
@@ -422,26 +422,26 @@ func (m *Manager) revocationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// parse token
 	var claims jwt.StandardClaims
 	_, err = jwt.ParseWithClaims(req.Token, &claims, func(token *jwt.Token) (interface{}, error) {
-		return m.policy.Secret, nil
+		return a.policy.Secret, nil
 	})
 	if err != nil || !bson.IsObjectIdHex(claims.Id) {
 		return
 	}
 
 	// delete access token
-	m.deleteAccessToken(bson.ObjectIdHex(claims.Id), client.ID())
+	a.deleteAccessToken(bson.ObjectIdHex(claims.Id), client.ID())
 
 	// delete refresh token
-	m.deleteRefreshToken(bson.ObjectIdHex(claims.Id), client.ID())
+	a.deleteRefreshToken(bson.ObjectIdHex(claims.Id), client.ID())
 
 	// write header
 	w.WriteHeader(http.StatusOK)
 }
 
-func (m *Manager) issueTokens(refreshable bool, scope oauth2.Scope, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
+func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
 	// prepare expiration
-	atExpiry := time.Now().Add(m.policy.AccessTokenLifespan)
-	rtExpiry := time.Now().Add(m.policy.RefreshTokenLifespan)
+	atExpiry := time.Now().Add(a.policy.AccessTokenLifespan)
+	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
 
 	// create access token data
 	accessTokenData := &TokenData{
@@ -457,14 +457,14 @@ func (m *Manager) issueTokens(refreshable bool, scope oauth2.Scope, client Clien
 	}
 
 	// save access token
-	at := m.saveAccessToken(accessTokenData)
+	at := a.saveAccessToken(accessTokenData)
 
 	// generate new access token
-	atSignature, err := generateAccessToken(at.ID(), m.policy.Secret, time.Now(), atExpiry, resourceOwner)
+	atSignature, err := generateAccessToken(at.ID(), a.policy.Secret, time.Now(), atExpiry, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response
-	res := bearer.NewTokenResponse(atSignature, int(m.policy.AccessTokenLifespan/time.Second))
+	res := bearer.NewTokenResponse(atSignature, int(a.policy.AccessTokenLifespan/time.Second))
 
 	// set granted scope
 	res.Scope = scope
@@ -484,10 +484,10 @@ func (m *Manager) issueTokens(refreshable bool, scope oauth2.Scope, client Clien
 		}
 
 		// save refresh token
-		rt := m.saveRefreshToken(refreshTokenData)
+		rt := a.saveRefreshToken(refreshTokenData)
 
 		// generate new refresh token
-		rtSignature, err := generateRefreshToken(rt.ID(), m.policy.Secret, time.Now(), rtExpiry)
+		rtSignature, err := generateRefreshToken(rt.ID(), a.policy.Secret, time.Now(), rtExpiry)
 		stack.AbortIf(err)
 
 		// set refresh token
@@ -495,17 +495,17 @@ func (m *Manager) issueTokens(refreshable bool, scope oauth2.Scope, client Clien
 	}
 
 	// run automated cleanup if enabled
-	if m.policy.AutomatedCleanup {
-		m.cleanup()
+	if a.policy.AutomatedCleanup {
+		a.cleanup()
 	}
 
 	return res
 }
 
-func (m *Manager) getFirstClient(id string) Client {
+func (a *Authenticator) getFirstClient(id string) Client {
 	// check all available models in order
-	for _, model := range m.policy.Clients {
-		c := m.getClient(model, id)
+	for _, model := range a.policy.Clients {
+		c := a.getClient(model, id)
 		if c != nil {
 			return c
 		}
@@ -514,12 +514,12 @@ func (m *Manager) getFirstClient(id string) Client {
 	return nil
 }
 
-func (m *Manager) getClient(model Client, id string) Client {
+func (a *Authenticator) getClient(model Client, id string) Client {
 	// prepare object
 	obj := model.Meta().Make()
 
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// get description
@@ -545,10 +545,10 @@ func (m *Manager) getClient(model Client, id string) Client {
 	return client
 }
 
-func (m *Manager) findFirstResourceOwner(id string) ResourceOwner {
+func (a *Authenticator) findFirstResourceOwner(id string) ResourceOwner {
 	// check all available models in order
-	for _, model := range m.policy.ResourceOwners {
-		ro := m.findResourceOwner(model, id)
+	for _, model := range a.policy.ResourceOwners {
+		ro := a.findResourceOwner(model, id)
 		if ro != nil {
 			return ro
 		}
@@ -557,12 +557,12 @@ func (m *Manager) findFirstResourceOwner(id string) ResourceOwner {
 	return nil
 }
 
-func (m *Manager) findResourceOwner(model ResourceOwner, id string) ResourceOwner {
+func (a *Authenticator) findResourceOwner(model ResourceOwner, id string) ResourceOwner {
 	// prepare object
 	obj := model.Meta().Make()
 
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// get description
@@ -588,10 +588,10 @@ func (m *Manager) findResourceOwner(model ResourceOwner, id string) ResourceOwne
 	return resourceOwner
 }
 
-func (m *Manager) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
+func (a *Authenticator) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
 	// check all available models in order
-	for _, model := range m.policy.ResourceOwners {
-		ro := m.getResourceOwner(model, id)
+	for _, model := range a.policy.ResourceOwners {
+		ro := a.getResourceOwner(model, id)
 		if ro != nil {
 			return ro
 		}
@@ -600,12 +600,12 @@ func (m *Manager) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
 	return nil
 }
 
-func (m *Manager) getResourceOwner(model ResourceOwner, id bson.ObjectId) ResourceOwner {
+func (a *Authenticator) getResourceOwner(model ResourceOwner, id bson.ObjectId) ResourceOwner {
 	// prepare object
 	obj := model.Meta().Make()
 
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// query db
@@ -623,20 +623,20 @@ func (m *Manager) getResourceOwner(model ResourceOwner, id bson.ObjectId) Resour
 	return resourceOwner
 }
 
-func (m *Manager) getAccessToken(id bson.ObjectId) Token {
-	return m.getToken(m.policy.AccessToken, id)
+func (a *Authenticator) getAccessToken(id bson.ObjectId) Token {
+	return a.getToken(a.policy.AccessToken, id)
 }
 
-func (m *Manager) getRefreshToken(id bson.ObjectId) Token {
-	return m.getToken(m.policy.RefreshToken, id)
+func (a *Authenticator) getRefreshToken(id bson.ObjectId) Token {
+	return a.getToken(a.policy.RefreshToken, id)
 }
 
-func (m *Manager) getToken(t Token, id bson.ObjectId) Token {
+func (a *Authenticator) getToken(t Token, id bson.ObjectId) Token {
 	// prepare object
 	obj := t.Meta().Make()
 
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// fetch access token
@@ -654,15 +654,15 @@ func (m *Manager) getToken(t Token, id bson.ObjectId) Token {
 	return accessToken
 }
 
-func (m *Manager) saveAccessToken(d *TokenData) Token {
-	return m.saveToken(m.policy.AccessToken, d)
+func (a *Authenticator) saveAccessToken(d *TokenData) Token {
+	return a.saveToken(a.policy.AccessToken, d)
 }
 
-func (m *Manager) saveRefreshToken(d *TokenData) Token {
-	return m.saveToken(m.policy.RefreshToken, d)
+func (a *Authenticator) saveRefreshToken(d *TokenData) Token {
+	return a.saveToken(a.policy.RefreshToken, d)
 }
 
-func (m *Manager) saveToken(t Token, d *TokenData) Token {
+func (a *Authenticator) saveToken(t Token, d *TokenData) Token {
 	// prepare access token
 	token := t.Meta().Make().(Token)
 
@@ -670,7 +670,7 @@ func (m *Manager) saveToken(t Token, d *TokenData) Token {
 	token.SetTokenData(d)
 
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// save access token
@@ -682,17 +682,17 @@ func (m *Manager) saveToken(t Token, d *TokenData) Token {
 	return token
 }
 
-func (m *Manager) deleteAccessToken(id bson.ObjectId, clientID bson.ObjectId) {
-	m.deleteToken(m.policy.AccessToken, id, clientID)
+func (a *Authenticator) deleteAccessToken(id bson.ObjectId, clientID bson.ObjectId) {
+	a.deleteToken(a.policy.AccessToken, id, clientID)
 }
 
-func (m *Manager) deleteRefreshToken(id bson.ObjectId, clientID bson.ObjectId) {
-	m.deleteToken(m.policy.RefreshToken, id, clientID)
+func (a *Authenticator) deleteRefreshToken(id bson.ObjectId, clientID bson.ObjectId) {
+	a.deleteToken(a.policy.RefreshToken, id, clientID)
 }
 
-func (m *Manager) deleteToken(t Token, id bson.ObjectId, clientID bson.ObjectId) {
+func (a *Authenticator) deleteToken(t Token, id bson.ObjectId, clientID bson.ObjectId) {
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// delete token
@@ -705,17 +705,17 @@ func (m *Manager) deleteToken(t Token, id bson.ObjectId, clientID bson.ObjectId)
 	stack.AbortIf(err)
 }
 
-func (m *Manager) cleanup() {
+func (a *Authenticator) cleanup() {
 	// remove all expired access tokens
-	m.cleanupToken(m.policy.AccessToken)
+	a.cleanupToken(a.policy.AccessToken)
 
 	// remove all expired refresh tokens
-	m.cleanupToken(m.policy.RefreshToken)
+	a.cleanupToken(a.policy.RefreshToken)
 }
 
-func (m *Manager) cleanupToken(t Token) {
+func (a *Authenticator) cleanupToken(t Token) {
 	// get store
-	store := m.store.Copy()
+	store := a.store.Copy()
 	defer store.Close()
 
 	// get description

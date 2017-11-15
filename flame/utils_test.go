@@ -1,4 +1,4 @@
-package auth
+package flame
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
+var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-flame")
 var testSubStore = testStore.Copy()
 
 func cleanSubStore() {
@@ -20,7 +20,7 @@ func cleanSubStore() {
 	testSubStore.DB().C("refresh_tokens").RemoveAll(nil)
 }
 
-func newHandler(auth *Manager, force bool) http.Handler {
+func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()
 
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))

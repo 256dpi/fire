@@ -1,4 +1,4 @@
-package auth
+package flame
 
 import (
 	"net/http"
@@ -40,7 +40,7 @@ func TestIntegration(t *testing.T) {
 		return req.Scope, nil
 	}
 
-	manager := New(testStore, p)
+	manager := NewAuthenticator(testStore, p)
 	manager.Reporter = func(err error) {
 		t.Error(err)
 	}
@@ -151,7 +151,7 @@ func TestJWTToken(t *testing.T) {
 }
 
 func TestPublicAccess(t *testing.T) {
-	manager := New(testStore, DefaultPolicy(testSecret))
+	manager := NewAuthenticator(testStore, DefaultPolicy(testSecret))
 	handler := newHandler(manager, false)
 
 	testRequest(handler, "GET", "/api/protected", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
