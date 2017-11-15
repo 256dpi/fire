@@ -13,16 +13,12 @@ var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-f
 
 func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()
-
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))
 
 	authorizer := auth.Authorizer("foo", force)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Handle("/api/protected", authorizer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
-	})
-
-	router.Handle("/api/protected", authorizer(handler))
+	})))
 
 	return router
 }
