@@ -13,9 +13,9 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -27,7 +27,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", map[string]string{
+	tester.Request("GET", "posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 
@@ -43,7 +43,7 @@ func TestBasicOperations(t *testing.T) {
 	var id string
 
 	// create post
-	testRequest(server, "POST", "/posts", map[string]string{
+	tester.Request("POST", "posts", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -54,7 +54,7 @@ func TestBasicOperations(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		post := findLastModel(&postModel{})
+		post := tester.FindLast(&postModel{})
 		id = post.ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
@@ -91,7 +91,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get list of posts
-	testRequest(server, "GET", "/posts", map[string]string{
+	tester.Request("GET", "posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -130,7 +130,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// update post
-	testRequest(server, "PATCH", "/posts/"+id, map[string]string{
+	tester.Request("PATCH", "posts/"+id, map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -176,7 +176,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get single post
-	testRequest(server, "GET", "/posts/"+id, map[string]string{
+	tester.Request("GET", "posts/"+id, map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -213,7 +213,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// delete post
-	testRequest(server, "DELETE", "/posts/"+id, map[string]string{
+	tester.Request("DELETE", "posts/"+id, map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
@@ -221,7 +221,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get empty list of posts
-	testRequest(server, "GET", "/posts", map[string]string{
+	tester.Request("GET", "posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -235,9 +235,9 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 		Filters: []string{
@@ -253,21 +253,21 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// create posts
-	post1 := saveModel(&postModel{
+	post1 := tester.Save(&postModel{
 		Title:     "post-1",
 		Published: true,
 	}).ID().Hex()
-	post2 := saveModel(&postModel{
+	post2 := tester.Save(&postModel{
 		Title:     "post-2",
 		Published: false,
 	}).ID().Hex()
-	post3 := saveModel(&postModel{
+	post3 := tester.Save(&postModel{
 		Title:     "post-3",
 		Published: true,
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(&selectionModel{
+	selection := tester.Save(&selectionModel{
 		Posts: []bson.ObjectId{
 			bson.ObjectIdHex(post1),
 			bson.ObjectIdHex(post2),
@@ -276,7 +276,7 @@ func TestFiltering(t *testing.T) {
 	}).ID().Hex()
 
 	// get posts with single value filter
-	testRequest(server, "GET", "/posts?filter[title]=post-1", map[string]string{
+	tester.Request("GET", "posts?filter[title]=post-1", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -320,7 +320,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with multi value filter
-	testRequest(server, "GET", "/posts?filter[title]=post-2,post-3", map[string]string{
+	tester.Request("GET", "posts?filter[title]=post-2,post-3", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -394,7 +394,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with boolean
-	testRequest(server, "GET", "/posts?filter[published]=true", map[string]string{
+	tester.Request("GET", "posts?filter[published]=true", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -468,7 +468,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with boolean
-	testRequest(server, "GET", "/posts?filter[published]=false", map[string]string{
+	tester.Request("GET", "posts?filter[published]=false", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -512,7 +512,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get to-many posts with boolean
-	testRequest(server, "GET", "/selections/"+selection+"/posts?filter[published]=false", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -557,9 +557,9 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 		Sorters: []string{
@@ -574,18 +574,18 @@ func TestSorting(t *testing.T) {
 	})
 
 	// create posts in random order
-	post2 := saveModel(&postModel{
+	post2 := tester.Save(&postModel{
 		Title: "post-2",
 	}).ID().Hex()
-	post1 := saveModel(&postModel{
+	post1 := tester.Save(&postModel{
 		Title: "post-1",
 	}).ID().Hex()
-	post3 := saveModel(&postModel{
+	post3 := tester.Save(&postModel{
 		Title: "post-3",
 	}).ID().Hex()
 
 	// get posts in ascending order
-	testRequest(server, "GET", "/posts?sort=title", map[string]string{
+	tester.Request("GET", "posts?sort=title", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -674,7 +674,7 @@ func TestSorting(t *testing.T) {
 	})
 
 	// get posts in descending order
-	testRequest(server, "GET", "/posts?sort=-title", map[string]string{
+	tester.Request("GET", "posts?sort=-title", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -763,10 +763,10 @@ func TestSorting(t *testing.T) {
 	})
 }
 
-func TestSparseFieldsets(t *testing.T) {
-	cleanStore()
+func TestSparseFields(t *testing.T) {
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -778,12 +778,12 @@ func TestSparseFieldsets(t *testing.T) {
 	})
 
 	// create posts
-	post := saveModel(&postModel{
+	post := tester.Save(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
 
 	// get posts with single value filter
-	testRequest(server, "GET", "/posts/"+post+"?fields[posts]=title", map[string]string{
+	tester.Request("GET", "posts/"+post+"?fields[posts]=title", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -819,9 +819,9 @@ func TestSparseFieldsets(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -833,21 +833,21 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// create existing post & comment
-	existingPost := saveModel(&postModel{
+	existingPost := tester.Save(&postModel{
 		Title: "Post 1",
 	})
-	saveModel(&commentModel{
+	tester.Save(&commentModel{
 		Message: "Comment 1",
 		Post:    existingPost.ID(),
 	})
 
 	// create new post
-	post := saveModel(&postModel{
+	post := tester.Save(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
 
 	// get single post
-	testRequest(server, "GET", "/posts/"+post, map[string]string{
+	tester.Request("GET", "posts/"+post, map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -884,7 +884,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get empty list of related comments
-	testRequest(server, "GET", "/posts/"+post+"/comments", map[string]string{
+	tester.Request("GET", "posts/"+post+"/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -899,7 +899,7 @@ func TestHasManyRelationship(t *testing.T) {
 	var comment string
 
 	// create related comment
-	testRequest(server, "POST", "/comments", map[string]string{
+	tester.Request("POST", "comments", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -918,7 +918,7 @@ func TestHasManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		comment = findLastModel(&commentModel{}).ID().Hex()
+		comment = tester.FindLast(&commentModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -955,7 +955,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get list of related comments
-	testRequest(server, "GET", "/posts/"+post+"/comments", map[string]string{
+	tester.Request("GET", "posts/"+post+"/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -995,7 +995,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get only relationship links
-	testRequest(server, "GET", "/posts/"+post+"/relationships/comments", map[string]string{
+	tester.Request("GET", "posts/"+post+"/relationships/comments", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1015,9 +1015,9 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1029,15 +1029,15 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// create posts
-	post1 := saveModel(&postModel{
+	post1 := tester.Save(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(&postModel{
+	post2 := tester.Save(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
 
 	// create comment
-	comment1 := saveModel(&commentModel{
+	comment1 := tester.Save(&commentModel{
 		Message: "Comment 1",
 		Post:    bson.ObjectIdHex(post1),
 	}).ID().Hex()
@@ -1045,7 +1045,7 @@ func TestToOneRelationship(t *testing.T) {
 	var comment2 string
 
 	// create relating post
-	testRequest(server, "POST", "/comments", map[string]string{
+	tester.Request("POST", "comments", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1070,7 +1070,7 @@ func TestToOneRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		comment2 = findLastModel(&commentModel{}).ID().Hex()
+		comment2 = tester.FindLast(&commentModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -1110,7 +1110,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// get related post
-	testRequest(server, "GET", "/comments/"+comment2+"/post", map[string]string{
+	tester.Request("GET", "comments/"+comment2+"/post", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1156,7 +1156,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// get related post id only
-	testRequest(server, "GET", "/comments/"+comment2+"/relationships/post", map[string]string{
+	tester.Request("GET", "comments/"+comment2+"/relationships/post", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1173,7 +1173,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// replace relationship
-	testRequest(server, "PATCH", "/comments/"+comment2+"/relationships/post", map[string]string{
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1187,7 +1187,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch replaced relationship
-	testRequest(server, "GET", "/comments/"+comment2+"/relationships/post", map[string]string{
+	tester.Request("GET", "comments/"+comment2+"/relationships/post", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1204,7 +1204,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// unset relationship
-	testRequest(server, "PATCH", "/comments/"+comment2+"/relationships/parent", map[string]string{
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1215,7 +1215,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch unset relationship
-	testRequest(server, "GET", "/comments/"+comment2+"/relationships/parent", map[string]string{
+	tester.Request("GET", "comments/"+comment2+"/relationships/parent", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1229,7 +1229,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch unset related resource
-	testRequest(server, "GET", "/comments/"+comment2+"/parent", map[string]string{
+	tester.Request("GET", "comments/"+comment2+"/parent", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1243,9 +1243,9 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1257,20 +1257,20 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// create posts
-	post1 := saveModel(&postModel{
+	post1 := tester.Save(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
-	post2 := saveModel(&postModel{
+	post2 := tester.Save(&postModel{
 		Title: "Post 2",
 	}).ID().Hex()
-	post3 := saveModel(&postModel{
+	post3 := tester.Save(&postModel{
 		Title: "Post 3",
 	}).ID().Hex()
 
 	var selection string
 
 	// create selection
-	testRequest(server, "POST", "/selections", map[string]string{
+	tester.Request("POST", "selections", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1295,7 +1295,7 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		selection = findLastModel(&selectionModel{}).ID().Hex()
+		selection = tester.FindLast(&selectionModel{}).ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -1331,7 +1331,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post
-	testRequest(server, "GET", "/selections/"+selection+"/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1405,7 +1405,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post ids only
-	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1428,7 +1428,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// update relationship
-	testRequest(server, "PATCH", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1444,7 +1444,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get updated related post ids only
-	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1463,7 +1463,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// add relationship
-	testRequest(server, "POST", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1479,7 +1479,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post ids only
-	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1502,7 +1502,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// remove relationship
-	testRequest(server, "DELETE", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept":       jsonapi.MediaType,
 		"Content-Type": jsonapi.MediaType,
 	}, `{
@@ -1522,7 +1522,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get empty related post ids list
-	testRequest(server, "GET", "/selections/"+selection+"/relationships/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1537,9 +1537,9 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1551,17 +1551,17 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	})
 
 	// create posts
-	post := saveModel(&postModel{
+	post := tester.Save(&postModel{
 		Title: "Post 1",
 	}).ID().Hex()
 
 	// create selection
-	selection := saveModel(&selectionModel{
+	selection := tester.Save(&selectionModel{
 		Name: "Selection 1",
 	}).ID().Hex()
 
 	// get related posts
-	testRequest(server, "GET", "/selections/"+selection+"/posts", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1574,7 +1574,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	})
 
 	// get related selections
-	testRequest(server, "GET", "/posts/"+post+"/selections", map[string]string{
+	tester.Request("GET", "posts/"+post+"/selections", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
@@ -1588,9 +1588,9 @@ func TestEmptyToManyRelationship(t *testing.T) {
 }
 
 func TestNoList(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1603,7 +1603,7 @@ func TestNoList(t *testing.T) {
 	})
 
 	// attempt list comments
-	testRequest(server, "GET", "/comments", map[string]string{
+	tester.Request("GET", "comments", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode)
@@ -1612,9 +1612,9 @@ func TestNoList(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1627,13 +1627,13 @@ func TestPagination(t *testing.T) {
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&postModel{
+		tester.Save(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}
 
 	// get first page of posts
-	testRequest(server, "GET", "/posts?page[number]=1&page[size]=5", map[string]string{
+	tester.Request("GET", "posts?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1651,7 +1651,7 @@ func TestPagination(t *testing.T) {
 	})
 
 	// get second page of posts
-	testRequest(server, "GET", "/posts?page[number]=2&page[size]=5", map[string]string{
+	tester.Request("GET", "posts?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1670,9 +1670,9 @@ func TestPagination(t *testing.T) {
 }
 
 func TestPaginationToMany(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1688,18 +1688,18 @@ func TestPaginationToMany(t *testing.T) {
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		ids = append(ids, saveModel(&postModel{
+		ids = append(ids, tester.Save(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		}).ID())
 	}
 
 	// create selection
-	selection := saveModel(&selectionModel{
+	selection := tester.Save(&selectionModel{
 		Posts: ids,
 	}).ID().Hex()
 
 	// get first page of posts
-	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=1&page[size]=5", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/posts?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1717,7 +1717,7 @@ func TestPaginationToMany(t *testing.T) {
 	})
 
 	// get second page of posts
-	testRequest(server, "GET", "/selections/"+selection+"/posts?page[number]=2&page[size]=5", map[string]string{
+	tester.Request("GET", "selections/"+selection+"/posts?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1736,9 +1736,9 @@ func TestPaginationToMany(t *testing.T) {
 }
 
 func TestPaginationHasMany(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1750,20 +1750,20 @@ func TestPaginationHasMany(t *testing.T) {
 	})
 
 	// create post
-	post := saveModel(&postModel{
+	post := tester.Save(&postModel{
 		Title: "Post",
 	}).ID()
 
 	// create some comments
 	for i := 0; i < 10; i++ {
-		saveModel(&commentModel{
+		tester.Save(&commentModel{
 			Message: fmt.Sprintf("Comment %d", i+1),
 			Post:    post,
 		})
 	}
 
 	// get first page of posts
-	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", map[string]string{
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1781,7 +1781,7 @@ func TestPaginationHasMany(t *testing.T) {
 	})
 
 	// get second page of posts
-	testRequest(server, "GET", "/posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", map[string]string{
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1800,9 +1800,9 @@ func TestPaginationHasMany(t *testing.T) {
 }
 
 func TestForcedPagination(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
@@ -1816,13 +1816,13 @@ func TestForcedPagination(t *testing.T) {
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&postModel{
+		tester.Save(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}
 
 	// get first page of posts
-	testRequest(server, "GET", "/posts", map[string]string{
+	tester.Request("GET", "posts", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -1841,9 +1841,9 @@ func TestForcedPagination(t *testing.T) {
 }
 
 func TestListLimit(t *testing.T) {
-	cleanStore()
+	tester.CleanStore()
 
-	server := buildHandler(&Controller{
+	tester.Handler = buildHandler(&Controller{
 		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
@@ -1857,13 +1857,13 @@ func TestListLimit(t *testing.T) {
 
 	// create some posts
 	for i := 0; i < 10; i++ {
-		saveModel(&postModel{
+		tester.Save(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
 		})
 	}
 
 	// get first page of posts
-	testRequest(server, "GET", "/posts?page[number]=1&page[size]=7", map[string]string{
+	tester.Request("GET", "posts?page[number]=1&page[size]=7", map[string]string{
 		"Accept": jsonapi.MediaType,
 	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()

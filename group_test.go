@@ -22,20 +22,20 @@ func TestGroup(t *testing.T) {
 }
 
 func TestGroupEndpointMissingController(t *testing.T) {
-	group := NewGroup()
+	tester.Handler = NewGroup().Endpoint("api")
 
-	testRequest(group.Endpoint("api"), "GET", "api/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "api/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
 	})
 }
 
 func TestGroupStackAbort(t *testing.T) {
-	wait := make(chan struct{})
+	var lastErr error
 
 	group := NewGroup()
 	group.Reporter = func(err error) {
 		assert.Equal(t, "foo", err.Error())
-		close(wait)
+		lastErr = err
 	}
 	group.Add(&Controller{
 		Model: &postModel{},
@@ -48,7 +48,9 @@ func TestGroupStackAbort(t *testing.T) {
 		},
 	})
 
-	testRequest(group.Endpoint(""), "GET", "posts", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Handler = group.Endpoint("")
+
+	tester.Request("GET", "posts", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"errors": [{
@@ -58,5 +60,5 @@ func TestGroupStackAbort(t *testing.T) {
 		}`, r.Body.String())
 	})
 
-	<-wait
+	assert.Error(t, lastErr)
 }
