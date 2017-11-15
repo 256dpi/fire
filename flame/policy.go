@@ -59,9 +59,9 @@ type Policy struct {
 	ResourceOwners []ResourceOwner
 	GrantStrategy  GrantStrategy
 
-	// DataForAccessToken should return a map of data that should be included
-	// in the JWT token under the "dat" field.
-	DataForAccessToken func(client Client, ro ResourceOwner) map[string]interface{}
+	// TokenData should return a map of data that should be included in the JWT
+	// token under the "dat" field.
+	TokenData func(Client, ResourceOwner) map[string]interface{}
 
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
@@ -104,8 +104,8 @@ func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, 
 	claims.ExpiresAt = expiresAt.Unix()
 
 	// set user data
-	if p.DataForAccessToken != nil {
-		claims.Data = p.DataForAccessToken(client, ro)
+	if p.TokenData != nil {
+		claims.Data = p.TokenData(client, ro)
 	}
 
 	// create token
