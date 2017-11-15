@@ -31,7 +31,7 @@ func directErrorCB(_ *fire.Context) (Enforcer, error) {
 }
 
 func indirectErrorCB(_ *fire.Context) (Enforcer, error) {
-	return func(_ *fire.Context)error{
+	return func(_ *fire.Context) error {
 		return errors.New("error")
 	}, nil
 }
