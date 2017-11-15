@@ -11,7 +11,7 @@ func TestAnd(t *testing.T) {
 	enforcer, err := And(accessGrantedCB, accessGrantedCB)(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, enforcer(context(fire.List)))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = And(accessGrantedCB, blankCB)(nil)
 	assert.NoError(t, err)
@@ -35,11 +35,11 @@ func TestAnd(t *testing.T) {
 
 	enforcer, err = And(accessGrantedCB, indirectErrorCB)(nil)
 	assert.NoError(t, err)
-	assert.Error(t, enforcer(nil))
+	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = And(indirectErrorCB, indirectErrorCB)(nil)
 	assert.NoError(t, err)
-	assert.Error(t, enforcer(nil))
+	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = Authorizer(blankCB).And(accessGrantedCB)(nil)
 	assert.NoError(t, err)
@@ -50,17 +50,17 @@ func TestOr(t *testing.T) {
 	enforcer, err := Or(accessGrantedCB, accessGrantedCB)(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, enforcer(context(fire.List)))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = Or(accessGrantedCB, blankCB)(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, enforcer(context(fire.List)))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = Or(blankCB, accessGrantedCB)(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, enforcer(context(fire.List)))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 
 	enforcer, err = Or(blankCB, blankCB)(nil)
 	assert.NoError(t, err)
@@ -77,5 +77,5 @@ func TestOr(t *testing.T) {
 	enforcer, err = Authorizer(blankCB).Or(accessGrantedCB)(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, enforcer(context(fire.List)))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, enforcer))
 }
