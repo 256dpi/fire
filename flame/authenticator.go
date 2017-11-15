@@ -139,8 +139,10 @@ func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) 
 			stack.AbortIf(err)
 
 			// parse token
-			claims, _, err := a.policy.ParseToken(tk)
-			if err != nil {
+			claims, expired, err := a.policy.ParseToken(tk)
+			if expired {
+				stack.Abort(bearer.InvalidToken("expired token"))
+			} else if err != nil {
 				stack.Abort(bearer.InvalidToken("malformed token"))
 			}
 
