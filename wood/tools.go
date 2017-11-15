@@ -1,2 +1,2 @@
 // Package tools implements various helpful tools for developing apps.
-package tools
+package wood
