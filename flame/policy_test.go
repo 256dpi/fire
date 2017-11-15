@@ -8,9 +8,9 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func TestPolicyNewKeyAndSignature(t *testing.T) {
+func TestPolicyNewAccessToken(t *testing.T) {
 	p := DefaultPolicy(testSecret)
-	sig, err := p.NewAccessToken(bson.NewObjectId(), time.Now(), time.Now(), nil)
+	sig, err := p.NewAccessToken(bson.NewObjectId(), time.Now(), time.Now(), nil, nil)
 	assert.NotEmpty(t, sig)
 	assert.NoError(t, err)
 }

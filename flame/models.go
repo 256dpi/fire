@@ -177,12 +177,6 @@ type ResourceOwner interface {
 	// ValidSecret should determine whether the specified plain text password
 	// matches the hashed password.
 	ValidPassword(string) bool
-
-	// DataForAccessToken should return a map of data that should be included
-	// in the JWT token under the "dat" field.
-	DataForAccessToken() map[string]interface{}
-
-	// TODO: Move to policy and specify token, client and resource owner as parameter.
 }
 
 // User is the built-in model used to store resource owners.
@@ -203,11 +197,4 @@ func (u *User) DescribeResourceOwner() ResourceOwnerDescription {
 // ValidPassword implements the ResourceOwner interface.
 func (u *User) ValidPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
-}
-
-// DataForAccessToken implements the ResourceOwner interface.
-func (u *User) DataForAccessToken() map[string]interface{} {
-	return map[string]interface{}{
-		"name": u.Name,
-	}
 }

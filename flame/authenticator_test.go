@@ -98,9 +98,9 @@ func TestIntegration(t *testing.T) {
 		ClientID:  app1.ID(),
 	}).(*AccessToken)
 
-	config.UnknownToken = mustGenerateAccessToken(bson.NewObjectId(), p.Secret, time.Now(), nil)
-	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, expiredToken.ExpiresAt, nil)
-	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, insufficientToken.ExpiresAt, nil)
+	config.UnknownToken = mustGenerateAccessToken(bson.NewObjectId(), p.Secret, time.Now())
+	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, expiredToken.ExpiresAt)
+	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, insufficientToken.ExpiresAt)
 
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
@@ -132,7 +132,15 @@ func TestIntegration(t *testing.T) {
 func TestJWTToken(t *testing.T) {
 	id := bson.NewObjectId()
 	tt := time.Now()
-	sig, err := generateAccessToken(id, []byte("abcd"), tt, tt, &User{Name: "Hello"})
+
+	p := DefaultPolicy(testSecret)
+	p.DataForAccessToken = func(c Client, ro ResourceOwner) map[string]interface{} {
+		return map[string]interface{}{
+			"name": ro.(*User).Name,
+		}
+	}
+
+	sig, err := p.generateAccessToken(id, []byte("abcd"), tt, tt, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
 	var claims accessTokenClaims
@@ -159,8 +167,8 @@ func TestPublicAccess(t *testing.T) {
 	})
 }
 
-func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Time, ro ResourceOwner) string {
-	str, err := generateAccessToken(id, secret, time.Now(), expiresAt, ro)
+func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Time) string {
+	str, err := DefaultPolicy(testSecret).generateAccessToken(id, secret, time.Now(), expiresAt, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -169,7 +177,7 @@ func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Tim
 }
 
 func mustGenerateRefreshToken(id bson.ObjectId, secret []byte, expiresAt time.Time) string {
-	str, err := generateRefreshToken(id, secret, time.Now(), expiresAt)
+	str, err := DefaultPolicy(testSecret).generateRefreshToken(id, secret, time.Now(), expiresAt)
 	if err != nil {
 		panic(err)
 	}

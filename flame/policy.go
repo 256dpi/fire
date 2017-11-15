@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/256dpi/oauth2"
+	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -58,6 +59,10 @@ type Policy struct {
 	ResourceOwners []ResourceOwner
 	GrantStrategy  GrantStrategy
 
+	// DataForAccessToken should return a map of data that should be included
+	// in the JWT token under the "dat" field.
+	DataForAccessToken func(client Client, ro ResourceOwner) map[string]interface{}
+
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
 	RefreshTokenLifespan time.Duration
@@ -83,10 +88,62 @@ func DefaultPolicy(secret string) *Policy {
 }
 
 // NewAccessToken returns a new access token for the provided information.
-func (p *Policy) NewAccessToken(id bson.ObjectId, issuedAt, expiresAt time.Time, ro ResourceOwner) (string, error) {
-	str, err := generateAccessToken(id, p.Secret, issuedAt, expiresAt, ro)
+func (p *Policy) NewAccessToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
+	str, err := p.generateAccessToken(id, p.Secret, issuedAt, expiresAt, client, ro)
 	if err != nil {
 		return "", err
+	}
+
+	return str, nil
+}
+
+type accessTokenClaims struct {
+	jwt.StandardClaims
+	Data map[string]interface{} `json:"dat"`
+}
+
+type refreshTokenClaims struct {
+	jwt.StandardClaims
+}
+
+func (p *Policy) generateAccessToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
+	// prepare claims
+	claims := &accessTokenClaims{}
+	claims.Id = id.Hex()
+	claims.IssuedAt = issuedAt.Unix()
+	claims.ExpiresAt = expiresAt.Unix()
+
+	// set user data
+	if p.DataForAccessToken != nil {
+		claims.Data = p.DataForAccessToken(client, ro)
+	}
+
+	// create token
+	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// sign token
+	str, err := tkn.SignedString(secret)
+	if err != nil {
+		return "", nil
+	}
+
+	return str, nil
+}
+
+func (p *Policy) generateRefreshToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time) (string, error) {
+	// prepare claims
+	claims := &refreshTokenClaims{}
+	claims.Id = id.Hex()
+	claims.IssuedAt = issuedAt.Unix()
+	claims.ExpiresAt = expiresAt.Unix()
+
+	// create token
+	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// sign token
+	str, err := tkn.SignedString(secret)
+	if err != nil {
+		return "", nil
 	}
 
 	return str, nil
