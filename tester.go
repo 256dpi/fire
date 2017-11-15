@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +29,19 @@ type Tester struct {
 
 	// The header to be set on all requests and contexts.
 	Header map[string]string
+
+	// Context to be set on fake requests.
+	Context context.Context
+}
+
+// NewTester returns a new tester.
+func NewTester(store *coal.Store, models ...coal.Model) *Tester {
+	return &Tester{
+		Store:   store,
+		Models:  models,
+		Header:  make(map[string]string),
+		Context: context.Background(),
+	}
 }
 
 // Register will register the specified model with the tester.
@@ -43,11 +57,17 @@ func (t *Tester) Clean() {
 
 	for _, model := range t.Models {
 		// remove all is faster than dropping the collection
-		store.C(model).RemoveAll(nil)
+		_, err := store.C(model).RemoveAll(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// reset header
 	t.Header = make(map[string]string)
+
+	// reset context
+	t.Context = context.Background()
 }
 
 // Save will save the specified model.
@@ -140,6 +160,9 @@ func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, va
 		req.Header.Set(key, value)
 	}
 
+	// set context
+	req = req.WithContext(t.Context)
+
 	// create context
 	ctx := &Context{
 		Action:      action,
@@ -186,6 +209,9 @@ func (t *Tester) RunValidator(action Action, model coal.Model, validator Callbac
 	for key, value := range t.Header {
 		req.Header.Set(key, value)
 	}
+
+	// set context
+	req = req.WithContext(t.Context)
 
 	// create context
 	ctx := &Context{

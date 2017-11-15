@@ -16,7 +16,7 @@ var testSecret = "abcd1234abcd1234"
 var testPassword = "foo"
 
 func TestIntegration(t *testing.T) {
-	cleanSubStore()
+	tester.Clean()
 
 	var allowedScope = oauth2.ParseScope("foo bar")
 	var requiredScope = oauth2.ParseScope("foo")
@@ -39,26 +39,26 @@ func TestIntegration(t *testing.T) {
 		return req.Scope, nil
 	}
 
-	manager := NewAuthenticator(testStore, p)
+	manager := NewAuthenticator(tester.Store, p)
 	manager.Reporter = func(err error) {
 		t.Error(err)
 	}
 
-	app1 := saveModel(&Application{
+	app1 := tester.Save(&Application{
 		Name:        "Application 1",
 		Key:         "app1",
 		SecretHash:  mustHash(testPassword),
 		RedirectURI: "http://example.com/callback1",
 	}).(*Application)
 
-	app2 := saveModel(&Application{
+	app2 := tester.Save(&Application{
 		Name:        "Application 2",
 		Key:         "app2",
 		SecretHash:  mustHash(testPassword),
 		RedirectURI: "http://example.com/callback2",
 	}).(*Application)
 
-	user := saveModel(&User{
+	user := tester.Save(&User{
 		Name:         "User",
 		Email:        "user@example.com",
 		PasswordHash: mustHash(testPassword),
@@ -85,13 +85,13 @@ func TestIntegration(t *testing.T) {
 
 	config.ExpectedExpiresIn = int(manager.policy.AccessTokenLifespan / time.Second)
 
-	expiredToken := saveModel(&AccessToken{
+	expiredToken := tester.Save(&AccessToken{
 		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
 		Scope:     []string{"foo"},
 		ClientID:  app1.ID(),
 	}).(*AccessToken)
 
-	insufficientToken := saveModel(&AccessToken{
+	insufficientToken := tester.Save(&AccessToken{
 		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
 		Scope:     []string{},
 		ClientID:  app1.ID(),
@@ -104,13 +104,13 @@ func TestIntegration(t *testing.T) {
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
 
-	validRefreshToken := saveModel(&RefreshToken{
+	validRefreshToken := tester.Save(&RefreshToken{
 		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
 	}).(*RefreshToken)
 
-	expiredRefreshToken := saveModel(&RefreshToken{
+	expiredRefreshToken := tester.Save(&RefreshToken{
 		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		ClientID:  app1.ID(),
@@ -129,10 +129,10 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestPublicAccess(t *testing.T) {
-	manager := NewAuthenticator(testStore, DefaultPolicy(testSecret))
-	handler := newHandler(manager, false)
+	manager := NewAuthenticator(tester.Store, DefaultPolicy(testSecret))
+	tester.Handler = newHandler(manager, false)
 
-	testRequest(handler, "GET", "/api/protected", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, "OK", r.Body.String())
 	})
 }

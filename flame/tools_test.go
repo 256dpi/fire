@@ -11,14 +11,14 @@ import (
 func TestTokenMigrator(t *testing.T) {
 	migrator := TokenMigrator(true)
 
-	handler := migrator(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	tester.Handler = migrator(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "Bearer foo", r.Header.Get("Authorization"))
 		assert.Equal(t, "", r.URL.Query().Get("access_token"))
 
 		w.Write([]byte("OK"))
 	}))
 
-	testRequest(handler, "GET", "/foo?access_token=foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "foo?access_token=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, "OK", r.Body.String())
 	})
 }

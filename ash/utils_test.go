@@ -7,9 +7,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.Tester{
-	Store: coal.MustCreateStore("mongodb://localhost/test-ash"),
-}
+var tester = fire.NewTester(coal.MustCreateStore("mongodb://localhost/test-ash"))
 
 func blankCB(_ *fire.Context) (Enforcer, error) {
 	return nil, nil

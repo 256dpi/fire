@@ -42,14 +42,7 @@ type selectionModel struct {
 var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
-var tester = Tester{
-	Store: testStore,
-	Models: []coal.Model{
-		&postModel{},
-		&commentModel{},
-		&selectionModel{},
-	},
-}
+var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{})
 
 func buildHandler(controllers ...*Controller) http.Handler {
 	group := NewGroup()

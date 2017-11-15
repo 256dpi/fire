@@ -2,7 +2,6 @@ package flame
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/256dpi/fire"
@@ -11,49 +10,30 @@ import (
 )
 
 func TestCallbackMissingAccessToken(t *testing.T) {
-	req, err := http.NewRequest("GET", "foo", nil)
-	assert.NoError(t, err)
+	authorizer := Callback("foo")
 
-	ctx := &fire.Context{
-		HTTPRequest: req,
-	}
-
-	err = Callback("foo")(ctx)
+	err := tester.RunAuthorizer(fire.List, nil, nil, authorizer)
 	assert.Error(t, err)
 }
 
 func TestCallbackInsufficientAccessToken(t *testing.T) {
-	req, err := http.NewRequest("GET", "foo", nil)
-	assert.NoError(t, err)
-
-	at := &AccessToken{
+	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &AccessToken{
 		Scope: []string{"bar"},
-	}
+	})
 
-	req = req.WithContext(context.WithValue(req.Context(), AccessTokenContextKey, at))
+	authorizer := Callback("foo")
 
-	ctx := &fire.Context{
-		HTTPRequest: req,
-	}
-
-	err = Callback("foo")(ctx)
+	err := tester.RunAuthorizer(fire.List, nil, nil, authorizer)
 	assert.Error(t, err)
 }
 
 func TestCallbackProperAccessToken(t *testing.T) {
-	req, err := http.NewRequest("GET", "foo", nil)
-	assert.NoError(t, err)
-
-	at := &AccessToken{
+	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &AccessToken{
 		Scope: []string{"foo"},
-	}
+	})
 
-	req = req.WithContext(context.WithValue(req.Context(), AccessTokenContextKey, at))
+	authorizer := Callback("foo")
 
-	ctx := &fire.Context{
-		HTTPRequest: req,
-	}
-
-	err = Callback("foo")(ctx)
+	err := tester.RunAuthorizer(fire.List, nil, nil, authorizer)
 	assert.NoError(t, err)
 }
