@@ -115,9 +115,10 @@ func (t *Tester) Path(path string) string {
 // returned error of the validator, the state of the supplied model and maybe
 // other objects in the database.
 //
-// Note: Only the Action, Query, Model, Store and a fake HTTPRequest with the
-// specified headers are set since these are the oly attributes an authorizer
-// should rely on.
+// Note: Only the Action, Query, Model and Store are set since these are the
+// only attributes an authorizer should rely on.
+//
+// Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, validator Callback) error {
 	// get store
 	store := t.Store.Copy()
@@ -142,9 +143,9 @@ func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, va
 	// create context
 	ctx := &Context{
 		Action:      action,
+		Query:       query,
 		Model:       model,
 		Store:       store,
-		Query:       query,
 		HTTPRequest: req,
 	}
 
@@ -158,6 +159,8 @@ func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, va
 //
 // Note: Only the Action, Model and Store attribute of the context are set since
 // these are the only attributes a validator should rely on.
+//
+// Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunValidator(action Action, model coal.Model, validator Callback) error {
 	// check action
 	if action.Read() {
@@ -173,11 +176,23 @@ func (t *Tester) RunValidator(action Action, model coal.Model, validator Callbac
 		coal.Init(model)
 	}
 
+	// create request
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// set headers
+	for key, value := range t.Header {
+		req.Header.Set(key, value)
+	}
+
 	// create context
 	ctx := &Context{
 		Action: action,
 		Model:  model,
 		Store:  store,
+		HTTPRequest: req,
 	}
 
 	// call validator
