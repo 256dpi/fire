@@ -130,7 +130,7 @@ type Client interface {
 	ValidRedirectURI(string) bool
 
 	// ValidSecret should determine whether the specified plain text secret
-	// matches the hashed secret.
+	// matches the stored hashed secret.
 	ValidSecret(string) bool
 }
 
@@ -175,7 +175,7 @@ type ResourceOwner interface {
 	DescribeResourceOwner() ResourceOwnerDescription
 
 	// ValidSecret should determine whether the specified plain text password
-	// matches the hashed password.
+	// matches the stored hashed password.
 	ValidPassword(string) bool
 }
 
