@@ -69,6 +69,8 @@ type Controller struct {
 	ListLimit uint64
 }
 
+// TODO: Update pagination to use offset and limit.
+
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
 	// parse incoming JSON API request
 	req, err := jsonapi.ParseRequest(r, prefix)
