@@ -64,7 +64,7 @@ type Controller struct {
 
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
-	ListLimit int
+	ListLimit uint64
 }
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
@@ -664,7 +664,7 @@ func (c *Controller) loadModels(ctx *Context) []Model {
 
 	// add pagination
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
-		query = query.Limit(ctx.JSONAPIRequest.PageSize).Skip((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize)
+		query = query.Limit(int(ctx.JSONAPIRequest.PageSize)).Skip(int((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize))
 	}
 
 	// query db
@@ -923,7 +923,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 		stack.AbortIf(err)
 
 		// calculate last page
-		lastPage := int(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
+		lastPage := uint64(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
 
 		// add basic pagination links
 		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber, ctx.JSONAPIRequest.PageSize)
