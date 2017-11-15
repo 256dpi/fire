@@ -5,11 +5,12 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
-var testStore = fire.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
+var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
 func cleanSubStore() {
@@ -35,7 +36,7 @@ func newHandler(auth *Manager, force bool) http.Handler {
 	return router
 }
 
-func saveModel(m fire.Model) fire.Model {
+func saveModel(m coal.Model) coal.Model {
 	err := testSubStore.C(m).Insert(m)
 	if err != nil {
 		panic(err)

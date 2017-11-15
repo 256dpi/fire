@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
 	"gopkg.in/mgo.v2"
@@ -17,7 +19,7 @@ import (
 // Note: Controllers must not be modified after adding to an application.
 type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
-	Model Model
+	Model coal.Model
 
 	// Filters defines the attributes that are filterable.
 	Filters []string
@@ -26,7 +28,7 @@ type Controller struct {
 	Sorters []string
 
 	// The store that is used to retrieve and persist the model.
-	Store *Store
+	Store *coal.Store
 
 	// The Authorizers authorize the requested action on the requested resource
 	// and are run before any models are loaded from the DB. Returned errors
@@ -270,7 +272,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 	c.loadModel(ctx)
 
 	// prepare resource type
-	var relationField *Field
+	var relationField *coal.Field
 
 	// find requested relationship
 	for _, field := range ctx.Model.Meta().Fields {
@@ -611,10 +613,10 @@ func (c *Controller) loadModel(ctx *Context) {
 	stack.AbortIf(err)
 
 	// initialize and set model
-	ctx.Model = Init(obj.(Model))
+	ctx.Model = coal.Init(obj.(coal.Model))
 }
 
-func (c *Controller) loadModels(ctx *Context) []Model {
+func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	// add filters
 	for _, filter := range c.Filters {
 		field := c.Model.Meta().MustFindField(filter)
@@ -672,7 +674,7 @@ func (c *Controller) loadModels(ctx *Context) []Model {
 	stack.AbortIf(err)
 
 	// init all models in slice
-	return InitSlice(slicePtr)
+	return coal.InitSlice(slicePtr)
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
@@ -753,7 +755,7 @@ func (c *Controller) updateModel(ctx *Context) {
 	stack.AbortIf(ctx.Store.C(ctx.Model).Update(ctx.Query, ctx.Model))
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resource {
+func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.Resource {
 	// create map from model
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[model.Meta().PluralName])
 	stack.AbortIf(err)
@@ -898,7 +900,7 @@ func (c *Controller) resourceForModel(ctx *Context, model Model) *jsonapi.Resour
 	return resource
 }
 
-func (c *Controller) resourcesForModels(ctx *Context, models []Model) []*jsonapi.Resource {
+func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
 	// prepare resources
 	resources := make([]*jsonapi.Resource, 0, len(models))
 

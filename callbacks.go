@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/256dpi/fire/coal"
+
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -82,7 +84,7 @@ func ModelValidator() Callback {
 
 		// TODO: Add error source pointer.
 
-		return Validate(ctx.Model)
+		return coal.Validate(ctx.Model)
 	}
 }
 

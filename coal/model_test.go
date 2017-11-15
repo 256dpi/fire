@@ -1,24 +1,11 @@
-package fire
+package coal
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
-
-type postWithTimestamps struct {
-	Base      `json:"-" bson:",inline" fire:"posts"`
-	Title     string    `json:"title" bson:"title" valid:"required"`
-	CreatedAt time.Time `json:"created-at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated-at" bson:"updated_at"`
-}
-
-func (p *postWithTimestamps) Validate() error {
-	ValidateTimestamps(p, "CreatedAt", "UpdatedAt")
-	return nil
-}
 
 func TestInit(t *testing.T) {
 	m := Init(&postModel{})
@@ -56,11 +43,11 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateTimestamps(t *testing.T) {
-	post := Init(&postWithTimestamps{}).(*postWithTimestamps)
-	err := post.Validate()
+	note := Init(&noteModel{}).(*noteModel)
+	err := note.Validate()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, post.CreatedAt)
-	assert.NotEmpty(t, post.UpdatedAt)
+	assert.NotEmpty(t, note.CreatedAt)
+	assert.NotEmpty(t, note.UpdatedAt)
 }
 
 func TestBaseID(t *testing.T) {

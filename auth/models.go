@@ -3,7 +3,8 @@ package auth
 import (
 	"time"
 
-	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
+
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -26,7 +27,7 @@ type TokenDescription struct {
 // Token is the interface that must be implemented to provide a custom access
 // token and refresh token.
 type Token interface {
-	fire.Model
+	coal.Model
 
 	// DescribeToken should return a TokenDescription.
 	DescribeToken() TokenDescription
@@ -40,7 +41,7 @@ type Token interface {
 
 // AccessToken is the built-in model used to store access tokens.
 type AccessToken struct {
-	fire.Base       `json:"-" bson:",inline" fire:"access-tokens:access_tokens"`
+	coal.Base       `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -75,7 +76,7 @@ func (t *AccessToken) SetTokenData(data *TokenData) {
 
 // RefreshToken is the built-in model used to store refresh tokens.
 type RefreshToken struct {
-	fire.Base       `json:"-" bson:",inline" fire:"refresh-tokens:refresh_tokens"`
+	coal.Base       `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
 	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
 	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -116,7 +117,7 @@ type ClientDescription struct {
 
 // Client is the interface that must be implemented to provide a custom client.
 type Client interface {
-	fire.Model
+	coal.Model
 
 	// DescribeClient should return a ClientDescription.
 	DescribeClient() ClientDescription
@@ -135,7 +136,7 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	fire.Base   `json:"-" bson:",inline" fire:"applications"`
+	coal.Base   `json:"-" bson:",inline" coal:"applications"`
 	Name        string `json:"name" valid:"required"`
 	Key         string `json:"key" valid:"required"`
 	SecretHash  []byte `json:"-" valid:"required"`
@@ -168,7 +169,7 @@ type ResourceOwnerDescription struct {
 // ResourceOwner is the interface that must be implemented to provide a custom
 // resource owner.
 type ResourceOwner interface {
-	fire.Model
+	coal.Model
 
 	// DescribeResourceOwner should return a ResourceOwnerDescription.
 	DescribeResourceOwner() ResourceOwnerDescription
@@ -186,7 +187,7 @@ type ResourceOwner interface {
 
 // User is the built-in model used to store resource owners.
 type User struct {
-	fire.Base    `json:"-" bson:",inline" fire:"users"`
+	coal.Base    `json:"-" bson:",inline" coal:"users"`
 	Name         string `json:"name" valid:"required"`
 	Email        string `json:"email" valid:"required"`
 	PasswordHash []byte `json:"-" valid:"required"`

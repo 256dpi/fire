@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
+
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/bearer"
 	"github.com/256dpi/oauth2/revocation"
@@ -27,31 +28,31 @@ const AccessTokenContextKey ctxKey = iota
 // supports the Resource Owner Credentials Grant, Client Credentials Grant and
 // Implicit Grant.
 type Manager struct {
-	store  *fire.Store
+	store  *coal.Store
 	policy *Policy
 
 	Reporter func(error)
 }
 
 // New constructs a new Manager from a store and policy.
-func New(store *fire.Store, policy *Policy) *Manager {
+func New(store *coal.Store, policy *Policy) *Manager {
 	// check secret
 	if len(policy.Secret) < 16 {
 		panic("fire/auth: secret must be longer than 16 characters")
 	}
 
 	// initialize models
-	fire.Init(policy.AccessToken)
-	fire.Init(policy.RefreshToken)
+	coal.Init(policy.AccessToken)
+	coal.Init(policy.RefreshToken)
 
 	// initialize clients
 	for _, model := range policy.Clients {
-		fire.Init(model)
+		coal.Init(model)
 	}
 
 	// initialize resource owners
 	for _, model := range policy.ResourceOwners {
-		fire.Init(model)
+		coal.Init(model)
 	}
 
 	return &Manager{
@@ -539,7 +540,7 @@ func (m *Manager) getClient(model Client, id string) Client {
 	stack.AbortIf(err)
 
 	// initialize model
-	client := fire.Init(obj).(Client)
+	client := coal.Init(obj).(Client)
 
 	return client
 }
@@ -582,7 +583,7 @@ func (m *Manager) findResourceOwner(model ResourceOwner, id string) ResourceOwne
 	stack.AbortIf(err)
 
 	// initialize model
-	resourceOwner := fire.Init(obj).(ResourceOwner)
+	resourceOwner := coal.Init(obj).(ResourceOwner)
 
 	return resourceOwner
 }
@@ -617,7 +618,7 @@ func (m *Manager) getResourceOwner(model ResourceOwner, id bson.ObjectId) Resour
 	stack.AbortIf(err)
 
 	// initialize model
-	resourceOwner := fire.Init(obj).(ResourceOwner)
+	resourceOwner := coal.Init(obj).(ResourceOwner)
 
 	return resourceOwner
 }
@@ -648,7 +649,7 @@ func (m *Manager) getToken(t Token, id bson.ObjectId) Token {
 	stack.AbortIf(err)
 
 	// initialize access token
-	accessToken := fire.Init(obj).(Token)
+	accessToken := coal.Init(obj).(Token)
 
 	return accessToken
 }

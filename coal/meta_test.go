@@ -1,4 +1,4 @@
-package fire
+package coal
 
 import (
 	"reflect"
@@ -21,23 +21,23 @@ type malformedBase3 struct {
 }
 
 type malformedToOne struct {
-	Base `json:"-" bson:",inline" fire:"foo:foos"`
-	Foo  bson.ObjectId `fire:"foo:foo:foo"`
+	Base `json:"-" bson:",inline" coal:"foo:foos"`
+	Foo  bson.ObjectId `coal:"foo:foo:foo"`
 }
 
 type malformedToMany struct {
-	Base `json:"-" bson:",inline" fire:"foo:foos"`
-	Foo  []bson.ObjectId `fire:"foo:foo:foo"`
+	Base `json:"-" bson:",inline" coal:"foo:foos"`
+	Foo  []bson.ObjectId `coal:"foo:foo:foo"`
 }
 
 type malformedHasMany struct {
-	Base `json:"-" bson:",inline" fire:"foo:foos"`
+	Base `json:"-" bson:",inline" coal:"foo:foos"`
 	Foo  HasMany
 }
 
 type unexpectedTag struct {
-	Base `json:"-" bson:",inline" fire:"foo:foos"`
-	Foo  string `fire:"foo"`
+	Base `json:"-" bson:",inline" coal:"foo:foos"`
+	Foo  string `coal:"foo"`
 }
 
 func TestNewMeta(t *testing.T) {
@@ -73,7 +73,7 @@ func TestNewMeta(t *testing.T) {
 func TestMeta(t *testing.T) {
 	post := Init(&postModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.postModel",
+		Name:       "coal.postModel",
 		Collection: "posts",
 		PluralName: "posts",
 		Fields: []Field{
@@ -133,7 +133,7 @@ func TestMeta(t *testing.T) {
 
 	comment := Init(&commentModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.commentModel",
+		Name:       "coal.commentModel",
 		Collection: "comments",
 		PluralName: "comments",
 		Fields: []Field{
@@ -174,7 +174,7 @@ func TestMeta(t *testing.T) {
 
 	selection := Init(&selectionModel{})
 	assert.Equal(t, &Meta{
-		Name:       "fire.selectionModel",
+		Name:       "coal.selectionModel",
 		Collection: "selections",
 		PluralName: "selections",
 		Fields: []Field{
@@ -204,13 +204,13 @@ func TestMeta(t *testing.T) {
 func TestMetaMake(t *testing.T) {
 	post := Init(&postModel{}).Meta().Make()
 
-	assert.Equal(t, "<*fire.postModel Value>", reflect.ValueOf(post).String())
+	assert.Equal(t, "<*coal.postModel Value>", reflect.ValueOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
 	posts := Init(&postModel{}).Meta().MakeSlice()
 
-	assert.Equal(t, "<*[]*fire.postModel Value>", reflect.ValueOf(posts).String())
+	assert.Equal(t, "<*[]*coal.postModel Value>", reflect.ValueOf(posts).String())
 }
 
 func BenchmarkNewMeta(b *testing.B) {

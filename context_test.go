@@ -3,6 +3,8 @@ package fire
 import (
 	"testing"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,13 +30,13 @@ func TestAction(t *testing.T) {
 func TestContextOriginal(t *testing.T) {
 	cleanStore()
 
-	savedPost := Init(&postModel{
+	savedPost := coal.Init(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
 	saveModel(savedPost)
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "bar",
 	}).(*postModel)
 
@@ -65,7 +67,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 func TestContextOriginalNonExisting(t *testing.T) {
 	cleanStore()
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "foo",
 	}).(*postModel)
 

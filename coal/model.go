@@ -1,4 +1,5 @@
-package fire
+// Package coal provides a mini ORM for mongoDB.
+package coal
 
 import (
 	"errors"
@@ -9,7 +10,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// Model is the main interface implemented by every fire model embedding Base.
+// Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
 	ID() bson.ObjectId
 	Meta() *Meta
@@ -36,7 +37,7 @@ type ValidatableModel interface {
 func Validate(m Model) error {
 	// validate id
 	if !m.ID().Valid() {
-		return errors.New("Invalid ID")
+		return errors.New("invalid id")
 	}
 
 	// invoke custom validation method when available
@@ -114,7 +115,7 @@ func A(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).JSONName
 }
 
-// Base is the base for every fire model.
+// Base is the base for every coal model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
 

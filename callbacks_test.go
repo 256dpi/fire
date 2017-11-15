@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -65,7 +67,7 @@ func TestExcept(t *testing.T) {
 func TestModelValidator(t *testing.T) {
 	validator := ModelValidator()
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "",
 	}).(*postModel)
 
@@ -92,7 +94,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "Title",
 	}).(*postModel)
 
@@ -114,7 +116,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 		"title": NoDefault,
 	})
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "Title",
 	}).(*postModel)
 
@@ -138,7 +140,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Another Title",
 	}).(*postModel)
 
-	post := Init(&postModel{
+	post := coal.Init(&postModel{
 		Title: "Title",
 	}).(*postModel)
 
@@ -241,7 +243,7 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 
 	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
-		F(&selectionModel{}, "Posts"): "posts",
+		coal.F(&selectionModel{}, "Posts"): "posts",
 	})
 
 	// create comment

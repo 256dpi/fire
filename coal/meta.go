@@ -1,4 +1,4 @@
-package fire
+package coal
 
 import (
 	"reflect"
@@ -74,26 +74,26 @@ func NewMeta(model Model) *Meta {
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 
-		// get fire tag
-		fireStructTag := structField.Tag.Get("fire")
+		// get coal tag
+		coalStructTag := structField.Tag.Get("coal")
 
 		// check if field is the Base
 		if structField.Type == baseType {
-			baseTag := strings.Split(fireStructTag, ":")
+			baseTag := strings.Split(coalStructTag, ":")
 
 			// check json tag
 			if structField.Tag.Get("json") != "-" {
-				panic(`fire: expected to find a tag of the form json:"-" on Base`)
+				panic(`coal: expected to find a tag of the form json:"-" on Base`)
 			}
 
 			// check bson tag
 			if structField.Tag.Get("bson") != ",inline" {
-				panic(`fire: expected to find a tag of the form bson:",inline" on Base`)
+				panic(`coal: expected to find a tag of the form bson:",inline" on Base`)
 			}
 
 			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
-				panic(`fire: expected to find a tag of the form fire:"plural-name[:collection]" on Base`)
+				panic(`coal: expected to find a tag of the form coal:"plural-name[:collection]" on Base`)
 			}
 
 			// infer plural and collection names
@@ -109,9 +109,9 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// parse individual tags
-		fireTags := strings.Split(fireStructTag, ",")
-		if len(fireStructTag) == 0 {
-			fireTags = nil
+		coalTags := strings.Split(coalStructTag, ",")
+		if len(coalStructTag) == 0 {
+			coalTags = nil
 		}
 
 		// get field type
@@ -133,14 +133,14 @@ func NewMeta(model Model) *Meta {
 
 		// check if field is a valid to-one relationship
 		if structField.Type == toOneType || structField.Type == optionalToOneType {
-			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
-				if strings.Count(fireTags[0], ":") > 1 {
-					panic(`fire: expected to find a tag of the form fire:"name:type" on to-one relationship`)
+				if strings.Count(coalTags[0], ":") > 1 {
+					panic(`coal: expected to find a tag of the form coal:"name:type" on to-one relationship`)
 				}
 
 				// parse special to-one relationship tag
-				toOneTag := strings.Split(fireTags[0], ":")
+				toOneTag := strings.Split(coalTags[0], ":")
 
 				// set relationship data
 				field.ToOne = true
@@ -148,20 +148,20 @@ func NewMeta(model Model) *Meta {
 				field.RelType = toOneTag[1]
 
 				// remove tag
-				fireTags = fireTags[1:]
+				coalTags = coalTags[1:]
 			}
 		}
 
 		// check if field is a valid to-many relationship
 		if structField.Type == toManyType {
-			if len(fireTags) > 0 && strings.Count(fireTags[0], ":") > 0 {
+			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
-				if strings.Count(fireTags[0], ":") > 1 {
-					panic(`fire: expected to find a tag of the form fire:"name:type" on to-many relationship`)
+				if strings.Count(coalTags[0], ":") > 1 {
+					panic(`coal: expected to find a tag of the form coal:"name:type" on to-many relationship`)
 				}
 
 				// parse special to-many relationship tag
-				toManyTag := strings.Split(fireTags[0], ":")
+				toManyTag := strings.Split(coalTags[0], ":")
 
 				// set relationship data
 				field.ToMany = true
@@ -169,19 +169,19 @@ func NewMeta(model Model) *Meta {
 				field.RelType = toManyTag[1]
 
 				// remove tag
-				fireTags = fireTags[1:]
+				coalTags = coalTags[1:]
 			}
 		}
 
 		// check if field is a valid has-many relationship
 		if structField.Type == hasManyType {
 			// check tag
-			if len(fireTags) != 1 || strings.Count(fireTags[0], ":") != 2 {
-				panic(`fire: expected to find a tag of the form fire:"name:type:inverse" on has-many relationship`)
+			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
+				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-many relationship`)
 			}
 
 			// parse special has-many relationship tag
-			hasManyTag := strings.Split(fireTags[0], ":")
+			hasManyTag := strings.Split(coalTags[0], ":")
 
 			// set relationship data
 			field.HasMany = true
@@ -190,12 +190,12 @@ func NewMeta(model Model) *Meta {
 			field.RelInverse = hasManyTag[2]
 
 			// remove tag
-			fireTags = fireTags[1:]
+			coalTags = coalTags[1:]
 		}
 
 		// panic on any additional tags
-		for _, tag := range fireTags {
-			panic("fire: unexpected tag " + tag)
+		for _, tag := range coalTags {
+			panic("coal: unexpected tag " + tag)
 		}
 
 		// add field
@@ -225,7 +225,7 @@ func (m *Meta) FindField(name string) *Field {
 func (m *Meta) MustFindField(name string) *Field {
 	field := m.FindField(name)
 	if field == nil {
-		panic(`fire: field "` + name + `" not found on "` + m.Name + `"`)
+		panic(`coal: field "` + name + `" not found on "` + m.Name + `"`)
 	}
 
 	return field

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
 )
@@ -28,7 +30,7 @@ func NewGroup() *Group {
 func (g *Group) Add(controllers ...*Controller) {
 	for _, controller := range controllers {
 		// initialize model
-		m := Init(controller.Model)
+		m := coal.Init(controller.Model)
 
 		// create entry in controller map
 		g.controllers[m.Meta().PluralName] = controller

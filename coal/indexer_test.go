@@ -1,4 +1,4 @@
-package fire
+package coal
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestIndexerEnsure(t *testing.T) {
-	store := MustCreateStore("mongodb://localhost/test-fire")
+	store := MustCreateStore("mongodb://localhost/test-fire-coal")
 	store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()
@@ -21,7 +21,7 @@ func TestIndexerEnsure(t *testing.T) {
 }
 
 func TestIndexerEnsureError(t *testing.T) {
-	store := MustCreateStore("mongodb://localhost/test-fire")
+	store := MustCreateStore("mongodb://localhost/test-fire-coal")
 	store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()

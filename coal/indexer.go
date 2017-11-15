@@ -1,4 +1,4 @@
-package fire
+package coal
 
 import "gopkg.in/mgo.v2"
 

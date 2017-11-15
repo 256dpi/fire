@@ -3,6 +3,8 @@ package fire
 import (
 	"net/http"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/256dpi/jsonapi"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -44,7 +46,7 @@ type Context struct {
 
 	// The Model that will be saved during Create, updated during Update or
 	// deleted during Delete.
-	Model Model
+	Model coal.Model
 
 	// The sorting that will be used during List.
 	Sorting []string
@@ -58,7 +60,7 @@ type Context struct {
 	Response *jsonapi.Document
 
 	// The store that is used to retrieve and persist the model.
-	Store *SubStore
+	Store *coal.SubStore
 
 	// The underlying JSON API request.
 	JSONAPIRequest *jsonapi.Request
@@ -72,7 +74,7 @@ type Context struct {
 	// The Group that received the request.
 	Group *Group
 
-	original Model
+	original coal.Model
 }
 
 // Original will return the stored version of the model. This method is intended
@@ -80,7 +82,7 @@ type Context struct {
 // returned error is already marked as fatal.
 //
 // Note: The method will panic if being used during any other action than Update.
-func (c *Context) Original() (Model, error) {
+func (c *Context) Original() (coal.Model, error) {
 	if c.Action != Update {
 		panic("fire: the original can only be loaded during an update action")
 	}
@@ -100,7 +102,7 @@ func (c *Context) Original() (Model, error) {
 	}
 
 	// cache model
-	c.original = Init(m)
+	c.original = coal.Init(m)
 
 	return c.original, nil
 }
