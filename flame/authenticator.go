@@ -14,7 +14,6 @@ import (
 	"github.com/256dpi/oauth2/bearer"
 	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
-	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -139,12 +138,9 @@ func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) 
 			tk, err := bearer.ParseToken(r)
 			stack.AbortIf(err)
 
-			// parse token and check id
-			var claims accessTokenClaims
-			_, err = jwt.ParseWithClaims(tk, &claims, func(token *jwt.Token) (interface{}, error) {
-				return a.policy.Secret, nil
-			})
-			if err != nil || !bson.IsObjectIdHex(claims.Id) {
+			// parse token
+			claims, _, err := a.policy.ParseToken(tk)
+			if err != nil {
 				stack.Abort(bearer.InvalidToken("malformed token"))
 			}
 
@@ -353,13 +349,10 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 
 func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// parse token
-	var claims refreshTokenClaims
-	_, err := jwt.ParseWithClaims(req.RefreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		return a.policy.Secret, nil
-	})
-	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
+	claims, expired, err := a.policy.ParseToken(req.RefreshToken)
+	if expired {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
-	} else if err != nil || !bson.IsObjectIdHex(claims.Id) {
+	} else if err != nil {
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
@@ -420,11 +413,8 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 	}
 
 	// parse token
-	var claims jwt.StandardClaims
-	_, err = jwt.ParseWithClaims(req.Token, &claims, func(token *jwt.Token) (interface{}, error) {
-		return a.policy.Secret, nil
-	})
-	if err != nil || !bson.IsObjectIdHex(claims.Id) {
+	claims, _, err := a.policy.ParseToken(req.Token)
+	if err != nil {
 		return
 	}
 

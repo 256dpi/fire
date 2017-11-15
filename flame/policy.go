@@ -71,6 +71,14 @@ type Policy struct {
 	AutomatedCleanup bool
 }
 
+// TokenClaims represents the data included in an access token and refresh token.
+type TokenClaims struct {
+	jwt.StandardClaims
+
+	// Data is only set for access tokens.
+	Data map[string]interface{} `json:"dat"`
+}
+
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
 func DefaultPolicy(secret string) *Policy {
@@ -97,18 +105,28 @@ func (p *Policy) NewAccessToken(id bson.ObjectId, issuedAt, expiresAt time.Time,
 	return str, nil
 }
 
-type accessTokenClaims struct {
-	jwt.StandardClaims
-	Data map[string]interface{} `json:"dat"`
-}
+// ParseToken will parse the presented token and return its claims, if it is
+// expired and eventual errors.
+func (p *Policy) ParseToken(str string) (*TokenClaims, bool, error) {
+	// parse token and check id
+	var claims TokenClaims
+	_, err := jwt.ParseWithClaims(str, &claims, func(_ *jwt.Token) (interface{}, error) {
+		return p.Secret, nil
+	})
+	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
+		return nil, true, err
+	} else if err != nil {
+		return nil, false, err
+	} else if !bson.IsObjectIdHex(claims.Id) {
+		return nil, false, errors.New("invalid id")
+	}
 
-type refreshTokenClaims struct {
-	jwt.StandardClaims
+	return &claims, false, nil
 }
 
 func (p *Policy) generateAccessToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
 	// prepare claims
-	claims := &accessTokenClaims{}
+	claims := &TokenClaims{}
 	claims.Id = id.Hex()
 	claims.IssuedAt = issuedAt.Unix()
 	claims.ExpiresAt = expiresAt.Unix()
@@ -132,7 +150,7 @@ func (p *Policy) generateAccessToken(id bson.ObjectId, secret []byte, issuedAt, 
 
 func (p *Policy) generateRefreshToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time) (string, error) {
 	// prepare claims
-	claims := &refreshTokenClaims{}
+	claims := &TokenClaims{}
 	claims.Id = id.Hex()
 	claims.IssuedAt = issuedAt.Unix()
 	claims.ExpiresAt = expiresAt.Unix()

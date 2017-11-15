@@ -8,7 +8,6 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/spec"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -127,35 +126,6 @@ func TestIntegration(t *testing.T) {
 	}
 
 	spec.Run(t, config)
-}
-
-func TestJWTToken(t *testing.T) {
-	id := bson.NewObjectId()
-	tt := time.Now()
-
-	p := DefaultPolicy(testSecret)
-	p.DataForAccessToken = func(c Client, ro ResourceOwner) map[string]interface{} {
-		return map[string]interface{}{
-			"name": ro.(*User).Name,
-		}
-	}
-
-	sig, err := p.generateAccessToken(id, []byte("abcd"), tt, tt, nil, &User{Name: "Hello"})
-	assert.NoError(t, err)
-
-	var claims accessTokenClaims
-	token, err := jwt.ParseWithClaims(sig, &claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte("abcd"), nil
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, token)
-
-	assert.Equal(t, id.Hex(), claims.Id)
-	assert.Equal(t, tt.Unix(), claims.IssuedAt)
-	assert.Equal(t, tt.Unix(), claims.ExpiresAt)
-	assert.Equal(t, map[string]interface{}{
-		"name": "Hello",
-	}, claims.Data)
 }
 
 func TestPublicAccess(t *testing.T) {
