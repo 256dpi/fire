@@ -27,17 +27,11 @@ func TestOnly(t *testing.T) {
 		return nil
 	}
 
-	ctx := &Context{
-		Action: Find,
-	}
-
-	err := Only(cb, List, Find)(ctx)
+	err := tester.RunValidator(Find, nil, Only(cb, List, Find))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 
-	ctx.Action = Update
-
-	err = Only(cb, List, Find)(ctx)
+	err = tester.RunValidator(Update, nil, Only(cb, List, Find))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 }
@@ -49,43 +43,32 @@ func TestExcept(t *testing.T) {
 		return nil
 	}
 
-	ctx := &Context{
-		Action: Update,
-	}
-
-	err := Except(cb, List, Find)(ctx)
+	err := tester.RunValidator(Update, nil, Except(cb, List, Find))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 
-	ctx.Action = Find
-
-	err = Except(cb, List, Find)(ctx)
+	err = tester.RunValidator(Find, nil, Except(cb, List, Find))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 }
 
 func TestModelValidator(t *testing.T) {
-	validator := ModelValidator()
-
-	post := coal.Init(&postModel{
+	post := &postModel{
 		Title: "",
-	}).(*postModel)
-
-	ctx := &Context{
-		Action: Create,
-		Model:  post,
 	}
 
-	err := validator(ctx)
+	validator := ModelValidator()
+
+	err := tester.RunValidator(Create, post, validator)
 	assert.Error(t, err)
 	assert.Equal(t, "Title: non zero value required;", err.Error())
 
 	post.Title = "Default Title"
-	err = validator(ctx)
+	err = tester.RunValidator(Create, post, validator)
 	assert.NoError(t, err)
 
 	post.Title = "error"
-	err = validator(ctx)
+	err = tester.RunValidator(Create, post, validator)
 	assert.Error(t, err)
 }
 
@@ -94,20 +77,15 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		"title": "Default Title",
 	})
 
-	post := coal.Init(&postModel{
+	post := &postModel{
 		Title: "Title",
-	}).(*postModel)
-
-	ctx := &Context{
-		Action: Create,
-		Model:  post,
 	}
 
-	err := validator(ctx)
+	err := tester.RunValidator(Create, post, validator)
 	assert.Error(t, err)
 
 	post.Title = "Default Title"
-	err = validator(ctx)
+	err = tester.RunValidator(Create, post, validator)
 	assert.NoError(t, err)
 }
 
@@ -116,16 +94,11 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 		"title": NoDefault,
 	})
 
-	post := coal.Init(&postModel{
+	post := &postModel{
 		Title: "Title",
-	}).(*postModel)
-
-	ctx := &Context{
-		Action: Create,
-		Model:  post,
 	}
 
-	err := validator(ctx)
+	err := tester.RunValidator(Create, post, validator)
 	assert.NoError(t, err)
 }
 
@@ -140,140 +113,83 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Another Title",
 	}).(*postModel)
 
-	post := coal.Init(&postModel{
+	post := &postModel{
+		Base:  coal.Base{DocID: savedPost.ID()},
 		Title: "Title",
-	}).(*postModel)
-
-	post.DocID = savedPost.DocID
-
-	ctx := &Context{
-		Action: Update,
-		Model:  post,
-		Store:  testSubStore,
 	}
 
-	err := validator(ctx)
+	err := tester.RunValidator(Update, post, validator)
 	assert.Error(t, err)
 
 	post.Title = "Another Title"
-	err = validator(ctx)
+	err = tester.RunValidator(Update, post, validator)
 	assert.NoError(t, err)
 }
 
 func TestDependentResourcesValidator(t *testing.T) {
 	tester.Clean()
 
-	// create validator
 	validator := DependentResourcesValidator(map[string]string{
 		"comments": "post_id",
 		"users":    "author_id",
 	})
 
-	// create post
-	post := tester.Save(&postModel{})
+	post := &postModel{}
 
-	// create context
-	ctx := &Context{
-		Action: Delete,
-		Query:  bson.M{"_id": post.ID()},
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err := validator(ctx)
+	err := tester.RunValidator(Delete, post, validator)
 	assert.NoError(t, err)
 
-	// create comment
 	tester.Save(&commentModel{
 		Post: post.ID(),
 	})
 
-	// call validator
-	err = validator(ctx)
+	err = tester.RunValidator(Delete, post, validator)
 	assert.Error(t, err)
 }
 
 func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
-	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
 		"parent":  "comments",
 		"post_id": "posts",
 	})
 
-	// create bad comment
 	comment1 := tester.Save(&commentModel{
 		Post: bson.NewObjectId(),
 	})
 
-	// create context
-	ctx := &Context{
-		Action: Create,
-		Model:  comment1,
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err := validator(ctx)
+	err := tester.RunValidator(Create, comment1, validator)
 	assert.Error(t, err)
 
-	// get id
-	comment1ID := comment1.ID()
-
-	// create post
 	post := tester.Save(&postModel{})
-
-	// create comment
 	comment2 := tester.Save(&commentModel{
-		Parent: &comment1ID,
+		Parent: coal.Optional(comment1.ID()),
 		Post:   post.ID(),
 	})
 
-	// update ctx
-	ctx.Model = comment2
-
-	// call validator
-	err = validator(ctx)
+	err = tester.RunValidator(Delete, comment2, validator)
 	assert.NoError(t, err)
 }
 
 func TestVerifyReferencesValidatorToMany(t *testing.T) {
 	tester.Clean()
 
-	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
 		coal.F(&selectionModel{}, "Posts"): "posts",
 	})
 
-	// create comment
 	selection1 := tester.Save(&selectionModel{
 		Posts: nil,
 	}).(*selectionModel)
 
-	// create context
-	ctx := &Context{
-		Action: Create,
-		Model:  selection1,
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err := validator(ctx)
+	err := tester.RunValidator(Create, selection1, validator)
 	assert.NoError(t, err)
 
-	// set some fake ids
-	selection1.Posts = []bson.ObjectId{
-		bson.NewObjectId(),
-		bson.NewObjectId(),
-	}
-
-	// create posts
 	post1 := tester.Save(&postModel{})
 	post2 := tester.Save(&postModel{})
 	post3 := tester.Save(&postModel{})
 
-	// create comment
 	selection2 := tester.Save(&selectionModel{
 		Posts: []bson.ObjectId{
 			post1.ID(),
@@ -282,106 +198,62 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 		},
 	})
 
-	// update ctx
-	ctx.Model = selection2
-
-	// call validator
-	err = validator(ctx)
+	err = tester.RunValidator(Delete, selection2, validator)
 	assert.NoError(t, err)
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
 	tester.Clean()
 
-	// create validator
 	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
 		"post_id": "post_id",
 	})
 
-	// post id
 	postID := bson.NewObjectId()
 
-	// create root comment
 	comment1 := tester.Save(&commentModel{
 		Post: postID,
 	})
 
-	// create leaf comment
-	parentID := comment1.ID()
 	comment2 := tester.Save(&commentModel{
-		Parent: &parentID,
+		Parent: coal.Optional(comment1.ID()),
 		Post:   bson.NewObjectId(),
 	})
 
-	// create context
-	ctx := &Context{
-		Action: Create,
-		Model:  comment2,
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err := validator(ctx)
+	err := tester.RunValidator(Create, comment2, validator)
 	assert.Error(t, err)
 
-	// create root comment
 	comment3 := tester.Save(&commentModel{
 		Post: postID,
 	})
 
-	// create leaf comment
-	parentID = comment3.ID()
 	comment4 := tester.Save(&commentModel{
-		Parent: &parentID,
+		Parent: coal.Optional(comment3.ID()),
 		Post:   postID,
 	})
 
-	// update ctx
-	ctx.Model = comment4
-
-	// call validator
-	err = validator(ctx)
+	err = tester.RunValidator(Create, comment4, validator)
 	assert.NoError(t, err)
 }
 
 func TestUniqueAttributeValidator(t *testing.T) {
 	tester.Clean()
 
-	// create validator
 	validator := UniqueAttributeValidator("title")
 
-	// create post
 	post1 := tester.Save(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
-	// create context
-	ctx := &Context{
-		Action: Update,
-		Model:  post1,
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err := validator(ctx)
+	err := tester.RunValidator(Update, post1, validator)
 	assert.NoError(t, err)
 
-	// create second post
 	tester.Save(&postModel{
 		Title: "bar",
 	})
 
-	// change post1
 	post1.Title = "bar"
 
-	// create context
-	ctx = &Context{
-		Action: Update,
-		Model:  post1,
-		Store:  testSubStore,
-	}
-
-	// call validator
-	err = validator(ctx)
+	err = tester.RunValidator(Create, post1, validator)
 	assert.Error(t, err)
 }

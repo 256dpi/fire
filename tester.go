@@ -106,6 +106,30 @@ func (t *Tester) Path(path string) string {
 	return path
 }
 
+// RunValidator is a helper to test validators. The caller should assert the
+// returned error of the validator, the state of the supplied model and maybe
+// other objects in the database.
+func (t *Tester) RunValidator(action Action, model coal.Model, validator Callback) error {
+	// get store
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// init model if present
+	if model != nil {
+		coal.Init(model)
+	}
+
+	// create context
+	ctx := &Context{
+		Action: action,
+		Model:  model,
+		Store:  store,
+	}
+
+	// call validator
+	return validator(ctx)
+}
+
 // Request will run the specified request against the registered handler. This
 // function can be used to create custom testing facilities.
 func (t *Tester) Request(method, path string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
