@@ -1,4 +1,4 @@
-package acl
+package ash
 
 import (
 	"testing"
@@ -77,6 +77,6 @@ func TestCallbackDebugger(t *testing.T) {
 
 	err := cb(context(fire.List))
 	assert.NoError(t, err)
-	assert.Equal(t, "github.com/256dpi/fire/acl.accessGrantedCB", authorizer)
-	assert.Equal(t, "github.com/256dpi/fire/acl.AccessGranted.func1", enforcer)
+	assert.Equal(t, "github.com/256dpi/fire/ash.accessGrantedCB", authorizer)
+	assert.Equal(t, "github.com/256dpi/fire/ash.AccessGranted.func1", enforcer)
 }

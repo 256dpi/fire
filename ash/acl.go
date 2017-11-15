@@ -1,6 +1,6 @@
-// Package acl implements a highly configurable and callback based ACL that can
+// Package ash implements a highly configurable and callback based ACL that can
 // be used to authorize controller actions in a declarative way.
-package acl
+package ash
 
 import (
 	"errors"
