@@ -87,6 +87,6 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		}
 
 		// write not found error
-		jsonapi.WriteError(w, jsonapi.NotFound("Resource not found"))
+		jsonapi.WriteError(w, jsonapi.NotFound("resource not found"))
 	})
 }

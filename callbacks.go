@@ -119,7 +119,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), def) {
-					return errors.New("Field " + field + " is protected")
+					return errors.New("field " + field + " is protected")
 				}
 			}
 		}
@@ -135,7 +135,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 			for field := range attributes {
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
-					return errors.New("Field " + field + " is protected")
+					return errors.New("field " + field + " is protected")
 				}
 			}
 		}
@@ -175,7 +175,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 
 			// immediately return if a document is found
 			if n == 1 {
-				return errors.New("Resource has dependent resources")
+				return errors.New("resource has dependent resources")
 			}
 		}
 
@@ -234,7 +234,7 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 
 				// check for existence
 				if n != len(ids) {
-					return errors.New("Missing references for field " + field)
+					return errors.New("missing references for field " + field)
 				}
 			} else {
 				// count entities in database
@@ -245,7 +245,7 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 
 				// check for existence
 				if n != 1 {
-					return errors.New("Missing reference for field " + field)
+					return errors.New("missing reference for field " + field)
 				}
 			}
 		}
@@ -292,7 +292,7 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 
 			// abort if reference is missing
 			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
-				return errors.New("Missing ID")
+				return errors.New("missing id")
 			}
 
 			query[targetField] = id
@@ -306,7 +306,7 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 
 		// return error if document is missing
 		if n == 0 {
-			return errors.New("References do not match")
+			return errors.New("references do not match")
 		}
 
 		return nil
@@ -357,7 +357,7 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callbac
 		if err != nil {
 			return Fatal(err)
 		} else if n != 0 {
-			return fmt.Errorf("Attribute %s is not unique", uniqueAttribute)
+			return fmt.Errorf("attribute %s is not unique", uniqueAttribute)
 		}
 
 		return nil

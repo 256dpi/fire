@@ -185,7 +185,7 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// basic input data check
 	if doc.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("Resource object expected"))
+		stack.Abort(jsonapi.BadRequest("resource object expected"))
 	}
 
 	// create new model
@@ -223,7 +223,7 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
 	// basic input data check
 	if doc.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("Resource object expected"))
+		stack.Abort(jsonapi.BadRequest("resource object expected"))
 	}
 
 	// load model
@@ -286,7 +286,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// check resource type
 	if relationField == nil {
-		stack.Abort(jsonapi.BadRequest("Relationship does not exist"))
+		stack.Abort(jsonapi.BadRequest("relationship does not exist"))
 	}
 
 	// get related controller
@@ -295,7 +295,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// check related controller
 	if relatedController == nil {
-		stack.Abort(fmt.Errorf("Missing related controller for %s", pluralName))
+		stack.Abort(fmt.Errorf("missing related controller for %s", pluralName))
 	}
 
 	// copy context and request
@@ -417,7 +417,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 		// check filter name
 		if filterName == "" {
-			stack.Abort(fmt.Errorf("No relationship matching the inverse name %s", relationField.RelInverse))
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
 		}
 
 		// tweak context
@@ -502,7 +502,7 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 
 			// return error for an invalid id
 			if !refID.Valid() {
-				stack.Abort(jsonapi.BadRequest("Invalid relationship ID"))
+				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 
 			// prepare mark
@@ -556,7 +556,7 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 
 			// return error for an invalid id
 			if !refID.Valid() {
-				stack.Abort(jsonapi.BadRequest("Invalid relationship ID"))
+				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 
 			// prepare mark
@@ -593,7 +593,7 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 func (c *Controller) loadModel(ctx *Context) {
 	// validate id
 	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
-		stack.Abort(jsonapi.BadRequest("Invalid resource ID"))
+		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
 	// prepare context
@@ -610,7 +610,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// query db
 	err := ctx.Store.C(c.Model).Find(ctx.Query).One(obj)
 	if err == mgo.ErrNotFound {
-		stack.Abort(jsonapi.NotFound("Resource not found"))
+		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
 	stack.AbortIf(err)
 
@@ -708,7 +708,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 				// return error for an invalid id
 				if !id.Valid() {
-					stack.Abort(jsonapi.BadRequest("Invalid relationship ID"))
+					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 				}
 			}
 
@@ -739,7 +739,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 				// return error for an invalid id
 				if !ids[i].Valid() {
-					stack.Abort(jsonapi.BadRequest("Invalid relationship ID"))
+					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 				}
 			}
 
@@ -863,7 +863,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 
 			// check filter name
 			if filterName == "" {
-				stack.Abort(fmt.Errorf("No relationship matching the inverse name %s", field.RelInverse))
+				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
 
 			// TODO: We should run the related controllers authenticator.
