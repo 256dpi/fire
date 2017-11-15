@@ -199,6 +199,8 @@ func (t *Tester) RunValidator(action Action, model coal.Model, validator Callbac
 	return validator(ctx)
 }
 
+// TODO: Add RunNotifier helper.
+
 // Request will run the specified request against the registered handler. This
 // function can be used to create custom testing facilities.
 func (t *Tester) Request(method, path string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
