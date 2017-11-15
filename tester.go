@@ -1,5 +1,5 @@
 // Package flame provides tools to test fire based JSON-APIs.
-package flame
+package fire
 
 import (
 	"fmt"

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/256dpi/fire/coal"
-	"github.com/256dpi/fire/flame"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -43,7 +42,7 @@ type selectionModel struct {
 var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
-var tester = flame.Tester{
+var tester = Tester{
 	Store: testStore,
 	Models: []coal.Model{
 		&postModel{},
