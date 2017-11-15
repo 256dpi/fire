@@ -11,8 +11,6 @@ import (
 )
 
 func TestCallbackMissingAccessToken(t *testing.T) {
-	cb := Callback("foo")
-
 	req, err := http.NewRequest("GET", "foo", nil)
 	assert.NoError(t, err)
 
@@ -20,13 +18,11 @@ func TestCallbackMissingAccessToken(t *testing.T) {
 		HTTPRequest: req,
 	}
 
-	err = cb(ctx)
+	err = Callback("foo")(ctx)
 	assert.Error(t, err)
 }
 
 func TestCallbackInsufficientAccessToken(t *testing.T) {
-	cb := Callback("foo")
-
 	req, err := http.NewRequest("GET", "foo", nil)
 	assert.NoError(t, err)
 
@@ -40,13 +36,11 @@ func TestCallbackInsufficientAccessToken(t *testing.T) {
 		HTTPRequest: req,
 	}
 
-	err = cb(ctx)
+	err = Callback("foo")(ctx)
 	assert.Error(t, err)
 }
 
 func TestCallbackProperAccessToken(t *testing.T) {
-	cb := Callback("foo")
-
 	req, err := http.NewRequest("GET", "foo", nil)
 	assert.NoError(t, err)
 
@@ -60,6 +54,6 @@ func TestCallbackProperAccessToken(t *testing.T) {
 		HTTPRequest: req,
 	}
 
-	err = cb(ctx)
+	err = Callback("foo")(ctx)
 	assert.NoError(t, err)
 }
