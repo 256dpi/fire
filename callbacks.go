@@ -167,7 +167,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 		for coll, field := range resources {
 			// count referencing documents
 			n, err := ctx.Store.DB().C(coll).Find(bson.M{
-				field: ctx.Query["_id"],
+				field: ctx.Model.ID(),
 			}).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
