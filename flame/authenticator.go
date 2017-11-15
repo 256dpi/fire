@@ -444,8 +444,7 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 
 	// set resource owner id if available
 	if resourceOwner != nil {
-		roID := resourceOwner.ID()
-		accessTokenData.ResourceOwnerID = &roID
+		accessTokenData.ResourceOwnerID = coal.Optional(resourceOwner.ID())
 	}
 
 	// save access token
@@ -471,8 +470,7 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 
 		// set resource owner id if available
 		if resourceOwner != nil {
-			roID := resourceOwner.ID()
-			refreshTokenData.ResourceOwnerID = &roID
+			refreshTokenData.ResourceOwnerID = coal.Optional(resourceOwner.ID())
 		}
 
 		// save refresh token
