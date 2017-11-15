@@ -25,10 +25,7 @@ type Tester struct {
 	// A path prefix e.g. 'api'.
 	Prefix string
 
-	// The token that should be used to authorize the request.
-	Token string
-
-	// These headers are added to the request if available.
+	// The headers to be set on all requests.
 	Headers map[string]string
 }
 
@@ -127,13 +124,6 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 	// add content type if required
 	if method == "POST" || method == "PATCH" || method == "DELETE" {
 		request.Header.Set("Content-Type", jsonapi.MediaType)
-	}
-
-	// TODO: Remove token as it can be set through the headers?
-
-	// add authorization header
-	if t.Token != "" {
-		request.Header.Set("Authorization", "Bearer "+t.Token)
 	}
 
 	// set custom headers
