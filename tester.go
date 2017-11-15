@@ -110,6 +110,11 @@ func (t *Tester) Path(path string) string {
 // returned error of the validator, the state of the supplied model and maybe
 // other objects in the database.
 func (t *Tester) RunValidator(action Action, model coal.Model, validator Callback) error {
+	// check action
+	if action.Read() {
+		panic("validator are only run on create, update and delete")
+	}
+
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()

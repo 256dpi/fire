@@ -27,11 +27,13 @@ func TestOnly(t *testing.T) {
 		return nil
 	}
 
-	err := tester.RunValidator(Find, nil, Only(cb, List, Find))
+	callback := Only(cb, Create, Delete)
+
+	err := tester.RunValidator(Create, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 
-	err = tester.RunValidator(Update, nil, Only(cb, List, Find))
+	err = tester.RunValidator(Update, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 }
@@ -43,11 +45,13 @@ func TestExcept(t *testing.T) {
 		return nil
 	}
 
-	err := tester.RunValidator(Update, nil, Except(cb, List, Find))
+	callback := Except(cb, Create, Delete)
+
+	err := tester.RunValidator(Update, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 
-	err = tester.RunValidator(Find, nil, Except(cb, List, Find))
+	err = tester.RunValidator(Create, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
 }
