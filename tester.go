@@ -26,8 +26,8 @@ type Tester struct {
 	// A path prefix e.g. 'api'.
 	Prefix string
 
-	// The headers to be set on all requests.
-	Headers map[string]string
+	// The header to be set on all requests and contexts.
+	Header map[string]string
 }
 
 // Register will register the specified model with the tester.
@@ -35,7 +35,8 @@ func (t *Tester) Register(model coal.Model) {
 	t.Models = append(t.Models, model)
 }
 
-// Clean will remove the collections of models that have been registered.
+// Clean will remove the collections of models that have been registered and
+// reset the header map.
 func (t *Tester) Clean() {
 	store := t.Store.Copy()
 	defer store.Close()
@@ -44,6 +45,9 @@ func (t *Tester) Clean() {
 		// remove all is faster than dropping the collection
 		store.C(model).RemoveAll(nil)
 	}
+
+	// reset header
+	t.Header = make(map[string]string)
 }
 
 // Save will save the specified model.
@@ -114,7 +118,7 @@ func (t *Tester) Path(path string) string {
 // Note: Only the Action, Query, Model, Store and a fake HTTPRequest with the
 // specified headers are set since these are the oly attributes an authorizer
 // should rely on.
-func (t *Tester) RunAuthorizer(action Action, header map[string]string, query bson.M, model coal.Model, validator Callback) error {
+func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, validator Callback) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -131,7 +135,7 @@ func (t *Tester) RunAuthorizer(action Action, header map[string]string, query bs
 	}
 
 	// set headers
-	for key, value := range header {
+	for key, value := range t.Header {
 		req.Header.Set(key, value)
 	}
 
@@ -201,7 +205,7 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 	}
 
 	// set custom headers
-	for k, v := range t.Headers {
+	for k, v := range t.Header {
 		request.Header.Set(k, v)
 	}
 

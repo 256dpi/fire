@@ -58,22 +58,20 @@ func TestExcept(t *testing.T) {
 }
 
 func TestBasicAuthorizer(t *testing.T) {
+	tester.Clean()
+
 	authorizer := BasicAuthorizer(map[string]string{
 		"foo": "bar",
 	})
 
-	header := map[string]string{
-		"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:bar")),
-	}
+	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:bar"))
 
-	err := tester.RunAuthorizer(Find, header, nil, nil, authorizer)
+	err := tester.RunAuthorizer(Find, nil, nil, authorizer)
 	assert.NoError(t, err)
 
-	header = map[string]string{
-		"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo")),
-	}
+	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
-	err = tester.RunAuthorizer(Find, header, nil, nil, authorizer)
+	err = tester.RunAuthorizer(Find, nil, nil, authorizer)
 	assert.Error(t, err)
 }
 
