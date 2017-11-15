@@ -867,7 +867,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 
 			// TODO: We should run the related controllers authenticator.
-			// TODO: => Update comment on HasMany type.
+			// => Update comment on HasMany type.
 
 			// load all referenced ids
 			var ids []bson.ObjectId
