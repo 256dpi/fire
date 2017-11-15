@@ -1840,7 +1840,7 @@ func TestForcedPagination(t *testing.T) {
 	})
 }
 
-func TestListLimit(t *testing.T) {
+func TestEnforcedListLimit(t *testing.T) {
 	tester.CleanStore()
 
 	tester.Handler = buildHandler(&Controller{
