@@ -130,7 +130,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	validator := ProtectedAttributesValidator(map[string]interface{}{
 		"title": "Default Title",
@@ -161,7 +161,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 }
 
 func TestDependentResourcesValidator(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	// create validator
 	validator := DependentResourcesValidator(map[string]string{
@@ -194,7 +194,7 @@ func TestDependentResourcesValidator(t *testing.T) {
 }
 
 func TestVerifyReferencesValidatorToOne(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
@@ -239,7 +239,7 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 }
 
 func TestVerifyReferencesValidatorToMany(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	// create validator
 	validator := VerifyReferencesValidator(map[string]string{
@@ -291,7 +291,7 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 }
 
 func TestMatchingReferencesValidator(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	// create validator
 	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
@@ -345,7 +345,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 }
 
 func TestUniqueAttributeValidator(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	// create validator
 	validator := UniqueAttributeValidator("title")

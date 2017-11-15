@@ -28,7 +28,7 @@ func TestAction(t *testing.T) {
 }
 
 func TestContextOriginal(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	savedPost := coal.Init(&postModel{
 		Title: "foo",
@@ -65,7 +65,7 @@ func TestContextOriginalWrongAction(t *testing.T) {
 }
 
 func TestContextOriginalNonExisting(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	post := coal.Init(&postModel{
 		Title: "foo",

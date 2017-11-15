@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/jsonapi"
 )
 
-// A Tester provides facilities to the test a fire based API.
+// A Tester provides facilities to the test a fire API.
 type Tester struct {
 	// The store to use for cleaning the database.
 	Store *coal.Store
@@ -37,8 +37,8 @@ func (t *Tester) Register(model coal.Model) {
 	t.Models = append(t.Models, model)
 }
 
-// CleanStore will remove the collections of models that have been registered.
-func (t *Tester) CleanStore() {
+// Clean will remove the collections of models that have been registered.
+func (t *Tester) Clean() {
 	store := t.Store.Copy()
 	defer store.Close()
 

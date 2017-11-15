@@ -12,7 +12,7 @@ import (
 )
 
 func TestBasicOperations(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -217,7 +217,7 @@ func TestBasicOperations(t *testing.T) {
 }
 
 func TestFiltering(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -529,7 +529,7 @@ func TestFiltering(t *testing.T) {
 }
 
 func TestSorting(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -732,7 +732,7 @@ func TestSorting(t *testing.T) {
 }
 
 func TestSparseFields(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -785,7 +785,7 @@ func TestSparseFields(t *testing.T) {
 }
 
 func TestHasManyRelationship(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -970,7 +970,7 @@ func TestHasManyRelationship(t *testing.T) {
 }
 
 func TestToOneRelationship(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1179,7 +1179,7 @@ func TestToOneRelationship(t *testing.T) {
 }
 
 func TestToManyRelationship(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1451,7 +1451,7 @@ func TestToManyRelationship(t *testing.T) {
 }
 
 func TestEmptyToManyRelationship(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1498,7 +1498,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 }
 
 func TestNoList(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1520,7 +1520,7 @@ func TestNoList(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1574,7 +1574,7 @@ func TestPagination(t *testing.T) {
 }
 
 func TestPaginationToMany(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1636,7 +1636,7 @@ func TestPaginationToMany(t *testing.T) {
 }
 
 func TestPaginationHasMany(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model: &postModel{},
@@ -1696,7 +1696,7 @@ func TestPaginationHasMany(t *testing.T) {
 }
 
 func TestForcedPagination(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model:     &postModel{},
@@ -1735,7 +1735,7 @@ func TestForcedPagination(t *testing.T) {
 }
 
 func TestEnforcedListLimit(t *testing.T) {
-	tester.CleanStore()
+	tester.Clean()
 
 	tester.Handler = buildHandler(&Controller{
 		Model:     &postModel{},
