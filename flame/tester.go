@@ -2,6 +2,7 @@
 package flame
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,9 +11,6 @@ import (
 
 	"github.com/256dpi/jsonapi"
 )
-
-// Map is a general map.
-type Map map[string]interface{}
 
 // A Tester provides facilities to the test a fire based API.
 type Tester struct {
@@ -146,4 +144,14 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 
 	// run callback
 	callback(recorder, request)
+}
+
+// DebugRequest returns a string of information to debug requests.
+func (t *Tester) DebugRequest(r *http.Request, rr *httptest.ResponseRecorder) string {
+	return fmt.Sprintf(`
+	URL:    %s
+	Header: %s
+	Status: %d
+	Header: %v
+	Body:   %v`, r.URL.String(), r.Header, rr.Code, rr.HeaderMap, rr.Body.String())
 }
