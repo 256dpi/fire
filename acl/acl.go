@@ -52,6 +52,7 @@ type Strategy struct {
 	Debugger func(string, string)
 }
 
+// L as short-hand function to create a list of authorizers.
 func L(cbs ...Authorizer) []Authorizer {
 	return cbs
 }

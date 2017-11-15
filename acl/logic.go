@@ -70,7 +70,7 @@ func Or(a, b Authorizer) Authorizer {
 	}
 }
 
-// Ort will run Or() with the current and specified authorizer.
+// Or will run Or() with the current and specified authorizer.
 func (a Authorizer) Or(b Authorizer) Authorizer {
 	return Or(a, b)
 }
