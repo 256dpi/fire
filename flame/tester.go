@@ -133,7 +133,7 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 
 	// add authorization header
 	if t.Token != "" {
-		request.Header.Set("Authorization", "Bearer " + t.Token)
+		request.Header.Set("Authorization", "Bearer "+t.Token)
 	}
 
 	// set custom headers
