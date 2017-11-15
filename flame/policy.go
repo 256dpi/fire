@@ -95,11 +95,26 @@ func DefaultPolicy(secret string) *Policy {
 	}
 }
 
-// NewAccessToken returns a new access token for the provided information.
-func (p *Policy) NewAccessToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
-	str, err := p.generateAccessToken(id, p.Secret, issuedAt, expiresAt, client, ro)
+// GenerateToken returns a new token for the provided information.
+func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
+	// prepare claims
+	claims := &TokenClaims{}
+	claims.Id = id.Hex()
+	claims.IssuedAt = issuedAt.Unix()
+	claims.ExpiresAt = expiresAt.Unix()
+
+	// set user data
+	if p.DataForAccessToken != nil {
+		claims.Data = p.DataForAccessToken(client, ro)
+	}
+
+	// create token
+	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// sign token
+	str, err := tkn.SignedString(p.Secret)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
 	return str, nil
@@ -122,47 +137,4 @@ func (p *Policy) ParseToken(str string) (*TokenClaims, bool, error) {
 	}
 
 	return &claims, false, nil
-}
-
-func (p *Policy) generateAccessToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
-	// prepare claims
-	claims := &TokenClaims{}
-	claims.Id = id.Hex()
-	claims.IssuedAt = issuedAt.Unix()
-	claims.ExpiresAt = expiresAt.Unix()
-
-	// set user data
-	if p.DataForAccessToken != nil {
-		claims.Data = p.DataForAccessToken(client, ro)
-	}
-
-	// create token
-	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// sign token
-	str, err := tkn.SignedString(secret)
-	if err != nil {
-		return "", nil
-	}
-
-	return str, nil
-}
-
-func (p *Policy) generateRefreshToken(id bson.ObjectId, secret []byte, issuedAt, expiresAt time.Time) (string, error) {
-	// prepare claims
-	claims := &TokenClaims{}
-	claims.Id = id.Hex()
-	claims.IssuedAt = issuedAt.Unix()
-	claims.ExpiresAt = expiresAt.Unix()
-
-	// create token
-	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// sign token
-	str, err := tkn.SignedString(secret)
-	if err != nil {
-		return "", nil
-	}
-
-	return str, nil
 }

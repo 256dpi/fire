@@ -8,14 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func TestPolicyNewAccessToken(t *testing.T) {
-	p := DefaultPolicy(testSecret)
-	sig, err := p.NewAccessToken(bson.NewObjectId(), time.Now(), time.Now(), nil, nil)
-	assert.NotEmpty(t, sig)
-	assert.NoError(t, err)
-}
-
-func TestPolicyDataForAccessToken(t *testing.T) {
+func TestPolicyParseAndGenerateToken(t *testing.T) {
 	id := bson.NewObjectId()
 	tt := time.Now()
 
@@ -26,7 +19,7 @@ func TestPolicyDataForAccessToken(t *testing.T) {
 		}
 	}
 
-	sig, err := p.NewAccessToken(id, tt, tt, nil, &User{Name: "Hello"})
+	sig, err := p.GenerateToken(id, tt, tt, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
 	claims, _, err := p.ParseToken(sig)

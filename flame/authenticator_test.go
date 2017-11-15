@@ -97,9 +97,9 @@ func TestIntegration(t *testing.T) {
 		ClientID:  app1.ID(),
 	}).(*AccessToken)
 
-	config.UnknownToken = mustGenerateAccessToken(bson.NewObjectId(), p.Secret, time.Now())
-	config.ExpiredToken = mustGenerateAccessToken(expiredToken.ID(), p.Secret, expiredToken.ExpiresAt)
-	config.InsufficientToken = mustGenerateAccessToken(insufficientToken.ID(), p.Secret, insufficientToken.ExpiresAt)
+	config.UnknownToken = mustGenerateAccessToken(p, bson.NewObjectId(), time.Now())
+	config.ExpiredToken = mustGenerateAccessToken(p, expiredToken.ID(), expiredToken.ExpiresAt)
+	config.InsufficientToken = mustGenerateAccessToken(p, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
 	config.PrimaryRedirectURI = "http://example.com/callback1"
 	config.SecondaryRedirectURI = "http://example.com/callback2"
@@ -116,9 +116,9 @@ func TestIntegration(t *testing.T) {
 		ClientID:  app1.ID(),
 	}).(*RefreshToken)
 
-	config.UnknownRefreshToken = mustGenerateRefreshToken(bson.NewObjectId(), p.Secret, time.Now())
-	config.ValidRefreshToken = mustGenerateRefreshToken(validRefreshToken.ID(), p.Secret, validRefreshToken.ExpiresAt)
-	config.ExpiredRefreshToken = mustGenerateRefreshToken(expiredRefreshToken.ID(), p.Secret, expiredRefreshToken.ExpiresAt)
+	config.UnknownRefreshToken = mustGenerateRefreshToken(p, bson.NewObjectId(), time.Now())
+	config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
+	config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 	config.AuthorizationParams = map[string]string{
 		"username": user.Email,
@@ -137,8 +137,8 @@ func TestPublicAccess(t *testing.T) {
 	})
 }
 
-func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Time) string {
-	str, err := DefaultPolicy(testSecret).generateAccessToken(id, secret, time.Now(), expiresAt, nil, nil)
+func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
+	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -146,8 +146,8 @@ func mustGenerateAccessToken(id bson.ObjectId, secret []byte, expiresAt time.Tim
 	return str
 }
 
-func mustGenerateRefreshToken(id bson.ObjectId, secret []byte, expiresAt time.Time) string {
-	str, err := DefaultPolicy(testSecret).generateRefreshToken(id, secret, time.Now(), expiresAt)
+func mustGenerateRefreshToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
+	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil)
 	if err != nil {
 		panic(err)
 	}

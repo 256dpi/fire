@@ -450,7 +450,7 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 	at := a.saveAccessToken(accessTokenData)
 
 	// generate new access token
-	atSignature, err := a.policy.generateAccessToken(at.ID(), a.policy.Secret, time.Now(), atExpiry, client, resourceOwner)
+	atSignature, err := a.policy.GenerateToken(at.ID(), time.Now(), atExpiry, client, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response
@@ -477,7 +477,7 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 		rt := a.saveRefreshToken(refreshTokenData)
 
 		// generate new refresh token
-		rtSignature, err := a.policy.generateRefreshToken(rt.ID(), a.policy.Secret, time.Now(), rtExpiry)
+		rtSignature, err := a.policy.GenerateToken(rt.ID(), time.Now(), rtExpiry, client, resourceOwner)
 		stack.AbortIf(err)
 
 		// set refresh token
