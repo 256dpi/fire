@@ -44,11 +44,6 @@ func NewTester(store *coal.Store, models ...coal.Model) *Tester {
 	}
 }
 
-// Register will register the specified model with the tester.
-func (t *Tester) Register(model coal.Model) {
-	t.Models = append(t.Models, model)
-}
-
 // Clean will remove the collections of models that have been registered and
 // reset the header map.
 func (t *Tester) Clean() {
@@ -85,24 +80,6 @@ func (t *Tester) Save(model coal.Model) coal.Model {
 	}
 
 	return model
-}
-
-// SaveAll will save the specified models.
-func (t *Tester) SaveAll(models ...coal.Model) {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// loop through all models
-	for _, model := range models {
-		// initialize model
-		model = coal.Init(model)
-
-		// insert to collection
-		err := store.C(model).Insert(model)
-		if err != nil {
-			panic(err)
-		}
-	}
 }
 
 // FindLast will return the last saved model.
