@@ -52,6 +52,10 @@ func TestContextOriginal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, savedPost.ID(), m.ID())
 	assert.Equal(t, savedPost.MustGet("Title"), m.MustGet("Title"))
+
+	m2, err := ctx.Original()
+	assert.NoError(t, err)
+	assert.Equal(t, m, m2)
 }
 
 func TestContextOriginalWrongAction(t *testing.T) {
