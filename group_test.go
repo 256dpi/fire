@@ -24,7 +24,7 @@ func TestGroup(t *testing.T) {
 func TestGroupEndpointMissingController(t *testing.T) {
 	tester.Handler = NewGroup().Endpoint("api")
 
-	tester.Request("GET", "api/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "api/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
 	})
 }
@@ -50,7 +50,7 @@ func TestGroupStackAbort(t *testing.T) {
 
 	tester.Handler = group.Endpoint("")
 
-	tester.Request("GET", "posts", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"errors": [{

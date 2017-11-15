@@ -127,7 +127,7 @@ func (t *Tester) Request(method, path string, payload string, callback func(*htt
 	request.Header.Set("Accept", jsonapi.MediaType)
 
 	// add content type if required
-	if method == "POST" || method == "PATCH" {
+	if method == "POST" || method == "PATCH" || method == "DELETE" {
 		request.Header.Set("Content-Type", jsonapi.MediaType)
 	}
 
