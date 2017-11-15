@@ -1,4 +1,3 @@
-// Package flame provides tools to test fire based JSON-APIs.
 package fire
 
 import (
