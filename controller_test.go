@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/256dpi/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"gopkg.in/mgo.v2/bson"
@@ -27,9 +26,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get empty list of posts
-	tester.Request("GET", "posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
@@ -43,10 +40,7 @@ func TestBasicOperations(t *testing.T) {
 	var id string
 
 	// create post
-	tester.Request("POST", "posts", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("POST", "posts", `{
 		"data": {
 			"type": "posts",
 			"attributes": {
@@ -91,9 +85,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get list of posts
-	tester.Request("GET", "posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -130,10 +122,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// update post
-	tester.Request("PATCH", "posts/"+id, map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("PATCH", "posts/"+id, `{
 		"data": {
 			"type": "posts",
 			"id": "`+id+`",
@@ -176,9 +165,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// get single post
-	tester.Request("GET", "posts/"+id, map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -213,17 +200,13 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// delete post
-	tester.Request("DELETE", "posts/"+id, map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("DELETE", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
 		assert.Equal(t, "", r.Body.String())
 	})
 
 	// get empty list of posts
-	tester.Request("GET", "posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
@@ -276,9 +259,7 @@ func TestFiltering(t *testing.T) {
 	}).ID().Hex()
 
 	// get posts with single value filter
-	tester.Request("GET", "posts?filter[title]=post-1", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -320,9 +301,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with multi value filter
-	tester.Request("GET", "posts?filter[title]=post-2,post-3", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?filter[title]=post-2,post-3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -394,9 +373,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with boolean
-	tester.Request("GET", "posts?filter[published]=true", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?filter[published]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -468,9 +445,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get posts with boolean
-	tester.Request("GET", "posts?filter[published]=false", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -512,9 +487,7 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// get to-many posts with boolean
-	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -585,9 +558,7 @@ func TestSorting(t *testing.T) {
 	}).ID().Hex()
 
 	// get posts in ascending order
-	tester.Request("GET", "posts?sort=title", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -674,9 +645,7 @@ func TestSorting(t *testing.T) {
 	})
 
 	// get posts in descending order
-	tester.Request("GET", "posts?sort=-title", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -783,9 +752,7 @@ func TestSparseFields(t *testing.T) {
 	}).ID().Hex()
 
 	// get posts with single value filter
-	tester.Request("GET", "posts/"+post+"?fields[posts]=title", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"?fields[posts]=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -847,9 +814,7 @@ func TestHasManyRelationship(t *testing.T) {
 	}).ID().Hex()
 
 	// get single post
-	tester.Request("GET", "posts/"+post, map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -884,9 +849,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get empty list of related comments
-	tester.Request("GET", "posts/"+post+"/comments", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
@@ -899,10 +862,7 @@ func TestHasManyRelationship(t *testing.T) {
 	var comment string
 
 	// create related comment
-	tester.Request("POST", "comments", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("POST", "comments", `{
 		"data": {
 			"type": "comments",
 			"attributes": {
@@ -955,9 +915,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get list of related comments
-	tester.Request("GET", "posts/"+post+"/comments", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -995,9 +953,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 
 	// get only relationship links
-	tester.Request("GET", "posts/"+post+"/relationships/comments", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"/relationships/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -1045,10 +1001,7 @@ func TestToOneRelationship(t *testing.T) {
 	var comment2 string
 
 	// create relating post
-	tester.Request("POST", "comments", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("POST", "comments", `{
 		"data": {
 			"type": "comments",
 			"attributes": {
@@ -1110,9 +1063,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// get related post
-	tester.Request("GET", "comments/"+comment2+"/post", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments/"+comment2+"/post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -1156,9 +1107,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// get related post id only
-	tester.Request("GET", "comments/"+comment2+"/relationships/post", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments/"+comment2+"/relationships/post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -1173,10 +1122,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// replace relationship
-	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
 			"type": "comments",
 			"id": "`+post2+`"
@@ -1187,9 +1133,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch replaced relationship
-	tester.Request("GET", "comments/"+comment2+"/relationships/post", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments/"+comment2+"/relationships/post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": {
@@ -1204,10 +1148,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// unset relationship
-	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", `{
 			"data": null
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
@@ -1215,9 +1156,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch unset relationship
-	tester.Request("GET", "comments/"+comment2+"/relationships/parent", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments/"+comment2+"/relationships/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": null,
@@ -1229,9 +1168,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 
 	// fetch unset related resource
-	tester.Request("GET", "comments/"+comment2+"/parent", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments/"+comment2+"/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": null,
@@ -1270,10 +1207,7 @@ func TestToManyRelationship(t *testing.T) {
 	var selection string
 
 	// create selection
-	tester.Request("POST", "selections", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("POST", "selections", `{
 		"data": {
 			"type": "selections",
 			"attributes": {
@@ -1331,9 +1265,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post
-	tester.Request("GET", "selections/"+selection+"/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -1405,9 +1337,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post ids only
-	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -1428,10 +1358,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// update relationship
-	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
 				"type": "comments",
@@ -1444,9 +1371,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get updated related post ids only
-	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -1463,10 +1388,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// add relationship
-	tester.Request("POST", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
 				"type": "comments",
@@ -1479,9 +1401,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get related post ids only
-	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [
@@ -1502,10 +1422,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// remove relationship
-	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept":       jsonapi.MediaType,
-		"Content-Type": jsonapi.MediaType,
-	}, `{
+	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
 				"type": "comments",
@@ -1522,9 +1439,7 @@ func TestToManyRelationship(t *testing.T) {
 	})
 
 	// get empty related post ids list
-	tester.Request("GET", "selections/"+selection+"/relationships/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data": [],
@@ -1561,9 +1476,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	}).ID().Hex()
 
 	// get related posts
-	tester.Request("GET", "selections/"+selection+"/posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
@@ -1574,9 +1487,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	})
 
 	// get related selections
-	tester.Request("GET", "posts/"+post+"/selections", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"/selections", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode)
 		assert.JSONEq(t, `{
 			"data":[],
@@ -1603,9 +1514,7 @@ func TestNoList(t *testing.T) {
 	})
 
 	// attempt list comments
-	tester.Request("GET", "comments", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode)
 		assert.Contains(t, r.Body.String(), "Listing is disabled for this resource.")
 	})
@@ -1633,9 +1542,7 @@ func TestPagination(t *testing.T) {
 	}
 
 	// get first page of posts
-	tester.Request("GET", "posts?page[number]=1&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1651,9 +1558,7 @@ func TestPagination(t *testing.T) {
 	})
 
 	// get second page of posts
-	tester.Request("GET", "posts?page[number]=2&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?page[number]=2&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1699,9 +1604,7 @@ func TestPaginationToMany(t *testing.T) {
 	}).ID().Hex()
 
 	// get first page of posts
-	tester.Request("GET", "selections/"+selection+"/posts?page[number]=1&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/posts?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1717,9 +1620,7 @@ func TestPaginationToMany(t *testing.T) {
 	})
 
 	// get second page of posts
-	tester.Request("GET", "selections/"+selection+"/posts?page[number]=2&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "selections/"+selection+"/posts?page[number]=2&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1763,9 +1664,7 @@ func TestPaginationHasMany(t *testing.T) {
 	}
 
 	// get first page of posts
-	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1781,9 +1680,7 @@ func TestPaginationHasMany(t *testing.T) {
 	})
 
 	// get second page of posts
-	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1822,9 +1719,7 @@ func TestForcedPagination(t *testing.T) {
 	}
 
 	// get first page of posts
-	tester.Request("GET", "posts", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -1863,9 +1758,7 @@ func TestEnforcedListLimit(t *testing.T) {
 	}
 
 	// get first page of posts
-	tester.Request("GET", "posts?page[number]=1&page[size]=7", map[string]string{
-		"Accept": jsonapi.MediaType,
-	}, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts?page[number]=1&page[size]=7", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
 

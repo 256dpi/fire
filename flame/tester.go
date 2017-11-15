@@ -11,6 +11,9 @@ import (
 	"github.com/256dpi/jsonapi"
 )
 
+// Map is a general map.
+type Map map[string]interface{}
+
 // A Tester provides facilities to the test a fire based API.
 type Tester struct {
 	// The store to use for cleaning the database.
@@ -24,6 +27,12 @@ type Tester struct {
 
 	// A path prefix e.g. 'api'.
 	Prefix string
+
+	// The token that should be used to authorize the request.
+	Token string
+
+	// These headers are added to the request if available.
+	Headers map[string]string
 }
 
 // Register will register the specified model with the tester.
@@ -90,18 +99,23 @@ func (t *Tester) FindLast(model coal.Model) coal.Model {
 	return coal.Init(model)
 }
 
-// Request will run the specified low-level request against the current handler.
-func (t *Tester) Request(method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
+// Path returns a root prefixed path for the supplied path.
+func (t *Tester) Path(path string) string {
 	// add root slash
-	path = "/" + path
+	path = "/" + strings.Trim(path, "/")
 
 	// add prefix if available
 	if t.Prefix != "" {
 		path = "/" + t.Prefix + path
 	}
 
+	return path
+}
+
+// Request will run the specified low-level request against the current handler.
+func (t *Tester) Request(method, path string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
 	// create request
-	request, err := http.NewRequest(method, path, strings.NewReader(payload))
+	request, err := http.NewRequest(method, t.Path(path), strings.NewReader(payload))
 	if err != nil {
 		panic(err)
 	}
@@ -112,8 +126,18 @@ func (t *Tester) Request(method, path string, headers map[string]string, payload
 	// preset jsonapi accept header
 	request.Header.Set("Accept", jsonapi.MediaType)
 
+	// add content type if required
+	if method == "POST" || method == "PATCH" {
+		request.Header.Set("Content-Type", jsonapi.MediaType)
+	}
+
+	// add authorization header
+	if t.Token != "" {
+		request.Header.Set("Authorization", "Bearer " + t.Token)
+	}
+
 	// set custom headers
-	for k, v := range headers {
+	for k, v := range t.Headers {
 		request.Header.Set(k, v)
 	}
 
