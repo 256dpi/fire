@@ -13,6 +13,8 @@ func TestCreateStore(t *testing.T) {
 	store2 := store1.Copy()
 	assert.NotNil(t, store2)
 
+	assert.Equal(t, "posts", store2.C(&postModel{}).Name)
+
 	store2.Close()
 	store1.Close()
 }
