@@ -26,6 +26,12 @@ func accessDeniedCB(_ *fire.Context) (Enforcer, error) {
 	return AccessDenied(), nil
 }
 
-func errorCB(_ *fire.Context) (Enforcer, error) {
+func directErrorCB(_ *fire.Context) (Enforcer, error) {
 	return nil, errors.New("error")
+}
+
+func indirectErrorCB(_ *fire.Context) (Enforcer, error) {
+	return func(_ *fire.Context)error{
+		return errors.New("error")
+	}, nil
 }

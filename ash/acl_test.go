@@ -12,7 +12,7 @@ func TestCallback(t *testing.T) {
 		List:   L(blankCB, accessGrantedCB),
 		Find:   L(blankCB),
 		Update: L(accessDeniedCB),
-		All:    L(errorCB),
+		All:    L(directErrorCB),
 	})
 
 	err := cb(context(fire.List))
@@ -34,7 +34,7 @@ func TestCallbackBubbling(t *testing.T) {
 		Find:   L(blankCB),
 		Update: L(blankCB),
 		Read:   L(accessGrantedCB),
-		All:    L(errorCB),
+		All:    L(directErrorCB),
 		Bubble: true,
 	})
 

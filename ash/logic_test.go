@@ -25,13 +25,21 @@ func TestAnd(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(accessGrantedCB, errorCB)(nil)
+	enforcer, err = And(accessGrantedCB, directErrorCB)(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(errorCB, accessGrantedCB)(nil)
+	enforcer, err = And(directErrorCB, accessGrantedCB)(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
+
+	enforcer, err = And(accessGrantedCB, indirectErrorCB)(nil)
+	assert.NoError(t, err)
+	assert.Error(t, enforcer(nil))
+
+	enforcer, err = And(indirectErrorCB, indirectErrorCB)(nil)
+	assert.NoError(t, err)
+	assert.Error(t, enforcer(nil))
 
 	enforcer, err = Authorizer(blankCB).And(accessGrantedCB)(nil)
 	assert.NoError(t, err)
@@ -58,11 +66,11 @@ func TestOr(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = Or(blankCB, errorCB)(nil)
+	enforcer, err = Or(blankCB, directErrorCB)(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = Or(errorCB, accessGrantedCB)(nil)
+	enforcer, err = Or(directErrorCB, accessGrantedCB)(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
