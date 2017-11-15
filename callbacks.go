@@ -73,6 +73,24 @@ func Except(cb Callback, actions ...Action) Callback {
 	}
 }
 
+// BasicAuthorizer authorizes requests based on a simple credentials list.
+func BasicAuthorizer(credentials map[string]string) Callback {
+	return func(ctx *Context) error {
+		// check for credentials
+		user, password, ok := ctx.HTTPRequest.BasicAuth()
+		if !ok {
+			return errors.New("access denied")
+		}
+
+		// check if credentials match
+		if val, ok := credentials[user]; !ok || val != password {
+			return errors.New("access denied")
+		}
+
+		return nil
+	}
+}
+
 // ModelValidator performs a validation of the model using the Validate
 // function.
 func ModelValidator() Callback {

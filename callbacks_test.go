@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"encoding/base64"
 	"errors"
 	"testing"
 
@@ -54,6 +55,26 @@ func TestExcept(t *testing.T) {
 	err = tester.RunValidator(Create, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
+}
+
+func TestBasicAuthorizer(t *testing.T) {
+	authorizer := BasicAuthorizer(map[string]string{
+		"foo": "bar",
+	})
+
+	header := map[string]string{
+		"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:bar")),
+	}
+
+	err := tester.RunAuthorizer(Find, header, nil, nil, authorizer)
+	assert.NoError(t, err)
+
+	header = map[string]string{
+		"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo")),
+	}
+
+	err = tester.RunAuthorizer(Find, header, nil, nil, authorizer)
+	assert.Error(t, err)
 }
 
 func TestModelValidator(t *testing.T) {

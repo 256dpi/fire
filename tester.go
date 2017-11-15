@@ -9,6 +9,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/jsonapi"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // A Tester provides facilities to the test a fire API.
@@ -106,9 +107,53 @@ func (t *Tester) Path(path string) string {
 	return path
 }
 
+// RunAuthorizer is a helper to test validators. The caller should assert the
+// returned error of the validator, the state of the supplied model and maybe
+// other objects in the database.
+//
+// Note: Only the Action, Query, Model, Store and a fake HTTPRequest with the
+// specified headers are set since these are the oly attributes an authorizer
+// should rely on.
+func (t *Tester) RunAuthorizer(action Action, header map[string]string, query bson.M, model coal.Model, validator Callback) error {
+	// get store
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// init model if present
+	if model != nil {
+		coal.Init(model)
+	}
+
+	// create request
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// set headers
+	for key, value := range header {
+		req.Header.Set(key, value)
+	}
+
+	// create context
+	ctx := &Context{
+		Action:      action,
+		Model:       model,
+		Store:       store,
+		Query:       query,
+		HTTPRequest: req,
+	}
+
+	// call validator
+	return validator(ctx)
+}
+
 // RunValidator is a helper to test validators. The caller should assert the
 // returned error of the validator, the state of the supplied model and maybe
 // other objects in the database.
+//
+// Note: Only the Action, Model and Store attribute of the context are set since
+// these are the only attributes a validator should rely on.
 func (t *Tester) RunValidator(action Action, model coal.Model, validator Callback) error {
 	// check action
 	if action.Read() {
