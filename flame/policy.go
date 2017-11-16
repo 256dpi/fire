@@ -31,17 +31,6 @@ var ErrGrantRejected = errors.New("grant rejected")
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = errors.New("invalid scope")
 
-// The GrantStrategy is invoked by the manager with the grant type, the
-// requested scope, the client and the resource owner before issuing an access
-// token. The callback should return no error and the scope that should be granted.
-// It can return ErrGrantRejected or ErrInvalidScope to cancel the grant request.
-type GrantStrategy func(req *GrantRequest) (oauth2.Scope, error)
-
-// DefaultGrantStrategy grants the requested scope.
-func DefaultGrantStrategy(req *GrantRequest) (oauth2.Scope, error) {
-	return req.Scope, nil
-}
-
 // A Policy configures the provided authentication schemes.
 type Policy struct {
 	// The shared secret which should be at least 16 characters.
@@ -52,15 +41,26 @@ type Policy struct {
 	ClientCredentialsGrant bool
 	ImplicitGrant          bool
 
-	// The used models and strategies.
-	AccessToken    Token
-	RefreshToken   Token
-	Clients        []Client
-	ResourceOwners []ResourceOwner
-	GrantStrategy  GrantStrategy
+	// The token models.
+	AccessToken  Token
+	RefreshToken Token
+
+	// The client model.
+	Clients []Client
+
+	// ResourceOwners should return a list of resource owner models that are
+	// tried in order to resolve grant requests.
+	ResourceOwners func(Client) []ResourceOwner
+
+	// GrantStrategy is invoked by the authenticator with the grant type, the
+	// requested scope, the client and the resource owner before issuing an
+	// access token. The callback should return no error and the scope that
+	// should be granted. It can return ErrGrantRejected or ErrInvalidScope to
+	// cancel the grant request.
+	GrantStrategy func(*GrantRequest) (oauth2.Scope, error)
 
 	// TokenData should return a map of data that should be included in the JWT
-	// token under the "dat" field.
+	// tokens under the "dat" field.
 	TokenData func(Client, ResourceOwner) map[string]interface{}
 
 	// The token used lifespans.
@@ -79,15 +79,22 @@ type TokenClaims struct {
 	Data map[string]interface{} `json:"dat"`
 }
 
+// DefaultGrantStrategy grants the requested scope.
+func DefaultGrantStrategy(req *GrantRequest) (oauth2.Scope, error) {
+	return req.Scope, nil
+}
+
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret:               []byte(secret),
-		AccessToken:          &AccessToken{},
-		RefreshToken:         &RefreshToken{},
-		Clients:              []Client{&Application{}},
-		ResourceOwners:       []ResourceOwner{&User{}},
+		Secret:       []byte(secret),
+		AccessToken:  &AccessToken{},
+		RefreshToken: &RefreshToken{},
+		Clients:      []Client{&Application{}},
+		ResourceOwners: func(_ Client) []ResourceOwner {
+			return []ResourceOwner{&User{}}
+		},
 		GrantStrategy:        DefaultGrantStrategy,
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,

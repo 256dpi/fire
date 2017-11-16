@@ -49,11 +49,6 @@ func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
 		coal.Init(model)
 	}
 
-	// initialize resource owners
-	for _, model := range policy.ResourceOwners {
-		coal.Init(model)
-	}
-
 	return &Authenticator{
 		store:  store,
 		policy: policy,
@@ -219,7 +214,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	password := r.PostForm.Get("password")
 
 	// get resource owner
-	resourceOwner := a.findFirstResourceOwner(username)
+	resourceOwner := a.findFirstResourceOwner(client, username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	}
@@ -292,7 +287,7 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.ResponseWriter, req *oauth2.TokenRequest, client Client) {
 	// get resource owner
-	resourceOwner := a.findFirstResourceOwner(req.Username)
+	resourceOwner := a.findFirstResourceOwner(client, req.Username)
 	if resourceOwner == nil {
 		stack.Abort(oauth2.AccessDenied(""))
 	}
@@ -390,7 +385,7 @@ func (a *Authenticator) handleRefreshTokenGrant(w http.ResponseWriter, req *oaut
 	// get resource owner
 	var ro ResourceOwner
 	if data.ResourceOwnerID != nil {
-		ro = a.getFirstResourceOwner(*data.ResourceOwnerID)
+		ro = a.getFirstResourceOwner(client, *data.ResourceOwnerID)
 	}
 
 	// issue tokens
@@ -535,9 +530,9 @@ func (a *Authenticator) getClient(model Client, id string) Client {
 	return client
 }
 
-func (a *Authenticator) findFirstResourceOwner(id string) ResourceOwner {
+func (a *Authenticator) findFirstResourceOwner(client Client, id string) ResourceOwner {
 	// check all available models in order
-	for _, model := range a.policy.ResourceOwners {
+	for _, model := range a.policy.ResourceOwners(client) {
 		ro := a.findResourceOwner(model, id)
 		if ro != nil {
 			return ro
@@ -549,7 +544,7 @@ func (a *Authenticator) findFirstResourceOwner(id string) ResourceOwner {
 
 func (a *Authenticator) findResourceOwner(model ResourceOwner, id string) ResourceOwner {
 	// prepare object
-	obj := model.Meta().Make()
+	obj := coal.Init(model).Meta().Make()
 
 	// get store
 	store := a.store.Copy()
@@ -578,9 +573,9 @@ func (a *Authenticator) findResourceOwner(model ResourceOwner, id string) Resour
 	return resourceOwner
 }
 
-func (a *Authenticator) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
+func (a *Authenticator) getFirstResourceOwner(client Client, id bson.ObjectId) ResourceOwner {
 	// check all available models in order
-	for _, model := range a.policy.ResourceOwners {
+	for _, model := range a.policy.ResourceOwners(client) {
 		ro := a.getResourceOwner(model, id)
 		if ro != nil {
 			return ro
@@ -592,7 +587,7 @@ func (a *Authenticator) getFirstResourceOwner(id bson.ObjectId) ResourceOwner {
 
 func (a *Authenticator) getResourceOwner(model ResourceOwner, id bson.ObjectId) ResourceOwner {
 	// prepare object
-	obj := model.Meta().Make()
+	obj := coal.Init(model).Meta().Make()
 
 	// get store
 	store := a.store.Copy()
