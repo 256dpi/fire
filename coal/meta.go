@@ -18,15 +18,15 @@ var hasManyType = reflect.TypeOf(HasMany{})
 
 // The HasOne type denotes a has-one relationship in a model declaration.
 //
-// Note: HasOne relationships will be fetched without authorization. This means
-// that the query could return ids to resources that would normally not be
+// Note: In fire HasOne relationships will be fetched without authorization. This
+// means that the query could return ids to resources that would normally not be
 // accessible.
 type HasOne struct{}
 
 // The HasMany type denotes a has-many relationship in a model declaration.
 //
-// Note: HasMany relationships will be fetched without authorization. This means
-// that the query could return ids to resources that would normally not be
+// Note: In fire HasMany relationships will be fetched without authorization. This
+// means that the query could return ids to resources that would normally not be
 // accessible.
 type HasMany struct{}
 
