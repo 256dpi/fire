@@ -9,20 +9,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A GrantRequest is used in conjunction with the GrantStrategy.
-type GrantRequest struct {
-	// The scope that has been requested.
-	Scope oauth2.Scope
-
-	// The client that made the access request.
-	Client Client
-
-	// The resource owner that gave his consent.
-	//
-	// Note: ResourceOwner is not set for a client credentials grant.
-	ResourceOwner ResourceOwner
-}
-
 // ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
 // of the grant based on the provided conditions.
 var ErrGrantRejected = errors.New("grant rejected")
@@ -45,7 +31,7 @@ type Policy struct {
 	AccessToken  Token
 	RefreshToken Token
 
-	// The client model.
+	// The client models.
 	Clients []Client
 
 	// ResourceOwners should return a list of resource owner models that are
@@ -57,7 +43,9 @@ type Policy struct {
 	// access token. The callback should return no error and the scope that
 	// should be granted. It can return ErrGrantRejected or ErrInvalidScope to
 	// cancel the grant request.
-	GrantStrategy func(*GrantRequest) (oauth2.Scope, error)
+	//
+	// Note: ResourceOwner is not set for a client credentials grant.
+	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
 
 	// TokenData should return a map of data that should be included in the JWT
 	// tokens under the "dat" field.
@@ -80,8 +68,8 @@ type TokenClaims struct {
 }
 
 // DefaultGrantStrategy grants the requested scope.
-func DefaultGrantStrategy(req *GrantRequest) (oauth2.Scope, error) {
-	return req.Scope, nil
+func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+	return scope, nil
 }
 
 // DefaultPolicy returns a simple policy that uses all built-in models and

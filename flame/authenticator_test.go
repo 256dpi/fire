@@ -27,16 +27,16 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
-	p.GrantStrategy = func(req *GrantRequest) (oauth2.Scope, error) {
-		if !allowedScope.Includes(req.Scope) {
+	p.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+		if !allowedScope.Includes(scope) {
 			return nil, ErrInvalidScope
 		}
 
-		if !req.Scope.Includes(requiredScope) {
+		if !scope.Includes(requiredScope) {
 			return nil, ErrInvalidScope
 		}
 
-		return req.Scope, nil
+		return scope, nil
 	}
 
 	manager := NewAuthenticator(tester.Store, p)

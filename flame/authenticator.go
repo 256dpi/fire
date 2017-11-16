@@ -225,11 +225,7 @@ func (a *Authenticator) handleImplicitGrant(w http.ResponseWriter, r *http.Reque
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(&GrantRequest{
-		Scope:         req.Scope,
-		Client:        client,
-		ResourceOwner: resourceOwner,
-	})
+	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
 	if err == ErrGrantRejected {
 		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
 	} else if err == ErrInvalidScope {
@@ -298,11 +294,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(w http.Respo
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(&GrantRequest{
-		Scope:         req.Scope,
-		Client:        client,
-		ResourceOwner: resourceOwner,
-	})
+	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
 	if err == ErrGrantRejected {
 		stack.Abort(oauth2.AccessDenied(""))
 	} else if err == ErrInvalidScope {
@@ -325,10 +317,7 @@ func (a *Authenticator) handleClientCredentialsGrant(w http.ResponseWriter, req 
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(&GrantRequest{
-		Scope:  req.Scope,
-		Client: client,
-	})
+	scope, err := a.policy.GrantStrategy(req.Scope, client, nil)
 	if err == ErrGrantRejected {
 		stack.Abort(oauth2.AccessDenied(""))
 	} else if err == ErrInvalidScope {
