@@ -14,6 +14,7 @@ type postModel struct {
 	TextBody   string  `json:"text-body" bson:"text_body"`
 	Comments   HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
+	Note       HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
 }
 
 func (p *postModel) Validate() error {
@@ -42,6 +43,7 @@ type noteModel struct {
 	Title     string    `json:"title" bson:"title" valid:"required"`
 	CreatedAt time.Time `json:"created-at" bson:"created_at"`
 	UpdatedAt time.Time `json:"updated-at" bson:"updated_at"`
+	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 func (n *noteModel) Validate() error {

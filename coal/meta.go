@@ -13,7 +13,15 @@ var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(bson.ObjectId(""))
 var optionalToOneType = reflect.TypeOf(new(bson.ObjectId))
 var toManyType = reflect.TypeOf(make([]bson.ObjectId, 0))
+var hasOneType = reflect.TypeOf(HasOne{})
 var hasManyType = reflect.TypeOf(HasMany{})
+
+// The HasOne type denotes a has-one relationship in a model declaration.
+//
+// Note: In fire HasOne relationships will be fetched without authorization. This
+// means that the query could return ids to resources that would normally not be
+// accessible.
+type HasOne struct{}
 
 // The HasMany type denotes a has-many relationship in a model declaration.
 //
@@ -32,6 +40,7 @@ type Field struct {
 	Optional   bool
 	ToOne      bool
 	ToMany     bool
+	HasOne     bool
 	HasMany    bool
 	RelName    string
 	RelType    string
@@ -171,6 +180,26 @@ func NewMeta(model Model) *Meta {
 				// remove tag
 				coalTags = coalTags[1:]
 			}
+		}
+
+		// check if field is a valid has-one relationship
+		if structField.Type == hasOneType {
+			// check tag
+			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
+				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-one relationship`)
+			}
+
+			// parse special has-one relationship tag
+			hasOneTag := strings.Split(coalTags[0], ":")
+
+			// set relationship data
+			field.HasOne = true
+			field.RelName = hasOneTag[0]
+			field.RelType = hasOneTag[1]
+			field.RelInverse = hasOneTag[2]
+
+			// remove tag
+			coalTags = coalTags[1:]
 		}
 
 		// check if field is a valid has-many relationship
