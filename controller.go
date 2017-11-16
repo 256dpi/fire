@@ -440,10 +440,12 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 			},
 		}
 
-		if len(models) > 0 {
+		// add if model is found
+		if len(models) > 1 {
+			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
+		} else if len(models) == 1 {
 			newCtx.Response.Data.One = relatedController.resourceForModel(newCtx, models[0])
 		}
-
 
 		// run notifiers
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
@@ -932,7 +934,9 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			var reference *jsonapi.Resource
 
 			// set all references
-			if len(ids) > 0 {
+			if len(ids) > 1 {
+				stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
+			} else if len(ids) == 1 {
 				reference = &jsonapi.Resource{
 					Type: relatedController.Model.Meta().PluralName,
 					ID:   ids[0].Hex(),
