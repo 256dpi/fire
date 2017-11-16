@@ -121,16 +121,6 @@ func TestMeta(t *testing.T) {
 				RelInverse: "posts",
 				index:      5,
 			},
-			{
-				Name: "Note",
-				Type: hasOneType,
-				Kind: reflect.Struct,
-				HasOne: true,
-				RelName: "note",
-				RelType: "notes",
-				RelInverse: "post",
-				index: 6,
-			},
 		},
 		model: post.Meta().model,
 	}, post.Meta())
