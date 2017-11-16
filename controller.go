@@ -400,6 +400,58 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
 	}
 
+	// finish has-one relationship
+	if relationField.HasOne {
+		// prepare filter
+		var filterName string
+
+		// find related relationship
+		for _, field := range relatedController.Model.Meta().Fields {
+			// find db field by comparing the relationship name wit the inverse
+			// name found on the original relationship
+			if field.RelName == relationField.RelInverse {
+				filterName = field.BSONName
+				break
+			}
+		}
+
+		// check filter name
+		if filterName == "" {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
+		}
+
+		// tweak context
+		newCtx.Action = List
+		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
+
+		// set query
+		newCtx.Query = bson.M{
+			filterName: ctx.Model.ID(),
+		}
+
+		// load related models
+		models := relatedController.loadModels(newCtx)
+
+		// compose response
+		newCtx.Response = &jsonapi.Document{
+			Data: &jsonapi.HybridResource{},
+			Links: &jsonapi.DocumentLinks{
+				Self: ctx.JSONAPIRequest.Self(),
+			},
+		}
+
+		if len(models) > 0 {
+			newCtx.Response.Data.One = relatedController.resourceForModel(newCtx, models[0])
+		}
+
+
+		// run notifiers
+		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
+
+		// write result
+		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
+	}
+
 	// finish has-many relationship
 	if relationField.HasMany {
 		// prepare filter
@@ -776,7 +828,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
 		// check if relationship
-		if !field.ToOne && !field.ToMany && !field.HasMany {
+		if !field.ToOne && !field.ToMany && !field.HasOne && !field.HasMany {
 			continue
 		}
 
@@ -838,6 +890,61 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 					Many: references,
 				},
 				Links: links,
+			}
+		} else if field.HasOne {
+			// get related controller
+			relatedController := ctx.Group.controllers[field.RelType]
+
+			// check existence
+			if relatedController == nil {
+				panic("fire: missing related controller " + field.RelType)
+			}
+
+			// prepare filter
+			var filterName string
+
+			// find related relationship
+			for _, relatedField := range relatedController.Model.Meta().Fields {
+				// find db field by comparing the relationship name wit the inverse
+				// name found on the original relationship
+				if relatedField.RelName == field.RelInverse {
+					filterName = relatedField.BSONName
+					break
+				}
+			}
+
+			// check filter name
+			if filterName == "" {
+				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
+			}
+
+			// TODO: We should run the related controllers authenticator.
+			// => Update comment on HasOne type.
+
+			// load all referenced ids
+			var ids []bson.ObjectId
+			err := ctx.Store.C(relatedController.Model).Find(bson.M{
+				filterName: model.ID(),
+			}).Distinct("_id", &ids)
+			stack.AbortIf(err)
+
+			// prepare references
+			var reference *jsonapi.Resource
+
+			// set all references
+			if len(ids) > 0 {
+				reference = &jsonapi.Resource{
+					Type: relatedController.Model.Meta().PluralName,
+					ID:   ids[0].Hex(),
+				}
+			}
+
+			// only set links
+			resource.Relationships[field.RelName] = &jsonapi.Document{
+				Links: links,
+				Data: &jsonapi.HybridResource{
+					One: reference,
+				},
 			}
 		} else if field.HasMany {
 			// get related controller
