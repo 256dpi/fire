@@ -23,9 +23,6 @@ func TestBasicOperations(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// get empty list of posts
@@ -77,13 +74,6 @@ func TestBasicOperations(t *testing.T) {
 							"self": "/posts/`+id+`/relationships/selections",
 							"related": "/posts/`+id+`/selections"
 						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+id+`/relationships/note",
-							"related": "/posts/`+id+`/note"
-						}
 					}
 				}
 			},
@@ -119,13 +109,6 @@ func TestBasicOperations(t *testing.T) {
 							"links": {
 								"self": "/posts/`+id+`/relationships/selections",
 								"related": "/posts/`+id+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+id+`/relationships/note",
-								"related": "/posts/`+id+`/note"
 							}
 						}
 					}
@@ -171,13 +154,6 @@ func TestBasicOperations(t *testing.T) {
 							"self": "/posts/`+id+`/relationships/selections",
 							"related": "/posts/`+id+`/selections"
 						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+id+`/relationships/note",
-							"related": "/posts/`+id+`/note"
-						}
 					}
 				}
 			},
@@ -212,13 +188,6 @@ func TestBasicOperations(t *testing.T) {
 						"links": {
 							"self": "/posts/`+id+`/relationships/selections",
 							"related": "/posts/`+id+`/selections"
-						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+id+`/relationships/note",
-							"related": "/posts/`+id+`/note"
 						}
 					}
 				}
@@ -262,9 +231,6 @@ func TestFiltering(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -323,13 +289,6 @@ func TestFiltering(t *testing.T) {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
 						}
 					}
 				}
@@ -372,13 +331,6 @@ func TestFiltering(t *testing.T) {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
 						}
 					}
 				},
@@ -408,13 +360,6 @@ func TestFiltering(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post3+`/relationships/selections",
 								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
 							}
 						}
 					}
@@ -458,13 +403,6 @@ func TestFiltering(t *testing.T) {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
 						}
 					}
 				},
@@ -494,13 +432,6 @@ func TestFiltering(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post3+`/relationships/selections",
 								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
 							}
 						}
 					}
@@ -544,13 +475,6 @@ func TestFiltering(t *testing.T) {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
 						}
 					}
 				}
@@ -593,13 +517,6 @@ func TestFiltering(t *testing.T) {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
 						}
 					}
 				}
@@ -625,9 +542,6 @@ func TestSorting(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -669,13 +583,6 @@ func TestSorting(t *testing.T) {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
 						}
 					}
 				},
@@ -701,13 +608,6 @@ func TestSorting(t *testing.T) {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
 						}
 					}
 				},
@@ -732,13 +632,6 @@ func TestSorting(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post3+`/relationships/selections",
 								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
 							}
 						}
 					}
@@ -777,13 +670,6 @@ func TestSorting(t *testing.T) {
 								"self": "/posts/`+post3+`/relationships/selections",
 								"related": "/posts/`+post3+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
-							}
 						}
 					}
 				},
@@ -808,13 +694,6 @@ func TestSorting(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
 							}
 						}
 					}
@@ -841,13 +720,6 @@ func TestSorting(t *testing.T) {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
 						}
 					}
 				}
@@ -870,9 +742,6 @@ func TestSparseFields(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -905,195 +774,11 @@ func TestSparseFields(t *testing.T) {
 							"self": "/posts/`+post+`/relationships/selections",
 							"related": "/posts/`+post+`/selections"
 						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+post+`/relationships/note",
-							"related": "/posts/`+post+`/note"
-						}
 					}
 				}
 			},
 			"links": {
 				"self": "/posts/`+post+`"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
-func TestHasOneRelationship(t *testing.T) {
-	tester.Clean()
-
-	tester.Handler = buildHandler(&Controller{
-		Model: &postModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &commentModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
-	})
-
-	// create existing post & note
-	existingPost := tester.Save(&postModel{
-		Title: "Post 1",
-	})
-	tester.Save(&noteModel{
-		Title: "Note 1",
-		Post:  existingPost.ID(),
-	})
-
-	// create new post
-	post := tester.Save(&postModel{
-		Title: "Post 2",
-	}).ID().Hex()
-
-	// get single post
-	tester.Request("GET", "posts/"+post, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "posts",
-				"id": "`+post+`",
-				"attributes": {
-					"title": "Post 2",
-					"published": false,
-					"text-body": ""
-				},
-				"relationships": {
-					"comments": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+post+`/relationships/comments",
-							"related": "/posts/`+post+`/comments"
-						}
-					},
-					"selections": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+post+`/relationships/selections",
-							"related": "/posts/`+post+`/selections"
-						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+post+`/relationships/note",
-							"related": "/posts/`+post+`/note"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/posts/`+post+`"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get empty unset related note
-	tester.Request("GET", "posts/"+post+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": null,
-			"links": {
-				"self": "/posts/`+post+`/note"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	var note string
-
-	// create related note
-	tester.Request("POST", "notes", `{
-		"data": {
-			"type": "notes",
-			"attributes": {
-				"title": "Note 2"
-			},
-			"relationships": {
-				"post": {
-					"data": {
-						"type": "posts",
-						"id": "`+post+`"
-					}
-				}
-			}
-		}
-	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		note = tester.FindLast(&noteModel{}).ID().Hex()
-
-		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "notes",
-				"id": "`+ note+`",
-				"attributes": {
-					"title": "Note 2"
-				},
-				"relationships": {
-					"post": {
-						"data": {
-							"type": "posts",
-							"id": "`+post+`"
-						},
-						"links": {
-							"self": "/notes/`+ note+`/relationships/post",
-							"related": "/notes/`+ note+`/post"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/notes/`+ note+`"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get set related note
-	tester.Request("GET", "posts/"+post+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "notes",
-				"id": "`+ note+`",
-				"attributes": {
-					"title": "Note 2"
-				},
-				"relationships": {
-					"post": {
-						"data": {
-							"type": "posts",
-							"id": "`+post+`"
-						},
-						"links": {
-							"self": "/notes/`+ note+`/relationships/post",
-							"related": "/notes/`+ note+`/post"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/posts/`+post+`/note"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get only relationship links
-	tester.Request("GET", "posts/"+post+"/relationships/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "notes",
-				"id": "`+ note+`"
-			},
-			"links": {
-				"self": "/posts/`+post+`/relationships/note",
-				"related": "/posts/`+post+`/note"
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -1110,9 +795,6 @@ func TestHasManyRelationship(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -1155,13 +837,6 @@ func TestHasManyRelationship(t *testing.T) {
 						"links": {
 							"self": "/posts/`+post+`/relationships/selections",
 							"related": "/posts/`+post+`/selections"
-						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+post+`/relationships/note",
-							"related": "/posts/`+post+`/note"
 						}
 					}
 				}
@@ -1306,9 +981,6 @@ func TestToOneRelationship(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// create posts
@@ -1424,13 +1096,6 @@ func TestToOneRelationship(t *testing.T) {
 							"self": "/posts/`+post1+`/relationships/selections",
 							"related": "/posts/`+post1+`/selections"
 						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+post1+`/relationships/note",
-							"related": "/posts/`+post1+`/note"
-						}
 					}
 				}
 			},
@@ -1524,9 +1189,6 @@ func TestToManyRelationship(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -1633,13 +1295,6 @@ func TestToManyRelationship(t *testing.T) {
 								"self": "/posts/`+post1+`/relationships/selections",
 								"related": "/posts/`+post1+`/selections"
 							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
 						}
 					}
 				},
@@ -1669,13 +1324,6 @@ func TestToManyRelationship(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post2+`/relationships/selections",
 								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
 							}
 						}
 					}
@@ -1814,9 +1462,6 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// create posts
@@ -1865,9 +1510,6 @@ func TestNoList(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// attempt list comments
@@ -1888,9 +1530,6 @@ func TestPagination(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -1945,9 +1584,6 @@ func TestPaginationToMany(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 
@@ -2011,9 +1647,6 @@ func TestPaginationHasMany(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// create post
@@ -2075,9 +1708,6 @@ func TestForcedPagination(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: testStore,
 	})
 
 	// create some posts
@@ -2116,9 +1746,6 @@ func TestEnforcedListLimit(t *testing.T) {
 		Store: testStore,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
-	}, &Controller{
-		Model: &noteModel{},
 		Store: testStore,
 	})
 

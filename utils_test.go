@@ -16,7 +16,6 @@ type postModel struct {
 	TextBody   string       `json:"text-body" bson:"text_body"`
 	Comments   coal.HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections coal.HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
-	Note       coal.HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
 }
 
 func (p *postModel) Validate() error {
@@ -40,22 +39,13 @@ type selectionModel struct {
 	Posts     []bson.ObjectId `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
-type noteModel struct {
-	coal.Base      `json:"-" bson:",inline" coal:"notes"`
-	Title     string    `json:"title" bson:"title" valid:"required"`
-	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
-}
-
 var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
-var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{})
 
 func buildHandler(controllers ...*Controller) http.Handler {
 	group := NewGroup()
 	group.Add(controllers...)
-	group.Reporter = func(err error) {
-		panic(err)
-	}
 	return group.Endpoint("")
 }
