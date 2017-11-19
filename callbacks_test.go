@@ -225,6 +225,48 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRelationshipValidatorDependentResources(t *testing.T) {
+	tester.Clean()
+
+	group := coal.NewGroup(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+	validator := RelationshipValidator(&postModel{}, group)
+
+	post := &postModel{}
+
+	err := tester.RunValidator(Delete, post, validator)
+	assert.NoError(t, err)
+
+	tester.Save(&commentModel{
+		Post: post.ID(),
+	})
+
+	err = tester.RunValidator(Delete, post, validator)
+	assert.Error(t, err)
+}
+
+func TestRelationshipValidatorVerifyReferences(t *testing.T) {
+	tester.Clean()
+
+	group := coal.NewGroup(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+	validator := RelationshipValidator(&commentModel{}, group)
+
+	comment1 := tester.Save(&commentModel{
+		Post: bson.NewObjectId(),
+	})
+
+	err := tester.RunValidator(Create, comment1, validator)
+	assert.Error(t, err)
+
+	post := tester.Save(&postModel{})
+	comment2 := tester.Save(&commentModel{
+		Parent: coal.P(comment1.ID()),
+		Post:   post.ID(),
+	})
+
+	err = tester.RunValidator(Delete, comment2, validator)
+	assert.NoError(t, err)
+}
+
 func TestMatchingReferencesValidator(t *testing.T) {
 	tester.Clean()
 

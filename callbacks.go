@@ -278,6 +278,79 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 	}
 }
 
+// RelationshipValidator makes sure all relationships of a model are correct and
+// in place. It does so by creating a DependentResourcesValidator and a
+// VerifyReferencesValidator based on the specified model and group.
+func RelationshipValidator(model coal.Model, group *coal.Group, excludedFields ...string) Callback {
+	// prepare lists
+	dependentResources := make(map[string]string)
+	references := make(map[string]string)
+
+	// iterate through all fields
+	for _, field := range coal.Init(model).Meta().Fields {
+		// exclude field if requested
+		if stringInList(field.Name, excludedFields) {
+			continue
+		}
+
+		// handle has-one and has-many relationships
+		if field.HasOne || field.HasMany {
+			// get related model
+			relatedModel := group.Find(field.RelType)
+			if relatedModel == nil {
+				panic("missing model in group: " + field.RelType)
+			}
+
+			// get collection
+			collection := relatedModel.Meta().Collection
+
+			// get related bson field
+			bsonField := ""
+			for _, relatedField := range relatedModel.Meta().Fields {
+				if relatedField.RelName == field.RelInverse {
+					bsonField = relatedField.BSONName
+				}
+			}
+			if bsonField == "" {
+				panic("missing field for inverse relationship: " + field.RelInverse)
+			}
+
+			// add relationship
+			dependentResources[collection] = bsonField
+		}
+
+		// handle to-one and to-many relationships
+		if field.ToOne || field.ToMany {
+			// get related model
+			relatedModel := group.Find(field.RelType)
+			if relatedModel == nil {
+				panic("missing model in group: " + field.RelType)
+			}
+
+			// add relationship
+			references[field.BSONName] = relatedModel.Meta().Collection
+		}
+	}
+
+	// create callbacks
+	cb1 := DependentResourcesValidator(dependentResources)
+	cb2 := VerifyReferencesValidator(references)
+
+	return func(ctx *Context) error {
+		err := cb1(ctx)
+		if err != nil {
+			return err
+		}
+
+		err = cb2(ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
 // MatchingReferencesValidator compares the model with a related model and
 // checks if certain references are shared.
 //
