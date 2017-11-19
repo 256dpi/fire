@@ -174,8 +174,8 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
 	validator := VerifyReferencesValidator(map[string]string{
-		"parent_id":  "comments",
-		"post_id": "posts",
+		"parent_id": "comments",
+		"post_id":   "posts",
 	})
 
 	comment1 := tester.Save(&commentModel{

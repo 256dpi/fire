@@ -6,7 +6,7 @@ type Group struct {
 }
 
 // NewGroup will create a new group.
-func NewGroup(models... Model) *Group {
+func NewGroup(models ...Model) *Group {
 	g := &Group{
 		models: make(map[string]Model),
 	}
@@ -17,7 +17,7 @@ func NewGroup(models... Model) *Group {
 }
 
 // Add will add the specified model to the group.
-func (g *Group) Add(models... Model) {
+func (g *Group) Add(models ...Model) {
 	for _, model := range models {
 		g.models[Init(model).Meta().PluralName] = model
 	}
