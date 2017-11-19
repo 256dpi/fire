@@ -1031,7 +1031,7 @@ func TestHasOneRelationship(t *testing.T) {
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "notes",
-				"id": "`+ note+`",
+				"id": "`+note+`",
 				"attributes": {
 					"title": "Note 2"
 				},
@@ -1042,14 +1042,14 @@ func TestHasOneRelationship(t *testing.T) {
 							"id": "`+post+`"
 						},
 						"links": {
-							"self": "/notes/`+ note+`/relationships/post",
-							"related": "/notes/`+ note+`/post"
+							"self": "/notes/`+note+`/relationships/post",
+							"related": "/notes/`+note+`/post"
 						}
 					}
 				}
 			},
 			"links": {
-				"self": "/notes/`+ note+`"
+				"self": "/notes/`+note+`"
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -1060,7 +1060,7 @@ func TestHasOneRelationship(t *testing.T) {
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "notes",
-				"id": "`+ note+`",
+				"id": "`+note+`",
 				"attributes": {
 					"title": "Note 2"
 				},
@@ -1071,8 +1071,8 @@ func TestHasOneRelationship(t *testing.T) {
 							"id": "`+post+`"
 						},
 						"links": {
-							"self": "/notes/`+ note+`/relationships/post",
-							"related": "/notes/`+ note+`/post"
+							"self": "/notes/`+note+`/relationships/post",
+							"related": "/notes/`+note+`/post"
 						}
 					}
 				}
@@ -1089,7 +1089,7 @@ func TestHasOneRelationship(t *testing.T) {
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "notes",
-				"id": "`+ note+`"
+				"id": "`+note+`"
 			},
 			"links": {
 				"self": "/posts/`+post+`/relationships/note",

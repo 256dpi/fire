@@ -41,8 +41,8 @@ type selectionModel struct {
 }
 
 type noteModel struct {
-	coal.Base      `json:"-" bson:",inline" coal:"notes"`
-	Title     string    `json:"title" bson:"title" valid:"required"`
+	coal.Base `json:"-" bson:",inline" coal:"notes"`
+	Title     string        `json:"title" bson:"title" valid:"required"`
 	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
