@@ -30,6 +30,11 @@ type malformedToMany struct {
 	Foo  []bson.ObjectId `coal:"foo:foo:foo"`
 }
 
+type malformedHasOne struct {
+	Base `json:"-" bson:",inline" coal:"foo:foos"`
+	Foo  HasOne
+}
+
 type malformedHasMany struct {
 	Base `json:"-" bson:",inline" coal:"foo:foos"`
 	Foo  HasMany
@@ -59,6 +64,10 @@ func TestNewMeta(t *testing.T) {
 
 	assert.Panics(t, func() {
 		NewMeta(&malformedToMany{})
+	})
+
+	assert.Panics(t, func() {
+		NewMeta(&malformedHasOne{})
 	})
 
 	assert.Panics(t, func() {
@@ -122,14 +131,14 @@ func TestMeta(t *testing.T) {
 				index:      5,
 			},
 			{
-				Name: "Note",
-				Type: hasOneType,
-				Kind: reflect.Struct,
-				HasOne: true,
-				RelName: "note",
-				RelType: "notes",
+				Name:       "Note",
+				Type:       hasOneType,
+				Kind:       reflect.Struct,
+				HasOne:     true,
+				RelName:    "note",
+				RelType:    "notes",
 				RelInverse: "post",
-				index: 6,
+				index:      6,
 			},
 		},
 		model: post.Meta().model,
