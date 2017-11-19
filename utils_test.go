@@ -30,7 +30,7 @@ func (p *postModel) Validate() error {
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
 	Message   string         `json:"message"`
-	Parent    *bson.ObjectId `json:"-" coal:"parent:comments"`
+	Parent    *bson.ObjectId `json:"-" bson:"parent_id" coal:"parent:comments"`
 	Post      bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
 }
 

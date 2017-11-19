@@ -174,7 +174,7 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
 	validator := VerifyReferencesValidator(map[string]string{
-		"parent":  "comments",
+		"parent_id":  "comments",
 		"post_id": "posts",
 	})
 
@@ -228,7 +228,7 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 func TestMatchingReferencesValidator(t *testing.T) {
 	tester.Clean()
 
-	validator := MatchingReferencesValidator("comments", "parent", map[string]string{
+	validator := MatchingReferencesValidator("comments", "parent_id", map[string]string{
 		"post_id": "post_id",
 	})
 
