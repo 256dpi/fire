@@ -40,12 +40,12 @@ func TestGroupStackAbort(t *testing.T) {
 	group.Add(&Controller{
 		Model: &postModel{},
 		Store: testStore,
-		Authorizers: []Callback{
+		Authorizers: L(
 			func(*Context) error {
 				stack.Abort(errors.New("foo"))
 				return nil
 			},
-		},
+		),
 	})
 
 	tester.Handler = group.Endpoint("")
