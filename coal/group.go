@@ -6,15 +6,21 @@ type Group struct {
 }
 
 // NewGroup will create a new group.
-func NewGroup() *Group {
-	return &Group{
+func NewGroup(models... Model) *Group {
+	g := &Group{
 		models: make(map[string]Model),
 	}
+
+	g.Add(models...)
+
+	return g
 }
 
 // Add will add the specified model to the group.
-func (g *Group) Add(model Model) {
-	g.models[Init(model).Meta().PluralName] = model
+func (g *Group) Add(models... Model) {
+	for _, model := range models {
+		g.models[Init(model).Meta().PluralName] = model
+	}
 }
 
 // Find will return a model with the specified plural name.
