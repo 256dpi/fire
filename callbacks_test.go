@@ -149,7 +149,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDependentResourcesValidator(t *testing.T) {
+func TestDependentResourcesValidatorHasOne(t *testing.T) {
 	tester.Clean()
 
 	validator := DependentResourcesValidator(map[string]string{
@@ -164,6 +164,30 @@ func TestDependentResourcesValidator(t *testing.T) {
 
 	tester.Save(&commentModel{
 		Post: post.ID(),
+	})
+
+	err = tester.RunValidator(Delete, post, validator)
+	assert.Error(t, err)
+}
+
+func TestDependentResourcesValidatorHasMany(t *testing.T) {
+	tester.Clean()
+
+	validator := DependentResourcesValidator(map[string]string{
+		"selections": "post_ids",
+	})
+
+	post := &postModel{}
+
+	err := tester.RunValidator(Delete, post, validator)
+	assert.NoError(t, err)
+
+	tester.Save(&selectionModel{
+		Posts: []bson.ObjectId{
+			bson.NewObjectId(),
+			post.ID(),
+			bson.NewObjectId(),
+		},
 	})
 
 	err = tester.RunValidator(Delete, post, validator)
