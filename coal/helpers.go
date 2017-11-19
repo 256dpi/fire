@@ -19,7 +19,7 @@ func A(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).JSONName
 }
 
-// Optional returns a pointer to the passed id.
-func Optional(id bson.ObjectId) *bson.ObjectId {
+// P is a short-hand function to get a pointer of the passed id.
+func P(id bson.ObjectId) *bson.ObjectId {
 	return &id
 }

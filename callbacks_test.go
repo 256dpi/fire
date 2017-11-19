@@ -187,7 +187,7 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 
 	post := tester.Save(&postModel{})
 	comment2 := tester.Save(&commentModel{
-		Parent: coal.Optional(comment1.ID()),
+		Parent: coal.P(comment1.ID()),
 		Post:   post.ID(),
 	})
 
@@ -239,7 +239,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	})
 
 	comment2 := tester.Save(&commentModel{
-		Parent: coal.Optional(comment1.ID()),
+		Parent: coal.P(comment1.ID()),
 		Post:   bson.NewObjectId(),
 	})
 
@@ -251,7 +251,7 @@ func TestMatchingReferencesValidator(t *testing.T) {
 	})
 
 	comment4 := tester.Save(&commentModel{
-		Parent: coal.Optional(comment3.ID()),
+		Parent: coal.P(comment3.ID()),
 		Post:   postID,
 	})
 

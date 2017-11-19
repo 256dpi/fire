@@ -19,7 +19,7 @@ func TestA(t *testing.T) {
 	assert.Equal(t, "text-body", A(&postModel{}, "TextBody"))
 }
 
-func TestOptional(t *testing.T) {
+func TestP(t *testing.T) {
 	id := bson.NewObjectId()
-	assert.Equal(t, &id, Optional(id))
+	assert.Equal(t, &id, P(id))
 }
