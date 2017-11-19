@@ -12,6 +12,8 @@ import (
 
 func TestGroup(t *testing.T) {
 	group := NewGroup()
+	assert.Nil(t, group.Find("posts"))
+
 	controller := &Controller{
 		Model: &postModel{},
 	}

@@ -25,6 +25,5 @@ func (g *Group) Add(models ...Model) {
 
 // Find will return a model with the specified plural name.
 func (g *Group) Find(pluralName string) Model {
-	model, _ := g.models[pluralName]
-	return model
+	return g.models[pluralName]
 }

@@ -291,7 +291,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// get related controller
 	pluralName := relationField.RelType
-	relatedController := ctx.Group.controllers[pluralName]
+	relatedController := ctx.Group.Find(pluralName)
 
 	// check related controller
 	if relatedController == nil {
@@ -895,7 +895,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 		} else if field.HasOne {
 			// get related controller
-			relatedController := ctx.Group.controllers[field.RelType]
+			relatedController := ctx.Group.Find(field.RelType)
 
 			// check existence
 			if relatedController == nil {
@@ -952,7 +952,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := ctx.Group.controllers[field.RelType]
+			relatedController := ctx.Group.Find(field.RelType)
 
 			// check existence
 			if relatedController == nil {
