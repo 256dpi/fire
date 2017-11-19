@@ -98,23 +98,6 @@ func InitSlice(ptr interface{}) []Model {
 	return models
 }
 
-// C is a short-hand function to extract the collection of a model.
-func C(m Model) string {
-	return Init(m).Meta().Collection
-}
-
-// F is a short-hand function to extract the BSON field name of a model
-// attribute.
-func F(m Model, field string) string {
-	return Init(m).Meta().MustFindField(field).BSONName
-}
-
-// A is a short-hand function to extract the JSON attribute name of a model
-// attribute.
-func A(m Model, field string) string {
-	return Init(m).Meta().MustFindField(field).JSONName
-}
-
 // Base is the base for every coal model.
 type Base struct {
 	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`

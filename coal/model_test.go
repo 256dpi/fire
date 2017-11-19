@@ -17,18 +17,6 @@ func TestInitSlice(t *testing.T) {
 	assert.NotNil(t, m[0].Meta())
 }
 
-func TestC(t *testing.T) {
-	assert.Equal(t, "posts", C(&postModel{}))
-}
-
-func TestF(t *testing.T) {
-	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
-}
-
-func TestA(t *testing.T) {
-	assert.Equal(t, "text-body", A(&postModel{}, "TextBody"))
-}
-
 func TestValidate(t *testing.T) {
 	post := Init(&postModel{}).(*postModel)
 
