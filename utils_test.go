@@ -51,11 +51,11 @@ var testSubStore = testStore.Copy()
 
 var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 
-func buildHandler(controllers ...*Controller) http.Handler {
+func buildHandler(prefix string, controllers ...*Controller) http.Handler {
 	group := NewGroup()
 	group.Add(controllers...)
 	group.Reporter = func(err error) {
 		panic(err)
 	}
-	return group.Endpoint("")
+	return group.Endpoint(prefix)
 }

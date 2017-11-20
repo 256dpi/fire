@@ -14,7 +14,7 @@ import (
 func TestBasicOperations(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -250,7 +250,7 @@ func TestBasicOperations(t *testing.T) {
 func TestFiltering(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 		Filters: []string{
@@ -614,7 +614,7 @@ func TestFiltering(t *testing.T) {
 func TestSorting(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 		Sorters: []string{
@@ -862,7 +862,7 @@ func TestSorting(t *testing.T) {
 func TestSparseFields(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -925,7 +925,7 @@ func TestSparseFields(t *testing.T) {
 func TestHasOneRelationship(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1102,7 +1102,7 @@ func TestHasOneRelationship(t *testing.T) {
 func TestHasManyRelationship(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1297,7 +1297,7 @@ func TestHasManyRelationship(t *testing.T) {
 func TestToOneRelationship(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1516,7 +1516,7 @@ func TestToOneRelationship(t *testing.T) {
 func TestToManyRelationship(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1805,7 +1805,7 @@ func TestToManyRelationship(t *testing.T) {
 func TestEmptyToManyRelationship(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1855,7 +1855,7 @@ func TestEmptyToManyRelationship(t *testing.T) {
 func TestNoList(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1880,7 +1880,7 @@ func TestNoList(t *testing.T) {
 func TestPagination(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -1937,7 +1937,7 @@ func TestPagination(t *testing.T) {
 func TestPaginationToMany(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -2002,7 +2002,7 @@ func TestPaginationToMany(t *testing.T) {
 func TestPaginationHasMany(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model: &postModel{},
 		Store: testStore,
 	}, &Controller{
@@ -2065,7 +2065,7 @@ func TestPaginationHasMany(t *testing.T) {
 func TestForcedPagination(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("", &Controller{
 		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
@@ -2107,7 +2107,7 @@ func TestForcedPagination(t *testing.T) {
 func TestEnforcedListLimit(t *testing.T) {
 	tester.Clean()
 
-	tester.Handler = buildHandler(&Controller{
+	tester.Handler = buildHandler("api", &Controller{
 		Model:     &postModel{},
 		Store:     testStore,
 		ListLimit: 5,
@@ -2138,10 +2138,10 @@ func TestEnforcedListLimit(t *testing.T) {
 		assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"self": "/posts?page[number]=1&page[size]=5",
-			"first": "/posts?page[number]=1&page[size]=5",
-			"last": "/posts?page[number]=2&page[size]=5",
-			"next": "/posts?page[number]=2&page[size]=5"
+			"self": "/api/posts?page[number]=1&page[size]=5",
+			"first": "/api/posts?page[number]=1&page[size]=5",
+			"last": "/api/posts?page[number]=2&page[size]=5",
+			"next": "/api/posts?page[number]=2&page[size]=5"
 		}`, links)
 	})
 }

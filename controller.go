@@ -825,7 +825,10 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	}
 
 	// generate base link
-	base := ctx.JSONAPIRequest.Prefix + "/" + model.Meta().PluralName + "/" + model.ID().Hex()
+	base := "/" + model.Meta().PluralName + "/" + model.ID().Hex()
+	if ctx.JSONAPIRequest.Prefix != "" {
+		base = "/" + ctx.JSONAPIRequest.Prefix + base
+	}
 
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
