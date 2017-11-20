@@ -139,6 +139,7 @@ type Application struct {
 	coal.Base   `json:"-" bson:",inline" coal:"applications"`
 	Name        string `json:"name" valid:"required"`
 	Key         string `json:"key" valid:"required"`
+	Secret      string `json:"secret,omitempty" bson:"-"`
 	SecretHash  []byte `json:"-" valid:"required"`
 	RedirectURI string `json:"redirect_uri" valid:"required"`
 }
@@ -158,6 +159,38 @@ func (a *Application) ValidRedirectURI(uri string) bool {
 // ValidSecret implements the Client interface.
 func (a *Application) ValidSecret(secret string) bool {
 	return bcrypt.CompareHashAndPassword(a.SecretHash, []byte(secret)) == nil
+}
+
+// Validate validates the application.
+func (a *Application) Validate() error {
+	// hash password if available
+	err := a.HashSecret()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// HashSecret will hash Secret and set SecretHash.
+func (a *Application) HashSecret() error {
+	if len(a.Secret) == 0 {
+		return nil
+	}
+
+	// generate hash from password
+	hash, err := bcrypt.GenerateFromPassword([]byte(a.Secret), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// save hash
+	a.SecretHash = hash
+
+	// clear password
+	a.Secret = ""
+
+	return nil
 }
 
 // A ResourceOwnerDescription is returned by a ResourceOwner model to specify
@@ -184,6 +217,7 @@ type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
 	Name         string `json:"name" valid:"required"`
 	Email        string `json:"email" valid:"required"`
+	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" valid:"required"`
 }
 
@@ -197,4 +231,36 @@ func (u *User) DescribeResourceOwner() ResourceOwnerDescription {
 // ValidPassword implements the ResourceOwner interface.
 func (u *User) ValidPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
+}
+
+// Validate validates the user.
+func (u *User) Validate() error {
+	// hash password if available
+	err := u.HashPassword()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// HashPassword will hash Password and set PasswordHash.
+func (u *User) HashPassword() error {
+	if len(u.Password) == 0 {
+		return nil
+	}
+
+	// generate hash from password
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// save hash
+	u.PasswordHash = hash
+
+	// clear password
+	u.Password = ""
+
+	return nil
 }
