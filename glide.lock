@@ -1,8 +1,10 @@
-hash: 5df65042b31fb8c9e26a903f0426671a56c087353c7ead1d12d6e656df253b00
-updated: 2017-11-15T11:56:57.871830702+01:00
+hash: 2fc0ada1abee1527f5705ac82f741953601846040c2cf75b076ea7907ae05e28
+updated: 2017-11-22T21:20:47.060673378+01:00
 imports:
 - name: github.com/256dpi/jsonapi
   version: 1a28390515dd8547416f7b0f11106a4684f13679
+- name: github.com/256dpi/mgojq
+  version: e79ab730184899ed67854174e78e55bdf4443418
 - name: github.com/256dpi/oauth2
   version: 893e79e85a99df8c99231a150d749bb724109642
   subpackages:
@@ -43,6 +45,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
-  version: 2dec1c4e7be3fff111b388536cf94ae23c38add7
+  version: 5a69e67cfd8f6f9b0044ed49f5079d0eeed28653
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
