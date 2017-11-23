@@ -17,13 +17,13 @@ type Job struct {
 	Params    bson.M    `json:"params"`
 	Status    string    `json:"status"`
 	Created   time.Time `json:"created"`
-	Delayed   time.Time `json:"delayed" bson:",omitempty"`
-	Started   time.Time `json:"started" bson:",omitempty"`
-	Ended     time.Time `json:"ended" bson:",omitempty"`
 	Attempts  int       `json:"attempts"`
-	Result    bson.M    `json:"result" bson:",omitempty"`
-	Error     string    `json:"error" bson:",omitempty"`
-	Reason    string    `json:"reason" bson:",omitempty"`
+	Delayed   time.Time `json:"delayed,omitempty" bson:",omitempty"`
+	Started   time.Time `json:"started,omitempty" bson:",omitempty"`
+	Ended     time.Time `json:"ended,omitempty" bson:",omitempty"`
+	Result    bson.M    `json:"result,omitempty" bson:",omitempty"`
+	Error     string    `json:"error,omitempty" bson:",omitempty"`
+	Reason    string    `json:"reason,omitempty" bson:",omitempty"`
 }
 
 // JobController will return a basic controller that provides access to the jobs.
