@@ -2,7 +2,6 @@ package fire
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/256dpi/fire/coal"
 
@@ -50,12 +49,3 @@ var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
 var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-
-func buildHandler(prefix string, controllers ...*Controller) http.Handler {
-	group := NewGroup()
-	group.Add(controllers...)
-	group.Reporter = func(err error) {
-		panic(err)
-	}
-	return group.Endpoint(prefix)
-}
