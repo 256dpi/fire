@@ -4,6 +4,7 @@ package flame
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -20,8 +21,16 @@ import (
 
 type ctxKey int
 
-// AccessTokenContextKey is the key used to save the access token in a context.
-const AccessTokenContextKey ctxKey = iota
+const (
+	// AccessTokenContextKey is the key used to save the access token in a context.
+	AccessTokenContextKey ctxKey = iota
+
+	// ClientContextKey is the key used to save the client in a context.
+	ClientContextKey
+
+	// ResourceOwnerContextKey is the key used to save the resource owner in a context.
+	ResourceOwnerContextKey
+)
 
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
@@ -99,7 +108,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 // Authorizer returns a middleware that can be used to authorize a request by
 // requiring an access token with the provided scope to be granted.
-func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) http.Handler {
+func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// immediately pass on request if force is not set and there is
@@ -163,6 +172,37 @@ func (a *Authenticator) Authorizer(scope string, force bool) func(http.Handler) 
 			// create new context with access token
 			ctx := context.WithValue(r.Context(), AccessTokenContextKey, accessToken)
 
+			// call next handler if client should not be loaded
+			if !loadClient {
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			// get client
+			client := a.getFirstClient(data.ClientID)
+			if client == nil {
+				stack.Abort(errors.New("missing client"))
+			}
+
+			// create new context with client
+			ctx = context.WithValue(ctx, ClientContextKey, client)
+
+			// call next handler if resource owner does not exist or should not
+			// be loaded
+			if data.ResourceOwnerID == nil || !loadResourceOwner {
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			// get resource owner
+			resourceOwner := a.getFirstResourceOwner(client, *data.ResourceOwnerID)
+			if client == nil {
+				stack.Abort(errors.New("missing resource owner"))
+			}
+
+			// create new context with resource owner
+			ctx = context.WithValue(ctx, ResourceOwnerContextKey, resourceOwner)
+
 			// call next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -180,7 +220,7 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// get client
-	client := a.getFirstClient(req.ClientID)
+	client := a.findFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
@@ -255,7 +295,7 @@ func (a *Authenticator) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get client
-	client := a.getFirstClient(req.ClientID)
+	client := a.findFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
@@ -393,7 +433,7 @@ func (a *Authenticator) revocationEndpoint(w http.ResponseWriter, r *http.Reques
 	stack.AbortIf(err)
 
 	// get client
-	client := a.getFirstClient(req.ClientID)
+	client := a.findFirstClient(req.ClientID)
 	if client == nil {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
@@ -476,10 +516,10 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 	return res
 }
 
-func (a *Authenticator) getFirstClient(id string) Client {
+func (a *Authenticator) findFirstClient(id string) Client {
 	// check all available models in order
 	for _, model := range a.policy.Clients {
-		c := a.getClient(model, id)
+		c := a.findClient(model, id)
 		if c != nil {
 			return c
 		}
@@ -488,7 +528,7 @@ func (a *Authenticator) getFirstClient(id string) Client {
 	return nil
 }
 
-func (a *Authenticator) getClient(model Client, id string) Client {
+func (a *Authenticator) findClient(model Client, id string) Client {
 	// prepare object
 	obj := model.Meta().Make()
 
@@ -506,6 +546,41 @@ func (a *Authenticator) getClient(model Client, id string) Client {
 	err := store.C(model).Find(bson.M{
 		field: id,
 	}).One(obj)
+	if err == mgo.ErrNotFound {
+		return nil
+	}
+
+	// abort on error
+	stack.AbortIf(err)
+
+	// initialize model
+	client := coal.Init(obj).(Client)
+
+	return client
+}
+
+func (a *Authenticator) getFirstClient(id bson.ObjectId) Client {
+	// check all available models in order
+	for _, model := range a.policy.Clients {
+		c := a.getClient(model, id)
+		if c != nil {
+			return c
+		}
+	}
+
+	return nil
+}
+
+func (a *Authenticator) getClient(model Client, id bson.ObjectId) Client {
+	// prepare object
+	obj := model.Meta().Make()
+
+	// get store
+	store := a.store.Copy()
+	defer store.Close()
+
+	// query db
+	err := store.C(model).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
 		return nil
 	}
