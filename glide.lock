@@ -1,5 +1,5 @@
-hash: 2fc0ada1abee1527f5705ac82f741953601846040c2cf75b076ea7907ae05e28
-updated: 2017-11-22T21:20:47.060673378+01:00
+hash: be290acbaab533eb7aa224cb74172ba924ef798f52306e995ca0d4aa8b6dbd29
+updated: 2017-11-24T16:56:27.20231067+01:00
 imports:
 - name: github.com/256dpi/jsonapi
   version: 1a28390515dd8547416f7b0f11106a4684f13679
@@ -19,11 +19,17 @@ imports:
   version: dbeaa9332f19a944acb5736b4456cfcc02140e29
 - name: github.com/goware/cors
   version: dba6525398619dead495962a916728e7ee2ca322
+- name: github.com/pborman/uuid
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: golang.org/x/crypto
   version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
   - bcrypt
   - blowfish
+- name: golang.org/x/net
+  version: f315505cf3349909cdf013ea56690da34e96a451
+  subpackages:
+  - context
 - name: gopkg.in/mgo.v2
   version: 01084657862d7b12d3b10ffd0394357abf8f8bc2
   subpackages:
@@ -31,6 +37,8 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
+- name: gopkg.in/tomb.v2
+  version: d5d1b5820637886def9eef33e03a27a9f166942c
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
