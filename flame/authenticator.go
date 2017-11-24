@@ -185,9 +185,9 @@ func (a *Authenticator) authorizationEndpoint(w http.ResponseWriter, r *http.Req
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
-	// validate redirect uri
-	if !client.ValidRedirectURI(req.RedirectURI) {
-		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
+	// validate redirect url
+	if !client.ValidRedirectURL(req.RedirectURI) {
+		stack.Abort(oauth2.InvalidRequest("invalid redirect url"))
 	}
 
 	// triage based on response type

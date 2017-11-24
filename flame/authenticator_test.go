@@ -48,14 +48,14 @@ func TestIntegration(t *testing.T) {
 		Name:        "Application 1",
 		Key:         "app1",
 		SecretHash:  mustHash(testPassword),
-		RedirectURI: "http://example.com/callback1",
+		RedirectURL: "http://example.com/callback1",
 	}).(*Application)
 
 	app2 := tester.Save(&Application{
 		Name:        "Application 2",
 		Key:         "app2",
 		SecretHash:  mustHash(testPassword),
-		RedirectURI: "http://example.com/callback2",
+		RedirectURL: "http://example.com/callback2",
 	}).(*Application)
 
 	user := tester.Save(&User{

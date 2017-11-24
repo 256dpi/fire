@@ -122,12 +122,12 @@ type Client interface {
 	// DescribeClient should return a ClientDescription.
 	DescribeClient() ClientDescription
 
-	// ValidRedirectURI should return whether the specified redirect uri can be
+	// ValidRedirectURL should return whether the specified redirect url can be
 	// used by this client.
 	//
 	// Note: In order to increases security the callback should only allow
-	// pre-registered redirect uris.
-	ValidRedirectURI(string) bool
+	// pre-registered redirect urls.
+	ValidRedirectURL(string) bool
 
 	// ValidSecret should determine whether the specified plain text secret
 	// matches the stored hashed secret.
@@ -141,7 +141,7 @@ type Application struct {
 	Key         string `json:"key" valid:"required"`
 	Secret      string `json:"secret,omitempty" bson:"-"`
 	SecretHash  []byte `json:"-" valid:"required"`
-	RedirectURI string `json:"redirect_uri" valid:"required"`
+	RedirectURL string `json:"redirect_url" valid:"required,url"`
 }
 
 // DescribeClient implements the Client interface.
@@ -151,9 +151,9 @@ func (a *Application) DescribeClient() ClientDescription {
 	}
 }
 
-// ValidRedirectURI implements the Client interface.
-func (a *Application) ValidRedirectURI(uri string) bool {
-	return uri == a.RedirectURI
+// ValidRedirectURL implements the Client interface.
+func (a *Application) ValidRedirectURL(url string) bool {
+	return url == a.RedirectURL
 }
 
 // ValidSecret implements the Client interface.
@@ -216,7 +216,7 @@ type ResourceOwner interface {
 type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
 	Name         string `json:"name" valid:"required"`
-	Email        string `json:"email" valid:"required"`
+	Email        string `json:"email" valid:"required,email"`
 	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" valid:"required"`
 }
