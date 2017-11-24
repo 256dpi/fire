@@ -67,8 +67,13 @@ type TokenClaims struct {
 	Data map[string]interface{} `json:"dat"`
 }
 
-// DefaultGrantStrategy grants the requested scope.
+// DefaultGrantStrategy grants only empty scopes.
 func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+	// check scope
+	if !scope.Empty() {
+		return nil, ErrInvalidScope
+	}
+
 	return scope, nil
 }
 
