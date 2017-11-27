@@ -7,6 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAddIndexes(t *testing.T) {
+	i := coal.NewIndexer()
+	AddAccessTokenIndexes(i)
+	AddRefreshTokenIndexes(i)
+	AddApplicationIndexes(i)
+	AddUserIndexes(i)
+
+	assert.NoError(t, i.Ensure(tester.Store))
+	assert.NoError(t, i.Ensure(tester.Store))
+}
+
 func TestAccessTokenInterfaces(t *testing.T) {
 	var _ coal.Model = &AccessToken{}
 	var _ Token = &AccessToken{}

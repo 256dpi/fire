@@ -47,6 +47,12 @@ type AccessToken struct {
 	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
+// AddAccessTokenIndexes will add access token indexes to the specified indexer.
+func AddAccessTokenIndexes(i *coal.Indexer) {
+	i.Add(&AccessToken{}, false, coal.F(&AccessToken{}, "Client"))
+	i.Add(&AccessToken{}, false, coal.F(&AccessToken{}, "ResourceOwner"))
+}
+
 // DescribeToken implements the flame.Token interface.
 func (t *AccessToken) DescribeToken() TokenDescription {
 	return TokenDescription{
@@ -80,6 +86,12 @@ type RefreshToken struct {
 	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
 	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
 	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+}
+
+// AddApplicationIndexes will add refresh token indexes to the specified indexer.
+func AddRefreshTokenIndexes(i *coal.Indexer) {
+	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "Client"))
+	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "ResourceOwner"))
 }
 
 // DescribeToken implements the flame.Token interface.
@@ -141,6 +153,11 @@ type Application struct {
 	Secret      string `json:"secret,omitempty" bson:"-"`
 	SecretHash  []byte `json:"-" valid:"required"`
 	RedirectURL string `json:"redirect_url" valid:"required,url"`
+}
+
+// AddApplicationIndexes will add application indexes to the specified indexer.
+func AddApplicationIndexes(i *coal.Indexer) {
+	i.Add(&Application{}, true, coal.F(&Application{}, "Key"))
 }
 
 // DescribeClient implements the flame.Client interface.
@@ -217,6 +234,11 @@ type User struct {
 	Email        string `json:"email" valid:"required,email"`
 	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" valid:"required"`
+}
+
+// AddUserIndexes will add user indexes to the specified indexer.
+func AddUserIndexes(i *coal.Indexer) {
+	i.Add(&User{}, true, coal.F(&User{}, "Email"))
 }
 
 // DescribeResourceOwner implements the flame.ResourceOwner interface.
