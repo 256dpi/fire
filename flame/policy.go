@@ -54,9 +54,6 @@ type Policy struct {
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
 	RefreshTokenLifespan time.Duration
-
-	// The optional automated cleanup of expires tokens.
-	AutomatedCleanup bool
 }
 
 // TokenClaims represents the data included in an access token and refresh token.
@@ -93,7 +90,6 @@ func DefaultPolicy(secret string) *Policy {
 		GrantStrategy:        DefaultGrantStrategy,
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,
-		AutomatedCleanup:     true,
 	}
 }
 
