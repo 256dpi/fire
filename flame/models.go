@@ -40,17 +40,17 @@ type Token interface {
 
 // AccessToken is the built-in model used to store access tokens.
 type AccessToken struct {
-	coal.Base       `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
-	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
-	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
-	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+	coal.Base     `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
+	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
+	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
+	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
+	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
 // DescribeToken implements the flame.Token interface.
 func (t *AccessToken) DescribeToken() TokenDescription {
 	return TokenDescription{
-		ClientIDField:  "ClientID",
+		ClientIDField:  "Client",
 		ExpiresAtField: "ExpiresAt",
 	}
 }
@@ -60,8 +60,8 @@ func (t *AccessToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
-		ClientID:        t.ClientID,
-		ResourceOwnerID: t.ResourceOwnerID,
+		ClientID:        t.Client,
+		ResourceOwnerID: t.ResourceOwner,
 	}
 }
 
@@ -69,23 +69,23 @@ func (t *AccessToken) GetTokenData() *TokenData {
 func (t *AccessToken) SetTokenData(data *TokenData) {
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
-	t.ClientID = data.ClientID
-	t.ResourceOwnerID = data.ResourceOwnerID
+	t.Client = data.ClientID
+	t.ResourceOwner = data.ResourceOwnerID
 }
 
 // RefreshToken is the built-in model used to store refresh tokens.
 type RefreshToken struct {
-	coal.Base       `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
-	ExpiresAt       time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope           []string       `json:"scope" valid:"required" bson:"scope"`
-	ClientID        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
-	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+	coal.Base     `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
+	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
+	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
+	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
+	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
 // DescribeToken implements the flame.Token interface.
 func (t *RefreshToken) DescribeToken() TokenDescription {
 	return TokenDescription{
-		ClientIDField:  "ClientID",
+		ClientIDField:  "Client",
 		ExpiresAtField: "ExpiresAt",
 	}
 }
@@ -95,8 +95,8 @@ func (t *RefreshToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Scope:           t.Scope,
 		ExpiresAt:       t.ExpiresAt,
-		ClientID:        t.ClientID,
-		ResourceOwnerID: t.ResourceOwnerID,
+		ClientID:        t.Client,
+		ResourceOwnerID: t.ResourceOwner,
 	}
 }
 
@@ -104,8 +104,8 @@ func (t *RefreshToken) GetTokenData() *TokenData {
 func (t *RefreshToken) SetTokenData(data *TokenData) {
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
-	t.ClientID = data.ClientID
-	t.ResourceOwnerID = data.ResourceOwnerID
+	t.Client = data.ClientID
+	t.ResourceOwner = data.ResourceOwnerID
 }
 
 // A ClientDescription is returned by a Client model to specify details about

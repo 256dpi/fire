@@ -88,13 +88,13 @@ func TestIntegration(t *testing.T) {
 	expiredToken := tester.Save(&AccessToken{
 		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
 		Scope:     []string{"foo"},
-		ClientID:  app1.ID(),
+		Client:    app1.ID(),
 	}).(*AccessToken)
 
 	insufficientToken := tester.Save(&AccessToken{
 		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
 		Scope:     []string{},
-		ClientID:  app1.ID(),
+		Client:    app1.ID(),
 	}).(*AccessToken)
 
 	config.UnknownToken = mustGenerateAccessToken(p, bson.NewObjectId(), time.Now())
@@ -107,13 +107,13 @@ func TestIntegration(t *testing.T) {
 	validRefreshToken := tester.Save(&RefreshToken{
 		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
-		ClientID:  app1.ID(),
+		Client:    app1.ID(),
 	}).(*RefreshToken)
 
 	expiredRefreshToken := tester.Save(&RefreshToken{
 		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
-		ClientID:  app1.ID(),
+		Client:    app1.ID(),
 	}).(*RefreshToken)
 
 	config.UnknownRefreshToken = mustGenerateRefreshToken(p, bson.NewObjectId(), time.Now())
