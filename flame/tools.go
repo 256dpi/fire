@@ -109,8 +109,6 @@ func GetApplicationKey(store *coal.Store, name string) (string, error) {
 // EnsureFirstUser ensures the existence of a first user if no other has been
 // created.
 func EnsureFirstUser(store *coal.Store, name, email, password string) error {
-	// TODO: Move to flame.
-
 	// copy store
 	s := store.Copy()
 	defer s.Close()
