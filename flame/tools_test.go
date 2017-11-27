@@ -26,18 +26,15 @@ func TestTokenMigrator(t *testing.T) {
 func TestEnsureApplicationAndGetApplicationKey(t *testing.T) {
 	tester.Clean()
 
-	err := EnsureApplication(tester.Store, "Foo")
+	key, err := EnsureApplication(tester.Store, "Foo")
 	assert.NoError(t, err)
 
 	app := tester.FindLast(&Application{}).(*Application)
 	assert.Equal(t, "Foo", app.Name)
 	assert.NotEmpty(t, app.Key)
+	assert.Equal(t, app.Key, key)
 	assert.Empty(t, app.Secret)
 	assert.NotEmpty(t, app.SecretHash)
-
-	key, err := GetApplicationKey(tester.Store, "Foo")
-	assert.NoError(t, err)
-	assert.Equal(t, app.Key, key)
 }
 
 func TestEnsureFirstUser(t *testing.T) {

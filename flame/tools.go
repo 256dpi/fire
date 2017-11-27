@@ -43,8 +43,8 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 }
 
 // EnsureApplication will ensure that an application with the provided name
-// exists.
-func EnsureApplication(store *coal.Store, name string) error {
+// exists and returns its key.
+func EnsureApplication(store *coal.Store, name string) (string, error) {
 	// copy store
 	s := store.Copy()
 	defer s.Close()
@@ -55,14 +55,14 @@ func EnsureApplication(store *coal.Store, name string) error {
 		coal.F(&Application{}, "Name"): name,
 	}).All(&apps)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// check existence
 	if len(apps) > 1 {
-		return errors.New("to many applications with that name")
+		return "", errors.New("to many applications with that name")
 	} else if len(apps) == 1 {
-		return nil
+		return apps[0].Key, nil
 	}
 
 	// application is missing
@@ -76,29 +76,11 @@ func EnsureApplication(store *coal.Store, name string) error {
 	// validate model
 	err = app.Validate()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// save application
 	err = s.C(app).Insert(app)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GetApplicationKey will return the key for the specified application.
-func GetApplicationKey(store *coal.Store, name string) (string, error) {
-	// copy store
-	s := store.Copy()
-	defer s.Close()
-
-	// get application
-	var app Application
-	err := s.C(&app).Find(bson.M{
-		"name": name,
-	}).One(&app)
 	if err != nil {
 		return "", err
 	}
