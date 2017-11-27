@@ -25,7 +25,7 @@ func TestProtectorBodyOverflow(t *testing.T) {
 	p := DefaultProtector()
 	e := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf, err := ioutil.ReadAll(r.Body)
-		assert.Equal(t, 4000, len(buf))
+		assert.Equal(t, 8000000, len(buf))
 		assert.Error(t, err)
 
 		w.WriteHeader(http.StatusContinue)
@@ -33,7 +33,7 @@ func TestProtectorBodyOverflow(t *testing.T) {
 	})
 	h := p(e)
 
-	r, err := http.NewRequest("GET", "/foo", randomReader(4001))
+	r, err := http.NewRequest("GET", "/foo", randomReader(8000001))
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
