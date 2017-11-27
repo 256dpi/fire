@@ -63,7 +63,7 @@ type Policy struct {
 type TokenClaims struct {
 	jwt.StandardClaims
 
-	// Data is only set for access tokens.
+	// Data contains user defined key value pairs.
 	Data map[string]interface{} `json:"dat"`
 }
 
