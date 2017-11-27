@@ -9,8 +9,8 @@ import (
 
 func TestAddIndexes(t *testing.T) {
 	i := coal.NewIndexer()
-	AddAccessTokenIndexes(i)
-	AddRefreshTokenIndexes(i)
+	AddAccessTokenIndexes(i, true)
+	AddRefreshTokenIndexes(i, true)
 	AddApplicationIndexes(i)
 	AddUserIndexes(i)
 

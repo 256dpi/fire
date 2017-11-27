@@ -6,6 +6,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -48,9 +49,17 @@ type AccessToken struct {
 }
 
 // AddAccessTokenIndexes will add access token indexes to the specified indexer.
-func AddAccessTokenIndexes(i *coal.Indexer) {
+func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&AccessToken{}, false, coal.F(&AccessToken{}, "Client"))
 	i.Add(&AccessToken{}, false, coal.F(&AccessToken{}, "ResourceOwner"))
+
+	if autoExpire {
+		i.AddRaw(coal.C(&AccessToken{}), mgo.Index{
+			Key:         []string{coal.F(&AccessToken{}, "ExpiresAt")},
+			ExpireAfter: time.Minute,
+			Background:  true,
+		})
+	}
 }
 
 // DescribeToken implements the flame.Token interface.
@@ -89,9 +98,17 @@ type RefreshToken struct {
 }
 
 // AddApplicationIndexes will add refresh token indexes to the specified indexer.
-func AddRefreshTokenIndexes(i *coal.Indexer) {
+func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "Client"))
 	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "ResourceOwner"))
+
+	if autoExpire {
+		i.AddRaw(coal.C(&RefreshToken{}), mgo.Index{
+			Key:         []string{coal.F(&RefreshToken{}, "ExpiresAt")},
+			ExpireAfter: time.Minute,
+			Background:  true,
+		})
+	}
 }
 
 // DescribeToken implements the flame.Token interface.
