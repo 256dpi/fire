@@ -12,16 +12,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var testSecret = "abcd1234abcd1234"
-var testPassword = "foo"
-
 func TestIntegration(t *testing.T) {
 	tester.Clean()
 
+	var testPassword = "foo"
 	var allowedScope = oauth2.ParseScope("foo bar")
 	var requiredScope = oauth2.ParseScope("foo")
 
-	p := DefaultPolicy(testSecret)
+	p := DefaultPolicy("")
 
 	p.PasswordGrant = true
 	p.ClientCredentialsGrant = true
@@ -129,7 +127,7 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestPublicAccess(t *testing.T) {
-	manager := NewAuthenticator(tester.Store, DefaultPolicy(testSecret))
+	manager := NewAuthenticator(tester.Store, DefaultPolicy(""))
 	tester.Handler = newHandler(manager, false)
 
 	tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {

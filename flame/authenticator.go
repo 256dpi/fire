@@ -1,5 +1,5 @@
-// Package flame implements an authentication manager that provides OAuth2
-// compatible authentication with JWT tokens.
+// Package flame implements an authenticator that provides OAuth2 compatible
+// authentication with JWT tokens.
 package flame
 
 import (
@@ -44,11 +44,6 @@ type Authenticator struct {
 
 // NewAuthenticator constructs a new Authenticator from a store and policy.
 func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
-	// check secret
-	if len(policy.Secret) < 16 {
-		panic("flame: secret must be longer than 16 characters")
-	}
-
 	// initialize models
 	coal.Init(policy.AccessToken)
 	coal.Init(policy.RefreshToken)

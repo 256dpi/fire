@@ -12,7 +12,7 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 	id := bson.NewObjectId()
 	tt := time.Now()
 
-	p := DefaultPolicy(testSecret)
+	p := DefaultPolicy("")
 	p.TokenData = func(c Client, ro ResourceOwner) map[string]interface{} {
 		return map[string]interface{}{
 			"name": ro.(*User).Name,

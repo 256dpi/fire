@@ -19,7 +19,7 @@ var ErrInvalidScope = errors.New("invalid scope")
 
 // A Policy configures the provided authentication schemes.
 type Policy struct {
-	// The shared secret which should be at least 16 characters.
+	// The secret should be at least 16 characters long.
 	Secret []byte
 
 	// The available grants.
@@ -79,6 +79,8 @@ func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2
 
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
+//
+// Note: The secret should be at least 16 characters long.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
 		Secret:       []byte(secret),
