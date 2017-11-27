@@ -1,2 +1,2 @@
-// Package wood implements various helpful tools for developing apps.
+// Package wood implements helpful tools that support the developer experience.
 package wood
