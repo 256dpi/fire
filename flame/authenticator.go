@@ -508,11 +508,6 @@ func (a *Authenticator) issueTokens(refreshable bool, scope oauth2.Scope, client
 		res.RefreshToken = rtSignature
 	}
 
-	// run automated cleanup if enabled
-	if a.policy.AutomatedCleanup {
-		a.cleanup()
-	}
-
 	return res
 }
 
@@ -751,35 +746,5 @@ func (a *Authenticator) deleteToken(t Token, id bson.ObjectId, clientID bson.Obj
 	}
 
 	// abort on critical error
-	stack.AbortIf(err)
-}
-
-func (a *Authenticator) cleanup() {
-	// remove all expired access tokens
-	a.cleanupToken(a.policy.AccessToken)
-
-	// remove all expired refresh tokens
-	a.cleanupToken(a.policy.RefreshToken)
-}
-
-func (a *Authenticator) cleanupToken(t Token) {
-	// get store
-	store := a.store.Copy()
-	defer store.Close()
-
-	// get description
-	desc := t.DescribeToken()
-
-	// get expires at field
-	field := coal.F(t, desc.ExpiresAtField)
-
-	// remove all records
-	_, err := store.C(t).RemoveAll(bson.M{
-		field: bson.M{
-			"$lt": time.Now(),
-		},
-	})
-
-	// abort on error
 	stack.AbortIf(err)
 }
