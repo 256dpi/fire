@@ -17,15 +17,14 @@ type TokenData struct {
 	ResourceOwnerID *bson.ObjectId
 }
 
-// A TokenDescription is returned by a Token model to specify some details about
+// A TokenDescription is returned by a Token model to specify details about
 // its implementation.
 type TokenDescription struct {
 	ClientIDField  string
 	ExpiresAtField string
 }
 
-// Token is the interface that must be implemented to provide a custom access
-// token and refresh token.
+// Token is the interface that must be implemented by the tokens.
 type Token interface {
 	coal.Model
 
@@ -48,7 +47,7 @@ type AccessToken struct {
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
-// DescribeToken implements the Token interface.
+// DescribeToken implements the flame.Token interface.
 func (t *AccessToken) DescribeToken() TokenDescription {
 	return TokenDescription{
 		ClientIDField:  "ClientID",
@@ -56,7 +55,7 @@ func (t *AccessToken) DescribeToken() TokenDescription {
 	}
 }
 
-// GetTokenData implements the Token interface.
+// GetTokenData implements the flame.Token interface.
 func (t *AccessToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Scope:           t.Scope,
@@ -66,7 +65,7 @@ func (t *AccessToken) GetTokenData() *TokenData {
 	}
 }
 
-// SetTokenData implements the Token interface.
+// SetTokenData implements the flame.Token interface.
 func (t *AccessToken) SetTokenData(data *TokenData) {
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
@@ -83,7 +82,7 @@ type RefreshToken struct {
 	ResourceOwnerID *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
-// DescribeToken implements the Token interface.
+// DescribeToken implements the flame.Token interface.
 func (t *RefreshToken) DescribeToken() TokenDescription {
 	return TokenDescription{
 		ClientIDField:  "ClientID",
@@ -91,7 +90,7 @@ func (t *RefreshToken) DescribeToken() TokenDescription {
 	}
 }
 
-// GetTokenData implements the Token interface.
+// GetTokenData implements the flame.Token interface.
 func (t *RefreshToken) GetTokenData() *TokenData {
 	return &TokenData{
 		Scope:           t.Scope,
@@ -101,7 +100,7 @@ func (t *RefreshToken) GetTokenData() *TokenData {
 	}
 }
 
-// SetTokenData implements the Token interface.
+// SetTokenData implements the flame.Token interface.
 func (t *RefreshToken) SetTokenData(data *TokenData) {
 	t.Scope = data.Scope
 	t.ExpiresAt = data.ExpiresAt
@@ -109,13 +108,13 @@ func (t *RefreshToken) SetTokenData(data *TokenData) {
 	t.ResourceOwnerID = data.ResourceOwnerID
 }
 
-// A ClientDescription is returned by a Client model to specify some details about
+// A ClientDescription is returned by a Client model to specify details about
 // its implementation.
 type ClientDescription struct {
 	IdentifierField string
 }
 
-// Client is the interface that must be implemented to provide a custom client.
+// Client is the interface that must be implemented by clients.
 type Client interface {
 	coal.Model
 
@@ -144,24 +143,24 @@ type Application struct {
 	RedirectURL string `json:"redirect_url" valid:"required,url"`
 }
 
-// DescribeClient implements the Client interface.
+// DescribeClient implements the flame.Client interface.
 func (a *Application) DescribeClient() ClientDescription {
 	return ClientDescription{
 		IdentifierField: "Key",
 	}
 }
 
-// ValidRedirectURL implements the Client interface.
+// ValidRedirectURL implements the flame.Client interface.
 func (a *Application) ValidRedirectURL(url string) bool {
 	return url == a.RedirectURL
 }
 
-// ValidSecret implements the Client interface.
+// ValidSecret implements the flame.Client interface.
 func (a *Application) ValidSecret(secret string) bool {
 	return bcrypt.CompareHashAndPassword(a.SecretHash, []byte(secret)) == nil
 }
 
-// Validate validates the application.
+// Validate implements the coal.ValidatableModel interface.
 func (a *Application) Validate() error {
 	// hash password if available
 	err := a.HashSecret()
@@ -194,13 +193,12 @@ func (a *Application) HashSecret() error {
 }
 
 // A ResourceOwnerDescription is returned by a ResourceOwner model to specify
-// some details about its implementation.
+// details about its implementation.
 type ResourceOwnerDescription struct {
 	IdentifierField string
 }
 
-// ResourceOwner is the interface that must be implemented to provide a custom
-// resource owner.
+// ResourceOwner is the interface that must be implemented resource owners.
 type ResourceOwner interface {
 	coal.Model
 
@@ -221,19 +219,19 @@ type User struct {
 	PasswordHash []byte `json:"-" valid:"required"`
 }
 
-// DescribeResourceOwner implements the ResourceOwner interface.
+// DescribeResourceOwner implements the flame.ResourceOwner interface.
 func (u *User) DescribeResourceOwner() ResourceOwnerDescription {
 	return ResourceOwnerDescription{
 		IdentifierField: "Email",
 	}
 }
 
-// ValidPassword implements the ResourceOwner interface.
+// ValidPassword implements the flame.ResourceOwner interface.
 func (u *User) ValidPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
 }
 
-// Validate validates the user.
+// Validate implements the coal.ValidatableModel interface.
 func (u *User) Validate() error {
 	// hash password if available
 	err := u.HashPassword()
