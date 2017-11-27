@@ -252,8 +252,8 @@ func TestVerifyReferencesValidatorToMany(t *testing.T) {
 func TestRelationshipValidatorDependentResources(t *testing.T) {
 	tester.Clean()
 
-	group := coal.NewGroup(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	validator := RelationshipValidator(&postModel{}, group)
+	catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+	validator := RelationshipValidator(&postModel{}, catalog)
 
 	post := &postModel{}
 
@@ -271,8 +271,8 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 	tester.Clean()
 
-	group := coal.NewGroup(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	validator := RelationshipValidator(&commentModel{}, group)
+	catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+	validator := RelationshipValidator(&commentModel{}, catalog)
 
 	comment1 := tester.Save(&commentModel{
 		Post: bson.NewObjectId(),

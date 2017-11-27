@@ -281,7 +281,7 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by creating a DependentResourcesValidator and a
 // VerifyReferencesValidator based on the specified model and group.
-func RelationshipValidator(model coal.Model, group *coal.Group, excludedFields ...string) Callback {
+func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) Callback {
 	// prepare lists
 	dependentResources := make(map[string]string)
 	references := make(map[string]string)
@@ -296,9 +296,9 @@ func RelationshipValidator(model coal.Model, group *coal.Group, excludedFields .
 		// handle has-one and has-many relationships
 		if field.HasOne || field.HasMany {
 			// get related model
-			relatedModel := group.Find(field.RelType)
+			relatedModel := catalog.Find(field.RelType)
 			if relatedModel == nil {
-				panic("missing model in group: " + field.RelType)
+				panic("missing model in catalog: " + field.RelType)
 			}
 
 			// get collection
@@ -322,9 +322,9 @@ func RelationshipValidator(model coal.Model, group *coal.Group, excludedFields .
 		// handle to-one and to-many relationships
 		if field.ToOne || field.ToMany {
 			// get related model
-			relatedModel := group.Find(field.RelType)
+			relatedModel := catalog.Find(field.RelType)
 			if relatedModel == nil {
-				panic("missing model in group: " + field.RelType)
+				panic("missing model in catalog: " + field.RelType)
 			}
 
 			// add relationship
