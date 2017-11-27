@@ -10,7 +10,7 @@ import (
 // DefaultProtector constructs a middleware that by default limits the request
 // body size to 4Ks and sets a basic CORS configuration.
 func DefaultProtector() func(http.Handler) http.Handler {
-	return NewProtector("4K", cors.Options{
+	return NewProtector("8M", cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedHeaders: []string{"Origin", "Accept", "Content-Type", "Authorization"},
 		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE"},
