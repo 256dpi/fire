@@ -49,7 +49,7 @@ type Policy struct {
 
 	// TokenData should return a map of data that should be included in the JWT
 	// tokens under the "dat" field.
-	TokenData func(Client, ResourceOwner) map[string]interface{}
+	TokenData func(Client, ResourceOwner, Token) map[string]interface{}
 
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
@@ -94,7 +94,7 @@ func DefaultPolicy(secret string) *Policy {
 }
 
 // GenerateToken returns a new token for the provided information.
-func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, ro ResourceOwner) (string, error) {
+func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token Token) (string, error) {
 	// prepare claims
 	claims := &TokenClaims{}
 	claims.Id = id.Hex()
@@ -103,7 +103,7 @@ func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, 
 
 	// set user data
 	if p.TokenData != nil {
-		claims.Data = p.TokenData(client, ro)
+		claims.Data = p.TokenData(client, resourceOwner, token)
 	}
 
 	// create token

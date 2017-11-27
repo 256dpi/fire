@@ -13,13 +13,13 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 	tt := time.Now()
 
 	p := DefaultPolicy("")
-	p.TokenData = func(c Client, ro ResourceOwner) map[string]interface{} {
+	p.TokenData = func(c Client, ro ResourceOwner, t Token) map[string]interface{} {
 		return map[string]interface{}{
 			"name": ro.(*User).Name,
 		}
 	}
 
-	sig, err := p.GenerateToken(id, tt, tt, nil, &User{Name: "Hello"})
+	sig, err := p.GenerateToken(id, tt, tt, nil, &User{Name: "Hello"}, nil)
 	assert.NoError(t, err)
 
 	claims, _, err := p.ParseToken(sig)

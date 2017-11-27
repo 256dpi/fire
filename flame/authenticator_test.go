@@ -136,7 +136,7 @@ func TestPublicAccess(t *testing.T) {
 }
 
 func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
-	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil)
+	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +145,7 @@ func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) s
 }
 
 func mustGenerateRefreshToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
-	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil)
+	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)
 	}
