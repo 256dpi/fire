@@ -5,7 +5,7 @@ type Catalog struct {
 	models map[string]Model
 }
 
-// NewCatalog will create a new group.
+// NewCatalog will create a new catalog.
 func NewCatalog(models ...Model) *Catalog {
 	g := &Catalog{
 		models: make(map[string]Model),
@@ -16,7 +16,7 @@ func NewCatalog(models ...Model) *Catalog {
 	return g
 }
 
-// Add will add the specified model to the group.
+// Add will add the specified models to the catalog.
 func (c *Catalog) Add(models ...Model) {
 	for _, model := range models {
 		c.models[Init(model).Meta().PluralName] = model
