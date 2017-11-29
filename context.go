@@ -20,6 +20,7 @@ const (
 	Create
 	Update
 	Delete
+	Custom
 )
 
 // Read will return true when this action does only read data.
@@ -73,6 +74,14 @@ type Context struct {
 
 	// The Group that received the request.
 	Group *Group
+
+	// The payload that was received with the collection or resource action.
+	ActionPayload []byte
+
+	// The response that will be written to the client while processing a
+	// collection or resource action. If set, the value must be a json.Marshal
+	// compatible object.
+	ActionResponse interface{}
 
 	original coal.Model
 }

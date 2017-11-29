@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -34,6 +35,22 @@ func (g *Group) Add(controllers ...*Controller) {
 
 		// create entry in controller map
 		g.controllers[m.Meta().PluralName] = controller
+
+		// TODO: Add to controller in a prepare function?
+
+		// validate resource actions
+		for action := range controller.ResourceActions {
+			if action == "relationships" {
+				panic(`invalid resource action "relationships"`)
+			}
+
+			// check relations
+			for _, field := range m.Meta().Fields {
+				if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && action == field.RelType {
+					panic(fmt.Sprintf(`invalid resource action "%s"`, action))
+				}
+			}
+		}
 	}
 }
 

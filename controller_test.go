@@ -2145,3 +2145,77 @@ func TestEnforcedListLimit(t *testing.T) {
 		}`, links)
 	})
 }
+
+func TestCollectionActions(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("api", &Controller{
+		Model: &postModel{},
+		Store: testStore,
+		CollectionActions: map[string]Callback{
+			"foo": func(ctx *Context) error {
+				assert.Equal(t, []byte("PAYLOAD"), ctx.ActionPayload)
+
+				ctx.ActionResponse = map[string]interface{}{
+					"bar": "baz",
+				}
+				return nil
+			},
+		},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: testStore,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: testStore,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: testStore,
+	})
+
+	// get first page of posts
+	tester.Request("POST", "posts/foo", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
+func TestResourceActions(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("api", &Controller{
+		Model: &postModel{},
+		Store: testStore,
+		ResourceActions: map[string]Callback{
+			"foo": func(ctx *Context) error {
+				assert.Equal(t, []byte("PAYLOAD"), ctx.ActionPayload)
+
+				ctx.ActionResponse = map[string]interface{}{
+					"bar": "baz",
+				}
+				return nil
+			},
+		},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: testStore,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: testStore,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: testStore,
+	})
+
+	post := tester.Save(&postModel{
+		Title: "Post",
+	}).(*postModel).ID()
+
+	// get first page of posts
+	tester.Request("POST", "posts/"+post.Hex()+"/foo", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}

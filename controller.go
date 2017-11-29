@@ -1,7 +1,9 @@
 package fire
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"reflect"
@@ -67,13 +69,43 @@ type Controller struct {
 	// The ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit uint64
+
+	// The CollectionActions and ResourceActions are custom actions that are run
+	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
+	// "posts/1/recover-password"). The request context is forwarded to
+	// the specified callback after running the authorizers. No validators and
+	// notifiers are run for the request. If the ActionResponse field is set on
+	// the context, the content will be encoded and written as the response.
+	//
+	// Note: The HTTP method "POST" is assumed for both action types.
+	CollectionActions map[string]Callback
+	ResourceActions   map[string]Callback
 }
 
 // TODO: Update pagination to use offset and limit.
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
+	// prepare parsers
+	parser := jsonapi.Parser{
+		Prefix:            prefix,
+		CollectionActions: make(map[string][]string),
+		ResourceActions:   make(map[string][]string),
+	}
+
+	// add collection actions
+	for action := range c.CollectionActions {
+		parser.CollectionActions[action] = []string{"POST"}
+	}
+
+	// add resource actions
+	for action := range c.ResourceActions {
+		parser.ResourceActions[action] = []string{"POST"}
+	}
+
+	// TODO: Cache the parser.
+
 	// parse incoming JSON API request
-	req, err := jsonapi.ParseRequest(r, prefix)
+	req, err := parser.ParseRequest(r)
 	stack.AbortIf(err)
 
 	// handle no list setting
@@ -136,6 +168,12 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	case jsonapi.RemoveFromRelationship:
 		ctx.Action = Update
 		c.removeFromRelationship(w, ctx, doc)
+	case jsonapi.CollectionAction:
+		ctx.Action = Custom
+		c.handleCollectionAction(w, ctx)
+	case jsonapi.ResourceAction:
+		ctx.Action = Custom
+		c.handleResourceAction(w, ctx)
 	}
 }
 
@@ -639,6 +677,66 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+
+	// write result
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context) {
+	// read payload
+	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+	stack.AbortIf(err)
+	ctx.ActionPayload = data
+
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+
+	// get callback
+	cb, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
+	if !ok {
+		panic("fire: missing collection action callback")
+	}
+
+	// run callback
+	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
+
+	// write response if available
+	if ctx.ActionResponse != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+		return
+	}
+
+	// write result
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
+	// read payload
+	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+	stack.AbortIf(err)
+	ctx.ActionPayload = data
+
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+
+	// get callback
+	cb, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
+	if !ok {
+		panic("fire: missing resource action callback")
+	}
+
+	// run callback
+	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
+
+	// write response if available
+	if ctx.ActionResponse != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+		return
+	}
 
 	// write result
 	w.WriteHeader(http.StatusNoContent)

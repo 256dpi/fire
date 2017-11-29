@@ -25,6 +25,7 @@ type Strategy struct {
 	Create []Authorizer
 	Update []Authorizer
 	Delete []Authorizer
+	Custom []Authorizer
 
 	// The read group contains List and Find.
 	Read []Authorizer
@@ -64,6 +65,8 @@ func Callback(s *Strategy) fire.Callback {
 			return s.call(ctx, s.Update, s.Write, s.All)
 		case fire.Delete:
 			return s.call(ctx, s.Delete, s.Write, s.All)
+		case fire.Custom:
+			return s.call(ctx, s.Custom, s.All)
 		}
 
 		// panic on unknown action
