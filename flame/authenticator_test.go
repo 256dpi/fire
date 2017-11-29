@@ -37,8 +37,8 @@ func TestIntegration(t *testing.T) {
 		return scope, nil
 	}
 
-	manager := NewAuthenticator(tester.Store, p)
-	manager.Reporter = func(err error) {
+	authenticator := NewAuthenticator(tester.Store, p)
+	authenticator.Reporter = func(err error) {
 		t.Error(err)
 	}
 
@@ -62,7 +62,7 @@ func TestIntegration(t *testing.T) {
 		PasswordHash: mustHash(testPassword),
 	}).(*User)
 
-	config := spec.Default(newHandler(manager, true))
+	config := spec.Default(newHandler(authenticator, true))
 
 	config.PasswordGrantSupport = true
 	config.ClientCredentialsGrantSupport = true
@@ -81,16 +81,16 @@ func TestIntegration(t *testing.T) {
 	config.ValidScope = "foo bar"
 	config.ExceedingScope = "foo bar baz"
 
-	config.ExpectedExpiresIn = int(manager.policy.AccessTokenLifespan / time.Second)
+	config.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
 
 	expiredToken := tester.Save(&AccessToken{
-		ExpiresAt: time.Now().Add(-manager.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(-authenticator.policy.AccessTokenLifespan),
 		Scope:     []string{"foo"},
 		Client:    app1.ID(),
 	}).(*AccessToken)
 
 	insufficientToken := tester.Save(&AccessToken{
-		ExpiresAt: time.Now().Add(manager.policy.AccessTokenLifespan),
+		ExpiresAt: time.Now().Add(authenticator.policy.AccessTokenLifespan),
 		Scope:     []string{},
 		Client:    app1.ID(),
 	}).(*AccessToken)
@@ -103,13 +103,13 @@ func TestIntegration(t *testing.T) {
 	config.SecondaryRedirectURI = "http://example.com/callback2"
 
 	validRefreshToken := tester.Save(&RefreshToken{
-		ExpiresAt: time.Now().Add(manager.policy.RefreshTokenLifespan),
+		ExpiresAt: time.Now().Add(authenticator.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		Client:    app1.ID(),
 	}).(*RefreshToken)
 
 	expiredRefreshToken := tester.Save(&RefreshToken{
-		ExpiresAt: time.Now().Add(-manager.policy.RefreshTokenLifespan),
+		ExpiresAt: time.Now().Add(-authenticator.policy.RefreshTokenLifespan),
 		Scope:     []string{"foo", "bar"},
 		Client:    app1.ID(),
 	}).(*RefreshToken)
@@ -127,8 +127,10 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestPublicAccess(t *testing.T) {
-	manager := NewAuthenticator(tester.Store, DefaultPolicy(""))
-	tester.Handler = newHandler(manager, false)
+	tester.Clean()
+
+	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""))
+	tester.Handler = newHandler(authenticator, false)
 
 	tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, "OK", r.Body.String())
