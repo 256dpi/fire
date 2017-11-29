@@ -80,32 +80,53 @@ type Controller struct {
 	// Note: The HTTP method "POST" is assumed for both action types.
 	CollectionActions map[string]Callback
 	ResourceActions   map[string]Callback
+
+	parser jsonapi.Parser
 }
 
 // TODO: Update pagination to use offset and limit.
 
-func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
+func (c *Controller) prepare() {
+	// initialize model
+	coal.Init(c.Model)
+
+	// validate resource actions
+	for action := range c.ResourceActions {
+		if action == "relationships" {
+			panic(`invalid resource action "relationships"`)
+		}
+
+		// check relations
+		for _, field := range c.Model.Meta().Fields {
+			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && action == field.RelType {
+				panic(fmt.Sprintf(`invalid resource action "%s"`, action))
+			}
+		}
+	}
+
 	// prepare parsers
-	parser := jsonapi.Parser{
-		Prefix:            prefix,
+	c.parser = jsonapi.Parser{
 		CollectionActions: make(map[string][]string),
 		ResourceActions:   make(map[string][]string),
 	}
 
 	// add collection actions
 	for action := range c.CollectionActions {
-		parser.CollectionActions[action] = []string{"POST"}
+		c.parser.CollectionActions[action] = []string{"POST"}
 	}
 
 	// add resource actions
 	for action := range c.ResourceActions {
-		parser.ResourceActions[action] = []string{"POST"}
+		c.parser.ResourceActions[action] = []string{"POST"}
 	}
+}
 
-	// TODO: Cache the parser.
+func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
+	// set prefix
+	c.parser.Prefix = prefix
 
 	// parse incoming JSON API request
-	req, err := parser.ParseRequest(r)
+	req, err := c.parser.ParseRequest(r)
 	stack.AbortIf(err)
 
 	// handle no list setting
