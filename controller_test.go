@@ -2153,12 +2153,20 @@ func TestCollectionActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		CollectionActions: map[string]Callback{
-			"foo": func(ctx *Context) error {
+			"bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.ActionPayload)
-
+				ctx.ActionResponse = []byte("RESPONSE")
+				return nil
+			},
+			"json": func(ctx *Context) error {
+				assert.Equal(t, []byte("{}"), ctx.ActionPayload)
 				ctx.ActionResponse = map[string]interface{}{
 					"bar": "baz",
 				}
+				return nil
+			},
+			"empty": func(ctx *Context) error {
+				assert.Empty(t, ctx.ActionPayload)
 				return nil
 			},
 		},
@@ -2173,11 +2181,25 @@ func TestCollectionActions(t *testing.T) {
 		Store: testStore,
 	})
 
-	// get first page of posts
-	tester.Request("POST", "posts/foo", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	// get byte response
+	tester.Request("POST", "posts/bytes", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, "", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Equal(t, "RESPONSE", r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get json response
+	tester.Request("POST", "posts/json", "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get empty response
+	tester.Request("POST", "posts/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
 
@@ -2188,12 +2210,20 @@ func TestResourceActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		ResourceActions: map[string]Callback{
-			"foo": func(ctx *Context) error {
+			"bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.ActionPayload)
-
+				ctx.ActionResponse = []byte("RESPONSE")
+				return nil
+			},
+			"json": func(ctx *Context) error {
+				assert.Equal(t, []byte("{}"), ctx.ActionPayload)
 				ctx.ActionResponse = map[string]interface{}{
 					"bar": "baz",
 				}
+				return nil
+			},
+			"empty": func(ctx *Context) error {
+				assert.Empty(t, ctx.ActionPayload)
 				return nil
 			},
 		},
@@ -2212,10 +2242,24 @@ func TestResourceActions(t *testing.T) {
 		Title: "Post",
 	}).(*postModel).ID()
 
-	// get first page of posts
-	tester.Request("POST", "posts/"+post.Hex()+"/foo", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	// get byte response
+	tester.Request("POST", "posts/"+post.Hex()+"/bytes", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, "", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Equal(t, "RESPONSE", r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get json response
+	tester.Request("POST", "posts/"+post.Hex()+"/json", "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get empty response
+	tester.Request("POST", "posts/"+post.Hex()+"/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }

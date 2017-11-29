@@ -79,9 +79,13 @@ type Context struct {
 	ActionPayload []byte
 
 	// The response that will be written to the client while processing a
-	// collection or resource action. If set, the value must be a json.Marshal
-	// compatible object.
+	// collection or resource action. If set, the value must be either a byte
+	// slice for raw responses or a json.Marshal compatible object for json
+	// responses.
 	ActionResponse interface{}
+
+	// TODO: Encode as a JSON-API response if the response is an instance of the
+	// controller model.
 
 	original coal.Model
 }

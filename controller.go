@@ -700,16 +700,23 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	// run callback
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
-	// write response if available
-	if ctx.ActionResponse != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+	// write no response if missing
+	if ctx.ActionResponse == nil {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	// write result
-	w.WriteHeader(http.StatusNoContent)
+	// write bytes if available
+	if slice, ok := ctx.ActionResponse.([]byte); ok {
+		w.WriteHeader(http.StatusOK)
+		w.Write(slice)
+		return
+	}
+
+	// write json response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
@@ -730,16 +737,23 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// run callback
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
-	// write response if available
-	if ctx.ActionResponse != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+	// write no response if missing
+	if ctx.ActionResponse == nil {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	// write result
-	w.WriteHeader(http.StatusNoContent)
+	// write bytes if available
+	if slice, ok := ctx.ActionResponse.([]byte); ok {
+		w.WriteHeader(http.StatusOK)
+		w.Write(slice)
+		return
+	}
+
+	// write json response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
 }
 
 func (c *Controller) loadModel(ctx *Context) {
