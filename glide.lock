@@ -1,8 +1,8 @@
 hash: 1843ca02730b2c0a5482042a680cb81779ed09f60b956d12398d42a4b576d611
-updated: 2017-11-28T23:50:39.594078983+01:00
+updated: 2017-11-29T18:10:54.118927784+01:00
 imports:
 - name: github.com/256dpi/jsonapi
-  version: b9ff6e6c2613fcff6350996bfecf6f62f9046e99
+  version: 778c9ece97935c22b67824b2af8825d392786f64
 - name: github.com/256dpi/mgojq
   version: e79ab730184899ed67854174e78e55bdf4443418
 - name: github.com/256dpi/oauth2
