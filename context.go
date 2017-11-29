@@ -84,6 +84,11 @@ type Context struct {
 	// responses.
 	ActionResponse interface{}
 
+	// ActionResponseContentType denotes the content type of the action response.
+	//
+	// Note: This value is only considered if the response is set to a byte slice.
+	ActionResponseContentType string
+
 	// TODO: Encode as a JSON-API response if the response is an instance of the
 	// controller model.
 

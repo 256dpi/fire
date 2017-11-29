@@ -708,6 +708,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 
 	// write bytes if available
 	if slice, ok := ctx.ActionResponse.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.ActionResponseContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
@@ -745,6 +746,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 
 	// write bytes if available
 	if slice, ok := ctx.ActionResponse.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.ActionResponseContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
