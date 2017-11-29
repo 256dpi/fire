@@ -137,6 +137,43 @@ func TestPublicAccess(t *testing.T) {
 	})
 }
 
+func TestContextKeys(t *testing.T) {
+	tester.Clean()
+
+	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""))
+	tester.Handler = newHandler(authenticator, false)
+
+	application := tester.Save(&Application{
+		Key: "application",
+	}).(*Application).ID()
+
+	user := tester.Save(&User{
+		Name:  "User",
+		Email: "email@example.com",
+	}).(*User).ID()
+
+	accessToken := tester.Save(&AccessToken{
+		ExpiresAt:     time.Now().Add(authenticator.policy.AccessTokenLifespan),
+		Client:        application,
+		ResourceOwner: &user,
+	}).(*AccessToken).ID()
+
+	token := mustGenerateAccessToken(authenticator.policy, accessToken, time.Now().Add(time.Hour))
+
+	auth := authenticator.Authorizer("", true, true, true)
+
+	tester.Handler.(*http.ServeMux).Handle("/api/info", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, accessToken, r.Context().Value(AccessTokenContextKey).(*AccessToken).ID())
+		assert.Equal(t, application, r.Context().Value(ClientContextKey).(*Application).ID())
+		assert.Equal(t, user, r.Context().Value(ResourceOwnerContextKey).(*User).ID())
+	})))
+
+	tester.Header["Authorization"] = "Bearer " + token
+	tester.Request("GET", "api/info", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Code, tester.DebugRequest(rq, r))
+	})
+}
+
 func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
