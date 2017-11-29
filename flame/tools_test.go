@@ -9,6 +9,8 @@ import (
 )
 
 func TestTokenMigrator(t *testing.T) {
+	tester.Clean()
+
 	migrator := TokenMigrator(true)
 
 	tester.Handler = migrator(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
