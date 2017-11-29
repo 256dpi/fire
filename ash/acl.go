@@ -19,28 +19,20 @@ type Authorizer func(ctx *fire.Context) (Enforcer, error)
 
 // Strategy contains lists of authorizers that are used to authorize the request.
 type Strategy struct {
-	// The list action.
-	List []Authorizer
-
-	// The find action.
-	Find []Authorizer
-
-	// The create action.
+	// Single actions.
+	List   []Authorizer
+	Find   []Authorizer
 	Create []Authorizer
-
-	// The update action.
 	Update []Authorizer
-
-	// The delete action.
 	Delete []Authorizer
 
-	// Read is the for List and Find.
+	// The read group contains List and Find.
 	Read []Authorizer
 
-	// Write is the fallback for Create, Update and Delete.
+	// The write group contains Create, Update and Delete.
 	Write []Authorizer
 
-	// All is a fallback for Read and Write.
+	// The all group contains all actions.
 	All []Authorizer
 
 	// If Bubble is set to true the Read, Write and All callback is run also if
