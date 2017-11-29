@@ -16,7 +16,7 @@ import (
 
 // A Controller provides a JSON API based interface to a model.
 //
-// Note: Controllers must not be modified after adding to an application.
+// Note: Controllers must not be modified after adding to a group.
 type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model coal.Model

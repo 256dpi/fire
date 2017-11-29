@@ -97,7 +97,7 @@ type RefreshToken struct {
 	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
 }
 
-// AddApplicationIndexes will add refresh token indexes to the specified indexer.
+// AddRefreshTokenIndexes will add refresh token indexes to the specified indexer.
 func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "Client"))
 	i.Add(&RefreshToken{}, false, coal.F(&RefreshToken{}, "ResourceOwner"))
