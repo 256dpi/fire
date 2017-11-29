@@ -19,17 +19,17 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type ctxKey int
+type ctxKey string
 
 const (
 	// AccessTokenContextKey is the key used to save the access token in a context.
-	AccessTokenContextKey ctxKey = iota
+	AccessTokenContextKey = ctxKey("access-token")
 
 	// ClientContextKey is the key used to save the client in a context.
-	ClientContextKey
+	ClientContextKey = ctxKey("client")
 
 	// ResourceOwnerContextKey is the key used to save the resource owner in a context.
-	ResourceOwnerContextKey
+	ResourceOwnerContextKey = ctxKey("resource-owner")
 )
 
 // An Authenticator provides OAuth2 based authentication. The implementation
