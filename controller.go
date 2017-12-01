@@ -74,10 +74,12 @@ type Controller struct {
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
 	// "posts/1/recover-password"). The request context is forwarded to
 	// the specified callback after running the authorizers. No validators and
-	// notifiers are run for the request. If the ActionResponse field is set on
+	// notifiers are run for the request. If the CustomResponse field is set on
 	// the context, the content will be encoded and written as the response.
 	//
-	// Note: The HTTP method "POST" is assumed for both action types.
+	// Note: The HTTP method "POST" is assumed for both action types. Also it is
+	// advised to not use the same identifier for a collection and resource
+	// action.
 	CollectionActions map[string]Callback
 	ResourceActions   map[string]Callback
 
@@ -707,7 +709,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	// read payload
 	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 	stack.AbortIf(err)
-	ctx.ActionPayload = data
+	ctx.CustomPayload = data
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
@@ -722,14 +724,14 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
-	if ctx.ActionResponse == nil {
+	if ctx.CustomResponse == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	// write bytes if available
-	if slice, ok := ctx.ActionResponse.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.ActionResponseContentType)
+	if slice, ok := ctx.CustomResponse.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.CustomContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
@@ -738,14 +740,14 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	// write json response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomResponse))
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// read payload
 	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 	stack.AbortIf(err)
-	ctx.ActionPayload = data
+	ctx.CustomPayload = data
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
@@ -760,14 +762,14 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
-	if ctx.ActionResponse == nil {
+	if ctx.CustomResponse == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	// write bytes if available
-	if slice, ok := ctx.ActionResponse.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.ActionResponseContentType)
+	if slice, ok := ctx.CustomResponse.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.CustomContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
@@ -776,7 +778,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// write json response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.ActionResponse))
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomResponse))
 }
 
 func (c *Controller) loadModel(ctx *Context) {

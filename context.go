@@ -60,6 +60,23 @@ type Context struct {
 	// Note: The document will be set before notifiers are run.
 	Response *jsonapi.Document
 
+	// The payload that was received with the custom collection or resource action.
+	CustomPayload []byte
+
+	// The response that will be written to the client while processing a custom
+	// collection or resource action. If set, the value must be either a byte
+	// slice for raw responses or a json.Marshal compatible object for json
+	// responses.
+	CustomResponse interface{}
+
+	// CustomContentType denotes the content type of the custom action response.
+	//
+	// Note: This value is only considered if the response is set to a byte slice.
+	CustomContentType string
+
+	// TODO: Encode as a JSON-API response if the custom response is an instance
+	// of the controller model.
+
 	// The store that is used to retrieve and persist the model.
 	Store *coal.SubStore
 
@@ -75,24 +92,22 @@ type Context struct {
 	// The Group that received the request.
 	Group *Group
 
-	// The payload that was received with the collection or resource action.
-	ActionPayload []byte
-
-	// The response that will be written to the client while processing a
-	// collection or resource action. If set, the value must be either a byte
-	// slice for raw responses or a json.Marshal compatible object for json
-	// responses.
-	ActionResponse interface{}
-
-	// ActionResponseContentType denotes the content type of the action response.
-	//
-	// Note: This value is only considered if the response is set to a byte slice.
-	ActionResponseContentType string
-
-	// TODO: Encode as a JSON-API response if the response is an instance of the
-	// controller model.
-
 	original coal.Model
+}
+
+// CustomActionName returns the name of the custom collection or resource action.
+func (c *Context) CustomActionName() string {
+	if c.Action != Custom {
+		panic("fire: the custom action name is only available during an custom action")
+	}
+
+	// return the collection action if set
+	if c.JSONAPIRequest.CollectionAction != "" {
+		return c.JSONAPIRequest.CollectionAction
+	}
+
+	// otherwise return the resource action
+	return c.JSONAPIRequest.ResourceAction
 }
 
 // Original will return the stored version of the model. This method is intended
