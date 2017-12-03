@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCallback(t *testing.T) {
+func TestCallback1(t *testing.T) {
 	cb := Callback(&Strategy{
 		List:   L{blankCB, accessGrantedCB},
 		Find:   L{blankCB},
@@ -19,7 +19,7 @@ func TestCallback(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = tester.RunAuthorizer(fire.Find, nil, nil, cb)
-	assert.Equal(t, errAccessDenied, err)
+	assert.Error(t, err)
 
 	err = tester.RunAuthorizer(fire.Update, nil, nil, cb)
 	assert.Equal(t, errAccessDenied, err)
@@ -28,14 +28,13 @@ func TestCallback(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCallbackBubbling(t *testing.T) {
+func TestCallback2(t *testing.T) {
 	cb := Callback(&Strategy{
 		List:   L{accessGrantedCB},
 		Find:   L{blankCB},
 		Update: L{blankCB},
 		Read:   L{accessGrantedCB},
 		All:    L{directErrorCB},
-		Bubble: true,
 	})
 
 	err := tester.RunAuthorizer(fire.List, nil, nil, cb)

@@ -38,10 +38,6 @@ type Strategy struct {
 	// The all group contains all actions.
 	All []Authorizer
 
-	// If Bubble is set to true the Read, Write and All callback is run also if
-	// the previous callback fails.
-	Bubble bool
-
 	// If Debugger is set it will be run with the chosen authorizers and
 	// enforcers name.
 	Debugger func(string, string)
@@ -107,11 +103,6 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]Authorizer) error {
 
 				return nil
 			}
-		}
-
-		// first list exhausted
-		if !s.Bubble {
-			return errAccessDenied
 		}
 	}
 
