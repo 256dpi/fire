@@ -8,7 +8,7 @@ import (
 )
 
 type postModel struct {
-	Base       `json:"-" bson:",inline" coal:"posts"`
+	Base       `json:"-" bson:",inline" valid:"required" coal:"posts"`
 	Title      string  `json:"title" bson:"title" valid:"required"`
 	Published  bool    `json:"published"`
 	TextBody   string  `json:"text-body" bson:"text_body"`
@@ -26,24 +26,24 @@ func (p *postModel) Validate() error {
 }
 
 type commentModel struct {
-	Base    `json:"-" bson:",inline" coal:"comments"`
+	Base    `json:"-" bson:",inline" valid:"required" coal:"comments"`
 	Message string         `json:"message"`
-	Parent  *bson.ObjectId `json:"-" coal:"parent:comments"`
-	Post    bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
+	Parent  *bson.ObjectId `json:"-" valid:"object-id" coal:"parent:comments"`
+	Post    bson.ObjectId  `json:"-" valid:"required,object-id" bson:"post_id" coal:"post:posts"`
 }
 
 type selectionModel struct {
-	Base  `json:"-" bson:",inline" coal:"selections:selections"`
+	Base  `json:"-" bson:",inline" valid:"required" coal:"selections:selections"`
 	Name  string          `json:"name"`
-	Posts []bson.ObjectId `json:"-" bson:"post_ids" coal:"posts:posts"`
+	Posts []bson.ObjectId `json:"-" bson:"post_ids" valid:"object-id" coal:"posts:posts"`
 }
 
 type noteModel struct {
-	Base      `json:"-" bson:",inline" coal:"notes"`
+	Base      `json:"-" bson:",inline" valid:"required" coal:"notes"`
 	Title     string        `json:"title" bson:"title" valid:"required"`
 	CreatedAt time.Time     `json:"created-at" bson:"created_at"`
 	UpdatedAt time.Time     `json:"updated-at" bson:"updated_at"`
-	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
+	Post      bson.ObjectId `json:"-" bson:"post_id" valid:"required,object-id" coal:"post:posts"`
 }
 
 func (n *noteModel) Validate() error {

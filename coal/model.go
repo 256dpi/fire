@@ -2,13 +2,43 @@
 package coal
 
 import (
-	"errors"
 	"reflect"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
+
+func init() {
+	// register the custom object-id validator
+	govalidator.CustomTypeTagMap.Set("object-id", func(i interface{}, o interface{}) bool {
+		// check object
+		if id, ok := i.(bson.ObjectId); ok {
+			return id.Valid()
+		}
+
+		// check pointer
+		if id, ok := i.(*bson.ObjectId); ok {
+			if id != nil {
+				return id.Valid()
+			}
+
+			return true
+		}
+
+		// check slice
+		if ids, ok := i.([]bson.ObjectId); ok {
+			for _, id := range ids {
+				if !id.Valid() {
+					return false
+				}
+			}
+			return true
+		}
+
+		panic("coal: unsupported field for object-id validator")
+	})
+}
 
 // Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
@@ -35,11 +65,6 @@ type ValidatableModel interface {
 // ValidatableModel interface, Validate method will be invoked after the struct
 // validation.
 func Validate(m Model) error {
-	// validate id
-	if !m.ID().Valid() {
-		return errors.New("invalid id")
-	}
-
 	// invoke custom validation method when available
 	if validatableModel, ok := m.(ValidatableModel); ok {
 		err := validatableModel.Validate()
@@ -100,7 +125,7 @@ func InitSlice(ptr interface{}) []Model {
 
 // Base is the base for every coal model.
 type Base struct {
-	DocID bson.ObjectId `json:"-" bson:"_id,omitempty"`
+	DocID bson.ObjectId `json:"-" bson:"_id" valid:"required,object-id"`
 
 	model interface{}
 	meta  *Meta

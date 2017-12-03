@@ -12,7 +12,7 @@ import (
 
 // Job is the coal model for the mgojq.Job type.
 type Job struct {
-	coal.Base `json:"-" bson:",inline" coal:"jobs"`
+	coal.Base `json:"-" bson:",inline" valid:"required" coal:"jobs"`
 	Name      string    `json:"name"`
 	Params    bson.M    `json:"params"`
 	Status    string    `json:"status"`

@@ -41,7 +41,7 @@ type Token interface {
 
 // AccessToken is the built-in model used to store access tokens.
 type AccessToken struct {
-	coal.Base     `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
+	coal.Base     `json:"-" bson:",inline" valid:"required" coal:"access-tokens:access_tokens"`
 	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
 	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -90,7 +90,7 @@ func (t *AccessToken) SetTokenData(data *TokenData) {
 
 // RefreshToken is the built-in model used to store refresh tokens.
 type RefreshToken struct {
-	coal.Base     `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
+	coal.Base     `json:"-" bson:",inline" valid:"required" coal:"refresh-tokens:refresh_tokens"`
 	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
 	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
 	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
@@ -164,7 +164,7 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	coal.Base   `json:"-" bson:",inline" coal:"applications"`
+	coal.Base   `json:"-" bson:",inline" valid:"required" coal:"applications"`
 	Name        string `json:"name" valid:"required"`
 	Key         string `json:"key" valid:"required"`
 	Secret      string `json:"secret,omitempty" bson:"-"`
@@ -246,7 +246,7 @@ type ResourceOwner interface {
 
 // User is the built-in model used to store resource owners.
 type User struct {
-	coal.Base    `json:"-" bson:",inline" coal:"users"`
+	coal.Base    `json:"-" bson:",inline" valid:"required" coal:"users"`
 	Name         string `json:"name" valid:"required"`
 	Email        string `json:"email" valid:"required,email"`
 	Password     string `json:"password,omitempty" bson:"-"`

@@ -31,6 +31,10 @@ func TestValidate(t *testing.T) {
 
 	post.Title = "error"
 	assert.Error(t, Validate(post))
+
+	post.DocID = "foo"
+	post.Title = "foo"
+	assert.Error(t, Validate(post))
 }
 
 func TestValidateTimestamps(t *testing.T) {
