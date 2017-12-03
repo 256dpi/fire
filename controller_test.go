@@ -2152,7 +2152,7 @@ func TestCollectionActions(t *testing.T) {
 	tester.Assign("api", &Controller{
 		Model: &postModel{},
 		Store: testStore,
-		CollectionActions: map[string]Callback{
+		CollectionActions: M{
 			"POST:bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = []byte("RESPONSE")
@@ -2216,7 +2216,7 @@ func TestResourceActions(t *testing.T) {
 	tester.Assign("api", &Controller{
 		Model: &postModel{},
 		Store: testStore,
-		ResourceActions: map[string]Callback{
+		ResourceActions: M{
 			"POST:bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = []byte("RESPONSE")

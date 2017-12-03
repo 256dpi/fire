@@ -9,10 +9,10 @@ import (
 
 func TestCallback(t *testing.T) {
 	cb := Callback(&Strategy{
-		List:   L(blankCB, accessGrantedCB),
-		Find:   L(blankCB),
-		Update: L(accessDeniedCB),
-		All:    L(directErrorCB),
+		List:   L{blankCB, accessGrantedCB},
+		Find:   L{blankCB},
+		Update: L{accessDeniedCB},
+		All:    L{directErrorCB},
 	})
 
 	err := tester.RunAuthorizer(fire.List, nil, nil, cb)
@@ -30,11 +30,11 @@ func TestCallback(t *testing.T) {
 
 func TestCallbackBubbling(t *testing.T) {
 	cb := Callback(&Strategy{
-		List:   L(accessGrantedCB),
-		Find:   L(blankCB),
-		Update: L(blankCB),
-		Read:   L(accessGrantedCB),
-		All:    L(directErrorCB),
+		List:   L{accessGrantedCB},
+		Find:   L{blankCB},
+		Update: L{blankCB},
+		Read:   L{accessGrantedCB},
+		All:    L{directErrorCB},
 		Bubble: true,
 	})
 
@@ -68,7 +68,7 @@ func TestCallbackDebugger(t *testing.T) {
 	var enforcer string
 
 	cb := Callback(&Strategy{
-		List: L(accessGrantedCB),
+		List: L{accessGrantedCB},
 		Debugger: func(a, e string) {
 			authorizer = a
 			enforcer = e

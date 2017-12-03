@@ -17,11 +17,6 @@ import (
 // are serialized to an error object and returned.
 type Callback func(*Context) error
 
-// L as short-hand function to create a list of callbacks.
-func L(cbs ...Callback) []Callback {
-	return cbs
-}
-
 type fatalError struct {
 	err error
 }

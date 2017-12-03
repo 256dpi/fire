@@ -47,10 +47,11 @@ type Strategy struct {
 	Debugger func(string, string)
 }
 
-// L as short-hand function to create a list of authorizers.
-func L(cbs ...Authorizer) []Authorizer {
-	return cbs
-}
+// L is a short-hand type to create a list of authorizers.
+type L []Authorizer
+
+// M is a short-hand type to create a map of authorizers.
+type M map[string][]Authorizer
 
 // Callback will return a callback that authorizes actions based on the
 // specified strategy.

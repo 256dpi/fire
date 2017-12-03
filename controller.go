@@ -19,6 +19,15 @@ import (
 
 var customMethods = []string{"GET", "POST", "PATCH", "DELETE"}
 
+// S is a short-and type to create list of strings.
+type S []string
+
+// L is a short-hand type to create a list of callbacks.
+type L []Callback
+
+// M is a short-hand type to create a map of callbacks.
+type M map[string]Callback
+
 // A Controller provides a JSON API based interface to a model.
 //
 // Note: Controllers must not be modified after adding to a group.
