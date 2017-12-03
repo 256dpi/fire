@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/256dpi/fire/coal"
 
@@ -15,6 +16,8 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+var customMethods = []string{"GET", "POST", "PATCH", "DELETE"}
 
 // A Controller provides a JSON API based interface to a model.
 //
@@ -92,20 +95,6 @@ func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
 
-	// validate resource actions
-	for action := range c.ResourceActions {
-		if action == "relationships" {
-			panic(`invalid resource action "relationships"`)
-		}
-
-		// check relations
-		for _, field := range c.Model.Meta().Fields {
-			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && action == field.RelType {
-				panic(fmt.Sprintf(`invalid resource action "%s"`, action))
-			}
-		}
-	}
-
 	// prepare parsers
 	c.parser = jsonapi.Parser{
 		CollectionActions: make(map[string][]string),
@@ -114,12 +103,47 @@ func (c *Controller) prepare() {
 
 	// add collection actions
 	for action := range c.CollectionActions {
-		c.parser.CollectionActions[action] = []string{"POST"}
+		// split string
+		segments := strings.Split(action, ":")
+		if len(segments) != 2 {
+			panic(`fire: expected resource action names to be like "POST:foo"`)
+		}
+
+		// check method
+		if !stringInList(segments[0], customMethods) {
+			panic(`fire: custom action method is not allowed`)
+		}
+
+		c.parser.CollectionActions[segments[1]] = []string{segments[0]}
+
 	}
 
 	// add resource actions
 	for action := range c.ResourceActions {
-		c.parser.ResourceActions[action] = []string{"POST"}
+		// split string
+		segments := strings.Split(action, ":")
+		if len(segments) != 2 {
+			panic(`fire: expected resource action names to be like "POST:foo"`)
+		}
+
+		// check method
+		if !stringInList(segments[0], customMethods) {
+			panic(`fire: custom action method is not allowed`)
+		}
+
+		// check collision
+		if segments[1] == "relationships" {
+			panic(`invalid resource action "relationships"`)
+		}
+
+		// check relations
+		for _, field := range c.Model.Meta().Fields {
+			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && segments[1] == field.RelType {
+				panic(fmt.Sprintf(`invalid resource action "%s"`, segments[1]))
+			}
+		}
+
+		c.parser.ResourceActions[segments[1]] = []string{segments[0]}
 	}
 }
 
@@ -721,7 +745,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.CollectionActions[ctx.CustomAction.Name]
+	cb, ok := c.CollectionActions[ctx.HTTPRequest.Method+":"+ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing collection action callback")
 	}
@@ -765,7 +789,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.ResourceActions[ctx.CustomAction.Name]
+	cb, ok := c.ResourceActions[ctx.HTTPRequest.Method+":"+ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing resource action callback")
 	}

@@ -2153,20 +2153,20 @@ func TestCollectionActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		CollectionActions: map[string]Callback{
-			"bytes": func(ctx *Context) error {
+			"POST:bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = []byte("RESPONSE")
 				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
-			"json": func(ctx *Context) error {
+			"POST:json": func(ctx *Context) error {
 				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
-			"empty": func(ctx *Context) error {
+			"POST:empty": func(ctx *Context) error {
 				assert.Empty(t, ctx.CustomAction.Payload)
 				return nil
 			},
@@ -2217,20 +2217,20 @@ func TestResourceActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		ResourceActions: map[string]Callback{
-			"bytes": func(ctx *Context) error {
+			"POST:bytes": func(ctx *Context) error {
 				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = []byte("RESPONSE")
 				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
-			"json": func(ctx *Context) error {
+			"POST:json": func(ctx *Context) error {
 				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
 				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
-			"empty": func(ctx *Context) error {
+			"POST:empty": func(ctx *Context) error {
 				assert.Empty(t, ctx.CustomAction.Payload)
 				return nil
 			},
