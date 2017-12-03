@@ -2154,20 +2154,20 @@ func TestCollectionActions(t *testing.T) {
 		Store: testStore,
 		CollectionActions: map[string]Callback{
 			"bytes": func(ctx *Context) error {
-				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomPayload)
-				ctx.CustomResponse = []byte("RESPONSE")
-				ctx.CustomContentType = "text/plain"
+				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
+				ctx.CustomAction.Response = []byte("RESPONSE")
+				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
 			"json": func(ctx *Context) error {
-				assert.Equal(t, []byte("{}"), ctx.CustomPayload)
-				ctx.CustomResponse = map[string]interface{}{
+				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
+				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
 			"empty": func(ctx *Context) error {
-				assert.Empty(t, ctx.CustomPayload)
+				assert.Empty(t, ctx.CustomAction.Payload)
 				return nil
 			},
 		},
@@ -2218,20 +2218,20 @@ func TestResourceActions(t *testing.T) {
 		Store: testStore,
 		ResourceActions: map[string]Callback{
 			"bytes": func(ctx *Context) error {
-				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomPayload)
-				ctx.CustomResponse = []byte("RESPONSE")
-				ctx.CustomContentType = "text/plain"
+				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
+				ctx.CustomAction.Response = []byte("RESPONSE")
+				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
 			"json": func(ctx *Context) error {
-				assert.Equal(t, []byte("{}"), ctx.CustomPayload)
-				ctx.CustomResponse = map[string]interface{}{
+				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
+				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
 			"empty": func(ctx *Context) error {
-				assert.Empty(t, ctx.CustomPayload)
+				assert.Empty(t, ctx.CustomAction.Payload)
 				return nil
 			},
 		},

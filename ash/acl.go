@@ -68,7 +68,7 @@ func Callback(s *Strategy) fire.Callback {
 		case fire.Delete:
 			return s.call(ctx, s.Delete, s.Write, s.All)
 		case fire.Custom:
-			return s.call(ctx, s.Custom[ctx.CustomActionName()], s.All)
+			return s.call(ctx, s.Custom[ctx.CustomAction.Name], s.All)
 		}
 
 		// panic on unknown action

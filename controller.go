@@ -709,13 +709,19 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	// read payload
 	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 	stack.AbortIf(err)
-	ctx.CustomPayload = data
+
+	// set custom action
+	ctx.CustomAction = &CustomAction{
+		Name:             ctx.JSONAPIRequest.CollectionAction,
+		CollectionAction: true,
+		Payload:          data,
+	}
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
+	cb, ok := c.CollectionActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing collection action callback")
 	}
@@ -724,14 +730,14 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
-	if ctx.CustomResponse == nil {
+	if ctx.CustomAction.Response == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	// write bytes if available
-	if slice, ok := ctx.CustomResponse.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.CustomContentType)
+	if slice, ok := ctx.CustomAction.Response.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.CustomAction.ContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
@@ -740,20 +746,26 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	// write json response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomResponse))
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomAction.Response))
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// read payload
 	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 	stack.AbortIf(err)
-	ctx.CustomPayload = data
+
+	// set custom action
+	ctx.CustomAction = &CustomAction{
+		Name:           ctx.JSONAPIRequest.ResourceAction,
+		ResourceAction: true,
+		Payload:        data,
+	}
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
+	cb, ok := c.ResourceActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing resource action callback")
 	}
@@ -762,14 +774,14 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
-	if ctx.CustomResponse == nil {
+	if ctx.CustomAction.Response == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	// write bytes if available
-	if slice, ok := ctx.CustomResponse.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.CustomContentType)
+	if slice, ok := ctx.CustomAction.Response.([]byte); ok {
+		w.Header().Set("Content-Type", ctx.CustomAction.ContentType)
 		w.WriteHeader(http.StatusOK)
 		w.Write(slice)
 		return
@@ -778,7 +790,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// write json response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomResponse))
+	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomAction.Response))
 }
 
 func (c *Controller) loadModel(ctx *Context) {
