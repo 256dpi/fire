@@ -12,6 +12,9 @@ import (
 // An Action describes the currently called action on the API.
 type Action int
 
+// TODO: Rename to operations and clarify that these can happen multiple times
+// during a controller action?
+
 // All the available actions.
 const (
 	_ Action = iota
