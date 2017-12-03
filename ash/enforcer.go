@@ -27,6 +27,9 @@ func AccessGranted() Enforcer {
 // AccessDenied will enforce the authorization by directly returning an access
 // denied error. It should be used if the request should not be authorized in
 // any case (.e.g a candidate accessing a resource he has clearly no access to).
+//
+// Note: Usually access is denied by returning no enforcer. This enforcer should
+// only be returned to immediately stop the authorization process.
 func AccessDenied() Enforcer {
 	return func(_ *fire.Context) error {
 		return errAccessDenied
@@ -57,7 +60,7 @@ func QueryFilter(filters bson.M) Enforcer {
 // used if the requested resource should be hidden from the candidate.
 func HideFilter() Enforcer {
 	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
-	// an  early ErrNotFound instead of manipulating the Query in crazy ways.
+	// an early ErrNotFound instead of manipulating the Query in crazy ways.
 
 	return QueryFilter(bson.M{
 		bson.NewObjectId().Hex(): bson.NewObjectId(),
