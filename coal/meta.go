@@ -85,27 +85,27 @@ func NewMeta(model Model) *Meta {
 
 	// iterate through all fields
 	for i := 0; i < modelType.NumField(); i++ {
-		structField := modelType.Field(i)
+		field := modelType.Field(i)
 
 		// get coal tag
-		coalStructTag := structField.Tag.Get("coal")
+		coalTag := field.Tag.Get("coal")
 
 		// check if field is the Base
-		if structField.Type == baseType {
-			baseTag := strings.Split(coalStructTag, ":")
+		if field.Type == baseType {
+			baseTag := strings.Split(coalTag, ":")
 
 			// check json tag
-			if structField.Tag.Get("json") != "-" {
+			if field.Tag.Get("json") != "-" {
 				panic(`coal: expected to find a tag of the form json:"-" on Base`)
 			}
 
 			// check bson tag
-			if structField.Tag.Get("bson") != ",inline" {
+			if field.Tag.Get("bson") != ",inline" {
 				panic(`coal: expected to find a tag of the form bson:",inline" on Base`)
 			}
 
 			// check valid tag
-			if structField.Tag.Get("valid") != "required" {
+			if field.Tag.Get("valid") != "required" {
 				panic(`coal: expected to find a tag of the form valid:"required" on Base`)
 			}
 
@@ -127,33 +127,33 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// parse individual tags
-		coalTags := strings.Split(coalStructTag, ",")
-		if len(coalStructTag) == 0 {
+		coalTags := strings.Split(coalTag, ",")
+		if len(coalTag) == 0 {
 			coalTags = nil
 		}
 
 		// get field type
-		fieldKind := structField.Type.Kind()
+		fieldKind := field.Type.Kind()
 		if fieldKind == reflect.Ptr {
-			fieldKind = structField.Type.Elem().Kind()
+			fieldKind = field.Type.Elem().Kind()
 		}
 
 		// prepare field
-		field := Field{
-			Name:     structField.Name,
-			Type:     structField.Type,
+		metaField := Field{
+			Name:     field.Name,
+			Type:     field.Type,
 			Kind:     fieldKind,
-			JSONName: getJSONFieldName(&structField),
-			BSONName: getBSONFieldName(&structField),
-			Optional: structField.Type.Kind() == reflect.Ptr,
+			JSONName: getJSONFieldName(&field),
+			BSONName: getBSONFieldName(&field),
+			Optional: field.Type.Kind() == reflect.Ptr,
 			index:    i,
 		}
 
 		// check if field is a valid to-one relationship
-		if structField.Type == toOneType || structField.Type == optionalToOneType {
+		if field.Type == toOneType || field.Type == optionalToOneType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check valid tag
-				if !strings.Contains(structField.Tag.Get("valid"), "object-id") {
+				if !strings.Contains(field.Tag.Get("valid"), "object-id") {
 					panic(`coal: missing "object-id" validation on to-one relationship`)
 				}
 
@@ -166,9 +166,9 @@ func NewMeta(model Model) *Meta {
 				toOneTag := strings.Split(coalTags[0], ":")
 
 				// set relationship data
-				field.ToOne = true
-				field.RelName = toOneTag[0]
-				field.RelType = toOneTag[1]
+				metaField.ToOne = true
+				metaField.RelName = toOneTag[0]
+				metaField.RelType = toOneTag[1]
 
 				// remove tag
 				coalTags = coalTags[1:]
@@ -176,10 +176,10 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// check if field is a valid to-many relationship
-		if structField.Type == toManyType {
+		if field.Type == toManyType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check valid tag
-				if !strings.Contains(structField.Tag.Get("valid"), "object-id") {
+				if !strings.Contains(field.Tag.Get("valid"), "object-id") {
 					panic(`coal: missing "object-id" validation on to-many relationship`)
 				}
 
@@ -192,9 +192,9 @@ func NewMeta(model Model) *Meta {
 				toManyTag := strings.Split(coalTags[0], ":")
 
 				// set relationship data
-				field.ToMany = true
-				field.RelName = toManyTag[0]
-				field.RelType = toManyTag[1]
+				metaField.ToMany = true
+				metaField.RelName = toManyTag[0]
+				metaField.RelType = toManyTag[1]
 
 				// remove tag
 				coalTags = coalTags[1:]
@@ -202,7 +202,7 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// check if field is a valid has-one relationship
-		if structField.Type == hasOneType {
+		if field.Type == hasOneType {
 			// check tag
 			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
 				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-one relationship`)
@@ -212,17 +212,17 @@ func NewMeta(model Model) *Meta {
 			hasOneTag := strings.Split(coalTags[0], ":")
 
 			// set relationship data
-			field.HasOne = true
-			field.RelName = hasOneTag[0]
-			field.RelType = hasOneTag[1]
-			field.RelInverse = hasOneTag[2]
+			metaField.HasOne = true
+			metaField.RelName = hasOneTag[0]
+			metaField.RelType = hasOneTag[1]
+			metaField.RelInverse = hasOneTag[2]
 
 			// remove tag
 			coalTags = coalTags[1:]
 		}
 
 		// check if field is a valid has-many relationship
-		if structField.Type == hasManyType {
+		if field.Type == hasManyType {
 			// check tag
 			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
 				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-many relationship`)
@@ -232,10 +232,10 @@ func NewMeta(model Model) *Meta {
 			hasManyTag := strings.Split(coalTags[0], ":")
 
 			// set relationship data
-			field.HasMany = true
-			field.RelName = hasManyTag[0]
-			field.RelType = hasManyTag[1]
-			field.RelInverse = hasManyTag[2]
+			metaField.HasMany = true
+			metaField.RelName = hasManyTag[0]
+			metaField.RelType = hasManyTag[1]
+			metaField.RelInverse = hasManyTag[2]
 
 			// remove tag
 			coalTags = coalTags[1:]
@@ -247,7 +247,7 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// add field
-		meta.Fields = append(meta.Fields, field)
+		meta.Fields = append(meta.Fields, metaField)
 	}
 
 	// cache meta
