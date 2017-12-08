@@ -15,4 +15,3 @@ setup:
 
 test:
 	go test ./...
-
