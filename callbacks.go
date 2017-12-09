@@ -364,39 +364,71 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 			return nil
 		}
 
-		// get main reference
-		id := ctx.Model.MustGet(reference)
+		// prepare ids
+		var ids []bson.ObjectId
 
-		// continue if reference is not set
-		if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
-			return nil
+		// get reference
+		ref := ctx.Model.MustGet(reference)
+
+		// handle to-one reference
+		if id, ok := ref.(bson.ObjectId); ok {
+			ids = []bson.ObjectId{id}
 		}
+
+		// handle optional to-one reference
+		if oid, ok := ref.(*bson.ObjectId); ok {
+			// return immediately if not set
+			if oid == nil {
+				return nil
+			}
+
+			// set id
+			ids = []bson.ObjectId{*oid}
+		}
+
+		// handle to-many reference
+		if list, ok := ref.([]bson.ObjectId); ok {
+			// return immediately if empty
+			if len(list) == 0 {
+				return nil
+			}
+
+			// set list
+			ids = list
+		}
+
+		// ensure list is unique
+		ids = coal.Unique(ids)
 
 		// prepare query
 		query := bson.M{
-			"_id": id,
+			"_id": bson.M{
+				"$in": ids,
+			},
 		}
 
-		// add other references
+		// add matchers
 		for targetField, modelField := range matcher {
-			id := ctx.Model.MustGet(modelField)
+			// get reference
+			ref := ctx.Model.MustGet(modelField)
 
-			// abort if reference is missing
-			if oid, ok := id.(*bson.ObjectId); ok && oid == nil {
-				return errors.New("missing id")
+			// skip not set optional references
+			if oid, ok := ref.(*bson.ObjectId); ok && oid == nil {
+				continue
 			}
 
-			query[targetField] = id
+			// add matcher as-is
+			query[targetField] = ref
 		}
 
-		// query db
-		n, err := ctx.Store.DB().C(collection).Find(query).Limit(1).Count()
+		// find matching documents
+		n, err := ctx.Store.DB().C(collection).Find(query).Count()
 		if err != nil {
 			return Fatal(err)
 		}
 
-		// return error if document is missing
-		if n == 0 {
+		// return error if a document is missing (does not match)
+		if n != len(ids) {
 			return errors.New("references do not match")
 		}
 

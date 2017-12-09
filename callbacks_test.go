@@ -291,37 +291,46 @@ func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestMatchingReferencesValidator(t *testing.T) {
+func TestMatchingReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
-	validator := MatchingReferencesValidator("comments", "parent_id", map[string]string{
-		"post_id": "post_id",
+	validator := MatchingReferencesValidator("foos", "foo_id", map[string]string{
+		"bar_id":     "bar_id",
+		"opt_bar_id": "opt_bar_id",
+		"bar_ids":    "bar_ids",
 	})
 
-	postID := bson.NewObjectId()
+	id := bson.NewObjectId()
 
-	comment1 := tester.Save(&commentModel{
-		Post: postID,
+	existing := tester.Save(&fooModel{
+		Bar:    id,
+		OptBar: coal.P(id),
+		Bars:   []bson.ObjectId{id},
 	})
 
-	comment2 := tester.Save(&commentModel{
-		Parent: coal.P(comment1.ID()),
-		Post:   bson.NewObjectId(),
-	})
+	candidate := &fooModel{
+		Foo:    coal.P(existing.ID()),
+		Bar:    bson.NewObjectId(),                  // <- not the same
+		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
+		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+	}
 
-	err := tester.RunValidator(Create, comment2, validator)
+	err := tester.RunValidator(Create, candidate, validator)
 	assert.Error(t, err)
 
-	comment3 := tester.Save(&commentModel{
-		Post: postID,
-	})
+	candidate.Bar = id
 
-	comment4 := tester.Save(&commentModel{
-		Parent: coal.P(comment3.ID()),
-		Post:   postID,
-	})
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
 
-	err = tester.RunValidator(Create, comment4, validator)
+	candidate.OptBar = coal.P(id)
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.Bars = []bson.ObjectId{id}
+
+	err = tester.RunValidator(Create, candidate, validator)
 	assert.NoError(t, err)
 }
 
