@@ -464,7 +464,7 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callbac
 			}
 
 			// return if field has not been changed
-			if ctx.Model.MustGet(uniqueAttribute) == original.MustGet(uniqueAttribute) {
+			if reflect.DeepEqual(ctx.Model.MustGet(uniqueAttribute), original.MustGet(uniqueAttribute)) {
 				return nil
 			}
 		}
