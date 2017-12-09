@@ -45,7 +45,20 @@ type noteModel struct {
 	Post      bson.ObjectId `json:"-" bson:"post_id" valid:"required,object-id" coal:"post:posts"`
 }
 
+type fooModel struct {
+	coal.Base `json:"-" bson:",inline" valid:"required" coal:"foos"`
+	Foo       *bson.ObjectId  `json:"-" bson:"foo_id" valid:"object-id" coal:"foo:foos"`
+	Bar       bson.ObjectId   `json:"-" bson:"bar_id" valid:"required,object-id" coal:"bar:bars"`
+	OptBar    *bson.ObjectId  `json:"-" bson:"opt_bar_id" valid:"object-id" coal:"bar:bars"`
+	Bars      []bson.ObjectId `json:"-" bson:"bar_ids" valid:"object-id" coal:"bar:bars"`
+}
+
+type barModel struct {
+	coal.Base `json:"-" bson:",inline" valid:"required" coal:"bars"`
+	Foo       bson.ObjectId `json:"-" bson:"foo_id" valid:"required,object-id" coal:"foo:foos"`
+}
+
 var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
-var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{})
