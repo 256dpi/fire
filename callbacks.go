@@ -229,8 +229,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 //		F(&Comment{}, "Author"): C(&User{}),
 //	})
 //
-// The callbacks supports `bson.ObjectId', `*bson.ObjectId` and `[]bson.ObjectId`
-// fields.
+// The callbacks supports to-one, optional to-one and to-many relationships.
 //
 func VerifyReferencesValidator(references map[string]string) Callback {
 	return func(ctx *Context) error {
@@ -242,24 +241,24 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 		// check all references
 		for field, collection := range references {
 			// read referenced id
-			idOrIDs := ctx.Model.MustGet(field)
+			ref := ctx.Model.MustGet(field)
 
 			// continue if reference is not set
-			if oid, ok := idOrIDs.(*bson.ObjectId); ok && oid == nil {
+			if oid, ok := ref.(*bson.ObjectId); ok && oid == nil {
 				continue
 			}
 
 			// continue if slice is empty
-			if ids, ok := idOrIDs.([]bson.ObjectId); ok && ids == nil {
+			if ids, ok := ref.([]bson.ObjectId); ok && ids == nil {
 				continue
 			}
 
-			// continue if slice is empty
-			if ids, ok := idOrIDs.([]bson.ObjectId); ok {
+			// handle to-many relationships
+			if ids, ok := ref.([]bson.ObjectId); ok {
 				// count entities in database
 				n, err := ctx.Store.DB().C(collection).Find(bson.M{
 					"_id": bson.M{
-						"$in": idOrIDs,
+						"$in": ids,
 					},
 				}).Count()
 				if err != nil {
@@ -270,17 +269,21 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 				if n != len(ids) {
 					return errors.New("missing references for field " + field)
 				}
-			} else {
-				// count entities in database
-				n, err := ctx.Store.DB().C(collection).FindId(idOrIDs).Limit(1).Count()
-				if err != nil {
-					return Fatal(err)
-				}
 
-				// check for existence
-				if n != 1 {
-					return errors.New("missing reference for field " + field)
-				}
+				continue
+			}
+
+			// handle to-one relationships
+
+			// count entities in database
+			n, err := ctx.Store.DB().C(collection).FindId(ref).Limit(1).Count()
+			if err != nil {
+				return Fatal(err)
+			}
+
+			// check for existence
+			if n != 1 {
+				return errors.New("missing reference for field " + field)
 			}
 		}
 

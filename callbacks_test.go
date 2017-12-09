@@ -198,54 +198,61 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
 	validator := VerifyReferencesValidator(map[string]string{
-		"parent_id": "comments",
-		"post_id":   "posts",
+		"bar_id":     "bars",
+		"opt_bar_id": "bars",
+		"bar_ids":    "bars",
 	})
 
-	comment1 := tester.Save(&commentModel{
-		Post: bson.NewObjectId(),
+	existing := tester.Save(&barModel{
+		Foo: bson.NewObjectId(),
 	})
 
-	err := tester.RunValidator(Create, comment1, validator)
+	err := tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    bson.NewObjectId(), // <- missing
+		OptBar: coal.P(existing.ID()),
+		Bars:   []bson.ObjectId{existing.ID()},
+	}), validator)
 	assert.Error(t, err)
 
-	post := tester.Save(&postModel{})
-	comment2 := tester.Save(&commentModel{
-		Parent: coal.P(comment1.ID()),
-		Post:   post.ID(),
-	})
+	err = tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    existing.ID(),
+		OptBar: coal.P(bson.NewObjectId()), // <- missing
+		Bars:   []bson.ObjectId{existing.ID()},
+	}), validator)
+	assert.Error(t, err)
 
-	err = tester.RunValidator(Delete, comment2, validator)
+	err = tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    existing.ID(),
+		OptBar: coal.P(existing.ID()),
+		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- missing
+	}), validator)
+	assert.Error(t, err)
+
+	err = tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    existing.ID(),
+		OptBar: nil, // <- not set
+		Bars:   []bson.ObjectId{existing.ID()},
+	}), validator)
 	assert.NoError(t, err)
-}
 
-func TestVerifyReferencesValidatorToMany(t *testing.T) {
-	tester.Clean()
-
-	validator := VerifyReferencesValidator(map[string]string{
-		coal.F(&selectionModel{}, "Posts"): "posts",
-	})
-
-	selection1 := tester.Save(&selectionModel{
-		Posts: nil,
-	}).(*selectionModel)
-
-	err := tester.RunValidator(Create, selection1, validator)
+	err = tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    existing.ID(),
+		OptBar: coal.P(existing.ID()),
+		Bars:   nil, // <- not set
+	}), validator)
 	assert.NoError(t, err)
 
-	post1 := tester.Save(&postModel{})
-	post2 := tester.Save(&postModel{})
-	post3 := tester.Save(&postModel{})
-
-	selection2 := tester.Save(&selectionModel{
-		Posts: []bson.ObjectId{
-			post1.ID(),
-			post2.ID(),
-			post3.ID(),
-		},
-	})
-
-	err = tester.RunValidator(Delete, selection2, validator)
+	err = tester.RunValidator(Create, tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    existing.ID(),
+		OptBar: coal.P(existing.ID()),
+		Bars:   []bson.ObjectId{existing.ID()},
+	}), validator)
 	assert.NoError(t, err)
 }
 
