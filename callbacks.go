@@ -73,6 +73,22 @@ func Except(cb Callback, actions ...Action) Callback {
 	}
 }
 
+// Combine will return a callback that runs all the specified callbacks in order
+// until an error is returned.
+func Combine(cbs ...Callback) Callback {
+	return func(ctx *Context) error {
+		// run all callbacks
+		for _, cb := range cbs {
+			err := cb(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) Callback {
 	return func(ctx *Context) error {
@@ -331,19 +347,10 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	cb1 := DependentResourcesValidator(dependentResources)
 	cb2 := VerifyReferencesValidator(references)
 
-	return func(ctx *Context) error {
-		err := cb1(ctx)
-		if err != nil {
-			return err
-		}
+	// create a combined callback
+	cb := Combine(cb1, cb2)
 
-		err = cb2(ctx)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
+	return cb
 }
 
 // MatchingReferencesValidator compares the model with one related model or all
