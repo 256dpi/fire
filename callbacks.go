@@ -207,8 +207,8 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 				return Fatal(err)
 			}
 
-			// immediately return if a document is found
-			if n == 1 {
+			// return err of documents are found
+			if n != 0 {
 				return errors.New("resource has dependent resources")
 			}
 		}
