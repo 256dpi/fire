@@ -23,3 +23,19 @@ func A(m Model, field string) string {
 func P(id bson.ObjectId) *bson.ObjectId {
 	return &id
 }
+
+// Unique is a helper to get a unique list of object ids.
+func Unique(ids []bson.ObjectId) []bson.ObjectId {
+	// prepare map
+	m := make(map[bson.ObjectId]bool)
+	l := make([]bson.ObjectId, 0, len(ids))
+
+	for _, id := range ids {
+		if _, ok := m[id]; !ok {
+			m[id] = true
+			l = append(l, id)
+		}
+	}
+
+	return l
+}
