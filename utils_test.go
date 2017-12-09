@@ -47,7 +47,9 @@ type noteModel struct {
 
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" valid:"required" coal:"foos"`
-	Foo       *bson.ObjectId  `json:"-" bson:"foo_id" valid:"object-id" coal:"foo:foos"`
+	Foo       bson.ObjectId   `json:"-" bson:"foo_id" valid:"required,object-id" coal:"foo:foos"`
+	OptFoo    *bson.ObjectId  `json:"-" bson:"opt_foo_id" valid:"object-id" coal:"foo:foos"`
+	Foos      []bson.ObjectId `json:"-" bson:"foo_ids" valid:"object-id" coal:"foo:foos"`
 	Bar       bson.ObjectId   `json:"-" bson:"bar_id" valid:"required,object-id" coal:"bar:bars"`
 	OptBar    *bson.ObjectId  `json:"-" bson:"opt_bar_id" valid:"object-id" coal:"bar:bars"`
 	Bars      []bson.ObjectId `json:"-" bson:"bar_ids" valid:"object-id" coal:"bar:bars"`

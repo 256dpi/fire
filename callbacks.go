@@ -346,8 +346,8 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	}
 }
 
-// MatchingReferencesValidator compares the model with a related model and
-// checks if certain references are shared.
+// MatchingReferencesValidator compares the model with one related model or all
+// related models and checks if the specified references are exactly shared.
 //
 // The target model is defined by passing its collection and the referencing
 // field on the current model. The matcher is defined by passing pairs of
@@ -356,6 +356,9 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 //	MatchingReferencesValidator(C(&Blog{}), F(&Post{}, "Blog"), map[string]string{
 //		F(&Blog{}, "Owner"): F(&Post{}, "Owner"),
 //	})
+//
+// To-many, optional to-many and has-many relationships are supported both for
+// the initial reference and in the matchers.
 //
 func MatchingReferencesValidator(collection, reference string, matcher map[string]string) Callback {
 	return func(ctx *Context) error {
@@ -407,18 +410,9 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 			},
 		}
 
-		// add matchers
+		// add matchers as-is
 		for targetField, modelField := range matcher {
-			// get reference
-			ref := ctx.Model.MustGet(modelField)
-
-			// skip not set optional references
-			if oid, ok := ref.(*bson.ObjectId); ok && oid == nil {
-				continue
-			}
-
-			// add matcher as-is
-			query[targetField] = ref
+			query[targetField] = ctx.Model.MustGet(modelField)
 		}
 
 		// find matching documents

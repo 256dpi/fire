@@ -303,19 +303,120 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 	id := bson.NewObjectId()
 
 	existing := tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
 		Bar:    id,
 		OptBar: coal.P(id),
 		Bars:   []bson.ObjectId{id},
 	})
 
 	candidate := &fooModel{
-		Foo:    coal.P(existing.ID()),
+		Foo:    existing.ID(),
 		Bar:    bson.NewObjectId(),                  // <- not the same
 		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
 		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
 	}
 
 	err := tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.Bar = id
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.OptBar = coal.P(id)
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.Bars = []bson.ObjectId{id}
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.NoError(t, err)
+}
+
+func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
+	tester.Clean()
+
+	validator := MatchingReferencesValidator("foos", "opt_foo_id", map[string]string{
+		"bar_id":     "bar_id",
+		"opt_bar_id": "opt_bar_id",
+		"bar_ids":    "bar_ids",
+	})
+
+	id := bson.NewObjectId()
+
+	existing := tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    id,
+		OptBar: coal.P(id),
+		Bars:   []bson.ObjectId{id},
+	})
+
+	candidate := &fooModel{
+		Foo:    bson.NewObjectId(),
+		OptFoo: nil,                                 // <- missing
+		Bar:    bson.NewObjectId(),                  // <- not the same
+		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
+		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+	}
+
+	err := tester.RunValidator(Create, candidate, validator)
+	assert.NoError(t, err)
+
+	candidate.OptFoo = coal.P(existing.ID())
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.Bar = id
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.OptBar = coal.P(id)
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.Error(t, err)
+
+	candidate.Bars = []bson.ObjectId{id}
+
+	err = tester.RunValidator(Create, candidate, validator)
+	assert.NoError(t, err)
+}
+
+func TestMatchingReferencesValidatorToMany(t *testing.T) {
+	tester.Clean()
+
+	validator := MatchingReferencesValidator("foos", "foo_ids", map[string]string{
+		"bar_id":     "bar_id",
+		"opt_bar_id": "opt_bar_id",
+		"bar_ids":    "bar_ids",
+	})
+
+	id := bson.NewObjectId()
+
+	existing := tester.Save(&fooModel{
+		Foo:    bson.NewObjectId(),
+		Bar:    id,
+		OptBar: coal.P(id),
+		Bars:   []bson.ObjectId{id},
+	})
+
+	candidate := &fooModel{
+		Foo:    bson.NewObjectId(),
+		Foos:   nil,                                 // <- missing
+		Bar:    bson.NewObjectId(),                  // <- not the same
+		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
+		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+	}
+
+	err := tester.RunValidator(Create, candidate, validator)
+	assert.NoError(t, err)
+
+	candidate.Foos = []bson.ObjectId{existing.ID()}
+
+	err = tester.RunValidator(Create, candidate, validator)
 	assert.Error(t, err)
 
 	candidate.Bar = id
