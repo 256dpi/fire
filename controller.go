@@ -791,6 +791,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	ctx.CustomAction = &CustomAction{
 		Name:           ctx.JSONAPIRequest.ResourceAction,
 		ResourceAction: true,
+		ResourceID:     ctx.JSONAPIRequest.ResourceID,
 		Payload:        data,
 	}
 
