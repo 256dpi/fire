@@ -17,11 +17,31 @@ type Operation int
 // All the available operations.
 const (
 	_ Operation = iota
+
+	// The list operation will used to authorize the loading of multiple
+	// resources from a collection.
 	List
+
+	// The find operation will be used to authorize the loading of a specific
+	// resource from a collection.
 	Find
+
+	// The create operation will be used to authorize and validate the creation
+	// of a new resource in a collection.
 	Create
+
+	// The update operation will be used to authorize the loading and validate
+	// the updating of a specific resource in a collection.
+	//
+	// Note: Updates can include attributes, relationships or both.
 	Update
+
+	// The delete operation will be used to authorize the loading and validate
+	// the deletion of a specific resource in a collection.
 	Delete
+
+	// The custom operation will be used to authorize the execution of a callback
+	// for a custom collection or resource action.
 	Custom
 )
 
