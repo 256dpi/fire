@@ -403,10 +403,13 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 	newCtx := &Context{
 		Store: ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
+			Prefix:       ctx.JSONAPIRequest.Prefix,
 			ResourceType: pluralName,
 			Include:      ctx.JSONAPIRequest.Include,
 			PageNumber:   ctx.JSONAPIRequest.PageNumber,
 			PageSize:     ctx.JSONAPIRequest.PageSize,
+			PageOffset:   ctx.JSONAPIRequest.PageOffset,
+			PageLimit:    ctx.JSONAPIRequest.PageLimit,
 			Sorting:      ctx.JSONAPIRequest.Sorting,
 			Fields:       ctx.JSONAPIRequest.Fields,
 			Filters:      ctx.JSONAPIRequest.Filters,
