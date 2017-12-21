@@ -196,45 +196,36 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx.Operation = List
 		c.listResources(w, ctx)
 	case jsonapi.FindResource:
-		ctx.Operation = Find
 		c.findResource(w, ctx)
 	case jsonapi.CreateResource:
-		ctx.Operation = Create
 		c.createResource(w, ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx.Operation = Update
 		c.updateResource(w, ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx.Operation = Delete
 		c.deleteResource(w, ctx)
 	case jsonapi.GetRelatedResources:
-		ctx.Operation = Find
 		c.getRelatedResources(w, ctx)
 	case jsonapi.GetRelationship:
-		ctx.Operation = Find
 		c.getRelationship(w, ctx)
 	case jsonapi.SetRelationship:
-		ctx.Operation = Update
 		c.setRelationship(w, ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx.Operation = Update
 		c.appendToRelationship(w, ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx.Operation = Update
 		c.removeFromRelationship(w, ctx, doc)
 	case jsonapi.CollectionAction:
-		ctx.Operation = Custom
 		c.handleCollectionAction(w, ctx)
 	case jsonapi.ResourceAction:
-		ctx.Operation = Custom
 		c.handleResourceAction(w, ctx)
 	}
 }
 
 func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = List
+
 	// prepare query
 	ctx.Query = bson.M{}
 
@@ -257,6 +248,9 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 }
 
 func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Find
+
 	// load model
 	c.loadModel(ctx)
 
@@ -278,6 +272,9 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 }
 
 func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+	// set operation
+	ctx.Operation = Create
+
 	// basic input data check
 	if doc.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("resource object expected"))
@@ -316,6 +313,9 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 }
 
 func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+	// set operation
+	ctx.Operation = Update
+
 	// basic input data check
 	if doc.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("resource object expected"))
@@ -348,6 +348,9 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 }
 
 func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Delete
+
 	// load model
 	c.loadModel(ctx)
 
@@ -365,6 +368,9 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 }
 
 func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Find
+
 	// load model
 	c.loadModel(ctx)
 
@@ -600,6 +606,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 }
 
 func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Find
+
 	// load model
 	c.loadModel(ctx)
 
@@ -617,6 +626,9 @@ func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 }
 
 func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+	// set operation
+	ctx.Operation = Update
+
 	// load model
 	c.loadModel(ctx)
 
@@ -634,6 +646,9 @@ func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *j
 }
 
 func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+	// set operation
+	ctx.Operation = Update
+
 	// load model
 	c.loadModel(ctx)
 
@@ -688,6 +703,9 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 }
 
 func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+	// set operation
+	ctx.Operation = Update
+
 	// load model
 	c.loadModel(ctx)
 
@@ -740,6 +758,9 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 }
 
 func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Custom
+
 	// set custom action
 	ctx.CustomAction = &CustomAction{
 		Name:             ctx.JSONAPIRequest.CollectionAction,
@@ -779,6 +800,11 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
+	// set operation
+	ctx.Operation = Custom
+
+	// TODO: Load model?
+
 	// set custom action
 	ctx.CustomAction = &CustomAction{
 		Name:           ctx.JSONAPIRequest.ResourceAction,
