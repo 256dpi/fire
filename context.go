@@ -61,7 +61,7 @@ func (o Operation) Write() bool {
 
 // A Context provides useful contextual information.
 type Context struct {
-	// The current operation in process.
+	// The current operation in process (read only).
 	Operation Operation
 
 	// The query that will be used during List, Find, Update or Delete to fetch
@@ -91,25 +91,25 @@ type Context struct {
 
 	// TODO: Rename to action?
 
-	// The custom action object is set when a Custom action is processed.
+	// The custom action object is set when a Custom action is processed (read only).
 	CustomAction *CustomAction
 
-	// The store that is used to retrieve and persist the model.
+	// The store that is used to retrieve and persist the model (read only).
 	Store *coal.SubStore
 
-	// The underlying JSON API request.
+	// The underlying JSON API request (read only).
 	JSONAPIRequest *jsonapi.Request
 
-	// The underlying HTTP request.
+	// The underlying HTTP request (read only).
 	//
 	// Note: The path is not updated when a controller forwards a request to
 	// another controller.
 	HTTPRequest *http.Request
 
-	// The Controller that is managing the request.
+	// The Controller that is managing the request (read only).
 	Controller *Controller
 
-	// The Group that received the request.
+	// The Group that received the request (read only).
 	Group *Group
 
 	original coal.Model
