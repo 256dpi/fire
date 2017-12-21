@@ -20,10 +20,14 @@ const (
 
 	// The list operation will used to authorize the loading of multiple
 	// resources from a collection.
+	//
+	// Note: This operation is also used to load related resources.
 	List
 
 	// The find operation will be used to authorize the loading of a specific
 	// resource from a collection.
+	//
+	// Note: This operation is also used to load a specific related resource.
 	Find
 
 	// The create operation will be used to authorize and validate the creation
@@ -66,6 +70,9 @@ type Context struct {
 	// On Find, Update and Delete, the "_id" key is preset to the document ID
 	// while on List all field and relationship filters are preset.
 	Query bson.M
+
+	// TODO: Use an internal query for the mandatory query that should not be
+	// overwritten.
 
 	// The Model that will be saved during Create, updated during Update or
 	// deleted during Delete.
