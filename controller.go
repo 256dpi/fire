@@ -101,6 +101,8 @@ type Controller struct {
 
 // TODO: Update pagination to use offset and limit.
 
+// TODO: Always render resource for relationship changes, as attributes might change?
+
 func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
