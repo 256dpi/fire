@@ -10,7 +10,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// A Callback is called during execution of a controller.
+// A Callback is called during the request processing flow of a controller.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns
 // an InternalServerError status and the error will be logged. All other errors

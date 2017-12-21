@@ -1243,6 +1243,7 @@ func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int
 		if isFatal(err) {
 			stack.Abort(err)
 		} else if err != nil {
+			// TODO: Only serialize errors that are marked to be safe?
 			stack.Abort(&jsonapi.Error{
 				Status: errorStatus,
 				Detail: err.Error(),
