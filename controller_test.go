@@ -2,6 +2,7 @@ package fire
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -2154,20 +2155,26 @@ func TestCollectionActions(t *testing.T) {
 		Store: testStore,
 		CollectionActions: M{
 			"POST:bytes": func(ctx *Context) error {
-				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("PAYLOAD"), bytes)
 				ctx.CustomAction.Response = []byte("RESPONSE")
 				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
 			"POST:json": func(ctx *Context) error {
-				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("{}"), bytes)
 				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
 			"POST:empty": func(ctx *Context) error {
-				assert.Empty(t, ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Empty(t, bytes)
 				return nil
 			},
 		},
@@ -2218,20 +2225,26 @@ func TestResourceActions(t *testing.T) {
 		Store: testStore,
 		ResourceActions: M{
 			"POST:bytes": func(ctx *Context) error {
-				assert.Equal(t, []byte("PAYLOAD"), ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("PAYLOAD"), bytes)
 				ctx.CustomAction.Response = []byte("RESPONSE")
 				ctx.CustomAction.ContentType = "text/plain"
 				return nil
 			},
 			"POST:json": func(ctx *Context) error {
-				assert.Equal(t, []byte("{}"), ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("{}"), bytes)
 				ctx.CustomAction.Response = map[string]interface{}{
 					"bar": "baz",
 				}
 				return nil
 			},
 			"POST:empty": func(ctx *Context) error {
-				assert.Empty(t, ctx.CustomAction.Payload)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Empty(t, bytes)
 				return nil
 			},
 		},

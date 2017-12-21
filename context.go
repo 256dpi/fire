@@ -126,9 +126,6 @@ type CustomAction struct {
 	// The resource id for a resource action.
 	ResourceID string
 
-	// The payload that was received with the custom collection or resource action.
-	Payload []byte
-
 	// The response that will be written to the client while processing a custom
 	// collection or resource action. If set, the value must be either a byte
 	// slice for raw responses or a json.Marshal compatible object for json

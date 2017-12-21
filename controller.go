@@ -3,7 +3,6 @@ package fire
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"reflect"
@@ -739,15 +738,10 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 }
 
 func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context) {
-	// read payload
-	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-	stack.AbortIf(err)
-
 	// set custom action
 	ctx.CustomAction = &CustomAction{
 		Name:             ctx.JSONAPIRequest.CollectionAction,
 		CollectionAction: true,
-		Payload:          data,
 	}
 
 	// run authorizers
@@ -783,16 +777,11 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
-	// read payload
-	data, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-	stack.AbortIf(err)
-
 	// set custom action
 	ctx.CustomAction = &CustomAction{
 		Name:           ctx.JSONAPIRequest.ResourceAction,
 		ResourceAction: true,
 		ResourceID:     ctx.JSONAPIRequest.ResourceID,
-		Payload:        data,
 	}
 
 	// run authorizers
