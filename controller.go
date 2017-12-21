@@ -158,10 +158,8 @@ func (c *Controller) prepare() {
 }
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
-	// set prefix
-	c.parser.Prefix = prefix
-
 	// parse incoming JSON API request
+	c.parser.Prefix = prefix
 	req, err := c.parser.ParseRequest(r)
 	stack.AbortIf(err)
 
@@ -193,7 +191,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 		Store:          store,
 	}
 
-	// call specific handlers based on the request intent
+	// call specific handlers
 	switch req.Intent {
 	case jsonapi.ListResources:
 		c.listResources(w, ctx)
