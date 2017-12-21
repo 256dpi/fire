@@ -2154,28 +2154,37 @@ func TestCollectionActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		CollectionActions: M{
-			"POST:bytes": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, []byte("PAYLOAD"), bytes)
-				ctx.CustomAction.Response = []byte("RESPONSE")
-				ctx.CustomAction.ContentType = "text/plain"
-				return nil
+			"bytes": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, []byte("PAYLOAD"), bytes)
+					ctx.CustomAction.Response = []byte("RESPONSE")
+					ctx.CustomAction.ContentType = "text/plain"
+					return nil
+				},
 			},
-			"POST:json": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, []byte("{}"), bytes)
-				ctx.CustomAction.Response = map[string]interface{}{
-					"bar": "baz",
-				}
-				return nil
+			"json": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, []byte("{}"), bytes)
+					ctx.CustomAction.Response = map[string]interface{}{
+						"bar": "baz",
+					}
+					return nil
+				},
 			},
-			"POST:empty": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Empty(t, bytes)
-				return nil
+			"empty": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Empty(t, bytes)
+					return nil
+				},
 			},
 		},
 	}, &Controller{
@@ -2224,28 +2233,37 @@ func TestResourceActions(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		ResourceActions: M{
-			"POST:bytes": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, []byte("PAYLOAD"), bytes)
-				ctx.CustomAction.Response = []byte("RESPONSE")
-				ctx.CustomAction.ContentType = "text/plain"
-				return nil
+			"bytes": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, []byte("PAYLOAD"), bytes)
+					ctx.CustomAction.Response = []byte("RESPONSE")
+					ctx.CustomAction.ContentType = "text/plain"
+					return nil
+				},
 			},
-			"POST:json": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, []byte("{}"), bytes)
-				ctx.CustomAction.Response = map[string]interface{}{
-					"bar": "baz",
-				}
-				return nil
+			"json": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, []byte("{}"), bytes)
+					ctx.CustomAction.Response = map[string]interface{}{
+						"bar": "baz",
+					}
+					return nil
+				},
 			},
-			"POST:empty": func(ctx *Context) error {
-				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-				assert.NoError(t, err)
-				assert.Empty(t, bytes)
-				return nil
+			"empty": {
+				Methods: []string{"POST"},
+				Callback: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.NoError(t, err)
+					assert.Empty(t, bytes)
+					return nil
+				},
 			},
 		},
 	}, &Controller{

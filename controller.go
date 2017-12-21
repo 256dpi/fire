@@ -6,7 +6,6 @@ import (
 	"math"
 	"net/http"
 	"reflect"
-	"strings"
 
 	"github.com/256dpi/fire/coal"
 
@@ -16,16 +15,23 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var customMethods = []string{"GET", "POST", "PATCH", "DELETE"}
-
 // S is a short-and type to create list of strings.
 type S []string
 
 // L is a short-hand type to create a list of callbacks.
 type L []Callback
 
-// M is a short-hand type to create a map of callbacks.
-type M map[string]Callback
+// M is a short-hand type to create a map of actions.
+type M map[string]Action
+
+// An Action defines a collection or resource action.
+type Action struct {
+	// The allowed methods for this action.
+	Methods []string
+
+	// The callback for this action.
+	Callback Callback
+}
 
 // A Controller provides a JSON API based interface to a model.
 //
@@ -87,14 +93,8 @@ type Controller struct {
 	// the specified callback after running the authorizers. No validators and
 	// notifiers are run for the request. If the CustomResponse field is set on
 	// the context, the content will be encoded and written as the response.
-	//
-	// Note: The HTTP method "POST" is assumed for both action types. Also it is
-	// advised to not use the same identifier for a collection and resource
-	// action.
-	CollectionActions map[string]Callback
-	ResourceActions   map[string]Callback
-
-	// TODO: Update docs.
+	CollectionActions map[string]Action
+	ResourceActions   map[string]Action
 
 	parser jsonapi.Parser
 }
@@ -114,48 +114,25 @@ func (c *Controller) prepare() {
 	}
 
 	// add collection actions
-	for action := range c.CollectionActions {
-		// split string
-		segments := strings.Split(action, ":")
-		if len(segments) != 2 {
-			panic(`fire: expected resource action names to be like "POST:foo"`)
-		}
-
-		// check method
-		if !stringInList(segments[0], customMethods) {
-			panic(`fire: custom action method is not allowed`)
-		}
-
-		c.parser.CollectionActions[segments[1]] = []string{segments[0]}
-
+	for name, action := range c.CollectionActions {
+		c.parser.CollectionActions[name] = action.Methods
 	}
 
 	// add resource actions
-	for action := range c.ResourceActions {
-		// split string
-		segments := strings.Split(action, ":")
-		if len(segments) != 2 {
-			panic(`fire: expected resource action names to be like "POST:foo"`)
-		}
-
-		// check method
-		if !stringInList(segments[0], customMethods) {
-			panic(`fire: custom action method is not allowed`)
-		}
-
+	for name, action := range c.ResourceActions {
 		// check collision
-		if segments[1] == "relationships" {
+		if name == "relationships" {
 			panic(`invalid resource action "relationships"`)
 		}
 
 		// check relations
 		for _, field := range c.Model.Meta().Fields {
-			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && segments[1] == field.RelType {
-				panic(fmt.Sprintf(`invalid resource action "%s"`, segments[1]))
+			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && name == field.RelType {
+				panic(fmt.Sprintf(`invalid resource action "%s"`, name))
 			}
 		}
 
-		c.parser.ResourceActions[segments[1]] = []string{segments[0]}
+		c.parser.ResourceActions[name] = action.Methods
 	}
 }
 
@@ -774,13 +751,13 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.CollectionActions[ctx.HTTPRequest.Method+":"+ctx.CustomAction.Name]
+	action, ok := c.CollectionActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing collection action callback")
 	}
 
 	// run callback
-	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
+	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
 	if ctx.CustomAction.Response == nil {
@@ -819,13 +796,13 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// get callback
-	cb, ok := c.ResourceActions[ctx.HTTPRequest.Method+":"+ctx.CustomAction.Name]
+	action, ok := c.ResourceActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing resource action callback")
 	}
 
 	// run callback
-	c.runCallbacks([]Callback{cb}, ctx, http.StatusBadRequest)
+	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
 
 	// write no response if missing
 	if ctx.CustomAction.Response == nil {
