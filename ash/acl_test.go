@@ -58,7 +58,7 @@ func TestCallbackPanic(t *testing.T) {
 	cb := Callback(&Strategy{})
 
 	assert.Panics(t, func() {
-		tester.RunAuthorizer(fire.Action(10), nil, nil, cb)
+		tester.RunAuthorizer(fire.Operation(10), nil, nil, cb)
 	})
 }
 

@@ -9,15 +9,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// An Action describes the currently called action on the API.
-type Action int
+// An Operation is a single yield to a callback in the processing flow of an
+// API request by a controller. These operations may occur multiple times
+// during a single request.
+type Operation int
 
-// TODO: Rename to operations and clarify that these can happen multiple times
-// during a controller action?
-
-// All the available actions.
+// All the available operations.
 const (
-	_ Action = iota
+	_ Operation = iota
 	List
 	Find
 	Create
@@ -26,20 +25,20 @@ const (
 	Custom
 )
 
-// Read will return true when this action does only read data.
-func (a Action) Read() bool {
-	return a == List || a == Find
+// Read will return true when this operations does only read data.
+func (o Operation) Read() bool {
+	return o == List || o == Find
 }
 
-// Write will return true when this action does write data.
-func (a Action) Write() bool {
-	return a == Create || a == Update || a == Delete
+// Write will return true when this operation does write data.
+func (o Operation) Write() bool {
+	return o == Create || o == Update || o == Delete
 }
 
 // A Context provides useful contextual information.
 type Context struct {
-	// The current action in process.
-	Action Action
+	// The current operation in process.
+	Operation Operation
 
 	// The query that will be used during List, Find, Update or Delete to fetch
 	// a list of models or the specific requested model.
@@ -63,6 +62,8 @@ type Context struct {
 	// Note: The document will be set before notifiers are run.
 	Response *jsonapi.Document
 
+	// TODO: Rename to action?
+
 	// The custom action object is set when a Custom action is processed.
 	CustomAction *CustomAction
 
@@ -85,13 +86,14 @@ type Context struct {
 }
 
 // Original will return the stored version of the model. This method is intended
-// to be used to calculate the changed fields during an Update action. Any
-// returned error is already marked as fatal.
+// to be used to calculate the changed fields during an Update operation. Any
+// returned error is already marked as fatal. This function will cache and reuse
+// loaded models between multiple callbacks.
 //
-// Note: The method will panic if being used during any other action than Update.
+// Note: The method will panic if being used during any other operation than Update.
 func (c *Context) Original() (coal.Model, error) {
-	if c.Action != Update {
-		panic("fire: the original can only be loaded during an update action")
+	if c.Operation != Update {
+		panic("fire: the original can only be loaded during an update operation")
 	}
 
 	// return cached model

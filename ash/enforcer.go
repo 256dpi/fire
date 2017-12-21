@@ -41,9 +41,9 @@ func AccessDenied() Enforcer {
 // resource in general, but some records should remain hidden.
 func QueryFilter(filters bson.M) Enforcer {
 	return func(ctx *fire.Context) error {
-		// panic on create action
-		if ctx.Action == fire.Create {
-			panic("action not supported")
+		// panic on create
+		if ctx.Operation == fire.Create {
+			panic("operation not supported")
 		}
 
 		// assign specified filters

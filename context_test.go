@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAction(t *testing.T) {
+func TestOperation(t *testing.T) {
 	table := []struct {
-		a Action
-		r bool
-		w bool
+		op Operation
+		r  bool
+		w  bool
 	}{
 		{List, true, false},
 		{Find, true, false},
@@ -22,8 +22,8 @@ func TestAction(t *testing.T) {
 	}
 
 	for _, entry := range table {
-		assert.Equal(t, entry.r, entry.a.Read())
-		assert.Equal(t, entry.w, entry.a.Write())
+		assert.Equal(t, entry.r, entry.op.Read())
+		assert.Equal(t, entry.w, entry.op.Write())
 	}
 }
 
@@ -43,9 +43,9 @@ func TestContextOriginal(t *testing.T) {
 	post.DocID = savedPost.DocID
 
 	ctx := &Context{
-		Action: Update,
-		Model:  post,
-		Store:  testSubStore,
+		Operation: Update,
+		Model:     post,
+		Store:     testSubStore,
 	}
 
 	m, err := ctx.Original()
@@ -58,9 +58,9 @@ func TestContextOriginal(t *testing.T) {
 	assert.Equal(t, m, m2)
 }
 
-func TestContextOriginalWrongAction(t *testing.T) {
+func TestContextOriginalWrongOperation(t *testing.T) {
 	ctx := &Context{
-		Action: Find,
+		Operation: Find,
 	}
 
 	assert.Panics(t, func() {
@@ -76,9 +76,9 @@ func TestContextOriginalNonExisting(t *testing.T) {
 	}).(*postModel)
 
 	ctx := &Context{
-		Action: Update,
-		Model:  post,
-		Store:  testSubStore,
+		Operation: Update,
+		Model:     post,
+		Store:     testSubStore,
 	}
 
 	m, err := ctx.Original()

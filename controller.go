@@ -43,7 +43,7 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *coal.Store
 
-	// The Authorizers authorize the requested action on the requested resource
+	// The Authorizers authorize the requested operation on the requested resource
 	// and are run before any models are loaded from the DB. Returned errors
 	// will cause the abortion of the request with an Unauthorized status.
 	//
@@ -54,7 +54,7 @@ type Controller struct {
 	// just appear as being not found.
 	Authorizers []Callback
 
-	// The Validators are run to validate Create, Update and Delete actions after
+	// The Validators are run to validate Create, Update and Delete operations after
 	// the models are loaded from the DB and the changed attributes have been
 	// assigned during an Update. Returned errors will cause the abortion of the
 	// request with a Bad Request status.
@@ -93,6 +93,8 @@ type Controller struct {
 	// action.
 	CollectionActions map[string]Callback
 	ResourceActions   map[string]Callback
+
+	// TODO: Update docs.
 
 	parser jsonapi.Parser
 }
@@ -194,40 +196,40 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	// call specific handlers based on the request intent
 	switch req.Intent {
 	case jsonapi.ListResources:
-		ctx.Action = List
+		ctx.Operation = List
 		c.listResources(w, ctx)
 	case jsonapi.FindResource:
-		ctx.Action = Find
+		ctx.Operation = Find
 		c.findResource(w, ctx)
 	case jsonapi.CreateResource:
-		ctx.Action = Create
+		ctx.Operation = Create
 		c.createResource(w, ctx, doc)
 	case jsonapi.UpdateResource:
-		ctx.Action = Update
+		ctx.Operation = Update
 		c.updateResource(w, ctx, doc)
 	case jsonapi.DeleteResource:
-		ctx.Action = Delete
+		ctx.Operation = Delete
 		c.deleteResource(w, ctx)
 	case jsonapi.GetRelatedResources:
-		ctx.Action = Find
+		ctx.Operation = Find
 		c.getRelatedResources(w, ctx)
 	case jsonapi.GetRelationship:
-		ctx.Action = Find
+		ctx.Operation = Find
 		c.getRelationship(w, ctx)
 	case jsonapi.SetRelationship:
-		ctx.Action = Update
+		ctx.Operation = Update
 		c.setRelationship(w, ctx, doc)
 	case jsonapi.AppendToRelationship:
-		ctx.Action = Update
+		ctx.Operation = Update
 		c.appendToRelationship(w, ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		ctx.Action = Update
+		ctx.Operation = Update
 		c.removeFromRelationship(w, ctx, doc)
 	case jsonapi.CollectionAction:
-		ctx.Action = Custom
+		ctx.Operation = Custom
 		c.handleCollectionAction(w, ctx)
 	case jsonapi.ResourceAction:
-		ctx.Action = Custom
+		ctx.Operation = Custom
 		c.handleResourceAction(w, ctx)
 	}
 }
@@ -429,7 +431,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// tweak context
-		newCtx.Action = Find
+		newCtx.Operation = Find
 		newCtx.JSONAPIRequest.Intent = jsonapi.FindResource
 		newCtx.JSONAPIRequest.ResourceID = id
 
@@ -465,7 +467,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		ids := ctx.Model.MustGet(relationField.Name).([]bson.ObjectId)
 
 		// tweak context
-		newCtx.Action = List
+		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set query
@@ -514,7 +516,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// tweak context
-		newCtx.Action = List
+		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set query
@@ -568,7 +570,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		}
 
 		// tweak context
-		newCtx.Action = List
+		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set query

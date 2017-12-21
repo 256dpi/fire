@@ -44,12 +44,12 @@ type value int
 const NoDefault value = iota
 
 // Only will return a callback that runs the specified callback only when one
-// of the supplied actions match.
-func Only(cb Callback, actions ...Action) Callback {
+// of the supplied operations match.
+func Only(cb Callback, ops ...Operation) Callback {
 	return func(ctx *Context) error {
-		// check action
-		for _, a := range actions {
-			if a == ctx.Action {
+		// check operation
+		for _, a := range ops {
+			if a == ctx.Operation {
 				return cb(ctx)
 			}
 		}
@@ -59,12 +59,12 @@ func Only(cb Callback, actions ...Action) Callback {
 }
 
 // Except will return a callback that runs the specified callback only when none
-// of the supplied actions match.
-func Except(cb Callback, actions ...Action) Callback {
+// of the supplied operations match.
+func Except(cb Callback, ops ...Operation) Callback {
 	return func(ctx *Context) error {
-		// check action
-		for _, a := range actions {
-			if a == ctx.Action {
+		// check operation
+		for _, a := range ops {
+			if a == ctx.Operation {
 				return nil
 			}
 		}
@@ -112,7 +112,7 @@ func BasicAuthorizer(credentials map[string]string) Callback {
 func ModelValidator() Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
-		if ctx.Action != Create && ctx.Action != Update {
+		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
 		}
 
@@ -139,11 +139,11 @@ func ModelValidator() Callback {
 func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
-		if ctx.Action != Create && ctx.Action != Update {
+		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
 		}
 
-		if ctx.Action == Create {
+		if ctx.Operation == Create {
 			// check all attributes
 			for field, def := range attributes {
 				// skip fields that have no default
@@ -158,7 +158,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 			}
 		}
 
-		if ctx.Action == Update {
+		if ctx.Operation == Update {
 			// read the original
 			original, err := ctx.Original()
 			if err != nil {
@@ -193,7 +193,7 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 func DependentResourcesValidator(resources map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Delete
-		if ctx.Action != Delete {
+		if ctx.Operation != Delete {
 			return nil
 		}
 
@@ -234,7 +234,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 func VerifyReferencesValidator(references map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
-		if ctx.Action != Create && ctx.Action != Update {
+		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
 		}
 
@@ -373,7 +373,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 func MatchingReferencesValidator(collection, reference string, matcher map[string]string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
-		if ctx.Action != Create && ctx.Action != Update {
+		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
 		}
 
@@ -451,12 +451,12 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
-		if ctx.Action != Create && ctx.Action != Update {
+		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
 		}
 
 		// check if field has changed
-		if ctx.Action == Update {
+		if ctx.Operation == Update {
 			// get original model
 			original, err := ctx.Original()
 			if err != nil {

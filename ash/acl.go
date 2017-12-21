@@ -1,5 +1,5 @@
 // Package ash implements a highly configurable and callback based ACL that can
-// be used to authorize controller actions in a declarative way.
+// be used to authorize controller operations in a declarative way.
 package ash
 
 import (
@@ -19,7 +19,7 @@ type Authorizer func(ctx *fire.Context) (Enforcer, error)
 
 // Strategy contains lists of authorizers that are used to authorize the request.
 type Strategy struct {
-	// Single actions.
+	// Single operations.
 	List   []Authorizer
 	Find   []Authorizer
 	Create []Authorizer
@@ -29,13 +29,13 @@ type Strategy struct {
 	// Custom actions.
 	Custom map[string][]Authorizer
 
-	// The read group contains List and Find.
+	// The read group contains List and Find operations.
 	Read []Authorizer
 
-	// The write group contains Create, Update and Delete.
+	// The write group contains Create, Update and Delete operations.
 	Write []Authorizer
 
-	// The all group contains all actions.
+	// The all group contains all operations.
 	All []Authorizer
 
 	// If Debugger is set it will be run with the chosen authorizers and
@@ -49,11 +49,11 @@ type L []Authorizer
 // M is a short-hand type to create a map of authorizers.
 type M map[string][]Authorizer
 
-// Callback will return a callback that authorizes actions based on the
+// Callback will return a callback that authorizes operations based on the
 // specified strategy.
 func Callback(s *Strategy) fire.Callback {
 	return func(ctx *fire.Context) error {
-		switch ctx.Action {
+		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)
 		case fire.Find:
@@ -68,8 +68,8 @@ func Callback(s *Strategy) fire.Callback {
 			return s.call(ctx, s.Custom[ctx.CustomAction.Name], s.All)
 		}
 
-		// panic on unknown action
-		panic("unknown action")
+		// panic on unknown operation
+		panic("unknown operation")
 	}
 }
 

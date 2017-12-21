@@ -124,11 +124,11 @@ func (t *Tester) Path(path string) string {
 // returned error of the validator, the state of the supplied model and maybe
 // other objects in the database.
 //
-// Note: Only the Action, Query, Model and Store are set since these are the
+// Note: Only the Operation, Query, Model and Store are set since these are the
 // only attributes an authorizer should rely on.
 //
 // Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, validator Callback) error {
+func (t *Tester) RunAuthorizer(op Operation, query bson.M, model coal.Model, validator Callback) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -154,7 +154,7 @@ func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, va
 
 	// create context
 	ctx := &Context{
-		Action:      action,
+		Operation:   op,
 		Query:       query,
 		Model:       model,
 		Store:       store,
@@ -169,13 +169,13 @@ func (t *Tester) RunAuthorizer(action Action, query bson.M, model coal.Model, va
 // returned error of the validator, the state of the supplied model and maybe
 // other objects in the database.
 //
-// Note: Only the Action, Model and Store attribute of the context are set since
+// Note: Only the Operation, Model and Store attribute of the context are set since
 // these are the only attributes a validator should rely on.
 //
 // Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunValidator(action Action, model coal.Model, validator Callback) error {
-	// check action
-	if action.Read() {
+func (t *Tester) RunValidator(op Operation, model coal.Model, validator Callback) error {
+	// check operation
+	if op.Read() {
 		panic("validator are only run on create, update and delete")
 	}
 
@@ -204,7 +204,7 @@ func (t *Tester) RunValidator(action Action, model coal.Model, validator Callbac
 
 	// create context
 	ctx := &Context{
-		Action:      action,
+		Operation:   op,
 		Model:       model,
 		Store:       store,
 		HTTPRequest: req,
