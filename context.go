@@ -97,6 +97,11 @@ type Context struct {
 	// The store that is used to retrieve and persist the model.
 	Store *coal.SubStore
 
+	// TODO: Convert the following to methods to prevent manipulations.
+	// Also, do not manipulate them when forwarding to another controller.
+
+	// TODO: Add Parent() to access the parent controller?
+
 	// The underlying JSON API request.
 	JSONAPIRequest *jsonapi.Request
 
