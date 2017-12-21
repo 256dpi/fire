@@ -2234,8 +2234,10 @@ func TestResourceActions(t *testing.T) {
 		Store: testStore,
 		ResourceActions: M{
 			"bytes": {
-				Methods: []string{"POST"},
+				Methods:   []string{"POST"},
+				LoadModel: true,
 				Callback: func(ctx *Context) error {
+					assert.NotEmpty(t, ctx.Model)
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
@@ -2247,6 +2249,7 @@ func TestResourceActions(t *testing.T) {
 			"json": {
 				Methods: []string{"POST"},
 				Callback: func(ctx *Context) error {
+					assert.Empty(t, ctx.Model)
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("{}"), bytes)
@@ -2259,6 +2262,7 @@ func TestResourceActions(t *testing.T) {
 			"empty": {
 				Methods: []string{"POST"},
 				Callback: func(ctx *Context) error {
+					assert.Empty(t, ctx.Model)
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)

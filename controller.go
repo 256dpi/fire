@@ -31,6 +31,9 @@ type Action struct {
 
 	// The callback for this action.
 	Callback Callback
+
+	// If true, the model is loaded for resource actions.
+	LoadModel bool
 }
 
 // A Controller provides a JSON API based interface to a model.
@@ -747,14 +750,14 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 		CollectionAction: true,
 	}
 
-	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
-
 	// get callback
 	action, ok := c.CollectionActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing collection action callback")
 	}
+
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// run callback
 	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
@@ -783,8 +786,6 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// set operation
 	ctx.Operation = Custom
 
-	// TODO: Load model?
-
 	// set custom action
 	ctx.CustomAction = &CustomAction{
 		Name:           ctx.JSONAPIRequest.ResourceAction,
@@ -792,13 +793,18 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 		ResourceID:     ctx.JSONAPIRequest.ResourceID,
 	}
 
-	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
-
 	// get callback
 	action, ok := c.ResourceActions[ctx.CustomAction.Name]
 	if !ok {
 		panic("fire: missing resource action callback")
+	}
+
+	// load model if requested
+	if action.LoadModel {
+		c.loadModel(ctx)
+	} else {
+		// otherwise run authorizers manually
+		c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 	}
 
 	// run callback
