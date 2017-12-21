@@ -44,9 +44,13 @@ const (
 	// the deletion of a specific resource in a collection.
 	Delete
 
-	// The custom operation will be used to authorize the execution of a callback
-	// for a custom collection or resource action.
-	Custom
+	// The collection action operation will be used to authorize the execution
+	// of a callback for a collection action.
+	CollectionAction
+
+	// The resource action operation will be used to authorize the execution
+	// of a callback for a resource action.
+	ResourceAction
 )
 
 // Read will return true when this operations does only read data.
@@ -57,6 +61,11 @@ func (o Operation) Read() bool {
 // Write will return true when this operation does write data.
 func (o Operation) Write() bool {
 	return o == Create || o == Update || o == Delete
+}
+
+// Action will return true when this operation is a collection or resource action.
+func (o Operation) Action() bool {
+	return o == CollectionAction || o == ResourceAction
 }
 
 // A Context provides useful contextual information.
@@ -89,15 +98,10 @@ type Context struct {
 	// Note: The document will be set before notifiers are run.
 	Response *jsonapi.Document
 
-	// TODO: Rename to action?
-
-	// The custom action object is set when a Custom action is processed (read only).
-	CustomAction *CustomAction
-
 	// The store that is used to retrieve and persist the model (read only).
 	Store *coal.SubStore
 
-	// The underlying JSON API request (read only).
+	// The underlying JSON-API request (read only).
 	JSONAPIRequest *jsonapi.Request
 
 	// The underlying HTTP request (read only).
@@ -105,6 +109,11 @@ type Context struct {
 	// Note: The path is not updated when a controller forwards a request to
 	// another controller.
 	HTTPRequest *http.Request
+
+	// The underlying HTTP response writer. The response writer should only be
+	// used during collection or resource actions to write a response or to set
+	// custom headers.
+	ResponseWriter http.ResponseWriter
 
 	// The Controller that is managing the request (read only).
 	Controller *Controller
@@ -144,31 +153,4 @@ func (c *Context) Original() (coal.Model, error) {
 	c.original = coal.Init(m)
 
 	return c.original, nil
-}
-
-// CustomAction contains information to process a custom action.
-type CustomAction struct {
-	// The name of the action.
-	Name string
-
-	// What type of actions that is being processed.
-	CollectionAction bool
-	ResourceAction   bool
-
-	// The resource id for a resource action.
-	ResourceID string
-
-	// The response that will be written to the client while processing a custom
-	// collection or resource action. If set, the value must be either a byte
-	// slice for raw responses or a json.Marshal compatible object for json
-	// responses.
-	Response interface{}
-
-	// CustomContentType denotes the content type of the custom action response.
-	//
-	// Note: This value is only considered if the response is set to a byte slice.
-	ContentType string
-
-	// TODO: Encode as a JSON-API response if the custom response is an instance
-	// of the controller model.
 }

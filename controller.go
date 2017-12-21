@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -168,6 +167,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	ctx := &Context{
 		JSONAPIRequest: req,
 		HTTPRequest:    r,
+		ResponseWriter: w,
 		Controller:     c,
 		Group:          group,
 		Store:          store,
@@ -394,9 +394,10 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 			Fields:       ctx.JSONAPIRequest.Fields,
 			Filters:      ctx.JSONAPIRequest.Filters,
 		},
-		HTTPRequest: ctx.HTTPRequest,
-		Controller:  relatedController,
-		Group:       ctx.Group,
+		HTTPRequest:    ctx.HTTPRequest,
+		ResponseWriter: ctx.ResponseWriter,
+		Controller:     relatedController,
+		Group:          ctx.Group,
 	}
 
 	// finish to-one relationship
@@ -742,16 +743,10 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 
 func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context) {
 	// set operation
-	ctx.Operation = Custom
-
-	// set custom action
-	ctx.CustomAction = &CustomAction{
-		Name:             ctx.JSONAPIRequest.CollectionAction,
-		CollectionAction: true,
-	}
+	ctx.Operation = CollectionAction
 
 	// get callback
-	action, ok := c.CollectionActions[ctx.CustomAction.Name]
+	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
 		panic("fire: missing collection action callback")
 	}
@@ -761,40 +756,14 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 
 	// run callback
 	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
-
-	// write no response if missing
-	if ctx.CustomAction.Response == nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	// write bytes if available
-	if slice, ok := ctx.CustomAction.Response.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.CustomAction.ContentType)
-		w.WriteHeader(http.StatusOK)
-		w.Write(slice)
-		return
-	}
-
-	// write json response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomAction.Response))
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	// set operation
-	ctx.Operation = Custom
-
-	// set custom action
-	ctx.CustomAction = &CustomAction{
-		Name:           ctx.JSONAPIRequest.ResourceAction,
-		ResourceAction: true,
-		ResourceID:     ctx.JSONAPIRequest.ResourceID,
-	}
+	ctx.Operation = ResourceAction
 
 	// get callback
-	action, ok := c.ResourceActions[ctx.CustomAction.Name]
+	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
 	if !ok {
 		panic("fire: missing resource action callback")
 	}
@@ -809,25 +778,6 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 
 	// run callback
 	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
-
-	// write no response if missing
-	if ctx.CustomAction.Response == nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	// write bytes if available
-	if slice, ok := ctx.CustomAction.Response.([]byte); ok {
-		w.Header().Set("Content-Type", ctx.CustomAction.ContentType)
-		w.WriteHeader(http.StatusOK)
-		w.Write(slice)
-		return
-	}
-
-	// write json response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	stack.AbortIf(json.NewEncoder(w).Encode(ctx.CustomAction.Response))
 }
 
 func (c *Controller) loadModel(ctx *Context) {

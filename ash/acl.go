@@ -20,20 +20,22 @@ type Authorizer func(ctx *fire.Context) (Enforcer, error)
 // Strategy contains lists of authorizers that are used to authorize the request.
 type Strategy struct {
 	// Single operations.
-	List   []Authorizer
-	Find   []Authorizer
-	Create []Authorizer
-	Update []Authorizer
-	Delete []Authorizer
-
-	// Custom actions.
-	Custom map[string][]Authorizer
+	List             []Authorizer
+	Find             []Authorizer
+	Create           []Authorizer
+	Update           []Authorizer
+	Delete           []Authorizer
+	CollectionAction []Authorizer
+	ResourceAction   []Authorizer
 
 	// The read group contains List and Find operations.
 	Read []Authorizer
 
 	// The write group contains Create, Update and Delete operations.
 	Write []Authorizer
+
+	// The action group contains CollectionAction and ResourceAction operations.
+	Action []Authorizer
 
 	// The all group contains all operations.
 	All []Authorizer
@@ -64,8 +66,10 @@ func Callback(s *Strategy) fire.Callback {
 			return s.call(ctx, s.Update, s.Write, s.All)
 		case fire.Delete:
 			return s.call(ctx, s.Delete, s.Write, s.All)
-		case fire.Custom:
-			return s.call(ctx, s.Custom[ctx.CustomAction.Name], s.All)
+		case fire.CollectionAction:
+			return s.call(ctx, s.CollectionAction, s.Action, s.All)
+		case fire.ResourceAction:
+			return s.call(ctx, s.ResourceAction, s.Action, s.All)
 		}
 
 		// panic on unknown operation

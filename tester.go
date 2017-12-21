@@ -154,11 +154,12 @@ func (t *Tester) RunAuthorizer(op Operation, query bson.M, model coal.Model, val
 
 	// create context
 	ctx := &Context{
-		Operation:   op,
-		Query:       query,
-		Model:       model,
-		Store:       store,
-		HTTPRequest: req,
+		Operation:      op,
+		Query:          query,
+		Model:          model,
+		Store:          store,
+		HTTPRequest:    req,
+		ResponseWriter: httptest.NewRecorder(),
 	}
 
 	// call validator
@@ -204,10 +205,11 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator Callback
 
 	// create context
 	ctx := &Context{
-		Operation:   op,
-		Model:       model,
-		Store:       store,
-		HTTPRequest: req,
+		Operation:      op,
+		Model:          model,
+		Store:          store,
+		HTTPRequest:    req,
+		ResponseWriter: httptest.NewRecorder(),
 	}
 
 	// call validator

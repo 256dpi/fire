@@ -2160,20 +2160,10 @@ func TestCollectionActions(t *testing.T) {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
-					ctx.CustomAction.Response = []byte("RESPONSE")
-					ctx.CustomAction.ContentType = "text/plain"
-					return nil
-				},
-			},
-			"json": {
-				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+
+					_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
 					assert.NoError(t, err)
-					assert.Equal(t, []byte("{}"), bytes)
-					ctx.CustomAction.Response = map[string]interface{}{
-						"bar": "baz",
-					}
+
 					return nil
 				},
 			},
@@ -2183,6 +2173,7 @@ func TestCollectionActions(t *testing.T) {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
+
 					return nil
 				},
 			},
@@ -2203,24 +2194,15 @@ func TestCollectionActions(t *testing.T) {
 	tester.Header["Accept"] = "text/plain"
 	tester.Request("POST", "posts/bytes", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "text/plain", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Equal(t, "text/plain; charset=utf-8", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Equal(t, "RESPONSE", r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get json response
-	tester.Header["Content-Type"] = "application/json"
-	tester.Header["Accept"] = "application/json"
-	tester.Request("POST", "posts/json", "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// get empty response
 	tester.Header["Content-Type"] = ""
 	tester.Header["Accept"] = ""
 	tester.Request("POST", "posts/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2238,24 +2220,14 @@ func TestResourceActions(t *testing.T) {
 				LoadModel: true,
 				Callback: func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
+
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
-					ctx.CustomAction.Response = []byte("RESPONSE")
-					ctx.CustomAction.ContentType = "text/plain"
-					return nil
-				},
-			},
-			"json": {
-				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
-					assert.Empty(t, ctx.Model)
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+
+					_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
 					assert.NoError(t, err)
-					assert.Equal(t, []byte("{}"), bytes)
-					ctx.CustomAction.Response = map[string]interface{}{
-						"bar": "baz",
-					}
+
 					return nil
 				},
 			},
@@ -2263,9 +2235,11 @@ func TestResourceActions(t *testing.T) {
 				Methods: []string{"POST"},
 				Callback: func(ctx *Context) error {
 					assert.Empty(t, ctx.Model)
+
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
+
 					return nil
 				},
 			},
@@ -2290,24 +2264,15 @@ func TestResourceActions(t *testing.T) {
 	tester.Header["Accept"] = "text/plain"
 	tester.Request("POST", "posts/"+post.Hex()+"/bytes", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "text/plain", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Equal(t, "text/plain; charset=utf-8", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Equal(t, "RESPONSE", r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get json response
-	tester.Header["Content-Type"] = "application/json"
-	tester.Header["Accept"] = "application/json"
-	tester.Request("POST", "posts/"+post.Hex()+"/json", "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "application/json", r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{ "bar": "baz" }`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// get empty response
 	tester.Header["Content-Type"] = ""
 	tester.Header["Accept"] = ""
 	tester.Request("POST", "posts/"+post.Hex()+"/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
