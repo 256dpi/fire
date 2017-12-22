@@ -2216,8 +2216,7 @@ func TestResourceActions(t *testing.T) {
 		Store: testStore,
 		ResourceActions: M{
 			"bytes": {
-				Methods:   []string{"POST"},
-				LoadModel: true,
+				Methods: []string{"POST"},
 				Callback: func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
@@ -2234,7 +2233,7 @@ func TestResourceActions(t *testing.T) {
 			"empty": {
 				Methods: []string{"POST"},
 				Callback: func(ctx *Context) error {
-					assert.Empty(t, ctx.Model)
+					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)

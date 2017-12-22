@@ -74,8 +74,7 @@ type Context struct {
 	Operation Operation
 
 	// The query that will be used during an List, Find, Update, Delete or
-	// ResourceAction (if LoadModel is set to true) operation to select a list
-	// of models or a specific model.
+	// ResourceAction operation to select a list of models or a specific model.
 	//
 	// On Find, Update and Delete operations, the "_id" key is preset to the
 	// resource id, while on forwarded List operations relationship filters are
@@ -83,8 +82,8 @@ type Context struct {
 	Selector bson.M
 
 	// The query that will be used during an List, Find, Update, Delete or
-	// ResourceAction (if LoadModel is set to true) operation to further filter
-	// the selection of a list of models or a specific model.
+	// ResourceAction operation to further filter the selection of a list of
+	// models or a specific model.
 	//
 	// On List operations, field filters are preset.
 	Filter bson.M
