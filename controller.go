@@ -807,6 +807,10 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		}
 
 		// TODO: Raise Bad Request if not allowed.
+
+		// TODO: Support to-one and to-many filters.
+
+		// TODO: Only allow exposed attributes filters.
 	}
 
 	// add sorting
