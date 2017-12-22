@@ -43,7 +43,7 @@ func AddFilter(filters bson.M) Enforcer {
 	return func(ctx *fire.Context) error {
 		// panic on create and collection action
 		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
-			panic("operation not supported")
+			panic("ash: operation not supported")
 		}
 
 		// assign specified filters

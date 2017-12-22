@@ -186,7 +186,7 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 func (t *Tester) RunValidator(op Operation, model coal.Model, validator Callback) error {
 	// check operation
 	if op.Read() {
-		panic("validator are only run on create, update and delete")
+		panic("fire: validators are only run on create, update and delete")
 	}
 
 	// get store

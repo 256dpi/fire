@@ -121,13 +121,13 @@ func (c *Controller) prepare() {
 	for name, action := range c.ResourceActions {
 		// check collision
 		if name == "relationships" {
-			panic(`invalid resource action "relationships"`)
+			panic(`fire: invalid resource action "relationships"`)
 		}
 
 		// check relations
 		for _, field := range c.Model.Meta().Fields {
 			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && name == field.RelType {
-				panic(fmt.Sprintf(`invalid resource action "%s"`, name))
+				panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
 			}
 		}
 

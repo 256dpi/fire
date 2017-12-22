@@ -77,7 +77,7 @@ type Context struct {
 	// ResourceAction operation to select a list of models or a specific model.
 	//
 	// On Find, Update and Delete operations, the "_id" key is preset to the
-	// resource id, while on forwarded List operations relationship filters are
+	// resource id, while on forwarded List operations a relationship filter is
 	// preset.
 	Selector bson.M
 
@@ -85,7 +85,7 @@ type Context struct {
 	// ResourceAction operation to further filter the selection of a list of
 	// models or a specific model.
 	//
-	// On List operations, field filters are preset.
+	// On List operations, attribute filters are preset.
 	Filter bson.M
 
 	// The Model that will be saved during Create, updated during Update or

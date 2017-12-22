@@ -73,7 +73,7 @@ func Callback(s *Strategy) fire.Callback {
 		}
 
 		// panic on unknown operation
-		panic("unknown operation")
+		panic("ash: unknown operation")
 	}
 }
 

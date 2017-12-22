@@ -312,7 +312,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			// get related model
 			relatedModel := catalog.Find(field.RelType)
 			if relatedModel == nil {
-				panic("missing model in catalog: " + field.RelType)
+				panic("fire: missing model in catalog: " + field.RelType)
 			}
 
 			// get collection
@@ -326,7 +326,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 				}
 			}
 			if bsonField == "" {
-				panic("missing field for inverse relationship: " + field.RelInverse)
+				panic("fire: missing field for inverse relationship: " + field.RelInverse)
 			}
 
 			// add relationship
@@ -338,7 +338,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			// get related model
 			relatedModel := catalog.Find(field.RelType)
 			if relatedModel == nil {
-				panic("missing model in catalog: " + field.RelType)
+				panic("fire: missing model in catalog: " + field.RelType)
 			}
 
 			// add relationship
