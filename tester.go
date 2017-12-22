@@ -128,7 +128,7 @@ func (t *Tester) Path(path string) string {
 // only attributes an authorizer should rely on.
 //
 // Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunAuthorizer(op Operation, query bson.M, model coal.Model, validator Callback) error {
+func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, validator Callback) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -152,10 +152,19 @@ func (t *Tester) RunAuthorizer(op Operation, query bson.M, model coal.Model, val
 	// set context
 	req = req.WithContext(t.Context)
 
+	// init queries
+	if selector == nil {
+		selector = bson.M{}
+	}
+	if filter == nil {
+		filter = bson.M{}
+	}
+
 	// create context
 	ctx := &Context{
 		Operation:      op,
-		Query:          query,
+		Selector:       selector,
+		Filter:         filter,
 		Model:          model,
 		Store:          store,
 		HTTPRequest:    req,

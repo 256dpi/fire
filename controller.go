@@ -165,12 +165,14 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 
 	// build context
 	ctx := &Context{
+		Selector:       bson.M{},
+		Filter:         bson.M{},
+		Store:          store,
 		JSONAPIRequest: req,
 		HTTPRequest:    r,
 		ResponseWriter: w,
 		Controller:     c,
 		Group:          group,
-		Store:          store,
 	}
 
 	// call specific handlers
@@ -205,9 +207,6 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	// set operation
 	ctx.Operation = List
-
-	// prepare query
-	ctx.Query = bson.M{}
 
 	// load models
 	models := c.loadModels(ctx)
@@ -338,7 +337,7 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// query db
-	stack.AbortIf(ctx.Store.C(c.Model).Remove(ctx.Query))
+	stack.AbortIf(ctx.Store.C(c.Model).Remove(c.makeQuery(ctx)))
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
@@ -381,7 +380,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 
 	// copy context and request
 	newCtx := &Context{
-		Store: ctx.Store,
+		Selector: bson.M{},
+		Filter:   bson.M{},
+		Store:    ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
 			ResourceType: pluralName,
@@ -460,12 +461,8 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
-		// set query
-		newCtx.Query = bson.M{
-			"_id": bson.M{
-				"$in": ids,
-			},
-		}
+		// set selector query
+		newCtx.Selector["_id"] = bson.M{"$in": ids}
 
 		// load related models
 		models := relatedController.loadModels(newCtx)
@@ -509,10 +506,8 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
-		// set query
-		newCtx.Query = bson.M{
-			filterName: ctx.Model.ID(),
-		}
+		// set selector query
+		newCtx.Selector[filterName] = ctx.Model.ID()
 
 		// load related models
 		models := relatedController.loadModels(newCtx)
@@ -563,11 +558,9 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		newCtx.Operation = List
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
-		// set query
-		newCtx.Query = bson.M{
-			filterName: bson.M{
-				"$in": []bson.ObjectId{ctx.Model.ID()},
-			},
+		// set selector query (supports to-one and to-many relationships)
+		newCtx.Selector[filterName] = bson.M{
+			"$in": []bson.ObjectId{ctx.Model.ID()},
 		}
 
 		// load related models
@@ -786,10 +779,8 @@ func (c *Controller) loadModel(ctx *Context) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
-	// prepare context
-	ctx.Query = bson.M{
-		"_id": bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID),
-	}
+	// set selector query
+	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
@@ -798,7 +789,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	obj := c.Model.Meta().Make()
 
 	// query db
-	err := ctx.Store.C(c.Model).Find(ctx.Query).One(obj)
+	err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).One(obj)
 	if err == mgo.ErrNotFound {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
@@ -816,12 +807,14 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		// check if filter is present
 		if values, ok := ctx.JSONAPIRequest.Filters[field.JSONName]; ok {
 			if field.Kind == reflect.Bool && len(values) == 1 {
-				ctx.Query[field.BSONName] = values[0] == "true"
+				ctx.Filter[field.BSONName] = values[0] == "true"
 				continue
 			}
 
-			ctx.Query[field.BSONName] = bson.M{"$in": values}
+			ctx.Filter[field.BSONName] = bson.M{"$in": values}
 		}
+
+		// TODO: Raise Bad Request if not allowed.
 	}
 
 	// add sorting
@@ -834,6 +827,8 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 				ctx.Sorting = append(ctx.Sorting, params)
 			}
 		}
+
+		// TODO: Raise Bad Request if not allowed.
 	}
 
 	// honor list limit
@@ -854,7 +849,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	slicePtr := c.Model.Meta().MakeSlice()
 
 	// prepare query
-	query := ctx.Store.C(c.Model).Find(ctx.Query).Sort(ctx.Sorting...)
+	query := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).Sort(ctx.Sorting...)
 
 	// add pagination
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
@@ -944,7 +939,7 @@ func (c *Controller) updateModel(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	stack.AbortIf(ctx.Store.C(ctx.Model).Update(ctx.Query, ctx.Model))
+	stack.AbortIf(ctx.Store.C(ctx.Model).Update(c.makeQuery(ctx), ctx.Model))
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.Resource {
@@ -1173,7 +1168,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		n, err := ctx.Store.C(c.Model).Find(ctx.Query).Count()
+		n, err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).Count()
 		stack.AbortIf(err)
 
 		// calculate last page
@@ -1196,6 +1191,12 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	}
 
 	return links
+}
+
+func (c *Controller) makeQuery(ctx *Context) bson.M {
+	return bson.M{
+		"$and": []bson.M{ctx.Selector, ctx.Filter},
+	}
 }
 
 func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int) {

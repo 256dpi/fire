@@ -66,12 +66,12 @@ func TestBasicAuthorizer(t *testing.T) {
 
 	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:bar"))
 
-	err := tester.RunAuthorizer(Find, nil, nil, authorizer)
+	err := tester.RunAuthorizer(Find, nil, nil, nil, authorizer)
 	assert.NoError(t, err)
 
 	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
-	err = tester.RunAuthorizer(Find, nil, nil, authorizer)
+	err = tester.RunAuthorizer(Find, nil, nil, nil, authorizer)
 	assert.Error(t, err)
 }
 

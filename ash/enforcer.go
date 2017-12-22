@@ -36,33 +36,33 @@ func AccessDenied() Enforcer {
 	}
 }
 
-// QueryFilter will enforce the authorization by manipulating the Query property
-// of the context. It should be used if the candidate is allowed to access the
-// resource in general, but some records should remain hidden.
-func QueryFilter(filters bson.M) Enforcer {
+// AddFilter will enforce the authorization by adding the passed filters to the
+// Filter query of the context. It should be used if the candidate is allowed to
+// access the resource in general, but some records should be filtered out.
+func AddFilter(filters bson.M) Enforcer {
 	return func(ctx *fire.Context) error {
-		// panic on create
-		if ctx.Operation == fire.Create {
+		// panic on create and collection action
+		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
 			panic("operation not supported")
 		}
 
 		// assign specified filters
 		for key, value := range filters {
-			ctx.Query[key] = value
+			ctx.Filter[key] = value
 		}
 
 		return nil
 	}
 }
 
-// HideFilter will enforce the authorization by manipulating the Query property
-// of the context in such a way, that no records will be returned. It should be
+// HideFilter will enforce the authorization by adding a falsy filter to the
+// Filter query of the context, so that no records will be returned. It should be
 // used if the requested resource should be hidden from the candidate.
 func HideFilter() Enforcer {
 	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
 	// an early ErrNotFound instead of manipulating the Query in crazy ways.
 
-	return QueryFilter(bson.M{
-		bson.NewObjectId().Hex(): bson.NewObjectId(),
+	return AddFilter(bson.M{
+		"___a_property_no_document_in_this_world_should_have": "value",
 	})
 }

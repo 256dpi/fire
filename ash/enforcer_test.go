@@ -12,19 +12,19 @@ func TestEnforcer(t *testing.T) {
 	assert.NoError(t, AccessGranted()(nil))
 	assert.Equal(t, errAccessDenied, AccessDenied()(nil))
 
-	query := bson.M{}
-	err := tester.RunAuthorizer(fire.List, query, nil, QueryFilter(bson.M{
+	filter := bson.M{}
+	err := tester.RunAuthorizer(fire.List, nil, filter, nil, AddFilter(bson.M{
 		"foo": "bar",
 	}))
 	assert.NoError(t, err)
-	assert.Equal(t, "bar", query["foo"])
+	assert.Equal(t, "bar", filter["foo"])
 
-	query = bson.M{}
-	err = tester.RunAuthorizer(fire.Find, query, nil, HideFilter())
+	filter = bson.M{}
+	err = tester.RunAuthorizer(fire.Find, nil, filter, nil, HideFilter())
 	assert.NoError(t, err)
-	assert.Len(t, query, 1)
+	assert.Len(t, filter, 1)
 
 	assert.Panics(t, func() {
-		tester.RunAuthorizer(fire.Create, query, nil, HideFilter())
+		tester.RunAuthorizer(fire.Create, nil, filter, nil, HideFilter())
 	})
 }

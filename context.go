@@ -73,15 +73,21 @@ type Context struct {
 	// The current operation in process (read only).
 	Operation Operation
 
-	// The query that will be used during List, Find, Update or Delete to fetch
-	// a list of models or the specific requested model.
+	// The query that will be used during an List, Find, Update, Delete or
+	// ResourceAction (if LoadModel is set to true) operation to select a list
+	// of models or a specific model.
 	//
-	// On Find, Update and Delete, the "_id" key is preset to the document ID
-	// while on List all field and relationship filters are preset.
-	Query bson.M
+	// On Find, Update and Delete operations, the "_id" key is preset to the
+	// resource id, while on forwarded List operations relationship filters are
+	// preset.
+	Selector bson.M
 
-	// TODO: Use an internal query for the mandatory query that should not be
-	// overwritten.
+	// The query that will be used during an List, Find, Update, Delete or
+	// ResourceAction (if LoadModel is set to true) operation to further filter
+	// the selection of a list of models or a specific model.
+	//
+	// On List operations, field filters are preset.
+	Filter bson.M
 
 	// The Model that will be saved during Create, updated during Update or
 	// deleted during Delete.
