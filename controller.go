@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/256dpi/fire/coal"
 
@@ -39,7 +40,7 @@ type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model coal.Model
 
-	// Filters defines the attributes that are filterable.
+	// Filters defines the attributes and relationships that are filterable.
 	Filters []string
 
 	// Sorters defines the attributes that are sortable.
@@ -793,38 +794,75 @@ func (c *Controller) loadModel(ctx *Context) {
 
 func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	// add filters
-	for _, filter := range c.Filters {
-		field := c.Model.Meta().MustFindField(filter)
+	for name, values := range ctx.JSONAPIRequest.Filters {
+		// initialize flag
+		handled := false
 
-		// check if filter is present
-		if values, ok := ctx.JSONAPIRequest.Filters[field.JSONName]; ok {
-			if field.Kind == reflect.Bool && len(values) == 1 {
-				ctx.Filter[field.BSONName] = values[0] == "true"
-				continue
+		for _, field := range c.Model.Meta().Fields {
+			// handle attribute filter
+			if field.JSONName == name && stringInList(field.JSONName, c.Filters) {
+				handled = true
+
+				// handle boolean values
+				if field.Kind == reflect.Bool && len(values) == 1 {
+					ctx.Filter[field.BSONName] = values[0] == "true"
+
+					break
+				}
+
+				// handle string values
+				ctx.Filter[field.BSONName] = bson.M{"$in": values}
+
+				break
 			}
 
-			ctx.Filter[field.BSONName] = bson.M{"$in": values}
+			// handle relationship filter
+			if field.RelName == name && (field.ToOne || field.ToMany) && stringInList(field.RelName, c.Filters) {
+				handled = true
+
+				// convert to object id list
+				ids, err := toObjectIDList(values)
+				if err != nil {
+					stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
+				}
+
+				// set relationship filter
+				ctx.Filter[field.BSONName] = bson.M{"$in": ids}
+
+				break
+			}
 		}
 
-		// TODO: Raise Bad Request if not allowed.
-
-		// TODO: Support to-one and to-many filters.
-
-		// TODO: Only allow exposed attributes filters.
+		// raise an error on a unsupported filter
+		if !handled {
+			stack.Abort(jsonapi.BadRequest(fmt.Sprintf("filter %s is not supported", name)))
+		}
 	}
 
 	// add sorting
-	for _, params := range ctx.JSONAPIRequest.Sorting {
-		for _, sorter := range c.Sorters {
-			field := c.Model.Meta().MustFindField(sorter)
+	for _, sorter := range ctx.JSONAPIRequest.Sorting {
+		// initialize flag
+		handled := false
 
-			// check if sorting is present
-			if params == field.JSONName || params == "-"+field.JSONName {
-				ctx.Sorting = append(ctx.Sorting, params)
+		// normalize sorter
+		normalizedSorter := strings.TrimPrefix(sorter, "-")
+
+		for _, field := range c.Model.Meta().Fields {
+			// handle attribute sorter
+			if (field.JSONName == normalizedSorter) && stringInList(field.JSONName, c.Sorters) {
+				handled = true
+
+				// add sorter
+				ctx.Sorting = append(ctx.Sorting, sorter)
+
+				break
 			}
 		}
 
-		// TODO: Raise Bad Request if not allowed.
+		// raise an error on a unsupported filter
+		if !handled {
+			stack.Abort(jsonapi.BadRequest(fmt.Sprintf("sorter %s is not supported", normalizedSorter)))
+		}
 	}
 
 	// honor list limit

@@ -264,9 +264,15 @@ func TestFiltering(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: testStore,
+		Filters: []string{
+			"posts",
+		},
 	}, &Controller{
 		Model: &noteModel{},
 		Store: testStore,
+		Filters: []string{
+			"post",
+		},
 	})
 
 	// create posts
@@ -283,14 +289,28 @@ func TestFiltering(t *testing.T) {
 		Published: true,
 	}).ID().Hex()
 
-	// create selection
+	// create selections
 	selection := tester.Save(&selectionModel{
+		Name: "selection-1",
 		Posts: []bson.ObjectId{
 			bson.ObjectIdHex(post1),
 			bson.ObjectIdHex(post2),
 			bson.ObjectIdHex(post3),
 		},
 	}).ID().Hex()
+	tester.Save(&selectionModel{
+		Name: "selection-2",
+	})
+
+	// create notes
+	note := tester.Save(&noteModel{
+		Title: "note-1",
+		Post:  bson.ObjectIdHex(post1),
+	}).ID().Hex()
+	tester.Save(&noteModel{
+		Title: "note-2",
+		Post:  bson.NewObjectId(),
+	})
 
 	// get posts with single value filter
 	tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -326,7 +346,10 @@ func TestFiltering(t *testing.T) {
 							}
 						},
 						"note": {
-							"data": null,
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
+							},
 							"links": {
 								"self": "/posts/`+post1+`/relationships/note",
 								"related": "/posts/`+post1+`/note"
@@ -461,7 +484,10 @@ func TestFiltering(t *testing.T) {
 							}
 						},
 						"note": {
-							"data": null,
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
+							},
 							"links": {
 								"self": "/posts/`+post1+`/relationships/note",
 								"related": "/posts/`+post1+`/note"
@@ -608,6 +634,90 @@ func TestFiltering(t *testing.T) {
 			"links": {
 				"self": "/selections/`+selection+`/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// filter notes with to-one relationship filter
+	tester.Request("GET", "notes?filter[post]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+  			"data": [
+    			{
+      				"type": "notes",
+      				"id": "`+note+`",
+      				"attributes": {
+        				"title": "note-1"
+      				},
+      				"relationships": {
+        				"post": {
+          					"data": {
+            					"type": "posts",
+            					"id": "`+post1+`"
+          					},
+          					"links": {
+            					"self": "/notes/`+note+`/relationships/post",
+            					"related": "/notes/`+note+`/post"
+          					}
+			        	}
+      				}
+    			}
+  			],
+  			"links": {
+    			"self": "/notes"
+  			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// filter selections with to-many relationship filter
+	tester.Request("GET", "selections?filter[posts]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+			  		"type": "selections",
+			  		"id": "`+selection+`",
+			  		"attributes": {
+						"name": "selection-1"
+			  		},
+			  		"relationships": {
+						"posts": {
+				  			"data": [
+								{
+									"type": "posts",
+									"id": "`+post1+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post2+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post3+`"
+								}
+							],
+							"links": {
+								"self": "/selections/`+selection+`/relationships/posts",
+								"related": "/selections/`+selection+`/posts"
+							}
+						}
+					}
+				}
+		  	],
+		  	"links": {
+				"self": "/selections"
+		  	}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test invalid filter
+	tester.Request("GET", "posts?filter[foo]=bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "filter foo is not supported"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
@@ -856,6 +966,18 @@ func TestSorting(t *testing.T) {
 			"links": {
 				"self": "/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test invalid sorter
+	tester.Request("GET", "posts?sort=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "sorter foo is not supported"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
