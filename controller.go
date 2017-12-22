@@ -853,8 +853,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	}
 
 	// query db
-	err := query.All(slicePtr)
-	stack.AbortIf(err)
+	stack.AbortIf(query.All(slicePtr))
 
 	// init all models in slice
 	return coal.InitSlice(slicePtr)
