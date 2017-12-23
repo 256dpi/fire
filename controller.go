@@ -15,7 +15,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// S is a short-and type to create list of strings.
+// S is a short-hand type to create list of strings.
 type S []string
 
 // L is a short-hand type to create a list of callbacks.
@@ -35,10 +35,13 @@ type Action struct {
 
 // A Controller provides a JSON API based interface to a model.
 //
-// Note: Controllers must not be modified after adding to a group.
+// Note: A controller must not be modified after being added to a group.
 type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
 	Model coal.Model
+
+	// The store that is used to retrieve and persist the model.
+	Store *coal.Store
 
 	// Filters defines the attributes and relationships that are filterable.
 	// Only fields that are indexed should be made filterable.
@@ -48,53 +51,49 @@ type Controller struct {
 	// indexed should be made sortable.
 	Sorters []string
 
-	// The store that is used to retrieve and persist the model.
-	Store *coal.Store
-
-	// The Authorizers authorize the requested operation on the requested resource
+	// Authorizers authorize the requested operation on the requested resource
 	// and are run before any models are loaded from the DB. Returned errors
-	// will cause the abortion of the request with an Unauthorized status.
+	// will cause the abortion of the request with an unauthorized status.
 	//
 	// The callbacks are expected to return an error if the requester should be
 	// informed about him being unauthorized to access the resource or modify the
-	// Context's Query attribute in such a way that only accessible resources
-	// are returned. The later improves privacy as a protected resource would
-	// just appear as being not found.
+	// context's filter query in such a way that only accessible resources are
+	// returned. The later improves privacy as a protected resource would just
+	// appear as being not found.
 	Authorizers []Callback
 
-	// The Validators are run to validate Create, Update and Delete operations after
-	// the models are loaded from the DB and the changed attributes have been
-	// assigned during an Update. Returned errors will cause the abortion of the
-	// request with a Bad Request status.
+	// Validators are run to validate Create, Update and Delete operations
+	// after the models are loaded and the changed attributes have been assigned
+	// during an Update. Returned errors will cause the abortion of the request
+	// with a bad request status.
 	//
-	// The callbacks are expected to validate the Model being created, updated or
+	// The callbacks are expected to validate the model being created, updated or
 	// deleted and return errors if the presented attributes or relationships
 	// are invalid or do not comply with the stated requirements. The preceding
 	// authorization checks should be repeated and now also include the model's
 	// attributes and relationships.
 	Validators []Callback
 
-	// The Notifiers are run before the final response is written to the client
+	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
 	// about the applied changes. Returned errors will cause the abortion of the
 	// request with an Internal Server Error status.
 	Notifiers []Callback
 
-	// The NoList property can be set to true if the resource is only listed
-	// through relationships from other resources. This is useful for
-	// resources like comments that should never be listed alone.
+	// NoList can be set to true if the resource is only listed through
+	// relationships from other resources. This is useful for resources like
+	// comments that should never be listed alone.
 	NoList bool
 
-	// The ListLimit can be set to a value higher than 1 to enforce paginated
+	// ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit uint64
 
-	// The CollectionActions and ResourceActions are custom actions that are run
+	// CollectionActions and ResourceActions are custom actions that are run
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
 	// "posts/1/recover-password"). The request context is forwarded to
 	// the specified callback after running the authorizers. No validators and
-	// notifiers are run for the request. If the CustomResponse field is set on
-	// the context, the content will be encoded and written as the response.
+	// notifiers are run for the request.
 	CollectionActions map[string]Action
 	ResourceActions   map[string]Action
 

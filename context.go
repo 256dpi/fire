@@ -9,9 +9,9 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// An Operation is a single yield to a callback in the processing flow of an
-// API request by a controller. These operations may occur multiple times
-// during a single request.
+// An Operation indicates the purpose of a yield to a callback in the processing
+// flow of an API request by a controller. These operations may occur multiple
+// times during a single request.
 type Operation int
 
 // All the available operations.
