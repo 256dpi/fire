@@ -20,29 +20,37 @@ type Authorizer func(ctx *fire.Context) (Enforcer, error)
 // Strategy contains lists of authorizers that are used to authorize the request.
 type Strategy struct {
 	// Single operations.
-	List             []Authorizer
-	Find             []Authorizer
-	Create           []Authorizer
-	Update           []Authorizer
-	Delete           []Authorizer
-	CollectionAction []Authorizer
-	ResourceAction   []Authorizer
+	List   []Authorizer
+	Find   []Authorizer
+	Create []Authorizer
+	Update []Authorizer
+	Delete []Authorizer
 
-	// The read group contains List and Find operations.
+	// Single action operations.
+	CollectionAction map[string][]Authorizer
+	ResourceAction   map[string][]Authorizer
+
+	// All action operations.
+	CollectionActions []Authorizer
+	ResourceActions   []Authorizer
+
+	// All List and Find operations.
 	Read []Authorizer
 
-	// The write group contains Create, Update and Delete operations.
+	// All Create, Update and Delete operations.
 	Write []Authorizer
 
-	// The action group contains CollectionAction and ResourceAction operations.
-	Action []Authorizer
+	// All CollectionAction and ResourceAction operations.
+	Actions []Authorizer
 
-	// The all group contains all operations.
+	// All operations.
 	All []Authorizer
 
 	// If Debugger is set it will be run with the chosen authorizers and
 	// enforcers name.
 	Debugger func(string, string)
+
+	// TODO: Make debugging available on the context?
 }
 
 // L is a short-hand type to create a list of authorizers.
@@ -67,9 +75,9 @@ func Callback(s *Strategy) fire.Callback {
 		case fire.Delete:
 			return s.call(ctx, s.Delete, s.Write, s.All)
 		case fire.CollectionAction:
-			return s.call(ctx, s.CollectionAction, s.Action, s.All)
+			return s.call(ctx, s.CollectionAction[ctx.JSONAPIRequest.CollectionAction], s.CollectionActions, s.Actions, s.All)
 		case fire.ResourceAction:
-			return s.call(ctx, s.ResourceAction, s.Action, s.All)
+			return s.call(ctx, s.ResourceAction[ctx.JSONAPIRequest.ResourceAction], s.ResourceActions, s.Actions, s.All)
 		}
 
 		// panic on unknown operation
