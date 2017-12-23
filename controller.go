@@ -41,9 +41,11 @@ type Controller struct {
 	Model coal.Model
 
 	// Filters defines the attributes and relationships that are filterable.
+	// Only fields that are indexed should be made filterable.
 	Filters []string
 
-	// Sorters defines the attributes that are sortable.
+	// Sorters defines the attributes that are sortable. Only fields that are
+	// indexed should be made sortable.
 	Sorters []string
 
 	// The store that is used to retrieve and persist the model.
