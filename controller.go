@@ -351,8 +351,8 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
-	// query db
-	stack.AbortIf(ctx.Store.C(c.Model).Remove(c.makeQuery(ctx)))
+	// remove model
+	stack.AbortIf(ctx.Store.C(c.Model).RemoveId(ctx.Model.ID()))
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
