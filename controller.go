@@ -989,7 +989,7 @@ func (c *Controller) updateModel(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	stack.AbortIf(ctx.Store.C(ctx.Model).Update(c.makeQuery(ctx), ctx.Model))
+	stack.AbortIf(ctx.Store.C(ctx.Model).UpdateId(ctx.Model.ID(), ctx.Model))
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.Resource {
