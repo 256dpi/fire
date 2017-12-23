@@ -63,19 +63,18 @@ func TestCallbackPanic(t *testing.T) {
 }
 
 func TestCallbackDebugger(t *testing.T) {
-	var authorizer string
-	var enforcer string
+	var msg string
 
 	cb := Callback(&Strategy{
 		List: L{accessGrantedCB},
-		Debugger: func(a, e string) {
-			authorizer = a
-			enforcer = e
-		},
 	})
 
-	err := tester.RunAuthorizer(fire.List, nil, nil, nil, cb)
+	err := cb(&fire.Context{
+		Operation: fire.List,
+		Logger: func(str string) {
+			msg = str
+		},
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, "github.com/256dpi/fire/ash.accessGrantedCB", authorizer)
-	assert.Equal(t, "github.com/256dpi/fire/ash.AccessGranted.func1", enforcer)
+	assert.Equal(t, "authorized by github.com/256dpi/fire/ash.accessGrantedCB using github.com/256dpi/fire/ash.AccessGranted.func1", msg)
 }

@@ -12,9 +12,11 @@ import (
 type Group struct {
 	controllers map[string]*Controller
 
-	// The Reporter function gets invoked by the controller with any occurring
-	// fatal errors.
+	// The function gets invoked by the controller with occurring fatal errors.
 	Reporter func(error)
+
+	// The function that should be used to log debugging information.
+	Logger func(string)
 }
 
 // NewGroup creates and returns a new group.

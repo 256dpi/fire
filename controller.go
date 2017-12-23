@@ -105,6 +105,8 @@ type Controller struct {
 
 // TODO: Always render resource for relationship changes, as attributes might change?
 
+// TODO: Add more low-level debugging info (handlers, queries, etc.)
+
 func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
@@ -173,6 +175,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 		ResponseWriter: w,
 		Controller:     c,
 		Group:          group,
+		Logger:         group.Logger,
 	}
 
 	// call specific handlers

@@ -4,6 +4,7 @@ package ash
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"runtime"
 
@@ -45,12 +46,6 @@ type Strategy struct {
 
 	// All operations.
 	All []Authorizer
-
-	// If Debugger is set it will be run with the chosen authorizers and
-	// enforcers name.
-	Debugger func(string, string)
-
-	// TODO: Make debugging available on the context?
 }
 
 // L is a short-hand type to create a list of authorizers.
@@ -108,10 +103,8 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]Authorizer) error {
 					return err
 				}
 
-				// debug names if enabled
-				if s.Debugger != nil {
-					s.Debugger(fnName(authorizer), fnName(enforcer))
-				}
+				// log authorization
+				ctx.Log(fmt.Sprintf("authorized by %s using %s", fnName(authorizer), fnName(enforcer)))
 
 				return nil
 			}
