@@ -89,6 +89,10 @@ type Controller struct {
 	// responses and restrain the page size to be within one and the limit.
 	ListLimit uint64
 
+	// DocumentLimit defines the maximum allowed size of an incoming document.
+	// It defaults to 8MB if set to zero.
+	DocumentLimit uint64
+
 	// CollectionActions and ResourceActions are custom actions that are run
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
 	// "posts/1/recover-password"). The request context is forwarded to
@@ -110,7 +114,7 @@ func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
 
-	// prepare parsers
+	// prepare parser
 	c.parser = jsonapi.Parser{
 		CollectionActions: make(map[string][]string),
 		ResourceActions:   make(map[string][]string),
@@ -137,10 +141,15 @@ func (c *Controller) prepare() {
 
 		c.parser.ResourceActions[name] = action.Methods
 	}
+
+	// set default document limit
+	if c.DocumentLimit == 0 {
+		c.DocumentLimit = DataSize("8M")
+	}
 }
 
 func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
-	// parse incoming JSON API request
+	// parse incoming JSON-API request
 	c.parser.Prefix = prefix
 	req, err := c.parser.ParseRequest(r)
 	stack.AbortIf(err)
@@ -156,7 +165,11 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	// parse body if available
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		doc, err = jsonapi.ParseDocument(r.Body)
+		// limit request body size
+		reader := http.MaxBytesReader(w, r.Body, int64(c.DocumentLimit))
+
+		// parse document
+		doc, err = jsonapi.ParseDocument(reader)
 		stack.AbortIf(err)
 	}
 
