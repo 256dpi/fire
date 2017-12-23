@@ -19,6 +19,12 @@ func A(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).JSONName
 }
 
+// R is a short-hand function to extract the relationship name of a model
+// attribute.
+func R(m Model, field string) string {
+	return Init(m).Meta().MustFindField(field).RelName
+}
+
 // P is a short-hand function to get a pointer of the passed id.
 func P(id bson.ObjectId) *bson.ObjectId {
 	return &id

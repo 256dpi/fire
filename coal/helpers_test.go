@@ -19,6 +19,10 @@ func TestA(t *testing.T) {
 	assert.Equal(t, "text-body", A(&postModel{}, "TextBody"))
 }
 
+func TestR(t *testing.T) {
+	assert.Equal(t, "post", R(&commentModel{}, "Post"))
+}
+
 func TestP(t *testing.T) {
 	id := bson.NewObjectId()
 	assert.Equal(t, &id, P(id))

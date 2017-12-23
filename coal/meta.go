@@ -256,11 +256,11 @@ func NewMeta(model Model) *Meta {
 	return meta
 }
 
-// FindField returns the first field that has a matching Name, JSONName, or
-// BSONName. FindField will return nil if no field has been found.
+// FindField returns the first field that has a matching Name, JSONName,
+// BSONName or RelName. FindField will return nil if no field has been found.
 func (m *Meta) FindField(name string) *Field {
 	for _, field := range m.Fields {
-		if field.JSONName == name || field.BSONName == name || field.Name == name {
+		if field.Name == name || field.JSONName == name || field.BSONName == name || field.RelName == name {
 			return &field
 		}
 	}
@@ -268,8 +268,8 @@ func (m *Meta) FindField(name string) *Field {
 	return nil
 }
 
-// MustFindField returns the first field that has a matching Name, JSONName, or
-// BSONName. MustFindField will panic if no field has been found.
+// MustFindField returns the first field that has a matching Name, JSONName,
+// BSONName or RelName. MustFindField will panic if no field has been found.
 func (m *Meta) MustFindField(name string) *Field {
 	field := m.FindField(name)
 	if field == nil {
