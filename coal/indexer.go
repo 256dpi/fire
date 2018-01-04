@@ -20,12 +20,16 @@ func NewIndexer() *Indexer {
 // Add will add an index to the internal index list. Fields that are prefixed
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
-//
-// Note: Fields are BSON field names. You can use F() to extract fields from
-// models.
 func (i *Indexer) Add(model Model, unique bool, fields ...string) {
+	// construct key from fields
+	var key []string
+	for _, f := range fields {
+		key = append(key, F(model, f))
+	}
+
+	// add index
 	i.AddRaw(C(model), mgo.Index{
-		Key:        fields,
+		Key:        key,
 		Unique:     unique,
 		Background: true,
 	})
