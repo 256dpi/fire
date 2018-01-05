@@ -10,6 +10,8 @@ import (
 
 // TODO: Pull in CORS from wood an make it a first class citizen.
 
+// TODO: Add custom resources.
+
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
 	controllers map[string]*Controller
