@@ -64,7 +64,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
-			// directly write potential oauth2 errors
+			// directly write oauth2 errors
 			if oauth2Error, ok := err.(*oauth2.Error); ok {
 				oauth2.WriteError(w, oauth2Error)
 				return
@@ -115,7 +115,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// continue any previous aborts
 			defer stack.Resume(func(err error) {
-				// directly write potential bearer errors
+				// directly write bearer errors
 				if bearerError, ok := err.(*bearer.Error); ok {
 					bearer.WriteError(w, bearerError)
 					return

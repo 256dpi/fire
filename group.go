@@ -65,7 +65,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
-			// directly write potential bearer errors
+			// directly write jsonapi errors
 			if jsonapiError, ok := err.(*jsonapi.Error); ok {
 				jsonapi.WriteError(w, jsonapiError)
 				return

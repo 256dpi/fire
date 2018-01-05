@@ -21,6 +21,8 @@ type fatalError struct {
 	err error
 }
 
+// TODO: Also add helpers for returning safe jsonapi errors.
+
 // Fatal wraps an error and marks it as fatal.
 func Fatal(err error) error {
 	return &fatalError{
@@ -294,7 +296,7 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by creating a DependentResourcesValidator and a
-// VerifyReferencesValidator based on the specified model and group.
+// VerifyReferencesValidator based on the specified model and catalog.
 func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) Callback {
 	// prepare lists
 	dependentResources := make(map[string]string)
