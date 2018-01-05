@@ -69,7 +69,7 @@ func TestCallbackDebugger(t *testing.T) {
 		List: L{accessGranted()},
 	})
 
-	err := cb(&fire.Context{
+	err := cb.Handler(&fire.Context{
 		Operation: fire.List,
 		Logger: func(str string) {
 			msg = str

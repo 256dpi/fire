@@ -2278,7 +2278,7 @@ func TestCollectionActions(t *testing.T) {
 		CollectionActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
+				Handler: func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
@@ -2291,7 +2291,7 @@ func TestCollectionActions(t *testing.T) {
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
+				Handler: func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
@@ -2339,7 +2339,7 @@ func TestResourceActions(t *testing.T) {
 		ResourceActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
+				Handler: func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2354,7 +2354,7 @@ func TestResourceActions(t *testing.T) {
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Callback: func(ctx *Context) error {
+				Handler: func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)

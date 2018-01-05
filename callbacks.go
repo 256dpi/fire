@@ -4,66 +4,63 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/256dpi/fire/coal"
 
 	"gopkg.in/mgo.v2/bson"
 )
 
+// C is a short-hand function to construct a callback.
+func C(n string, h Handler) *Callback {
+	return &Callback{
+		Name:    n,
+		Handler: h,
+	}
+}
+
 // A Callback is called during the request processing flow of a controller.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns
 // an InternalServerError status and the error will be logged. All other errors
 // are serialized to an error object and returned.
-type Callback func(*Context) error
-
-type fatalError struct {
-	err error
+type Callback struct {
+	Name    string
+	Handler Handler
 }
 
-// TODO: Also add helpers for returning safe jsonapi errors.
-
-// Fatal wraps an error and marks it as fatal.
-func Fatal(err error) error {
-	return &fatalError{
-		err: err,
-	}
-}
-
-func (err *fatalError) Error() string {
-	return err.err.Error()
-}
-
-func isFatal(err error) bool {
-	_, ok := err.(*fatalError)
-	return ok
-}
-
-type value int
+type noDefault int
 
 // NoDefault marks the specified field to have no default that needs to be
 // enforced while executing the ProtectedFieldsValidator.
-const NoDefault value = iota
+const NoDefault noDefault = iota
 
 // Only will return a callback that runs the specified callback only when one
 // of the supplied operations match.
-func Only(cb Callback, ops ...Operation) Callback {
-	return func(ctx *Context) error {
+func Only(cb *Callback, ops ...Operation) *Callback {
+	// construct name
+	name := fmt.Sprintf("fire.Only(%s)", cb.Name)
+
+	return C(name, func(ctx *Context) error {
 		// check operation
 		for _, a := range ops {
+			// run callback if operation is allowed
 			if a == ctx.Operation {
-				return cb(ctx)
+				return cb.Handler(ctx)
 			}
 		}
 
 		return nil
-	}
+	})
 }
 
 // Except will return a callback that runs the specified callback only when none
 // of the supplied operations match.
-func Except(cb Callback, ops ...Operation) Callback {
-	return func(ctx *Context) error {
+func Except(cb *Callback, ops ...Operation) *Callback {
+	// construct name
+	name := fmt.Sprintf("fire.Except(%s)", cb.Name)
+
+	return C(name, func(ctx *Context) error {
 		// check operation
 		for _, a := range ops {
 			if a == ctx.Operation {
@@ -71,29 +68,38 @@ func Except(cb Callback, ops ...Operation) Callback {
 			}
 		}
 
-		return cb(ctx)
-	}
+		return cb.Handler(ctx)
+	})
 }
 
 // Combine will return a callback that runs all the specified callbacks in order
 // until an error is returned.
-func Combine(cbs ...Callback) Callback {
-	return func(ctx *Context) error {
+func Combine(cbs ...*Callback) *Callback {
+	// extract names
+	var names []string
+	for _, cb := range cbs {
+		names = append(names, cb.Name)
+	}
+
+	// construct name
+	name := fmt.Sprintf("fire.Combine(%s)", strings.Join(names, ", "))
+
+	return C(name, func(ctx *Context) error {
 		// run all callbacks
 		for _, cb := range cbs {
-			err := cb(ctx)
+			err := cb.Handler(ctx)
 			if err != nil {
 				return err
 			}
 		}
 
 		return nil
-	}
+	})
 }
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
-func BasicAuthorizer(credentials map[string]string) Callback {
-	return func(ctx *Context) error {
+func BasicAuthorizer(credentials map[string]string) *Callback {
+	return C("fire.BasicAuthorizer", func(ctx *Context) error {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {
@@ -106,13 +112,13 @@ func BasicAuthorizer(credentials map[string]string) Callback {
 		}
 
 		return nil
-	}
+	})
 }
 
 // ModelValidator performs a validation of the model using the Validate
 // function.
-func ModelValidator() Callback {
-	return func(ctx *Context) error {
+func ModelValidator() *Callback {
+	return C("fire.ModelValidator", func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
@@ -121,7 +127,7 @@ func ModelValidator() Callback {
 		// TODO: Add error source pointer.
 
 		return coal.Validate(ctx.Model)
-	}
+	})
 }
 
 // ProtectedFieldsValidator compares protected attributes against their
@@ -138,8 +144,8 @@ func ModelValidator() Callback {
 // The special NoDefault value can be provided to skip the default enforcement
 // on Create.
 //
-func ProtectedFieldsValidator(fields map[string]interface{}) Callback {
-	return func(ctx *Context) error {
+func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
+	return C("fire.ProtectedFieldsValidator", func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
@@ -177,7 +183,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) Callback {
 		}
 
 		return nil
-	}
+	})
 }
 
 // DependentResourcesValidator counts documents in the supplied collections
@@ -192,8 +198,8 @@ func ProtectedFieldsValidator(fields map[string]interface{}) Callback {
 //		C(&Comment{}): F(&Comment{}, "Author"),
 //	})
 //
-func DependentResourcesValidator(resources map[string]string) Callback {
-	return func(ctx *Context) error {
+func DependentResourcesValidator(resources map[string]string) *Callback {
+	return C("DependentResourcesValidator", func(ctx *Context) error {
 		// only run validator on Delete
 		if ctx.Operation != Delete {
 			return nil
@@ -217,7 +223,7 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 
 		// pass validation
 		return nil
-	}
+	})
 }
 
 // VerifyReferencesValidator makes sure all references in the document are
@@ -233,8 +239,8 @@ func DependentResourcesValidator(resources map[string]string) Callback {
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
 //
-func VerifyReferencesValidator(references map[string]string) Callback {
-	return func(ctx *Context) error {
+func VerifyReferencesValidator(references map[string]string) *Callback {
+	return C("fire.VerifyReferencesValidator", func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
@@ -291,13 +297,13 @@ func VerifyReferencesValidator(references map[string]string) Callback {
 
 		// pass validation
 		return nil
-	}
+	})
 }
 
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by creating a DependentResourcesValidator and a
 // VerifyReferencesValidator based on the specified model and catalog.
-func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) Callback {
+func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) *Callback {
 	// prepare lists
 	dependentResources := make(map[string]string)
 	references := make(map[string]string)
@@ -372,8 +378,8 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 // To-many, optional to-many and has-many relationships are supported both for
 // the initial reference and in the matchers.
 //
-func MatchingReferencesValidator(collection, reference string, matcher map[string]string) Callback {
-	return func(ctx *Context) error {
+func MatchingReferencesValidator(collection, reference string, matcher map[string]string) *Callback {
+	return C("fire.MatchingReferencesValidator", func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
@@ -439,7 +445,7 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 		}
 
 		return nil
-	}
+	})
 }
 
 // UniqueAttributeValidator ensures that the specified attribute of the
@@ -450,8 +456,8 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 //
 //	UniqueAttributeValidator(F(&Blog{}, "Name"), F(&Blog{}, "Creator"))
 //
-func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callback {
-	return func(ctx *Context) error {
+func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callback {
+	return C("fire.UniqueAttributeValidator", func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
 			return nil
@@ -490,5 +496,5 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) Callbac
 		}
 
 		return nil
-	}
+	})
 }

@@ -6,11 +6,8 @@ import (
 )
 
 // E is a short-hand function to create an enforcer.
-func E(n string, cb fire.Callback) *Enforcer {
-	return &Enforcer{
-		Name:     n,
-		Callback: cb,
-	}
+func E(n string, h fire.Handler) *Enforcer {
+	return fire.C(n, h)
 }
 
 // An Enforcer is returned by an Authorizer to enforce the previously inspected
@@ -21,10 +18,7 @@ func E(n string, cb fire.Callback) *Enforcer {
 // API documentation). In order to prevent the leakage of implementation details
 // the enforcer should mutate the context's Query field to hide existing data
 // from the candidate.
-type Enforcer struct {
-	Name     string
-	Callback fire.Callback
-}
+type Enforcer = fire.Callback
 
 // GrantAccess will enforce the authorization without any changes to the
 // context. It should be used if the presented candidate has full access to the

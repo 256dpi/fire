@@ -128,7 +128,7 @@ func (t *Tester) Path(path string) string {
 // only attributes an authorizer should rely on.
 //
 // Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, validator Callback) error {
+func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, authorizer *Callback) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -171,8 +171,8 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 		ResponseWriter: httptest.NewRecorder(),
 	}
 
-	// call validator
-	return validator(ctx)
+	// call authorizer
+	return authorizer.Handler(ctx)
 }
 
 // RunValidator is a helper to test validators. The caller should assert the
@@ -183,7 +183,7 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 // these are the only attributes a validator should rely on.
 //
 // Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunValidator(op Operation, model coal.Model, validator Callback) error {
+func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callback) error {
 	// check operation
 	if op.Read() {
 		panic("fire: validators are only run on create, update and delete")
@@ -222,7 +222,7 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator Callback
 	}
 
 	// call validator
-	return validator(ctx)
+	return validator.Handler(ctx)
 }
 
 // TODO: Add RunNotifier helper.

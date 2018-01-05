@@ -15,7 +15,7 @@ func And(a, b *Authorizer) *Authorizer {
 
 	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
-		enforcer1, err := a.Callback(ctx)
+		enforcer1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcer1 == nil {
@@ -23,7 +23,7 @@ func And(a, b *Authorizer) *Authorizer {
 		}
 
 		// run second callback
-		enforcer2, err := b.Callback(ctx)
+		enforcer2, err := b.Handler(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcer2 == nil {
@@ -35,12 +35,12 @@ func And(a, b *Authorizer) *Authorizer {
 
 		// return an enforcer that calls both enforcers
 		return E(name, func(ctx *fire.Context) error {
-			err := enforcer1.Callback(ctx)
+			err := enforcer1.Handler(ctx)
 			if err != nil {
 				return err
 			}
 
-			err = enforcer2.Callback(ctx)
+			err = enforcer2.Handler(ctx)
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func Or(a, b *Authorizer) *Authorizer {
 
 	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
-		enforcer1, err := a.Callback(ctx)
+		enforcer1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +74,7 @@ func Or(a, b *Authorizer) *Authorizer {
 		}
 
 		// run second callback
-		enforcer2, err := b.Callback(ctx)
+		enforcer2, err := b.Handler(ctx)
 		if err != nil {
 			return nil, err
 		}

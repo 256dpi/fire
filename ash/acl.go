@@ -13,11 +13,17 @@ import (
 // authorizer authorized the operation.
 var ErrAccessDenied = errors.New("access denied")
 
+// Handler is a function that inspects an operation context and eventually
+// returns an enforcer or an error.
+//
+// See: fire.Handler.
+type Handler func(*fire.Context) (*Enforcer, error)
+
 // A is a short-hand function to construct an authorizer.
-func A(n string, cb func(*fire.Context) (*Enforcer, error)) *Authorizer {
+func A(n string, h Handler) *Authorizer {
 	return &Authorizer{
-		Name:     n,
-		Callback: cb,
+		Name:    n,
+		Handler: h,
 	}
 }
 
@@ -25,8 +31,8 @@ func A(n string, cb func(*fire.Context) (*Enforcer, error)) *Authorizer {
 // to enforce authorization with the data that is available. If yes, the
 // authorizer should return an Enforcer that will enforce the authorization.
 type Authorizer struct {
-	Name     string
-	Callback func(ctx *fire.Context) (*Enforcer, error)
+	Name    string
+	Handler Handler
 }
 
 // Strategy contains lists of authorizers that are used to authorize operations.
@@ -67,8 +73,8 @@ type M map[string][]*Authorizer
 
 // Callback will return a callback that authorizes operations based on the
 // specified strategy.
-func Callback(s *Strategy) fire.Callback {
-	return func(ctx *fire.Context) error {
+func Callback(s *Strategy) *fire.Callback {
+	return fire.C("ash.Callback", func(ctx *fire.Context) error {
 		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)
@@ -88,7 +94,7 @@ func Callback(s *Strategy) fire.Callback {
 
 		// panic on unknown operation
 		panic("ash: unknown operation")
-	}
+	})
 }
 
 // TODO: If fire implements levelled logging, the attempted authorizers and
@@ -100,7 +106,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		// loop through all callbacks
 		for _, authorizer := range list {
 			// run callback and return on error
-			enforcer, err := authorizer.Callback(ctx)
+			enforcer, err := authorizer.Handler(ctx)
 			if err != nil {
 				return err
 			}
@@ -108,7 +114,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 			// run enforcer on success
 			if enforcer != nil {
 				// run callback and return error
-				err = enforcer.Callback(ctx)
+				err = enforcer.Handler(ctx)
 				if err != nil {
 					return err
 				}

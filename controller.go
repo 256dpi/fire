@@ -19,7 +19,7 @@ import (
 type S []string
 
 // L is a short-hand type to create a list of callbacks.
-type L []Callback
+type L []*Callback
 
 // M is a short-hand type to create a map of actions.
 type M map[string]Action
@@ -30,8 +30,10 @@ type Action struct {
 	Methods []string
 
 	// The callback for this action.
-	Callback Callback
+	Handler Handler
 }
+
+// TODO: Rename Notifiers to Transformers?
 
 // A Controller provides a JSON API based interface to a model.
 //
@@ -60,7 +62,7 @@ type Controller struct {
 	// context's filter query in such a way that only accessible resources are
 	// returned. The later improves privacy as a protected resource would just
 	// appear as being not found.
-	Authorizers []Callback
+	Authorizers []*Callback
 
 	// Validators are run to validate Create, Update and Delete operations
 	// after the models are loaded and the changed attributes have been assigned
@@ -72,13 +74,13 @@ type Controller struct {
 	// are invalid or do not comply with the stated requirements. The preceding
 	// authorization checks should be repeated and now also include the model's
 	// attributes and relationships.
-	Validators []Callback
+	Validators []*Callback
 
 	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
 	// about the applied changes. Returned errors will cause the abortion of the
 	// request with an Internal Server Error status.
-	Notifiers []Callback
+	Notifiers []*Callback
 
 	// NoList can be set to true if the resource is only listed through
 	// relationships from other resources. This is useful for resources like
@@ -763,7 +765,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// run callback
-	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
+	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
 }
 
 func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
@@ -780,7 +782,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	c.loadModel(ctx)
 
 	// run callback
-	c.runCallbacks([]Callback{action.Callback}, ctx, http.StatusBadRequest)
+	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
 }
 
 func (c *Controller) loadModel(ctx *Context) {
@@ -1249,11 +1251,13 @@ func (c *Controller) makeQuery(ctx *Context) bson.M {
 	}
 }
 
-func (c *Controller) runCallbacks(list []Callback, ctx *Context, errorStatus int) {
+// TODO: Log executed callbacks.
+
+func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus int) {
 	// run callbacks and handle errors
 	for _, cb := range list {
-		err := cb(ctx)
-		if isFatal(err) {
+		err := cb.Handler(ctx)
+		if IsFatal(err) {
 			stack.Abort(err)
 		} else if err != nil {
 			stack.Abort(&jsonapi.Error{

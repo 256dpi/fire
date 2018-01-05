@@ -13,20 +13,20 @@ import (
 
 func TestFatal(t *testing.T) {
 	err := Fatal(errors.New("foo"))
-	assert.True(t, isFatal(err))
+	assert.True(t, IsFatal(err))
 	assert.Equal(t, "foo", err.Error())
 
 	err = errors.New("foo")
-	assert.False(t, isFatal(err))
+	assert.False(t, IsFatal(err))
 	assert.Equal(t, "foo", err.Error())
 }
 
 func TestOnly(t *testing.T) {
 	var counter int
-	cb := func(ctx *Context) error {
+	cb := C("", func(ctx *Context) error {
 		counter++
 		return nil
-	}
+	})
 
 	callback := Only(cb, Create, Delete)
 
@@ -41,10 +41,10 @@ func TestOnly(t *testing.T) {
 
 func TestExcept(t *testing.T) {
 	var counter int
-	cb := func(ctx *Context) error {
+	cb := C("", func(ctx *Context) error {
 		counter++
 		return nil
-	}
+	})
 
 	callback := Except(cb, Create, Delete)
 

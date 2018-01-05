@@ -43,10 +43,10 @@ func TestGroupStackAbort(t *testing.T) {
 		Model: &postModel{},
 		Store: testStore,
 		Authorizers: L{
-			func(*Context) error {
+			C("", func(*Context) error {
 				stack.Abort(errors.New("foo"))
 				return nil
-			},
+			}),
 		},
 	})
 
