@@ -1,14 +1,21 @@
 package ash
 
-import "github.com/256dpi/fire"
+import (
+	"fmt"
 
-// And will run the callbacks and return immediately if one does not return an
-// enforcer. Two successfully returned enforcer ar wrapped in one that executes
-// both.
-func And(a, b Authorizer) Authorizer {
-	return func(ctx *fire.Context) (Enforcer, error) {
+	"github.com/256dpi/fire"
+)
+
+// And will run both authorizers and return immediately if one does not return an
+// enforcer. The two successfully returned enforcers are wrapped in one that will
+// execute both.
+func And(a, b *Authorizer) *Authorizer {
+	// construct name
+	name := fmt.Sprintf("ash.And(%s, %s)", a.Name, b.Name)
+
+	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
-		enforcer1, err := a(ctx)
+		enforcer1, err := a.Callback(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcer1 == nil {
@@ -16,41 +23,47 @@ func And(a, b Authorizer) Authorizer {
 		}
 
 		// run second callback
-		enforcer2, err := b(ctx)
+		enforcer2, err := b.Callback(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcer2 == nil {
 			return nil, err
 		}
 
+		// construct new name
+		name := fmt.Sprintf("ash.And(%s, %s)", enforcer1.Name, enforcer2.Name)
+
 		// return an enforcer that calls both enforcers
-		return func(ctx *fire.Context) error {
-			err := enforcer1(ctx)
+		return E(name, func(ctx *fire.Context) error {
+			err := enforcer1.Callback(ctx)
 			if err != nil {
 				return err
 			}
 
-			err = enforcer2(ctx)
+			err = enforcer2.Callback(ctx)
 			if err != nil {
 				return err
 			}
 
 			return nil
-		}, nil
-	}
+		}), nil
+	})
 }
 
 // And will run And() with the current and specified authorizer.
-func (a Authorizer) And(b Authorizer) Authorizer {
+func (a *Authorizer) And(b *Authorizer) *Authorizer {
 	return And(a, b)
 }
 
-// Or will run the first callback and return its enforcer on success. If no
-// enforcer is returned it will run the second callback and return its result.
-func Or(a, b Authorizer) Authorizer {
-	return func(ctx *fire.Context) (Enforcer, error) {
+// Or will run the first authorizer and return its enforcer on success. If no
+// enforcer is returned it will run the second authorizer and return its result.
+func Or(a, b *Authorizer) *Authorizer {
+	// construct name
+	name := fmt.Sprintf("ash.And(%s, %s)", a.Name, b.Name)
+
+	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
-		enforcer1, err := a(ctx)
+		enforcer1, err := a.Callback(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -61,16 +74,16 @@ func Or(a, b Authorizer) Authorizer {
 		}
 
 		// run second callback
-		enforcer2, err := b(ctx)
+		enforcer2, err := b.Callback(ctx)
 		if err != nil {
 			return nil, err
 		}
 
 		return enforcer2, nil
-	}
+	})
 }
 
 // Or will run Or() with the current and specified authorizer.
-func (a Authorizer) Or(b Authorizer) Authorizer {
+func (a *Authorizer) Or(b *Authorizer) *Authorizer {
 	return Or(a, b)
 }

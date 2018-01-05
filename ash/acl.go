@@ -5,54 +5,65 @@ package ash
 import (
 	"errors"
 	"fmt"
-	"reflect"
-	"runtime"
 
 	"github.com/256dpi/fire"
 )
 
-var errAccessDenied = errors.New("access denied")
+// ErrAccessDenied is returned by the DenyAccess enforcer and the Strategy if no
+// authorizer authorized the operation.
+var ErrAccessDenied = errors.New("access denied")
+
+// A is a short-hand function to construct an authorizer.
+func A(n string, cb func(*fire.Context) (*Enforcer, error)) *Authorizer {
+	return &Authorizer{
+		Name:     n,
+		Callback: cb,
+	}
+}
 
 // An Authorizer should inspect the specified context and asses if it is able
 // to enforce authorization with the data that is available. If yes, the
 // authorizer should return an Enforcer that will enforce the authorization.
-type Authorizer func(ctx *fire.Context) (Enforcer, error)
+type Authorizer struct {
+	Name     string
+	Callback func(ctx *fire.Context) (*Enforcer, error)
+}
 
-// Strategy contains lists of authorizers that are used to authorize the request.
+// Strategy contains lists of authorizers that are used to authorize operations.
 type Strategy struct {
 	// Single operations.
-	List   []Authorizer
-	Find   []Authorizer
-	Create []Authorizer
-	Update []Authorizer
-	Delete []Authorizer
+	List   []*Authorizer
+	Find   []*Authorizer
+	Create []*Authorizer
+	Update []*Authorizer
+	Delete []*Authorizer
 
 	// Single action operations.
-	CollectionAction map[string][]Authorizer
-	ResourceAction   map[string][]Authorizer
+	CollectionAction map[string][]*Authorizer
+	ResourceAction   map[string][]*Authorizer
 
 	// All action operations.
-	CollectionActions []Authorizer
-	ResourceActions   []Authorizer
+	CollectionActions []*Authorizer
+	ResourceActions   []*Authorizer
 
 	// All List and Find operations.
-	Read []Authorizer
+	Read []*Authorizer
 
 	// All Create, Update and Delete operations.
-	Write []Authorizer
+	Write []*Authorizer
 
 	// All CollectionAction and ResourceAction operations.
-	Actions []Authorizer
+	Actions []*Authorizer
 
 	// All operations.
-	All []Authorizer
+	All []*Authorizer
 }
 
 // L is a short-hand type to create a list of authorizers.
-type L []Authorizer
+type L []*Authorizer
 
 // M is a short-hand type to create a map of authorizers.
-type M map[string][]Authorizer
+type M map[string][]*Authorizer
 
 // Callback will return a callback that authorizes operations based on the
 // specified strategy.
@@ -80,31 +91,30 @@ func Callback(s *Strategy) fire.Callback {
 	}
 }
 
-func (s *Strategy) call(ctx *fire.Context, lists ...[]Authorizer) error {
+// TODO: If fire implements levelled logging, the attempted authorizers and
+// enforcers should be logged as well.
+
+func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 	// loop through all lists
 	for _, list := range lists {
-		// continue if not set
-		if list == nil {
-			continue
-		}
-
 		// loop through all callbacks
 		for _, authorizer := range list {
 			// run callback and return on error
-			enforcer, err := authorizer(ctx)
+			enforcer, err := authorizer.Callback(ctx)
 			if err != nil {
 				return err
 			}
 
 			// run enforcer on success
 			if enforcer != nil {
-				err = enforcer(ctx)
+				// run callback and return error
+				err = enforcer.Callback(ctx)
 				if err != nil {
 					return err
 				}
 
 				// log authorization
-				ctx.Log(fmt.Sprintf("authorized by %s using %s", fnName(authorizer), fnName(enforcer)))
+				ctx.Log(fmt.Sprintf("authorized by %s using %s", authorizer.Name, enforcer.Name))
 
 				return nil
 			}
@@ -112,9 +122,5 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]Authorizer) error {
 	}
 
 	// deny access on failure
-	return errAccessDenied
-}
-
-func fnName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	return ErrAccessDenied
 }

@@ -8,74 +8,74 @@ import (
 )
 
 func TestAnd(t *testing.T) {
-	enforcer, err := And(accessGrantedCB, accessGrantedCB)(nil)
+	enforcer, err := And(accessGranted(), accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = And(accessGrantedCB, blankCB)(nil)
+	enforcer, err = And(accessGranted(), blank()).Callback(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(blankCB, accessGrantedCB)(nil)
+	enforcer, err = And(blank(), accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(blankCB, blankCB)(nil)
+	enforcer, err = And(blank(), blank()).Callback(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(accessGrantedCB, directErrorCB)(nil)
+	enforcer, err = And(accessGranted(), directError()).Callback(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(directErrorCB, accessGrantedCB)(nil)
+	enforcer, err = And(directError(), accessGranted()).Callback(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = And(accessGrantedCB, indirectErrorCB)(nil)
+	enforcer, err = And(accessGranted(), indirectError()).Callback(nil)
 	assert.NoError(t, err)
-	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = And(indirectErrorCB, indirectErrorCB)(nil)
+	enforcer, err = And(indirectError(), indirectError()).Callback(nil)
 	assert.NoError(t, err)
-	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.Error(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = Authorizer(blankCB).And(accessGrantedCB)(nil)
+	enforcer, err = blank().And(accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 }
 
 func TestOr(t *testing.T) {
-	enforcer, err := Or(accessGrantedCB, accessGrantedCB)(nil)
+	enforcer, err := Or(accessGranted(), accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = Or(accessGrantedCB, blankCB)(nil)
+	enforcer, err = Or(accessGranted(), blank()).Callback(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = Or(blankCB, accessGrantedCB)(nil)
+	enforcer, err = Or(blank(), accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 
-	enforcer, err = Or(blankCB, blankCB)(nil)
+	enforcer, err = Or(blank(), blank()).Callback(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = Or(blankCB, directErrorCB)(nil)
+	enforcer, err = Or(blank(), directError()).Callback(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = Or(directErrorCB, accessGrantedCB)(nil)
+	enforcer, err = Or(directError(), accessGranted()).Callback(nil)
 	assert.Error(t, err)
 	assert.Nil(t, enforcer)
 
-	enforcer, err = Authorizer(blankCB).Or(accessGrantedCB)(nil)
+	enforcer, err = blank().Or(accessGranted()).Callback(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, enforcer)
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, enforcer.Callback))
 }

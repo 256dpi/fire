@@ -9,24 +9,34 @@ import (
 
 var tester = fire.NewTester(coal.MustCreateStore("mongodb://localhost/test-ash"))
 
-func blankCB(_ *fire.Context) (Enforcer, error) {
-	return nil, nil
+func blank() *Authorizer {
+	return A("blank", func(_ *fire.Context) (*Enforcer, error) {
+		return nil, nil
+	})
 }
 
-func accessGrantedCB(_ *fire.Context) (Enforcer, error) {
-	return AccessGranted(), nil
+func accessGranted() *Authorizer {
+	return A("accessGranted", func(_ *fire.Context) (*Enforcer, error) {
+		return GrantAccess(), nil
+	})
 }
 
-func accessDeniedCB(_ *fire.Context) (Enforcer, error) {
-	return AccessDenied(), nil
+func accessDenied() *Authorizer {
+	return A("accessDenied", func(_ *fire.Context) (*Enforcer, error) {
+		return DenyAccess(), nil
+	})
 }
 
-func directErrorCB(_ *fire.Context) (Enforcer, error) {
-	return nil, errors.New("error")
+func directError() *Authorizer {
+	return A("directError", func(_ *fire.Context) (*Enforcer, error) {
+		return nil, errors.New("error")
+	})
 }
 
-func indirectErrorCB(_ *fire.Context) (Enforcer, error) {
-	return func(_ *fire.Context) error {
-		return errors.New("error")
-	}, nil
+func indirectError() *Authorizer {
+	return A("indirectError", func(_ *fire.Context) (*Enforcer, error) {
+		return E("indirectError", func(_ *fire.Context) error {
+			return errors.New("error")
+		}), nil
+	})
 }
