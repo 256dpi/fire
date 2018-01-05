@@ -40,7 +40,7 @@ func isFatal(err error) bool {
 type value int
 
 // NoDefault marks the specified field to have no default that needs to be
-// enforced while executing the ProtectedAttributesValidator.
+// enforced while executing the ProtectedFieldsValidator.
 const NoDefault value = iota
 
 // Only will return a callback that runs the specified callback only when one
@@ -122,13 +122,13 @@ func ModelValidator() Callback {
 	}
 }
 
-// ProtectedAttributesValidator compares protected attributes against their
+// ProtectedFieldsValidator compares protected attributes against their
 // default (during Create) or stored value (during Update) and returns an error
 // if they have been changed.
 //
 // Attributes are defined by passing pairs of fields and default values:
 //
-//	ProtectedAttributesValidator(map[string]interface{}{
+//	ProtectedFieldsValidator(map[string]interface{}{
 //		F(&Post{}, "Title"): NoDefault, // can only be set during Create
 //		F(&Post{}, "Link"):  "",        // is fixed and cannot be changed
 //	})
@@ -136,7 +136,7 @@ func ModelValidator() Callback {
 // The special NoDefault value can be provided to skip the default enforcement
 // on Create.
 //
-func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
+func ProtectedFieldsValidator(fields map[string]interface{}) Callback {
 	return func(ctx *Context) error {
 		// only run validator on Create and Update
 		if ctx.Operation != Create && ctx.Operation != Update {
@@ -144,8 +144,8 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 		}
 
 		if ctx.Operation == Create {
-			// check all attributes
-			for field, def := range attributes {
+			// check all fields
+			for field, def := range fields {
 				// skip fields that have no default
 				if def == NoDefault {
 					continue
@@ -165,8 +165,8 @@ func ProtectedAttributesValidator(attributes map[string]interface{}) Callback {
 				return err
 			}
 
-			// check all attributes
-			for field := range attributes {
+			// check all fields
+			for field := range fields {
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
 					return errors.New("field " + field + " is protected")

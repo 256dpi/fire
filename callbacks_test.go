@@ -96,7 +96,7 @@ func TestModelValidator(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
-	validator := ProtectedAttributesValidator(map[string]interface{}{
+	validator := ProtectedFieldsValidator(map[string]interface{}{
 		"title": "Default Title",
 	})
 
@@ -113,7 +113,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
-	validator := ProtectedAttributesValidator(map[string]interface{}{
+	validator := ProtectedFieldsValidator(map[string]interface{}{
 		"title": NoDefault,
 	})
 
@@ -128,7 +128,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	tester.Clean()
 
-	validator := ProtectedAttributesValidator(map[string]interface{}{
+	validator := ProtectedFieldsValidator(map[string]interface{}{
 		"title": "Default Title",
 	})
 
