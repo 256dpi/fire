@@ -11,8 +11,8 @@ func TestIndexerEnsure(t *testing.T) {
 	store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()
-	indexer.Add(&postModel{}, false, "title")
-	indexer.Add(&commentModel{}, false, "post_id")
+	indexer.Add(&postModel{}, false, false, "Title")
+	indexer.Add(&commentModel{}, false, false, "Post")
 
 	err := indexer.Ensure(store)
 	assert.NoError(t, err)
@@ -25,13 +25,13 @@ func TestIndexerEnsureError(t *testing.T) {
 	store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()
-	indexer.Add(&postModel{}, true, "published")
+	indexer.Add(&postModel{}, true, false, "Published")
 	assert.NoError(t, indexer.Ensure(store))
 
 	store.session.ResetIndexCache()
 
 	indexer = NewIndexer()
-	indexer.Add(&postModel{}, false, "published")
+	indexer.Add(&postModel{}, false, false, "Published")
 	assert.Error(t, indexer.Ensure(store))
 
 	store.session.DB("").DropDatabase()
