@@ -31,6 +31,11 @@ type Action struct {
 
 	// The callback for this action.
 	Handler Handler
+
+	// BodyLimit defines the maximum allowed size of the request body. It
+	// defaults to 8M if set to zero. The DataSize helper can be used to set
+	// the value.
+	BodyLimit uint64
 }
 
 // TODO: Rename Notifiers to Transformers?
@@ -125,6 +130,12 @@ func (c *Controller) prepare() {
 
 	// add collection actions
 	for name, action := range c.CollectionActions {
+		// set default body limit
+		if action.BodyLimit == 0 {
+			action.BodyLimit = DataSize("8M")
+		}
+
+		// add action to parser
 		c.parser.CollectionActions[name] = action.Methods
 	}
 
@@ -142,6 +153,12 @@ func (c *Controller) prepare() {
 			}
 		}
 
+		// set default body limit
+		if action.BodyLimit == 0 {
+			action.BodyLimit = DataSize("8M")
+		}
+
+		// add action to parser
 		c.parser.ResourceActions[name] = action.Methods
 	}
 
@@ -762,6 +779,9 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 		panic("fire: missing collection action callback")
 	}
 
+	// limit request body size
+	ctx.HTTPRequest.Body = http.MaxBytesReader(w, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
@@ -778,6 +798,9 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	if !ok {
 		panic("fire: missing resource action callback")
 	}
+
+	// limit request body size
+	ctx.HTTPRequest.Body = http.MaxBytesReader(w, ctx.HTTPRequest.Body, int64(action.BodyLimit))
 
 	// load model
 	c.loadModel(ctx)

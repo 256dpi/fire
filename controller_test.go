@@ -2299,6 +2299,19 @@ func TestCollectionActions(t *testing.T) {
 					return nil
 				},
 			},
+			"error": {
+				Methods: []string{"POST"},
+				BodyLimit: 3,
+				Handler: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.Error(t, err)
+					assert.Equal(t, []byte("PAY"), bytes)
+
+					ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+
+					return nil
+				},
+			},
 		},
 	}, &Controller{
 		Model: &commentModel{},
@@ -2325,6 +2338,13 @@ func TestCollectionActions(t *testing.T) {
 	tester.Header["Accept"] = ""
 	tester.Request("POST", "posts/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// error
+	tester.Request("POST", "posts/error", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2364,6 +2384,19 @@ func TestResourceActions(t *testing.T) {
 					return nil
 				},
 			},
+			"error": {
+				Methods: []string{"POST"},
+				BodyLimit: 3,
+				Handler: func(ctx *Context) error {
+					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					assert.Error(t, err)
+					assert.Equal(t, []byte("PAY"), bytes)
+
+					ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+
+					return nil
+				},
+			},
 		},
 	}, &Controller{
 		Model: &commentModel{},
@@ -2394,6 +2427,13 @@ func TestResourceActions(t *testing.T) {
 	tester.Header["Accept"] = ""
 	tester.Request("POST", "posts/"+post.Hex()+"/empty", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
+		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get error
+	tester.Request("POST", "posts/"+post.Hex()+"/error", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
