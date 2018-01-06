@@ -22,7 +22,7 @@ type S []string
 type L []*Callback
 
 // M is a short-hand type to create a map of actions.
-type M map[string]Action
+type M map[string]*Action
 
 // An Action defines a collection or resource action.
 type Action struct {
@@ -101,8 +101,8 @@ type Controller struct {
 	// "posts/1/recover-password"). The request context is forwarded to
 	// the specified callback after running the authorizers. No validators and
 	// notifiers are run for the request.
-	CollectionActions map[string]Action
-	ResourceActions   map[string]Action
+	CollectionActions map[string]*Action
+	ResourceActions   map[string]*Action
 
 	parser jsonapi.Parser
 }
