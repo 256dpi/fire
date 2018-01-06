@@ -2307,7 +2307,7 @@ func TestCollectionActions(t *testing.T) {
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)
 
-					ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
 					return nil
 				},
@@ -2344,7 +2344,7 @@ func TestCollectionActions(t *testing.T) {
 
 	// error
 	tester.Request("POST", "posts/error", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusRequestEntityTooLarge, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2392,7 +2392,7 @@ func TestResourceActions(t *testing.T) {
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)
 
-					ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
 					return nil
 				},
@@ -2433,7 +2433,7 @@ func TestResourceActions(t *testing.T) {
 
 	// get error
 	tester.Request("POST", "posts/"+post.Hex()+"/error", "PAYLOAD", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusRequestEntityTooLarge, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Result().Header.Get("Content-Type"), tester.DebugRequest(rq, r))
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
