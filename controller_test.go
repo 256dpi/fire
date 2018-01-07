@@ -2300,7 +2300,7 @@ func TestCollectionActions(t *testing.T) {
 				},
 			},
 			"error": {
-				Methods: []string{"POST"},
+				Methods:   []string{"POST"},
 				BodyLimit: 3,
 				Handler: func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2385,7 +2385,7 @@ func TestResourceActions(t *testing.T) {
 				},
 			},
 			"error": {
-				Methods: []string{"POST"},
+				Methods:   []string{"POST"},
 				BodyLimit: 3,
 				Handler: func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
