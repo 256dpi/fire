@@ -2,9 +2,13 @@ package ash
 
 import (
 	"errors"
+	"testing"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/transport"
 )
 
 var tester = fire.NewTester(coal.MustCreateStore("mongodb://localhost/test-ash"))
@@ -39,4 +43,19 @@ func indirectError() *Authorizer {
 			return errors.New("error")
 		}), nil
 	})
+}
+
+func TestMain(m *testing.M) {
+	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
+	defer tr.Close()
+
+	tracer, closer := jaeger.NewTracer("test-ash",
+		jaeger.NewConstSampler(true),
+		jaeger.NewRemoteReporter(tr),
+	)
+	defer closer.Close()
+
+	opentracing.SetGlobalTracer(tracer)
+
+	m.Run()
 }

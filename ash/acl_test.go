@@ -61,20 +61,3 @@ func TestCallbackPanic(t *testing.T) {
 		tester.RunAuthorizer(fire.Operation(10), nil, nil, nil, cb)
 	})
 }
-
-func TestCallbackDebugger(t *testing.T) {
-	var msg string
-
-	cb := Callback(&Strategy{
-		List: L{accessGranted()},
-	})
-
-	err := cb.Handler(&fire.Context{
-		Operation: fire.List,
-		Logger: func(str string) {
-			msg = str
-		},
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, "authorized by accessGranted using ash/GrantAccess", msg)
-}

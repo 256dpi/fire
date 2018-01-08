@@ -4,7 +4,6 @@ package ash
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/256dpi/fire"
 )
@@ -97,30 +96,28 @@ func Callback(s *Strategy) *fire.Callback {
 	})
 }
 
-// TODO: If fire implements levelled logging, the attempted authorizers and
-// enforcers should be logged as well.
-
 func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 	// loop through all lists
 	for _, list := range lists {
 		// loop through all callbacks
 		for _, authorizer := range list {
 			// run callback and return on error
+			ctx.Tracer.Push(authorizer.Name)
 			enforcer, err := authorizer.Handler(ctx)
 			if err != nil {
 				return err
 			}
+			ctx.Tracer.Pop()
 
 			// run enforcer on success
 			if enforcer != nil {
 				// run callback and return error
+				ctx.Tracer.Push(enforcer.Name)
 				err = enforcer.Handler(ctx)
 				if err != nil {
 					return err
 				}
-
-				// log authorization
-				ctx.Log(fmt.Sprintf("authorized by %s using %s", authorizer.Name, enforcer.Name))
+				ctx.Tracer.Pop()
 
 				return nil
 			}
