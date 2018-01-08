@@ -168,11 +168,14 @@ func (c *Controller) prepare() {
 	}
 }
 
-func (c *Controller) generalHandler(group *Group, prefix string, w http.ResponseWriter, r *http.Request) {
+func (c *Controller) generalHandler(ctx *Context) {
 	// parse incoming JSON-API request
-	c.parser.Prefix = prefix
-	req, err := c.parser.ParseRequest(r)
+	c.parser.Prefix = ctx.Group.prefix
+	req, err := c.parser.ParseRequest(ctx.HTTPRequest)
 	stack.AbortIf(err)
+
+	// set request
+	ctx.JSONAPIRequest = req
 
 	// handle no list setting
 	if req.Intent == jsonapi.ListResources && c.NoList {
@@ -186,7 +189,7 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
 		// parse document and respect document limit
-		doc, err = jsonapi.ParseDocument(http.MaxBytesReader(w, r.Body, int64(c.DocumentLimit)))
+		doc, err = jsonapi.ParseDocument(http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(c.DocumentLimit)))
 		stack.AbortIf(err)
 	}
 
@@ -194,18 +197,8 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	store := c.Store.Copy()
 	defer store.Close()
 
-	// build context
-	ctx := &Context{
-		Selector:       bson.M{},
-		Filter:         bson.M{},
-		Store:          store,
-		JSONAPIRequest: req,
-		HTTPRequest:    r,
-		ResponseWriter: w,
-		Controller:     c,
-		Group:          group,
-		Logger:         group.Logger,
-	}
+	// set store
+	ctx.Store = store
 
 	// call specific handlers
 	switch req.Intent {

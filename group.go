@@ -14,6 +14,7 @@ import (
 
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
+	prefix string
 	controllers map[string]*Controller
 
 	// The function gets invoked by the controller with occurring fatal errors.
@@ -24,8 +25,9 @@ type Group struct {
 }
 
 // NewGroup creates and returns a new group.
-func NewGroup() *Group {
+func NewGroup(prefix string) *Group {
 	return &Group{
+		prefix: prefix,
 		controllers: make(map[string]*Controller),
 	}
 }
@@ -63,8 +65,18 @@ func (g *Group) Find(pluralName string) *Controller {
 // Endpoint will return an http handler that serves requests for this controller
 // group. The specified prefix is used to parse the requests and generate urls
 // for the resources.
-func (g *Group) Endpoint(prefix string) http.Handler {
+func (g *Group) Endpoint() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// prepare context
+		c := &Context{
+			Selector:       bson.M{},
+			Filter:         bson.M{},
+			HTTPRequest:    r,
+			ResponseWriter: w,
+			Group:          g,
+			Logger:         g.Logger,
+		}
+
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
 			// directly write jsonapi errors
@@ -83,12 +95,17 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		})
 
 		// trim and split path
-		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
+		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, g.prefix), "/"), "/")
 
-		// try to call the controllers general handler
+		// find controller if a resource is given
 		if len(s) > 0 {
 			if controller, ok := g.controllers[s[0]]; ok {
-				controller.generalHandler(g, prefix, w, r)
+				// set controller
+				c.Controller = controller
+
+				// call controller
+				controller.generalHandler(c)
+
 				return
 			}
 		}
