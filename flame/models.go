@@ -18,19 +18,9 @@ type TokenData struct {
 	ResourceOwnerID *bson.ObjectId
 }
 
-// A TokenDescription is returned by a Token model to specify details about
-// its implementation.
-type TokenDescription struct {
-	ClientIDField  string
-	ExpiresAtField string
-}
-
 // Token is the interface that must be implemented by the tokens.
 type Token interface {
 	coal.Model
-
-	// DescribeToken should return a TokenDescription.
-	DescribeToken() TokenDescription
 
 	// GetTokenData should collect and return the tokens data.
 	GetTokenData() *TokenData
@@ -59,14 +49,6 @@ func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
 			ExpireAfter: time.Minute,
 			Background:  true,
 		})
-	}
-}
-
-// DescribeToken implements the flame.Token interface.
-func (t *AccessToken) DescribeToken() TokenDescription {
-	return TokenDescription{
-		ClientIDField:  "Client",
-		ExpiresAtField: "ExpiresAt",
 	}
 }
 
@@ -108,14 +90,6 @@ func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 			ExpireAfter: time.Minute,
 			Background:  true,
 		})
-	}
-}
-
-// DescribeToken implements the flame.Token interface.
-func (t *RefreshToken) DescribeToken() TokenDescription {
-	return TokenDescription{
-		ClientIDField:  "Client",
-		ExpiresAtField: "ExpiresAt",
 	}
 }
 
