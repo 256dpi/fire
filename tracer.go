@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/opentracing/opentracing-go"
@@ -26,7 +27,7 @@ func NewTracerFromRequest(r *http.Request, name string) *Tracer {
 }
 
 // NewTracerWithRoot returns a new tracer that has a root span created with the
-// specified operation name.
+// specified name.
 func NewTracerWithRoot(name string) *Tracer {
 	return NewTracer(opentracing.StartSpan(name))
 }
@@ -39,10 +40,9 @@ func NewTracer(root opentracing.Span) *Tracer {
 	}
 }
 
-// Push will add a new operation on to the stack. Successful operations must
-// be finished by calling Pop. If the code panics or an error is returned the
-// last pushed operation will be flagged with the error and a leftover operations
-// are popped.
+// Push will add a new span on to the stack. Successful spans must be finished by
+// calling Pop. If the code panics or an error is returned the last pushed span
+// will be flagged with the error and a leftover spans are popped.
 func (t *Tracer) Push(name string) {
 	// get context
 	var ctx opentracing.SpanContext
@@ -59,7 +59,7 @@ func (t *Tracer) Push(name string) {
 	t.spans = append(t.spans, span)
 }
 
-// Last returns the last pushed operation or the root span.
+// Last returns the last pushed span or the root span.
 func (t *Tracer) Last() opentracing.Span {
 	// return root if empty
 	if len(t.spans) == 0 {
@@ -69,23 +69,27 @@ func (t *Tracer) Last() opentracing.Span {
 	return t.spans[len(t.spans)-1]
 }
 
-// Tag adds a tag to the last pushed operation.
+// Tag adds a tag to the last pushed span.
 func (t *Tracer) Tag(key string, value interface{}) {
 	t.Last().SetTag(key, value)
 }
 
-// Log ads a log to the last pushed operation.
+// Log adds a log to the last pushed span.
 func (t *Tracer) Log(key string, value interface{}) {
 	t.Last().LogKV(key, value)
 }
 
-// Pop finishes and removes the last pushed operation.
-//
-// Note: Pop panics if there are no more spans to pop.
+// Context returns a new context with the latest span stored as a reference for
+// handlers that will call NewTracerFromRequest or similar.
+func (t *Tracer) Context(ctx context.Context) context.Context {
+	return opentracing.ContextWithSpan(ctx, t.Last())
+}
+
+// Pop finishes and removes the last pushed span.
 func (t *Tracer) Pop() {
 	// check list
 	if len(t.spans) == 0 {
-		panic("missing spans")
+		return
 	}
 
 	// finish last span
