@@ -134,6 +134,13 @@ type Context struct {
 	original coal.Model
 }
 
+// Query returns the composite query of Selector and Filter.
+func (c *Context) Query() bson.M {
+	return bson.M{
+		"$and": []bson.M{c.Selector, c.Filter},
+	}
+}
+
 // Original will return the stored version of the model. This method is intended
 // to be used to calculate the changed fields during an Update operation. Any
 // returned error is already marked as fatal. This function will cache and reuse

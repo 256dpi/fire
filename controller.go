@@ -902,8 +902,8 @@ func (c *Controller) loadModel(ctx *Context) {
 
 	// query db
 	ctx.Tracer.Push("mgo/Query.One")
-	ctx.Tracer.Tag("query", c.makeQuery(ctx))
-	err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).One(obj)
+	ctx.Tracer.Tag("query", ctx.Query())
+	err := ctx.Store.C(c.Model).Find(ctx.Query()).One(obj)
 	if err == mgo.ErrNotFound {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
@@ -1011,7 +1011,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	slicePtr := c.Model.Meta().MakeSlice()
 
 	// prepare query
-	query := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).Sort(ctx.Sorting...)
+	query := ctx.Store.C(c.Model).Find(ctx.Query()).Sort(ctx.Sorting...)
 
 	// add pagination
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
@@ -1020,7 +1020,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 	// query db
 	ctx.Tracer.Push("mgo/Query.All")
-	ctx.Tracer.Tag("query", query)
+	ctx.Tracer.Tag("query", ctx.Query())
 	stack.AbortIf(query.All(slicePtr))
 	ctx.Tracer.Pop()
 
@@ -1362,8 +1362,8 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
 		ctx.Tracer.Push("mgo/Query.Count")
-		ctx.Tracer.Tag("query", c.makeQuery(ctx))
-		n, err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).Count()
+		ctx.Tracer.Tag("query", ctx.Query())
+		n, err := ctx.Store.C(c.Model).Find(ctx.Query()).Count()
 		stack.AbortIf(err)
 		ctx.Tracer.Pop()
 
@@ -1387,12 +1387,6 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	}
 
 	return links
-}
-
-func (c *Controller) makeQuery(ctx *Context) bson.M {
-	return bson.M{
-		"$and": []bson.M{ctx.Selector, ctx.Filter},
-	}
 }
 
 func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus int) {
