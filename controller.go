@@ -1126,7 +1126,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// => Update comment on HasOne type.
 
 			// prepare query
-			query := bson.M{ filterName: model.ID() }
+			query := bson.M{filterName: model.ID()}
 
 			// load all referenced ids
 			var ids []bson.ObjectId
