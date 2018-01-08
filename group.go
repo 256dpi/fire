@@ -25,7 +25,8 @@ type Group struct {
 	Logger func(string)
 }
 
-// NewGroup creates and returns a new group.
+// NewGroup creates and returns a new group. The specified prefix is used to
+// parse the requests and generate urls for the resources.
 func NewGroup(prefix string) *Group {
 	return &Group{
 		prefix:      prefix,
@@ -63,9 +64,7 @@ func (g *Group) Find(pluralName string) *Controller {
 	return g.controllers[pluralName]
 }
 
-// Endpoint will return an http handler that serves requests for this controller
-// group. The specified prefix is used to parse the requests and generate urls
-// for the resources.
+// Endpoint will return an http handler that serves requests for this group.
 func (g *Group) Endpoint() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create tracer
