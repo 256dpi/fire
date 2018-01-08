@@ -11,7 +11,7 @@ import (
 // execute both.
 func And(a, b *Authorizer) *Authorizer {
 	// construct name
-	name := fmt.Sprintf("ash.And(%s, %s)", a.Name, b.Name)
+	name := fmt.Sprintf("ash/And(%s, %s)", a.Name, b.Name)
 
 	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
@@ -31,7 +31,7 @@ func And(a, b *Authorizer) *Authorizer {
 		}
 
 		// construct new name
-		name := fmt.Sprintf("ash.And(%s, %s)", enforcer1.Name, enforcer2.Name)
+		name := fmt.Sprintf("ash/And(%s, %s)", enforcer1.Name, enforcer2.Name)
 
 		// return an enforcer that calls both enforcers
 		return E(name, func(ctx *fire.Context) error {
@@ -59,7 +59,7 @@ func (a *Authorizer) And(b *Authorizer) *Authorizer {
 // enforcer is returned it will run the second authorizer and return its result.
 func Or(a, b *Authorizer) *Authorizer {
 	// construct name
-	name := fmt.Sprintf("ash.And(%s, %s)", a.Name, b.Name)
+	name := fmt.Sprintf("ash/And(%s, %s)", a.Name, b.Name)
 
 	return A(name, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback

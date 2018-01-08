@@ -74,7 +74,7 @@ type M map[string][]*Authorizer
 // Callback will return a callback that authorizes operations based on the
 // specified strategy.
 func Callback(s *Strategy) *fire.Callback {
-	return fire.C("ash.Callback", func(ctx *fire.Context) error {
+	return fire.C("ash/Callback", func(ctx *fire.Context) error {
 		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)

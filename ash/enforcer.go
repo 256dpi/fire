@@ -24,7 +24,7 @@ type Enforcer = fire.Callback
 // context. It should be used if the presented candidate has full access to the
 // data (.e.g a superuser).
 func GrantAccess() *Enforcer {
-	return E("ash.GrantAccess", func(_ *fire.Context) error {
+	return E("ash/GrantAccess", func(_ *fire.Context) error {
 		return nil
 	})
 }
@@ -37,7 +37,7 @@ func GrantAccess() *Enforcer {
 // only be returned to immediately stop the authorization process and prevent
 // other enforcers from authorizing the operation.
 func DenyAccess() *Enforcer {
-	return E("ash.DenyAccess", func(_ *fire.Context) error {
+	return E("ash/DenyAccess", func(_ *fire.Context) error {
 		return ErrAccessDenied
 	})
 }
@@ -49,7 +49,7 @@ func DenyAccess() *Enforcer {
 // Note: This method will panic if used for Create and CollectionAction operation.
 // You should test for this cases and use another enforcer.
 func AddFilter(filters bson.M) *Enforcer {
-	return E("ash.AddFilter", func(ctx *fire.Context) error {
+	return E("ash/AddFilter", func(ctx *fire.Context) error {
 		// panic on create and collection action
 		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
 			panic("ash: operation not supported")
@@ -71,7 +71,7 @@ func HideFilter() *Enforcer {
 	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
 	// an early ErrNotFound instead of manipulating the Query in crazy ways.
 
-	return E("ash.HideFilter", func(ctx *fire.Context) error {
+	return E("ash/HideFilter", func(ctx *fire.Context) error {
 		// panic on create and collection action
 		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
 			panic("ash: operation not supported")

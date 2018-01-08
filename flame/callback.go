@@ -14,7 +14,7 @@ import (
 // Note: It requires that the request has already been authorized using the
 // Authorizer middleware from a Authenticator.
 func Callback(scope string) *fire.Callback {
-	return fire.C("flame.Callback", func(ctx *fire.Context) error {
+	return fire.C("flame/Callback", func(ctx *fire.Context) error {
 		// parse scope
 		s := oauth2.ParseScope(scope)
 
