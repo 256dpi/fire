@@ -76,5 +76,5 @@ func TestCallbackDebugger(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "authorized by accessGranted using ash.GrantAccess", msg)
+	assert.Equal(t, "authorized by accessGranted using ash/GrantAccess", msg)
 }
