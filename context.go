@@ -126,10 +126,8 @@ type Context struct {
 	// The Group that received the request (read only).
 	Group *Group
 
+	// The Tracer used to tracer code execution (read only).
 	Tracer *Tracer
-
-	// The logger is invoked if set with debugging information.
-	Logger func(string)
 
 	original coal.Model
 }
@@ -181,11 +179,4 @@ func (c *Context) Original() (coal.Model, error) {
 	c.Tracer.Pop()
 
 	return c.original, nil
-}
-
-// Log the specified message if a logger is set.
-func (c *Context) Log(str string) {
-	if c.Logger != nil {
-		c.Logger(str)
-	}
 }

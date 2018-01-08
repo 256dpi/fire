@@ -20,9 +20,6 @@ type Group struct {
 
 	// The function gets invoked by the controller with occurring fatal errors.
 	Reporter func(error)
-
-	// The function that should be used to log debugging information.
-	Logger func(string)
 }
 
 // NewGroup creates and returns a new group. The specified prefix is used to
@@ -116,7 +113,6 @@ func (g *Group) Endpoint() http.Handler {
 			Controller:     controller,
 			Group:          g,
 			Tracer:         tracer,
-			Logger:         g.Logger,
 		})
 	})
 }
