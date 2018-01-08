@@ -2,10 +2,14 @@ package flame
 
 import (
 	"net/http"
+	"testing"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/transport"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,4 +34,19 @@ func mustHash(password string) []byte {
 	}
 
 	return hash
+}
+
+func TestMain(m *testing.M) {
+	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
+	defer tr.Close()
+
+	tracer, closer := jaeger.NewTracer("test-flame",
+		jaeger.NewConstSampler(true),
+		jaeger.NewRemoteReporter(tr),
+	)
+	defer closer.Close()
+
+	opentracing.SetGlobalTracer(tracer)
+
+	m.Run()
 }

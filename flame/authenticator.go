@@ -11,6 +11,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/bearer"
 	"github.com/256dpi/oauth2/revocation"
@@ -32,12 +33,11 @@ const (
 	ResourceOwnerContextKey = ctxKey("resource-owner")
 )
 
-// TODO: Implement tracing.
-
 type state struct {
 	request *http.Request
 	writer  http.ResponseWriter
 	store   *coal.SubStore
+	tracer  *fire.Tracer
 }
 
 // An Authenticator provides OAuth2 based authentication. The implementation
@@ -70,6 +70,11 @@ func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
 // Endpoint returns a handler for the common token and authorize endpoint.
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// create tracer
+		tracer := fire.NewTracerFromRequest(r, "flame/Authenticator.Endpoint")
+		tracer.Tag("prefix", prefix)
+		defer tracer.Finish(true)
+
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
 			// directly write oauth2 errors
@@ -77,6 +82,11 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 				oauth2.WriteError(w, oauth2Error)
 				return
 			}
+
+			// set critical error on last span
+			tracer.Tag("error", true)
+			tracer.Log("error", err.Error())
+			tracer.Log("stack", stack.Trace())
 
 			// otherwise report critical errors
 			if a.Reporter != nil {
@@ -111,6 +121,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			request: r,
 			writer:  w,
 			store:   store,
+			tracer:  tracer,
 		}
 
 		// call endpoints
@@ -130,6 +141,17 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// create tracer
+			tracer := fire.NewTracerFromRequest(r, "flame/Authenticator.Authorizer")
+			tracer.Tag("scope", scope)
+			tracer.Tag("force", force)
+			tracer.Tag("loadClient", loadClient)
+			tracer.Tag("loadResourceOwner", loadResourceOwner)
+			defer tracer.Finish(true)
+
+			// add span to context
+			r = r.WithContext(tracer.Context(r.Context()))
+
 			// immediately pass on request if force is not set and there is
 			// no authentication information provided
 			if !force && r.Header.Get("Authorization") == "" {
@@ -144,6 +166,11 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 					bearer.WriteError(w, bearerError)
 					return
 				}
+
+				// set critical error on last span
+				tracer.Tag("error", true)
+				tracer.Log("error", err.Error())
+				tracer.Log("stack", stack.Trace())
 
 				// otherwise report critical errors
 				if a.Reporter != nil {
@@ -178,6 +205,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				request: r,
 				writer:  w,
 				store:   store,
+				tracer:  tracer,
 			}
 
 			// get token
@@ -240,6 +268,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 }
 
 func (a *Authenticator) authorizationEndpoint(state *state) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.authorizationEndpoint")
+
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(state.request)
 	stack.AbortIf(err)
@@ -263,17 +294,22 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		if a.policy.ImplicitGrant {
-			a.handleImplicitGrant(state, req, client)
-			return
+		// check availability
+		if !a.policy.ImplicitGrant {
+			stack.Abort(oauth2.UnsupportedResponseType(""))
 		}
+
+		a.handleImplicitGrant(state, req, client)
 	}
 
-	// response type is unsupported
-	stack.Abort(oauth2.UnsupportedResponseType(""))
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.AuthorizationRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleImplicitGrant")
+
 	// check request method
 	if state.request.Method == "GET" {
 		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
@@ -312,9 +348,15 @@ func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.Authorizat
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) tokenEndpoint(state *state) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.tokenEndpoint")
+
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(state.request)
 	stack.AbortIf(err)
@@ -333,25 +375,31 @@ func (a *Authenticator) tokenEndpoint(state *state) {
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
-		if a.policy.PasswordGrant {
-			a.handleResourceOwnerPasswordCredentialsGrant(state, req, client)
-			return
+		// check availability
+		if !a.policy.PasswordGrant {
+			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
+
+		a.handleResourceOwnerPasswordCredentialsGrant(state, req, client)
 	case oauth2.ClientCredentialsGrantType:
-		if a.policy.ClientCredentialsGrant {
-			a.handleClientCredentialsGrant(state, req, client)
-			return
+		// check availability
+		if !a.policy.ClientCredentialsGrant {
+			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
+
+		a.handleClientCredentialsGrant(state, req, client)
 	case oauth2.RefreshTokenGrantType:
 		a.handleRefreshTokenGrant(state, req, client)
-		return
 	}
 
-	// grant type is unsupported
-	stack.Abort(oauth2.UnsupportedGrantType(""))
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(state *state, req *oauth2.TokenRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleResourceOwnerPasswordCredentialsGrant")
+
 	// get resource owner
 	resourceOwner := a.findFirstResourceOwner(state, client, req.Username)
 	if resourceOwner == nil {
@@ -378,9 +426,15 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(state *state
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) handleClientCredentialsGrant(state *state, req *oauth2.TokenRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleClientCredentialsGrant")
+
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
@@ -401,9 +455,15 @@ func (a *Authenticator) handleClientCredentialsGrant(state *state, req *oauth2.T
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleRefreshTokenGrant")
+
 	// parse token
 	claims, expired, err := a.policy.ParseToken(req.RefreshToken)
 	if expired {
@@ -455,9 +515,15 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) revocationEndpoint(state *state) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.revocationEndpoint")
+
 	// parse authorization request
 	req, err := revocation.ParseRequest(state.request)
 	stack.AbortIf(err)
@@ -471,6 +537,7 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 	// parse token
 	claims, _, err := a.policy.ParseToken(req.Token)
 	if err != nil {
+		state.tracer.Pop()
 		return
 	}
 
@@ -482,9 +549,15 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 
 	// write header
 	state.writer.WriteHeader(http.StatusOK)
+
+	// finish trace
+	state.tracer.Pop()
 }
 
 func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2.Scope, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.issueTokens")
+
 	// prepare expiration
 	atExpiry := time.Now().Add(a.policy.AccessTokenLifespan)
 	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
@@ -538,22 +611,35 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 		res.RefreshToken = rtSignature
 	}
 
+	// finish trace
+	state.tracer.Pop()
+
 	return res
 }
 
 func (a *Authenticator) findFirstClient(state *state, id string) Client {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.findFirstClient")
+
 	// check all available models in order
 	for _, model := range a.policy.Clients {
 		c := a.findClient(state, model, id)
 		if c != nil {
+			state.tracer.Pop()
 			return c
 		}
 	}
+
+	// finish trace
+	state.tracer.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) findClient(state *state, model Client, id string) Client {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.findClient")
+
 	// prepare object
 	obj := model.Meta().Make()
 
@@ -563,67 +649,98 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	// get id field
 	field := coal.F(model, desc.IdentifierField)
 
+	// prepare query
+	query := bson.M{field: id}
+
 	// query db
-	err := state.store.C(model).Find(bson.M{
-		field: id,
-	}).One(obj)
+	state.tracer.Push("mgo/Query.One")
+	state.tracer.Tag("query", query)
+	err := state.store.C(model).Find(query).One(obj)
 	if err == mgo.ErrNotFound {
+		state.tracer.Pop()
 		return nil
 	}
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
 
 	// initialize model
 	client := coal.Init(obj).(Client)
+
+	// finish trace
+	state.tracer.Pop()
 
 	return client
 }
 
 func (a *Authenticator) getFirstClient(state *state, id bson.ObjectId) Client {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.getFirstClient")
+
 	// check all available models in order
 	for _, model := range a.policy.Clients {
 		c := a.getClient(state, model, id)
 		if c != nil {
+			state.tracer.Pop()
 			return c
 		}
 	}
+
+	// finish trace
+	state.tracer.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) getClient(state *state, model Client, id bson.ObjectId) Client {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.getClient")
+
 	// prepare object
 	obj := model.Meta().Make()
 
 	// query db
+	state.tracer.Push("mgo/Query.One")
+	state.tracer.Tag("id", id.Hex())
 	err := state.store.C(model).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
+		state.tracer.Pop()
 		return nil
 	}
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
 
 	// initialize model
 	client := coal.Init(obj).(Client)
+
+	// finish trace
+	state.tracer.Pop()
 
 	return client
 }
 
 func (a *Authenticator) findFirstResourceOwner(state *state, client Client, id string) ResourceOwner {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.findFirstResourceOwner")
+
 	// check all available models in order
 	for _, model := range a.policy.ResourceOwners(client) {
 		ro := a.findResourceOwner(state, model, id)
 		if ro != nil {
+			state.tracer.Pop()
 			return ro
 		}
 	}
+
+	// finish trace
+	state.tracer.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id string) ResourceOwner {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.findResourceOwner")
+
 	// prepare object
 	obj := coal.Init(model).Meta().Make()
 
@@ -633,74 +750,106 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	// get id field
 	field := coal.F(model, desc.IdentifierField)
 
+	// prepare query
+	query := bson.M{field: id}
+
 	// query db
-	err := state.store.C(model).Find(bson.M{
-		field: id,
-	}).One(obj)
+	state.tracer.Push("mgo/Query.One")
+	state.tracer.Tag("query", query)
+	err := state.store.C(model).Find(query).One(obj)
 	if err == mgo.ErrNotFound {
+		state.tracer.Pop()
 		return nil
 	}
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
 
 	// initialize model
 	resourceOwner := coal.Init(obj).(ResourceOwner)
+
+	// finish trace
+	state.tracer.Pop()
 
 	return resourceOwner
 }
 
 func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id bson.ObjectId) ResourceOwner {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.getFirstResourceOwner")
+
 	// check all available models in order
 	for _, model := range a.policy.ResourceOwners(client) {
 		ro := a.getResourceOwner(state, model, id)
 		if ro != nil {
+			state.tracer.Pop()
 			return ro
 		}
 	}
+
+	// finish trace
+	state.tracer.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id bson.ObjectId) ResourceOwner {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.getResourceOwner")
+
 	// prepare object
 	obj := coal.Init(model).Meta().Make()
 
 	// query db
+	state.tracer.Push("mgo/Query.One")
+	state.tracer.Tag("id", id.Hex())
 	err := state.store.C(model).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
+		state.tracer.Pop()
 		return nil
 	}
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
 
 	// initialize model
 	resourceOwner := coal.Init(obj).(ResourceOwner)
+
+	// finish trace
+	state.tracer.Pop()
 
 	return resourceOwner
 }
 
 func (a *Authenticator) getToken(state *state, t Token, id bson.ObjectId) Token {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.getToken")
+
 	// prepare object
 	obj := t.Meta().Make()
 
 	// fetch access token
+	state.tracer.Push("mgo/Query.One")
+	state.tracer.Tag("id", id.Hex())
 	err := state.store.C(t).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
+		state.tracer.Pop()
 		return nil
 	}
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
 
 	// initialize access token
 	accessToken := coal.Init(obj).(Token)
+
+	// finish trace
+	state.tracer.Pop()
 
 	return accessToken
 }
 
 func (a *Authenticator) saveToken(state *state, t Token, d *TokenData) Token {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.saveToken")
+
 	// prepare access token
 	token := t.Meta().Make().(Token)
 
@@ -708,21 +857,32 @@ func (a *Authenticator) saveToken(state *state, t Token, d *TokenData) Token {
 	token.SetTokenData(d)
 
 	// save access token
+	state.tracer.Push("mgo/Collection.Insert")
+	state.tracer.Tag("model", token)
 	err := state.store.C(token).Insert(token)
-
-	// abort on error
 	stack.AbortIf(err)
+	state.tracer.Pop()
+
+	// finish trace
+	state.tracer.Pop()
 
 	return token
 }
 
 func (a *Authenticator) deleteToken(state *state, t Token, id bson.ObjectId) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.deleteToken")
+
 	// delete token
+	state.tracer.Push("mgo/Collection.RemoveId")
+	state.tracer.Tag("id", id.Hex())
 	err := state.store.C(t).RemoveId(id)
 	if err == mgo.ErrNotFound {
 		err = nil
 	}
-
-	// abort on critical error
 	stack.AbortIf(err)
+	state.tracer.Pop()
+
+	// finish trace
+	state.tracer.Pop()
 }
