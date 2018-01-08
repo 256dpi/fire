@@ -84,22 +84,29 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		// trim and split path
 		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
 
-		// try to call the controllers general handler
-		if len(s) > 0 {
-			if s[0] == "authorize" {
-				a.authorizationEndpoint(w, r)
-				return
-			} else if s[0] == "token" {
-				a.tokenEndpoint(w, r)
-				return
-			} else if s[0] == "revoke" {
-				a.revocationEndpoint(w, r)
-				return
-			}
+		// check length
+		if len(s) != 1 {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 
-		// write not found error
-		w.WriteHeader(http.StatusNotFound)
+		// check resource
+		if s[0] != "authorize" && s[0] != "token" && s[0] != "revoke" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// call endpoints
+		switch s[0] {
+		case "authorize":
+			a.authorizationEndpoint(w, r)
+		case "token":
+			a.tokenEndpoint(w, r)
+		case "revoke":
+			a.revocationEndpoint(w, r)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
 	})
 }
 
