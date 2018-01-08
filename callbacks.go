@@ -207,10 +207,11 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 
 		// check all relations
 		for coll, field := range resources {
+			// prepare query
+			query := bson.M{field: ctx.Model.ID()}
+
 			// count referencing documents
-			n, err := ctx.Store.DB().C(coll).Find(bson.M{
-				field: ctx.Model.ID(),
-			}).Limit(1).Count()
+			n, err := ctx.Store.DB().C(coll).Find(query).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
@@ -263,12 +264,11 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 
 			// handle to-many relationships
 			if ids, ok := ref.([]bson.ObjectId); ok {
+				// prepare query
+				query := bson.M{"_id": bson.M{"$in": ids}}
+
 				// count entities in database
-				n, err := ctx.Store.DB().C(collection).Find(bson.M{
-					"_id": bson.M{
-						"$in": ids,
-					},
-				}).Count()
+				n, err := ctx.Store.DB().C(collection).Find(query).Count()
 				if err != nil {
 					return Fatal(err)
 				}
