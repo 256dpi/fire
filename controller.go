@@ -1130,11 +1130,12 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// TODO: We should run the related controllers authenticator.
 			// => Update comment on HasOne type.
 
+			// prepare query
+			query := bson.M{ filterName: model.ID() }
+
 			// load all referenced ids
 			var ids []bson.ObjectId
-			err := ctx.Store.C(relatedController.Model).Find(bson.M{
-				filterName: model.ID(),
-			}).Distinct("_id", &ids)
+			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
 
 			// prepare references
@@ -1187,13 +1188,16 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// TODO: We should run the related controllers authenticator.
 			// => Update comment on HasMany type.
 
-			// load all referenced ids
-			var ids []bson.ObjectId
-			err := ctx.Store.C(relatedController.Model).Find(bson.M{
+			// prepare query
+			query := bson.M{
 				filterName: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
-			}).Distinct("_id", &ids)
+			}
+
+			// load all referenced ids
+			var ids []bson.ObjectId
+			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
 
 			// prepare references
