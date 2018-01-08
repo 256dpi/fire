@@ -116,8 +116,6 @@ type Controller struct {
 
 // TODO: Always render resource for relationship changes, as attributes might change?
 
-// TODO: Add more low-level debugging info (handlers, queries, etc.)
-
 func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
@@ -169,6 +167,9 @@ func (c *Controller) prepare() {
 }
 
 func (c *Controller) generalHandler(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.generalHandler")
+
 	// parse incoming JSON-API request
 	c.parser.Prefix = ctx.Group.prefix
 	req, err := c.parser.ParseRequest(ctx.HTTPRequest)
@@ -227,9 +228,15 @@ func (c *Controller) generalHandler(ctx *Context) {
 	case jsonapi.ResourceAction:
 		c.handleResourceAction(ctx)
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) listResources(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.listResources")
+
 	// set operation
 	ctx.Operation = List
 
@@ -249,9 +256,15 @@ func (c *Controller) listResources(ctx *Context) {
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) findResource(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.findResource")
+
 	// set operation
 	ctx.Operation = Find
 
@@ -273,9 +286,15 @@ func (c *Controller) findResource(ctx *Context) {
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.createResource")
+
 	// set operation
 	ctx.Operation = Create
 
@@ -297,7 +316,10 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// insert model
+	ctx.Tracer.Push("mgo/Collection.Insert")
+	ctx.Tracer.Tag("model", ctx.Model)
 	stack.AbortIf(ctx.Store.C(ctx.Model).Insert(ctx.Model))
+	ctx.Tracer.Pop()
 
 	// compose response
 	ctx.Response = &jsonapi.Document{
@@ -314,9 +336,15 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusCreated, ctx.Response))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.updateResource")
+
 	// set operation
 	ctx.Operation = Update
 
@@ -349,9 +377,15 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) deleteResource(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.deleteResources")
+
 	// set operation
 	ctx.Operation = Delete
 
@@ -362,16 +396,25 @@ func (c *Controller) deleteResource(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// remove model
+	ctx.Tracer.Push("mgo/Collection.RemoveId")
+	ctx.Tracer.Tag("model", ctx.Model)
 	stack.AbortIf(ctx.Store.C(c.Model).RemoveId(ctx.Model.ID()))
+	ctx.Tracer.Pop()
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// set status
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) getRelatedResources(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.getRelatedResources")
+
 	// set operation
 	ctx.Operation = Find
 
@@ -424,6 +467,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		ResponseWriter: ctx.ResponseWriter,
 		Controller:     relatedController,
 		Group:          ctx.Group,
+		Tracer:         ctx.Tracer,
 	}
 
 	// finish to-one relationship
@@ -605,9 +649,15 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// write result
 		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) getRelationship(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.getRelationship")
+
 	// set operation
 	ctx.Operation = Find
 
@@ -625,9 +675,15 @@ func (c *Controller) getRelationship(ctx *Context) {
 
 	// write result
 	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.setRelationship")
+
 	// set operation
 	ctx.Operation = Update
 
@@ -645,9 +701,15 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// write result
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.appendToRelationship")
+
 	// set operation
 	ctx.Operation = Update
 
@@ -702,9 +764,15 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// write result
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
+
 	// set operation
 	ctx.Operation = Update
 
@@ -757,9 +825,15 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 	// write result
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) handleCollectionAction(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.handleCollectionAction")
+
 	// set operation
 	ctx.Operation = CollectionAction
 
@@ -777,9 +851,15 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 
 	// run callback
 	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) handleResourceAction(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.handleResourceAction")
+
 	// set operation
 	ctx.Operation = ResourceAction
 
@@ -797,9 +877,15 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 
 	// run callback
 	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) loadModel(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.loadModel")
+
 	// validate id
 	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
@@ -815,17 +901,26 @@ func (c *Controller) loadModel(ctx *Context) {
 	obj := c.Model.Meta().Make()
 
 	// query db
+	ctx.Tracer.Push("mgo/Query.One")
+	ctx.Tracer.Tag("query", c.makeQuery(ctx))
 	err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).One(obj)
 	if err == mgo.ErrNotFound {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
 	stack.AbortIf(err)
+	ctx.Tracer.Pop()
 
 	// initialize and set model
 	ctx.Model = coal.Init(obj.(coal.Model))
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) loadModels(ctx *Context) []coal.Model {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.loadModels")
+
 	// add filters
 	for name, values := range ctx.JSONAPIRequest.Filters {
 		// initialize flag
@@ -924,10 +1019,16 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	}
 
 	// query db
+	ctx.Tracer.Push("mgo/Query.All")
+	ctx.Tracer.Tag("query", query)
 	stack.AbortIf(query.All(slicePtr))
+	ctx.Tracer.Pop()
 
 	// get models
 	models := coal.InitSlice(slicePtr)
+
+	// finish trace
+	ctx.Tracer.Pop()
 
 	return models
 }
@@ -1003,14 +1104,25 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 }
 
 func (c *Controller) updateModel(ctx *Context) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.updateModel")
+
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
+	ctx.Tracer.Push("mgo/Collection.UpdateId")
 	stack.AbortIf(ctx.Store.C(ctx.Model).UpdateId(ctx.Model.ID(), ctx.Model))
+	ctx.Tracer.Pop()
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.Resource {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.resourceForModel")
+
 	// create map from model
 	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[model.Meta().PluralName])
 	stack.AbortIf(err)
@@ -1130,8 +1242,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 
 			// load all referenced ids
 			var ids []bson.ObjectId
+			ctx.Tracer.Push("mgo/Query.Distinct")
+			ctx.Tracer.Tag("query", query)
 			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
+			ctx.Tracer.Pop()
 
 			// prepare references
 			var reference *jsonapi.Resource
@@ -1192,8 +1307,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 
 			// load all referenced ids
 			var ids []bson.ObjectId
+			ctx.Tracer.Push("mgo/Query.Distinct")
+			ctx.Tracer.Tag("query", query)
 			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
+			ctx.Tracer.Pop()
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))
@@ -1215,6 +1333,9 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 		}
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 
 	return resource
 }
@@ -1240,8 +1361,11 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
+		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Tag("query", c.makeQuery(ctx))
 		n, err := ctx.Store.C(c.Model).Find(c.makeQuery(ctx)).Count()
 		stack.AbortIf(err)
+		ctx.Tracer.Pop()
 
 		// calculate last page
 		lastPage := uint64(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
@@ -1271,11 +1395,14 @@ func (c *Controller) makeQuery(ctx *Context) bson.M {
 	}
 }
 
-// TODO: Log executed callbacks.
-
 func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus int) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.runCallbacks")
+
 	// run callbacks and handle errors
 	for _, cb := range list {
+		// call callback
+		ctx.Tracer.Push(cb.Name)
 		err := cb.Handler(ctx)
 		if IsFatal(err) {
 			stack.Abort(err)
@@ -1285,5 +1412,9 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 				Detail: err.Error(),
 			})
 		}
+		ctx.Tracer.Pop()
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 }

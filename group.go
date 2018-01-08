@@ -6,6 +6,7 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // TODO: Pull in CORS from wood an make it a first class citizen.
@@ -14,7 +15,7 @@ import (
 
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
-	prefix string
+	prefix      string
 	controllers map[string]*Controller
 
 	// The function gets invoked by the controller with occurring fatal errors.
@@ -27,7 +28,7 @@ type Group struct {
 // NewGroup creates and returns a new group.
 func NewGroup(prefix string) *Group {
 	return &Group{
-		prefix: prefix,
+		prefix:      prefix,
 		controllers: make(map[string]*Controller),
 	}
 }
@@ -67,15 +68,9 @@ func (g *Group) Find(pluralName string) *Controller {
 // for the resources.
 func (g *Group) Endpoint() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// prepare context
-		c := &Context{
-			Selector:       bson.M{},
-			Filter:         bson.M{},
-			HTTPRequest:    r,
-			ResponseWriter: w,
-			Group:          g,
-			Logger:         g.Logger,
-		}
+		// create tracer
+		tracer := NewTracerFromRequest(r, "fire/Group.Endpoint")
+		defer tracer.Finish(true)
 
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
@@ -85,7 +80,12 @@ func (g *Group) Endpoint() http.Handler {
 				return
 			}
 
-			// otherwise report critical errors
+			// set critical error on last span
+			tracer.Tag("error", true)
+			tracer.Log("error", err.Error())
+			tracer.Log("stack", stack.Trace())
+
+			// report critical errors if possible
 			if g.Reporter != nil {
 				g.Reporter(err)
 			}
@@ -97,20 +97,27 @@ func (g *Group) Endpoint() http.Handler {
 		// trim and split path
 		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, g.prefix), "/"), "/")
 
-		// find controller if a resource is given
-		if len(s) > 0 {
-			if controller, ok := g.controllers[s[0]]; ok {
-				// set controller
-				c.Controller = controller
-
-				// call controller
-				controller.generalHandler(c)
-
-				return
-			}
+		// check segments
+		if len(s) == 0 {
+			stack.Abort(jsonapi.NotFound("resource not found"))
 		}
 
-		// write not found error
-		jsonapi.WriteError(w, jsonapi.NotFound("resource not found"))
+		// get controller
+		controller, ok := g.controllers[s[0]]
+		if !ok {
+			stack.Abort(jsonapi.NotFound("resource not found"))
+		}
+
+		// call controller with context
+		controller.generalHandler(&Context{
+			Selector:       bson.M{},
+			Filter:         bson.M{},
+			HTTPRequest:    r,
+			ResponseWriter: w,
+			Controller:     controller,
+			Group:          g,
+			Tracer:         tracer,
+			Logger:         g.Logger,
+		})
 	})
 }

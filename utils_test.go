@@ -2,9 +2,13 @@ package fire
 
 import (
 	"errors"
+	"testing"
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/transport"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -64,3 +68,18 @@ var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
 var testSubStore = testStore.Copy()
 
 var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{})
+
+func TestMain(m *testing.M) {
+	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
+	defer tr.Close()
+
+	tracer, closer := jaeger.NewTracer("test-fire",
+		jaeger.NewConstSampler(true),
+		jaeger.NewRemoteReporter(tr),
+	)
+	defer closer.Close()
+
+	opentracing.SetGlobalTracer(tracer)
+
+	m.Run()
+}

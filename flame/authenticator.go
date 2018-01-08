@@ -32,6 +32,8 @@ const (
 	ResourceOwnerContextKey = ctxKey("resource-owner")
 )
 
+// TODO: Implement tracing.
+
 // An Authenticator provides OAuth2 based authentication. The implementation
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant.

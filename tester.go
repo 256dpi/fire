@@ -160,6 +160,10 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 		filter = bson.M{}
 	}
 
+	// create tracer
+	tracer := NewTracerWithRoot(authorizer.Name)
+	defer tracer.Finish(true)
+
 	// create context
 	ctx := &Context{
 		Operation:      op,
@@ -169,6 +173,7 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 		Store:          store,
 		HTTPRequest:    req,
 		ResponseWriter: httptest.NewRecorder(),
+		Tracer:         tracer,
 	}
 
 	// call authorizer
@@ -212,6 +217,10 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callbac
 	// set context
 	req = req.WithContext(t.Context)
 
+	// create tracer
+	tracer := NewTracerWithRoot(validator.Name)
+	defer tracer.Finish(true)
+
 	// create context
 	ctx := &Context{
 		Operation:      op,
@@ -219,6 +228,7 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callbac
 		Store:          store,
 		HTTPRequest:    req,
 		ResponseWriter: httptest.NewRecorder(),
+		Tracer:         tracer,
 	}
 
 	// call validator

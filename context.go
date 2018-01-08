@@ -126,6 +126,8 @@ type Context struct {
 	// The Group that received the request (read only).
 	Group *Group
 
+	Tracer *Tracer
+
 	// The logger is invoked if set with debugging information.
 	Logger func(string)
 
@@ -139,12 +141,17 @@ type Context struct {
 //
 // Note: The method will panic if being used during any other operation than Update.
 func (c *Context) Original() (coal.Model, error) {
+	// begin trace
+	c.Tracer.Push("fire/Context.Original")
+
+	// check operation
 	if c.Operation != Update {
 		panic("fire: the original can only be loaded during an update operation")
 	}
 
 	// return cached model
 	if c.original != nil {
+		c.Tracer.Pop()
 		return c.original, nil
 	}
 
@@ -152,13 +159,19 @@ func (c *Context) Original() (coal.Model, error) {
 	m := c.Model.Meta().Make()
 
 	// read original document
+	c.Tracer.Push("mgo/Query.One")
+	c.Tracer.Tag("id", c.Model.ID())
 	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
 		return nil, Fatal(err)
 	}
+	c.Tracer.Pop()
 
 	// cache model
 	c.original = coal.Init(m)
+
+	// finish trace
+	c.Tracer.Pop()
 
 	return c.original, nil
 }

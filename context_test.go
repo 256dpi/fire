@@ -46,6 +46,7 @@ func TestContextOriginal(t *testing.T) {
 		Operation: Update,
 		Model:     post,
 		Store:     testSubStore,
+		Tracer:    NewTracerWithRoot("TestContextOriginal"),
 	}
 
 	m, err := ctx.Original()
@@ -61,6 +62,7 @@ func TestContextOriginal(t *testing.T) {
 func TestContextOriginalWrongOperation(t *testing.T) {
 	ctx := &Context{
 		Operation: Find,
+		Tracer:    NewTracerWithRoot("TestContextOriginalWrongOperation"),
 	}
 
 	assert.Panics(t, func() {
@@ -79,6 +81,7 @@ func TestContextOriginalNonExisting(t *testing.T) {
 		Operation: Update,
 		Model:     post,
 		Store:     testSubStore,
+		Tracer:    NewTracerWithRoot("TestContextOriginalNonExisting"),
 	}
 
 	m, err := ctx.Original()

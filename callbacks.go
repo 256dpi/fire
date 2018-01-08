@@ -211,10 +211,13 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 			query := bson.M{field: ctx.Model.ID()}
 
 			// count referencing documents
+			ctx.Tracer.Push("mgo/Query.Count")
+			ctx.Tracer.Tag("query", query)
 			n, err := ctx.Store.DB().C(coll).Find(query).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
+			ctx.Tracer.Pop()
 
 			// return err of documents are found
 			if n != 0 {
@@ -268,10 +271,13 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 				query := bson.M{"_id": bson.M{"$in": ids}}
 
 				// count entities in database
+				ctx.Tracer.Push("mgo/Query.Count")
+				ctx.Tracer.Tag("query", query)
 				n, err := ctx.Store.DB().C(collection).Find(query).Count()
 				if err != nil {
 					return Fatal(err)
 				}
+				ctx.Tracer.Pop()
 
 				// check for existence
 				if n != len(ids) {
@@ -284,10 +290,13 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 			// handle to-one relationships
 
 			// count entities in database
+			ctx.Tracer.Push("mgo/Query.Count")
+			ctx.Tracer.Tag("id", ref)
 			n, err := ctx.Store.DB().C(collection).FindId(ref).Limit(1).Count()
 			if err != nil {
 				return Fatal(err)
 			}
+			ctx.Tracer.Pop()
 
 			// check for existence
 			if n != 1 {
@@ -434,10 +443,13 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 		}
 
 		// find matching documents
+		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Tag("query", query)
 		n, err := ctx.Store.DB().C(collection).Find(query).Count()
 		if err != nil {
 			return Fatal(err)
 		}
+		ctx.Tracer.Pop()
 
 		// return error if a document is missing (does not match)
 		if n != len(ids) {
@@ -488,12 +500,15 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callba
 		}
 
 		// count
+		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Tag("query", query)
 		n, err := ctx.Store.C(ctx.Model).Find(query).Limit(1).Count()
 		if err != nil {
 			return Fatal(err)
 		} else if n != 0 {
 			return fmt.Errorf("attribute %s is not unique", uniqueAttribute)
 		}
+		ctx.Tracer.Pop()
 
 		return nil
 	})
