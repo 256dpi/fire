@@ -451,7 +451,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	res := a.issueTokens(state, true, req.Scope, client, ro)
 
 	// delete refresh token
-	a.deleteToken(state, a.policy.RefreshToken, rt.ID(), client.ID())
+	a.deleteToken(state, a.policy.RefreshToken, rt.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -475,10 +475,10 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 	}
 
 	// delete access token
-	a.deleteToken(state, a.policy.AccessToken, bson.ObjectIdHex(claims.Id), client.ID())
+	a.deleteToken(state, a.policy.AccessToken, bson.ObjectIdHex(claims.Id))
 
 	// delete refresh token
-	a.deleteToken(state, a.policy.RefreshToken, bson.ObjectIdHex(claims.Id), client.ID())
+	a.deleteToken(state, a.policy.RefreshToken, bson.ObjectIdHex(claims.Id))
 
 	// write header
 	state.writer.WriteHeader(http.StatusOK)
@@ -716,7 +716,7 @@ func (a *Authenticator) saveToken(state *state, t Token, d *TokenData) Token {
 	return token
 }
 
-func (a *Authenticator) deleteToken(state *state, t Token, id bson.ObjectId, clientID bson.ObjectId) {
+func (a *Authenticator) deleteToken(state *state, t Token, id bson.ObjectId) {
 	// delete token
 	err := state.store.C(t).RemoveId(id)
 	if err == mgo.ErrNotFound {
