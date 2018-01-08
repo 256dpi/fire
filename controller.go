@@ -926,8 +926,10 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	// query db
 	stack.AbortIf(query.All(slicePtr))
 
-	// init all models in slice
-	return coal.InitSlice(slicePtr)
+	// get models
+	models := coal.InitSlice(slicePtr)
+
+	return models
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
