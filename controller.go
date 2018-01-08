@@ -182,14 +182,11 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 		))
 	}
 
-	// parse body if available
+	// parse document if expected
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		// limit request body size
-		reader := http.MaxBytesReader(w, r.Body, int64(c.DocumentLimit))
-
-		// parse document
-		doc, err = jsonapi.ParseDocument(reader)
+		// parse document and respect document limit
+		doc, err = jsonapi.ParseDocument(http.MaxBytesReader(w, r.Body, int64(c.DocumentLimit)))
 		stack.AbortIf(err)
 	}
 
