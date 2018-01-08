@@ -210,33 +210,33 @@ func (c *Controller) generalHandler(group *Group, prefix string, w http.Response
 	// call specific handlers
 	switch req.Intent {
 	case jsonapi.ListResources:
-		c.listResources(w, ctx)
+		c.listResources(ctx)
 	case jsonapi.FindResource:
-		c.findResource(w, ctx)
+		c.findResource(ctx)
 	case jsonapi.CreateResource:
-		c.createResource(w, ctx, doc)
+		c.createResource(ctx, doc)
 	case jsonapi.UpdateResource:
-		c.updateResource(w, ctx, doc)
+		c.updateResource(ctx, doc)
 	case jsonapi.DeleteResource:
-		c.deleteResource(w, ctx)
+		c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
-		c.getRelatedResources(w, ctx)
+		c.getRelatedResources(ctx)
 	case jsonapi.GetRelationship:
-		c.getRelationship(w, ctx)
+		c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		c.setRelationship(w, ctx, doc)
+		c.setRelationship(ctx, doc)
 	case jsonapi.AppendToRelationship:
-		c.appendToRelationship(w, ctx, doc)
+		c.appendToRelationship(ctx, doc)
 	case jsonapi.RemoveFromRelationship:
-		c.removeFromRelationship(w, ctx, doc)
+		c.removeFromRelationship(ctx, doc)
 	case jsonapi.CollectionAction:
-		c.handleCollectionAction(w, ctx)
+		c.handleCollectionAction(ctx)
 	case jsonapi.ResourceAction:
-		c.handleResourceAction(w, ctx)
+		c.handleResourceAction(ctx)
 	}
 }
 
-func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) listResources(ctx *Context) {
 	// set operation
 	ctx.Operation = List
 
@@ -255,10 +255,10 @@ func (c *Controller) listResources(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 }
 
-func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) findResource(ctx *Context) {
 	// set operation
 	ctx.Operation = Find
 
@@ -279,10 +279,10 @@ func (c *Controller) findResource(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 }
 
-func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// set operation
 	ctx.Operation = Create
 
@@ -320,10 +320,10 @@ func (c *Controller) createResource(w http.ResponseWriter, ctx *Context, doc *js
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusCreated, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusCreated, ctx.Response))
 }
 
-func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// set operation
 	ctx.Operation = Update
 
@@ -355,10 +355,10 @@ func (c *Controller) updateResource(w http.ResponseWriter, ctx *Context, doc *js
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 }
 
-func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) deleteResource(ctx *Context) {
 	// set operation
 	ctx.Operation = Delete
 
@@ -375,10 +375,10 @@ func (c *Controller) deleteResource(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// set status
-	w.WriteHeader(http.StatusNoContent)
+	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) getRelatedResources(ctx *Context) {
 	// set operation
 	ctx.Operation = Find
 
@@ -481,7 +481,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
 	}
 
 	// finish to-many relationship
@@ -511,7 +511,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
 	}
 
 	// finish has-one relationship
@@ -563,7 +563,7 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
 	}
 
 	// finish has-many relationship
@@ -610,11 +610,11 @@ func (c *Controller) getRelatedResources(w http.ResponseWriter, ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
 	}
 }
 
-func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) getRelationship(ctx *Context) {
 	// set operation
 	ctx.Operation = Find
 
@@ -631,10 +631,10 @@ func (c *Controller) getRelationship(w http.ResponseWriter, ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(w, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 }
 
-func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// set operation
 	ctx.Operation = Update
 
@@ -651,10 +651,10 @@ func (c *Controller) setRelationship(w http.ResponseWriter, ctx *Context, doc *j
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	w.WriteHeader(http.StatusNoContent)
+	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// set operation
 	ctx.Operation = Update
 
@@ -708,10 +708,10 @@ func (c *Controller) appendToRelationship(w http.ResponseWriter, ctx *Context, d
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	w.WriteHeader(http.StatusNoContent)
+	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) {
 	// set operation
 	ctx.Operation = Update
 
@@ -763,10 +763,10 @@ func (c *Controller) removeFromRelationship(w http.ResponseWriter, ctx *Context,
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	w.WriteHeader(http.StatusNoContent)
+	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) handleCollectionAction(ctx *Context) {
 	// set operation
 	ctx.Operation = CollectionAction
 
@@ -777,7 +777,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	}
 
 	// limit request body size
-	ctx.HTTPRequest.Body = http.MaxBytesReader(w, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+	ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
@@ -786,7 +786,7 @@ func (c *Controller) handleCollectionAction(w http.ResponseWriter, ctx *Context)
 	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
 }
 
-func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
+func (c *Controller) handleResourceAction(ctx *Context) {
 	// set operation
 	ctx.Operation = ResourceAction
 
@@ -797,7 +797,7 @@ func (c *Controller) handleResourceAction(w http.ResponseWriter, ctx *Context) {
 	}
 
 	// limit request body size
-	ctx.HTTPRequest.Body = http.MaxBytesReader(w, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+	ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
 
 	// load model
 	c.loadModel(ctx)
