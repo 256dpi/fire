@@ -384,7 +384,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 
 func (c *Controller) deleteResource(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.deleteResources")
+	ctx.Tracer.Push("fire/Controller.deleteResource")
 
 	// set operation
 	ctx.Operation = Delete
@@ -1034,6 +1034,9 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.assignData")
+
 	// map attributes to struct
 	stack.AbortIf(res.Attributes.Assign(ctx.Model))
 
@@ -1041,9 +1044,15 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	for name, rel := range res.Relationships {
 		c.assignRelationship(ctx, name, rel)
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.assignRelationship")
+
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
@@ -1101,6 +1110,9 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			ctx.Model.MustSet(field.Name, ids)
 		}
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 }
 
 func (c *Controller) updateModel(ctx *Context) {
@@ -1341,6 +1353,9 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 }
 
 func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.resourceForModels")
+
 	// prepare resources
 	resources := make([]*jsonapi.Resource, 0, len(models))
 
@@ -1349,10 +1364,16 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*js
 		resources = append(resources, c.resourceForModel(ctx, model))
 	}
 
+	// finish trace
+	ctx.Tracer.Pop()
+
 	return resources
 }
 
 func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.listLinks")
+
 	// prepare links
 	links := &jsonapi.DocumentLinks{
 		Self: self,
@@ -1385,6 +1406,9 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber+1, ctx.JSONAPIRequest.PageSize)
 		}
 	}
+
+	// finish trace
+	ctx.Tracer.Pop()
 
 	return links
 }
