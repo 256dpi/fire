@@ -41,12 +41,6 @@ type Callback struct {
 	Handler Handler
 }
 
-type noDefault int
-
-// NoDefault marks the specified field to have no default that needs to be
-// enforced while executing the ProtectedFieldsValidator.
-const NoDefault noDefault = iota
-
 // Only will return a callback that runs the specified callback only when one
 // of the supplied operations match.
 func Only(cb *Callback, force bool, ops ...Operation) *Callback {
@@ -136,6 +130,12 @@ func ModelValidator() *Callback {
 		return coal.Validate(ctx.Model)
 	}), false, Create, Update)
 }
+
+type noDefault int
+
+// NoDefault marks the specified field to have no default that needs to be
+// enforced while executing the ProtectedFieldsValidator.
+const NoDefault noDefault = iota
 
 // ProtectedFieldsValidator compares protected attributes against their
 // default (during Create) or stored value (during Update) and returns an error
