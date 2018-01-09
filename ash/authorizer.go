@@ -2,6 +2,39 @@ package ash
 
 import "github.com/256dpi/fire"
 
+// A is a short-hand function to construct an authorizer. It will also add tracing
+// code around the execution of the authorizer.
+func A(name string, h Handler) *Authorizer {
+	return &Authorizer{
+		Handler: func(ctx *fire.Context) (*Enforcer, error) {
+			// begin trace
+			ctx.Tracer.Push(name)
+
+			// call handler
+			enforcer, err := h(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			// finish trace
+			ctx.Tracer.Pop()
+
+			return enforcer, nil
+		},
+	}
+}
+
+// Handler is a function that inspects an operation context and eventually
+// returns an enforcer or an error.
+type Handler func(*fire.Context) (*Enforcer, error)
+
+// An Authorizer should inspect the specified context and assesses if it is able
+// to enforce authorization with the data that is available. If yes, the
+// authorizer should return an Enforcer that will enforce the authorization.
+type Authorizer struct {
+	Handler Handler
+}
+
 // And will run both authorizers and return immediately if one does not return an
 // enforcer. The two successfully returned enforcers are wrapped in one that will
 // execute both.
@@ -12,7 +45,7 @@ func And(a, b *Authorizer) *Authorizer {
 		if err != nil {
 			return nil, err
 		} else if enforcer1 == nil {
-			return nil, err
+			return nil, nil
 		}
 
 		// run second callback
@@ -20,23 +53,11 @@ func And(a, b *Authorizer) *Authorizer {
 		if err != nil {
 			return nil, err
 		} else if enforcer2 == nil {
-			return nil, err
+			return nil, nil
 		}
 
 		// return an enforcer that calls both enforcers
-		return E("ash/And", func(ctx *fire.Context) error {
-			err := enforcer1.Handler(ctx)
-			if err != nil {
-				return err
-			}
-
-			err = enforcer2.Handler(ctx)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}), nil
+		return fire.Combine(enforcer1, enforcer2), nil
 	})
 }
 

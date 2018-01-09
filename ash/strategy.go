@@ -8,27 +8,6 @@ import (
 	"github.com/256dpi/fire"
 )
 
-// A is a short-hand function to construct an authorizer.
-func A(name string, h Handler) *Authorizer {
-	return &Authorizer{
-		Handler: func(ctx *fire.Context) (*Enforcer, error) {
-			// begin trace
-			ctx.Tracer.Push(name)
-
-			// call handler
-			enforcer, err := h(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			// finish trace
-			ctx.Tracer.Pop()
-
-			return enforcer, nil
-		},
-	}
-}
-
 // L is a short-hand type to create a list of authorizers.
 type L []*Authorizer
 
@@ -43,19 +22,6 @@ func C(s *Strategy) *fire.Callback {
 // ErrAccessDenied is returned by the DenyAccess enforcer and the Strategy if no
 // authorizer authorized the operation.
 var ErrAccessDenied = errors.New("access denied")
-
-// Handler is a function that inspects an operation context and eventually
-// returns an enforcer or an error.
-//
-// See: fire.Handler.
-type Handler func(*fire.Context) (*Enforcer, error)
-
-// An Authorizer should inspect the specified context and asses if it is able
-// to enforce authorization with the data that is available. If yes, the
-// authorizer should return an Enforcer that will enforce the authorization.
-type Authorizer struct {
-	Handler Handler
-}
 
 // Strategy contains lists of authorizers that are used to authorize operations.
 type Strategy struct {
@@ -89,7 +55,7 @@ type Strategy struct {
 
 // Callback will return a callback that authorizes operations using the strategy.
 func (s *Strategy) Callback() *fire.Callback {
-	return fire.C("ash/C", func(ctx *fire.Context) error {
+	return fire.C("ash/Strategy.Callback", func(ctx *fire.Context) error {
 		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)
@@ -131,11 +97,12 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 					return err
 				}
 
+				// return nil if an enforcer ran successfully
 				return nil
 			}
 		}
 	}
 
-	// deny access on failure
+	// deny access by default
 	return ErrAccessDenied
 }
