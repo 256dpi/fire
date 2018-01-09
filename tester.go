@@ -130,7 +130,7 @@ func (t *Tester) Path(path string) string {
 // Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, authorizer *Callback) error {
 	// call validator with context
-	return t.RunHandler(op, selector, filter, model, authorizer.Handler)
+	return t.RunHandler(op, selector, filter, model, nil, nil, authorizer.Handler)
 }
 
 // RunValidator is a helper to test validators. The caller should assert the
@@ -148,19 +148,32 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callbac
 	}
 
 	// call validator with context
-	return t.RunHandler(op, nil, nil, model, validator.Handler)
+	return t.RunHandler(op, nil, nil, model, nil, nil, validator.Handler)
+}
+
+// RunNotifier is a helper to test notifiers. The caller should assert the
+// returned error of the notifier and the state of the response or other triggered
+// actions.
+//
+// Note: Only the Response attribute of the context is set since this is the
+// only attribute a notifier should rely on.
+//
+// Note: A fake http request is set to allow access to request headers.
+func (t *Tester) RunNotifier(op Operation, response *jsonapi.Document, notifier *Callback) error {
+	// call notifier with context
+	return t.RunHandler(op, nil, nil, nil, nil, response, notifier.Handler)
 }
 
 // WithContext runs the given function with a prepared context.
 func (t *Tester) WithContext(op Operation, selector, filter bson.M, model coal.Model, fn func(*Context)) {
-	t.RunHandler(op, selector, filter, model, func(ctx *Context) error {
+	t.RunHandler(op, selector, filter, model, nil, nil, func(ctx *Context) error {
 		fn(ctx)
 		return nil
 	})
 }
 
 // RunHandler builds a context and runs the passed handler with it.
-func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Model, h Handler) error {
+func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Model, sorting []string, response *jsonapi.Document, h Handler) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -202,6 +215,8 @@ func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Mo
 		Selector:       selector,
 		Filter:         filter,
 		Model:          model,
+		Sorting:        sorting,
+		Response:       response,
 		Store:          store,
 		HTTPRequest:    req,
 		ResponseWriter: httptest.NewRecorder(),
@@ -211,8 +226,6 @@ func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Mo
 	// call handler
 	return h(ctx)
 }
-
-// TODO: Add RunNotifier helper.
 
 // Request will run the specified request against the registered handler. This
 // function can be used to create custom testing facilities.

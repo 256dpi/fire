@@ -38,8 +38,6 @@ type Action struct {
 	BodyLimit uint64
 }
 
-// TODO: Rename Notifiers to Transformers?
-
 // A Controller provides a JSON API based interface to a model.
 //
 // Note: A controller must not be modified after being added to a group.
