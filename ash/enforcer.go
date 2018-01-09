@@ -6,8 +6,8 @@ import (
 )
 
 // E is a short-hand function to create an enforcer.
-func E(name string, h fire.Handler) *Enforcer {
-	return fire.C(name, h)
+func E(name string, m fire.Matcher, h fire.Handler) *Enforcer {
+	return fire.C(name, m, h)
 }
 
 // An Enforcer is returned by an Authorizer to enforce the previously inspected
@@ -24,7 +24,7 @@ type Enforcer = fire.Callback
 // context. It should be used if the presented candidate has full access to the
 // data (.e.g a superuser).
 func GrantAccess() *Enforcer {
-	return E("ash/GrantAccess", func(_ *fire.Context) error {
+	return E("ash/GrantAccess", nil, func(_ *fire.Context) error {
 		return nil
 	})
 }
@@ -37,7 +37,7 @@ func GrantAccess() *Enforcer {
 // only be returned to immediately stop the authorization process and prevent
 // other enforcers from authorizing the operation.
 func DenyAccess() *Enforcer {
-	return E("ash/DenyAccess", func(_ *fire.Context) error {
+	return E("ash/DenyAccess", nil, func(_ *fire.Context) error {
 		return ErrAccessDenied
 	})
 }
@@ -49,14 +49,14 @@ func DenyAccess() *Enforcer {
 // Note: This method will panic if used for Create and CollectionAction operation.
 // You should test for this cases and use another enforcer.
 func AddFilter(filters bson.M) *Enforcer {
-	return fire.Except(E("ash/AddFilter", func(ctx *fire.Context) error {
+	return E("ash/AddFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
 		// assign specified filters
 		for key, value := range filters {
 			ctx.Filter[key] = value
 		}
 
 		return nil
-	}), true, fire.Create, fire.CollectionAction)
+	})
 }
 
 // HideFilter will enforce the authorization by adding a falsy filter to the
@@ -69,10 +69,10 @@ func HideFilter() *Enforcer {
 	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
 	// an early ErrNotFound instead of manipulating the Query in crazy ways.
 
-	return fire.Except(E("ash/HideFilter", func(ctx *fire.Context) error {
+	return E("ash/HideFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
 		// assign specified filters
 		ctx.Filter["___a_property_no_document_in_this_world_should_have"] = "value"
 
 		return nil
-	}), true, fire.Create, fire.CollectionAction)
+	})
 }

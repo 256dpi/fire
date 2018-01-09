@@ -1422,6 +1422,11 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 
 	// run callbacks and handle errors
 	for _, cb := range list {
+		// check if callback should be run
+		if cb.Matcher != nil && !cb.Matcher(ctx) {
+			continue
+		}
+
 		// call callback
 		err := cb.Handler(ctx)
 		if IsFatal(err) {

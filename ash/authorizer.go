@@ -4,8 +4,9 @@ import "github.com/256dpi/fire"
 
 // A is a short-hand function to construct an authorizer. It will also add tracing
 // code around the execution of the authorizer.
-func A(name string, h Handler) *Authorizer {
+func A(name string, m fire.Matcher, h Handler) *Authorizer {
 	return &Authorizer{
+		Matcher: m,
 		Handler: func(ctx *fire.Context) (*Enforcer, error) {
 			// begin trace
 			ctx.Tracer.Push(name)
@@ -32,6 +33,7 @@ type Handler func(*fire.Context) (*Enforcer, error)
 // to enforce authorization with the data that is available. If yes, the
 // authorizer should return an Enforcer that will enforce the authorization.
 type Authorizer struct {
+	Matcher fire.Matcher
 	Handler Handler
 }
 
@@ -39,7 +41,7 @@ type Authorizer struct {
 // enforcer. The two successfully returned enforcers are wrapped in one that will
 // execute both.
 func And(a, b *Authorizer) *Authorizer {
-	return A("ash/And", func(ctx *fire.Context) (*Enforcer, error) {
+	return A("ash/And", nil, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
 		enforcer1, err := a.Handler(ctx)
 		if err != nil {
@@ -69,7 +71,7 @@ func (a *Authorizer) And(b *Authorizer) *Authorizer {
 // Or will run the first authorizer and return its enforcer on success. If no
 // enforcer is returned it will run the second authorizer and return its result.
 func Or(a, b *Authorizer) *Authorizer {
-	return A("ash/Or", func(ctx *fire.Context) (*Enforcer, error) {
+	return A("ash/Or", nil, func(ctx *fire.Context) (*Enforcer, error) {
 		// run first callback
 		enforcer1, err := a.Handler(ctx)
 		if err != nil {

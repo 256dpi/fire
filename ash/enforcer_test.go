@@ -23,8 +23,4 @@ func TestEnforcer(t *testing.T) {
 	err = tester.RunAuthorizer(fire.Find, nil, filter, nil, HideFilter())
 	assert.NoError(t, err)
 	assert.Len(t, filter, 1)
-
-	assert.Panics(t, func() {
-		tester.RunAuthorizer(fire.Create, nil, filter, nil, HideFilter())
-	})
 }

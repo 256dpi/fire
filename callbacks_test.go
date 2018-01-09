@@ -11,55 +11,13 @@ import (
 )
 
 func TestOnly(t *testing.T) {
-	var counter int
-	cb := C("TestOnly", func(ctx *Context) error {
-		counter++
-		return nil
-	})
-
-	callback := Only(cb, false, Create, Delete)
-
-	err := tester.RunValidator(Create, nil, callback)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, counter)
-
-	err = tester.RunValidator(Update, nil, callback)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, counter)
-
-	callback2 := Only(cb, true, Create, Delete)
-
-	assert.Panics(t, func() {
-		err = tester.RunValidator(Update, nil, callback2)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, counter)
-	})
+	assert.True(t, Only(Create, Delete)(&Context{Operation: Create}))
+	assert.False(t, Only(Create, Delete)(&Context{Operation: Update}))
 }
 
 func TestExcept(t *testing.T) {
-	var counter int
-	cb := C("TestExcept", func(ctx *Context) error {
-		counter++
-		return nil
-	})
-
-	callback := Except(cb, false, Create, Delete)
-
-	err := tester.RunValidator(Update, nil, callback)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, counter)
-
-	err = tester.RunValidator(Create, nil, callback)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, counter)
-
-	callback2 := Except(cb, true, Create, Delete)
-
-	assert.Panics(t, func() {
-		err = tester.RunValidator(Create, nil, callback2)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, counter)
-	})
+	assert.True(t, Except(Create, Delete)(&Context{Operation: Update}))
+	assert.False(t, Except(Create, Delete)(&Context{Operation: Create}))
 }
 
 func TestBasicAuthorizer(t *testing.T) {

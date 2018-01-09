@@ -55,7 +55,7 @@ type Strategy struct {
 
 // Callback will return a callback that authorizes operations using the strategy.
 func (s *Strategy) Callback() *fire.Callback {
-	return fire.C("ash/Strategy.Callback", func(ctx *fire.Context) error {
+	return fire.C("ash/Strategy.Callback", nil, func(ctx *fire.Context) error {
 		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)
@@ -83,6 +83,11 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 	for _, list := range lists {
 		// loop through all callbacks
 		for _, authorizer := range list {
+			// check if enforcer can be run
+			if authorizer.Matcher != nil && !authorizer.Matcher(ctx) {
+				panic("operation not supported")
+			}
+
 			// run callback and return on error
 			enforcer, err := authorizer.Handler(ctx)
 			if err != nil {
@@ -91,6 +96,11 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 
 			// run enforcer on success
 			if enforcer != nil {
+				// check if enforcer can be run
+				if enforcer.Matcher != nil && !enforcer.Matcher(ctx) {
+					panic("operation not supported")
+				}
+
 				// run callback and return error
 				err = enforcer.Handler(ctx)
 				if err != nil {
