@@ -42,13 +42,14 @@ type Callback struct {
 }
 
 // Only will return a callback that runs the specified callback only when one
-// of the supplied operations match.
+// of the supplied operations match. It will panic if no operations match and
+// force is true.
 func Only(cb *Callback, force bool, ops ...Operation) *Callback {
 	// construct name
 	name := fmt.Sprintf("fire/Only(%s)", joinOperations(ops, ","))
 
 	return C(name, func(ctx *Context) error {
-		// check operation
+		// check operations
 		for _, a := range ops {
 			// run callback if operation is allowed
 			if a == ctx.Operation {
@@ -58,7 +59,7 @@ func Only(cb *Callback, force bool, ops ...Operation) *Callback {
 
 		// check force
 		if force {
-			panic(fmt.Sprintf("unsupported operation"))
+			panic("fire: unsupported operation")
 		}
 
 		return nil
@@ -66,24 +67,27 @@ func Only(cb *Callback, force bool, ops ...Operation) *Callback {
 }
 
 // Except will return a callback that runs the specified callback only when none
-// of the supplied operations match.
+// of the supplied operations match. It will panic if one of the operations match
+// and force is true.
 func Except(cb *Callback, force bool, ops ...Operation) *Callback {
 	// construct name
 	name := fmt.Sprintf("fire/Except(%s)", joinOperations(ops, ","))
 
 	return C(name, func(ctx *Context) error {
-		// check operation
+		// check operations
 		for _, a := range ops {
+			// return if operation is not allowed
 			if a == ctx.Operation {
 				// check force
 				if force {
-					panic(fmt.Sprintf("unsupported operation"))
+					panic("fire: unsupported operation")
 				}
 
 				return nil
 			}
 		}
 
+		// otherwise run callback
 		return cb.Handler(ctx)
 	})
 }
@@ -126,7 +130,7 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 // function.
 func ModelValidator() *Callback {
 	return Only(C("fire/ModelValidator", func(ctx *Context) error {
-		// TODO: Add error source pointer.
+		// TODO: Add error source pointers.
 		return coal.Validate(ctx.Model)
 	}), false, Create, Update)
 }
@@ -150,7 +154,6 @@ const NoDefault noDefault = iota
 //
 // The special NoDefault value can be provided to skip the default enforcement
 // on Create.
-//
 func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 	return Only(C("fire/ProtectedFieldsValidator", func(ctx *Context) error {
 		// handle resource creation
@@ -241,7 +244,6 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 //	})
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
-//
 func VerifyReferencesValidator(references map[string]string) *Callback {
 	return Only(C("fire/VerifyReferencesValidator", func(ctx *Context) error {
 		// check all references
@@ -380,7 +382,6 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 //
 // To-many, optional to-many and has-many relationships are supported both for
 // the initial reference and in the matchers.
-//
 func MatchingReferencesValidator(collection, reference string, matcher map[string]string) *Callback {
 	return Only(C("fire/MatchingReferencesValidator", func(ctx *Context) error {
 		// prepare ids
