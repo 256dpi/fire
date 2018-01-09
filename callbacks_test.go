@@ -2,7 +2,6 @@ package fire
 
 import (
 	"encoding/base64"
-	"errors"
 	"testing"
 
 	"github.com/256dpi/fire/coal"
@@ -10,16 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
-
-func TestFatal(t *testing.T) {
-	err := Fatal(errors.New("foo"))
-	assert.True(t, IsFatal(err))
-	assert.Equal(t, "foo", err.Error())
-
-	err = errors.New("foo")
-	assert.False(t, IsFatal(err))
-	assert.Equal(t, "foo", err.Error())
-}
 
 func TestOnly(t *testing.T) {
 	var counter int

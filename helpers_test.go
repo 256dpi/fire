@@ -1,12 +1,23 @@
 package fire
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestFatal(t *testing.T) {
+	err := Fatal(errors.New("foo"))
+	assert.True(t, IsFatal(err))
+	assert.Equal(t, "foo", err.Error())
+
+	err = errors.New("foo")
+	assert.False(t, IsFatal(err))
+	assert.Equal(t, "foo", err.Error())
+}
 
 func TestCompose(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
