@@ -143,8 +143,8 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 // Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callback) error {
 	// check operation
-	if op.Read() {
-		panic("fire: validators are only run on create, update and delete")
+	if !op.Write() {
+		panic("fire: validators should only be run on create, update or delete")
 	}
 
 	// call validator with context
