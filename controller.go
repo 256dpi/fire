@@ -1412,6 +1412,11 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 }
 
 func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus int) {
+	// return early if list is empty
+	if len(list) == 0 {
+		return
+	}
+
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.runCallbacks")
 
