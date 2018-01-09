@@ -17,16 +17,16 @@ func TestBasicOperations(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// get empty list of posts
@@ -253,23 +253,23 @@ func TestFiltering(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 		Filters: []string{
 			"title",
 			"published",
 		},
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 		Filters: []string{
 			"posts",
 		},
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 		Filters: []string{
 			"post",
 		},
@@ -727,19 +727,19 @@ func TestSorting(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 		Sorters: []string{
 			"title",
 		},
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create posts in random order
@@ -987,16 +987,16 @@ func TestSparseFields(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create posts
@@ -1050,16 +1050,16 @@ func TestHasOneRelationship(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create existing post & note
@@ -1227,16 +1227,16 @@ func TestHasManyRelationship(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create existing post & comment
@@ -1422,16 +1422,16 @@ func TestToOneRelationship(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create posts
@@ -1641,16 +1641,16 @@ func TestToManyRelationship(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create posts
@@ -1930,16 +1930,16 @@ func TestEmptyToManyRelationship(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create posts
@@ -1980,17 +1980,17 @@ func TestNoList(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model:  &commentModel{},
-		Store:  testStore,
+		Store:  tester.Store,
 		NoList: true,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// attempt list comments
@@ -2005,16 +2005,16 @@ func TestPagination(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create some posts
@@ -2062,16 +2062,16 @@ func TestPaginationToMany(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// prepare ids
@@ -2127,16 +2127,16 @@ func TestPaginationHasMany(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create post
@@ -2190,17 +2190,17 @@ func TestForcedPagination(t *testing.T) {
 
 	tester.Assign("", &Controller{
 		Model:     &postModel{},
-		Store:     testStore,
+		Store:     tester.Store,
 		ListLimit: 5,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create some posts
@@ -2232,17 +2232,17 @@ func TestEnforcedListLimit(t *testing.T) {
 
 	tester.Assign("api", &Controller{
 		Model:     &postModel{},
-		Store:     testStore,
+		Store:     tester.Store,
 		ListLimit: 5,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// create some posts
@@ -2274,7 +2274,7 @@ func TestCollectionActions(t *testing.T) {
 
 	tester.Assign("api", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 		CollectionActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
@@ -2315,13 +2315,13 @@ func TestCollectionActions(t *testing.T) {
 		},
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	// get byte response
@@ -2355,7 +2355,7 @@ func TestResourceActions(t *testing.T) {
 
 	tester.Assign("api", &Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 		ResourceActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
@@ -2400,13 +2400,13 @@ func TestResourceActions(t *testing.T) {
 		},
 	}, &Controller{
 		Model: &commentModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: testStore,
+		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: testStore,
+		Store: tester.Store,
 	})
 
 	post := tester.Save(&postModel{

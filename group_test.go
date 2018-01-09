@@ -41,7 +41,7 @@ func TestGroupStackAbort(t *testing.T) {
 	}
 	group.Add(&Controller{
 		Model: &postModel{},
-		Store: testStore,
+		Store: tester.Store,
 		Authorizers: L{
 			C("", func(*Context) error {
 				stack.Abort(errors.New("foo"))
