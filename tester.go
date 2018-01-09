@@ -53,7 +53,7 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) {
 		panic(err)
 	}
 
-	t.Handler = group.Endpoint(prefix)
+	t.Handler = Compose(RootTracer(), group.Endpoint(prefix))
 }
 
 // Clean will remove the collections of models that have been registered and

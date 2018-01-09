@@ -2,10 +2,50 @@ package fire
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/opentracing/opentracing-go"
+	"gopkg.in/mgo.v2/bson"
 )
+
+// RootTracer is a middleware that can be used to create root trace span for an
+// incoming request.
+func RootTracer() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// split url
+			segments := strings.Split(r.URL.Path, "/")
+
+			// replace ids
+			for i, s := range segments {
+				if bson.IsObjectIdHex(s) {
+					segments[i] = ":id"
+				}
+			}
+
+			// construct name
+			path := strings.Join(segments, "/")
+			name := fmt.Sprintf("%s %s", r.Method, path)
+
+			// create root span from request
+			tracer := NewTracerFromRequest(r, name)
+			tracer.Tag("http.proto", r.Proto)
+			tracer.Tag("http.method", r.Method)
+			tracer.Tag("http.host", r.Host)
+			tracer.Tag("peer.address", r.RemoteAddr)
+			tracer.Log("http.url", r.URL.String())
+			tracer.Log("http.length", r.ContentLength)
+			tracer.Log("http.header", r.Header)
+			r = r.WithContext(tracer.Context(r.Context()))
+			defer tracer.Finish(true)
+
+			// call next handler
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // Tracer provides a simple wrapper around the opentracing API to instrument
 // and trace code.
@@ -14,15 +54,11 @@ type Tracer struct {
 	spans []opentracing.Span
 }
 
-// NewTracerFromRequest returns a new tracer that has a root span derive from
-// the specified request.
+// NewTracerFromRequest returns a new tracer that has a root span derived from
+// the specified request. A span previously added to the request context using
+// Context is automatically used as the parent.
 func NewTracerFromRequest(r *http.Request, name string) *Tracer {
-	// create from request
 	span, _ := opentracing.StartSpanFromContext(r.Context(), name)
-	span = span.SetTag("http.method", r.Method)
-	span = span.SetTag("http.url", r.URL.Path)
-	span = span.SetTag("peer.address", r.RemoteAddr)
-
 	return NewTracer(span)
 }
 
