@@ -64,10 +64,10 @@ type barModel struct {
 	Foo       bson.ObjectId `json:"-" bson:"foo_id" valid:"required,object-id" coal:"foo:foos"`
 }
 
-var testStore = coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire")
-var testSubStore = testStore.Copy()
-
-var tester = NewTester(testStore, &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{})
+var tester = NewTester(
+	coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire"),
+	&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{},
+)
 
 func TestMain(m *testing.M) {
 	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
