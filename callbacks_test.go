@@ -28,7 +28,7 @@ func TestOnly(t *testing.T) {
 		return nil
 	})
 
-	callback := Only(cb, Create, Delete)
+	callback := Only(cb, false, Create, Delete)
 
 	err := tester.RunValidator(Create, nil, callback)
 	assert.NoError(t, err)
@@ -37,6 +37,14 @@ func TestOnly(t *testing.T) {
 	err = tester.RunValidator(Update, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
+
+	callback2 := Only(cb, true, Create, Delete)
+
+	assert.Panics(t, func() {
+		err = tester.RunValidator(Update, nil, callback2)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, counter)
+	})
 }
 
 func TestExcept(t *testing.T) {
@@ -46,7 +54,7 @@ func TestExcept(t *testing.T) {
 		return nil
 	})
 
-	callback := Except(cb, Create, Delete)
+	callback := Except(cb, false, Create, Delete)
 
 	err := tester.RunValidator(Update, nil, callback)
 	assert.NoError(t, err)
@@ -55,6 +63,14 @@ func TestExcept(t *testing.T) {
 	err = tester.RunValidator(Create, nil, callback)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, counter)
+
+	callback2 := Except(cb, true, Create, Delete)
+
+	assert.Panics(t, func() {
+		err = tester.RunValidator(Create, nil, callback2)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, counter)
+	})
 }
 
 func TestBasicAuthorizer(t *testing.T) {

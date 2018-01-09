@@ -49,7 +49,7 @@ const NoDefault noDefault = iota
 
 // Only will return a callback that runs the specified callback only when one
 // of the supplied operations match.
-func Only(cb *Callback, ops ...Operation) *Callback {
+func Only(cb *Callback, force bool, ops ...Operation) *Callback {
 	// construct name
 	name := fmt.Sprintf("fire/Only(%s)", joinOperations(ops, ","))
 
@@ -62,13 +62,18 @@ func Only(cb *Callback, ops ...Operation) *Callback {
 			}
 		}
 
+		// check force
+		if force {
+			panic(fmt.Sprintf("unsupported operation"))
+		}
+
 		return nil
 	})
 }
 
 // Except will return a callback that runs the specified callback only when none
 // of the supplied operations match.
-func Except(cb *Callback, ops ...Operation) *Callback {
+func Except(cb *Callback, force bool, ops ...Operation) *Callback {
 	// construct name
 	name := fmt.Sprintf("fire/Except(%s)", joinOperations(ops, ","))
 
@@ -76,6 +81,11 @@ func Except(cb *Callback, ops ...Operation) *Callback {
 		// check operation
 		for _, a := range ops {
 			if a == ctx.Operation {
+				// check force
+				if force {
+					panic(fmt.Sprintf("unsupported operation"))
+				}
+
 				return nil
 			}
 		}
@@ -121,16 +131,10 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 // ModelValidator performs a validation of the model using the Validate
 // function.
 func ModelValidator() *Callback {
-	return C("fire/ModelValidator", func(ctx *Context) error {
-		// only run validator on Create and Update
-		if ctx.Operation != Create && ctx.Operation != Update {
-			return nil
-		}
-
+	return Only(C("fire/ModelValidator", func(ctx *Context) error {
 		// TODO: Add error source pointer.
-
 		return coal.Validate(ctx.Model)
-	})
+	}), false, Create, Update)
 }
 
 // ProtectedFieldsValidator compares protected attributes against their
@@ -148,12 +152,8 @@ func ModelValidator() *Callback {
 // on Create.
 //
 func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
-	return C("fire/ProtectedFieldsValidator", func(ctx *Context) error {
-		// only run validator on Create and Update
-		if ctx.Operation != Create && ctx.Operation != Update {
-			return nil
-		}
-
+	return Only(C("fire/ProtectedFieldsValidator", func(ctx *Context) error {
+		// handle resource creation
 		if ctx.Operation == Create {
 			// check all fields
 			for field, def := range fields {
@@ -169,6 +169,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 			}
 		}
 
+		// handle resource updates
 		if ctx.Operation == Update {
 			// read the original
 			original, err := ctx.Original()
@@ -186,7 +187,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 		}
 
 		return nil
-	})
+	}), false, Create, Update)
 }
 
 // DependentResourcesValidator counts documents in the supplied collections
@@ -202,12 +203,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 //	})
 //
 func DependentResourcesValidator(resources map[string]string) *Callback {
-	return C("DependentResourcesValidator", func(ctx *Context) error {
-		// only run validator on Delete
-		if ctx.Operation != Delete {
-			return nil
-		}
-
+	return Only(C("DependentResourcesValidator", func(ctx *Context) error {
 		// check all relations
 		for coll, field := range resources {
 			// prepare query
@@ -230,7 +226,7 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 
 		// pass validation
 		return nil
-	})
+	}), false, Delete)
 }
 
 // VerifyReferencesValidator makes sure all references in the document are
@@ -247,12 +243,7 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 // The callbacks supports to-one, optional to-one and to-many relationships.
 //
 func VerifyReferencesValidator(references map[string]string) *Callback {
-	return C("fire/VerifyReferencesValidator", func(ctx *Context) error {
-		// only run validator on Create and Update
-		if ctx.Operation != Create && ctx.Operation != Update {
-			return nil
-		}
-
+	return Only(C("fire/VerifyReferencesValidator", func(ctx *Context) error {
 		// check all references
 		for field, collection := range references {
 			// read referenced id
@@ -309,7 +300,7 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 
 		// pass validation
 		return nil
-	})
+	}), false, Create, Update)
 }
 
 // RelationshipValidator makes sure all relationships of a model are correct and
@@ -391,12 +382,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 // the initial reference and in the matchers.
 //
 func MatchingReferencesValidator(collection, reference string, matcher map[string]string) *Callback {
-	return C("fire/MatchingReferencesValidator", func(ctx *Context) error {
-		// only run validator on Create and Update
-		if ctx.Operation != Create && ctx.Operation != Update {
-			return nil
-		}
-
+	return Only(C("fire/MatchingReferencesValidator", func(ctx *Context) error {
 		// prepare ids
 		var ids []bson.ObjectId
 
@@ -460,7 +446,7 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 		}
 
 		return nil
-	})
+	}), false, Create, Update)
 }
 
 // UniqueAttributeValidator ensures that the specified attribute of the
@@ -472,12 +458,7 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 //	UniqueAttributeValidator(F(&Blog{}, "Name"), F(&Blog{}, "Creator"))
 //
 func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callback {
-	return C("fire/UniqueAttributeValidator", func(ctx *Context) error {
-		// only run validator on Create and Update
-		if ctx.Operation != Create && ctx.Operation != Update {
-			return nil
-		}
-
+	return Only(C("fire/UniqueAttributeValidator", func(ctx *Context) error {
 		// check if field has changed
 		if ctx.Operation == Update {
 			// get original model
@@ -514,5 +495,5 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callba
 		ctx.Tracer.Pop()
 
 		return nil
-	})
+	}), false, Create, Update)
 }

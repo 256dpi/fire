@@ -49,37 +49,30 @@ func DenyAccess() *Enforcer {
 // Note: This method will panic if used for Create and CollectionAction operation.
 // You should test for this cases and use another enforcer.
 func AddFilter(filters bson.M) *Enforcer {
-	return E("ash/AddFilter", func(ctx *fire.Context) error {
-		// panic on create and collection action
-		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
-			panic("ash: operation not supported")
-		}
-
+	return fire.Except(E("ash/AddFilter", func(ctx *fire.Context) error {
 		// assign specified filters
 		for key, value := range filters {
 			ctx.Filter[key] = value
 		}
 
 		return nil
-	})
+	}), true, fire.Create, fire.CollectionAction)
 }
 
 // HideFilter will enforce the authorization by adding a falsy filter to the
 // Filter query of the context, so that no records will be returned. It should be
 // used if the requested resources or resource should be hidden from the candidate.
+//
+// Note: This method will panic if used for Create and CollectionAction operation.
+// You should test for this cases and use another enforcer.
 func HideFilter() *Enforcer {
 	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
 	// an early ErrNotFound instead of manipulating the Query in crazy ways.
 
-	return E("ash/HideFilter", func(ctx *fire.Context) error {
-		// panic on create and collection action
-		if ctx.Operation == fire.Create || ctx.Operation == fire.CollectionAction {
-			panic("ash: operation not supported")
-		}
-
+	return fire.Except(E("ash/HideFilter", func(ctx *fire.Context) error {
 		// assign specified filters
 		ctx.Filter["___a_property_no_document_in_this_world_should_have"] = "value"
 
 		return nil
-	})
+	}), true, fire.Create, fire.CollectionAction)
 }
