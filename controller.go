@@ -166,12 +166,12 @@ func (c *Controller) prepare() {
 	}
 }
 
-func (c *Controller) generalHandler(ctx *Context) {
+func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.generalHandler")
 
 	// parse incoming JSON-API request
-	c.parser.Prefix = ctx.Group.prefix
+	c.parser.Prefix = prefix
 	req, err := c.parser.ParseRequest(ctx.HTTPRequest)
 	stack.AbortIf(err)
 

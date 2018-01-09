@@ -11,7 +11,7 @@ import (
 )
 
 func TestGroup(t *testing.T) {
-	group := NewGroup("")
+	group := NewGroup()
 	assert.Nil(t, group.Find("posts"))
 
 	controller := &Controller{
@@ -24,7 +24,7 @@ func TestGroup(t *testing.T) {
 }
 
 func TestGroupEndpointMissingController(t *testing.T) {
-	tester.Handler = NewGroup("api").Endpoint()
+	tester.Handler = NewGroup().Endpoint("api")
 
 	tester.Request("GET", "api/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
@@ -34,7 +34,7 @@ func TestGroupEndpointMissingController(t *testing.T) {
 func TestGroupStackAbort(t *testing.T) {
 	var lastErr error
 
-	group := NewGroup("")
+	group := NewGroup()
 	group.Reporter = func(err error) {
 		assert.Equal(t, "foo", err.Error())
 		lastErr = err
@@ -50,7 +50,7 @@ func TestGroupStackAbort(t *testing.T) {
 		},
 	})
 
-	tester.Handler = group.Endpoint()
+	tester.Handler = group.Endpoint("")
 
 	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode)

@@ -15,18 +15,15 @@ import (
 
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
-	prefix      string
 	controllers map[string]*Controller
 
 	// The function gets invoked by the controller with occurring fatal errors.
 	Reporter func(error)
 }
 
-// NewGroup creates and returns a new group. The specified prefix is used to
-// parse the requests and generate urls for the resources.
-func NewGroup(prefix string) *Group {
+// NewGroup creates and returns a new group.
+func NewGroup() *Group {
 	return &Group{
-		prefix:      prefix,
 		controllers: make(map[string]*Controller),
 	}
 }
@@ -61,8 +58,10 @@ func (g *Group) Find(pluralName string) *Controller {
 	return g.controllers[pluralName]
 }
 
-// Endpoint will return an http handler that serves requests for this group.
-func (g *Group) Endpoint() http.Handler {
+// Endpoint will return an http handler that serves requests for this group. The
+// specified prefix is used to parse the requests and generate urls for the
+// resources.
+func (g *Group) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create tracer
 		tracer := NewTracerFromRequest(r, "fire/Group.Endpoint")
@@ -91,7 +90,7 @@ func (g *Group) Endpoint() http.Handler {
 		})
 
 		// trim and split path
-		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, g.prefix), "/"), "/")
+		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
 
 		// check segments
 		if len(s) == 0 {
@@ -105,7 +104,7 @@ func (g *Group) Endpoint() http.Handler {
 		}
 
 		// call controller with context
-		controller.generalHandler(&Context{
+		controller.generalHandler(prefix, &Context{
 			Selector:       bson.M{},
 			Filter:         bson.M{},
 			HTTPRequest:    r,
