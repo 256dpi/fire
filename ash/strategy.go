@@ -85,7 +85,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		for _, authorizer := range list {
 			// check if enforcer can be run
 			if authorizer.Matcher != nil && !authorizer.Matcher(ctx) {
-				panic("operation not supported")
+				panic("ash: operation not supported")
 			}
 
 			// run callback and return on error
@@ -98,7 +98,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 			if enforcer != nil {
 				// check if enforcer can be run
 				if enforcer.Matcher != nil && !enforcer.Matcher(ctx) {
-					panic("operation not supported")
+					panic("ash: operation not supported")
 				}
 
 				// run callback and return error
