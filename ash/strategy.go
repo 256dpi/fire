@@ -85,8 +85,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		for _, authorizer := range list {
 			// check if authenticator can be run
 			if authorizer.Matcher != nil && !authorizer.Matcher(ctx) {
-				// authorizers should not be added to list they do not support
-				panic("ash: not supported")
+				continue
 			}
 
 			// run callback and return on error
