@@ -8,7 +8,7 @@ import (
 )
 
 func TestCallback1(t *testing.T) {
-	cb := Callback(&Strategy{
+	cb := C(&Strategy{
 		List:   L{blank(), accessGranted()},
 		Find:   L{blank()},
 		Update: L{accessDenied()},
@@ -29,7 +29,7 @@ func TestCallback1(t *testing.T) {
 }
 
 func TestCallback2(t *testing.T) {
-	cb := Callback(&Strategy{
+	cb := C(&Strategy{
 		List:   L{accessGranted()},
 		Find:   L{blank()},
 		Update: L{blank()},
@@ -48,14 +48,14 @@ func TestCallback2(t *testing.T) {
 }
 
 func TestCallbackEmpty(t *testing.T) {
-	cb := Callback(&Strategy{})
+	cb := C(&Strategy{})
 
 	err := tester.RunAuthorizer(fire.Delete, nil, nil, nil, cb)
 	assert.Equal(t, ErrAccessDenied, err)
 }
 
 func TestCallbackPanic(t *testing.T) {
-	cb := Callback(&Strategy{})
+	cb := C(&Strategy{})
 
 	assert.Panics(t, func() {
 		tester.RunAuthorizer(fire.Operation(10), nil, nil, nil, cb)

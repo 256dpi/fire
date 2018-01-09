@@ -8,16 +8,6 @@ import (
 	"github.com/256dpi/fire"
 )
 
-// ErrAccessDenied is returned by the DenyAccess enforcer and the Strategy if no
-// authorizer authorized the operation.
-var ErrAccessDenied = errors.New("access denied")
-
-// Handler is a function that inspects an operation context and eventually
-// returns an enforcer or an error.
-//
-// See: fire.Handler.
-type Handler func(*fire.Context) (*Enforcer, error)
-
 // A is a short-hand function to construct an authorizer.
 func A(name string, h Handler) *Authorizer {
 	return &Authorizer{
@@ -38,6 +28,27 @@ func A(name string, h Handler) *Authorizer {
 		},
 	}
 }
+
+// L is a short-hand type to create a list of authorizers.
+type L []*Authorizer
+
+// M is a short-hand type to create a map of authorizers.
+type M map[string][]*Authorizer
+
+// C is a short-hand to define a strategy and return its callback.
+func C(s *Strategy) *fire.Callback {
+	return s.Callback()
+}
+
+// ErrAccessDenied is returned by the DenyAccess enforcer and the Strategy if no
+// authorizer authorized the operation.
+var ErrAccessDenied = errors.New("access denied")
+
+// Handler is a function that inspects an operation context and eventually
+// returns an enforcer or an error.
+//
+// See: fire.Handler.
+type Handler func(*fire.Context) (*Enforcer, error)
 
 // An Authorizer should inspect the specified context and asses if it is able
 // to enforce authorization with the data that is available. If yes, the
@@ -76,16 +87,9 @@ type Strategy struct {
 	All []*Authorizer
 }
 
-// L is a short-hand type to create a list of authorizers.
-type L []*Authorizer
-
-// M is a short-hand type to create a map of authorizers.
-type M map[string][]*Authorizer
-
-// Callback will return a callback that authorizes operations based on the
-// specified strategy.
-func Callback(s *Strategy) *fire.Callback {
-	return fire.C("ash/Callback", func(ctx *fire.Context) error {
+// Callback will return a callback that authorizes operations using the strategy.
+func (s *Strategy) Callback() *fire.Callback {
+	return fire.C("ash/C", func(ctx *fire.Context) error {
 		switch ctx.Operation {
 		case fire.List:
 			return s.call(ctx, s.List, s.Read, s.All)
