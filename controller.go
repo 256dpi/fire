@@ -30,7 +30,7 @@ type Action struct {
 	Methods []string
 
 	// The callback for this action.
-	Handler Handler
+	Callback *Callback
 
 	// BodyLimit defines the maximum allowed size of the request body. It
 	// defaults to 8M if set to zero. The DataSize helper can be used to set
@@ -850,7 +850,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// run callback
-	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
+	c.runCallbacks(L{action.Callback}, ctx, http.StatusBadRequest)
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -876,7 +876,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	c.loadModel(ctx)
 
 	// run callback
-	c.runCallbacks(L{C("", action.Handler)}, ctx, http.StatusBadRequest)
+	c.runCallbacks(L{action.Callback}, ctx, http.StatusBadRequest)
 
 	// finish trace
 	ctx.Tracer.Pop()

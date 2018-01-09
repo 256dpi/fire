@@ -2278,7 +2278,7 @@ func TestCollectionActions(t *testing.T) {
 		CollectionActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Handler: func(ctx *Context) error {
+				Callback: C("bytes", func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
@@ -2287,22 +2287,22 @@ func TestCollectionActions(t *testing.T) {
 					assert.NoError(t, err)
 
 					return nil
-				},
+				}),
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Handler: func(ctx *Context) error {
+				Callback: C("empty", func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
 
 					return nil
-				},
+				}),
 			},
 			"error": {
 				Methods:   []string{"POST"},
 				BodyLimit: 3,
-				Handler: func(ctx *Context) error {
+				Callback: C("error", func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)
@@ -2310,7 +2310,7 @@ func TestCollectionActions(t *testing.T) {
 					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
 					return nil
-				},
+				}),
 			},
 		},
 	}, &Controller{
@@ -2359,7 +2359,7 @@ func TestResourceActions(t *testing.T) {
 		ResourceActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Handler: func(ctx *Context) error {
+				Callback: C("bytes", func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2370,11 +2370,11 @@ func TestResourceActions(t *testing.T) {
 					assert.NoError(t, err)
 
 					return nil
-				},
+				}),
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Handler: func(ctx *Context) error {
+				Callback: C("empty", func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2382,12 +2382,12 @@ func TestResourceActions(t *testing.T) {
 					assert.Empty(t, bytes)
 
 					return nil
-				},
+				}),
 			},
 			"error": {
 				Methods:   []string{"POST"},
 				BodyLimit: 3,
-				Handler: func(ctx *Context) error {
+				Callback: C("error", func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)
@@ -2395,7 +2395,7 @@ func TestResourceActions(t *testing.T) {
 					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
 					return nil
-				},
+				}),
 			},
 		},
 	}, &Controller{
