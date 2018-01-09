@@ -10,19 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGroup(t *testing.T) {
-	group := NewGroup()
-	assert.Nil(t, group.Find("posts"))
-
-	controller := &Controller{
-		Model: &postModel{},
-	}
-
-	group.Add(controller)
-	assert.Equal(t, []*Controller{controller}, group.List())
-	assert.Equal(t, controller, group.Find("posts"))
-}
-
 func TestGroupEndpointMissingController(t *testing.T) {
 	tester.Handler = NewGroup().Endpoint("api")
 
