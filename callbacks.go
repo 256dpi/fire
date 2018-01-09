@@ -32,6 +32,13 @@ func C(name string, h Handler) *Callback {
 	}
 }
 
+// Handler is function that takes a context, mutates is to modify the behaviour
+// and response or return an error.
+//
+// If a returned error is wrapped using Fatal, processing stops immediately and
+// the error is logged.
+type Handler func(*Context) error
+
 // A Callback is called during the request processing flow of a controller.
 //
 // Note: If the callback returns an error wrapped using Fatal() the API returns

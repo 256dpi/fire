@@ -1,3 +1,5 @@
+// Package fire is an idiomatic micro-framework for building Ember.js compatible
+// APIs with Go.
 package fire
 
 import (
