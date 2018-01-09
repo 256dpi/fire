@@ -6,8 +6,8 @@ import (
 )
 
 // E is a short-hand function to create an enforcer.
-func E(n string, h fire.Handler) *Enforcer {
-	return fire.C(n, h)
+func E(name string, h fire.Handler) *Enforcer {
+	return fire.C(name, h)
 }
 
 // An Enforcer is returned by an Authorizer to enforce the previously inspected

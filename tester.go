@@ -129,6 +129,38 @@ func (t *Tester) Path(path string) string {
 //
 // Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, authorizer *Callback) error {
+	// call validator with context
+	return t.RunHandler(op, selector, filter, model, authorizer.Handler)
+}
+
+// RunValidator is a helper to test validators. The caller should assert the
+// returned error of the validator, the state of the supplied model and maybe
+// other objects in the database.
+//
+// Note: Only the Operation, Model and Store attribute of the context are set since
+// these are the only attributes a validator should rely on.
+//
+// Note: A fake http request is set to allow access to request headers.
+func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callback) error {
+	// check operation
+	if op.Read() {
+		panic("fire: validators are only run on create, update and delete")
+	}
+
+	// call validator with context
+	return t.RunHandler(op, nil, nil, model, validator.Handler)
+}
+
+// WithContext runs the given function with a prepared context.
+func (t *Tester) WithContext(op Operation, selector, filter bson.M, model coal.Model, fn func(*Context)) {
+	t.RunHandler(op, selector, filter, model, func(ctx *Context) error {
+		fn(ctx)
+		return nil
+	})
+}
+
+// RunHandler builds a context and runs the passed handler with it.
+func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Model, h Handler) error {
 	// get store
 	store := t.Store.Copy()
 	defer store.Close()
@@ -161,7 +193,7 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 	}
 
 	// create tracer
-	tracer := NewTracerWithRoot(authorizer.Name)
+	tracer := NewTracerWithRoot("fire/Tester.RunHandler")
 	defer tracer.Finish(true)
 
 	// create context
@@ -176,63 +208,8 @@ func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal
 		Tracer:         tracer,
 	}
 
-	// call authorizer
-	return authorizer.Handler(ctx)
-}
-
-// RunValidator is a helper to test validators. The caller should assert the
-// returned error of the validator, the state of the supplied model and maybe
-// other objects in the database.
-//
-// Note: Only the Operation, Model and Store attribute of the context are set since
-// these are the only attributes a validator should rely on.
-//
-// Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callback) error {
-	// check operation
-	if op.Read() {
-		panic("fire: validators are only run on create, update and delete")
-	}
-
-	// get store
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// init model if present
-	if model != nil {
-		coal.Init(model)
-	}
-
-	// create request
-	req, err := http.NewRequest("GET", "", nil)
-	if err != nil {
-		panic(err)
-	}
-
-	// set headers
-	for key, value := range t.Header {
-		req.Header.Set(key, value)
-	}
-
-	// set context
-	req = req.WithContext(t.Context)
-
-	// create tracer
-	tracer := NewTracerWithRoot(validator.Name)
-	defer tracer.Finish(true)
-
-	// create context
-	ctx := &Context{
-		Operation:      op,
-		Model:          model,
-		Store:          store,
-		HTTPRequest:    req,
-		ResponseWriter: httptest.NewRecorder(),
-		Tracer:         tracer,
-	}
-
-	// call validator
-	return validator.Handler(ctx)
+	// call handler
+	return h(ctx)
 }
 
 // TODO: Add RunNotifier helper.

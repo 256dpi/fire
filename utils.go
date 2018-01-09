@@ -2,6 +2,7 @@ package fire
 
 import (
 	"errors"
+	"strings"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -28,4 +29,16 @@ func toObjectIDList(list []string) ([]bson.ObjectId, error) {
 	}
 
 	return ids, nil
+}
+
+func operationsAsStrings(ops []Operation) []string {
+	list := make([]string, len(ops))
+	for i, op := range ops {
+		list[i] = op.String()
+	}
+	return list
+}
+
+func joinOperations(ops []Operation, sep string) string {
+	return strings.Join(operationsAsStrings(ops), sep)
 }

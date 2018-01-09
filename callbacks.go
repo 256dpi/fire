@@ -4,18 +4,31 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/256dpi/fire/coal"
 
 	"gopkg.in/mgo.v2/bson"
 )
 
-// C is a short-hand function to construct a callback.
-func C(n string, h Handler) *Callback {
+// C is a short-hand function to construct a callback. It will also add tracing
+// code around the execution of the callback.
+func C(name string, h Handler) *Callback {
 	return &Callback{
-		Name:    n,
-		Handler: h,
+		Handler: func(ctx *Context) error {
+			// begin trace
+			ctx.Tracer.Push(name)
+
+			// call handler
+			err := h(ctx)
+			if err != nil {
+				return err
+			}
+
+			// finish trace
+			ctx.Tracer.Pop()
+
+			return nil
+		},
 	}
 }
 
@@ -25,7 +38,6 @@ func C(n string, h Handler) *Callback {
 // an InternalServerError status and the error will be logged. All other errors
 // are serialized to an error object and returned.
 type Callback struct {
-	Name    string
 	Handler Handler
 }
 
@@ -39,7 +51,7 @@ const NoDefault noDefault = iota
 // of the supplied operations match.
 func Only(cb *Callback, ops ...Operation) *Callback {
 	// construct name
-	name := fmt.Sprintf("fire/Only(%s)", cb.Name)
+	name := fmt.Sprintf("fire/Only(%s)", joinOperations(ops, ","))
 
 	return C(name, func(ctx *Context) error {
 		// check operation
@@ -58,7 +70,7 @@ func Only(cb *Callback, ops ...Operation) *Callback {
 // of the supplied operations match.
 func Except(cb *Callback, ops ...Operation) *Callback {
 	// construct name
-	name := fmt.Sprintf("fire/Except(%s)", cb.Name)
+	name := fmt.Sprintf("fire/Except(%s)", joinOperations(ops, ","))
 
 	return C(name, func(ctx *Context) error {
 		// check operation
@@ -75,16 +87,7 @@ func Except(cb *Callback, ops ...Operation) *Callback {
 // Combine will return a callback that runs all the specified callbacks in order
 // until an error is returned.
 func Combine(cbs ...*Callback) *Callback {
-	// extract names
-	var names []string
-	for _, cb := range cbs {
-		names = append(names, cb.Name)
-	}
-
-	// construct name
-	name := fmt.Sprintf("fire/Combine(%s)", strings.Join(names, ", "))
-
-	return C(name, func(ctx *Context) error {
+	return C("fire/Combine", func(ctx *Context) error {
 		// run all callbacks
 		for _, cb := range cbs {
 			err := cb.Handler(ctx)

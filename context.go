@@ -68,6 +68,28 @@ func (o Operation) Action() bool {
 	return o == CollectionAction || o == ResourceAction
 }
 
+// String returns the name of the operation.
+func (o Operation) String() string {
+	switch o {
+	case List:
+		return "List"
+	case Find:
+		return "Find"
+	case Create:
+		return "Create"
+	case Update:
+		return "Update"
+	case Delete:
+		return "Delete"
+	case CollectionAction:
+		return "CollectionAction"
+	case ResourceAction:
+		return "ResourceAction"
+	}
+
+	return ""
+}
+
 // A Context provides useful contextual information.
 type Context struct {
 	// The current operation in process (read only).

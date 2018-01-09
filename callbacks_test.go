@@ -23,7 +23,7 @@ func TestFatal(t *testing.T) {
 
 func TestOnly(t *testing.T) {
 	var counter int
-	cb := C("", func(ctx *Context) error {
+	cb := C("TestOnly", func(ctx *Context) error {
 		counter++
 		return nil
 	})
@@ -41,7 +41,7 @@ func TestOnly(t *testing.T) {
 
 func TestExcept(t *testing.T) {
 	var counter int
-	cb := C("", func(ctx *Context) error {
+	cb := C("TestExcept", func(ctx *Context) error {
 		counter++
 		return nil
 	})

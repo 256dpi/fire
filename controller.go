@@ -1420,7 +1420,6 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 	// run callbacks and handle errors
 	for _, cb := range list {
 		// call callback
-		ctx.Tracer.Push(cb.Name)
 		err := cb.Handler(ctx)
 		if IsFatal(err) {
 			stack.Abort(err)
@@ -1430,7 +1429,6 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 				Detail: err.Error(),
 			})
 		}
-		ctx.Tracer.Pop()
 	}
 
 	// finish trace

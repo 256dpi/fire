@@ -9,8 +9,8 @@ import (
 )
 
 func TestEnforcer(t *testing.T) {
-	assert.NoError(t, GrantAccess().Handler(nil))
-	assert.Equal(t, ErrAccessDenied, DenyAccess().Handler(nil))
+	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, GrantAccess()))
+	assert.Equal(t, ErrAccessDenied, tester.RunAuthorizer(fire.List, nil, nil, nil, DenyAccess()))
 
 	filter := bson.M{}
 	err := tester.RunAuthorizer(fire.List, nil, filter, nil, AddFilter(bson.M{

@@ -42,31 +42,23 @@ func TestContextOriginal(t *testing.T) {
 
 	post.DocID = savedPost.DocID
 
-	ctx := &Context{
-		Operation: Update,
-		Model:     post,
-		Store:     testSubStore,
-		Tracer:    NewTracerWithRoot("TestContextOriginal"),
-	}
+	tester.WithContext(Update, nil, nil, post, func(ctx *Context) {
+		m, err := ctx.Original()
+		assert.NoError(t, err)
+		assert.Equal(t, savedPost.ID(), m.ID())
+		assert.Equal(t, savedPost.MustGet("Title"), m.MustGet("Title"))
 
-	m, err := ctx.Original()
-	assert.NoError(t, err)
-	assert.Equal(t, savedPost.ID(), m.ID())
-	assert.Equal(t, savedPost.MustGet("Title"), m.MustGet("Title"))
-
-	m2, err := ctx.Original()
-	assert.NoError(t, err)
-	assert.Equal(t, m, m2)
+		m2, err := ctx.Original()
+		assert.NoError(t, err)
+		assert.Equal(t, m, m2)
+	})
 }
 
 func TestContextOriginalWrongOperation(t *testing.T) {
-	ctx := &Context{
-		Operation: Find,
-		Tracer:    NewTracerWithRoot("TestContextOriginalWrongOperation"),
-	}
-
-	assert.Panics(t, func() {
-		ctx.Original()
+	tester.WithContext(Find, nil, nil, nil, func(ctx *Context) {
+		assert.Panics(t, func() {
+			ctx.Original()
+		})
 	})
 }
 
@@ -77,14 +69,9 @@ func TestContextOriginalNonExisting(t *testing.T) {
 		Title: "foo",
 	}).(*postModel)
 
-	ctx := &Context{
-		Operation: Update,
-		Model:     post,
-		Store:     testSubStore,
-		Tracer:    NewTracerWithRoot("TestContextOriginalNonExisting"),
-	}
-
-	m, err := ctx.Original()
-	assert.Error(t, err)
-	assert.Nil(t, m)
+	tester.WithContext(Update, nil, nil, post, func(ctx *Context) {
+		m, err := ctx.Original()
+		assert.Error(t, err)
+		assert.Nil(t, m)
+	})
 }

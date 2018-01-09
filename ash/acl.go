@@ -19,10 +19,23 @@ var ErrAccessDenied = errors.New("access denied")
 type Handler func(*fire.Context) (*Enforcer, error)
 
 // A is a short-hand function to construct an authorizer.
-func A(n string, h Handler) *Authorizer {
+func A(name string, h Handler) *Authorizer {
 	return &Authorizer{
-		Name:    n,
-		Handler: h,
+		Handler: func(ctx *fire.Context) (*Enforcer, error) {
+			// begin trace
+			ctx.Tracer.Push(name)
+
+			// call handler
+			enforcer, err := h(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			// finish trace
+			ctx.Tracer.Pop()
+
+			return enforcer, nil
+		},
 	}
 }
 
@@ -30,7 +43,6 @@ func A(n string, h Handler) *Authorizer {
 // to enforce authorization with the data that is available. If yes, the
 // authorizer should return an Enforcer that will enforce the authorization.
 type Authorizer struct {
-	Name    string
 	Handler Handler
 }
 
@@ -102,22 +114,18 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		// loop through all callbacks
 		for _, authorizer := range list {
 			// run callback and return on error
-			ctx.Tracer.Push(authorizer.Name)
 			enforcer, err := authorizer.Handler(ctx)
 			if err != nil {
 				return err
 			}
-			ctx.Tracer.Pop()
 
 			// run enforcer on success
 			if enforcer != nil {
 				// run callback and return error
-				ctx.Tracer.Push(enforcer.Name)
 				err = enforcer.Handler(ctx)
 				if err != nil {
 					return err
 				}
-				ctx.Tracer.Pop()
 
 				return nil
 			}
