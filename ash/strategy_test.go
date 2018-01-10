@@ -23,7 +23,7 @@ func TestCallback1(t *testing.T) {
 	assert.Error(t, err)
 
 	err = tester.RunAuthorizer(fire.Update, nil, nil, nil, cb)
-	assert.Equal(t, ErrAccessDenied, err)
+	assert.Equal(t, fire.ErrAccessDenied, err)
 
 	err = tester.RunAuthorizer(fire.Create, nil, nil, nil, cb)
 	assert.Error(t, err)
@@ -52,7 +52,7 @@ func TestCallbackEmpty(t *testing.T) {
 	cb := C(&Strategy{})
 
 	err := tester.RunAuthorizer(fire.Delete, nil, nil, nil, cb)
-	assert.Equal(t, ErrAccessDenied, err)
+	assert.Equal(t, fire.ErrAccessDenied, err)
 }
 
 func TestCallbackPanic(t *testing.T) {

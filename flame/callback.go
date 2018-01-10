@@ -1,8 +1,6 @@
 package flame
 
 import (
-	"errors"
-
 	"github.com/256dpi/fire"
 
 	"github.com/256dpi/oauth2"
@@ -21,12 +19,12 @@ func Callback(scope string) *fire.Callback {
 		// get access token
 		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
 		if !ok || accessToken == nil {
-			return errors.New("missing access token")
+			return fire.ErrAccessDenied
 		}
 
 		// validate scope
 		if !oauth2.Scope(accessToken.GetTokenData().Scope).Includes(s) {
-			return fire.Safe(errors.New("unauthorized"))
+			return fire.ErrAccessDenied
 		}
 
 		return nil

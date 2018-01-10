@@ -39,7 +39,7 @@ func GrantAccess() *Enforcer {
 // other enforcers from authorizing the operation.
 func DenyAccess() *Enforcer {
 	return E("ash/DenyAccess", nil, func(_ *fire.Context) error {
-		return ErrAccessDenied
+		return fire.ErrAccessDenied
 	})
 }
 

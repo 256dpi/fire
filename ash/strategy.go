@@ -2,11 +2,7 @@
 // be used to authorize controller operations in a declarative way.
 package ash
 
-import (
-	"errors"
-
-	"github.com/256dpi/fire"
-)
+import "github.com/256dpi/fire"
 
 // L is a short-hand type to create a list of authorizers.
 type L []*Authorizer
@@ -18,10 +14,6 @@ type M map[string][]*Authorizer
 func C(s *Strategy) *fire.Callback {
 	return s.Callback()
 }
-
-// ErrAccessDenied is returned by the DenyAccess enforcer and the Strategy if no
-// authorizer authorized the operation.
-var ErrAccessDenied = errors.New("access denied")
 
 // Strategy contains lists of authorizers that are used to authorize operations.
 type Strategy struct {
@@ -117,6 +109,5 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		}
 	}
 
-	// deny access by default
-	return ErrAccessDenied
+	return fire.ErrAccessDenied
 }

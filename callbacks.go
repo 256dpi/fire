@@ -91,8 +91,15 @@ type Callback struct {
 	Matcher Matcher
 
 	// The handler handler that gets executed with the context.
+	//
+	// If returned errors are marked with Safe() they will be included in the
+	// returned JSON-API error.
 	Handler Handler
 }
+
+// ErrAccessDenied can be returned by an authorizer to deny access. The error is
+// already wrapped using Safe.
+var ErrAccessDenied = Safe(errors.New("access denied"))
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
@@ -100,12 +107,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {
-			return Safe(errors.New("access denied"))
+			return ErrAccessDenied
 		}
 
 		// check if credentials match
 		if val, ok := credentials[user]; !ok || val != password {
-			return Safe(errors.New("access denied"))
+			return ErrAccessDenied
 		}
 
 		return nil
