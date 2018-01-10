@@ -1423,7 +1423,7 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 	// run callbacks and handle errors
 	for _, cb := range list {
 		// check if callback should be run
-		if cb.Matcher != nil && !cb.Matcher(ctx) {
+		if !cb.Matcher(ctx) {
 			continue
 		}
 
@@ -1447,8 +1447,8 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.runAction")
 
-	// check if callback should be run
-	if a.Callback.Matcher != nil && !a.Callback.Matcher(ctx) {
+	// check if callback can be run
+	if !a.Callback.Matcher(ctx) {
 		panic("fire: not supported")
 	}
 

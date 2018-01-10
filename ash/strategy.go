@@ -84,7 +84,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		// loop through all callbacks
 		for _, authorizer := range list {
 			// check if authenticator can be run
-			if authorizer.Matcher != nil && !authorizer.Matcher(ctx) {
+			if !authorizer.Matcher(ctx) {
 				continue
 			}
 
@@ -97,7 +97,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 			// run enforcer on success
 			if enforcer != nil {
 				// check if enforcer can be run
-				if enforcer.Matcher != nil && !enforcer.Matcher(ctx) {
+				if !enforcer.Matcher(ctx) {
 					// an authorizer should not return an enforcer that cannot
 					// enforce the authentication
 					panic("ash: not supported")

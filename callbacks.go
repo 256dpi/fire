@@ -13,6 +13,11 @@ import (
 // C is a short-hand function to construct a callback. It will also add tracing
 // code around the execution of the callback.
 func C(name string, m Matcher, h Handler) *Callback {
+	// default to all
+	if m == nil {
+		m = All()
+	}
+
 	return &Callback{
 		Matcher: m,
 		Handler: func(ctx *Context) error {
@@ -43,6 +48,13 @@ type Handler func(*Context) error
 // The matcher should return true if the callback should be run for the
 // presented action.
 type Matcher func(*Context) bool
+
+// All will match all contexts.
+func All() Matcher {
+	return func(ctx *Context) bool {
+		return true
+	}
+}
 
 // Only will match if the operation is present in the provided list.
 func Only(ops ...Operation) Matcher {
