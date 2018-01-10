@@ -42,11 +42,9 @@ type Authorizer struct {
 	Handler Handler
 }
 
-// And will run both authorizers and return immediately if one does not return an
-// enforcer. The two successfully returned enforcers are wrapped in one that will
-// execute both.
-//
-// Note: The authorizer is only run if both authorizers match the context.
+// And will match and run both authorizers and return immediately if one does not
+// return an enforcer. The two successfully returned enforcers are wrapped in one
+// that will match and run both enforcers.
 func And(a, b *Authorizer) *Authorizer {
 	return A("ash/And", func(ctx *fire.Context)bool{
 		return a.Matcher(ctx) && b.Matcher(ctx)
@@ -103,28 +101,42 @@ func (a *Authorizer) And(b *Authorizer) *Authorizer {
 	return And(a, b)
 }
 
-// Or will run the first authorizer and return its enforcer on success. If no
-// enforcer is returned it will run the second authorizer and return its result.
+// Or will match and run the first authorizer and return its enforcer on success.
+// If no enforcer is returned it will match and run the second authorizer and
+// return its result.
 func Or(a, b *Authorizer) *Authorizer {
-	return A("ash/Or", nil, func(ctx *fire.Context) (*Enforcer, error) {
-		// run first callback
-		enforcer1, err := a.Handler(ctx)
-		if err != nil {
-			return nil, err
+	return A("ash/Or", func(ctx *fire.Context) bool {
+		return a.Matcher(ctx) || b.Matcher(ctx)
+	}, func(ctx *fire.Context) (*Enforcer, error) {
+		// check first authorizer
+		if a.Matcher(ctx) {
+			// run callback
+			enforcer, err := a.Handler(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			// return on success
+			if enforcer != nil {
+				return enforcer, nil
+			}
 		}
 
-		// return on success
-		if enforcer1 != nil {
-			return enforcer1, nil
+		// check second authorizer
+		if b.Matcher(ctx) {
+			// run callback
+			enforcer, err := b.Handler(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			// return on success
+			if enforcer != nil {
+				return enforcer, nil
+			}
 		}
 
-		// run second callback
-		enforcer2, err := b.Handler(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		return enforcer2, nil
+		return nil, nil
 	})
 }
 
