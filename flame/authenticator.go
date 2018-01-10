@@ -47,6 +47,7 @@ type Authenticator struct {
 	store  *coal.Store
 	policy *Policy
 
+	// The function gets invoked by the authenticator with critical errors.
 	Reporter func(error)
 }
 

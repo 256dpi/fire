@@ -19,7 +19,7 @@ import (
 type Group struct {
 	controllers map[string]*Controller
 
-	// The function gets invoked by the controller with occurring fatal errors.
+	// The function gets invoked by the controller with critical errors.
 	Reporter func(error)
 }
 
