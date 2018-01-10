@@ -353,10 +353,27 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	cb1 := DependentResourcesValidator(dependentResources)
 	cb2 := VerifyReferencesValidator(references)
 
-	// create a combined callback
-	cb := Combine(cb1, cb2)
+	return C("RelationshipValidator", func(ctx *Context) bool {
+		return cb1.Matcher(ctx) || cb2.Matcher(ctx)
+	}, func(ctx *Context) error {
+		// run dependent resources validator
+		if cb1.Matcher(ctx) {
+			err := cb1.Handler(ctx)
+			if err != nil {
+				return err
+			}
+		}
 
-	return cb
+		// run dependent resources validator
+		if cb2.Matcher(ctx) {
+			err := cb2.Handler(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // MatchingReferencesValidator compares the model with one related model or all
