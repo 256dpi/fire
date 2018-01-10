@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/256dpi/fire/coal"
+
 	"github.com/pborman/uuid"
 	"gopkg.in/mgo.v2/bson"
 )

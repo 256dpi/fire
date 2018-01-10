@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/256dpi/fire"
+
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )

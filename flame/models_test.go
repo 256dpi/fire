@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/256dpi/fire/coal"
+
 	"github.com/stretchr/testify/assert"
 )
 

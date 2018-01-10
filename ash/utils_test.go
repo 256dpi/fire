@@ -6,6 +6,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"

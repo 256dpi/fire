@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/bearer"
 	"github.com/256dpi/oauth2/revocation"

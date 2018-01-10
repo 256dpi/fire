@@ -2,6 +2,7 @@ package ash
 
 import (
 	"github.com/256dpi/fire"
+
 	"gopkg.in/mgo.v2/bson"
 )
 
