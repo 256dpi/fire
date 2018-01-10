@@ -45,13 +45,27 @@ type Authorizer struct {
 // And will run both authorizers and return immediately if one does not return an
 // enforcer. The two successfully returned enforcers are wrapped in one that will
 // execute both.
+//
+// Note: The authorizer is only run if both authorizers match the context.
 func And(a, b *Authorizer) *Authorizer {
-	return A("ash/And", nil, func(ctx *fire.Context) (*Enforcer, error) {
+	return A("ash/And", func(ctx *fire.Context)bool{
+		return a.Matcher(ctx) && b.Matcher(ctx)
+	}, func(ctx *fire.Context) (*Enforcer, error) {
+		// check if callback a can be run
+		if !a.Matcher(ctx) {
+			return nil, nil
+		}
+
 		// run first callback
 		enforcer1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcer1 == nil {
+			return nil, nil
+		}
+
+		// check if callback b can be run
+		if !b.Matcher(ctx) {
 			return nil, nil
 		}
 
@@ -64,7 +78,23 @@ func And(a, b *Authorizer) *Authorizer {
 		}
 
 		// return an enforcer that calls both enforcers
-		return fire.Combine(enforcer1, enforcer2), nil
+		return E("ash/And", func(ctx *fire.Context) bool {
+			return enforcer1.Matcher(ctx) && enforcer2.Matcher(ctx)
+		}, func(ctx *fire.Context) error{
+			// call first enforcer
+			err := enforcer1.Handler(ctx)
+			if err != nil {
+				return err
+			}
+
+			// call second enforcer
+			err  = enforcer2.Handler(ctx)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}), nil
 	})
 }
 
