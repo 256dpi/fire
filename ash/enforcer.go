@@ -67,9 +67,6 @@ func AddFilter(filters bson.M) *Enforcer {
 // Note: This method will panic if used for Create and CollectionAction operation.
 // You should test for this cases and use another enforcer.
 func HideFilter() *Enforcer {
-	// TODO: Authorizers should be allowed to return ErrNotFound to trigger
-	// an early ErrNotFound instead of manipulating the Query in crazy ways.
-
 	return E("ash/HideFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
 		// assign specified filters
 		ctx.Filter["___a_property_no_document_in_this_world_should_have"] = "value"
