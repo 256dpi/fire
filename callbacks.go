@@ -94,22 +94,6 @@ type Callback struct {
 	Handler Handler
 }
 
-// Combine will return a callback that runs all the specified callbacks in order
-// until an error is returned.
-func Combine(cbs ...*Callback) *Callback {
-	return C("fire/Combine", nil, func(ctx *Context) error {
-		// run all callbacks
-		for _, cb := range cbs {
-			err := cb.Handler(ctx)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-}
-
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
 	return C("fire/BasicAuthorizer", nil, func(ctx *Context) error {
