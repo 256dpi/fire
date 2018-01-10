@@ -100,12 +100,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {
-			return errors.New("access denied")
+			return Safe(errors.New("access denied"))
 		}
 
 		// check if credentials match
 		if val, ok := credentials[user]; !ok || val != password {
-			return errors.New("access denied")
+			return Safe(errors.New("access denied"))
 		}
 
 		return nil
@@ -117,13 +117,22 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
 		// TODO: Add error source pointers.
-		return coal.Validate(ctx.Model)
+
+		// run validation
+		err := coal.Validate(ctx.Model)
+		if err != nil {
+			// TODO: Are all errors safe?
+			return Safe(err)
+		}
+
+		return nil
 	})
 }
 
 // NoDefault marks the specified field to have no default that needs to be
 // enforced while executing the ProtectedFieldsValidator.
 const NoDefault noDefault = iota
+
 type noDefault int
 
 // ProtectedFieldsValidator compares protected attributes against their
@@ -152,7 +161,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), def) {
-					return errors.New("field " + field + " is protected")
+					return Safe(errors.New("field " + field + " is protected"))
 				}
 			}
 		}
@@ -169,7 +178,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 			for field := range fields {
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
-					return errors.New("field " + field + " is protected")
+					return Safe(errors.New("field " + field + " is protected"))
 				}
 			}
 		}
@@ -202,13 +211,13 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 			ctx.Tracer.Tag("query", query)
 			n, err := ctx.Store.DB().C(coll).Find(query).Limit(1).Count()
 			if err != nil {
-				return Fatal(err)
+				return err
 			}
 			ctx.Tracer.Pop()
 
 			// return err of documents are found
 			if n != 0 {
-				return errors.New("resource has dependent resources")
+				return Safe(errors.New("resource has dependent resources"))
 			}
 		}
 
@@ -256,13 +265,13 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 				ctx.Tracer.Tag("query", query)
 				n, err := ctx.Store.DB().C(collection).Find(query).Count()
 				if err != nil {
-					return Fatal(err)
+					return err
 				}
 				ctx.Tracer.Pop()
 
 				// check for existence
 				if n != len(ids) {
-					return errors.New("missing references for field " + field)
+					return Safe(errors.New("missing references for field " + field))
 				}
 
 				continue
@@ -275,13 +284,13 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 			ctx.Tracer.Tag("id", ref)
 			n, err := ctx.Store.DB().C(collection).FindId(ref).Limit(1).Count()
 			if err != nil {
-				return Fatal(err)
+				return err
 			}
 			ctx.Tracer.Pop()
 
 			// check for existence
 			if n != 1 {
-				return errors.New("missing reference for field " + field)
+				return Safe(errors.New("missing reference for field " + field))
 			}
 		}
 
@@ -439,13 +448,13 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 		ctx.Tracer.Tag("query", query)
 		n, err := ctx.Store.DB().C(collection).Find(query).Count()
 		if err != nil {
-			return Fatal(err)
+			return err
 		}
 		ctx.Tracer.Pop()
 
 		// return error if a document is missing (does not match)
 		if n != len(ids) {
-			return errors.New("references do not match")
+			return Safe(errors.New("references do not match"))
 		}
 
 		return nil
@@ -491,9 +500,9 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callba
 		ctx.Tracer.Tag("query", query)
 		n, err := ctx.Store.C(ctx.Model).Find(query).Limit(1).Count()
 		if err != nil {
-			return Fatal(err)
+			return err
 		} else if n != 0 {
-			return fmt.Errorf("attribute %s is not unique", uniqueAttribute)
+			return Safe(fmt.Errorf("attribute %s is not unique", uniqueAttribute))
 		}
 		ctx.Tracer.Pop()
 

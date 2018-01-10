@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFatal(t *testing.T) {
-	err := Fatal(errors.New("foo"))
-	assert.True(t, IsFatal(err))
+func TestSafe(t *testing.T) {
+	err := Safe(errors.New("foo"))
+	assert.True(t, IsSafe(err))
 	assert.Equal(t, "foo", err.Error())
 
 	err = errors.New("foo")
-	assert.False(t, IsFatal(err))
+	assert.False(t, IsSafe(err))
 	assert.Equal(t, "foo", err.Error())
 }
 

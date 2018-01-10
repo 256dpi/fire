@@ -190,7 +190,7 @@ func (c *Context) Original() (coal.Model, error) {
 	c.Tracer.Tag("id", c.Model.ID())
 	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
 	if err != nil {
-		return nil, Fatal(err)
+		return nil, err
 	}
 	c.Tracer.Pop()
 

@@ -5,27 +5,25 @@ import (
 	"strconv"
 )
 
-type fatalError struct {
+type safeError struct {
 	err error
 }
 
-// TODO: Also add helpers for returning safe jsonapi errors.
-
-// Fatal wraps an error and marks it as fatal. Wrapped errors will never be
-// written to the client but logged if a reporter is configured.
-func Fatal(err error) error {
-	return &fatalError{
+// Safe wraps an error and marks it as safe. Wrapped errors are safe to be
+// presented to the client if appropriate.
+func Safe(err error) error {
+	return &safeError{
 		err: err,
 	}
 }
 
-func (err *fatalError) Error() string {
+func (err *safeError) Error() string {
 	return err.err.Error()
 }
 
-// IsFatal can be used to check if an error has been wrapped using Fatal.
-func IsFatal(err error) bool {
-	_, ok := err.(*fatalError)
+// IsSafe can be used to check if an error has been wrapped using Safe.
+func IsSafe(err error) bool {
+	_, ok := err.(*safeError)
 	return ok
 }
 

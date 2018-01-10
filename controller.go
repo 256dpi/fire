@@ -1429,13 +1429,13 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 
 		// call callback
 		err := cb.Handler(ctx)
-		if IsFatal(err) {
-			stack.Abort(err)
-		} else if err != nil {
+		if IsSafe(err) {
 			stack.Abort(&jsonapi.Error{
 				Status: errorStatus,
 				Detail: err.Error(),
 			})
+		} else if err != nil {
+			stack.Abort(err)
 		}
 	}
 
@@ -1454,13 +1454,13 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 
 	// call callback
 	err := a.Callback.Handler(ctx)
-	if IsFatal(err) {
-		stack.Abort(err)
-	} else if err != nil {
+	if IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: errorStatus,
 			Detail: err.Error(),
 		})
+	} else if err != nil {
+		stack.Abort(err)
 	}
 
 	// finish trace

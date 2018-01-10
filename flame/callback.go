@@ -21,12 +21,12 @@ func Callback(scope string) *fire.Callback {
 		// get access token
 		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
 		if !ok || accessToken == nil {
-			return fire.Fatal(errors.New("missing access token"))
+			return errors.New("missing access token")
 		}
 
 		// validate scope
 		if !oauth2.Scope(accessToken.GetTokenData().Scope).Includes(s) {
-			return errors.New("unauthorized")
+			return fire.Safe(errors.New("unauthorized"))
 		}
 
 		return nil
