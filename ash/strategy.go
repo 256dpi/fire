@@ -89,27 +89,29 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 			}
 
 			// run callback and return on error
-			enforcer, err := authorizer.Handler(ctx)
+			enforcers, err := authorizer.Handler(ctx)
 			if err != nil {
 				return err
 			}
 
-			// run enforcer on success
-			if enforcer != nil {
-				// check if enforcer can be run
-				if !enforcer.Matcher(ctx) {
-					// an authorizer should not return an enforcer that cannot
-					// enforce the authentication
-					panic("ash: not supported")
+			// run enforcers on success
+			if enforcers != nil {
+				for _, enforcer := range enforcers {
+					// check if enforcer can be run
+					if !enforcer.Matcher(ctx) {
+						// an authorizer should not return an enforcer that cannot
+						// enforce the authentication
+						panic("ash: not supported")
+					}
+
+					// run callback and return error
+					err = enforcer.Handler(ctx)
+					if err != nil {
+						return err
+					}
 				}
 
-				// run callback and return error
-				err = enforcer.Handler(ctx)
-				if err != nil {
-					return err
-				}
-
-				// return nil if an enforcer ran successfully
+				// return nil if all enforcers ran successfully
 				return nil
 			}
 		}

@@ -14,34 +14,34 @@ import (
 var tester = fire.NewTester(coal.MustCreateStore("mongodb://localhost/test-ash"))
 
 func blank() *Authorizer {
-	return A("blank", nil, func(_ *fire.Context) (*Enforcer, error) {
+	return A("blank", nil, func(_ *fire.Context) ([]*Enforcer, error) {
 		return nil, nil
 	})
 }
 
 func accessGranted() *Authorizer {
-	return A("accessGranted", nil, func(_ *fire.Context) (*Enforcer, error) {
-		return GrantAccess(), nil
+	return A("accessGranted", nil, func(_ *fire.Context) ([]*Enforcer, error) {
+		return S{GrantAccess()}, nil
 	})
 }
 
 func accessDenied() *Authorizer {
-	return A("accessDenied", nil, func(_ *fire.Context) (*Enforcer, error) {
-		return DenyAccess(), nil
+	return A("accessDenied", nil, func(_ *fire.Context) ([]*Enforcer, error) {
+		return S{DenyAccess()}, nil
 	})
 }
 
 func directError() *Authorizer {
-	return A("directError", nil, func(_ *fire.Context) (*Enforcer, error) {
+	return A("directError", nil, func(_ *fire.Context) ([]*Enforcer, error) {
 		return nil, errors.New("error")
 	})
 }
 
 func indirectError() *Authorizer {
-	return A("indirectError", nil, func(_ *fire.Context) (*Enforcer, error) {
-		return E("indirectError", nil, func(_ *fire.Context) error {
+	return A("indirectError", nil, func(_ *fire.Context) ([]*Enforcer, error) {
+		return S{E("indirectError", nil, func(_ *fire.Context) error {
 			return errors.New("error")
-		}), nil
+		})}, nil
 	})
 }
 

@@ -12,12 +12,12 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 
 	return &Authorizer{
 		Matcher: m,
-		Handler: func(ctx *fire.Context) (*Enforcer, error) {
+		Handler: func(ctx *fire.Context) ([]*Enforcer, error) {
 			// begin trace
 			ctx.Tracer.Push(name)
 
 			// call handler
-			enforcer, err := h(ctx)
+			enforcers, err := h(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -25,40 +25,43 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 			// finish trace
 			ctx.Tracer.Pop()
 
-			return enforcer, nil
+			return enforcers, nil
 		},
 	}
 }
 
+// S is a short-hand for set of enforcers.
+type S []*Enforcer
+
 // Handler is a function that inspects an operation context and eventually
-// returns an enforcer or an error.
-type Handler func(*fire.Context) (*Enforcer, error)
+// returns a set of enforcers or an error.
+type Handler func(*fire.Context) ([]*Enforcer, error)
 
 // An Authorizer should inspect the specified context and assesses if it is able
 // to enforce authorization with the data that is available. If yes, the
-// authorizer should return an Enforcer that will enforce the authorization.
+// authorizer should return a set of enforcers that will enforce the authorization.
 type Authorizer struct {
 	Matcher fire.Matcher
 	Handler Handler
 }
 
 // And will match and run both authorizers and return immediately if one does not
-// return an enforcer. The two successfully returned enforcers are wrapped in one
-// that will match and run both enforcers.
+// return a set of enforcers. The two successfully returned enforcer sets are
+// merged into one and returned.
 func And(a, b *Authorizer) *Authorizer {
-	return A("ash/And", func(ctx *fire.Context)bool{
+	return A("ash/And", func(ctx *fire.Context) bool {
 		return a.Matcher(ctx) && b.Matcher(ctx)
-	}, func(ctx *fire.Context) (*Enforcer, error) {
+	}, func(ctx *fire.Context) ([]*Enforcer, error) {
 		// check if callback a can be run
 		if !a.Matcher(ctx) {
 			return nil, nil
 		}
 
 		// run first callback
-		enforcer1, err := a.Handler(ctx)
+		enforcers1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
-		} else if enforcer1 == nil {
+		} else if enforcers1 == nil {
 			return nil, nil
 		}
 
@@ -68,31 +71,18 @@ func And(a, b *Authorizer) *Authorizer {
 		}
 
 		// run second callback
-		enforcer2, err := b.Handler(ctx)
+		enforcers2, err := b.Handler(ctx)
 		if err != nil {
 			return nil, err
-		} else if enforcer2 == nil {
+		} else if enforcers2 == nil {
 			return nil, nil
 		}
 
-		// return an enforcer that calls both enforcers
-		return E("ash/And", func(ctx *fire.Context) bool {
-			return enforcer1.Matcher(ctx) && enforcer2.Matcher(ctx)
-		}, func(ctx *fire.Context) error{
-			// call first enforcer
-			err := enforcer1.Handler(ctx)
-			if err != nil {
-				return err
-			}
+		// merge both sets
+		enforcers := append(S{}, enforcers1...)
+		enforcers = append(enforcers, enforcers2...)
 
-			// call second enforcer
-			err  = enforcer2.Handler(ctx)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}), nil
+		return enforcers, nil
 	})
 }
 
@@ -101,38 +91,38 @@ func (a *Authorizer) And(b *Authorizer) *Authorizer {
 	return And(a, b)
 }
 
-// Or will match and run the first authorizer and return its enforcer on success.
-// If no enforcer is returned it will match and run the second authorizer and
-// return its result.
+// Or will match and run the first authorizer and return its enforcers on success.
+// If no enforcers are returned it will match and run the second authorizer and
+// return its enforcers.
 func Or(a, b *Authorizer) *Authorizer {
 	return A("ash/Or", func(ctx *fire.Context) bool {
 		return a.Matcher(ctx) || b.Matcher(ctx)
-	}, func(ctx *fire.Context) (*Enforcer, error) {
+	}, func(ctx *fire.Context) ([]*Enforcer, error) {
 		// check first authorizer
 		if a.Matcher(ctx) {
 			// run callback
-			enforcer, err := a.Handler(ctx)
+			enforcers, err := a.Handler(ctx)
 			if err != nil {
 				return nil, err
 			}
 
 			// return on success
-			if enforcer != nil {
-				return enforcer, nil
+			if enforcers != nil {
+				return enforcers, nil
 			}
 		}
 
 		// check second authorizer
 		if b.Matcher(ctx) {
 			// run callback
-			enforcer, err := b.Handler(ctx)
+			enforcers, err := b.Handler(ctx)
 			if err != nil {
 				return nil, err
 			}
 
 			// return on success
-			if enforcer != nil {
-				return enforcer, nil
+			if enforcers != nil {
+				return enforcers, nil
 			}
 		}
 

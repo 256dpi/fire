@@ -45,8 +45,8 @@ func C(name string, m Matcher, h Handler) *Callback {
 // the error is logged.
 type Handler func(*Context) error
 
-// The matcher should return true if the callback should be run for the
-// presented action.
+// Matcher should return true if the associated callback should be run for the
+// presented context.
 type Matcher func(*Context) bool
 
 // All will match all contexts.
