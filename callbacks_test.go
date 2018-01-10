@@ -76,6 +76,8 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 }
 
 func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
+	assert.NotEqual(t, NoDefault, 1)
+
 	validator := ProtectedFieldsValidator(map[string]interface{}{
 		"title": NoDefault,
 	})

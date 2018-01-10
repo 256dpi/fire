@@ -121,11 +121,10 @@ func ModelValidator() *Callback {
 	})
 }
 
-type noDefault int
-
 // NoDefault marks the specified field to have no default that needs to be
 // enforced while executing the ProtectedFieldsValidator.
 const NoDefault noDefault = iota
+type noDefault int
 
 // ProtectedFieldsValidator compares protected attributes against their
 // default (during Create) or stored value (during Update) and returns an error
@@ -292,7 +291,7 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 }
 
 // RelationshipValidator makes sure all relationships of a model are correct and
-// in place. It does so by creating a DependentResourcesValidator and a
+// in place. It does so by combining a DependentResourcesValidator and a
 // VerifyReferencesValidator based on the specified model and catalog.
 func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) *Callback {
 	// prepare lists
