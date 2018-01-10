@@ -41,7 +41,10 @@ type Handler func(*fire.Context) ([]*Enforcer, error)
 // to enforce authorization with the data that is available. If yes, the
 // authorizer should return a set of enforcers that will enforce the authorization.
 type Authorizer struct {
+	// The matcher that decides whether the authorizer can be run.
 	Matcher fire.Matcher
+
+	// The handler handler that gets executed with the context.
 	Handler Handler
 }
 

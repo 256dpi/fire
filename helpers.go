@@ -11,7 +11,8 @@ type fatalError struct {
 
 // TODO: Also add helpers for returning safe jsonapi errors.
 
-// Fatal wraps an error and marks it as fatal.
+// Fatal wraps an error and marks it as fatal. Wrapped errors will never be
+// written to the client but logged if a reporter is configured.
 func Fatal(err error) error {
 	return &fatalError{
 		err: err,

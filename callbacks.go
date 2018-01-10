@@ -40,13 +40,10 @@ func C(name string, m Matcher, h Handler) *Callback {
 
 // Handler is function that takes a context, mutates is to modify the behaviour
 // and response or return an error.
-//
-// If a returned error is wrapped using Fatal, processing stops immediately and
-// the error is logged.
 type Handler func(*Context) error
 
-// Matcher should return true if the associated callback should be run for the
-// presented context.
+// Matcher is a function that makes an assessment of a context and decides whether
+// a modification should be applied in the future.
 type Matcher func(*Context) bool
 
 // All will match all contexts.
@@ -90,7 +87,10 @@ func Except(ops ...Operation) Matcher {
 // an InternalServerError status and the error will be logged. All other errors
 // are serialized to an error object and returned.
 type Callback struct {
+	// The matcher that decides whether the callback should be run.
 	Matcher Matcher
+
+	// The handler handler that gets executed with the context.
 	Handler Handler
 }
 
