@@ -181,6 +181,7 @@ func (a *Application) Validate() error {
 
 // HashSecret will hash Secret and set SecretHash.
 func (a *Application) HashSecret() error {
+	// check length
 	if len(a.Secret) == 0 {
 		return nil
 	}
@@ -257,6 +258,7 @@ func (u *User) Validate() error {
 
 // HashPassword will hash Password and set PasswordHash.
 func (u *User) HashPassword() error {
+	// check length
 	if len(u.Password) == 0 {
 		return nil
 	}
