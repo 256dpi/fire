@@ -164,22 +164,32 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 		ctx.Filter = bson.M{}
 	}
 
-	// create request
-	req, err := http.NewRequest("GET", "", nil)
-	if err != nil {
-		panic(err)
-	}
+	// set request
+	if ctx.HTTPRequest == nil {
+		// create request
+		req, err := http.NewRequest("GET", "", nil)
+		if err != nil {
+			panic(err)
+		}
 
-	// set context
-	ctx.HTTPRequest = req.WithContext(t.Context)
+		// set headers
+		for key, value := range t.Header {
+			req.Header.Set(key, value)
+		}
 
-	// set headers
-	for key, value := range t.Header {
-		req.Header.Set(key, value)
+		// set context
+		ctx.HTTPRequest = req.WithContext(t.Context)
 	}
 
 	// set response writer
-	ctx.ResponseWriter = httptest.NewRecorder()
+	if ctx.ResponseWriter == nil {
+		ctx.ResponseWriter = httptest.NewRecorder()
+	}
+
+	// set json api request
+	if ctx.JSONAPIRequest == nil {
+		ctx.JSONAPIRequest = &jsonapi.Request{}
+	}
 
 	// set tracers
 	ctx.Tracer = NewTracerWithRoot("fire/Tester.RunHandler")
