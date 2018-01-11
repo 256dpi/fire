@@ -14,7 +14,7 @@ import (
 // visualizes the model dependencies.
 func VisualizeModels(catalog *coal.Catalog) string {
 	// create graph
-	graph := gographviz.NewGraph()
+	graph := gographviz.NewEscape()
 	panicIfSet(graph.SetName("G"))
 
 	// add model nodes

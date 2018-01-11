@@ -14,7 +14,7 @@ type postModel struct {
 	Published  bool         `json:"published"`
 	Comments   coal.HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections coal.HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
-	Note       coal.HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
+	Note       coal.HasOne  `json:"-" bson:"-" coal:"note:cool-notes:post"`
 }
 
 type commentModel struct {
@@ -31,7 +31,7 @@ type selectionModel struct {
 }
 
 type noteModel struct {
-	coal.Base `json:"-" bson:",inline" valid:"required" coal:"notes"`
+	coal.Base `json:"-" bson:",inline" valid:"required" coal:"cool-notes"`
 	Title     string        `json:"title" bson:"title" valid:"required"`
 	Post      bson.ObjectId `json:"-" bson:"post_id" valid:"required,object-id" coal:"post:posts"`
 }
