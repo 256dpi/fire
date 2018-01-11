@@ -19,9 +19,4 @@ func TestEnforcer(t *testing.T) {
 	}))
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", filter["foo"])
-
-	filter = bson.M{}
-	err = tester.RunAuthorizer(fire.Find, nil, filter, nil, HideFilter())
-	assert.NoError(t, err)
-	assert.Len(t, filter, 1)
 }

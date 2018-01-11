@@ -59,18 +59,3 @@ func AddFilter(filters bson.M) *Enforcer {
 		return nil
 	})
 }
-
-// HideFilter will enforce the authorization by adding a falsy filter to the
-// Filter query of the context, so that no records will be returned. It should be
-// used if the requested resources or resource should be hidden from the candidate.
-//
-// Note: This method will panic if used for Create and CollectionAction operation.
-// You should test for this cases and use another enforcer.
-func HideFilter() *Enforcer {
-	return E("ash/HideFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
-		// assign specified filters
-		ctx.Filter["___a_property_no_document_in_this_world_should_have"] = "value"
-
-		return nil
-	})
-}
