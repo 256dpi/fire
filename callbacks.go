@@ -468,12 +468,18 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 	})
 }
 
+// NoZero indicates that the zero value check should be skipped.
+const NoZero noZero = iota
+
+type noZero int
+
 // UniqueFieldValidator ensures that the specified field of the Model will
 // remain unique among the specified filters. If the value matches the provided
 // zero value the check is skipped.
 //
 //	UniqueFieldValidator(F(&Blog{}, "Name"), "", F(&Blog{}, "Creator"))
 //
+// The special NoZero value can be provided to skip the zero check.
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
 	return C("fire/UniqueFieldValidator", Only(Create, Update), func(ctx *Context) error {
 		// check if field has changed
@@ -494,7 +500,7 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 		value := ctx.Model.MustGet(field)
 
 		// return if value is the zero value
-		if reflect.DeepEqual(value, zero) {
+		if value != NoZero && reflect.DeepEqual(value, zero) {
 			return nil
 		}
 

@@ -408,6 +408,8 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 }
 
 func TestUniqueFieldValidator(t *testing.T) {
+	assert.NotEqual(t, NoZero, 0)
+
 	tester.Clean()
 
 	validator := UniqueFieldValidator("title", "")
