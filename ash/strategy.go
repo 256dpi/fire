@@ -47,6 +47,14 @@ type Strategy struct {
 
 // Callback will return a callback that authorizes operations using the strategy.
 func (s *Strategy) Callback() *fire.Callback {
+	// enforce defaults
+	if s.CollectionAction == nil {
+		s.CollectionAction = make(map[string][]*Authorizer)
+	}
+	if s.ResourceAction == nil {
+		s.ResourceAction = make(map[string][]*Authorizer)
+	}
+
 	return fire.C("ash/Strategy.Callback", nil, func(ctx *fire.Context) (err error) {
 		switch ctx.Operation {
 		case fire.List:

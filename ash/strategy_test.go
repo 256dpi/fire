@@ -5,6 +5,7 @@ import (
 
 	"github.com/256dpi/fire"
 
+	"github.com/256dpi/jsonapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,4 +54,19 @@ func TestCallbackEmpty(t *testing.T) {
 
 	err := tester.RunCallback(&fire.Context{Operation: fire.Delete}, cb)
 	assert.Equal(t, fire.ErrAccessDenied, err)
+}
+
+func TestActions(t *testing.T) {
+	cb := C(&Strategy{
+		CollectionAction: M{
+			"foo": L{accessGranted()},
+		},
+		ResourceActions: L{accessGranted()},
+	})
+
+	err := tester.RunCallback(&fire.Context{Operation: fire.ResourceAction}, cb)
+	assert.NoError(t, err)
+
+	err = tester.RunCallback(&fire.Context{Operation: fire.CollectionAction, JSONAPIRequest: &jsonapi.Request{CollectionAction: "foo"}}, cb)
+	assert.NoError(t, err)
 }
