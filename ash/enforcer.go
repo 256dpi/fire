@@ -56,3 +56,29 @@ func FilterQuery(filters bson.M) *Enforcer {
 		return nil
 	})
 }
+
+// FilterFields will enforce the authorization by making sure only the specified
+// fields are returned for the client. If filters are existing it will only remove
+// fields not present in the specified list.
+func FilterFields(fields ...string) *Enforcer {
+	return E("ash/FilterFields", nil, func(ctx *fire.Context) error {
+		// just set fields if not set yet
+		if len(ctx.Fields) == 0 {
+			ctx.Fields = fields
+			return nil
+		}
+
+		// collect whitelisted fields
+		var list []string
+		for _, field := range ctx.Fields {
+			if stringInList(field, fields) {
+				list = append(list, field)
+			}
+		}
+
+		// set new list
+		ctx.Fields = list
+
+		return nil
+	})
+}

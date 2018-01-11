@@ -25,3 +25,15 @@ func TestFilterQuery(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", filter["foo"])
 }
+
+func TestFilterFields(t *testing.T) {
+	ctx := &fire.Context{Fields: nil}
+	err := tester.RunCallback(ctx, FilterFields("foo", "bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"foo", "bar"}, ctx.Fields)
+
+	ctx = &fire.Context{Fields: []string{"foo", "bar", "baz"}}
+	err = tester.RunCallback(ctx, FilterFields("bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"bar"}, ctx.Fields)
+}
