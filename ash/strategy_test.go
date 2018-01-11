@@ -54,11 +54,3 @@ func TestCallbackEmpty(t *testing.T) {
 	err := tester.RunCallback(&fire.Context{Operation: fire.Delete}, cb)
 	assert.Equal(t, fire.ErrAccessDenied, err)
 }
-
-func TestCallbackPanic(t *testing.T) {
-	cb := C(&Strategy{})
-
-	assert.Panics(t, func() {
-		tester.RunCallback(&fire.Context{Operation: fire.Operation(10)}, cb)
-	})
-}

@@ -47,26 +47,25 @@ type Strategy struct {
 
 // Callback will return a callback that authorizes operations using the strategy.
 func (s *Strategy) Callback() *fire.Callback {
-	return fire.C("ash/Strategy.Callback", nil, func(ctx *fire.Context) error {
+	return fire.C("ash/Strategy.Callback", nil, func(ctx *fire.Context) (err error) {
 		switch ctx.Operation {
 		case fire.List:
-			return s.call(ctx, s.List, s.Read, s.All)
+			err = s.call(ctx, s.List, s.Read, s.All)
 		case fire.Find:
-			return s.call(ctx, s.Find, s.Read, s.All)
+			err = s.call(ctx, s.Find, s.Read, s.All)
 		case fire.Create:
-			return s.call(ctx, s.Create, s.Write, s.All)
+			err = s.call(ctx, s.Create, s.Write, s.All)
 		case fire.Update:
-			return s.call(ctx, s.Update, s.Write, s.All)
+			err = s.call(ctx, s.Update, s.Write, s.All)
 		case fire.Delete:
-			return s.call(ctx, s.Delete, s.Write, s.All)
+			err = s.call(ctx, s.Delete, s.Write, s.All)
 		case fire.CollectionAction:
-			return s.call(ctx, s.CollectionAction[ctx.JSONAPIRequest.CollectionAction], s.CollectionActions, s.Actions, s.All)
+			err = s.call(ctx, s.CollectionAction[ctx.JSONAPIRequest.CollectionAction], s.CollectionActions, s.Actions, s.All)
 		case fire.ResourceAction:
-			return s.call(ctx, s.ResourceAction[ctx.JSONAPIRequest.ResourceAction], s.ResourceActions, s.Actions, s.All)
+			err = s.call(ctx, s.ResourceAction[ctx.JSONAPIRequest.ResourceAction], s.ResourceActions, s.Actions, s.All)
 		}
 
-		// panic on unknown operation
-		panic("ash: unknown operation")
+		return err
 	})
 }
 
