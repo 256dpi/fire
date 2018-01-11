@@ -16,6 +16,9 @@ func VisualizeModels(catalog *coal.Catalog) string {
 	// create graph
 	graph := gographviz.NewEscape()
 	panicIfSet(graph.SetName("G"))
+	graph.AddAttr("G", "overlap", "false")
+	graph.AddAttr("G", "splines", "ortho")
+	graph.AddAttr("G", "nodesep", "1")
 
 	// add model nodes
 	for name, model := range catalog.Models {
