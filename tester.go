@@ -130,7 +130,12 @@ func (t *Tester) Path(path string) string {
 // Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, authorizer *Callback) error {
 	// call validator with context
-	return t.RunHandler(op, selector, filter, model, nil, nil, authorizer.Handler)
+	return t.RunHandler(&Context{
+		Operation: op,
+		Selector:  selector,
+		Filter:    filter,
+		Model:     model,
+	}, authorizer.Handler)
 }
 
 // RunValidator is a helper to test validators. The caller should assert the
@@ -148,7 +153,10 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callbac
 	}
 
 	// call validator with context
-	return t.RunHandler(op, nil, nil, model, nil, nil, validator.Handler)
+	return t.RunHandler(&Context{
+		Operation: op,
+		Model:     model,
+	}, validator.Handler)
 }
 
 // RunNotifier is a helper to test notifiers. The caller should assert the
@@ -161,26 +169,49 @@ func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callbac
 // Note: A fake http request is set to allow access to request headers.
 func (t *Tester) RunNotifier(op Operation, response *jsonapi.Document, notifier *Callback) error {
 	// call notifier with context
-	return t.RunHandler(op, nil, nil, nil, nil, response, notifier.Handler)
+	return t.RunHandler(&Context{
+		Operation: op,
+		Response:  response,
+	}, notifier.Handler)
 }
 
 // WithContext runs the given function with a prepared context.
-func (t *Tester) WithContext(op Operation, selector, filter bson.M, model coal.Model, fn func(*Context)) {
-	t.RunHandler(op, selector, filter, model, nil, nil, func(ctx *Context) error {
+func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
+	t.RunHandler(ctx, func(ctx *Context) error {
 		fn(ctx)
 		return nil
 	})
 }
 
 // RunHandler builds a context and runs the passed handler with it.
-func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Model, sorting []string, response *jsonapi.Document, h Handler) error {
-	// get store
-	store := t.Store.Copy()
-	defer store.Close()
+func (t *Tester) RunHandler(ctx *Context, h Handler) error {
+	// set context if missing
+	if ctx == nil {
+		ctx = &Context{}
+	}
+
+	// set operation if missing
+	if ctx.Operation == 0 {
+		ctx.Operation = List
+	}
+
+	// set store if unset
+	if ctx.Store == nil {
+		ctx.Store = t.Store.Copy()
+		defer ctx.Store.Close()
+	}
 
 	// init model if present
-	if model != nil {
-		coal.Init(model)
+	if ctx.Model != nil {
+		coal.Init(ctx.Model)
+	}
+
+	// init queries
+	if ctx.Selector == nil {
+		ctx.Selector = bson.M{}
+	}
+	if ctx.Filter == nil {
+		ctx.Filter = bson.M{}
 	}
 
 	// create request
@@ -189,39 +220,20 @@ func (t *Tester) RunHandler(op Operation, selector, filter bson.M, model coal.Mo
 		panic(err)
 	}
 
+	// set context
+	ctx.HTTPRequest = req.WithContext(t.Context)
+
 	// set headers
 	for key, value := range t.Header {
 		req.Header.Set(key, value)
 	}
 
-	// set context
-	req = req.WithContext(t.Context)
+	// set response writer
+	ctx.ResponseWriter = httptest.NewRecorder()
 
-	// init queries
-	if selector == nil {
-		selector = bson.M{}
-	}
-	if filter == nil {
-		filter = bson.M{}
-	}
-
-	// create tracer
-	tracer := NewTracerWithRoot("fire/Tester.RunHandler")
-	defer tracer.Finish(true)
-
-	// create context
-	ctx := &Context{
-		Operation:      op,
-		Selector:       selector,
-		Filter:         filter,
-		Model:          model,
-		Sorting:        sorting,
-		Response:       response,
-		Store:          store,
-		HTTPRequest:    req,
-		ResponseWriter: httptest.NewRecorder(),
-		Tracer:         tracer,
-	}
+	// set tracers
+	ctx.Tracer = NewTracerWithRoot("fire/Tester.RunHandler")
+	defer ctx.Tracer.Finish(true)
 
 	// call handler
 	return h(ctx)

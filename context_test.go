@@ -42,7 +42,7 @@ func TestContextOriginal(t *testing.T) {
 
 	post.DocID = savedPost.DocID
 
-	tester.WithContext(Update, nil, nil, post, func(ctx *Context) {
+	tester.WithContext(&Context{Operation: Update, Model: post}, func(ctx *Context) {
 		m, err := ctx.Original()
 		assert.NoError(t, err)
 		assert.Equal(t, savedPost.ID(), m.ID())
@@ -55,7 +55,7 @@ func TestContextOriginal(t *testing.T) {
 }
 
 func TestContextOriginalWrongOperation(t *testing.T) {
-	tester.WithContext(Find, nil, nil, nil, func(ctx *Context) {
+	tester.WithContext(nil, func(ctx *Context) {
 		assert.Panics(t, func() {
 			ctx.Original()
 		})
@@ -69,7 +69,7 @@ func TestContextOriginalNonExisting(t *testing.T) {
 		Title: "foo",
 	}).(*postModel)
 
-	tester.WithContext(Update, nil, nil, post, func(ctx *Context) {
+	tester.WithContext(&Context{Operation: Update, Model: post}, func(ctx *Context) {
 		m, err := ctx.Original()
 		assert.Error(t, err)
 		assert.Nil(t, m)

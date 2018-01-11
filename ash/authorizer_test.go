@@ -9,7 +9,7 @@ import (
 )
 
 func TestAnd(t *testing.T) {
-	tester.WithContext(fire.List, nil, nil, nil, func(ctx *fire.Context) {
+	tester.WithContext(nil, func(ctx *fire.Context) {
 		enforcers, err := And(accessGranted(), accessGranted()).Handler(ctx)
 		assert.NoError(t, err)
 		assert.NotNil(t, enforcers)
@@ -56,7 +56,7 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-	tester.WithContext(fire.List, nil, nil, nil, func(ctx *fire.Context) {
+	tester.WithContext(nil, func(ctx *fire.Context) {
 		enforcers, err := Or(accessGranted(), accessGranted()).Handler(ctx)
 		assert.NoError(t, err)
 		assert.NotNil(t, enforcers)
