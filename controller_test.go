@@ -1585,8 +1585,17 @@ func TestToOneRelationship(t *testing.T) {
 			"id": "`+post2+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post2+`"
+			},
+			"links": {
+				"self": "/comments/`+comment2+`/relationships/post",
+				"related": "/comments/`+comment2+`/post"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// fetch replaced relationship
@@ -1608,8 +1617,14 @@ func TestToOneRelationship(t *testing.T) {
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", `{
 			"data": null
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": null,
+			"links": {
+				"self": "/comments/`+comment2+`/relationships/parent",
+				"related": "/comments/`+comment2+`/parent"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// fetch unset relationship
@@ -1840,8 +1855,19 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+                {
+					"type": "posts",
+					"id": "`+post3+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// get updated related post ids only
@@ -1870,8 +1896,23 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post3+`"
+				},
+                {
+					"type": "posts",
+					"id": "`+post1+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// get related post ids only
@@ -1908,8 +1949,14 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
 	// get empty related post ids list

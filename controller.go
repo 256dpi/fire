@@ -113,8 +113,6 @@ type Controller struct {
 	parser jsonapi.Parser
 }
 
-// TODO: Always render resource for relationship changes, as attributes might change?
-
 func (c *Controller) prepare() {
 	// initialize model
 	coal.Init(c.Model)
@@ -699,11 +697,17 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// save model
 	c.updateModel(ctx)
 
+	// get resource
+	resource := c.resourceForModel(ctx, ctx.Model)
+
+	// get relationship
+	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -762,11 +766,17 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// save model
 	c.updateModel(ctx)
 
+	// get resource
+	resource := c.resourceForModel(ctx, ctx.Model)
+
+	// get relationship
+	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -823,11 +833,17 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	// save model
 	c.updateModel(ctx)
 
+	// get resource
+	resource := c.resourceForModel(ctx, ctx.Model)
+
+	// get relationship
+	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
