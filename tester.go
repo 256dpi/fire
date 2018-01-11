@@ -120,59 +120,9 @@ func (t *Tester) Path(path string) string {
 	return path
 }
 
-// RunAuthorizer is a helper to test validators. The caller should assert the
-// returned error of the validator, the state of the supplied model and maybe
-// other objects in the database.
-//
-// Note: Only the Operation, Query, Model and Store are set since these are the
-// only attributes an authorizer should rely on.
-//
-// Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunAuthorizer(op Operation, selector, filter bson.M, model coal.Model, authorizer *Callback) error {
-	// call validator with context
-	return t.RunHandler(&Context{
-		Operation: op,
-		Selector:  selector,
-		Filter:    filter,
-		Model:     model,
-	}, authorizer.Handler)
-}
-
-// RunValidator is a helper to test validators. The caller should assert the
-// returned error of the validator, the state of the supplied model and maybe
-// other objects in the database.
-//
-// Note: Only the Operation, Model and Store attribute of the context are set since
-// these are the only attributes a validator should rely on.
-//
-// Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunValidator(op Operation, model coal.Model, validator *Callback) error {
-	// check operation
-	if !op.Write() {
-		panic("fire: validators should only be run on create, update or delete")
-	}
-
-	// call validator with context
-	return t.RunHandler(&Context{
-		Operation: op,
-		Model:     model,
-	}, validator.Handler)
-}
-
-// RunNotifier is a helper to test notifiers. The caller should assert the
-// returned error of the notifier and the state of the response or other triggered
-// actions.
-//
-// Note: Only the Response attribute of the context is set since this is the
-// only attribute a notifier should rely on.
-//
-// Note: A fake http request is set to allow access to request headers.
-func (t *Tester) RunNotifier(op Operation, response *jsonapi.Document, notifier *Callback) error {
-	// call notifier with context
-	return t.RunHandler(&Context{
-		Operation: op,
-		Response:  response,
-	}, notifier.Handler)
+// RunCallback is a helper to test callbacks.
+func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
+	return t.RunHandler(ctx, cb.Handler)
 }
 
 // WithContext runs the given function with a prepared context.

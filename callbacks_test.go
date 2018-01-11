@@ -29,12 +29,12 @@ func TestBasicAuthorizer(t *testing.T) {
 
 	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:bar"))
 
-	err := tester.RunAuthorizer(Find, nil, nil, nil, authorizer)
+	err := tester.RunCallback(nil, authorizer)
 	assert.NoError(t, err)
 
 	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
-	err = tester.RunAuthorizer(Find, nil, nil, nil, authorizer)
+	err = tester.RunCallback(nil, authorizer)
 	assert.Error(t, err)
 }
 
@@ -45,16 +45,16 @@ func TestModelValidator(t *testing.T) {
 
 	validator := ModelValidator()
 
-	err := tester.RunValidator(Create, post, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
 	assert.Equal(t, "Title: non zero value required;", err.Error())
 
 	post.Title = "Default Title"
-	err = tester.RunValidator(Create, post, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.NoError(t, err)
 
 	post.Title = "error"
-	err = tester.RunValidator(Create, post, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
 }
 
@@ -67,11 +67,11 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 		Title: "Title",
 	}
 
-	err := tester.RunValidator(Create, post, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
 
 	post.Title = "Default Title"
-	err = tester.RunValidator(Create, post, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.NoError(t, err)
 }
 
@@ -86,7 +86,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 		Title: "Title",
 	}
 
-	err := tester.RunValidator(Create, post, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.NoError(t, err)
 }
 
@@ -106,11 +106,11 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Title",
 	}
 
-	err := tester.RunValidator(Update, post, validator)
+	err := tester.RunCallback(&Context{Operation: Update, Model: post}, validator)
 	assert.Error(t, err)
 
 	post.Title = "Another Title"
-	err = tester.RunValidator(Update, post, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: post}, validator)
 	assert.NoError(t, err)
 }
 
@@ -124,14 +124,14 @@ func TestDependentResourcesValidatorHasOne(t *testing.T) {
 
 	post := &postModel{}
 
-	err := tester.RunValidator(Delete, post, validator)
+	err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&commentModel{
 		Post: post.ID(),
 	})
 
-	err = tester.RunValidator(Delete, post, validator)
+	err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.Error(t, err)
 }
 
@@ -144,7 +144,7 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 
 	post := &postModel{}
 
-	err := tester.RunValidator(Delete, post, validator)
+	err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&selectionModel{
@@ -155,7 +155,7 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 		},
 	})
 
-	err = tester.RunValidator(Delete, post, validator)
+	err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.Error(t, err)
 }
 
@@ -172,52 +172,52 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 		Foo: bson.NewObjectId(),
 	})
 
-	err := tester.RunValidator(Create, tester.Save(&fooModel{
+	err := tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    bson.NewObjectId(), // <- missing
 		OptBar: coal.P(existing.ID()),
 		Bars:   []bson.ObjectId{existing.ID()},
-	}), validator)
+	})}, validator)
 	assert.Error(t, err)
 
-	err = tester.RunValidator(Create, tester.Save(&fooModel{
+	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(bson.NewObjectId()), // <- missing
 		Bars:   []bson.ObjectId{existing.ID()},
-	}), validator)
+	})}, validator)
 	assert.Error(t, err)
 
-	err = tester.RunValidator(Create, tester.Save(&fooModel{
+	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
 		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- missing
-	}), validator)
+	})}, validator)
 	assert.Error(t, err)
 
-	err = tester.RunValidator(Create, tester.Save(&fooModel{
+	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    existing.ID(),
 		OptBar: nil, // <- not set
 		Bars:   []bson.ObjectId{existing.ID()},
-	}), validator)
+	})}, validator)
 	assert.NoError(t, err)
 
-	err = tester.RunValidator(Create, tester.Save(&fooModel{
+	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
 		Bars:   nil, // <- not set
-	}), validator)
+	})}, validator)
 	assert.NoError(t, err)
 
-	err = tester.RunValidator(Create, tester.Save(&fooModel{
+	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
 		Foo:    bson.NewObjectId(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
 		Bars:   []bson.ObjectId{existing.ID()},
-	}), validator)
+	})}, validator)
 	assert.NoError(t, err)
 }
 
@@ -229,14 +229,14 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 
 	post := &postModel{}
 
-	err := tester.RunValidator(Delete, post, validator)
+	err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&commentModel{
 		Post: post.ID(),
 	})
 
-	err = tester.RunValidator(Delete, post, validator)
+	err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 	assert.Error(t, err)
 }
 
@@ -250,7 +250,7 @@ func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 		Post: bson.NewObjectId(),
 	})
 
-	err := tester.RunValidator(Create, comment1, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: comment1}, validator)
 	assert.Error(t, err)
 
 	post := tester.Save(&postModel{})
@@ -259,7 +259,7 @@ func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 		Post:   post.ID(),
 	})
 
-	err = tester.RunValidator(Delete, comment2, validator)
+	err = tester.RunCallback(&Context{Operation: Delete, Model: comment2}, validator)
 	assert.NoError(t, err)
 }
 
@@ -288,22 +288,22 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
 	}
 
-	err := tester.RunValidator(Create, candidate, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bar = id
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.OptBar = coal.P(id)
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bars = []bson.ObjectId{id}
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 }
 
@@ -333,27 +333,27 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
 	}
 
-	err := tester.RunValidator(Create, candidate, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 
 	candidate.OptFoo = coal.P(existing.ID())
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bar = id
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.OptBar = coal.P(id)
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bars = []bson.ObjectId{id}
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 }
 
@@ -383,27 +383,27 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
 	}
 
-	err := tester.RunValidator(Create, candidate, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 
 	candidate.Foos = []bson.ObjectId{existing.ID()}
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bar = id
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.OptBar = coal.P(id)
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
 	candidate.Bars = []bson.ObjectId{id}
 
-	err = tester.RunValidator(Create, candidate, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 }
 
@@ -416,7 +416,7 @@ func TestUniqueAttributeValidator(t *testing.T) {
 		Title: "foo",
 	}).(*postModel)
 
-	err := tester.RunValidator(Update, post1, validator)
+	err := tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&postModel{
@@ -425,6 +425,6 @@ func TestUniqueAttributeValidator(t *testing.T) {
 
 	post1.Title = "bar"
 
-	err = tester.RunValidator(Create, post1, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
 	assert.Error(t, err)
 }

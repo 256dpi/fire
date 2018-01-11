@@ -10,11 +10,11 @@ import (
 )
 
 func TestEnforcer(t *testing.T) {
-	assert.NoError(t, tester.RunAuthorizer(fire.List, nil, nil, nil, GrantAccess()))
-	assert.Equal(t, fire.ErrAccessDenied, tester.RunAuthorizer(fire.List, nil, nil, nil, DenyAccess()))
+	assert.NoError(t, tester.RunCallback(nil, GrantAccess()))
+	assert.Equal(t, fire.ErrAccessDenied, tester.RunCallback(nil, DenyAccess()))
 
 	filter := bson.M{}
-	err := tester.RunAuthorizer(fire.List, nil, filter, nil, FilterQuery(bson.M{
+	err := tester.RunCallback(&fire.Context{Filter: filter}, FilterQuery(bson.M{
 		"foo": "bar",
 	}))
 	assert.NoError(t, err)

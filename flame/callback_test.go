@@ -4,15 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/256dpi/fire"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCallbackMissingAccessToken(t *testing.T) {
 	authorizer := Callback("foo")
 
-	err := tester.RunAuthorizer(fire.List, nil, nil, nil, authorizer)
+	err := tester.RunCallback(nil, authorizer)
 	assert.Error(t, err)
 }
 
@@ -23,7 +21,7 @@ func TestCallbackInsufficientAccessToken(t *testing.T) {
 
 	authorizer := Callback("foo")
 
-	err := tester.RunAuthorizer(fire.List, nil, nil, nil, authorizer)
+	err := tester.RunCallback(nil, authorizer)
 	assert.Error(t, err)
 }
 
@@ -34,6 +32,6 @@ func TestCallbackProperAccessToken(t *testing.T) {
 
 	authorizer := Callback("foo")
 
-	err := tester.RunAuthorizer(fire.List, nil, nil, nil, authorizer)
+	err := tester.RunCallback(nil, authorizer)
 	assert.NoError(t, err)
 }
