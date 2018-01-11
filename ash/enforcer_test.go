@@ -14,7 +14,7 @@ func TestEnforcer(t *testing.T) {
 	assert.Equal(t, fire.ErrAccessDenied, tester.RunAuthorizer(fire.List, nil, nil, nil, DenyAccess()))
 
 	filter := bson.M{}
-	err := tester.RunAuthorizer(fire.List, nil, filter, nil, AddFilter(bson.M{
+	err := tester.RunAuthorizer(fire.List, nil, filter, nil, FilterQuery(bson.M{
 		"foo": "bar",
 	}))
 	assert.NoError(t, err)
