@@ -46,11 +46,8 @@ func DenyAccess() *Enforcer {
 // FilterQuery will enforce the authorization by adding the passed filters to the
 // Filter query of the context. It should be used if the candidate is allowed to
 // access the resource in general, but some records should be filtered out.
-//
-// Note: This method will panic if used for Create and CollectionAction operation.
-// You should test for this cases and use another enforcer.
 func FilterQuery(filters bson.M) *Enforcer {
-	return E("ash/FilterQuery", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
+	return E("ash/FilterQuery", nil, func(ctx *fire.Context) error {
 		// assign specified filters
 		for key, value := range filters {
 			ctx.Filter[key] = value
