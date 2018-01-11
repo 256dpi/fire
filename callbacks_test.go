@@ -407,10 +407,10 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestUniqueAttributeValidator(t *testing.T) {
+func TestUniqueFieldValidator(t *testing.T) {
 	tester.Clean()
 
-	validator := UniqueAttributeValidator("title")
+	validator := UniqueFieldValidator("title", "")
 
 	post1 := tester.Save(&postModel{
 		Title: "foo",
@@ -426,5 +426,41 @@ func TestUniqueAttributeValidator(t *testing.T) {
 	post1.Title = "bar"
 
 	err = tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	assert.Error(t, err)
+}
+
+func TestUniqueFieldValidatorOptional(t *testing.T) {
+	tester.Clean()
+
+	validator := UniqueFieldValidator("parent_id", nil)
+
+	comment1 := tester.Save(&commentModel{
+		Post:   bson.NewObjectId(),
+		Parent: nil,
+	}).(*commentModel)
+
+	err := tester.RunCallback(&Context{Operation: Update, Model: comment1}, validator)
+	assert.NoError(t, err)
+
+	id1 := coal.P(bson.NewObjectId())
+
+	comment2 := tester.Save(&commentModel{
+		Post:   bson.NewObjectId(),
+		Parent: id1,
+	}).(*commentModel)
+
+	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
+	assert.NoError(t, err)
+
+	id2 := coal.P(bson.NewObjectId())
+
+	tester.Save(&commentModel{
+		Post:   bson.NewObjectId(),
+		Parent: id2,
+	})
+
+	comment2.Parent = id2
+
+	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
 	assert.Error(t, err)
 }

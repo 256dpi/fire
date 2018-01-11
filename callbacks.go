@@ -468,16 +468,14 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 	})
 }
 
-// UniqueAttributeValidator ensures that the specified attribute of the
-// controllers Model will remain unique among the specified filters.
+// UniqueFieldValidator ensures that the specified field of the Model will
+// remain unique among the specified filters. If the value matches the provided
+// zero value the check is skipped.
 //
-// The unique attribute is defines as the first argument. Filters are defined
-// by passing a list of database fields:
+//	UniqueFieldValidator(F(&Blog{}, "Name"), "", F(&Blog{}, "Creator"))
 //
-//	UniqueAttributeValidator(F(&Blog{}, "Name"), F(&Blog{}, "Creator"))
-//
-func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callback {
-	return C("fire/UniqueAttributeValidator", Only(Create, Update), func(ctx *Context) error {
+func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
+	return C("fire/UniqueFieldValidator", Only(Create, Update), func(ctx *Context) error {
 		// check if field has changed
 		if ctx.Operation == Update {
 			// get original model
@@ -487,14 +485,22 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callba
 			}
 
 			// return if field has not been changed
-			if reflect.DeepEqual(ctx.Model.MustGet(uniqueAttribute), original.MustGet(uniqueAttribute)) {
+			if reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
 				return nil
 			}
 		}
 
+		// get value
+		value := ctx.Model.MustGet(field)
+
+		// return if value is the zero value
+		if reflect.DeepEqual(value, zero) {
+			return nil
+		}
+
 		// prepare query
 		query := bson.M{
-			uniqueAttribute: ctx.Model.MustGet(uniqueAttribute),
+			field: value,
 		}
 
 		// add filters
@@ -509,7 +515,7 @@ func UniqueAttributeValidator(uniqueAttribute string, filters ...string) *Callba
 		if err != nil {
 			return err
 		} else if n != 0 {
-			return Safe(fmt.Errorf("attribute %s is not unique", uniqueAttribute))
+			return Safe(fmt.Errorf("attribute %s is not unique", field))
 		}
 		ctx.Tracer.Pop()
 
