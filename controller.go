@@ -92,6 +92,9 @@ type Controller struct {
 
 	// ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
+	//
+	// Note: Fire uses the "page[number]" and "page[size]" query parameters for
+	// pagination.
 	ListLimit uint64
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
@@ -109,8 +112,6 @@ type Controller struct {
 
 	parser jsonapi.Parser
 }
-
-// TODO: Update pagination to use offset and limit.
 
 // TODO: Always render resource for relationship changes, as attributes might change?
 
