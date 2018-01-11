@@ -117,6 +117,9 @@ type Context struct {
 	// The sorting that will be used during List.
 	Sorting []string
 
+	// The filtered fields if at least one is available.
+	Fields []string
+
 	// The document that will be written to the client during List, Find, Create
 	// and partially Update. The JSON API endpoints which modify a resources
 	// relationships do only respond with a header as no other information should

@@ -192,6 +192,9 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		stack.AbortIf(err)
 	}
 
+	// set fields
+	ctx.Fields = ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName]
+
 	// copy store
 	store := c.Store.Copy()
 	defer store.Close()
@@ -448,6 +451,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	newCtx := &Context{
 		Selector: bson.M{},
 		Filter:   bson.M{},
+		Fields:   ctx.JSONAPIRequest.Fields[relatedController.Model.Meta().PluralName],
 		Store:    ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
@@ -1134,7 +1138,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
 	// create map from model
-	m, err := jsonapi.StructToMap(model, ctx.JSONAPIRequest.Fields[model.Meta().PluralName])
+	m, err := jsonapi.StructToMap(model, ctx.Fields)
 	stack.AbortIf(err)
 
 	// prepare resource
