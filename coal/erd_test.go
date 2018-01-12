@@ -4,7 +4,7 @@ import "fmt"
 
 func ExampleCatalog_VisualizeModels() {
 	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	fmt.Print(catalog.VisualizeModels("Test"))
+	fmt.Print(catalog.Visualize("Test"))
 
 	// Output:
 	// digraph G {

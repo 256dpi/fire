@@ -6,9 +6,9 @@ import (
 	"sort"
 )
 
-// VisualizeModels emits a string in dot format that when put through graphviz
+// Visualize emits a string in dot format that when put through graphviz
 // visualizes the model dependencies.
-func (c *Catalog) VisualizeModels(name string) string {
+func (c *Catalog) Visualize(title string) string {
 	// prepare buffer
 	var out bytes.Buffer
 
@@ -24,7 +24,7 @@ func (c *Catalog) VisualizeModels(name string) string {
 	out.WriteString("  fontsize=\"13\";\n")
 	out.WriteString("  fontname=\"Arial BoldMT\";\n")
 	out.WriteString("  splines=\"spline\";\n")
-	out.WriteString("  label=\"" + name + "\";\n")
+	out.WriteString("  label=\"" + title + "\";\n")
 
 	// get a sorted list of model names and lookup table
 	var names []string
