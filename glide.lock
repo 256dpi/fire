@@ -1,5 +1,5 @@
-hash: 52a2525a6d4d1c0f9782b231469358ce83699e8d69bffd8aa37aaf350c6a07fb
-updated: 2018-01-11T22:17:38.453899+01:00
+hash: 05d8657d2aa7d685a6a0213efc8022ad8c3033a69f6a859f873908774dac78ad
+updated: 2018-01-12T17:05:16.899268+01:00
 imports:
 - name: github.com/256dpi/jsonapi
   version: 778c9ece97935c22b67824b2af8825d392786f64
@@ -15,8 +15,6 @@ imports:
   version: 7420e9ad7ed883a6ef0a737cca30af639de46b38
 - name: github.com/asaskevich/govalidator
   version: 7664702784775e51966f0885f5cd27435916517b
-- name: github.com/awalterschulze/gographviz
-  version: c84395e536e1a1199093a4e6253d1bee99e4cd2a
 - name: github.com/dgrijalva/jwt-go
   version: dbeaa9332f19a944acb5736b4456cfcc02140e29
 - name: github.com/goware/cors

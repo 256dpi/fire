@@ -2,26 +2,38 @@
 package spark
 
 import (
+	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/256dpi/fire/coal"
-
-	"github.com/awalterschulze/gographviz"
 )
 
 // VisualizeModels emits a string in dot format that when put through graphviz
 // visualizes the model dependencies.
 func VisualizeModels(catalog *coal.Catalog) string {
-	// create graph
-	graph := gographviz.NewEscape()
-	panicIfSet(graph.SetName("G"))
-	graph.AddAttr("G", "overlap", "false")
-	graph.AddAttr("G", "splines", "ortho")
-	graph.AddAttr("G", "nodesep", "1")
+	// prepare buffer
+	var out bytes.Buffer
+
+	// start graph
+	out.WriteString("graph G {\n")
+	out.WriteString("  nodesep=1;\n")
+	out.WriteString("  overlap=false;\n")
+	out.WriteString("  splines=ortho;\n")
+
+	// get a sorted list of model names
+	var names []string
+	for name := range catalog.Models {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 
 	// add model nodes
-	for name, model := range catalog.Models {
+	for _, name := range names {
+		// get model
+		model := catalog.Models[name]
+
 		// get attribute, relationships and fields
 		var attributes []string
 		var relationships []string
@@ -43,29 +55,25 @@ func VisualizeModels(catalog *coal.Catalog) string {
 			strings.Join(fields, `\l`),
 		)
 
-		// add node
-		panicIfSet(graph.AddNode("G", name, map[string]string{
-			"shape": "Mrecord",
-			"label": label,
-		}))
+		// write node
+		out.WriteString(fmt.Sprintf(`  "%s" [ label=%s, shape=Mrecord ];`, name, label) + "\n")
 	}
 
 	// add relationships
-	for name, model := range catalog.Models {
+	for _, name := range names {
+		// get model
+		model := catalog.Models[name]
+
 		for _, field := range model.Meta().Fields {
 			if field.RelName != "" {
-				graph.AddEdge(name, field.RelType, false, map[string]string{
-					"arrowhead": "normal", "dir": "forward",
-				})
+				// write edge
+				out.WriteString(fmt.Sprintf(`  "%s"--"%s"[ arrowhead=normal, dir=forward ];`, name, field.RelType) + "\n")
 			}
 		}
 	}
 
-	return graph.String()
-}
+	// end graph
+	out.WriteString("}\n")
 
-func panicIfSet(err error) {
-	if err != nil {
-		panic(err)
-	}
+	return out.String()
 }

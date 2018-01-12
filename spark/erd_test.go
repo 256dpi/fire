@@ -42,17 +42,19 @@ func ExampleVisualizeModels() {
 
 	// Output:
 	// graph G {
-	// 	posts--comments[ arrowhead=normal, dir=forward ];
-	// 	posts--selections[ arrowhead=normal, dir=forward ];
-	// 	posts--notes[ arrowhead=normal, dir=forward ];
-	// 	comments--comments[ arrowhead=normal, dir=forward ];
-	// 	comments--posts[ arrowhead=normal, dir=forward ];
-	// 	selections--posts[ arrowhead=normal, dir=forward ];
-	// 	notes--posts[ arrowhead=normal, dir=forward ];
-	// 	comments [ label="{comments\l|message\l|parent\lpost\l|\l}", shape=Mrecord ];
-	// 	notes [ label="{notes\l|title\l|post\l|\l}", shape=Mrecord ];
-	// 	posts [ label="{posts\l|title\lpublished\l|comments\lselections\lnote\l|\l}", shape=Mrecord ];
-	// 	selections [ label="{selections\l|name\l|posts\l|\l}", shape=Mrecord ];
-	//
+	//   nodesep=1;
+	//   overlap=false;
+	//   splines=ortho;
+	//   "comments" [ label="{comments\l|message\l|parent\lpost\l|\l}", shape=Mrecord ];
+	//   "cool-notes" [ label="{cool-notes\l|title\l|post\l|\l}", shape=Mrecord ];
+	//   "posts" [ label="{posts\l|title\lpublished\l|comments\lselections\lnote\l|\l}", shape=Mrecord ];
+	//   "selections" [ label="{selections\l|name\l|posts\l|\l}", shape=Mrecord ];
+	//   "comments"--"comments"[ arrowhead=normal, dir=forward ];
+	//   "comments"--"posts"[ arrowhead=normal, dir=forward ];
+	//   "cool-notes"--"posts"[ arrowhead=normal, dir=forward ];
+	//   "posts"--"comments"[ arrowhead=normal, dir=forward ];
+	//   "posts"--"selections"[ arrowhead=normal, dir=forward ];
+	//   "posts"--"cool-notes"[ arrowhead=normal, dir=forward ];
+	//   "selections"--"posts"[ arrowhead=normal, dir=forward ];
 	// }
 }
