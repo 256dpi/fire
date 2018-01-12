@@ -1,18 +1,15 @@
-// Package spark provides tools for generating visualizations.
-package spark
+package coal
 
 import (
 	"bytes"
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/256dpi/fire/coal"
 )
 
 // VisualizeModels emits a string in dot format that when put through graphviz
 // visualizes the model dependencies.
-func VisualizeModels(catalog *coal.Catalog) string {
+func (c *Catalog) VisualizeModels() string {
 	// prepare buffer
 	var out bytes.Buffer
 
@@ -24,7 +21,7 @@ func VisualizeModels(catalog *coal.Catalog) string {
 
 	// get a sorted list of model names
 	var names []string
-	for name := range catalog.Models {
+	for name := range c.models {
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -32,7 +29,7 @@ func VisualizeModels(catalog *coal.Catalog) string {
 	// add model nodes
 	for _, name := range names {
 		// get model
-		model := catalog.Models[name]
+		model := c.models[name]
 
 		// get attribute, relationships and fields
 		var attributes []string
@@ -62,7 +59,7 @@ func VisualizeModels(catalog *coal.Catalog) string {
 	// add relationships
 	for _, name := range names {
 		// get model
-		model := catalog.Models[name]
+		model := c.models[name]
 
 		for _, field := range model.Meta().Fields {
 			if field.RelName != "" {

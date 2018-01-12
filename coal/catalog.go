@@ -2,13 +2,13 @@ package coal
 
 // A Catalog provides a mechanism for models to access each others meta data.
 type Catalog struct {
-	Models map[string]Model
+	models map[string]Model
 }
 
 // NewCatalog will create a new catalog.
 func NewCatalog(models ...Model) *Catalog {
 	g := &Catalog{
-		Models: make(map[string]Model),
+		models: make(map[string]Model),
 	}
 
 	g.Add(models...)
@@ -19,11 +19,11 @@ func NewCatalog(models ...Model) *Catalog {
 // Add will add the specified models to the catalog.
 func (c *Catalog) Add(models ...Model) {
 	for _, model := range models {
-		c.Models[Init(model).Meta().PluralName] = model
+		c.models[Init(model).Meta().PluralName] = model
 	}
 }
 
 // Find will return a model with the specified plural name.
 func (c *Catalog) Find(pluralName string) Model {
-	return c.Models[pluralName]
+	return c.models[pluralName]
 }
