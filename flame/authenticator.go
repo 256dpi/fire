@@ -216,15 +216,15 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get additional data
-			data := accessToken.GetTokenData()
+			scope, expiresAt, clientID, resourceOwnerID := accessToken.GetTokenData()
 
 			// validate expiration
-			if data.ExpiresAt.Before(time.Now()) {
+			if expiresAt.Before(time.Now()) {
 				stack.Abort(bearer.InvalidToken("expired token"))
 			}
 
 			// validate scope
-			if !oauth2.Scope(data.Scope).Includes(s) {
+			if !oauth2.Scope(scope).Includes(s) {
 				stack.Abort(bearer.InsufficientScope(s.String()))
 			}
 
@@ -238,7 +238,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get client
-			client := a.getFirstClient(state, data.ClientID)
+			client := a.getFirstClient(state, clientID)
 			if client == nil {
 				stack.Abort(errors.New("missing client"))
 			}
@@ -248,13 +248,13 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// call next handler if resource owner does not exist or should not
 			// be loaded
-			if data.ResourceOwnerID == nil || !loadResourceOwner {
+			if resourceOwnerID == nil || !loadResourceOwner {
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
 			// get resource owner
-			resourceOwner := a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
+			resourceOwner := a.getFirstResourceOwner(state, client, *resourceOwnerID)
 			if client == nil {
 				stack.Abort(errors.New("missing resource owner"))
 			}
@@ -480,32 +480,32 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// get data
-	data := rt.GetTokenData()
+	scope, expiresAt, clientID, resourceOwnerID := rt.GetTokenData()
 
 	// validate expiration
-	if data.ExpiresAt.Before(time.Now()) {
+	if expiresAt.Before(time.Now()) {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	}
 
 	// validate ownership
-	if data.ClientID != client.ID() {
+	if clientID != client.ID() {
 		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
 	// inherit scope from stored refresh token
 	if req.Scope.Empty() {
-		req.Scope = data.Scope
+		req.Scope = scope
 	}
 
 	// validate scope - a missing scope is always included
-	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
+	if !oauth2.Scope(scope).Includes(req.Scope) {
 		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
 	var ro ResourceOwner
-	if data.ResourceOwnerID != nil {
-		ro = a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
+	if resourceOwnerID != nil {
+		ro = a.getFirstResourceOwner(state, client, *resourceOwnerID)
 	}
 
 	// issue tokens
@@ -563,20 +563,8 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	atExpiry := time.Now().Add(a.policy.AccessTokenLifespan)
 	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
 
-	// create access token data
-	accessTokenData := &TokenData{
-		Scope:     scope,
-		ExpiresAt: atExpiry,
-		ClientID:  client.ID(),
-	}
-
-	// set resource owner id if available
-	if resourceOwner != nil {
-		accessTokenData.ResourceOwnerID = coal.P(resourceOwner.ID())
-	}
-
 	// save access token
-	at := a.saveToken(state, a.policy.AccessToken, accessTokenData)
+	at := a.saveToken(state, a.policy.AccessToken, scope, atExpiry, client, resourceOwner)
 
 	// generate new access token
 	atSignature, err := a.policy.GenerateToken(at.ID(), time.Now(), atExpiry, client, resourceOwner, at)
@@ -588,21 +576,10 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	// set granted scope
 	res.Scope = scope
 
+	// issue a refresh token if requested
 	if refreshable {
-		// create refresh token data
-		refreshTokenData := &TokenData{
-			Scope:     scope,
-			ExpiresAt: rtExpiry,
-			ClientID:  client.ID(),
-		}
-
-		// set resource owner id if available
-		if resourceOwner != nil {
-			refreshTokenData.ResourceOwnerID = coal.P(resourceOwner.ID())
-		}
-
 		// save refresh token
-		rt := a.saveToken(state, a.policy.RefreshToken, refreshTokenData)
+		rt := a.saveToken(state, a.policy.RefreshToken, scope, rtExpiry, client, resourceOwner)
 
 		// generate new refresh token
 		rtSignature, err := a.policy.GenerateToken(rt.ID(), time.Now(), rtExpiry, client, resourceOwner, rt)
@@ -644,11 +621,8 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	// prepare object
 	obj := model.Meta().Make()
 
-	// get description
-	desc := model.DescribeClient()
-
 	// get id field
-	field := coal.F(model, desc.IdentifierField)
+	field := coal.F(model, model.DescribeClient())
 
 	// prepare query
 	query := bson.M{field: id}
@@ -745,11 +719,8 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	// prepare object
 	obj := coal.Init(model).Meta().Make()
 
-	// get description
-	desc := model.DescribeResourceOwner()
-
 	// get id field
-	field := coal.F(model, desc.IdentifierField)
+	field := coal.F(model, model.DescribeResourceOwner())
 
 	// prepare query
 	query := bson.M{field: id}
@@ -820,17 +791,17 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id b
 	return resourceOwner
 }
 
-func (a *Authenticator) getToken(state *state, t Token, id bson.ObjectId) Token {
+func (a *Authenticator) getToken(state *state, model Token, id bson.ObjectId) Token {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getToken")
 
 	// prepare object
-	obj := t.Meta().Make()
+	obj := model.Meta().Make()
 
 	// fetch access token
 	state.tracer.Push("mgo/Query.One")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(t).FindId(id).One(obj)
+	err := state.store.C(model).FindId(id).One(obj)
 	if err == mgo.ErrNotFound {
 		state.tracer.Pop()
 		return nil
@@ -847,15 +818,15 @@ func (a *Authenticator) getToken(state *state, t Token, id bson.ObjectId) Token 
 	return accessToken
 }
 
-func (a *Authenticator) saveToken(state *state, t Token, d *TokenData) Token {
+func (a *Authenticator) saveToken(state *state, model Token, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) Token {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.saveToken")
 
 	// prepare access token
-	token := t.Meta().Make().(Token)
+	token := model.Meta().Make().(Token)
 
 	// set access token data
-	token.SetTokenData(d)
+	token.SetTokenData(scope, expiresAt, client, resourceOwner)
 
 	// save access token
 	state.tracer.Push("mgo/Collection.Insert")
@@ -870,14 +841,14 @@ func (a *Authenticator) saveToken(state *state, t Token, d *TokenData) Token {
 	return token
 }
 
-func (a *Authenticator) deleteToken(state *state, t Token, id bson.ObjectId) {
+func (a *Authenticator) deleteToken(state *state, model Token, id bson.ObjectId) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.deleteToken")
 
 	// delete token
 	state.tracer.Push("mgo/Collection.RemoveId")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(t).RemoveId(id)
+	err := state.store.C(model).RemoveId(id)
 	if err == mgo.ErrNotFound {
 		err = nil
 	}

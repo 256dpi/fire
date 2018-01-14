@@ -10,23 +10,15 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// TokenData is used to carry token related information.
-type TokenData struct {
-	Scope           []string
-	ExpiresAt       time.Time
-	ClientID        bson.ObjectId
-	ResourceOwnerID *bson.ObjectId
-}
-
 // Token is the interface that must be implemented by the tokens.
 type Token interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() *TokenData
+	GetTokenData() (scope []string, expiresAt time.Time, client bson.ObjectId, resourceOwner *bson.ObjectId)
 
 	// SetTokenData should set the specified token data.
-	SetTokenData(*TokenData)
+	SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
 }
 
 // AccessToken is the built-in model used to store access tokens.
@@ -53,21 +45,18 @@ func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.Token interface.
-func (t *AccessToken) GetTokenData() *TokenData {
-	return &TokenData{
-		Scope:           t.Scope,
-		ExpiresAt:       t.ExpiresAt,
-		ClientID:        t.Client,
-		ResourceOwnerID: t.ResourceOwner,
-	}
+func (t *AccessToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
+	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
 }
 
 // SetTokenData implements the flame.Token interface.
-func (t *AccessToken) SetTokenData(data *TokenData) {
-	t.Scope = data.Scope
-	t.ExpiresAt = data.ExpiresAt
-	t.Client = data.ClientID
-	t.ResourceOwner = data.ResourceOwnerID
+func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
+	t.Scope = scope
+	t.ExpiresAt = expiresAt
+	t.Client = client.ID()
+	if resourceOwner != nil {
+		t.ResourceOwner = coal.P(resourceOwner.ID())
+	}
 }
 
 // RefreshToken is the built-in model used to store refresh tokens.
@@ -94,35 +83,26 @@ func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.Token interface.
-func (t *RefreshToken) GetTokenData() *TokenData {
-	return &TokenData{
-		Scope:           t.Scope,
-		ExpiresAt:       t.ExpiresAt,
-		ClientID:        t.Client,
-		ResourceOwnerID: t.ResourceOwner,
-	}
+func (t *RefreshToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
+	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
 }
 
 // SetTokenData implements the flame.Token interface.
-func (t *RefreshToken) SetTokenData(data *TokenData) {
-	t.Scope = data.Scope
-	t.ExpiresAt = data.ExpiresAt
-	t.Client = data.ClientID
-	t.ResourceOwner = data.ResourceOwnerID
-}
-
-// A ClientDescription is returned by a Client model to specify details about
-// its implementation.
-type ClientDescription struct {
-	IdentifierField string
+func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
+	t.Scope = scope
+	t.ExpiresAt = expiresAt
+	t.Client = client.ID()
+	if resourceOwner != nil {
+		t.ResourceOwner = coal.P(resourceOwner.ID())
+	}
 }
 
 // Client is the interface that must be implemented by clients.
 type Client interface {
 	coal.Model
 
-	// DescribeClient should return a ClientDescription.
-	DescribeClient() ClientDescription
+	// DescribeClient should return a the clients identifier field.
+	DescribeClient() (identifierField string)
 
 	// ValidRedirectURL should return whether the specified redirect url can be
 	// used by this client.
@@ -152,10 +132,8 @@ func AddApplicationIndexes(i *coal.Indexer) {
 }
 
 // DescribeClient implements the flame.Client interface.
-func (a *Application) DescribeClient() ClientDescription {
-	return ClientDescription{
-		IdentifierField: "Key",
-	}
+func (a *Application) DescribeClient() string {
+	return "Key"
 }
 
 // ValidRedirectURL implements the flame.Client interface.
@@ -211,8 +189,8 @@ type ResourceOwnerDescription struct {
 type ResourceOwner interface {
 	coal.Model
 
-	// DescribeResourceOwner should return a ResourceOwnerDescription.
-	DescribeResourceOwner() ResourceOwnerDescription
+	// DescribeResourceOwner should return the resource owners identifier field.
+	DescribeResourceOwner() (identifierField string)
 
 	// ValidSecret should determine whether the specified plain text password
 	// matches the stored hashed password.
@@ -234,10 +212,8 @@ func AddUserIndexes(i *coal.Indexer) {
 }
 
 // DescribeResourceOwner implements the flame.ResourceOwner interface.
-func (u *User) DescribeResourceOwner() ResourceOwnerDescription {
-	return ResourceOwnerDescription{
-		IdentifierField: "Email",
-	}
+func (u *User) DescribeResourceOwner() string {
+	return "Email"
 }
 
 // ValidPassword implements the flame.ResourceOwner interface.

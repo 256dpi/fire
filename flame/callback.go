@@ -23,7 +23,8 @@ func Callback(scope string) *fire.Callback {
 		}
 
 		// validate scope
-		if !oauth2.Scope(accessToken.GetTokenData().Scope).Includes(s) {
+		scope, _, _, _ := accessToken.GetTokenData()
+		if !oauth2.Scope(scope).Includes(s) {
 			return fire.ErrAccessDenied
 		}
 
