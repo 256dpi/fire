@@ -333,7 +333,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			bsonField := ""
 			for _, relatedField := range relatedModel.Meta().Fields {
 				if relatedField.RelName == field.RelInverse {
-					bsonField = relatedField.BSONName
+					bsonField = relatedField.Name
 				}
 			}
 			if bsonField == "" {
@@ -353,7 +353,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			}
 
 			// add relationship
-			references[field.BSONName] = relatedModel
+			references[field.Name] = relatedModel
 		}
 	}
 
