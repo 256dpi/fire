@@ -1053,6 +1053,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignData")
 
+	// TODO: Only allow changes to whitelisted attributes?
+
 	// map attributes to struct
 	stack.AbortIf(res.Attributes.Assign(ctx.Model))
 
@@ -1068,6 +1070,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
+
+	// TODO: Only allow changes to whitelisted relationships?
 
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {
@@ -1151,6 +1155,8 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
+	// TODO: Only expose whitelisted attributes.
+
 	// create map from model
 	m, err := jsonapi.StructToMap(model, ctx.Fields)
 	stack.AbortIf(err)
@@ -1168,6 +1174,8 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	if ctx.JSONAPIRequest.Prefix != "" {
 		base = "/" + ctx.JSONAPIRequest.Prefix + base
 	}
+
+	// TODO: Only expose whitelisted relationships.
 
 	// go through all relationships
 	for _, field := range model.Meta().Fields {

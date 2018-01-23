@@ -103,12 +103,16 @@ type Context struct {
 	// is preset.
 	Selector bson.M
 
+	// TODO: Split up Selector up in ID, Reference and ReferenceID?
+
 	// The query that will be used during an List, Find, Update, Delete or
 	// ResourceAction operation to further filter the selection of a list of
 	// models or a specific model.
 	//
 	// On List operations, attribute and relationship filters are preset.
 	Filter bson.M
+
+	// TODO: Split up preset and custom filters?
 
 	// The Model that will be saved during Create, updated during Update or
 	// deleted during Delete.
@@ -117,8 +121,12 @@ type Context struct {
 	// The sorting that will be used during List.
 	Sorting []string
 
+	// TODO: Simplify Sorting e.g. Field: Asc / Desc.
+
 	// The filtered fields if at least one is available.
 	Fields []string
+
+	// TODO: Add a system filter that should not be overwritten.
 
 	// The document that will be written to the client during List, Find, Create
 	// and Update.
