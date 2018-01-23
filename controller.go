@@ -48,12 +48,23 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *coal.Store
 
-	// Filters defines the attributes and relationships that are filterable.
+	// Filters is a list of attributes and relationships that are filterable.
 	// Only fields that are indexed should be made filterable.
+	//
+	//	Filters: fire.S{
+	// 		coal.A(&Post{}, "Type"), // attribute
+	// 		coal.R(&Post{}, "Author"), // relationship
+	// 	}
+	//
 	Filters []string
 
-	// Sorters defines the attributes that are sortable. Only fields that are
+	// Sorters is a list of attributes that are sortable. Only fields that are
 	// indexed should be made sortable.
+	//
+	//	Sorters: fire.S{
+	// 		coal.A(&Post{}, "CreatedAt"), // attribute
+	// 	}
+	//
 	Sorters []string
 
 	// Authorizers authorize the requested operation on the requested resource

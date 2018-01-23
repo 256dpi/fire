@@ -148,9 +148,9 @@ type noDefault int
 //
 // Attributes are defined by passing pairs of fields and default values:
 //
-//	ProtectedFieldsValidator(map[string]interface{}{
-//		F(&Post{}, "Title"): NoDefault, // can only be set during Create
-//		F(&Post{}, "Link"):  "",        // is fixed and cannot be changed
+//	fire.ProtectedFieldsValidator(map[string]interface{}{
+//		coal.F(&Post{}, "Title"): NoDefault, // can only be set during Create
+//		coal.F(&Post{}, "Link"):  "",        // is fixed and cannot be changed
 //	})
 //
 // The special NoDefault value can be provided to skip the default enforcement
@@ -201,9 +201,9 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 // Dependent resources are defined by passing pairs of collections and database
 // fields that hold the current models id:
 //
-//	DependentResourcesValidator(map[string]string{
-//		C(&Post{}): F(&Post{}, "Author"),
-//		C(&Comment{}): F(&Comment{}, "Author"),
+//	fire.DependentResourcesValidator(map[string]string{
+//		coal.C(&Post{}): coal.F(&Post{}, "Author"),
+//		coal.C(&Comment{}): coal.F(&Comment{}, "Author"),
 //	})
 //
 func DependentResourcesValidator(resources map[string]string) *Callback {
@@ -239,9 +239,9 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 // References are defined by passing pairs of database fields and collections of
 // models whose ids might be referenced on the current model:
 //
-//	VerifyReferencesValidator(map[string]string{
-//		F(&Comment{}, "Post"): C(&Post{}),
-//		F(&Comment{}, "Author"): C(&User{}),
+//	fire.VerifyReferencesValidator(map[string]string{
+//		coal.F(&Comment{}, "Post"): coal.C(&Post{}),
+//		coal.F(&Comment{}, "Author"): coal.C(&User{}),
 //	})
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
@@ -394,8 +394,8 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 // field on the current model. The matcher is defined by passing pairs of
 // database fields on the target and current model:
 //
-//	MatchingReferencesValidator(C(&Blog{}), F(&Post{}, "Blog"), map[string]string{
-//		F(&Blog{}, "Owner"): F(&Post{}, "Owner"),
+//	fire.MatchingReferencesValidator(coal.C(&Blog{}), coal.F(&Post{}, "Blog"), map[string]string{
+//		coal.F(&Blog{}, "Owner"): coal.F(&Post{}, "Owner"),
 //	})
 //
 // To-many, optional to-many and has-many relationships are supported both for
@@ -477,7 +477,7 @@ type noZero int
 // remain unique among the specified filters. If the value matches the provided
 // zero value the check is skipped.
 //
-//	UniqueFieldValidator(F(&Blog{}, "Name"), "", F(&Blog{}, "Creator"))
+//	fire.UniqueFieldValidator(coal.F(&Blog{}, "Name"), "", coal.F(&Blog{}, "Creator"))
 //
 // The special NoZero value can be provided to skip the zero check.
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
