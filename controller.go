@@ -15,9 +15,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// S is a short-hand type to create list of strings.
-type S []string
-
 // L is a short-hand type to create a list of callbacks.
 type L []*Callback
 
@@ -48,22 +45,17 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *coal.Store
 
-	// Filters is a list of attributes and relationships that are filterable.
-	// Only fields that are indexed should be made filterable.
+	// Filters is a list of fields that are filterable. Only fields that are
+	// indexed should be made filterable.
 	//
-	//	Filters: fire.S{
-	// 		coal.A(&Post{}, "Type"), // attribute
-	// 		coal.R(&Post{}, "Author"), // relationship
-	// 	}
+	//	Filters: []string{"Type", "Author"}
 	//
 	Filters []string
 
-	// Sorters is a list of attributes that are sortable. Only fields that are
+	// Sorters is a list of fields that are sortable. Only fields that are
 	// indexed should be made sortable.
 	//
-	//	Sorters: fire.S{
-	// 		coal.A(&Post{}, "CreatedAt"), // attribute
-	// 	}
+	//	Sorters: []string{"Tag", "CreatedAt"}
 	//
 	Sorters []string
 
@@ -958,7 +950,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute filter
-			if field.JSONName == name && stringInList(field.JSONName, c.Filters) {
+			if field.JSONName == name && stringInList(field.Name, c.Filters) {
 				handled = true
 
 				// handle boolean values
@@ -975,7 +967,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 			}
 
 			// handle relationship filter
-			if field.RelName == name && (field.ToOne || field.ToMany) && stringInList(field.RelName, c.Filters) {
+			if field.RelName == name && (field.ToOne || field.ToMany) && stringInList(field.Name, c.Filters) {
 				handled = true
 
 				// convert to object id list
@@ -1007,7 +999,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute sorter
-			if (field.JSONName == normalizedSorter) && stringInList(field.JSONName, c.Sorters) {
+			if (field.JSONName == normalizedSorter) && stringInList(field.Name, c.Sorters) {
 				handled = true
 
 				// add sorter

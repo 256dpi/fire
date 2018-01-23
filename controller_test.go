@@ -252,27 +252,20 @@ func TestFiltering(t *testing.T) {
 	tester.Clean()
 
 	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-		Filters: []string{
-			"title",
-			"published",
-		},
+		Model:   &postModel{},
+		Store:   tester.Store,
+		Filters: []string{"Title", "Published"},
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,
 	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-		Filters: []string{
-			"posts",
-		},
+		Model:   &selectionModel{},
+		Store:   tester.Store,
+		Filters: []string{"Posts"},
 	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-		Filters: []string{
-			"post",
-		},
+		Model:   &noteModel{},
+		Store:   tester.Store,
+		Filters: []string{"Post"},
 	})
 
 	// create posts
@@ -726,11 +719,9 @@ func TestSorting(t *testing.T) {
 	tester.Clean()
 
 	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-		Sorters: []string{
-			"title",
-		},
+		Model:   &postModel{},
+		Store:   tester.Store,
+		Sorters: []string{"Title"},
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,
