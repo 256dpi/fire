@@ -30,6 +30,11 @@ func P(id bson.ObjectId) *bson.ObjectId {
 	return &id
 }
 
+// N is a short-hand function to get a typed nil for an id pointer.
+func N() *bson.ObjectId {
+	return nil
+}
+
 // Unique is a helper to get a unique list of object ids.
 func Unique(ids []bson.ObjectId) []bson.ObjectId {
 	// prepare map

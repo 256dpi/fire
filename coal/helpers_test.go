@@ -28,6 +28,12 @@ func TestP(t *testing.T) {
 	assert.Equal(t, &id, P(id))
 }
 
+func TestN(t *testing.T) {
+	var id *bson.ObjectId
+	assert.Equal(t, id, N())
+	assert.NotEqual(t, nil, N())
+}
+
 func TestUnique(t *testing.T) {
 	id1 := bson.NewObjectId()
 	id2 := bson.NewObjectId()
