@@ -46,11 +46,11 @@ type Controller struct {
 	Store *coal.Store
 
 	// Filters is a list of fields that are filterable. Only fields that are
-	// indexed should be made filterable.
+	// exposed and indexed should be made filterable.
 	Filters []string
 
 	// Sorters is a list of fields that are sortable. Only fields that are
-	// indexed should be made sortable.
+	// exposed and indexed should be made sortable.
 	Sorters []string
 
 	// Authorizers authorize the requested operation on the requested resource
