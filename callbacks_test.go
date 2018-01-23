@@ -60,7 +60,7 @@ func TestModelValidator(t *testing.T) {
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 	validator := ProtectedFieldsValidator(map[string]interface{}{
-		"title": "Default Title",
+		"Title": "Default Title",
 	})
 
 	post := &postModel{
@@ -79,7 +79,7 @@ func TestProtectedAttributesValidatorNoDefault(t *testing.T) {
 	assert.NotEqual(t, NoDefault, 0)
 
 	validator := ProtectedFieldsValidator(map[string]interface{}{
-		"title": NoDefault,
+		"Title": NoDefault,
 	})
 
 	post := &postModel{
@@ -94,7 +94,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 	tester.Clean()
 
 	validator := ProtectedFieldsValidator(map[string]interface{}{
-		"title": "Default Title",
+		"Title": "Default Title",
 	})
 
 	savedPost := tester.Save(&postModel{
@@ -117,9 +117,8 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 func TestDependentResourcesValidatorHasOne(t *testing.T) {
 	tester.Clean()
 
-	validator := DependentResourcesValidator(map[string]string{
-		"comments": "post_id",
-		"users":    "author_id",
+	validator := DependentResourcesValidator(map[coal.Model]string{
+		&commentModel{}: "Post",
 	})
 
 	post := &postModel{}
@@ -138,8 +137,8 @@ func TestDependentResourcesValidatorHasOne(t *testing.T) {
 func TestDependentResourcesValidatorHasMany(t *testing.T) {
 	tester.Clean()
 
-	validator := DependentResourcesValidator(map[string]string{
-		"selections": "post_ids",
+	validator := DependentResourcesValidator(map[coal.Model]string{
+		&selectionModel{}: "Posts",
 	})
 
 	post := &postModel{}
@@ -162,10 +161,10 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
-	validator := VerifyReferencesValidator(map[string]string{
-		"bar_id":     "bars",
-		"opt_bar_id": "bars",
-		"bar_ids":    "bars",
+	validator := VerifyReferencesValidator(map[string]coal.Model{
+		"Bar":    &barModel{},
+		"OptBar": &barModel{},
+		"Bars":   &barModel{},
 	})
 
 	existing := tester.Save(&barModel{
@@ -266,10 +265,10 @@ func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 func TestMatchingReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
-	validator := MatchingReferencesValidator("foos", "foo_id", map[string]string{
-		"bar_id":     "bar_id",
-		"opt_bar_id": "opt_bar_id",
-		"bar_ids":    "bar_ids",
+	validator := MatchingReferencesValidator("Foo", &fooModel{}, map[string]string{
+		"Bar":    "Bar",
+		"OptBar": "OptBar",
+		"Bars":   "Bars",
 	})
 
 	id := bson.NewObjectId()
@@ -310,10 +309,10 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 	tester.Clean()
 
-	validator := MatchingReferencesValidator("foos", "opt_foo_id", map[string]string{
-		"bar_id":     "bar_id",
-		"opt_bar_id": "opt_bar_id",
-		"bar_ids":    "bar_ids",
+	validator := MatchingReferencesValidator("OptFoo", &fooModel{}, map[string]string{
+		"Bar":    "Bar",
+		"OptBar": "OptBar",
+		"Bars":   "Bars",
 	})
 
 	id := bson.NewObjectId()
@@ -360,10 +359,10 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 func TestMatchingReferencesValidatorToMany(t *testing.T) {
 	tester.Clean()
 
-	validator := MatchingReferencesValidator("foos", "foo_ids", map[string]string{
-		"bar_id":     "bar_id",
-		"opt_bar_id": "opt_bar_id",
-		"bar_ids":    "bar_ids",
+	validator := MatchingReferencesValidator("Foos", &fooModel{}, map[string]string{
+		"Bar":    "Bar",
+		"OptBar": "OptBar",
+		"Bars":   "Bars",
 	})
 
 	id := bson.NewObjectId()
@@ -412,7 +411,7 @@ func TestUniqueFieldValidator(t *testing.T) {
 
 	tester.Clean()
 
-	validator := UniqueFieldValidator("title", "")
+	validator := UniqueFieldValidator("Title", "")
 
 	post1 := tester.Save(&postModel{
 		Title: "foo",
@@ -434,7 +433,7 @@ func TestUniqueFieldValidator(t *testing.T) {
 func TestUniqueFieldValidatorOptional(t *testing.T) {
 	tester.Clean()
 
-	validator := UniqueFieldValidator("parent_id", nil)
+	validator := UniqueFieldValidator("Parent", nil)
 
 	comment1 := tester.Save(&commentModel{
 		Post:   bson.NewObjectId(),

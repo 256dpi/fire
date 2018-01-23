@@ -83,7 +83,7 @@ func Validate(m Model) error {
 }
 
 // ValidateTimestamps is a helper function that can be used inside a models
-// Validate method to maintain "created-at" and "updated-at" timestamps.
+// Validate method to maintain created-at and updated-at timestamps.
 //
 // Note: You can pass an empty string to disable certain timestamps.
 func ValidateTimestamps(m Model, createdAtField, updatedAtField string) {

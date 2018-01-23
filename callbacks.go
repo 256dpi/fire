@@ -142,25 +142,25 @@ const NoDefault noDefault = iota
 
 type noDefault int
 
-// ProtectedFieldsValidator compares protected attributes against their
-// default (during Create) or stored value (during Update) and returns an error
+// ProtectedFieldsValidator compares protected fields against their default
+// during Create (if provided) or stored value during Update and returns an error
 // if they have been changed.
 //
-// Attributes are defined by passing pairs of fields and default values:
+// Protected fields are defined by passing pairs of fields and default values:
 //
 //	fire.ProtectedFieldsValidator(map[string]interface{}{
-//		coal.F(&Post{}, "Title"): NoDefault, // can only be set during Create
-//		coal.F(&Post{}, "Link"):  "",        // is fixed and cannot be changed
+//		"Title": NoDefault, // can only be set during Create
+//		"Link":  "",        // default is fixed and cannot be changed
 //	})
 //
 // The special NoDefault value can be provided to skip the default enforcement
 // on Create.
-func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
+func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 	return C("fire/ProtectedFieldsValidator", Only(Create, Update), func(ctx *Context) error {
 		// handle resource creation
 		if ctx.Operation == Create {
 			// check all fields
-			for field, def := range fields {
+			for field, def := range pairs {
 				// skip fields that have no default
 				if def == NoDefault {
 					continue
@@ -182,7 +182,7 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 			}
 
 			// check all fields
-			for field := range fields {
+			for field := range pairs {
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
 					return Safe(errors.New("field " + field + " is protected"))
@@ -194,29 +194,29 @@ func ProtectedFieldsValidator(fields map[string]interface{}) *Callback {
 	})
 }
 
-// DependentResourcesValidator counts documents in the supplied collections
-// and returns an error if some get found. This callback is meant to protect
-// resources from breaking relations when requested to be deleted.
+// DependentResourcesValidator counts related documents and returns an error if
+// some get found. This callback is meant to protect resources from breaking
+// relations when requested to be deleted.
 //
-// Dependent resources are defined by passing pairs of collections and database
-// fields that hold the current models id:
+// Dependent resources are defined by passing pairs of models and fields that
+// reference the current model.
 //
 //	fire.DependentResourcesValidator(map[string]string{
-//		coal.C(&Post{}): coal.F(&Post{}, "Author"),
-//		coal.C(&Comment{}): coal.F(&Comment{}, "Author"),
+//		&Post{}: "Author",
+//		&Comment{}: "Author",
 //	})
 //
-func DependentResourcesValidator(resources map[string]string) *Callback {
+func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 	return C("DependentResourcesValidator", Only(Delete), func(ctx *Context) error {
 		// check all relations
-		for coll, field := range resources {
+		for model, field := range pairs {
 			// prepare query
-			query := bson.M{field: ctx.Model.ID()}
+			query := bson.M{coal.F(model, field): ctx.Model.ID()}
 
 			// count referencing documents
 			ctx.Tracer.Push("mgo/Query.Count")
 			ctx.Tracer.Tag("query", query)
-			n, err := ctx.Store.DB().C(coll).Find(query).Limit(1).Count()
+			n, err := ctx.Store.DB().C(coal.C(model)).Find(query).Limit(1).Count()
 			if err != nil {
 				return err
 			}
@@ -236,19 +236,19 @@ func DependentResourcesValidator(resources map[string]string) *Callback {
 // VerifyReferencesValidator makes sure all references in the document are
 // existing by counting the references on the related collections.
 //
-// References are defined by passing pairs of database fields and collections of
-// models whose ids might be referenced on the current model:
+// References are defined by passing pairs of fields and models who might be
+// referenced by the current model:
 //
 //	fire.VerifyReferencesValidator(map[string]string{
-//		coal.F(&Comment{}, "Post"): coal.C(&Post{}),
-//		coal.F(&Comment{}, "Author"): coal.C(&User{}),
+//		"Post": &Post{},
+//		"Author": &User{},
 //	})
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
-func VerifyReferencesValidator(references map[string]string) *Callback {
+func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 	return C("fire/VerifyReferencesValidator", Only(Create, Update), func(ctx *Context) error {
 		// check all references
-		for field, collection := range references {
+		for field, collection := range pairs {
 			// read referenced id
 			ref := ctx.Model.MustGet(field)
 
@@ -270,7 +270,7 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 				// count entities in database
 				ctx.Tracer.Push("mgo/Query.Count")
 				ctx.Tracer.Tag("query", query)
-				n, err := ctx.Store.DB().C(collection).Find(query).Count()
+				n, err := ctx.Store.DB().C(coal.C(collection)).Find(query).Count()
 				if err != nil {
 					return err
 				}
@@ -289,7 +289,7 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 			// count entities in database
 			ctx.Tracer.Push("mgo/Query.Count")
 			ctx.Tracer.Tag("id", ref)
-			n, err := ctx.Store.DB().C(collection).FindId(ref).Limit(1).Count()
+			n, err := ctx.Store.DB().C(coal.C(collection)).FindId(ref).Limit(1).Count()
 			if err != nil {
 				return err
 			}
@@ -311,8 +311,8 @@ func VerifyReferencesValidator(references map[string]string) *Callback {
 // VerifyReferencesValidator based on the specified model and catalog.
 func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) *Callback {
 	// prepare lists
-	dependentResources := make(map[string]string)
-	references := make(map[string]string)
+	dependentResources := make(map[coal.Model]string)
+	references := make(map[string]coal.Model)
 
 	// iterate through all fields
 	for _, field := range coal.Init(model).Meta().Fields {
@@ -329,9 +329,6 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 				panic("fire: missing model in catalog: " + field.RelType)
 			}
 
-			// get collection
-			collection := relatedModel.Meta().Collection
-
 			// get related bson field
 			bsonField := ""
 			for _, relatedField := range relatedModel.Meta().Fields {
@@ -344,7 +341,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			}
 
 			// add relationship
-			dependentResources[collection] = bsonField
+			dependentResources[relatedModel] = bsonField
 		}
 
 		// handle to-one and to-many relationships
@@ -356,7 +353,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 			}
 
 			// add relationship
-			references[field.BSONName] = relatedModel.Meta().Collection
+			references[field.BSONName] = relatedModel
 		}
 	}
 
@@ -388,19 +385,19 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 }
 
 // MatchingReferencesValidator compares the model with one related model or all
-// related models and checks if the specified references are exactly shared.
+// related models and checks if the specified references are shared exactly.
 //
-// The target model is defined by passing its collection and the referencing
-// field on the current model. The matcher is defined by passing pairs of
-// database fields on the target and current model:
+// The target is defined by passing the reference on the current model and the
+// target model. The matcher is defined by passing pairs of fields on the current
+// and target model:
 //
-//	fire.MatchingReferencesValidator(coal.C(&Blog{}), coal.F(&Post{}, "Blog"), map[string]string{
-//		coal.F(&Blog{}, "Owner"): coal.F(&Post{}, "Owner"),
+//	fire.MatchingReferencesValidator("Blog", &Blog{}, map[string]string{
+//		"Owner": "Owner",
 //	})
 //
 // To-many, optional to-many and has-many relationships are supported both for
 // the initial reference and in the matchers.
-func MatchingReferencesValidator(collection, reference string, matcher map[string]string) *Callback {
+func MatchingReferencesValidator(reference string, target coal.Model, matcher map[string]string) *Callback {
 	return C("fire/MatchingReferencesValidator", Only(Create, Update), func(ctx *Context) error {
 		// prepare ids
 		var ids []bson.ObjectId
@@ -445,15 +442,15 @@ func MatchingReferencesValidator(collection, reference string, matcher map[strin
 			},
 		}
 
-		// add matchers as-is
-		for targetField, modelField := range matcher {
-			query[targetField] = ctx.Model.MustGet(modelField)
+		// add matchers
+		for sourceField, targetField := range matcher {
+			query[coal.F(target, targetField)] = ctx.Model.MustGet(sourceField)
 		}
 
 		// find matching documents
 		ctx.Tracer.Push("mgo/Query.Count")
 		ctx.Tracer.Tag("query", query)
-		n, err := ctx.Store.DB().C(collection).Find(query).Count()
+		n, err := ctx.Store.DB().C(coal.C(target)).Find(query).Count()
 		if err != nil {
 			return err
 		}
@@ -473,11 +470,11 @@ const NoZero noZero = iota
 
 type noZero int
 
-// UniqueFieldValidator ensures that the specified field of the Model will
+// UniqueFieldValidator ensures that the specified field of the current model will
 // remain unique among the specified filters. If the value matches the provided
 // zero value the check is skipped.
 //
-//	fire.UniqueFieldValidator(coal.F(&Blog{}, "Name"), "", coal.F(&Blog{}, "Creator"))
+//	fire.UniqueFieldValidator("Name", "", "Creator")
 //
 // The special NoZero value can be provided to skip the zero check.
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
@@ -506,12 +503,12 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 
 		// prepare query
 		query := bson.M{
-			field: value,
+			coal.F(ctx.Model, field): value,
 		}
 
 		// add filters
 		for _, field := range filters {
-			query[field] = ctx.Model.MustGet(field)
+			query[coal.F(ctx.Model, field)] = ctx.Model.MustGet(field)
 		}
 
 		// count
