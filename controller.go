@@ -188,6 +188,10 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		stack.AbortIf(err)
 	}
 
+	// prepare context
+	ctx.Selector = bson.M{}
+	ctx.Filters = []bson.M{}
+
 	// set fields
 	ctx.Fields = ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName]
 

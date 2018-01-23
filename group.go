@@ -8,16 +8,14 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // TODO: Pull in CORS from wood an make it a first class citizen.
 
-// TODO: Add custom resources.
-
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
 	controllers map[string]*Controller
+	actions     map[string]*Action
 
 	// The function gets invoked by the controller with critical errors.
 	Reporter func(error)
@@ -27,6 +25,7 @@ type Group struct {
 func NewGroup() *Group {
 	return &Group{
 		controllers: make(map[string]*Controller),
+		actions:     make(map[string]*Action),
 	}
 }
 
@@ -42,6 +41,20 @@ func (g *Group) Add(controllers ...*Controller) {
 		// create entry in controller map
 		g.controllers[name] = controller
 	}
+}
+
+// Handle allows to add an action as a group action. Group actions will be run
+// when no controller matches the request.
+//
+// Note: The passed context is more or less empty.
+func (g *Group) Handle(name string, a *Action) {
+	// set default body limit
+	if a.BodyLimit == 0 {
+		a.BodyLimit = DataSize("8M")
+	}
+
+	// add action
+	g.actions[name] = a
 }
 
 // Endpoint will return an http handler that serves requests for this group. The
@@ -83,21 +96,45 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			stack.Abort(jsonapi.NotFound("resource not found"))
 		}
 
-		// get controller
-		controller, ok := g.controllers[s[0]]
-		if !ok {
-			stack.Abort(jsonapi.NotFound("resource not found"))
-		}
-
-		// call controller with context
-		controller.generalHandler(prefix, &Context{
-			Selector:       bson.M{},
-			Filters:        []bson.M{},
+		// prepare context
+		ctx := &Context{
 			HTTPRequest:    r,
 			ResponseWriter: w,
-			Controller:     controller,
 			Group:          g,
 			Tracer:         tracer,
-		})
+		}
+
+		// get controller
+		controller, ok := g.controllers[s[0]]
+		if ok {
+			// set controller
+			ctx.Controller = controller
+
+			// call controller with context
+			controller.generalHandler(prefix, ctx)
+
+			return
+		}
+
+		// get action
+		action, ok := g.actions[s[0]]
+		if ok {
+			// check if action is allowed
+			if stringInList(r.Method, action.Methods) {
+				// check if action matches the context
+				if action.Callback.Matcher(ctx) {
+					// limit request body size
+					ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+
+					// call action with context
+					stack.AbortIf(action.Callback.Handler(ctx))
+
+					return
+				}
+			}
+		}
+
+		// otherwise return error
+		stack.Abort(jsonapi.NotFound("resource not found"))
 	})
 }

@@ -51,3 +51,29 @@ func TestGroupStackAbort(t *testing.T) {
 
 	assert.Error(t, lastErr)
 }
+
+func TestGroupAction(t *testing.T) {
+	group := NewGroup()
+	group.Handle("foo", &Action{
+		Methods: []string{"GET", "PUT"},
+		Callback: C("TestGroupAction", All(), func(ctx *Context) error {
+			ctx.ResponseWriter.WriteHeader(http.StatusFound)
+			return nil
+		}),
+		BodyLimit: 1,
+	})
+
+	tester.Handler = group.Endpoint("")
+
+	tester.Request("GET", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusFound, r.Result().StatusCode)
+	})
+
+	tester.Request("POST", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+	})
+
+	tester.Request("PUT", "bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+	})
+}
