@@ -13,9 +13,9 @@ import (
 // C is a short-hand function to construct a callback. It will also add tracing
 // code around the execution of the callback.
 func C(name string, m Matcher, h Handler) *Callback {
-	// default to all
-	if m == nil {
-		m = All()
+	// panic if matcher or handler is not set
+	if m == nil || h == nil {
+		panic("fire: missing matcher or handler")
 	}
 
 	return &Callback{
@@ -103,7 +103,7 @@ var ErrAccessDenied = Safe(errors.New("access denied"))
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
-	return C("fire/BasicAuthorizer", nil, func(ctx *Context) error {
+	return C("fire/BasicAuthorizer", All(), func(ctx *Context) error {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {

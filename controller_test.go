@@ -2325,7 +2325,7 @@ func TestCollectionActions(t *testing.T) {
 		CollectionActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Callback: C("bytes", nil, func(ctx *Context) error {
+				Callback: C("bytes", All(), func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
@@ -2338,7 +2338,7 @@ func TestCollectionActions(t *testing.T) {
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Callback: C("empty", nil, func(ctx *Context) error {
+				Callback: C("empty", All(), func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
@@ -2349,7 +2349,7 @@ func TestCollectionActions(t *testing.T) {
 			"error": {
 				Methods:   []string{"POST"},
 				BodyLimit: 3,
-				Callback: C("error", nil, func(ctx *Context) error {
+				Callback: C("error", All(), func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)
@@ -2406,7 +2406,7 @@ func TestResourceActions(t *testing.T) {
 		ResourceActions: M{
 			"bytes": {
 				Methods: []string{"POST"},
-				Callback: C("bytes", nil, func(ctx *Context) error {
+				Callback: C("bytes", All(), func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2421,7 +2421,7 @@ func TestResourceActions(t *testing.T) {
 			},
 			"empty": {
 				Methods: []string{"POST"},
-				Callback: C("empty", nil, func(ctx *Context) error {
+				Callback: C("empty", All(), func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -2434,7 +2434,7 @@ func TestResourceActions(t *testing.T) {
 			"error": {
 				Methods:   []string{"POST"},
 				BodyLimit: 3,
-				Callback: C("error", nil, func(ctx *Context) error {
+				Callback: C("error", All(), func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte("PAY"), bytes)

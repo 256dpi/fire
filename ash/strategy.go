@@ -55,7 +55,7 @@ func (s *Strategy) Callback() *fire.Callback {
 		s.ResourceAction = make(map[string][]*Authorizer)
 	}
 
-	return fire.C("ash/Strategy.Callback", nil, func(ctx *fire.Context) (err error) {
+	return fire.C("ash/Strategy.Callback", fire.All(), func(ctx *fire.Context) (err error) {
 		switch ctx.Operation {
 		case fire.List:
 			err = s.call(ctx, s.List, s.Read, s.All)

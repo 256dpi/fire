@@ -5,9 +5,9 @@ import "github.com/256dpi/fire"
 // A is a short-hand function to construct an authorizer. It will also add tracing
 // code around the execution of the authorizer.
 func A(name string, m fire.Matcher, h Handler) *Authorizer {
-	// default to all
-	if m == nil {
-		m = fire.All()
+	// panic if matcher or handler is not set
+	if m == nil || h == nil {
+		panic("ash: missing matcher or handler")
 	}
 
 	return &Authorizer{
