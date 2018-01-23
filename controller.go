@@ -47,16 +47,10 @@ type Controller struct {
 
 	// Filters is a list of fields that are filterable. Only fields that are
 	// indexed should be made filterable.
-	//
-	//	Filters: []string{"Type", "Author"}
-	//
 	Filters []string
 
 	// Sorters is a list of fields that are sortable. Only fields that are
 	// indexed should be made sortable.
-	//
-	//	Sorters: []string{"Tag", "CreatedAt"}
-	//
 	Sorters []string
 
 	// Authorizers authorize the requested operation on the requested resource
