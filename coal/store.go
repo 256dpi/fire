@@ -31,6 +31,11 @@ func NewStore(session *mgo.Session) *Store {
 	}
 }
 
+// A Store manages the usage of database connections.
+type Store struct {
+	session *mgo.Session
+}
+
 // Copy will make a copy of the store and the underlying session. Copied stores
 // that are not used anymore must be closed.
 func (s *Store) Copy() *SubStore {
@@ -60,9 +65,4 @@ func (s *SubStore) DB() *mgo.Database {
 // C will return the collection associated to the passed model.
 func (s *SubStore) C(model Model) *mgo.Collection {
 	return s.DB().C(C(model))
-}
-
-// A Store manages the usage of database connections.
-type Store struct {
-	session *mgo.Session
 }
