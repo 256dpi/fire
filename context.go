@@ -103,7 +103,7 @@ type Context struct {
 	// is preset.
 	Selector bson.M
 
-	// TODO: Split up Selector up in ID, Reference and ReferenceID?
+	// TODO: Split up Selector in multiple fields?
 
 	// The filters that will be used during an List, Find, Update, Delete or
 	// ResourceAction operation to further filter the selection of a list of
