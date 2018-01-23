@@ -17,23 +17,24 @@ func TestDenyAccess(t *testing.T) {
 	assert.Equal(t, fire.ErrAccessDenied, tester.RunCallback(nil, DenyAccess()))
 }
 
-func TestFilterQuery(t *testing.T) {
-	filter := bson.M{}
-	err := tester.RunCallback(&fire.Context{Filter: filter}, FilterQuery(bson.M{
+func TestAddFilter(t *testing.T) {
+	ctx := &fire.Context{}
+
+	err := tester.RunCallback(ctx, AddFilter(bson.M{
 		"foo": "bar",
 	}))
 	assert.NoError(t, err)
-	assert.Equal(t, "bar", filter["foo"])
+	assert.Equal(t, []bson.M{{"foo": "bar"}}, ctx.Filters)
 }
 
-func TestFilterFields(t *testing.T) {
+func TestWhitelistFields(t *testing.T) {
 	ctx := &fire.Context{Fields: nil}
-	err := tester.RunCallback(ctx, FilterFields("foo", "bar"))
+	err := tester.RunCallback(ctx, WhitelistFields("foo", "bar"))
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"foo", "bar"}, ctx.Fields)
 
 	ctx = &fire.Context{Fields: []string{"foo", "bar", "baz"}}
-	err = tester.RunCallback(ctx, FilterFields("bar"))
+	err = tester.RunCallback(ctx, WhitelistFields("bar"))
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"bar"}, ctx.Fields)
 }

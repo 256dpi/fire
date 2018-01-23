@@ -92,7 +92,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		// call controller with context
 		controller.generalHandler(prefix, &Context{
 			Selector:       bson.M{},
-			Filter:         bson.M{},
+			Filters:        []bson.M{},
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Controller:     controller,

@@ -160,8 +160,8 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 	if ctx.Selector == nil {
 		ctx.Selector = bson.M{}
 	}
-	if ctx.Filter == nil {
-		ctx.Filter = bson.M{}
+	if ctx.Filters == nil {
+		ctx.Filters = []bson.M{}
 	}
 
 	// set request

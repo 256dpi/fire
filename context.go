@@ -110,7 +110,7 @@ type Context struct {
 	// models or a specific model.
 	//
 	// On List operations, attribute and relationship filters are preset.
-	Filter bson.M
+	Filters []bson.M
 
 	// TODO: Split up preset and custom filters?
 
@@ -125,8 +125,6 @@ type Context struct {
 
 	// The filtered fields if at least one is available.
 	Fields []string
-
-	// TODO: Add a system filter that should not be overwritten.
 
 	// The document that will be written to the client during List, Find, Create
 	// and Update.
@@ -164,9 +162,7 @@ type Context struct {
 
 // Query returns the composite query of Selector and Filter.
 func (c *Context) Query() bson.M {
-	return bson.M{
-		"$and": []bson.M{c.Selector, c.Filter},
-	}
+	return bson.M{"$and": append([]bson.M{c.Selector}, c.Filters...)}
 }
 
 // Original will return the stored version of the model. This method is intended

@@ -446,7 +446,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// copy context and request
 	newCtx := &Context{
 		Selector: bson.M{},
-		Filter:   bson.M{},
+		Filters:  []bson.M{},
 		Fields:   ctx.JSONAPIRequest.Fields[relatedController.Model.Meta().PluralName],
 		Store:    ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
@@ -949,13 +949,13 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 				// handle boolean values
 				if field.Kind == reflect.Bool && len(values) == 1 {
-					ctx.Filter[field.BSONName] = values[0] == "true"
+					ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: values[0] == "true"})
 
 					break
 				}
 
 				// handle string values
-				ctx.Filter[field.BSONName] = bson.M{"$in": values}
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: bson.M{"$in": values}})
 
 				break
 			}
@@ -971,7 +971,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 				}
 
 				// set relationship filter
-				ctx.Filter[field.BSONName] = bson.M{"$in": ids}
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: bson.M{"$in": ids}})
 
 				break
 			}

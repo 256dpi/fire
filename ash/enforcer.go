@@ -43,25 +43,23 @@ func DenyAccess() *Enforcer {
 	})
 }
 
-// FilterQuery will enforce the authorization by adding the passed filters to the
+// AddFilter will enforce the authorization by adding the passed filter to the
 // Filter query of the context. It should be used if the candidate is allowed to
 // access the resource in general, but some records should be filtered out.
-func FilterQuery(filters bson.M) *Enforcer {
-	return E("ash/FilterQuery", fire.All(), func(ctx *fire.Context) error {
-		// assign specified filters
-		for key, value := range filters {
-			ctx.Filter[key] = value
-		}
+func AddFilter(filter bson.M) *Enforcer {
+	return E("ash/AddFilter", fire.All(), func(ctx *fire.Context) error {
+		// assign specified filter
+		ctx.Filters = append(ctx.Filters, filter)
 
 		return nil
 	})
 }
 
-// FilterFields will enforce the authorization by making sure only the specified
-// fields are returned for the client. If filters are existing it will only remove
+// WhitelistFields will enforce the authorization by making sure only the specified
+// fields are returned for the client. If fields are existing it will only remove
 // fields not present in the specified list.
-func FilterFields(fields ...string) *Enforcer {
-	return E("ash/FilterFields", fire.All(), func(ctx *fire.Context) error {
+func WhitelistFields(fields ...string) *Enforcer {
+	return E("ash/WhitelistFields", fire.All(), func(ctx *fire.Context) error {
 		// just set fields if not set yet
 		if len(ctx.Fields) == 0 {
 			ctx.Fields = fields
