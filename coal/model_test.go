@@ -52,13 +52,9 @@ func TestBaseID(t *testing.T) {
 
 func TestBaseGet(t *testing.T) {
 	post1 := Init(&postModel{})
-	assert.Equal(t, "", post1.MustGet("text_body"))
-	assert.Equal(t, "", post1.MustGet("text-body"))
 	assert.Equal(t, "", post1.MustGet("TextBody"))
 
 	post2 := Init(&postModel{TextBody: "hello"})
-	assert.Equal(t, "hello", post2.MustGet("text_body"))
-	assert.Equal(t, "hello", post2.MustGet("text-body"))
 	assert.Equal(t, "hello", post2.MustGet("TextBody"))
 
 	assert.Panics(t, func() {
@@ -68,12 +64,6 @@ func TestBaseGet(t *testing.T) {
 
 func TestBaseSet(t *testing.T) {
 	post := Init(&postModel{}).(*postModel)
-
-	post.MustSet("text_body", "1")
-	assert.Equal(t, "1", post.TextBody)
-
-	post.MustSet("text-body", "2")
-	assert.Equal(t, "2", post.TextBody)
 
 	post.MustSet("TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)

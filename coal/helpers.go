@@ -8,19 +8,19 @@ func C(m Model) string {
 }
 
 // F is a short-hand function to extract the BSON field name of a model
-// attribute.
+// attribute. F will panic if no field has been found.
 func F(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).BSONName
 }
 
 // A is a short-hand function to extract the JSON attribute name of a model
-// attribute.
+// attribute. A will panic if no field has been found.
 func A(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).JSONName
 }
 
 // R is a short-hand function to extract the relationship name of a model
-// attribute.
+// attribute. R will panic if no field has been found.
 func R(m Model, field string) string {
 	return Init(m).Meta().MustFindField(field).RelName
 }

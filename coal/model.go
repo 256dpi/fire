@@ -136,10 +136,8 @@ func (b *Base) ID() bson.ObjectId {
 	return b.DocID
 }
 
-// MustGet returns the value of the given field.
-//
-// Note: MustGet will return the value of the first field that has a matching
-// Name, JSONName, or BSONName and will panic if no field can be found.
+// MustGet returns the value of the given field. MustGet will panic if no field
+// has been found.
 func (b *Base) MustGet(name string) interface{} {
 	field := b.meta.MustFindField(name)
 
@@ -148,11 +146,8 @@ func (b *Base) MustGet(name string) interface{} {
 	return structField.Interface()
 }
 
-// MustSet will set the given field to the the passed valued.
-//
-// Note: MustSet will set the value of the first field that has a matching Name,
-// JSONName, or BSONName and will panic if no field can been found. The method
-// will also panic if the type of the field and the passed value do not match.
+// MustSet will set the given field to the the passed valued. MustSet will panic
+// if no field has been found.
 func (b *Base) MustSet(name string, value interface{}) {
 	field := b.meta.MustFindField(name)
 
