@@ -317,7 +317,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	// iterate through all fields
 	for _, field := range coal.Init(model).Meta().Fields {
 		// exclude field if requested
-		if stringInList(field.Name, excludedFields) {
+		if Contains(excludedFields, field.Name) {
 			continue
 		}
 

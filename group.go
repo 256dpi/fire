@@ -120,7 +120,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		action, ok := g.actions[s[0]]
 		if ok {
 			// check if action is allowed
-			if stringInList(r.Method, action.Methods) {
+			if Contains(action.Methods, r.Method) {
 				// check if action matches the context
 				if action.Callback.Matcher(ctx) {
 					// limit request body size

@@ -87,3 +87,14 @@ func DataSize(str string) uint64 {
 
 	panic(msg)
 }
+
+// Contains returns true if a list of strings contains another string.
+func Contains(list []string, str string) bool {
+	for _, item := range list {
+		if item == str {
+			return true
+		}
+	}
+
+	return false
+}

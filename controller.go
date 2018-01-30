@@ -948,7 +948,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute filter
-			if field.JSONName == name && stringInList(field.Name, c.Filters) {
+			if field.JSONName == name && Contains(c.Filters, field.Name) {
 				handled = true
 
 				// handle boolean values
@@ -965,7 +965,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 			}
 
 			// handle relationship filter
-			if field.RelName == name && (field.ToOne || field.ToMany) && stringInList(field.Name, c.Filters) {
+			if field.RelName == name && (field.ToOne || field.ToMany) && Contains(c.Filters, field.Name) {
 				handled = true
 
 				// convert to object id list
@@ -997,7 +997,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute sorter
-			if (field.JSONName == normalizedSorter) && stringInList(field.Name, c.Sorters) {
+			if (field.JSONName == normalizedSorter) && Contains(c.Sorters, field.Name) {
 				handled = true
 
 				// add sorter
