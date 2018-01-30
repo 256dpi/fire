@@ -98,3 +98,18 @@ func Contains(list []string, str string) bool {
 
 	return false
 }
+
+// Intersect will return the intersection of both lists.
+func Intersect(listA, listB []string) []string {
+	// prepare new list
+	var list []string
+
+	// add items that are part of both lists
+	for _, item := range listA {
+		if Contains(listB, item) {
+			list = append(list, item)
+		}
+	}
+
+	return list
+}

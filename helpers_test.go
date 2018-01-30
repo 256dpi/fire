@@ -74,3 +74,14 @@ func TestDataSize(t *testing.T) {
 		})
 	}
 }
+
+func TestContains(t *testing.T) {
+	assert.True(t, Contains([]string{"a", "b", "c"}, "a"))
+	assert.True(t, Contains([]string{"a", "b", "c"}, "b"))
+	assert.True(t, Contains([]string{"a", "b", "c"}, "c"))
+	assert.False(t, Contains([]string{"a", "b", "c"}, "d"))
+}
+
+func TestIntersect(t *testing.T) {
+	assert.Equal(t, []string{"b"}, Intersect([]string{"a", "b"}, []string{"b", "c"}))
+}
