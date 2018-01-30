@@ -191,7 +191,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// prepare context
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
-	ctx.Fields = c.initialFields(ctx.JSONAPIRequest, c.Model)
+	ctx.ReadableFields = c.initialFields(ctx.JSONAPIRequest, c.Model)
 
 	// copy store
 	store := c.Store.Copy()
@@ -447,10 +447,10 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// copy context and request
 	newCtx := &Context{
-		Selector: bson.M{},
-		Filters:  []bson.M{},
-		Fields:   c.initialFields(ctx.JSONAPIRequest, relatedController.Model),
-		Store:    ctx.Store,
+		Selector:       bson.M{},
+		Filters:        []bson.M{},
+		ReadableFields: c.initialFields(ctx.JSONAPIRequest, relatedController.Model),
+		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
 			ResourceType: pluralName,
@@ -1189,7 +1189,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 
 	// create whitelist
 	var whitelist []string
-	for _, field := range ctx.Fields {
+	for _, field := range ctx.ReadableFields {
 		f := model.Meta().MustFindField(field)
 		if f.JSONName != "" {
 			whitelist = append(whitelist, f.JSONName)

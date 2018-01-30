@@ -119,10 +119,11 @@ type Context struct {
 	// The sorting that will be used during List.
 	Sorting []string
 
-	// The whitelisted fields.
+	// The whitelisted readable fields that controls which attributes and
+	// relationships are exposed in the responses.
 	//
 	// Note: This list should only be reduced and never extended.
-	Fields []string
+	ReadableFields []string
 
 	// The document that will be written to the client during List, Find, Create
 	// and Update.

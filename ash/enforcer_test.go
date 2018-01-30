@@ -27,14 +27,14 @@ func TestAddFilter(t *testing.T) {
 	assert.Equal(t, []bson.M{{"foo": "bar"}}, ctx.Filters)
 }
 
-func TestWhitelistFields(t *testing.T) {
-	ctx := &fire.Context{Fields: nil}
-	err := tester.RunCallback(ctx, WhitelistFields("foo", "bar"))
+func TestWhitelistReadableFields(t *testing.T) {
+	ctx := &fire.Context{ReadableFields: []string{"foo", "bar", "baz"}}
+	err := tester.RunCallback(ctx, WhitelistReadableFields("bar"))
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"foo", "bar"}, ctx.Fields)
+	assert.Equal(t, []string{"bar"}, ctx.ReadableFields)
 
-	ctx = &fire.Context{Fields: []string{"foo", "bar", "baz"}}
-	err = tester.RunCallback(ctx, WhitelistFields("bar"))
+	ctx = &fire.Context{ReadableFields: []string{}}
+	err = tester.RunCallback(ctx, WhitelistReadableFields("foo", "bar"))
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"bar"}, ctx.Fields)
+	assert.Equal(t, []string(nil), ctx.ReadableFields)
 }

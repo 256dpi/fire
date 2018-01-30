@@ -55,27 +55,12 @@ func AddFilter(filter bson.M) *Enforcer {
 	})
 }
 
-// WhitelistFields will enforce the authorization by making sure only the specified
-// fields are returned for the client. If fields are existing it will only remove
-// fields not present in the specified list.
-func WhitelistFields(fields ...string) *Enforcer {
-	return E("ash/WhitelistFields", fire.All(), func(ctx *fire.Context) error {
-		// just set fields if not set yet
-		if len(ctx.Fields) == 0 {
-			ctx.Fields = fields
-			return nil
-		}
-
-		// collect whitelisted fields
-		var list []string
-		for _, field := range ctx.Fields {
-			if fire.Contains(fields, field) {
-				list = append(list, field)
-			}
-		}
-
+// WhitelistReadableFields will enforce the authorization by making sure only the
+// specified fields are returned for the client.
+func WhitelistReadableFields(fields ...string) *Enforcer {
+	return E("ash/WhitelistReadableFields", fire.All(), func(ctx *fire.Context) error {
 		// set new list
-		ctx.Fields = list
+		ctx.ReadableFields = fire.Intersect(ctx.ReadableFields, fields)
 
 		return nil
 	})
