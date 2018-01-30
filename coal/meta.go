@@ -21,17 +21,9 @@ var hasManyType = reflect.TypeOf(HasMany{})
 // Has-one relationships requires that the referencing side is ensuring that the
 // reference is unique. In fire this should be done using a uniqueness validator
 // and a unique index on the collection.
-//
-// Note: In fire has-one relationships will be fetched without authorization.
-// This means that the query could return ids to resources that would normally
-// not be accessible.
 type HasOne struct{}
 
 // The HasMany type denotes a has-many relationship in a model declaration.
-//
-// Note: In fire has-many relationships will be fetched without authorization.
-// This means that the query could return ids to resources that would normally
-// not be accessible.
 type HasMany struct{}
 
 // A Field contains the meta information about a single field of a model.

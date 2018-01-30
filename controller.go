@@ -1198,8 +1198,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 		}
 	}
 
-	// TODO: Only expose whitelisted attributes.
-
 	// create map from model
 	m, err := jsonapi.StructToMap(model, whitelist)
 	stack.AbortIf(err)
@@ -1217,8 +1215,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	if ctx.JSONAPIRequest.Prefix != "" {
 		base = "/" + ctx.JSONAPIRequest.Prefix + base
 	}
-
-	// TODO: Only expose whitelisted relationships.
 
 	// go through all relationships
 	for _, field := range model.Meta().Fields {
@@ -1318,9 +1314,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
 
-			// TODO: We should run the related controllers authenticator.
-			// => Update comment on HasOne type.
-
 			// prepare query
 			query := bson.M{filterName: model.ID()}
 
@@ -1378,9 +1371,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			if filterName == "" {
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
-
-			// TODO: We should run the related controllers authenticator.
-			// => Update comment on HasMany type.
 
 			// prepare query
 			query := bson.M{
