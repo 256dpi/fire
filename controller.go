@@ -191,9 +191,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// prepare context
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
-
-	// set fields
-	ctx.Fields = ctx.JSONAPIRequest.Fields[c.Model.Meta().PluralName]
+	ctx.Fields = c.initialFields(ctx.JSONAPIRequest, c.Model)
 
 	// copy store
 	store := c.Store.Copy()
@@ -451,7 +449,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	newCtx := &Context{
 		Selector: bson.M{},
 		Filters:  []bson.M{},
-		Fields:   ctx.JSONAPIRequest.Fields[relatedController.Model.Meta().PluralName],
+		Fields:   c.initialFields(ctx.JSONAPIRequest, relatedController.Model),
 		Store:    ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
@@ -902,6 +900,36 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
+func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []string {
+	// prepare list
+	var list []string
+
+	// add all attributes and relationships
+	for _, f := range model.Meta().Fields {
+		if f.JSONName != "" || f.RelName != "" {
+			list = append(list, f.Name)
+		}
+	}
+
+	// check if a field whitelist has been provided
+	if len(r.Fields[model.Meta().PluralName]) > 0 {
+		// convert requested fields list
+		var requested []string
+		for _, field := range r.Fields[model.Meta().PluralName] {
+			for _, f := range model.Meta().Fields {
+				if f.JSONName == field || f.RelName == field {
+					requested = append(requested, f.Name)
+				}
+			}
+		}
+
+		// whitelist requested fields
+		list = Intersect(requested, list)
+	}
+
+	return list
+}
+
 func (c *Controller) loadModel(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModel")
@@ -1159,10 +1187,21 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
+	// create whitelist
+	var whitelist []string
+	for _, field := range ctx.Fields {
+		f := model.Meta().MustFindField(field)
+		if f.JSONName != "" {
+			whitelist = append(whitelist, f.JSONName)
+		} else if f.RelName != "" {
+			whitelist = append(whitelist, f.RelName)
+		}
+	}
+
 	// TODO: Only expose whitelisted attributes.
 
 	// create map from model
-	m, err := jsonapi.StructToMap(model, ctx.Fields)
+	m, err := jsonapi.StructToMap(model, whitelist)
 	stack.AbortIf(err)
 
 	// prepare resource
@@ -1185,6 +1224,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	for _, field := range model.Meta().Fields {
 		// check if relationship
 		if !field.ToOne && !field.ToMany && !field.HasOne && !field.HasMany {
+			continue
+		}
+
+		// check if whitelisted
+		if !Contains(whitelist, field.RelName) {
 			continue
 		}
 

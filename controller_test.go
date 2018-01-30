@@ -996,7 +996,7 @@ func TestSparseFields(t *testing.T) {
 	}).ID().Hex()
 
 	// get posts with single value filter
-	tester.Request("GET", "posts/"+post+"?fields[posts]=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"data": {
@@ -1006,20 +1006,6 @@ func TestSparseFields(t *testing.T) {
 					"title": "Post 1"
 				},
 				"relationships": {
-					"comments": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+post+`/relationships/comments",
-							"related": "/posts/`+post+`/comments"
-						}
-					},
-					"selections": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+post+`/relationships/selections",
-							"related": "/posts/`+post+`/selections"
-						}
-					},
 					"note": {
 						"data": null,
 						"links": {
