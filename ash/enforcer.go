@@ -69,7 +69,7 @@ func WhitelistFields(fields ...string) *Enforcer {
 		// collect whitelisted fields
 		var list []string
 		for _, field := range ctx.Fields {
-			if stringInList(field, fields) {
+			if fire.Contains(fields, field) {
 				list = append(list, field)
 			}
 		}
