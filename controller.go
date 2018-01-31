@@ -192,6 +192,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
 	ctx.ReadableFields = c.initialFields(ctx.JSONAPIRequest, c.Model)
+	ctx.WritableFields = c.initialFields(nil, c.Model)
 
 	// copy store
 	store := c.Store.Copy()
@@ -450,6 +451,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		Selector:       bson.M{},
 		Filters:        []bson.M{},
 		ReadableFields: c.initialFields(ctx.JSONAPIRequest, relatedController.Model),
+		WritableFields: c.initialFields(nil, relatedController.Model),
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
@@ -690,8 +692,21 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// load model
 	c.loadModel(ctx)
 
-	// assign relationship
-	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
+	// set relationships
+	for _, field := range ctx.Model.Meta().Fields {
+		// check if field matches relationship
+		if field.RelName != ctx.JSONAPIRequest.Relationship {
+			continue
+		}
+
+		// check if field is writable
+		if !Contains(ctx.WritableFields, field.Name) {
+			continue // TODO: Test.
+		}
+
+		// assign relationship
+		c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
+	}
 
 	// save model
 	c.updateModel(ctx)
@@ -727,6 +742,11 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 		// check if field matches relationship
 		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
 			continue
+		}
+
+		// check if field is writable
+		if !Contains(ctx.WritableFields, field.Name) {
+			continue // TODO: Test.
 		}
 
 		// process all references
@@ -796,6 +816,11 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 		// check if field matches relationship
 		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
 			continue
+		}
+
+		// check if field is writable
+		if !Contains(ctx.WritableFields, field.Name) {
+			continue // TODO: Test.
 		}
 
 		// process all references
@@ -912,7 +937,7 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 	}
 
 	// check if a field whitelist has been provided
-	if len(r.Fields[model.Meta().PluralName]) > 0 {
+	if r != nil && len(r.Fields[model.Meta().PluralName]) > 0 {
 		// convert requested fields list
 		var requested []string
 		for _, field := range r.Fields[model.Meta().PluralName] {
@@ -1085,13 +1110,36 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignData")
 
-	// TODO: Only allow changes to whitelisted attributes?
+	// create whitelist
+	var whitelist []string
+	for _, field := range ctx.WritableFields {
+		f := ctx.Model.Meta().MustFindField(field)
+		if f.JSONName != "" {
+			whitelist = append(whitelist, f.JSONName)
+		} else if f.RelName != "" {
+			whitelist = append(whitelist, f.RelName)
+		}
+	}
+
+	// whitelist attributes
+	attributes := make(jsonapi.Map)
+	for name, value := range res.Attributes {
+		if Contains(whitelist, name) {
+			attributes[name] = value
+		}
+	}
 
 	// map attributes to struct
-	stack.AbortIf(res.Attributes.Assign(ctx.Model))
+	stack.AbortIf(attributes.Assign(ctx.Model))
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
+		// check whitelist
+		if !Contains(whitelist, name) {
+			continue
+		}
+
+		// assign relationship
 		c.assignRelationship(ctx, name, rel)
 	}
 
@@ -1102,8 +1150,6 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
-
-	// TODO: Only allow changes to whitelisted relationships?
 
 	// assign relationships
 	for _, field := range ctx.Model.Meta().Fields {

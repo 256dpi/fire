@@ -248,6 +248,85 @@ func TestBasicOperations(t *testing.T) {
 	})
 }
 
+func TestWritableFields(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestWritableFields", All(), func(ctx *Context) error {
+				ctx.WritableFields = []string{"Title"}
+				return nil
+			}),
+		},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	var id string
+
+	// create post
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"title": "Post 1",
+				"published": true
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+id+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": ""
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/comments",
+							"related": "/posts/`+id+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/selections",
+							"related": "/posts/`+id+`/selections"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+id+`/relationships/note",
+							"related": "/posts/`+id+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
 func TestFiltering(t *testing.T) {
 	tester.Clean()
 
