@@ -112,10 +112,6 @@ type Context struct {
 	// On List operations, attribute and relationship filters are preset.
 	Filters []bson.M
 
-	// The Model that will be saved during Create, updated during Update or
-	// deleted during Delete.
-	Model coal.Model
-
 	// The sorting that will be used during List.
 	Sorting []string
 
@@ -129,6 +125,10 @@ type Context struct {
 	//
 	// Note: This list should only be reduced and never extended.
 	WritableFields []string
+
+	// The Model that will be saved during Create, updated during Update or
+	// deleted during Delete.
+	Model coal.Model
 
 	// The document that will be written to the client during List, Find, Create
 	// and Update.
