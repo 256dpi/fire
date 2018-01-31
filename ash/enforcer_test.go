@@ -38,3 +38,15 @@ func TestWhitelistReadableFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string(nil), ctx.ReadableFields)
 }
+
+func TestWhitelistWritableFields(t *testing.T) {
+	ctx := &fire.Context{WritableFields: []string{"foo", "bar", "baz"}}
+	err := tester.RunCallback(ctx, WhitelistWritableFields("bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"bar"}, ctx.WritableFields)
+
+	ctx = &fire.Context{WritableFields: []string{}}
+	err = tester.RunCallback(ctx, WhitelistWritableFields("foo", "bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string(nil), ctx.WritableFields)
+}

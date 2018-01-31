@@ -65,3 +65,14 @@ func WhitelistReadableFields(fields ...string) *Enforcer {
 		return nil
 	})
 }
+
+// WhitelistWritableFields will enforce the authorization by making sure only the
+// specified fields can be changed by the client.
+func WhitelistWritableFields(fields ...string) *Enforcer {
+	return E("ash/WhitelistWritableFields", fire.All(), func(ctx *fire.Context) error {
+		// set new list
+		ctx.WritableFields = fire.Intersect(ctx.WritableFields, fields)
+
+		return nil
+	})
+}
