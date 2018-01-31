@@ -302,14 +302,14 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		stack.Abort(jsonapi.BadRequest("resource object expected"))
 	}
 
+	// run authorizers
+	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+
 	// create new model
 	ctx.Model = c.Model.Meta().Make()
 
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
-
-	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
