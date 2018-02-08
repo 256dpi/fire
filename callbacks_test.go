@@ -10,6 +10,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func TestC(t *testing.T) {
+	assert.Panics(t, func() {
+		C("", nil, nil)
+	})
+}
+
 func TestOnly(t *testing.T) {
 	assert.True(t, Only(Create, Delete)(&Context{Operation: Create}))
 	assert.False(t, Only(Create, Delete)(&Context{Operation: Update}))

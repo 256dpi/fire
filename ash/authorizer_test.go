@@ -8,6 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestA(t *testing.T) {
+	assert.Panics(t, func() {
+		A("", nil, nil)
+	})
+}
+
 func TestRun(t *testing.T) {
 	tester.WithContext(nil, func(ctx *fire.Context) {
 		enforcers, err := Run(GrantAccess()).Handler(ctx)
