@@ -32,6 +32,11 @@ func TestBasicAuthorizer(t *testing.T) {
 	err := tester.RunCallback(nil, authorizer)
 	assert.NoError(t, err)
 
+	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(""))
+
+	err = tester.RunCallback(nil, authorizer)
+	assert.Error(t, err)
+
 	tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
 	err = tester.RunCallback(nil, authorizer)
