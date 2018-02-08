@@ -248,911 +248,6 @@ func TestBasicOperations(t *testing.T) {
 	})
 }
 
-func TestReadableFields(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-		Authorizers: L{
-			C("TestReadableFields", All(), func(ctx *Context) error {
-				ctx.ReadableFields = []string{"Published"}
-				return nil
-			}),
-		},
-	})
-
-	// create post
-	post1 := tester.Save(&postModel{
-		Title:     "post-1",
-		Published: true,
-	}).ID().Hex()
-
-	// get posts with single value filter
-	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post1+`",
-					"attributes": {
-						"published": true
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
-func TestWritableFields(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-		Authorizers: L{
-			C("TestWritableFields", All(), func(ctx *Context) error {
-				ctx.WritableFields = []string{"Title"}
-				return nil
-			}),
-		},
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	var id string
-
-	// create post
-	tester.Request("POST", "posts", `{
-		"data": {
-			"type": "posts",
-			"attributes": {
-				"title": "Post 1",
-				"published": true
-			},
-			"relationships": {
-				"note": {
-					"data": {
-						"type": "notes",
-						"id": "`+bson.NewObjectId().Hex()+`"
-					},
-					"links": {
-						"self": "/posts/`+id+`/relationships/note",
-						"related": "/posts/`+id+`/note"
-					}
-				}
-			}
-		}
-	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		post := tester.FindLast(&postModel{})
-		id = post.ID().Hex()
-
-		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "posts",
-				"id": "`+id+`",
-				"attributes": {
-					"title": "Post 1",
-					"published": false,
-					"text-body": ""
-				},
-				"relationships": {
-					"comments": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+id+`/relationships/comments",
-							"related": "/posts/`+id+`/comments"
-						}
-					},
-					"selections": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+id+`/relationships/selections",
-							"related": "/posts/`+id+`/selections"
-						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+id+`/relationships/note",
-							"related": "/posts/`+id+`/note"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/posts/`+id+`"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
-func TestFiltering(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model:   &postModel{},
-		Store:   tester.Store,
-		Filters: []string{"Title", "Published"},
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model:   &selectionModel{},
-		Store:   tester.Store,
-		Filters: []string{"Posts"},
-	}, &Controller{
-		Model:   &noteModel{},
-		Store:   tester.Store,
-		Filters: []string{"Post"},
-	})
-
-	// create posts
-	post1 := tester.Save(&postModel{
-		Title:     "post-1",
-		Published: true,
-	}).ID().Hex()
-	post2 := tester.Save(&postModel{
-		Title:     "post-2",
-		Published: false,
-	}).ID().Hex()
-	post3 := tester.Save(&postModel{
-		Title:     "post-3",
-		Published: true,
-	}).ID().Hex()
-
-	// create selections
-	selection := tester.Save(&selectionModel{
-		Name: "selection-1",
-		Posts: []bson.ObjectId{
-			bson.ObjectIdHex(post1),
-			bson.ObjectIdHex(post2),
-			bson.ObjectIdHex(post3),
-		},
-	}).ID().Hex()
-	tester.Save(&selectionModel{
-		Name: "selection-2",
-	})
-
-	// create notes
-	note := tester.Save(&noteModel{
-		Title: "note-1",
-		Post:  bson.ObjectIdHex(post1),
-	}).ID().Hex()
-	tester.Save(&noteModel{
-		Title: "note-2",
-		Post:  bson.NewObjectId(),
-	})
-
-	// get posts with single value filter
-	tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post1+`",
-					"attributes": {
-						"title": "post-1",
-						"published": true,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/comments",
-								"related": "/posts/`+post1+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/selections",
-								"related": "/posts/`+post1+`/selections"
-							}
-						},
-						"note": {
-							"data": {
-								"type": "notes",
-								"id": "`+note+`"
-							},
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get posts with multi value filter
-	tester.Request("GET", "posts?filter[title]=post-2,post-3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post2+`",
-					"attributes": {
-						"title": "post-2",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/comments",
-								"related": "/posts/`+post2+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/selections",
-								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post3+`",
-					"attributes": {
-						"title": "post-3",
-						"published": true,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/comments",
-								"related": "/posts/`+post3+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/selections",
-								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get posts with boolean
-	tester.Request("GET", "posts?filter[published]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post1+`",
-					"attributes": {
-						"title": "post-1",
-						"published": true,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/comments",
-								"related": "/posts/`+post1+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/selections",
-								"related": "/posts/`+post1+`/selections"
-							}
-						},
-						"note": {
-							"data": {
-								"type": "notes",
-								"id": "`+note+`"
-							},
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post3+`",
-					"attributes": {
-						"title": "post-3",
-						"published": true,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/comments",
-								"related": "/posts/`+post3+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/selections",
-								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get posts with boolean
-	tester.Request("GET", "posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post2+`",
-					"attributes": {
-						"title": "post-2",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/comments",
-								"related": "/posts/`+post2+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/selections",
-								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get to-many posts with boolean
-	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post2+`",
-					"attributes": {
-						"title": "post-2",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/comments",
-								"related": "/posts/`+post2+`/comments"
-							}
-						},
-						"selections": {
-							"data": [
-								{
-									"type": "selections",
-									"id": "`+selection+`"
-								}
-							],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/selections",
-								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/selections/`+selection+`/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// filter notes with to-one relationship filter
-	tester.Request("GET", "notes?filter[post]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-  			"data": [
-    			{
-      				"type": "notes",
-      				"id": "`+note+`",
-      				"attributes": {
-        				"title": "note-1"
-      				},
-      				"relationships": {
-        				"post": {
-          					"data": {
-            					"type": "posts",
-            					"id": "`+post1+`"
-          					},
-          					"links": {
-            					"self": "/notes/`+note+`/relationships/post",
-            					"related": "/notes/`+note+`/post"
-          					}
-			        	}
-      				}
-    			}
-  			],
-  			"links": {
-    			"self": "/notes"
-  			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// filter selections with to-many relationship filter
-	tester.Request("GET", "selections?filter[posts]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-			  		"type": "selections",
-			  		"id": "`+selection+`",
-			  		"attributes": {
-						"name": "selection-1"
-			  		},
-			  		"relationships": {
-						"posts": {
-				  			"data": [
-								{
-									"type": "posts",
-									"id": "`+post1+`"
-								},
-								{
-									"type": "posts",
-									"id": "`+post2+`"
-								},
-								{
-									"type": "posts",
-									"id": "`+post3+`"
-								}
-							],
-							"links": {
-								"self": "/selections/`+selection+`/relationships/posts",
-								"related": "/selections/`+selection+`/posts"
-							}
-						}
-					}
-				}
-		  	],
-		  	"links": {
-				"self": "/selections"
-		  	}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// test invalid filter
-	tester.Request("GET", "posts?filter[foo]=bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"errors":[{
-				"status": "400",
-				"title": "Bad Request",
-				"detail": "filter foo is not supported"
-			}]
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
-func TestSorting(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model:   &postModel{},
-		Store:   tester.Store,
-		Sorters: []string{"Title"},
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// create posts in random order
-	post2 := tester.Save(&postModel{
-		Title: "post-2",
-	}).ID().Hex()
-	post1 := tester.Save(&postModel{
-		Title: "post-1",
-	}).ID().Hex()
-	post3 := tester.Save(&postModel{
-		Title: "post-3",
-	}).ID().Hex()
-
-	// get posts in ascending order
-	tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post1+`",
-					"attributes": {
-						"title": "post-1",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/comments",
-								"related": "/posts/`+post1+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/selections",
-								"related": "/posts/`+post1+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post2+`",
-					"attributes": {
-						"title": "post-2",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/comments",
-								"related": "/posts/`+post2+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/selections",
-								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post3+`",
-					"attributes": {
-						"title": "post-3",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/comments",
-								"related": "/posts/`+post3+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/selections",
-								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// get posts in descending order
-	tester.Request("GET", "posts?sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post3+`",
-					"attributes": {
-						"title": "post-3",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/comments",
-								"related": "/posts/`+post3+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post3+`/relationships/selections",
-								"related": "/posts/`+post3+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post3+`/relationships/note",
-								"related": "/posts/`+post3+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post2+`",
-					"attributes": {
-						"title": "post-2",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/comments",
-								"related": "/posts/`+post2+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post2+`/relationships/selections",
-								"related": "/posts/`+post2+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post2+`/relationships/note",
-								"related": "/posts/`+post2+`/note"
-							}
-						}
-					}
-				},
-				{
-					"type": "posts",
-					"id": "`+post1+`",
-					"attributes": {
-						"title": "post-1",
-						"published": false,
-						"text-body": ""
-					},
-					"relationships": {
-						"comments": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/comments",
-								"related": "/posts/`+post1+`/comments"
-							}
-						},
-						"selections": {
-							"data": [],
-							"links": {
-								"self": "/posts/`+post1+`/relationships/selections",
-								"related": "/posts/`+post1+`/selections"
-							}
-						},
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post1+`/relationships/note",
-								"related": "/posts/`+post1+`/note"
-							}
-						}
-					}
-				}
-			],
-			"links": {
-				"self": "/posts"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// test invalid sorter
-	tester.Request("GET", "posts?sort=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"errors":[{
-				"status": "400",
-				"title": "Bad Request",
-				"detail": "sorter foo is not supported"
-			}]
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
-func TestSparseFields(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// create posts
-	post := tester.Save(&postModel{
-		Title: "Post 1",
-	}).ID().Hex()
-
-	// get posts with single value filter
-	tester.Request("GET", "posts/"+post+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"data": {
-				"type": "posts",
-				"id": "`+post+`",
-				"attributes": {
-					"title": "Post 1"
-				},
-				"relationships": {
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+post+`/relationships/note",
-							"related": "/posts/`+post+`/note"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/posts/`+post+`"
-			}
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-}
-
 func TestHasOneRelationship(t *testing.T) {
 	tester.Clean()
 
@@ -2130,6 +1225,921 @@ func TestEmptyToManyRelationship(t *testing.T) {
 	})
 }
 
+func TestFiltering(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model:   &postModel{},
+		Store:   tester.Store,
+		Filters: []string{"Title", "Published"},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model:   &selectionModel{},
+		Store:   tester.Store,
+		Filters: []string{"Posts"},
+	}, &Controller{
+		Model:   &noteModel{},
+		Store:   tester.Store,
+		Filters: []string{"Post"},
+	})
+
+	// create posts
+	post1 := tester.Save(&postModel{
+		Title:     "post-1",
+		Published: true,
+	}).ID().Hex()
+	post2 := tester.Save(&postModel{
+		Title:     "post-2",
+		Published: false,
+	}).ID().Hex()
+	post3 := tester.Save(&postModel{
+		Title:     "post-3",
+		Published: true,
+	}).ID().Hex()
+
+	// create selections
+	selection := tester.Save(&selectionModel{
+		Name: "selection-1",
+		Posts: []bson.ObjectId{
+			bson.ObjectIdHex(post1),
+			bson.ObjectIdHex(post2),
+			bson.ObjectIdHex(post3),
+		},
+	}).ID().Hex()
+	tester.Save(&selectionModel{
+		Name: "selection-2",
+	})
+
+	// create notes
+	note := tester.Save(&noteModel{
+		Title: "note-1",
+		Post:  bson.ObjectIdHex(post1),
+	}).ID().Hex()
+	tester.Save(&noteModel{
+		Title: "note-2",
+		Post:  bson.NewObjectId(),
+	})
+
+	// get posts with single value filter
+	tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
+							},
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get posts with multi value filter
+	tester.Request("GET", "posts?filter[title]=post-2,post-3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get posts with boolean
+	tester.Request("GET", "posts?filter[published]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
+							},
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get posts with boolean
+	tester.Request("GET", "posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get to-many posts with boolean
+	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// filter notes with to-one relationship filter
+	tester.Request("GET", "notes?filter[post]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+  			"data": [
+    			{
+      				"type": "notes",
+      				"id": "`+note+`",
+      				"attributes": {
+        				"title": "note-1"
+      				},
+      				"relationships": {
+        				"post": {
+          					"data": {
+            					"type": "posts",
+            					"id": "`+post1+`"
+          					},
+          					"links": {
+            					"self": "/notes/`+note+`/relationships/post",
+            					"related": "/notes/`+note+`/post"
+          					}
+			        	}
+      				}
+    			}
+  			],
+  			"links": {
+    			"self": "/notes"
+  			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// filter selections with to-many relationship filter
+	tester.Request("GET", "selections?filter[posts]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+			  		"type": "selections",
+			  		"id": "`+selection+`",
+			  		"attributes": {
+						"name": "selection-1"
+			  		},
+			  		"relationships": {
+						"posts": {
+				  			"data": [
+								{
+									"type": "posts",
+									"id": "`+post1+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post2+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post3+`"
+								}
+							],
+							"links": {
+								"self": "/selections/`+selection+`/relationships/posts",
+								"related": "/selections/`+selection+`/posts"
+							}
+						}
+					}
+				}
+		  	],
+		  	"links": {
+				"self": "/selections"
+		  	}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test array filtering.
+
+	// test invalid filter
+	tester.Request("GET", "posts?filter[foo]=bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "filter foo is not supported"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
+func TestSorting(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model:   &postModel{},
+		Store:   tester.Store,
+		Sorters: []string{"Title"},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	// create posts in random order
+	post2 := tester.Save(&postModel{
+		Title: "post-2",
+	}).ID().Hex()
+	post1 := tester.Save(&postModel{
+		Title: "post-1",
+	}).ID().Hex()
+	post3 := tester.Save(&postModel{
+		Title: "post-3",
+	}).ID().Hex()
+
+	// get posts in ascending order
+	tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get posts in descending order
+	tester.Request("GET", "posts?sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test relationship sorting.
+
+	// test invalid sorter
+	tester.Request("GET", "posts?sort=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "sorter foo is not supported"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
+func TestSparseFields(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	// create posts
+	post := tester.Save(&postModel{
+		Title: "Post 1",
+	}).ID().Hex()
+
+	// get posts with single value filter
+	tester.Request("GET", "posts/"+post+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post+`",
+				"attributes": {
+					"title": "Post 1"
+				},
+				"relationships": {
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+post+`/relationships/note",
+							"related": "/posts/`+post+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+post+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test relationships.
+}
+
+func TestReadableFields(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestReadableFields", All(), func(ctx *Context) error {
+				ctx.ReadableFields = []string{"Published"}
+				return nil
+			}),
+		},
+	})
+
+	// create post
+	post1 := tester.Save(&postModel{
+		Title:     "post-1",
+		Published: true,
+	}).ID().Hex()
+
+	// get posts with single value filter
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"published": true
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test Relationships
+}
+
+func TestWritableFields(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestWritableFields", All(), func(ctx *Context) error {
+				ctx.WritableFields = []string{"Title"}
+				return nil
+			}),
+		},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	var id string
+
+	// create post
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"title": "Post 1",
+				"published": true
+			},
+			"relationships": {
+				"note": {
+					"data": {
+						"type": "notes",
+						"id": "`+bson.NewObjectId().Hex()+`"
+					},
+					"links": {
+						"self": "/posts/`+id+`/relationships/note",
+						"related": "/posts/`+id+`/note"
+					}
+				}
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+id+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": ""
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/comments",
+							"related": "/posts/`+id+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/selections",
+							"related": "/posts/`+id+`/selections"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+id+`/relationships/note",
+							"related": "/posts/`+id+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test Relationships
+}
+
 func TestNoList(t *testing.T) {
 	tester.Clean()
 
@@ -2172,10 +2182,26 @@ func TestPagination(t *testing.T) {
 		Store: tester.Store,
 	})
 
+	// prepare ids
+	var ids []bson.ObjectId
+
 	// create some posts
 	for i := 0; i < 10; i++ {
-		tester.Save(&postModel{
+		ids = append(ids, tester.Save(&postModel{
 			Title: fmt.Sprintf("Post %d", i+1),
+		}).ID())
+	}
+
+	// create post
+	post := tester.Save(&postModel{
+		Title: "Post",
+	}).ID()
+
+	// create some comments
+	for i := 0; i < 10; i++ {
+		tester.Save(&commentModel{
+			Message: fmt.Sprintf("Comment %d", i+1),
+			Post:    post,
 		})
 	}
 
@@ -2210,34 +2236,6 @@ func TestPagination(t *testing.T) {
 			"prev": "/posts?page[number]=1&page[size]=5"
 		}`, links)
 	})
-}
-
-func TestPaginationToMany(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// prepare ids
-	var ids []bson.ObjectId
-
-	// create some posts
-	for i := 0; i < 10; i++ {
-		ids = append(ids, tester.Save(&postModel{
-			Title: fmt.Sprintf("Post %d", i+1),
-		}).ID())
-	}
 
 	// create selection
 	selection := tester.Save(&selectionModel{
@@ -2275,37 +2273,6 @@ func TestPaginationToMany(t *testing.T) {
 			"prev": "/selections/`+selection+`/posts?page[number]=1&page[size]=5"
 		}`, links)
 	})
-}
-
-func TestPaginationHasMany(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// create post
-	post := tester.Save(&postModel{
-		Title: "Post",
-	}).ID()
-
-	// create some comments
-	for i := 0; i < 10; i++ {
-		tester.Save(&commentModel{
-			Message: fmt.Sprintf("Comment %d", i+1),
-			Post:    post,
-		})
-	}
 
 	// get first page of posts
 	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
