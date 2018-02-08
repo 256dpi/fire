@@ -10,8 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGroupEndpointMissingController(t *testing.T) {
+func TestGroupEndpointMissingResource(t *testing.T) {
 	tester.Handler = NewGroup().Endpoint("api")
+
+	tester.Request("GET", "api/", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+	})
 
 	tester.Request("GET", "api/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)

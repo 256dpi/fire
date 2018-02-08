@@ -61,6 +61,9 @@ func (g *Group) Handle(name string, a *Action) {
 // specified prefix is used to parse the requests and generate urls for the
 // resources.
 func (g *Group) Endpoint(prefix string) http.Handler {
+	// trim prefix
+	prefix = strings.Trim(prefix, "/")
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create tracer
 		tracer := NewTracerFromRequest(r, "fire/Group.Endpoint")
@@ -88,13 +91,18 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			jsonapi.WriteError(w, jsonapi.InternalServerError(""))
 		})
 
-		// trim and split path
-		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
+		// trim path
+		path := strings.Trim(r.URL.Path, "/")
+		path = strings.TrimPrefix(path, prefix)
+		path = strings.Trim(path, "/")
 
-		// check segments
-		if len(s) == 0 {
+		// check path
+		if path == "" {
 			stack.Abort(jsonapi.NotFound("resource not found"))
 		}
+
+		// split path
+		s := strings.Split(path, "/")
 
 		// prepare context
 		ctx := &Context{
