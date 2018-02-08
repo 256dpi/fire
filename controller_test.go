@@ -1183,7 +1183,6 @@ func TestEmptyToManyRelationship(t *testing.T) {
 		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: tester.Store,
@@ -2192,19 +2191,6 @@ func TestPagination(t *testing.T) {
 		}).ID())
 	}
 
-	// create post
-	post := tester.Save(&postModel{
-		Title: "Post",
-	}).ID()
-
-	// create some comments
-	for i := 0; i < 10; i++ {
-		tester.Save(&commentModel{
-			Message: fmt.Sprintf("Comment %d", i+1),
-			Post:    post,
-		})
-	}
-
 	// get first page of posts
 	tester.Request("GET", "posts?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
@@ -2273,6 +2259,19 @@ func TestPagination(t *testing.T) {
 			"prev": "/selections/`+selection+`/posts?page[number]=1&page[size]=5"
 		}`, links)
 	})
+
+	// create post
+	post := tester.Save(&postModel{
+		Title: "Post",
+	}).ID()
+
+	// create some comments
+	for i := 0; i < 10; i++ {
+		tester.Save(&commentModel{
+			Message: fmt.Sprintf("Comment %d", i+1),
+			Post:    post,
+		})
+	}
 
 	// get first page of posts
 	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
