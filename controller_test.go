@@ -248,6 +248,46 @@ func TestBasicOperations(t *testing.T) {
 	})
 }
 
+func TestReadableFields(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestReadableFields", All(), func(ctx *Context) error {
+				ctx.ReadableFields = []string{"Published"}
+				return nil
+			}),
+		},
+	})
+
+	// create post
+	post1 := tester.Save(&postModel{
+		Title:     "post-1",
+		Published: true,
+	}).ID().Hex()
+
+	// get posts with single value filter
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"published": true
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
 func TestWritableFields(t *testing.T) {
 	tester.Clean()
 
