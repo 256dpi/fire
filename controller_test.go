@@ -1173,35 +1173,8 @@ func TestToManyRelationship(t *testing.T) {
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
-}
 
-func TestEmptyToManyRelationship(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &commentModel{},
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// create posts
-	post := tester.Save(&postModel{
-		Title: "Post 1",
-	}).ID().Hex()
-
-	// create selection
-	selection := tester.Save(&selectionModel{
-		Name: "Selection 1",
-	}).ID().Hex()
-
-	// get related posts
+	// get empty list of related posts
 	tester.Request("GET", "selections/"+selection+"/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -1212,13 +1185,13 @@ func TestEmptyToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get related selections
-	tester.Request("GET", "posts/"+post+"/selections", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	// get empty list of related selections
+	tester.Request("GET", "posts/"+post1+"/selections", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"data":[],
 			"links": {
-				"self": "/posts/`+post+`/selections"
+				"self": "/posts/`+post1+`/selections"
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
