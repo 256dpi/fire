@@ -58,10 +58,9 @@ type Controller struct {
 	// will cause the abortion of the request with an unauthorized status.
 	//
 	// The callbacks are expected to return an error if the requester should be
-	// informed about him being unauthorized to access the resource or modify the
-	// context's filter query in such a way that only accessible resources are
-	// returned. The later improves privacy as a protected resource would just
-	// appear as being not found.
+	// informed about him being unauthorized to access the resource, or add
+	// filters to the context to only return accessible resources. The later
+	// improves privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
 
 	// Validators are run to validate Create, Update and Delete operations
@@ -71,7 +70,7 @@ type Controller struct {
 	//
 	// The callbacks are expected to validate the model being created, updated or
 	// deleted and return errors if the presented attributes or relationships
-	// are invalid or do not comply with the stated requirements. The preceding
+	// are invalid or do not comply with the stated requirements. Necessary
 	// authorization checks should be repeated and now also include the model's
 	// attributes and relationships.
 	Validators []*Callback

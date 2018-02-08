@@ -92,7 +92,9 @@ func (o Operation) String() string {
 
 // A Context provides useful contextual information.
 type Context struct {
-	// The current operation in process (read only).
+	// The current operation in process.
+	//
+	// Usage: Read Only, Availability: Authorizers
 	Operation Operation
 
 	// The query that will be used during an List, Find, Update, Delete or
@@ -101,6 +103,8 @@ type Context struct {
 	// On Find, Update and Delete operations, the "_id" key is preset to the
 	// resource id, while on forwarded List operations the relationship filter
 	// is preset.
+	//
+	// Usage: Read Only, Availability: Authorizers (All)
 	Selector bson.M
 
 	// TODO: Split up Selector in multiple fields?
@@ -110,55 +114,73 @@ type Context struct {
 	// models or a specific model.
 	//
 	// On List operations, attribute and relationship filters are preset.
+	//
+	// Usage: Append Only, Availability: Authorizers (All)
 	Filters []bson.M
 
 	// The sorting that will be used during List.
+	//
+	// Usage: No Restriction, Availability: Authorizers (All)
 	Sorting []string
 
 	// Only the whitelisted readable fields are exposed to the client as
 	// attributes and relationships.
 	//
-	// Note: This list should only be reduced and never extended.
+	// Usage: Reduce Only, Availability: Authorizers (All)
 	ReadableFields []string
 
 	// Only the whitelisted writable fields can be altered by requests.
 	//
-	// Note: This list should only be reduced and never extended.
+	// Usage: Reduce Only, Availability: Authorizers (All)
 	WritableFields []string
 
-	// The Model that will be saved during Create, updated during Update or
-	// deleted during Delete.
+	// The Model that will be created, updated or deleted.
+	//
+	// Usage: Modify Only, Availability: Validators (Create, Update, Delete)
 	Model coal.Model
 
-	// The document that will be written to the client during List, Find, Create
-	// and Update.
+	// The document that will be written to the client.
 	//
-	// Note: The document will be set before notifiers are run.
+	// Usage: Modify Only, Availability: Notifiers (All except Actions)
 	Response *jsonapi.Document
 
-	// The store that is used to retrieve and persist the model (read only).
+	// The store that is used to retrieve and persist the model.
+	//
+	// Usage: Read Only
 	Store *coal.SubStore
 
-	// The underlying JSON-API request (read only).
+	// The underlying JSON-API request.
+	//
+	// Usage: Read Only
 	JSONAPIRequest *jsonapi.Request
 
-	// The underlying HTTP request (read only).
+	// The underlying HTTP request.
 	//
 	// Note: The path is not updated when a controller forwards a request to
 	// a related controller.
+	//
+	// Usage: Read Only
 	HTTPRequest *http.Request
 
 	// The underlying HTTP response writer. The response writer should only be
 	// used during collection or resource actions to write a custom response.
+	//
+	// Usage: Read Only
 	ResponseWriter http.ResponseWriter
 
-	// The Controller that is managing the request (read only).
+	// The Controller that is managing the request.
+	//
+	// Usage: Read Only
 	Controller *Controller
 
-	// The Group that received the request (read only).
+	// The Group that received the request.
+	//
+	// Usage: Read Only
 	Group *Group
 
-	// The Tracer used to tracer code execution (read only).
+	// The Tracer used to tracer code execution.
+	//
+	// Usage: Read Only
 	Tracer *Tracer
 
 	original coal.Model
