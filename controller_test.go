@@ -816,6 +816,57 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// fetch existing relationship
+	tester.Request("GET", "comments/"+comment2+"/relationships/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "comments",
+				"id": "`+comment1+`"
+			},
+			"links": {
+				"self": "/comments/`+comment2+`/relationships/parent",
+				"related": "/comments/`+comment2+`/parent"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// fetch existing related resource
+	tester.Request("GET", "comments/"+comment2+"/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "comments",
+				"id": "`+comment1+`",
+				"attributes": {
+					"message": "Comment 1"
+				},
+				"relationships": {
+					"parent": {
+						"data": null,
+						"links": {
+							"self": "/comments/`+comment1+`/relationships/parent",
+							"related": "/comments/`+comment1+`/parent"
+						}
+					},
+					"post": {
+						"data": {
+							"type": "posts",
+							"id": "`+post1+`"
+						},
+						"links": {
+							"self": "/comments/`+comment1+`/relationships/post",
+							"related": "/comments/`+comment1+`/post"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/comments/`+comment2+`/parent"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// unset relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", `{
 			"data": null

@@ -474,8 +474,6 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			// lookup optional id on loaded model
 			oid := ctx.Model.MustGet(relationField.Name).(*bson.ObjectId)
 
-			// TODO: Test present optional id.
-
 			// check if present
 			if oid != nil {
 				id = oid.Hex()
