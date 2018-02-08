@@ -320,6 +320,18 @@ func TestWritableFields(t *testing.T) {
 			"attributes": {
 				"title": "Post 1",
 				"published": true
+			},
+			"relationships": {
+				"note": {
+					"data": {
+						"type": "notes",
+						"id": "`+bson.NewObjectId().Hex()+`"
+					},
+					"links": {
+						"self": "/posts/`+id+`/relationships/note",
+						"related": "/posts/`+id+`/note"
+					}
+				}
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
