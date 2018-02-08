@@ -450,8 +450,8 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	newCtx := &Context{
 		Selector:       bson.M{},
 		Filters:        []bson.M{},
-		ReadableFields: c.initialFields(ctx.JSONAPIRequest, relatedController.Model),
-		WritableFields: c.initialFields(nil, relatedController.Model),
+		ReadableFields: relatedController.initialFields(ctx.JSONAPIRequest, relatedController.Model),
+		WritableFields: relatedController.initialFields(nil, relatedController.Model),
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
