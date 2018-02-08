@@ -2319,32 +2319,6 @@ func TestForcedPagination(t *testing.T) {
 			"next": "/posts?page[number]=2&page[size]=5"
 		}`, links)
 	})
-}
-
-func TestEnforcedListLimit(t *testing.T) {
-	tester.Clean()
-
-	tester.Assign("api", &Controller{
-		Model:     &postModel{},
-		Store:     tester.Store,
-		ListLimit: 5,
-	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &noteModel{},
-		Store: tester.Store,
-	})
-
-	// create some posts
-	for i := 0; i < 10; i++ {
-		tester.Save(&postModel{
-			Title: fmt.Sprintf("Post %d", i+1),
-		})
-	}
 
 	// get first page of posts
 	tester.Request("GET", "posts?page[number]=1&page[size]=7", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -2355,10 +2329,10 @@ func TestEnforcedListLimit(t *testing.T) {
 		assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
 		assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"self": "/api/posts?page[number]=1&page[size]=5",
-			"first": "/api/posts?page[number]=1&page[size]=5",
-			"last": "/api/posts?page[number]=2&page[size]=5",
-			"next": "/api/posts?page[number]=2&page[size]=5"
+			"self": "/posts?page[number]=1&page[size]=5",
+			"first": "/posts?page[number]=1&page[size]=5",
+			"last": "/posts?page[number]=2&page[size]=5",
+			"next": "/posts?page[number]=2&page[size]=5"
 		}`, links)
 	})
 }
