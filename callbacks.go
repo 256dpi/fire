@@ -3,10 +3,12 @@ package fire
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/256dpi/jsonapi"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -97,9 +99,8 @@ type Callback struct {
 	Handler Handler
 }
 
-// ErrAccessDenied can be returned by an authorizer to deny access. The error is
-// already wrapped using Safe.
-var ErrAccessDenied = Safe(errors.New("access denied"))
+// ErrAccessDenied can be returned by any callback to deny access.
+var ErrAccessDenied = jsonapi.ErrorFromStatus(http.StatusUnauthorized, "access denied")
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {

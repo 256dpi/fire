@@ -55,7 +55,8 @@ type Controller struct {
 
 	// Authorizers authorize the requested operation on the requested resource
 	// and are run before any models are loaded from the DB. Returned errors
-	// will cause the abortion of the request with an unauthorized status.
+	// will cause the abortion of the request with an unauthorized status by
+	// default.
 	//
 	// The callbacks are expected to return an error if the requester should be
 	// informed about him being unauthorized to access the resource, or add
@@ -66,7 +67,7 @@ type Controller struct {
 	// Validators are run to validate Create, Update and Delete operations
 	// after the models are loaded and the changed attributes have been assigned
 	// during an Update. Returned errors will cause the abortion of the request
-	// with a bad request status.
+	// with a bad request status by default.
 	//
 	// The callbacks are expected to validate the model being created, updated or
 	// deleted and return errors if the presented attributes or relationships
@@ -78,7 +79,7 @@ type Controller struct {
 	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
 	// about the applied changes. Returned errors will cause the abortion of the
-	// request with an Internal Server Error status.
+	// request with an Internal Server Error status by default.
 	Notifiers []*Callback
 
 	// NoList can be set to true if the resource is only listed through
