@@ -694,7 +694,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 
 		// check if field is writable
 		if !Contains(ctx.WritableFields, field.Name) {
-			continue // TODO: Test.
+			continue
 		}
 
 		// assign relationship
@@ -739,7 +739,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 		// check if field is writable
 		if !Contains(ctx.WritableFields, field.Name) {
-			continue // TODO: Test.
+			continue
 		}
 
 		// process all references
@@ -813,7 +813,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 		// check if field is writable
 		if !Contains(ctx.WritableFields, field.Name) {
-			continue // TODO: Test.
+			continue
 		}
 
 		// process all references

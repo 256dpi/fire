@@ -2087,6 +2087,12 @@ func TestWritableFields(t *testing.T) {
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: tester.Store,
+		Authorizers: L{
+			C("TestWritableFields", All(), func(ctx *Context) error {
+				ctx.WritableFields = []string{}
+				return nil
+			}),
+		},
 	}, &Controller{
 		Model: &noteModel{},
 		Store: tester.Store,
@@ -2153,7 +2159,83 @@ func TestWritableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// TODO: Test Relationships
+	post := bson.NewObjectId()
+
+	selection := tester.Save(&selectionModel{
+		Posts: []bson.ObjectId{post},
+	}).ID().Hex()
+
+	// update relationship
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "comments",
+				"id": "`+bson.NewObjectId().Hex()+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+                {
+					"type": "posts",
+					"id": "`+post.Hex()+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// add relationship
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "`+bson.NewObjectId().Hex()+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post.Hex()+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// remove relationship
+	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "`+post.Hex()+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post.Hex()+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 }
 
 func TestNoList(t *testing.T) {
