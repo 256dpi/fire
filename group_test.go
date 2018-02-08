@@ -64,7 +64,6 @@ func TestGroupAction(t *testing.T) {
 			ctx.ResponseWriter.WriteHeader(http.StatusFound)
 			return nil
 		}),
-		BodyLimit: 1,
 	})
 
 	tester.Handler = group.Endpoint("")
