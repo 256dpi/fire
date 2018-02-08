@@ -1989,13 +1989,22 @@ func TestReadableFields(t *testing.T) {
 				return nil
 			}),
 		},
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestReadableFields", All(), func(ctx *Context) error {
+				ctx.ReadableFields = []string{}
+				return nil
+			}),
+		},
 	})
 
 	// create post
 	post1 := tester.Save(&postModel{
 		Title:     "post-1",
 		Published: true,
-	}).ID().Hex()
+	}).ID()
 
 	// get posts with single value filter
 	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -2004,7 +2013,7 @@ func TestReadableFields(t *testing.T) {
 			"data": [
 				{
 					"type": "posts",
-					"id": "`+post1+`",
+					"id": "`+post1.Hex()+`",
 					"attributes": {
 						"published": true
 					}
@@ -2016,7 +2025,24 @@ func TestReadableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// TODO: Test Relationships
+	// create note
+	note1 := tester.Save(&noteModel{
+		Post: post1,
+	}).ID()
+
+	// get posts with single value filter
+	tester.Request("GET", "/posts/"+post1.Hex()+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "notes",
+				"id": "`+note1.Hex()+`"
+			},
+			"links": {
+				"self": "/posts/`+post1.Hex()+`/note"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 }
 
 func TestWritableFields(t *testing.T) {
@@ -2507,4 +2533,4 @@ func TestResourceActions(t *testing.T) {
 	})
 }
 
-// TODO: Test Prefix Handling?
+// TODO: Test Group
