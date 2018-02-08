@@ -1,8 +1,8 @@
-hash: 05d8657d2aa7d685a6a0213efc8022ad8c3033a69f6a859f873908774dac78ad
-updated: 2018-01-12T17:05:16.899268+01:00
+hash: ff2acf0f605fd2e4331989d19ac95eb27e5ab130ae6075a5cd95bb1b82dff0dd
+updated: 2018-02-08T16:27:59.841894+02:00
 imports:
 - name: github.com/256dpi/jsonapi
-  version: 778c9ece97935c22b67824b2af8825d392786f64
+  version: dbfb1f4b466ccfb43d3de69dc46e955571d394e2
 - name: github.com/256dpi/mgojq
   version: e79ab730184899ed67854174e78e55bdf4443418
 - name: github.com/256dpi/oauth2
@@ -58,7 +58,7 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
 - name: github.com/tidwall/gjson
@@ -66,7 +66,7 @@ testImports:
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
 - name: github.com/uber/jaeger-client-go
-  version: f54d8ece0a66e3db6a9247e946eb1e2bd79029ea
+  version: 3ac96c6e679cb60a74589b0d0aa7c70a906183f7
   subpackages:
   - internal/baggage
   - internal/spanlog
@@ -78,6 +78,6 @@ testImports:
   - transport
   - utils
 - name: github.com/uber/jaeger-lib
-  version: 5519f3beabf28707fca8d3f47f9cff87dad48d96
+  version: 7f95f4f7e80028096410abddaae2556e4c61b59f
   subpackages:
   - metrics
