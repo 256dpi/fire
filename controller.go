@@ -421,41 +421,34 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
-	// prepare resource type
-	var relationField *coal.Field
-
 	// find requested relationship
+	var relationField *coal.Field
 	for _, field := range ctx.Model.Meta().Fields {
 		if field.RelName == ctx.JSONAPIRequest.RelatedResource {
 			relationField = &field
 			break
 		}
 	}
-
-	// check resource type
 	if relationField == nil {
 		stack.Abort(jsonapi.BadRequest("relationship does not exist"))
 	}
 
 	// get related controller
-	pluralName := relationField.RelType
-	relatedController := ctx.Group.controllers[pluralName]
-
-	// check related controller
-	if relatedController == nil {
-		stack.Abort(fmt.Errorf("missing related controller for %s", pluralName))
+	rc := ctx.Group.controllers[relationField.RelType]
+	if rc == nil {
+		stack.Abort(fmt.Errorf("missing related controller for %s", relationField.RelType))
 	}
 
 	// copy context and request
 	newCtx := &Context{
 		Selector:       bson.M{},
 		Filters:        []bson.M{},
-		ReadableFields: relatedController.initialFields(ctx.JSONAPIRequest, relatedController.Model),
-		WritableFields: relatedController.initialFields(nil, relatedController.Model),
+		ReadableFields: rc.initialFields(ctx.JSONAPIRequest, rc.Model),
+		WritableFields: rc.initialFields(nil, rc.Model),
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
-			ResourceType: pluralName,
+			ResourceType: relationField.RelType,
 			Include:      ctx.JSONAPIRequest.Include,
 			PageNumber:   ctx.JSONAPIRequest.PageNumber,
 			PageSize:     ctx.JSONAPIRequest.PageSize,
@@ -467,7 +460,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		},
 		HTTPRequest:    ctx.HTTPRequest,
 		ResponseWriter: ctx.ResponseWriter,
-		Controller:     relatedController,
+		Controller:     rc,
 		Group:          ctx.Group,
 		Tracer:         ctx.Tracer,
 	}
@@ -510,10 +503,10 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// load model if id is present
 		if id != "" {
 			// load model
-			relatedController.loadModel(newCtx)
+			rc.loadModel(newCtx)
 
 			// set model
-			newCtx.Response.Data.One = relatedController.resourceForModel(newCtx, newCtx.Model)
+			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Model)
 		}
 
 		// run notifiers
@@ -536,14 +529,14 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.Selector["_id"] = bson.M{"$in": ids}
 
 		// load related models
-		models := relatedController.loadModels(newCtx)
+		models := rc.loadModels(newCtx)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: relatedController.resourcesForModels(newCtx, models),
+				Many: rc.resourcesForModels(newCtx, models),
 			},
-			Links: relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
 
 		// run notifiers
@@ -559,7 +552,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		var filterName string
 
 		// find related relationship
-		for _, field := range relatedController.Model.Meta().Fields {
+		for _, field := range rc.Model.Meta().Fields {
 			// find db field by comparing the relationship name wit the inverse
 			// name found on the original relationship
 			if field.RelName == relationField.RelInverse {
@@ -581,7 +574,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.Selector[filterName] = ctx.Model.ID()
 
 		// load related models
-		models := relatedController.loadModels(newCtx)
+		models := rc.loadModels(newCtx)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
@@ -595,7 +588,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		if len(models) > 1 {
 			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 		} else if len(models) == 1 {
-			newCtx.Response.Data.One = relatedController.resourceForModel(newCtx, models[0])
+			newCtx.Response.Data.One = rc.resourceForModel(newCtx, models[0])
 		}
 
 		// run notifiers
@@ -611,7 +604,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		var filterName string
 
 		// find related relationship
-		for _, field := range relatedController.Model.Meta().Fields {
+		for _, field := range rc.Model.Meta().Fields {
 			// find db field by comparing the relationship name wit the inverse
 			// name found on the original relationship
 			if field.RelName == relationField.RelInverse {
@@ -635,14 +628,14 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// load related models
-		models := relatedController.loadModels(newCtx)
+		models := rc.loadModels(newCtx)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: relatedController.resourcesForModels(newCtx, models),
+				Many: rc.resourcesForModels(newCtx, models),
 			},
-			Links: relatedController.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
 
 		// run notifiers
