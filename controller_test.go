@@ -1933,28 +1933,22 @@ func TestSparseFields(t *testing.T) {
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
-	}, &Controller{
-		Model: &selectionModel{},
-		Store: tester.Store,
-	}, &Controller{
 		Model: &noteModel{},
 		Store: tester.Store,
 	})
 
-	// create posts
+	// create post
 	post := tester.Save(&postModel{
 		Title: "Post 1",
-	}).ID().Hex()
+	}).ID()
 
 	// get posts with single value filter
-	tester.Request("GET", "posts/"+post+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "posts",
-				"id": "`+post+`",
+				"id": "`+post.Hex()+`",
 				"attributes": {
 					"title": "Post 1"
 				},
@@ -1962,19 +1956,49 @@ func TestSparseFields(t *testing.T) {
 					"note": {
 						"data": null,
 						"links": {
-							"self": "/posts/`+post+`/relationships/note",
-							"related": "/posts/`+post+`/note"
+							"self": "/posts/`+post.Hex()+`/relationships/note",
+							"related": "/posts/`+post.Hex()+`/note"
 						}
 					}
 				}
 			},
 			"links": {
-				"self": "/posts/`+post+`"
+				"self": "/posts/`+post.Hex()+`"
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// TODO: Test relationships.
+	// create note
+	note := tester.Save(&noteModel{
+		Title: "Note 1",
+		Post:  post,
+	}).ID()
+
+	// get related note
+	tester.Request("GET", "/posts/"+post.Hex()+"/note?fields[notes]=post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "notes",
+				"id": "`+note.Hex()+`",
+				"relationships": {
+					"post": {
+						"data": {
+							"type": "posts",
+							"id": "`+post.Hex()+`"
+						},
+						"links": {
+							"self": "/notes/`+note.Hex()+`/relationships/post",
+							"related": "/notes/`+note.Hex()+`/post"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+post.Hex()+`/note"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 }
 
 func TestReadableFields(t *testing.T) {
@@ -2001,7 +2025,7 @@ func TestReadableFields(t *testing.T) {
 	})
 
 	// create post
-	post1 := tester.Save(&postModel{
+	post := tester.Save(&postModel{
 		Title:     "post-1",
 		Published: true,
 	}).ID()
@@ -2013,7 +2037,7 @@ func TestReadableFields(t *testing.T) {
 			"data": [
 				{
 					"type": "posts",
-					"id": "`+post1.Hex()+`",
+					"id": "`+post.Hex()+`",
 					"attributes": {
 						"published": true
 					}
@@ -2026,20 +2050,20 @@ func TestReadableFields(t *testing.T) {
 	})
 
 	// create note
-	note1 := tester.Save(&noteModel{
-		Post: post1,
+	note := tester.Save(&noteModel{
+		Post: post,
 	}).ID()
 
-	// get posts with single value filter
-	tester.Request("GET", "/posts/"+post1.Hex()+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	// get related note
+	tester.Request("GET", "/posts/"+post.Hex()+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"data": {
 				"type": "notes",
-				"id": "`+note1.Hex()+`"
+				"id": "`+note.Hex()+`"
 			},
 			"links": {
-				"self": "/posts/`+post1.Hex()+`/note"
+				"self": "/posts/`+post.Hex()+`/note"
 			}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2068,8 +2092,6 @@ func TestWritableFields(t *testing.T) {
 		Store: tester.Store,
 	})
 
-	var id string
-
 	// create post
 	tester.Request("POST", "posts", `{
 		"data": {
@@ -2083,17 +2105,13 @@ func TestWritableFields(t *testing.T) {
 					"data": {
 						"type": "notes",
 						"id": "`+bson.NewObjectId().Hex()+`"
-					},
-					"links": {
-						"self": "/posts/`+id+`/relationships/note",
-						"related": "/posts/`+id+`/note"
 					}
 				}
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		post := tester.FindLast(&postModel{})
-		id = post.ID().Hex()
+		id := post.ID().Hex()
 
 		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
