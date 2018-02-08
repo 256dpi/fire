@@ -1020,10 +1020,13 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 			if field.RelName == name && (field.ToOne || field.ToMany) && Contains(c.Filters, field.Name) {
 				handled = true
 
-				// convert to object id list
-				ids, err := toObjectIDList(values)
-				if err != nil {
-					stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
+				// convert to object ids
+				var ids []bson.ObjectId
+				for _, str := range values {
+					if !bson.IsObjectIdHex(str) {
+						stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
+					}
+					ids = append(ids, bson.ObjectIdHex(str))
 				}
 
 				// set relationship filter
