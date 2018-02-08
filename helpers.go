@@ -102,7 +102,7 @@ func Contains(list []string, str string) bool {
 // Intersect will return the intersection of both lists.
 func Intersect(listA, listB []string) []string {
 	// prepare new list
-	var list []string
+	list := make([]string, 0, len(listA))
 
 	// add items that are part of both lists
 	for _, item := range listA {

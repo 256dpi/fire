@@ -927,7 +927,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 
 func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []string {
 	// prepare list
-	var list []string
+	list := make([]string, 0, len(model.Meta().Fields))
 
 	// add all attributes and relationships
 	for _, f := range model.Meta().Fields {
@@ -1237,7 +1237,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
 	// create whitelist
-	var whitelist []string
+	whitelist := make([]string, 0, len(ctx.ReadableFields))
 	for _, field := range ctx.ReadableFields {
 		f := model.Meta().MustFindField(field)
 		if f.JSONName != "" {
