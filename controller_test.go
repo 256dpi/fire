@@ -2865,5 +2865,3 @@ func TestResourceActions(t *testing.T) {
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
-
-// TODO: Test Group
