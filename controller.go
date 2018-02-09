@@ -303,6 +303,16 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		stack.Abort(jsonapi.BadRequest("resource object expected"))
 	}
 
+	// check resource type
+	if doc.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
+		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+	}
+
+	// check id
+	if doc.Data.One.ID != "" {
+		stack.Abort(jsonapi.BadRequest("spurious resource id"))
+	}
+
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
@@ -351,6 +361,16 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// basic input data check
 	if doc.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("resource object expected"))
+	}
+
+	// check resource type
+	if doc.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
+		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+	}
+
+	// check id
+	if doc.Data.One.ID != ctx.JSONAPIRequest.ResourceID {
+		stack.Abort(jsonapi.BadRequest("resource id mismatch"))
 	}
 
 	// load model
@@ -1159,12 +1179,18 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 			// set and check id if available
 			if rel.Data != nil && rel.Data.One != nil {
+				// extract id
 				id = bson.ObjectIdHex(rel.Data.One.ID)
 
 				// return error for an invalid id
 				if !id.Valid() {
 					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 				}
+			}
+
+			// check type
+			if id != "" && rel.Data.One.Type != field.RelType {
+				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
 			// handle non optional field first
@@ -1177,8 +1203,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			if id != "" {
 				ctx.Model.MustSet(field.Name, &id)
 			} else {
-				var nilID *bson.ObjectId
-				ctx.Model.MustSet(field.Name, nilID)
+				ctx.Model.MustSet(field.Name, coal.N())
 			}
 		}
 
@@ -1189,6 +1214,11 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 			// range over all resources
 			for i, r := range rel.Data.Many {
+				// check type
+				if r.Type != field.RelType {
+					stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+				}
+
 				// set id
 				ids[i] = bson.ObjectIdHex(r.ID)
 

@@ -42,6 +42,39 @@ func TestBasicOperations(t *testing.T) {
 
 	var id string
 
+	// attempt to create post with invalid type
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "foo"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to create post with invalid id
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"id": "`+bson.NewObjectId().Hex()+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "spurious resource id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// create post
 	tester.Request("POST", "posts", `{
 		"data": {
@@ -135,6 +168,46 @@ func TestBasicOperations(t *testing.T) {
 			"links": {
 				"self": "/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to update post with invalid type
+	tester.Request("PATCH", "posts/"+id, `{
+		"data": {
+			"type": "foo",
+			"id": "`+id+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to update post with invalid id
+	tester.Request("PATCH", "posts/"+id, `{
+		"data": {
+			"type": "posts",
+			"id": "`+bson.NewObjectId().Hex()+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource id mismatch"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
@@ -332,6 +405,33 @@ func TestHasOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to create related note with invalid type
+	tester.Request("POST", "notes", `{
+		"data": {
+			"type": "notes",
+			"attributes": {
+				"title": "Note 2"
+			},
+			"relationships": {
+				"post": {
+					"data": {
+						"type": "foo",
+						"id": "`+post+`"
+					}
+				}
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	var note string
 
 	// create related note
@@ -380,7 +480,7 @@ func TestHasOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get set related note
+	// get related note
 	tester.Request("GET", "posts/"+post+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -409,7 +509,7 @@ func TestHasOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get only relationship links
+	// get note relationship
 	tester.Request("GET", "posts/"+post+"/relationships/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -509,6 +609,33 @@ func TestHasManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to create related comment with invalid type
+	tester.Request("POST", "comments", `{
+		"data": {
+			"type": "comments",
+			"attributes": {
+				"message": "Comment 2"
+			},
+			"relationships": {
+				"post": {
+					"data": {
+						"type": "foo",
+						"id": "`+post+`"
+					}
+				}
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	var comment string
 
 	// create related comment
@@ -602,7 +729,7 @@ func TestHasManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get only relationship links
+	// get list of relationships
 	tester.Request("GET", "posts/"+post+"/relationships/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -784,7 +911,7 @@ func TestToOneRelationship(t *testing.T) {
 	// replace relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
-			"type": "comments",
+			"type": "posts",
 			"id": "`+post2+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -1104,7 +1231,7 @@ func TestToManyRelationship(t *testing.T) {
 	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
-				"type": "comments",
+				"type": "posts",
 				"id": "`+post3+`"
 			}
 		]
