@@ -729,7 +729,7 @@ func TestHasManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get list of relationships
+	// get comments relationship
 	tester.Request("GET", "posts/"+post+"/relationships/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -893,7 +893,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get related post id only
+	// get post relationship
 	tester.Request("GET", "comments/"+comment2+"/relationships/post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -908,7 +908,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// replace relationship
+	// replace post relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
 			"type": "posts",
@@ -928,7 +928,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// fetch replaced relationship
+	// get replaced post relationship
 	tester.Request("GET", "comments/"+comment2+"/relationships/post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -943,7 +943,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// fetch existing relationship
+	// get existing parent relationship
 	tester.Request("GET", "comments/"+comment2+"/relationships/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -958,7 +958,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// fetch existing related resource
+	// get existing related resource
 	tester.Request("GET", "comments/"+comment2+"/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -994,7 +994,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// unset relationship
+	// unset parent relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/parent", `{
 			"data": null
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -1008,7 +1008,7 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// fetch unset relationship
+	// fetch unset parent relationship
 	tester.Request("GET", "comments/"+comment2+"/relationships/parent", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -1206,7 +1206,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get related post ids only
+	// get posts relationship
 	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -1227,7 +1227,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// update relationship
+	// replace posts relationship
 	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -1251,7 +1251,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get updated related post ids only
+	// get updated posts relationship
 	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -1268,7 +1268,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// add relationship
+	// add to posts relationship
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -1296,7 +1296,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get related post ids only
+	// get posts relationship
 	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -1317,7 +1317,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// remove relationship
+	// remove from posts relationships
 	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -1340,7 +1340,7 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// get empty related post ids list
+	// get empty posts relationship
 	tester.Request("GET", "selections/"+selection+"/relationships/posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
@@ -2343,7 +2343,7 @@ func TestWritableFields(t *testing.T) {
 		Posts: []bson.ObjectId{post},
 	}).ID().Hex()
 
-	// update relationship
+	// update posts relationship
 	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -2367,7 +2367,7 @@ func TestWritableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// add relationship
+	// add to posts relationship
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -2391,7 +2391,7 @@ func TestWritableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// remove relationship
+	// remove from posts relationship
 	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
