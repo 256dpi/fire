@@ -762,6 +762,11 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 		// process all references
 		for _, ref := range doc.Data.Many {
+			// check type
+			if ref.Type != field.RelType {
+				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+			}
+
 			// get id
 			refID := bson.ObjectIdHex(ref.ID)
 
@@ -836,6 +841,11 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 		// process all references
 		for _, ref := range doc.Data.Many {
+			// check type
+			if ref.Type != field.RelType {
+				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+			}
+
 			// get id
 			refID := bson.ObjectIdHex(ref.ID)
 

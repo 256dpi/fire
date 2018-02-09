@@ -908,6 +908,23 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to replace post relationship with invalid type
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
+		"data": {
+			"type": "foo",
+			"id": "`+post2+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// replace post relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
@@ -1268,11 +1285,30 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to add to posts relationship with invalid type
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "foo",
+				"id": "`+post1+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// add to posts relationship
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
-				"type": "comments",
+				"type": "posts",
 				"id": "`+post1+`"
 			}
 		]
@@ -1317,15 +1353,34 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to remove from posts relationships with invalid type
+	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "foo",
+				"id": "`+post3+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// remove from posts relationships
 	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
-				"type": "comments",
+				"type": "posts",
 				"id": "`+post3+`"
 			},
 			{
-				"type": "comments",
+				"type": "posts",
 				"id": "`+post1+`"
 			}
 		]
