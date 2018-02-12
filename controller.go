@@ -308,7 +308,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 
 	// basic input data check
 	if doc.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("resource object expected"))
+		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
@@ -368,7 +368,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 
 	// basic input data check
 	if doc.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("resource object expected"))
+		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
