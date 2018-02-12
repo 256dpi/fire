@@ -181,7 +181,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	if req.Intent == jsonapi.ListResources && c.NoList {
 		stack.Abort(jsonapi.ErrorFromStatus(
 			http.StatusMethodNotAllowed,
-			"Listing is disabled for this resource.",
+			"listing is disabled for this resource",
 		))
 	}
 

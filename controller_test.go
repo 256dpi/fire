@@ -2507,7 +2507,13 @@ func TestNoList(t *testing.T) {
 	// attempt list comments
 	tester.Request("GET", "comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.Contains(t, r.Body.String(), "Listing is disabled for this resource.", tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "405",
+				"title": "Method Not Allowed",
+				"detail": "listing is disabled for this resource"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
 
