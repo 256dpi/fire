@@ -123,7 +123,7 @@ func (c *Controller) prepare() {
 	// add collection actions
 	for name, action := range c.CollectionActions {
 		// check collision
-		if name == "" {
+		if name == "" || bson.IsObjectIdHex(name) {
 			panic(fmt.Sprintf(`fire: invalid collection action "%s"`, name))
 		}
 
