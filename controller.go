@@ -450,7 +450,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 	}
 	if relationField == nil {
-		stack.Abort(jsonapi.BadRequest("relationship does not exist"))
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// get related controller
@@ -670,6 +670,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 func (c *Controller) getRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.getRelationship")
+
+	// check relationship
+	field := c.findRelationship(ctx.JSONAPIRequest.Relationship)
+	if field == nil {
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+	}
 
 	// set operation
 	ctx.Operation = Find
@@ -974,6 +980,17 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 	}
 
 	return list
+}
+
+func (c *Controller) findRelationship(name string) *coal.Field {
+	// find relationship
+	for _, f := range c.Model.Meta().Fields {
+		if f.RelName == name {
+			return &f
+		}
+	}
+
+	return nil
 }
 
 func (c *Controller) loadModel(ctx *Context) {

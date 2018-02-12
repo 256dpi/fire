@@ -338,15 +338,6 @@ func TestHasOneRelationship(t *testing.T) {
 		Store: tester.Store,
 	})
 
-	// create existing post & note
-	existingPost := tester.Save(&postModel{
-		Title: "Post 1",
-	})
-	tester.Save(&noteModel{
-		Title: "Note 1",
-		Post:  existingPost.ID(),
-	})
-
 	// create new post
 	post := tester.Save(&postModel{
 		Title: "Post 2",
@@ -391,6 +382,30 @@ func TestHasOneRelationship(t *testing.T) {
 			"links": {
 				"self": "/posts/`+post+`"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get invalid relation
+	tester.Request("GET", "posts/"+post+"/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get invalid relationship
+	tester.Request("GET", "posts/"+post+"/relationships/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
