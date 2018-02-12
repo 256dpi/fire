@@ -188,8 +188,11 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// parse document if expected
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
+		// constrain reader
+		r := http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(c.DocumentLimit))
+
 		// parse document and respect document limit
-		doc, err = jsonapi.ParseDocument(http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(c.DocumentLimit)))
+		doc, err = jsonapi.ParseDocument(r)
 		stack.AbortIf(err)
 	}
 
