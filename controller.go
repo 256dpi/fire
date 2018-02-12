@@ -35,6 +35,10 @@ type Action struct {
 	BodyLimit uint64
 }
 
+// TODO: Properly attempt to find a relationship rather than filtering the available list.
+
+// TODO: Writes to a non writable field should yield an error.
+
 // A Controller provides a JSON API based interface to a model.
 //
 // Note: A controller must not be modified after being added to a group.
@@ -685,6 +689,8 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
+	// TODO: Check if relationship is readable.
+
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
 
@@ -1167,9 +1173,12 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// whitelist attributes
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
-		if Contains(whitelist, name) {
-			attributes[name] = value
+		if !Contains(whitelist, name) {
+			// TODO: Raise error.
+			continue
 		}
+
+		attributes[name] = value
 	}
 
 	// map attributes to struct
@@ -1179,6 +1188,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	for name, rel := range res.Relationships {
 		// check whitelist
 		if !Contains(whitelist, name) {
+			// TODO: Raise error.
 			continue
 		}
 

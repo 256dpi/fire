@@ -12,6 +12,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// TODO: Test invalid relationships.
+
 func TestBasicOperations(t *testing.T) {
 	tester.Clean()
 
