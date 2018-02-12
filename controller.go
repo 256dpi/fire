@@ -441,14 +441,8 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
-	// find requested relationship
-	var relationField *coal.Field
-	for _, field := range ctx.Model.Meta().Fields {
-		if field.RelName == ctx.JSONAPIRequest.RelatedResource {
-			relationField = &field
-			break
-		}
-	}
+	// find relationship
+	relationField := c.findRelationship(ctx.JSONAPIRequest.RelatedResource)
 	if relationField == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -1192,72 +1186,75 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
 
-	// assign relationships
-	for _, field := range ctx.Model.Meta().Fields {
-		// check if field matches relationship
-		if field.RelName != name || (!field.ToOne && !field.ToMany) {
-			continue
+	// get relationship
+	field := c.findRelationship(name)
+	if field == nil {
+		return
+	}
+
+	// check if field matches relationship
+	if !field.ToOne && !field.ToMany {
+		return
+	}
+
+	// handle to-one relationship
+	if field.ToOne {
+		// prepare zero value
+		var id bson.ObjectId
+
+		// set and check id if available
+		if rel.Data != nil && rel.Data.One != nil {
+			// extract id
+			id = bson.ObjectIdHex(rel.Data.One.ID)
+
+			// return error for an invalid id
+			if !id.Valid() {
+				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+			}
 		}
 
-		// handle to-one relationship
-		if field.ToOne {
-			// prepare zero value
-			var id bson.ObjectId
+		// check type
+		if id != "" && rel.Data.One.Type != field.RelType {
+			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+		}
 
-			// set and check id if available
-			if rel.Data != nil && rel.Data.One != nil {
-				// extract id
-				id = bson.ObjectIdHex(rel.Data.One.ID)
+		// handle non optional field first
+		if !field.Optional {
+			ctx.Model.MustSet(field.Name, id)
+			return
+		}
 
-				// return error for an invalid id
-				if !id.Valid() {
-					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
-				}
-			}
+		// assign for a zero value optional field
+		if id != "" {
+			ctx.Model.MustSet(field.Name, &id)
+		} else {
+			ctx.Model.MustSet(field.Name, coal.N())
+		}
+	}
 
+	// handle to-many relationship
+	if field.ToMany {
+		// prepare slice of ids
+		ids := make([]bson.ObjectId, len(rel.Data.Many))
+
+		// range over all resources
+		for i, r := range rel.Data.Many {
 			// check type
-			if id != "" && rel.Data.One.Type != field.RelType {
+			if r.Type != field.RelType {
 				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
-			// handle non optional field first
-			if !field.Optional {
-				ctx.Model.MustSet(field.Name, id)
-				continue
-			}
+			// set id
+			ids[i] = bson.ObjectIdHex(r.ID)
 
-			// assign for a zero value optional field
-			if id != "" {
-				ctx.Model.MustSet(field.Name, &id)
-			} else {
-				ctx.Model.MustSet(field.Name, coal.N())
+			// return error for an invalid id
+			if !ids[i].Valid() {
+				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 		}
 
-		// handle to-many relationship
-		if field.ToMany {
-			// prepare slice of ids
-			ids := make([]bson.ObjectId, len(rel.Data.Many))
-
-			// range over all resources
-			for i, r := range rel.Data.Many {
-				// check type
-				if r.Type != field.RelType {
-					stack.Abort(jsonapi.BadRequest("resource type mismatch"))
-				}
-
-				// set id
-				ids[i] = bson.ObjectIdHex(r.ID)
-
-				// return error for an invalid id
-				if !ids[i].Valid() {
-					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
-				}
-			}
-
-			// set ids
-			ctx.Model.MustSet(field.Name, ids)
-		}
+		// set ids
+		ctx.Model.MustSet(field.Name, ids)
 	}
 
 	// finish trace
