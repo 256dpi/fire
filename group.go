@@ -3,6 +3,7 @@
 package fire
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -48,6 +49,10 @@ func (g *Group) Add(controllers ...*Controller) {
 //
 // Note: The passed context is more or less empty.
 func (g *Group) Handle(name string, a *Action) {
+	if name == "" {
+		panic(fmt.Sprintf(`fire: invalid group action "%s"`, name))
+	}
+
 	// set default body limit
 	if a.BodyLimit == 0 {
 		a.BodyLimit = DataSize("8M")

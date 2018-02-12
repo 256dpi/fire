@@ -122,6 +122,11 @@ func (c *Controller) prepare() {
 
 	// add collection actions
 	for name, action := range c.CollectionActions {
+		// check collision
+		if name == "" {
+			panic(fmt.Sprintf(`fire: invalid collection action "%s"`, name))
+		}
+
 		// set default body limit
 		if action.BodyLimit == 0 {
 			action.BodyLimit = DataSize("8M")
@@ -134,13 +139,13 @@ func (c *Controller) prepare() {
 	// add resource actions
 	for name, action := range c.ResourceActions {
 		// check collision
-		if name == "relationships" {
-			panic(`fire: invalid resource action "relationships"`)
+		if name == "" || name == "relationships" {
+			panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
 		}
 
 		// check relations
 		for _, field := range c.Model.Meta().Fields {
-			if (field.ToOne || field.ToMany || field.HasOne || field.HasMany) && name == field.RelType {
+			if name == field.RelName {
 				panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
 			}
 		}
