@@ -28,16 +28,29 @@ type HasMany struct{}
 
 // A Field contains the meta information about a single field of a model.
 type Field struct {
-	Name       string
-	Type       reflect.Type
-	Kind       reflect.Kind
-	JSONName   string
-	BSONName   string
-	Optional   bool
-	ToOne      bool
-	ToMany     bool
-	HasOne     bool
-	HasMany    bool
+	// The struct field name e.g. "TireSize".
+	Name string
+
+	// The struct field type and kind.
+	Type reflect.Type
+	Kind reflect.Kind
+
+	// The key name in a JSON when serialized e.g. "tire-size".
+	JSONName string
+
+	// The field name in a BSON document when serialized e.g.  "tire_size".
+	BSONName string
+
+	// Whether the field is a pointer and thus optional.
+	Optional bool
+
+	// The relationship status.
+	ToOne   bool
+	ToMany  bool
+	HasOne  bool
+	HasMany bool
+
+	// The relationship information.
 	RelName    string
 	RelType    string
 	RelInverse string
