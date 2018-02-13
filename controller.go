@@ -35,10 +35,6 @@ type Action struct {
 	BodyLimit uint64
 }
 
-// TODO: Properly attempt to find a relationship rather than filtering the available list.
-
-// TODO: Writes to a non writable field should yield an error.
-
 // A Controller provides a JSON API based interface to a model.
 //
 // Note: A controller must not be modified after being added to a group.
@@ -662,7 +658,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
-	// TODO: Check if relationship is readable.
+	// TODO: Check if relationship is readable (yield not found).
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
@@ -1020,53 +1016,47 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 	// add filters
 	for name, values := range ctx.JSONAPIRequest.Filters {
-		// initialize flag
-		handled := false
-
-		// TODO: Remove loop.
-
-		for _, field := range c.Model.Meta().Fields {
-			// handle attribute filter
-			if field.JSONKey == name && Contains(c.Filters, field.Name) {
-				handled = true
-
-				// handle boolean values
-				if field.Kind == reflect.Bool && len(values) == 1 {
-					ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: values[0] == "true"})
-
-					break
-				}
-
-				// handle string values
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": values}})
-
-				break
+		// handle attributes filter
+		if field := c.Model.Meta().Attributes[name]; field != nil {
+			// check whitelist
+			if !Contains(c.Filters, field.Name) {
+				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported filter "%s"`, name)))
 			}
 
-			// handle relationship filter
-			if field.RelName == name && (field.ToOne || field.ToMany) && Contains(c.Filters, field.Name) {
-				handled = true
-
-				// convert to object ids
-				var ids []bson.ObjectId
-				for _, str := range values {
-					if !bson.IsObjectIdHex(str) {
-						stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
-					}
-					ids = append(ids, bson.ObjectIdHex(str))
-				}
-
-				// set relationship filter
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": ids}})
-
-				break
+			// handle boolean values
+			if field.Kind == reflect.Bool && len(values) == 1 {
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: values[0] == "true"})
+				continue
 			}
+
+			// handle string values
+			ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": values}})
+			continue
+		}
+
+		// handle relationship filters
+		if field := c.Model.Meta().Relationships[name]; field != nil {
+			// check whitelist
+			if !field.ToOne && !field.ToMany || !Contains(c.Filters, field.Name) {
+				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported filter "%s"`, name)))
+			}
+
+			// convert to object ids
+			var ids []bson.ObjectId
+			for _, str := range values {
+				if !bson.IsObjectIdHex(str) {
+					stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
+				}
+				ids = append(ids, bson.ObjectIdHex(str))
+			}
+
+			// set relationship filter
+			ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": ids}})
+			continue
 		}
 
 		// raise an error on a unsupported filter
-		if !handled {
-			stack.Abort(jsonapi.BadRequest(fmt.Sprintf("filter %s is not supported", name)))
-		}
+		stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 	}
 
 	// add sorting
@@ -1080,7 +1070,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
 		}
 
-		// check if supported
+		// check whitelist
 		if !Contains(c.Sorters, field.Name) {
 			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
 		}
@@ -1155,9 +1145,9 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// whitelist attributes
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
+		// check whitelist
 		if !Contains(whitelist, name) {
-			// TODO: Raise error.
-			continue
+			stack.Abort(jsonapi.BadRequest("attribute is not writable"))
 		}
 
 		attributes[name] = value
@@ -1170,8 +1160,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	for name, rel := range res.Relationships {
 		// check whitelist
 		if !Contains(whitelist, name) {
-			// TODO: Raise error.
-			continue
+			stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 		}
 
 		// assign relationship

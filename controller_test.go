@@ -1910,7 +1910,7 @@ func TestFiltering(t *testing.T) {
 			"errors":[{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "filter foo is not supported"
+				"detail": "invalid filter \"foo\""
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2390,46 +2390,13 @@ func TestWritableFields(t *testing.T) {
 			}
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		post := tester.FindLast(&postModel{})
-		id := post.ID().Hex()
-
-		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"data": {
-				"type": "posts",
-				"id": "`+id+`",
-				"attributes": {
-					"title": "Post 1",
-					"published": false,
-					"text-body": ""
-				},
-				"relationships": {
-					"comments": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+id+`/relationships/comments",
-							"related": "/posts/`+id+`/comments"
-						}
-					},
-					"selections": {
-						"data": [],
-						"links": {
-							"self": "/posts/`+id+`/relationships/selections",
-							"related": "/posts/`+id+`/selections"
-						}
-					},
-					"note": {
-						"data": null,
-						"links": {
-							"self": "/posts/`+id+`/relationships/note",
-							"related": "/posts/`+id+`/note"
-						}
-					}
-				}
-			},
-			"links": {
-				"self": "/posts/`+id+`"
-			}
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "attribute is not writable"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
