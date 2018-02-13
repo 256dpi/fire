@@ -150,7 +150,7 @@ func TestMeta(t *testing.T) {
 			post.Fields["Selections"],
 			post.Fields["Note"],
 		},
-		DBFields: map[string]*Field{
+		DatabaseFields: map[string]*Field{
 			"title":     post.Fields["Title"],
 			"published": post.Fields["Published"],
 			"text_body": post.Fields["TextBody"],
@@ -211,7 +211,7 @@ func TestMeta(t *testing.T) {
 			comment.Fields["Parent"],
 			comment.Fields["Post"],
 		},
-		DBFields: map[string]*Field{
+		DatabaseFields: map[string]*Field{
 			"message": comment.Fields["Message"],
 			"parent":  comment.Fields["Parent"],
 			"post_id": comment.Fields["Post"],
@@ -255,7 +255,7 @@ func TestMeta(t *testing.T) {
 			selection.Fields["Name"],
 			selection.Fields["Posts"],
 		},
-		DBFields: map[string]*Field{
+		DatabaseFields: map[string]*Field{
 			"name":     selection.Fields["Name"],
 			"post_ids": selection.Fields["Posts"],
 		},

@@ -47,10 +47,10 @@ type Field struct {
 
 // Meta stores extracted meta data from a model.
 type Meta struct {
-	// The go type name e.g. "models.CarWheel".
+	// The struct type name e.g. "models.CarWheel".
 	Name string
 
-	// The plural resource type name e.g. "car-wheels".
+	// The plural resource name e.g. "car-wheels".
 	PluralName string
 
 	// The collection name e.g. "car_wheels".
@@ -63,7 +63,7 @@ type Meta struct {
 	OrderedFields []*Field
 
 	// The database fields.
-	DBFields map[string]*Field
+	DatabaseFields map[string]*Field
 
 	// The attributes.
 	Attributes map[string]*Field
@@ -90,12 +90,12 @@ func NewMeta(model Model) *Meta {
 
 	// create new meta
 	meta = &Meta{
-		Name:          modelName,
-		model:         model,
-		Fields:        make(map[string]*Field),
-		DBFields:      make(map[string]*Field),
-		Attributes:    make(map[string]*Field),
-		Relationships: make(map[string]*Field),
+		Name:           modelName,
+		model:          model,
+		Fields:         make(map[string]*Field),
+		DatabaseFields: make(map[string]*Field),
+		Attributes:     make(map[string]*Field),
+		Relationships:  make(map[string]*Field),
 	}
 
 	// iterate through all fields
@@ -270,7 +270,7 @@ func NewMeta(model Model) *Meta {
 
 		// add db fields
 		if metaField.BSONName != "" {
-			meta.DBFields[metaField.BSONName] = metaField
+			meta.DatabaseFields[metaField.BSONName] = metaField
 		}
 
 		// add attributes
