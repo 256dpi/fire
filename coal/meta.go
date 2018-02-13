@@ -106,10 +106,14 @@ func NewMeta(model Model) *Meta {
 		// get coal tag
 		coalTag := field.Tag.Get("coal")
 
-		// TODO: Assert that first field is the base.
+		// check for first field
+		if i == 0 {
+			// assert first field to be the base
+			if field.Type != baseType {
+				panic(`coal: expected to Base as the first struct field`)
+			}
 
-		// check if field is the Base
-		if field.Type == baseType {
+			// split tag
 			baseTag := strings.Split(coalTag, ":")
 
 			// check json tag

@@ -20,6 +20,11 @@ type malformedBase3 struct {
 	Base `json:"-" bson:",inline"`
 }
 
+type malformedBase4 struct {
+	Foo  string `json:"foo"`
+	Base `json:"-" bson:",inline" coal:"foo:foos" valid:"required"`
+}
+
 type malformedToOne struct {
 	Base `json:"-" bson:",inline" coal:"foo:foos"`
 	Foo  bson.ObjectId `coal:"foo:foo:foo"`
@@ -56,6 +61,10 @@ func TestNewMeta(t *testing.T) {
 
 	assert.Panics(t, func() {
 		NewMeta(&malformedBase3{})
+	})
+
+	assert.Panics(t, func() {
+		NewMeta(&malformedBase4{})
 	})
 
 	assert.Panics(t, func() {
