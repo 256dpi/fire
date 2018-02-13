@@ -456,7 +456,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	c.loadModel(ctx)
 
 	// find relationship
-	relationField := c.findRelationship(ctx.JSONAPIRequest.RelatedResource)
+	relationField := c.Model.Meta().Relationships[ctx.JSONAPIRequest.RelatedResource]
 	if relationField == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -680,7 +680,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.getRelationship")
 
 	// check relationship
-	field := c.findRelationship(ctx.JSONAPIRequest.Relationship)
+	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
 	if field == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -964,13 +964,16 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 
 func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []string {
 	// prepare list
-	list := make([]string, 0, len(model.Meta().Fields))
+	list := make([]string, 0, len(model.Meta().Attributes)+len(model.Meta().Relationships))
 
-	// add all attributes and relationships
-	for _, f := range model.Meta().Fields {
-		if f.JSONName != "" || f.RelName != "" {
-			list = append(list, f.Name)
-		}
+	// add attributes
+	for _, f := range model.Meta().Attributes {
+		list = append(list, f.Name)
+	}
+
+	// add relationships
+	for _, f := range model.Meta().Relationships {
+		list = append(list, f.Name)
 	}
 
 	// check if a field whitelist has been provided
@@ -990,11 +993,6 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 	}
 
 	return list
-}
-
-func (c *Controller) findRelationship(name string) *coal.Field {
-	// TODO: Remove function.
-	return c.Model.Meta().Relationships[name]
 }
 
 func (c *Controller) loadModel(ctx *Context) {
@@ -1205,7 +1203,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
 
 	// get relationship
-	field := c.findRelationship(name)
+	field := c.Model.Meta().Relationships[name]
 	if field == nil {
 		return
 	}
