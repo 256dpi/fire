@@ -316,7 +316,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 
 	// check id
 	if doc.Data.One.ID != "" {
-		stack.Abort(jsonapi.BadRequest("spurious resource id"))
+		stack.Abort(jsonapi.BadRequest("unnecessary resource id"))
 	}
 
 	// run authorizers

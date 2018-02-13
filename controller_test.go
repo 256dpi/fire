@@ -72,7 +72,7 @@ func TestBasicOperations(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "spurious resource id"
+				"detail": "unnecessary resource id"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
