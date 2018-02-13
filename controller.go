@@ -574,21 +574,21 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// finish has-one relationship
 	if relationField.HasOne {
-		// prepare filter
-		var filterName string
+		// prepare filter field
+		var filterField string
 
 		// find related relationship
 		for _, field := range rc.Model.Meta().Fields {
 			// find db field by comparing the relationship name wit the inverse
 			// name found on the original relationship
 			if field.RelName == relationField.RelInverse {
-				filterName = field.BSONName
+				filterField = field.BSONField
 				break
 			}
 		}
 
-		// check filter name
-		if filterName == "" {
+		// check filter field
+		if filterField == "" {
 			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
 		}
 
@@ -597,7 +597,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query
-		newCtx.Selector[filterName] = ctx.Model.ID()
+		newCtx.Selector[filterField] = ctx.Model.ID()
 
 		// load related models
 		models := rc.loadModels(newCtx)
@@ -626,21 +626,21 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// finish has-many relationship
 	if relationField.HasMany {
-		// prepare filter
-		var filterName string
+		// prepare filter field
+		var filterField string
 
 		// find related relationship
 		for _, field := range rc.Model.Meta().Fields {
 			// find db field by comparing the relationship name wit the inverse
 			// name found on the original relationship
 			if field.RelName == relationField.RelInverse {
-				filterName = field.BSONName
+				filterField = field.BSONField
 				break
 			}
 		}
 
-		// check filter name
-		if filterName == "" {
+		// check filter field
+		if filterField == "" {
 			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
 		}
 
@@ -649,7 +649,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query (supports to-one and to-many relationships)
-		newCtx.Selector[filterName] = bson.M{
+		newCtx.Selector[filterField] = bson.M{
 			"$in": []bson.ObjectId{ctx.Model.ID()},
 		}
 
@@ -982,7 +982,7 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 		var requested []string
 		for _, field := range r.Fields[model.Meta().PluralName] {
 			for _, f := range model.Meta().Fields {
-				if f.JSONName == field || f.RelName == field {
+				if f.JSONKey == field || f.RelName == field {
 					requested = append(requested, f.Name)
 				}
 			}
@@ -1041,18 +1041,18 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute filter
-			if field.JSONName == name && Contains(c.Filters, field.Name) {
+			if field.JSONKey == name && Contains(c.Filters, field.Name) {
 				handled = true
 
 				// handle boolean values
 				if field.Kind == reflect.Bool && len(values) == 1 {
-					ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: values[0] == "true"})
+					ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: values[0] == "true"})
 
 					break
 				}
 
 				// handle string values
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: bson.M{"$in": values}})
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": values}})
 
 				break
 			}
@@ -1071,7 +1071,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 				}
 
 				// set relationship filter
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONName: bson.M{"$in": ids}})
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": ids}})
 
 				break
 			}
@@ -1093,7 +1093,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute sorter
-			if (field.JSONName == normalizedSorter) && Contains(c.Sorters, field.Name) {
+			if (field.JSONKey == normalizedSorter) && Contains(c.Sorters, field.Name) {
 				handled = true
 
 				// add sorter
@@ -1161,8 +1161,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 			// TODO: Raise error.
 		}
 
-		if f.JSONName != "" {
-			whitelist = append(whitelist, f.JSONName)
+		if f.JSONKey != "" {
+			whitelist = append(whitelist, f.JSONKey)
 		} else if f.RelName != "" {
 			whitelist = append(whitelist, f.RelName)
 		}
@@ -1307,8 +1307,8 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// TODO: Raise error.
 		}
 
-		if f.JSONName != "" {
-			whitelist = append(whitelist, f.JSONName)
+		if f.JSONKey != "" {
+			whitelist = append(whitelist, f.JSONKey)
 		} else if f.RelName != "" {
 			whitelist = append(whitelist, f.RelName)
 		}
@@ -1416,26 +1416,26 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				panic("fire: missing related controller " + field.RelType)
 			}
 
-			// prepare filter
-			var filterName string
+			// prepare filter field
+			var filterField string
 
 			// find related relationship
 			for _, relatedField := range relatedController.Model.Meta().Fields {
 				// find db field by comparing the relationship name wit the inverse
 				// name found on the original relationship
 				if relatedField.RelName == field.RelInverse {
-					filterName = relatedField.BSONName
+					filterField = relatedField.BSONField
 					break
 				}
 			}
 
-			// check filter name
-			if filterName == "" {
+			// check filter field
+			if filterField == "" {
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
 
 			// prepare query
-			query := bson.M{filterName: model.ID()}
+			query := bson.M{filterField: model.ID()}
 
 			// TODO: Filter using relationship filters.
 
@@ -1476,27 +1476,27 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				panic("fire: missing related controller " + field.RelType)
 			}
 
-			// prepare filter
-			var filterName string
+			// prepare filter field
+			var filterField string
 
 			// find related relationship
 			for _, relatedField := range relatedController.Model.Meta().Fields {
 				// find db field by comparing the relationship name wit the inverse
 				// name found on the original relationship
 				if relatedField.RelName == field.RelInverse {
-					filterName = relatedField.BSONName
+					filterField = relatedField.BSONField
 					break
 				}
 			}
 
-			// check filter name
-			if filterName == "" {
+			// check filter field
+			if filterField == "" {
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
 
 			// prepare query
 			query := bson.M{
-				filterName: bson.M{
+				filterField: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
 			}

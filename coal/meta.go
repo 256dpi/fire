@@ -35,11 +35,11 @@ type Field struct {
 	Type reflect.Type
 	Kind reflect.Kind
 
-	// The key name in a JSON when serialized e.g. "tire-size".
-	JSONName string
+	// The JSON object key name e.g. "tire-size".
+	JSONKey string
 
-	// The field name in a BSON document when serialized e.g.  "tire_size".
-	BSONName string
+	// The BSON document field e.g. "tire_size".
+	BSONField string
 
 	// Whether the field is a pointer and thus optional.
 	Optional bool
@@ -175,13 +175,13 @@ func NewMeta(model Model) *Meta {
 
 		// prepare field
 		metaField := &Field{
-			Name:     field.Name,
-			Type:     field.Type,
-			Kind:     fieldKind,
-			JSONName: getJSONFieldName(&field),
-			BSONName: getBSONFieldName(&field),
-			Optional: field.Type.Kind() == reflect.Ptr,
-			index:    i,
+			Name:      field.Name,
+			Type:      field.Type,
+			Kind:      fieldKind,
+			JSONKey:   getJSONFieldName(&field),
+			BSONField: getBSONFieldName(&field),
+			Optional:  field.Type.Kind() == reflect.Ptr,
+			index:     i,
 		}
 
 		// check if field is a valid to-one relationship
@@ -286,13 +286,13 @@ func NewMeta(model Model) *Meta {
 		meta.OrderedFields = append(meta.OrderedFields, metaField)
 
 		// add db fields
-		if metaField.BSONName != "" {
-			meta.DatabaseFields[metaField.BSONName] = metaField
+		if metaField.BSONField != "" {
+			meta.DatabaseFields[metaField.BSONField] = metaField
 		}
 
 		// add attributes
-		if metaField.JSONName != "" {
-			meta.Attributes[metaField.JSONName] = metaField
+		if metaField.JSONKey != "" {
+			meta.Attributes[metaField.JSONKey] = metaField
 		}
 
 		// add relationships
