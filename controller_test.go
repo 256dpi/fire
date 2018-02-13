@@ -2439,31 +2439,26 @@ func TestWritableFields(t *testing.T) {
 		Posts: []bson.ObjectId{post},
 	}).ID().Hex()
 
-	// update posts relationship
+	// attempt to update posts relationship
 	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
-				"type": "comments",
+				"type": "posts",
 				"id": "`+bson.NewObjectId().Hex()+`"
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"data": [
-                {
-					"type": "posts",
-					"id": "`+post.Hex()+`"
-				}
-			],
-			"links": {
-				"self": "/selections/`+selection+`/relationships/posts",
-				"related": "/selections/`+selection+`/posts"
-			}
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "relationship is not writable"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// add to posts relationship
+	// attempt to add to posts relationship
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -2472,22 +2467,17 @@ func TestWritableFields(t *testing.T) {
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post.Hex()+`"
-				}
-			],
-			"links": {
-				"self": "/selections/`+selection+`/relationships/posts",
-				"related": "/selections/`+selection+`/posts"
-			}
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "relationship is not writable"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// remove from posts relationship
+	// attempt to remove from posts relationship
 	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -2496,18 +2486,13 @@ func TestWritableFields(t *testing.T) {
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"data": [
-				{
-					"type": "posts",
-					"id": "`+post.Hex()+`"
-				}
-			],
-			"links": {
-				"self": "/selections/`+selection+`/relationships/posts",
-				"related": "/selections/`+selection+`/posts"
-			}
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "relationship is not writable"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }

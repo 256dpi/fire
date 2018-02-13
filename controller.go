@@ -650,7 +650,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.getRelationship")
 
-	// check relationship
+	// get relationship
 	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
 	if field == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
@@ -684,29 +684,30 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.setRelationship")
 
+	// get relationship
+	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
+	if field == nil {
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+	}
+
+	// check if field matches relationship
+	if !field.ToOne && !field.ToMany {
+		stack.Abort(jsonapi.BadRequest("unsupported relationship"))
+	}
+
 	// set operation
 	ctx.Operation = Update
 
 	// load model
 	c.loadModel(ctx)
 
-	// TODO: Remove loop.
-
-	// set relationships
-	for _, field := range ctx.Model.Meta().Fields {
-		// check if field matches relationship
-		if field.RelName != ctx.JSONAPIRequest.Relationship {
-			continue
-		}
-
-		// check if field is writable
-		if !Contains(ctx.WritableFields, field.Name) {
-			continue
-		}
-
-		// assign relationship
-		c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
+	// check if field is writable
+	if !Contains(ctx.WritableFields, field.Name) {
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
+
+	// assign relationship
+	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
 
 	// save model
 	c.updateModel(ctx)
@@ -731,62 +732,58 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.appendToRelationship")
 
+	// get relationship
+	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
+	if field == nil {
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+	}
+
+	// check if field matches relationship
+	if !field.ToMany {
+		stack.Abort(jsonapi.BadRequest("unsupported relationship"))
+	}
+
 	// set operation
 	ctx.Operation = Update
 
 	// load model
 	c.loadModel(ctx)
 
-	// TODO: Remove loop.
+	// check if field is writable
+	if !Contains(ctx.WritableFields, field.Name) {
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+	}
 
-	// append relationships
-	for _, field := range ctx.Model.Meta().Fields {
-		// check if field matches relationship
-		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
-			continue
+	// process all references
+	for _, ref := range doc.Data.Many {
+		// check type
+		if ref.Type != field.RelType {
+			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// check if field is writable
-		if !Contains(ctx.WritableFields, field.Name) {
-			continue
+		// return error for an invalid id
+		if !bson.IsObjectIdHex(ref.ID) {
+			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
-		// process all references
-		for _, ref := range doc.Data.Many {
-			// check type
-			if ref.Type != field.RelType {
-				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
-			}
+		// get id
+		refID := bson.ObjectIdHex(ref.ID)
 
-			// get id
-			refID := bson.ObjectIdHex(ref.ID)
+		// get current ids
+		ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
 
-			// return error for an invalid id
-			if !refID.Valid() {
-				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
-			}
+		// TODO: Test already existing reference.
 
-			// prepare mark
-			var present bool
-
-			// get current ids
-			ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
-
-			// TODO: Test already existing reference.
-
-			// check if id is already present
-			for _, id := range ids {
-				if id == refID {
-					present = true
-				}
-			}
-
-			// add id if not present
-			if !present {
-				ids = append(ids, refID)
-				ctx.Model.MustSet(field.Name, ids)
+		// check if id is already present
+		for _, id := range ids {
+			if id == refID {
+				continue
 			}
 		}
+
+		// add id
+		ids = append(ids, refID)
+		ctx.Model.MustSet(field.Name, ids)
 	}
 
 	// save model
@@ -812,59 +809,60 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
 
+	// get relationship
+	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
+	if field == nil {
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+	}
+
+	// check if field matches relationship
+	if !field.ToMany {
+		stack.Abort(jsonapi.BadRequest("unsupported relationship"))
+	}
+
 	// set operation
 	ctx.Operation = Update
 
 	// load model
 	c.loadModel(ctx)
 
-	// TODO: Remove loop.
+	// check if field is writable
+	if !Contains(ctx.WritableFields, field.Name) {
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+	}
 
-	// remove relationships
-	for _, field := range ctx.Model.Meta().Fields {
-		// check if field matches relationship
-		if !field.ToMany || field.RelName != ctx.JSONAPIRequest.Relationship {
-			continue
+	// process all references
+	for _, ref := range doc.Data.Many {
+		// check type
+		if ref.Type != field.RelType {
+			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// check if field is writable
-		if !Contains(ctx.WritableFields, field.Name) {
-			continue
+		// return error for an invalid id
+		if !bson.IsObjectIdHex(ref.ID) {
+			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
-		// process all references
-		for _, ref := range doc.Data.Many {
-			// check type
-			if ref.Type != field.RelType {
-				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+		// get id
+		refID := bson.ObjectIdHex(ref.ID)
+
+		// prepare mark
+		var pos = -1
+
+		// get current ids
+		ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
+
+		// check if id is already present
+		for i, id := range ids {
+			if id == refID {
+				pos = i
 			}
+		}
 
-			// get id
-			refID := bson.ObjectIdHex(ref.ID)
-
-			// return error for an invalid id
-			if !refID.Valid() {
-				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
-			}
-
-			// prepare mark
-			var pos = -1
-
-			// get current ids
-			ids := ctx.Model.MustGet(field.Name).([]bson.ObjectId)
-
-			// check if id is already present
-			for i, id := range ids {
-				if id == refID {
-					pos = i
-				}
-			}
-
-			// remove id if present
-			if pos >= 0 {
-				ids = append(ids[:pos], ids[pos+1:]...)
-				ctx.Model.MustSet(field.Name, ids)
-			}
+		// remove id if present
+		if pos >= 0 {
+			ids = append(ids[:pos], ids[pos+1:]...)
+			ctx.Model.MustSet(field.Name, ids)
 		}
 	}
 
