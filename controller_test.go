@@ -508,6 +508,33 @@ func TestHasOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to create related note with invalid relationship
+	tester.Request("POST", "notes", `{
+		"data": {
+			"type": "notes",
+			"attributes": {
+				"title": "Note 2"
+			},
+			"relationships": {
+				"foo": {
+					"data": {
+						"type": "foo",
+						"id": "`+bson.NewObjectId().Hex()+`"
+					}
+				}
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "relationship is not writable"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// attempt to create related note with invalid type
 	tester.Request("POST", "notes", `{
 		"data": {
