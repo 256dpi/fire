@@ -50,7 +50,7 @@ func (c *Catalog) Visualize(title string) string {
 		out.WriteString(fmt.Sprintf(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`))
 
 		// write attributes
-		for _, field := range model.Meta().Fields {
+		for _, field := range model.Meta().OrderedFields {
 			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial ItalicMT" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, field.Type.String()))
 		}
 
@@ -79,7 +79,7 @@ func (c *Catalog) Visualize(title string) string {
 		model := c.models[name]
 
 		// add all direct relationships
-		for _, field := range model.Meta().Fields {
+		for _, field := range model.Meta().OrderedFields {
 			if field.RelName != "" && (field.ToOne || field.ToMany) {
 				list[name+"-"+field.RelName] = &rel{
 					from:    name,
@@ -98,7 +98,7 @@ func (c *Catalog) Visualize(title string) string {
 		model := c.models[name]
 
 		// add all indirect relationships
-		for _, field := range model.Meta().Fields {
+		for _, field := range model.Meta().OrderedFields {
 			if field.RelName != "" && (field.HasOne || field.HasMany) {
 				r := list[field.RelType+"-"+field.RelInverse]
 				r.dstMany = field.HasMany

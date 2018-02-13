@@ -139,7 +139,11 @@ func (b *Base) ID() bson.ObjectId {
 // MustGet returns the value of the given field. MustGet will panic if no field
 // has been found.
 func (b *Base) MustGet(name string) interface{} {
-	field := b.meta.MustFindField(name)
+	// find field
+	field := b.meta.Fields[name]
+	if field == nil {
+		panic(`coal: field "` + name + `" not found on "` + b.meta.Name + `"`)
+	}
 
 	// read value from model struct
 	structField := reflect.ValueOf(b.model).Elem().Field(field.index)
@@ -149,7 +153,11 @@ func (b *Base) MustGet(name string) interface{} {
 // MustSet will set the given field to the the passed valued. MustSet will panic
 // if no field has been found.
 func (b *Base) MustSet(name string, value interface{}) {
-	field := b.meta.MustFindField(name)
+	// find field
+	field := b.meta.Fields[name]
+	if field == nil {
+		panic(`coal: field "` + name + `" not found on "` + b.meta.Name + `"`)
+	}
 
 	// set the value on model struct
 	reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))

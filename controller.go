@@ -993,14 +993,8 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 }
 
 func (c *Controller) findRelationship(name string) *coal.Field {
-	// find relationship
-	for _, f := range c.Model.Meta().Fields {
-		if f.RelName == name {
-			return &f
-		}
-	}
-
-	return nil
+	// TODO: Remove function.
+	return c.Model.Meta().Relationships[name]
 }
 
 func (c *Controller) loadModel(ctx *Context) {
@@ -1164,7 +1158,11 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// create whitelist
 	var whitelist []string
 	for _, field := range ctx.WritableFields {
-		f := ctx.Model.Meta().MustFindField(field)
+		f := ctx.Model.Meta().Fields[field]
+		if f == nil {
+			// TODO: Raise error.
+		}
+
 		if f.JSONName != "" {
 			whitelist = append(whitelist, f.JSONName)
 		} else if f.RelName != "" {
@@ -1306,7 +1304,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	// create whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
 	for _, field := range ctx.ReadableFields {
-		f := model.Meta().MustFindField(field)
+		f := model.Meta().Fields[field]
+		if f == nil {
+			// TODO: Raise error.
+		}
+
 		if f.JSONName != "" {
 			whitelist = append(whitelist, f.JSONName)
 		} else if f.RelName != "" {

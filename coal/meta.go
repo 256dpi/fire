@@ -47,10 +47,29 @@ type Field struct {
 
 // Meta stores extracted meta data from a model.
 type Meta struct {
-	Name       string
+	// The go type name e.g. "models.CarWheel".
+	Name string
+
+	// The plural resource type name e.g. "car-wheels".
 	PluralName string
+
+	// The collection name e.g. "car_wheels".
 	Collection string
-	Fields     []Field
+
+	// The struct fields.
+	Fields map[string]*Field
+
+	// The struct fields ordered.
+	OrderedFields []*Field
+
+	// The database fields.
+	DBFields map[string]*Field
+
+	// The attributes.
+	Attributes map[string]*Field
+
+	// The relationships.
+	Relationships map[string]*Field
 
 	model Model
 }
@@ -71,16 +90,23 @@ func NewMeta(model Model) *Meta {
 
 	// create new meta
 	meta = &Meta{
-		Name:  modelName,
-		model: model,
+		Name:          modelName,
+		model:         model,
+		Fields:        make(map[string]*Field),
+		DBFields:      make(map[string]*Field),
+		Attributes:    make(map[string]*Field),
+		Relationships: make(map[string]*Field),
 	}
 
 	// iterate through all fields
 	for i := 0; i < modelType.NumField(); i++ {
+		// get field
 		field := modelType.Field(i)
 
 		// get coal tag
 		coalTag := field.Tag.Get("coal")
+
+		// TODO: Assert that first field is the base.
 
 		// check if field is the Base
 		if field.Type == baseType {
@@ -131,7 +157,7 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// prepare field
-		metaField := Field{
+		metaField := &Field{
 			Name:     field.Name,
 			Type:     field.Type,
 			Kind:     fieldKind,
@@ -239,36 +265,29 @@ func NewMeta(model Model) *Meta {
 		}
 
 		// add field
-		meta.Fields = append(meta.Fields, metaField)
+		meta.Fields[metaField.Name] = metaField
+		meta.OrderedFields = append(meta.OrderedFields, metaField)
+
+		// add db fields
+		if metaField.BSONName != "" {
+			meta.DBFields[metaField.BSONName] = metaField
+		}
+
+		// add attributes
+		if metaField.JSONName != "" {
+			meta.Attributes[metaField.JSONName] = metaField
+		}
+
+		// add relationships
+		if metaField.RelName != "" {
+			meta.Relationships[metaField.RelName] = metaField
+		}
 	}
 
 	// cache meta
 	metaCache[modelName] = meta
 
 	return meta
-}
-
-// FindField returns the first field that has a matching Name. FindField will
-// return nil if no field has been found.
-func (m *Meta) FindField(name string) *Field {
-	for _, field := range m.Fields {
-		if field.Name == name {
-			return &field
-		}
-	}
-
-	return nil
-}
-
-// MustFindField returns the first field that has a matching Name. MustFindField
-// will panic if no field has been found.
-func (m *Meta) MustFindField(name string) *Field {
-	field := m.FindField(name)
-	if field == nil {
-		panic(`coal: field "` + name + `" not found on "` + m.Name + `"`)
-	}
-
-	return field
 }
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.

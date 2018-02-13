@@ -10,19 +10,37 @@ func C(m Model) string {
 // F is a short-hand function to extract the BSON field name of a model
 // attribute. F will panic if no field has been found.
 func F(m Model, field string) string {
-	return Init(m).Meta().MustFindField(field).BSONName
+	// find field
+	f := Init(m).Meta().Fields[field]
+	if f == nil {
+		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+	}
+
+	return f.BSONName
 }
 
 // A is a short-hand function to extract the JSON attribute name of a model
 // attribute. A will panic if no field has been found.
 func A(m Model, field string) string {
-	return Init(m).Meta().MustFindField(field).JSONName
+	// find field
+	f := Init(m).Meta().Fields[field]
+	if f == nil {
+		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+	}
+
+	return f.JSONName
 }
 
 // R is a short-hand function to extract the relationship name of a model
 // attribute. R will panic if no field has been found.
 func R(m Model, field string) string {
-	return Init(m).Meta().MustFindField(field).RelName
+	// find field
+	f := Init(m).Meta().Fields[field]
+	if f == nil {
+		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+	}
+
+	return f.RelName
 }
 
 // P is a short-hand function to get a pointer of the passed id.

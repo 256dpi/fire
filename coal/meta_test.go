@@ -80,13 +80,14 @@ func TestNewMeta(t *testing.T) {
 }
 
 func TestMeta(t *testing.T) {
-	post := Init(&postModel{})
+	post := Init(&postModel{}).Meta()
+
 	assert.Equal(t, &Meta{
 		Name:       "coal.postModel",
 		Collection: "posts",
 		PluralName: "posts",
-		Fields: []Field{
-			{
+		Fields: map[string]*Field{
+			"Title": {
 				Name:     "Title",
 				Type:     reflect.TypeOf(""),
 				Kind:     reflect.String,
@@ -94,7 +95,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "title",
 				index:    1,
 			},
-			{
+			"Published": {
 				Name:     "Published",
 				Type:     reflect.TypeOf(true),
 				Kind:     reflect.Bool,
@@ -102,7 +103,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "published",
 				index:    2,
 			},
-			{
+			"TextBody": {
 				Name:     "TextBody",
 				Type:     reflect.TypeOf(""),
 				Kind:     reflect.String,
@@ -110,7 +111,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "text_body",
 				index:    3,
 			},
-			{
+			"Comments": {
 				Name:       "Comments",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
@@ -120,7 +121,7 @@ func TestMeta(t *testing.T) {
 				RelInverse: "post",
 				index:      4,
 			},
-			{
+			"Selections": {
 				Name:       "Selections",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
@@ -130,7 +131,7 @@ func TestMeta(t *testing.T) {
 				RelInverse: "posts",
 				index:      5,
 			},
-			{
+			"Note": {
 				Name:       "Note",
 				Type:       hasOneType,
 				Kind:       reflect.Struct,
@@ -141,16 +142,39 @@ func TestMeta(t *testing.T) {
 				index:      6,
 			},
 		},
-		model: post.Meta().model,
-	}, post.Meta())
+		OrderedFields: []*Field{
+			post.Fields["Title"],
+			post.Fields["Published"],
+			post.Fields["TextBody"],
+			post.Fields["Comments"],
+			post.Fields["Selections"],
+			post.Fields["Note"],
+		},
+		DBFields: map[string]*Field{
+			"title":     post.Fields["Title"],
+			"published": post.Fields["Published"],
+			"text_body": post.Fields["TextBody"],
+		},
+		Attributes: map[string]*Field{
+			"title":     post.Fields["Title"],
+			"published": post.Fields["Published"],
+			"text-body": post.Fields["TextBody"],
+		},
+		Relationships: map[string]*Field{
+			"comments":   post.Fields["Comments"],
+			"selections": post.Fields["Selections"],
+			"note":       post.Fields["Note"],
+		},
+		model: post.model,
+	}, post)
 
-	comment := Init(&commentModel{})
+	comment := Init(&commentModel{}).Meta()
 	assert.Equal(t, &Meta{
 		Name:       "coal.commentModel",
 		Collection: "comments",
 		PluralName: "comments",
-		Fields: []Field{
-			{
+		Fields: map[string]*Field{
+			"Message": {
 				Name:     "Message",
 				Type:     reflect.TypeOf(""),
 				Kind:     reflect.String,
@@ -158,7 +182,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "message",
 				index:    1,
 			},
-			{
+			"Parent": {
 				Name:     "Parent",
 				Type:     optionalToOneType,
 				Kind:     reflect.String,
@@ -170,7 +194,7 @@ func TestMeta(t *testing.T) {
 				RelType:  "comments",
 				index:    2,
 			},
-			{
+			"Post": {
 				Name:     "Post",
 				Type:     toOneType,
 				Kind:     reflect.String,
@@ -182,16 +206,33 @@ func TestMeta(t *testing.T) {
 				index:    3,
 			},
 		},
-		model: comment.Meta().model,
-	}, comment.Meta())
+		OrderedFields: []*Field{
+			comment.Fields["Message"],
+			comment.Fields["Parent"],
+			comment.Fields["Post"],
+		},
+		DBFields: map[string]*Field{
+			"message": comment.Fields["Message"],
+			"parent":  comment.Fields["Parent"],
+			"post_id": comment.Fields["Post"],
+		},
+		Attributes: map[string]*Field{
+			"message": comment.Fields["Message"],
+		},
+		Relationships: map[string]*Field{
+			"parent": comment.Fields["Parent"],
+			"post":   comment.Fields["Post"],
+		},
+		model: comment.model,
+	}, comment)
 
-	selection := Init(&selectionModel{})
+	selection := Init(&selectionModel{}).Meta()
 	assert.Equal(t, &Meta{
 		Name:       "coal.selectionModel",
 		Collection: "selections",
 		PluralName: "selections",
-		Fields: []Field{
-			{
+		Fields: map[string]*Field{
+			"Name": {
 				Name:     "Name",
 				Type:     reflect.TypeOf(""),
 				Kind:     reflect.String,
@@ -199,7 +240,7 @@ func TestMeta(t *testing.T) {
 				BSONName: "name",
 				index:    1,
 			},
-			{
+			"Posts": {
 				Name:     "Posts",
 				Type:     toManyType,
 				Kind:     reflect.Slice,
@@ -210,8 +251,22 @@ func TestMeta(t *testing.T) {
 				index:    2,
 			},
 		},
-		model: selection.Meta().model,
-	}, selection.Meta())
+		OrderedFields: []*Field{
+			selection.Fields["Name"],
+			selection.Fields["Posts"],
+		},
+		DBFields: map[string]*Field{
+			"name":     selection.Fields["Name"],
+			"post_ids": selection.Fields["Posts"],
+		},
+		Attributes: map[string]*Field{
+			"name": selection.Fields["Name"],
+		},
+		Relationships: map[string]*Field{
+			"posts": selection.Fields["Posts"],
+		},
+		model: selection.model,
+	}, selection)
 }
 
 func TestMetaMake(t *testing.T) {
