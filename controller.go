@@ -955,16 +955,23 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 
 	// check if a field whitelist has been provided
 	if r != nil && len(r.Fields[model.Meta().PluralName]) > 0 {
-		// TODO: Remove loop.
-
 		// convert requested fields list
 		var requested []string
 		for _, field := range r.Fields[model.Meta().PluralName] {
-			for _, f := range model.Meta().Fields {
-				if f.JSONKey == field || f.RelName == field {
-					requested = append(requested, f.Name)
-				}
+			// add attribute
+			if f := model.Meta().Attributes[field]; f != nil {
+				requested = append(requested, f.Name)
+				continue
 			}
+
+			// add relationship
+			if f := model.Meta().Relationships[field]; f != nil {
+				requested = append(requested, f.Name)
+				continue
+			}
+
+			// raise error
+			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sparse field "%s"`, field)))
 		}
 
 		// whitelist requested fields

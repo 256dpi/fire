@@ -433,7 +433,7 @@ func TestHasOneRelationship(t *testing.T) {
 				"post": {
 					"data": {
 						"type": "foo",
-						"id": "`+post+`"
+						"id": "`+bson.NewObjectId().Hex()+`"
 					}
 				}
 			}
@@ -2170,7 +2170,19 @@ func TestSorting(t *testing.T) {
 			"errors":[{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "sorter foo is not supported"
+				"detail": "invalid sorter \"foo\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test invalid sorter
+	tester.Request("GET", "posts?sort=published", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "unsupported sorter \"published\""
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2191,6 +2203,18 @@ func TestSparseFields(t *testing.T) {
 	post := tester.Save(&postModel{
 		Title: "Post 1",
 	}).ID()
+
+	// get posts with invalid filter
+	tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid sparse field \"foo\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 
 	// get posts with single value filter
 	tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
