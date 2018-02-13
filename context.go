@@ -118,7 +118,7 @@ type Context struct {
 	// Usage: Append Only, Availability: Authorizers (All)
 	Filters []bson.M
 
-	// TODO: Add Relationship filters.
+	// TODO: Add Relationship filters?
 
 	// The sorting that will be used during List.
 	//

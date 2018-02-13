@@ -658,7 +658,10 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
-	// TODO: Check if relationship is readable (yield not found).
+	// check if relationship is readable
+	if !Contains(ctx.ReadableFields, field.Name) {
+		stack.Abort(jsonapi.NotFound("resource not found"))
+	}
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
