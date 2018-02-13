@@ -43,12 +43,12 @@ func R(m Model, field string) string {
 	return f.RelName
 }
 
-// P is a short-hand function to get a pointer of the passed id.
+// P is a short-hand function to get a pointer of the passed object id.
 func P(id bson.ObjectId) *bson.ObjectId {
 	return &id
 }
 
-// N is a short-hand function to get a typed nil for an id pointer.
+// N is a short-hand function to get a typed nil object id pointer.
 func N() *bson.ObjectId {
 	return nil
 }
