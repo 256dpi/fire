@@ -454,15 +454,15 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	c.loadModel(ctx)
 
 	// find relationship
-	relationField := c.Model.Meta().Relationships[ctx.JSONAPIRequest.RelatedResource]
-	if relationField == nil {
+	rel := c.Model.Meta().Relationships[ctx.JSONAPIRequest.RelatedResource]
+	if rel == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// get related controller
-	rc := ctx.Group.controllers[relationField.RelType]
+	rc := ctx.Group.controllers[rel.RelType]
 	if rc == nil {
-		stack.Abort(fmt.Errorf("missing related controller for %s", relationField.RelType))
+		stack.Abort(fmt.Errorf("missing related controller for %s", rel.RelType))
 	}
 
 	// copy context and request
@@ -474,7 +474,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
-			ResourceType: relationField.RelType,
+			ResourceType: rel.RelType,
 			Include:      ctx.JSONAPIRequest.Include,
 			PageNumber:   ctx.JSONAPIRequest.PageNumber,
 			PageSize:     ctx.JSONAPIRequest.PageSize,
@@ -492,21 +492,18 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	}
 
 	// finish to-one relationship
-	if relationField.ToOne {
+	if rel.ToOne {
+		// prepare id
 		var id string
 
 		// lookup id of related resource
-		if relationField.Optional {
-			// lookup optional id on loaded model
-			oid := ctx.Model.MustGet(relationField.Name).(*bson.ObjectId)
-
-			// check if present
+		if rel.Optional {
+			oid := ctx.Model.MustGet(rel.Name).(*bson.ObjectId)
 			if oid != nil {
 				id = oid.Hex()
 			}
 		} else {
-			// lookup id on loaded model
-			id = ctx.Model.MustGet(relationField.Name).(bson.ObjectId).Hex()
+			id = ctx.Model.MustGet(rel.Name).(bson.ObjectId).Hex()
 		}
 
 		// tweak context
@@ -541,9 +538,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	}
 
 	// finish to-many relationship
-	if relationField.ToMany {
+	if rel.ToMany {
 		// get ids from loaded model
-		ids := ctx.Model.MustGet(relationField.Name).([]bson.ObjectId)
+		ids := ctx.Model.MustGet(rel.Name).([]bson.ObjectId)
 
 		// tweak context
 		newCtx.Operation = List
@@ -571,11 +568,11 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	}
 
 	// finish has-one relationship
-	if relationField.HasOne {
+	if rel.HasOne {
 		// find relationship
-		rel := rc.Model.Meta().Relationships[relationField.RelInverse]
-		if rel == nil {
-			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
+		relRel := rc.Model.Meta().Relationships[rel.RelInverse]
+		if relRel == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relRel.RelInverse))
 		}
 
 		// tweak context
@@ -583,7 +580,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query
-		newCtx.Selector[rel.BSONField] = ctx.Model.ID()
+		newCtx.Selector[relRel.BSONField] = ctx.Model.ID()
 
 		// load related models
 		models := rc.loadModels(newCtx)
@@ -611,11 +608,11 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	}
 
 	// finish has-many relationship
-	if relationField.HasMany {
+	if rel.HasMany {
 		// find relationship
-		rel := rc.Model.Meta().Relationships[relationField.RelInverse]
-		if rel == nil {
-			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relationField.RelInverse))
+		relRel := rc.Model.Meta().Relationships[rel.RelInverse]
+		if relRel == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relRel.RelInverse))
 		}
 
 		// tweak context
@@ -623,7 +620,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query (supports to-one and to-many relationships)
-		newCtx.Selector[rel.BSONField] = bson.M{
+		newCtx.Selector[relRel.BSONField] = bson.M{
 			"$in": []bson.ObjectId{ctx.Model.ID()},
 		}
 
@@ -693,6 +690,8 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// load model
 	c.loadModel(ctx)
 
+	// TODO: Remove loop.
+
 	// set relationships
 	for _, field := range ctx.Model.Meta().Fields {
 		// check if field matches relationship
@@ -737,6 +736,8 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// load model
 	c.loadModel(ctx)
+
+	// TODO: Remove loop.
 
 	// append relationships
 	for _, field := range ctx.Model.Meta().Fields {
@@ -816,6 +817,8 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 	// load model
 	c.loadModel(ctx)
+
+	// TODO: Remove loop.
 
 	// remove relationships
 	for _, field := range ctx.Model.Meta().Fields {
@@ -952,6 +955,8 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 
 	// check if a field whitelist has been provided
 	if r != nil && len(r.Fields[model.Meta().PluralName]) > 0 {
+		// TODO: Remove loop.
+
 		// convert requested fields list
 		var requested []string
 		for _, field := range r.Fields[model.Meta().PluralName] {
@@ -1013,6 +1018,8 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		// initialize flag
 		handled := false
 
+		// TODO: Remove loop.
+
 		for _, field := range c.Model.Meta().Fields {
 			// handle attribute filter
 			if field.JSONKey == name && Contains(c.Filters, field.Name) {
@@ -1059,28 +1066,22 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 	// add sorting
 	for _, sorter := range ctx.JSONAPIRequest.Sorting {
-		// initialize flag
-		handled := false
-
 		// normalize sorter
 		normalizedSorter := strings.TrimPrefix(sorter, "-")
 
-		for _, field := range c.Model.Meta().Fields {
-			// handle attribute sorter
-			if (field.JSONKey == normalizedSorter) && Contains(c.Sorters, field.Name) {
-				handled = true
-
-				// add sorter
-				ctx.Sorting = append(ctx.Sorting, sorter)
-
-				break
-			}
+		// find field
+		field := c.Model.Meta().Attributes[normalizedSorter]
+		if field == nil {
+			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
 		}
 
-		// raise an error on a unsupported filter
-		if !handled {
-			stack.Abort(jsonapi.BadRequest(fmt.Sprintf("sorter %s is not supported", normalizedSorter)))
+		// check if supported
+		if !Contains(c.Sorters, field.Name) {
+			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
 		}
+
+		// add sorter
+		ctx.Sorting = append(ctx.Sorting, sorter)
 	}
 
 	// honor list limit
@@ -1127,14 +1128,18 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignData")
 
-	// create whitelist
+	// prepare whitelist
 	var whitelist []string
+
+	// covert field names to attributes and relationships
 	for _, field := range ctx.WritableFields {
+		// get field
 		f := ctx.Model.Meta().Fields[field]
 		if f == nil {
-			// TODO: Raise error.
+			panic("fire: unknown readable field " + field)
 		}
 
+		// add attributes and relationships
 		if f.JSONKey != "" {
 			whitelist = append(whitelist, f.JSONKey)
 		} else if f.RelName != "" {
@@ -1194,53 +1199,55 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 
 		// set and check id if available
 		if rel.Data != nil && rel.Data.One != nil {
-			// extract id
-			id = bson.ObjectIdHex(rel.Data.One.ID)
+			// check type
+			if rel.Data.One.Type != field.RelType {
+				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+			}
 
-			// return error for an invalid id
-			if !id.Valid() {
+			// check id
+			if !bson.IsObjectIdHex(rel.Data.One.ID) {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
+
+			// extract id
+			id = bson.ObjectIdHex(rel.Data.One.ID)
 		}
 
-		// check type
-		if id != "" && rel.Data.One.Type != field.RelType {
-			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
-		}
-
-		// handle non optional field first
+		// set non optional id
 		if !field.Optional {
 			ctx.Model.MustSet(field.Name, id)
 			return
 		}
 
-		// assign for a zero value optional field
-		if id != "" {
+		// set valid optional id
+		if id.Valid() {
 			ctx.Model.MustSet(field.Name, &id)
-		} else {
-			ctx.Model.MustSet(field.Name, coal.N())
+			return
 		}
+
+		// set zero optional id
+		ctx.Model.MustSet(field.Name, coal.N())
 	}
 
 	// handle to-many relationship
 	if field.ToMany {
-		// prepare slice of ids
+		// prepare ids
 		ids := make([]bson.ObjectId, len(rel.Data.Many))
 
-		// range over all resources
+		// convert all ids
 		for i, r := range rel.Data.Many {
 			// check type
 			if r.Type != field.RelType {
 				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
-			// set id
-			ids[i] = bson.ObjectIdHex(r.ID)
-
-			// return error for an invalid id
-			if !ids[i].Valid() {
+			// check id
+			if !bson.IsObjectIdHex(r.ID) {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
+
+			// set id
+			ids[i] = bson.ObjectIdHex(r.ID)
 		}
 
 		// set ids
@@ -1273,14 +1280,18 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
-	// create whitelist
+	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
+
+	// covert field names to attributes and relationships
 	for _, field := range ctx.ReadableFields {
+		// get field
 		f := model.Meta().Fields[field]
 		if f == nil {
-			// TODO: Raise error.
+			panic("fire: unknown readable field " + field)
 		}
 
+		// add attributes and relationships
 		if f.JSONKey != "" {
 			whitelist = append(whitelist, f.JSONKey)
 		} else if f.RelName != "" {
@@ -1341,7 +1352,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 					}
 				}
 			} else {
-				// TODO: Filter using relationship filters.
+				// TODO: Filter using relationship filters?
 
 				// directly create reference
 				reference = &jsonapi.Resource{
@@ -1350,18 +1361,18 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				}
 			}
 
-			// assign relationship
+			// set links and reference
 			resource.Relationships[field.RelName] = &jsonapi.Document{
+				Links: links,
 				Data: &jsonapi.HybridResource{
 					One: reference,
 				},
-				Links: links,
 			}
 		} else if field.ToMany {
 			// get ids
 			ids := model.MustGet(field.Name).([]bson.ObjectId)
 
-			// prepare slice of references
+			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))
 
 			// set all references
@@ -1372,14 +1383,14 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				}
 			}
 
-			// TODO: Filter using relationship filters.
+			// TODO: Filter using relationship filters?
 
-			// assign relationship
+			// set links and reference
 			resource.Relationships[field.RelName] = &jsonapi.Document{
+				Links: links,
 				Data: &jsonapi.HybridResource{
 					Many: references,
 				},
-				Links: links,
 			}
 		} else if field.HasOne {
 			// get related controller
@@ -1395,9 +1406,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 
 			// prepare query
-			query := bson.M{rel.BSONField: model.ID()}
+			query := bson.M{
+				rel.BSONField: model.ID(),
+			}
 
-			// TODO: Filter using relationship filters.
+			// TODO: Filter using relationship filters?
 
 			// load all referenced ids
 			var ids []bson.ObjectId
@@ -1406,21 +1419,22 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			err := ctx.Store.C(rc.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
 			ctx.Tracer.Pop()
-
-			// prepare references
-			var reference *jsonapi.Resource
-
-			// set all references
 			if len(ids) > 1 {
 				stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
-			} else if len(ids) == 1 {
+			}
+
+			// prepare reference
+			var reference *jsonapi.Resource
+
+			// set reference
+			if len(ids) == 1 {
 				reference = &jsonapi.Resource{
 					Type: rc.Model.Meta().PluralName,
 					ID:   ids[0].Hex(),
 				}
 			}
 
-			// only set links
+			// set links and reference
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
 				Data: &jsonapi.HybridResource{
@@ -1447,7 +1461,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				},
 			}
 
-			// TODO: Filter using relationship filters.
+			// TODO: Filter using relationship filters?
 
 			// load all referenced ids
 			var ids []bson.ObjectId
@@ -1468,7 +1482,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				}
 			}
 
-			// only set links
+			// set links and references
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
 				Data: &jsonapi.HybridResource{
@@ -1489,11 +1503,11 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*js
 	ctx.Tracer.Push("fire/Controller.resourceForModels")
 
 	// prepare resources
-	resources := make([]*jsonapi.Resource, 0, len(models))
+	resources := make([]*jsonapi.Resource, len(models))
 
 	// create resources
-	for _, model := range models {
-		resources = append(resources, c.resourceForModel(ctx, model))
+	for i, model := range models {
+		resources[i] = c.resourceForModel(ctx, model)
 	}
 
 	// finish trace
