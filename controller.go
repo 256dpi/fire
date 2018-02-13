@@ -1383,15 +1383,13 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 		} else if field.HasOne {
 			// get related controller
-			relatedController := ctx.Group.controllers[field.RelType]
-
-			// check existence
-			if relatedController == nil {
+			rc := ctx.Group.controllers[field.RelType]
+			if rc == nil {
 				panic("fire: missing related controller " + field.RelType)
 			}
 
 			// find relationship
-			rel := relatedController.Model.Meta().Relationships[field.RelInverse]
+			rel := rc.Model.Meta().Relationships[field.RelInverse]
 			if rel == nil {
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
@@ -1405,7 +1403,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			var ids []bson.ObjectId
 			ctx.Tracer.Push("mgo/Query.Distinct")
 			ctx.Tracer.Tag("query", query)
-			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
+			err := ctx.Store.C(rc.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
 			ctx.Tracer.Pop()
 
@@ -1417,7 +1415,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 			} else if len(ids) == 1 {
 				reference = &jsonapi.Resource{
-					Type: relatedController.Model.Meta().PluralName,
+					Type: rc.Model.Meta().PluralName,
 					ID:   ids[0].Hex(),
 				}
 			}
@@ -1431,15 +1429,13 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 		} else if field.HasMany {
 			// get related controller
-			relatedController := ctx.Group.controllers[field.RelType]
-
-			// check existence
-			if relatedController == nil {
+			rc := ctx.Group.controllers[field.RelType]
+			if rc == nil {
 				panic("fire: missing related controller " + field.RelType)
 			}
 
 			// find relationship
-			rel := relatedController.Model.Meta().Relationships[field.RelInverse]
+			rel := rc.Model.Meta().Relationships[field.RelInverse]
 			if rel == nil {
 				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 			}
@@ -1457,7 +1453,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			var ids []bson.ObjectId
 			ctx.Tracer.Push("mgo/Query.Distinct")
 			ctx.Tracer.Tag("query", query)
-			err := ctx.Store.C(relatedController.Model).Find(query).Distinct("_id", &ids)
+			err := ctx.Store.C(rc.Model).Find(query).Distinct("_id", &ids)
 			stack.AbortIf(err)
 			ctx.Tracer.Pop()
 
@@ -1467,7 +1463,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// set all references
 			for i, id := range ids {
 				references[i] = &jsonapi.Resource{
-					Type: relatedController.Model.Meta().PluralName,
+					Type: rc.Model.Meta().PluralName,
 					ID:   id.Hex(),
 				}
 			}
