@@ -194,6 +194,11 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		stack.AbortIf(err)
 	}
 
+	// validate id if present
+	if req.ResourceID != "" && !bson.IsObjectIdHex(req.ResourceID) {
+		stack.Abort(jsonapi.BadRequest("invalid resource id"))
+	}
+
 	// prepare context
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
@@ -981,11 +986,6 @@ func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []strin
 func (c *Controller) loadModel(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModel")
-
-	// validate id
-	if !bson.IsObjectIdHex(ctx.JSONAPIRequest.ResourceID) {
-		stack.Abort(jsonapi.BadRequest("invalid resource id"))
-	}
 
 	// set selector query
 	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)

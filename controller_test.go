@@ -77,6 +77,25 @@ func TestBasicOperations(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to create post with invalid attribute
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"foo": "bar"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "attribute is not writable"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// create post
 	tester.Request("POST", "posts", `{
 		"data": {
@@ -213,6 +232,49 @@ func TestBasicOperations(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to update post with invalid id
+	tester.Request("PATCH", "posts/foo", `{
+		"data": {
+			"type": "posts",
+			"id": "`+id+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid resource id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to update post with invalid attribute
+	tester.Request("PATCH", "posts/"+id, `{
+		"data": {
+			"type": "posts",
+			"id": "`+id+`",
+			"attributes": {
+				"foo": "bar"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "attribute is not writable"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// update post
 	tester.Request("PATCH", "posts/"+id, `{
 		"data": {
@@ -263,6 +325,18 @@ func TestBasicOperations(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to get single post with invalid id
+	tester.Request("GET", "posts/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid resource id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// get single post
 	tester.Request("GET", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -302,6 +376,18 @@ func TestBasicOperations(t *testing.T) {
 			"links": {
 				"self": "/posts/`+id+`"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt delete post with invalid id
+	tester.Request("DELETE", "posts/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid resource id"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
