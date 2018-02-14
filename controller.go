@@ -1177,12 +1177,12 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// get relationship
 	field := c.Model.Meta().Relationships[name]
 	if field == nil {
-		return
+		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// check if field matches relationship
 	if !field.ToOne && !field.ToMany {
-		return
+		stack.Abort(jsonapi.BadRequest("unsupported relationship"))
 	}
 
 	// handle to-one relationship
