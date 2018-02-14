@@ -12,8 +12,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// TODO: Test invalid relationships.
-
 func TestBasicOperations(t *testing.T) {
 	tester.Clean()
 
@@ -43,6 +41,18 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	var id string
+
+	// attempt to create post with missing document
+	tester.Request("POST", "posts", `{}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "missing document"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 
 	// attempt to create post with invalid type
 	tester.Request("POST", "posts", `{
@@ -189,6 +199,21 @@ func TestBasicOperations(t *testing.T) {
 			"links": {
 				"self": "/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to update post with missing document
+	tester.Request("PATCH", "posts/"+id, `{}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "missing document"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
@@ -519,7 +544,7 @@ func TestHasOneRelationship(t *testing.T) {
 				"foo": {
 					"data": {
 						"type": "foo",
-						"id": "`+bson.NewObjectId().Hex()+`"
+						"id": "`+post+`"
 					}
 				}
 			}
@@ -546,7 +571,7 @@ func TestHasOneRelationship(t *testing.T) {
 				"post": {
 					"data": {
 						"type": "foo",
-						"id": "`+bson.NewObjectId().Hex()+`"
+						"id": "`+post+`"
 					}
 				}
 			}
@@ -910,7 +935,7 @@ func TestToOneRelationship(t *testing.T) {
 
 	var comment2 string
 
-	// create relating post
+	// create relating comment
 	tester.Request("POST", "comments", `{
 		"data": {
 			"type": "comments",

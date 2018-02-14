@@ -139,12 +139,7 @@ func (c *Controller) prepare() {
 	// add resource actions
 	for name, action := range c.ResourceActions {
 		// check collision
-		if name == "" || name == "relationships" {
-			panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
-		}
-
-		// check relations
-		if c.Model.Meta().Relationships[name] != nil {
+		if name == "" || name == "relationships" || c.Model.Meta().Relationships[name] != nil {
 			panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
 		}
 
@@ -310,7 +305,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Operation = Create
 
 	// basic input data check
-	if doc.Data.One == nil {
+	if doc.Data == nil || doc.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
@@ -372,7 +367,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Operation = Update
 
 	// basic input data check
-	if doc.Data.One == nil {
+	if doc.Data == nil || doc.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
@@ -585,6 +580,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// load related models
 		models := rc.loadModels(newCtx)
+		if len(models) > 1 {
+			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
+		}
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
@@ -595,9 +593,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// add if model is found
-		if len(models) > 1 {
-			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
-		} else if len(models) == 1 {
+		if len(models) == 1 {
 			newCtx.Response.Data.One = rc.resourceForModel(newCtx, models[0])
 		}
 
@@ -899,7 +895,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// get callback
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
-		panic("fire: missing collection action callback")
+		stack.Abort(fmt.Errorf("missing collection action callback"))
 	}
 
 	// limit request body size
@@ -925,7 +921,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	// get callback
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
 	if !ok {
-		panic("fire: missing resource action callback")
+		stack.Abort(fmt.Errorf("missing resource action callback"))
 	}
 
 	// limit request body size
@@ -1134,7 +1130,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get field
 		f := ctx.Model.Meta().Fields[field]
 		if f == nil {
-			panic("fire: unknown readable field " + field)
+			stack.Abort(fmt.Errorf("unknown readable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1285,7 +1281,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 		// get field
 		f := model.Meta().Fields[field]
 		if f == nil {
-			panic("fire: unknown readable field " + field)
+			stack.Abort(fmt.Errorf("unknown readable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1393,7 +1389,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// get related controller
 			rc := ctx.Group.controllers[field.RelType]
 			if rc == nil {
-				panic("fire: missing related controller " + field.RelType)
+				stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
 			}
 
 			// find relationship
@@ -1442,7 +1438,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			// get related controller
 			rc := ctx.Group.controllers[field.RelType]
 			if rc == nil {
-				panic("fire: missing related controller " + field.RelType)
+				stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
 			}
 
 			// find relationship
@@ -1594,7 +1590,7 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 
 	// check if callback can be run
 	if !a.Callback.Matcher(ctx) {
-		panic("fire: not supported")
+		stack.Abort(fmt.Errorf("not supported"))
 	}
 
 	// call callback
