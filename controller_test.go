@@ -1063,6 +1063,23 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to replace invalid relationship
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/foo", `{
+		"data": {
+			"type": "posts",
+			"id": "`+post2+`"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// attempt to replace post relationship with invalid type
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
@@ -1440,6 +1457,25 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to add to invalid relationship
+	tester.Request("POST", "selections/"+selection+"/relationships/foo", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "`+post1+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// attempt to add to posts relationship with invalid type
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
@@ -1459,7 +1495,54 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to add to posts relationship with invalid id
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "foo"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// add to posts relationship
+	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "`+post1+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post3+`"
+				},
+                {
+					"type": "posts",
+					"id": "`+post1+`"
+				}
+			],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// add existing id to posts relationship
 	tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 		"data": [
 			{
@@ -1508,6 +1591,25 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to remove from invalid relationship
+	tester.Request("DELETE", "selections/"+selection+"/relationships/foo", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "`+post3+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// attempt to remove from posts relationships with invalid type
 	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 		"data": [
@@ -1523,6 +1625,25 @@ func TestToManyRelationship(t *testing.T) {
 				"status": "400",
 				"title": "Bad Request",
 				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to remove from posts relationships with invalid id
+	tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "foo"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship id"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2461,22 +2582,27 @@ func TestReadableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// create note
-	note := tester.Save(&noteModel{
-		Post: post,
-	}).ID()
-
-	// get related note
-	tester.Request("GET", "/posts/"+post.Hex()+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+	// attempt to get relationship
+	tester.Request("GET", "/posts/"+post.Hex()+"/relationships/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
-			"data": {
-				"type": "notes",
-				"id": "`+note.Hex()+`"
-			},
-			"links": {
-				"self": "/posts/`+post.Hex()+`/note"
-			}
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to get related note
+	tester.Request("GET", "/posts/"+post.Hex()+"/note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
@@ -2558,7 +2684,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship is not writable"
+				"detail": "invalid relationship"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2577,7 +2703,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship is not writable"
+				"detail": "invalid relationship"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2596,7 +2722,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship is not writable"
+				"detail": "invalid relationship"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
