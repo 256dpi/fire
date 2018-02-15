@@ -328,8 +328,6 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
 
-	// TODO: Check if all required relationships are set?
-
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
@@ -1245,8 +1243,6 @@ func (c *Controller) updateModel(ctx *Context) {
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
-
-	// TODO: Check if all required relationships are set?
 
 	// update model
 	ctx.Tracer.Push("mgo/Collection.UpdateId")
