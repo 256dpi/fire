@@ -26,10 +26,12 @@ func TestGroupStackAbort(t *testing.T) {
 	var lastErr error
 
 	group := NewGroup()
+
 	group.Reporter = func(err error) {
 		assert.Equal(t, "foo", err.Error())
 		lastErr = err
 	}
+
 	group.Add(&Controller{
 		Model: &postModel{},
 		Store: tester.Store,
@@ -39,6 +41,12 @@ func TestGroupStackAbort(t *testing.T) {
 				return nil
 			}),
 		},
+	})
+
+	assert.Panics(t, func() {
+		group.Add(&Controller{
+			Model: &postModel{},
+		})
 	})
 
 	tester.Handler = group.Endpoint("")
@@ -58,12 +66,17 @@ func TestGroupStackAbort(t *testing.T) {
 
 func TestGroupAction(t *testing.T) {
 	group := NewGroup()
+
 	group.Handle("foo", &Action{
 		Methods: []string{"GET", "PUT"},
 		Callback: C("TestGroupAction", All(), func(ctx *Context) error {
 			ctx.ResponseWriter.WriteHeader(http.StatusFound)
 			return nil
 		}),
+	})
+
+	assert.Panics(t, func() {
+		group.Handle("foo", &Action{})
 	})
 
 	tester.Handler = group.Endpoint("")

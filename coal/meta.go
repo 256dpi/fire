@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -287,16 +288,34 @@ func NewMeta(model Model) *Meta {
 
 		// add db fields
 		if metaField.BSONField != "" {
+			// check existence
+			if meta.DatabaseFields[metaField.BSONField] != nil {
+				panic(fmt.Sprintf(`coal: duplicate BSON field "%s"`, metaField.BSONField))
+			}
+
+			// add field
 			meta.DatabaseFields[metaField.BSONField] = metaField
 		}
 
 		// add attributes
 		if metaField.JSONKey != "" {
+			// check existence
+			if meta.Attributes[metaField.JSONKey] != nil {
+				panic(fmt.Sprintf(`coal: duplicate JSON key "%s"`, metaField.JSONKey))
+			}
+
+			// add field
 			meta.Attributes[metaField.JSONKey] = metaField
 		}
 
 		// add relationships
 		if metaField.RelName != "" {
+			// check existence
+			if meta.Relationships[metaField.RelName] != nil {
+				panic(fmt.Sprintf(`coal: duplicate relationship "%s"`, metaField.RelName))
+			}
+
+			// add field
 			meta.Relationships[metaField.RelName] = metaField
 		}
 	}

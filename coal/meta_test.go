@@ -86,6 +86,36 @@ func TestNewMeta(t *testing.T) {
 	assert.Panics(t, func() {
 		NewMeta(&unexpectedTag{})
 	})
+
+	assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
+		type m struct {
+			Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
+			Text1 string `json:"text"`
+			Text2 string `json:"text"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
+		type m struct {
+			Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
+			Text1 string `bson:"text"`
+			Text2 string `bson:"text"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
+		type m struct {
+			Base    `json:"-" bson:",inline" valid:"required" coal:"ms"`
+			Parent1 bson.ObjectId `valid:"object-id" coal:"parent:parents"`
+			Parent2 bson.ObjectId `valid:"object-id" coal:"parent:parents"`
+		}
+
+		NewMeta(&m{})
+	})
 }
 
 func TestMeta(t *testing.T) {

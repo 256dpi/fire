@@ -39,6 +39,11 @@ func (g *Group) Add(controllers ...*Controller) {
 		// get name
 		name := controller.Model.Meta().PluralName
 
+		// check existence
+		if g.controllers[name] != nil {
+			panic(fmt.Errorf(`fire: controller with name "%s" already exists`, name))
+		}
+
 		// create entry in controller map
 		g.controllers[name] = controller
 	}
@@ -56,6 +61,11 @@ func (g *Group) Handle(name string, a *Action) {
 	// set default body limit
 	if a.BodyLimit == 0 {
 		a.BodyLimit = DataSize("8M")
+	}
+
+	// check existence
+	if g.actions[name] != nil {
+		panic(fmt.Errorf(`fire: action with name "%s" already exists`, name))
 	}
 
 	// add action

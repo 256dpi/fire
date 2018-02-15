@@ -1329,8 +1329,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 					}
 				}
 			} else {
-				// TODO: Filter using relationship filters?
-
 				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
@@ -1360,8 +1358,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				}
 			}
 
-			// TODO: Filter using relationship filters?
-
 			// set links and reference
 			resource.Relationships[field.RelName] = &jsonapi.Document{
 				Links: links,
@@ -1386,8 +1382,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			query := bson.M{
 				rel.BSONField: model.ID(),
 			}
-
-			// TODO: Filter using relationship filters?
 
 			// load all referenced ids
 			var ids []bson.ObjectId
@@ -1437,8 +1431,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 					"$in": []bson.ObjectId{model.ID()},
 				},
 			}
-
-			// TODO: Filter using relationship filters?
 
 			// load all referenced ids
 			var ids []bson.ObjectId

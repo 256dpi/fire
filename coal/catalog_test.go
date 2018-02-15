@@ -12,4 +12,8 @@ func TestCatalog(t *testing.T) {
 
 	c.Add(&postModel{})
 	assert.NotNil(t, c.Find("posts"))
+
+	assert.Panics(t, func() {
+		c.Add(&postModel{})
+	})
 }
