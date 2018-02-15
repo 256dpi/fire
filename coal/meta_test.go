@@ -8,94 +8,94 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type malformedBase1 struct {
-	Base
-}
-
-type malformedBase2 struct {
-	Base `json:"-"`
-}
-
-type malformedBase3 struct {
-	Base `json:"-" bson:",inline"`
-}
-
-type malformedBase4 struct {
-	Foo  string `json:"foo"`
-	Base `json:"-" bson:",inline" coal:"foo:foos" valid:"required"`
-}
-
-type malformedToOne struct {
-	Base `json:"-" bson:",inline" coal:"foo:foos"`
-	Foo  bson.ObjectId `coal:"foo:foo:foo"`
-}
-
-type malformedToMany struct {
-	Base `json:"-" bson:",inline" coal:"foo:foos"`
-	Foo  []bson.ObjectId `coal:"foo:foo:foo"`
-}
-
-type malformedHasOne struct {
-	Base `json:"-" bson:",inline" coal:"foo:foos"`
-	Foo  HasOne
-}
-
-type malformedHasMany struct {
-	Base `json:"-" bson:",inline" coal:"foo:foos"`
-	Foo  HasMany
-}
-
-type unexpectedTag struct {
-	Base `json:"-" bson:",inline" coal:"foo:foos"`
-	Foo  string `coal:"foo"`
-}
-
 func TestNewMeta(t *testing.T) {
 	assert.Panics(t, func() {
-		NewMeta(&malformedBase1{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedBase2{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedBase3{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedBase4{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedToOne{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedToMany{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedHasOne{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&malformedHasMany{})
-	})
-
-	assert.Panics(t, func() {
-		NewMeta(&unexpectedTag{})
-	})
-
-	assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
 		type m struct {
-			Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
-			Text1 string `json:"text"`
-			Text2 string `json:"text"`
+			Base
 		}
 
 		NewMeta(&m{})
 	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Foo  string `json:"foo"`
+			Base `json:"-" bson:",inline" coal:"foo:foos" valid:"required"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  bson.ObjectId `coal:"foo:foo:foo"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  []bson.ObjectId `coal:"foo:foo:foo"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  HasOne
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  HasMany
+		}
+
+		NewMeta(&m{})
+	})
+
+	assert.Panics(t, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  string `coal:"foo"`
+		}
+
+		NewMeta(&m{})
+	})
+
+	//assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
+	//	type m struct {
+	//		Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
+	//		Text1 string `json:"text"`
+	//		Text2 string `json:"text"`
+	//	}
+	//
+	//	NewMeta(&m{})
+	//})
 
 	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
 		type m struct {
