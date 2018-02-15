@@ -68,3 +68,14 @@ func Unique(ids []bson.ObjectId) []bson.ObjectId {
 
 	return l
 }
+
+// Contains returns true if a list of strings contains another string.
+func Contains(list []bson.ObjectId, id bson.ObjectId) bool {
+	for _, item := range list {
+		if item == id {
+			return true
+		}
+	}
+
+	return false
+}

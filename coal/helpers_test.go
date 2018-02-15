@@ -43,3 +43,15 @@ func TestUnique(t *testing.T) {
 	assert.Equal(t, []bson.ObjectId{id1, id2}, Unique([]bson.ObjectId{id1, id2, id1}))
 	assert.Equal(t, []bson.ObjectId{id1, id2}, Unique([]bson.ObjectId{id1, id2, id1, id2}))
 }
+
+func TestContains(t *testing.T) {
+	a := bson.NewObjectId()
+	b := bson.NewObjectId()
+	c := bson.NewObjectId()
+	d := bson.NewObjectId()
+
+	assert.True(t, Contains([]bson.ObjectId{a, b, c}, a))
+	assert.True(t, Contains([]bson.ObjectId{a, b, c}, b))
+	assert.True(t, Contains([]bson.ObjectId{a, b, c}, c))
+	assert.False(t, Contains([]bson.ObjectId{a, b, c}, d))
+}
