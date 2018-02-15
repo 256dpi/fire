@@ -63,7 +63,7 @@ func TestContextOriginal(t *testing.T) {
 
 func TestContextOriginalWrongOperation(t *testing.T) {
 	tester.WithContext(nil, func(ctx *Context) {
-		assert.Panics(t, func() {
+		assert.PanicsWithValue(t, `fire: the original can only be loaded during an update operation`, func() {
 			ctx.Original()
 		})
 	})

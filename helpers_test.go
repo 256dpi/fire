@@ -50,15 +50,15 @@ func TestCompose(t *testing.T) {
 }
 
 func TestComposePanics(t *testing.T) {
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `fire: expected chain to have at least two items`, func() {
 		Compose()
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `fire: expected last chain item to be a "http.Handler"`, func() {
 		Compose(nil, nil)
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `fire: expected intermediary chain item to be a "func(http.handler) http.Handler"`, func() {
 		Compose(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	})
 }
@@ -69,7 +69,7 @@ func TestDataSize(t *testing.T) {
 	assert.Equal(t, uint64(100*1000*1000*1000), DataSize("100G"))
 
 	for _, str := range []string{"", "1", "K", "10", "KM"} {
-		assert.Panics(t, func() {
+		assert.PanicsWithValue(t, `fire: data size must be like 4K, 20M or 5G`, func() {
 			DataSize(str)
 		})
 	}

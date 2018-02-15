@@ -41,7 +41,7 @@ func (g *Group) Add(controllers ...*Controller) {
 
 		// check existence
 		if g.controllers[name] != nil {
-			panic(fmt.Errorf(`fire: controller with name "%s" already exists`, name))
+			panic(fmt.Sprintf(`fire: controller with name "%s" already exists`, name))
 		}
 
 		// create entry in controller map
@@ -65,7 +65,7 @@ func (g *Group) Handle(name string, a *Action) {
 
 	// check existence
 	if g.actions[name] != nil {
-		panic(fmt.Errorf(`fire: action with name "%s" already exists`, name))
+		panic(fmt.Sprintf(`fire: action with name "%s" already exists`, name))
 	}
 
 	// add action

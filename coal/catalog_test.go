@@ -13,7 +13,7 @@ func TestCatalog(t *testing.T) {
 	c.Add(&postModel{})
 	assert.NotNil(t, c.Find("posts"))
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `coal: model with name "posts" already exists in catalog`, func() {
 		c.Add(&postModel{})
 	})
 }

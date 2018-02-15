@@ -26,7 +26,7 @@ func (c *Catalog) Add(models ...Model) {
 
 		// check existence
 		if c.models[name] != nil {
-			panic(fmt.Errorf(`coal: model with name "%s" already exists in catalog`, name))
+			panic(fmt.Sprintf(`coal: model with name "%s" already exists in catalog`, name))
 		}
 
 		// add model

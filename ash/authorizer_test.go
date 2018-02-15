@@ -9,7 +9,7 @@ import (
 )
 
 func TestA(t *testing.T) {
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `ash: missing matcher or handler`, func() {
 		A("", nil, nil)
 	})
 }

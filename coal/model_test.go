@@ -57,7 +57,7 @@ func TestBaseGet(t *testing.T) {
 	post2 := Init(&postModel{TextBody: "hello"})
 	assert.Equal(t, "hello", post2.MustGet("TextBody"))
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `coal: field "missing" not found on "coal.postModel"`, func() {
 		post1.MustGet("missing")
 	})
 }
@@ -68,11 +68,11 @@ func TestBaseSet(t *testing.T) {
 	post.MustSet("TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `coal: field "missing" not found on "coal.postModel"`, func() {
 		post.MustSet("missing", "-")
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `reflect.Set: value of type int is not assignable to type string`, func() {
 		post.MustSet("TextBody", 1)
 	})
 }

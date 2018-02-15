@@ -43,7 +43,7 @@ func TestGroupStackAbort(t *testing.T) {
 		},
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `fire: controller with name "posts" already exists`, func() {
 		group.Add(&Controller{
 			Model: &postModel{},
 		})
@@ -75,7 +75,7 @@ func TestGroupAction(t *testing.T) {
 		}),
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, `fire: action with name "foo" already exists`, func() {
 		group.Handle("foo", &Action{})
 	})
 
