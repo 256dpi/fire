@@ -101,7 +101,7 @@ func TestBasicOperations(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "attribute is not writable"
+				"detail": "invalid attribute"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -295,7 +295,7 @@ func TestBasicOperations(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "attribute is not writable"
+				"detail": "invalid attribute"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -358,6 +358,18 @@ func TestBasicOperations(t *testing.T) {
 				"status": "400",
 				"title": "Bad Request",
 				"detail": "invalid resource id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to get not existing post
+	tester.Request("GET", "posts/"+bson.NewObjectId().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "404",
+				"title": "Not Found",
+				"detail": "resource not found"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -555,7 +567,7 @@ func TestHasOneRelationship(t *testing.T) {
 			"errors":[{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship is not writable"
+				"detail": "invalid relationship"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -1097,6 +1109,23 @@ func TestToOneRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// attempt to replace post relationship with invalid id
+	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
+		"data": {
+			"type": "posts",
+			"id": "foo"
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship id"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// replace post relationship
 	tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 		"data": {
@@ -1413,6 +1442,44 @@ func TestToManyRelationship(t *testing.T) {
 				"self": "/selections/`+selection+`/relationships/posts",
 				"related": "/selections/`+selection+`/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to replace posts relationship with invalid type
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "foo",
+				"id": "`+post3+`"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "resource type mismatch"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to replace posts relationship with invalid id
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
+		"data": [
+			{
+				"type": "posts",
+				"id": "foo"
+			}
+		]
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid relationship id"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
@@ -1763,6 +1830,30 @@ func TestFiltering(t *testing.T) {
 		Post:  bson.NewObjectId(),
 	})
 
+	// test invalid filter
+	tester.Request("GET", "posts?filter[foo]=bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid filter \"foo\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test not supported filter
+	tester.Request("GET", "posts?filter[text-body]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid filter \"text-body\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// get posts with single value filter
 	tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -2039,6 +2130,18 @@ func TestFiltering(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// test not supported relationship filter
+	tester.Request("GET", "comments?filter[post]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid filter \"post\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// get to-many posts with boolean
 	tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -2085,6 +2188,18 @@ func TestFiltering(t *testing.T) {
 			"links": {
 				"self": "/selections/`+selection+`/posts"
 			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test invalid relationship filter id
+	tester.Request("GET", "notes?filter[post]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "relationship filter values are not object ids"
+			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
@@ -2161,18 +2276,6 @@ func TestFiltering(t *testing.T) {
 	})
 
 	// TODO: Test array filtering.
-
-	// test invalid filter
-	tester.Request("GET", "posts?filter[foo]=bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"errors":[{
-				"status": "400",
-				"title": "Bad Request",
-				"detail": "invalid filter \"foo\""
-			}]
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
 }
 
 func TestSorting(t *testing.T) {
@@ -2636,7 +2739,7 @@ func TestWritableFields(t *testing.T) {
 		Store: tester.Store,
 	})
 
-	// create post
+	// attempt to create post with protected field
 	tester.Request("POST", "posts", `{
 		"data": {
 			"type": "posts",
@@ -2644,12 +2747,30 @@ func TestWritableFields(t *testing.T) {
 				"title": "Post 1",
 				"published": true
 			},
+			"relationships": {}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "attribute is not writable"
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to create selection with protected relationship
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {},
 			"relationships": {
-				"note": {
-					"data": {
-						"type": "notes",
+				"posts": {
+					"data": [{
+						"type": "posts",
 						"id": "`+bson.NewObjectId().Hex()+`"
-					}
+					}]
 				}
 			}
 		}
@@ -2659,7 +2780,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "attribute is not writable"
+				"detail": "relationship is not writable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})

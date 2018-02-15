@@ -707,7 +707,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	}
 
 	// assign relationship
-	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc)
+	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc, rel)
 
 	// save model
 	c.updateModel(ctx)
@@ -1005,7 +1005,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		if field := c.Model.Meta().Attributes[name]; field != nil {
 			// check whitelist
 			if !Contains(c.Filters, field.Name) {
-				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported filter "%s"`, name)))
+				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
 			// handle boolean values
@@ -1023,7 +1023,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		if field := c.Model.Meta().Relationships[name]; field != nil {
 			// check whitelist
 			if !field.ToOne && !field.ToMany || !Contains(c.Filters, field.Name) {
-				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported filter "%s"`, name)))
+				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
 			// convert to object ids
@@ -1116,7 +1116,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get field
 		f := ctx.Model.Meta().Fields[field]
 		if f == nil {
-			stack.Abort(fmt.Errorf("unknown readable field %s", field))
+			stack.Abort(fmt.Errorf("unknown writable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1130,11 +1130,18 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// whitelist attributes
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
+		// get field
+		field := c.Model.Meta().Attributes[name]
+		if field == nil {
+			stack.Abort(jsonapi.BadRequest("invalid attribute"))
+		}
+
 		// check whitelist
 		if !Contains(whitelist, name) {
 			stack.Abort(jsonapi.BadRequest("attribute is not writable"))
 		}
 
+		// set attribute
 		attributes[name] = value
 	}
 
@@ -1143,33 +1150,28 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
+		// get relationship
+		field := c.Model.Meta().Relationships[name]
+		if field == nil || (!field.ToOne && !field.ToMany) {
+			stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		}
+
 		// check whitelist
 		if !Contains(whitelist, name) {
 			stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 		}
 
 		// assign relationship
-		c.assignRelationship(ctx, name, rel)
+		c.assignRelationship(ctx, name, rel, field)
 	}
 
 	// finish trace
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document) {
+func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document, field *coal.Field) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
-
-	// get relationship
-	field := c.Model.Meta().Relationships[name]
-	if field == nil {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
-	}
-
-	// check if field matches relationship
-	if !field.ToOne && !field.ToMany {
-		stack.Abort(jsonapi.BadRequest("unsupported relationship"))
-	}
 
 	// handle to-one relationship
 	if field.ToOne {
