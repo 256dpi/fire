@@ -2286,8 +2286,9 @@ func TestSorting(t *testing.T) {
 		Store:   tester.Store,
 		Sorters: []string{"Title"},
 	}, &Controller{
-		Model: &commentModel{},
-		Store: tester.Store,
+		Model:   &commentModel{},
+		Store:   tester.Store,
+		Sorters: []string{"Message"},
 	}, &Controller{
 		Model: &selectionModel{},
 		Store: tester.Store,
@@ -2547,7 +2548,204 @@ func TestSorting(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	// TODO: Test relationship sorting.
+	// create post
+	post := tester.Save(&postModel{
+		Title: "Post",
+	}).ID()
+
+	// create some comments
+	comment1 := tester.Save(&commentModel{
+		Message: "Comment 1",
+		Post:    post,
+	}).ID().Hex()
+	comment2 := tester.Save(&commentModel{
+		Message: "Comment 2",
+		Post:    post,
+	}).ID().Hex()
+	comment3 := tester.Save(&commentModel{
+		Message: "Comment 3",
+		Post:    post,
+	}).ID().Hex()
+
+	// get first page of comments
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?sort=message", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": "Comment 1"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment2+`",
+					"attributes": {
+						"message": "Comment 2"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/parent",
+								"related": "/comments/`+comment2+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/post",
+								"related": "/comments/`+comment2+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment3+`",
+					"attributes": {
+						"message": "Comment 3"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/parent",
+								"related": "/comments/`+comment3+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/post",
+								"related": "/comments/`+comment3+`/post"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts/`+post.Hex()+`/comments"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get second page of comments
+	tester.Request("GET", "posts/"+post.Hex()+"/comments?sort=-message", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "comments",
+					"id": "`+comment3+`",
+					"attributes": {
+						"message": "Comment 3"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/parent",
+								"related": "/comments/`+comment3+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/post",
+								"related": "/comments/`+comment3+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment2+`",
+					"attributes": {
+						"message": "Comment 2"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/parent",
+								"related": "/comments/`+comment2+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/post",
+								"related": "/comments/`+comment2+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": "Comment 1"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts/`+post.Hex()+`/comments"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
 }
 
 func TestSparseFields(t *testing.T) {
