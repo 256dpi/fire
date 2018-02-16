@@ -2307,6 +2307,30 @@ func TestSorting(t *testing.T) {
 		Title: "post-3",
 	}).ID().Hex()
 
+	// test invalid sorter
+	tester.Request("GET", "posts?sort=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "invalid sorter \"foo\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// test invalid sorter
+	tester.Request("GET", "posts?sort=published", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors":[{
+				"status": "400",
+				"title": "Bad Request",
+				"detail": "unsupported sorter \"published\""
+			}]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// get posts in ascending order
 	tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -2524,30 +2548,6 @@ func TestSorting(t *testing.T) {
 	})
 
 	// TODO: Test relationship sorting.
-
-	// test invalid sorter
-	tester.Request("GET", "posts?sort=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"errors":[{
-				"status": "400",
-				"title": "Bad Request",
-				"detail": "invalid sorter \"foo\""
-			}]
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
-
-	// test invalid sorter
-	tester.Request("GET", "posts?sort=published", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-		assert.JSONEq(t, `{
-			"errors":[{
-				"status": "400",
-				"title": "Bad Request",
-				"detail": "unsupported sorter \"published\""
-			}]
-		}`, r.Body.String(), tester.DebugRequest(rq, r))
-	})
 }
 
 func TestSparseFields(t *testing.T) {
@@ -2989,7 +2989,7 @@ func TestPagination(t *testing.T) {
 		})
 	}
 
-	// get first page of posts
+	// get first page of comments
 	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
@@ -3005,7 +3005,7 @@ func TestPagination(t *testing.T) {
 		}`, links)
 	})
 
-	// get second page of posts
+	// get second page of comments
 	tester.Request("GET", "posts/"+post.Hex()+"/comments?page[number]=2&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		list := gjson.Get(r.Body.String(), "data").Array()
 		links := gjson.Get(r.Body.String(), "links").Raw
