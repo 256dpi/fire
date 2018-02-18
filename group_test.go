@@ -75,6 +75,10 @@ func TestGroupAction(t *testing.T) {
 		}),
 	})
 
+	assert.PanicsWithValue(t, `fire: invalid group action ""`, func() {
+		group.Handle("", &Action{})
+	})
+
 	assert.PanicsWithValue(t, `fire: action with name "foo" already exists`, func() {
 		group.Handle("foo", &Action{})
 	})

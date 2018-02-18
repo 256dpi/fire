@@ -13,14 +13,26 @@ func TestC(t *testing.T) {
 
 func TestF(t *testing.T) {
 	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
+
+	assert.PanicsWithValue(t, `coal: field "Foo" not found on "coal.postModel"`, func() {
+		F(&postModel{}, "Foo")
+	})
 }
 
 func TestA(t *testing.T) {
 	assert.Equal(t, "text-body", A(&postModel{}, "TextBody"))
+
+	assert.PanicsWithValue(t, `coal: field "Foo" not found on "coal.postModel"`, func() {
+		A(&postModel{}, "Foo")
+	})
 }
 
 func TestR(t *testing.T) {
 	assert.Equal(t, "post", R(&commentModel{}, "Post"))
+
+	assert.PanicsWithValue(t, `coal: field "Foo" not found on "coal.postModel"`, func() {
+		R(&postModel{}, "Foo")
+	})
 }
 
 func TestP(t *testing.T) {
