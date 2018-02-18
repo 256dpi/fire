@@ -56,6 +56,8 @@ type Model interface {
 //
 // Note: You can pass an empty string to disable certain timestamps.
 func UpdateTimestamps(m Model, createdAtField, updatedAtField string) {
+	// TODO: Move to fire.
+
 	// set the "created-at" field if present and not already set
 	if createdAtField != "" && m.MustGet(createdAtField).(time.Time).IsZero() {
 		m.MustSet(createdAtField, time.Now())

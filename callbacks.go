@@ -130,8 +130,10 @@ type ValidatableModel interface {
 	Validate() error
 }
 
-// ModelValidator performs a validation of the model using the Validate
-// function.
+// ModelValidator performs a validation of the model using the govalidator
+// package to validate the model based on the "valid" struct tags. If the passed
+// model also implements the ValidatableModel interface, the Validate method will
+// be invoked after the struct validation.
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
 		// TODO: Add error source pointers.
