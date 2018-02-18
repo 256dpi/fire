@@ -1,6 +1,7 @@
 package flame
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/256dpi/fire"
@@ -65,12 +66,12 @@ func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client C
 func (t *AccessToken) Validate() error {
 	// check id
 	if !t.ID().Valid() {
-		return fire.ValidationError("id", "invalid")
+		return fire.Safe(fmt.Errorf("invalid id"))
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.ValidationError("expires-at", "missing")
+		return fire.Safe(fmt.Errorf("expires at not set"))
 	}
 
 	return nil
@@ -118,12 +119,12 @@ func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client 
 func (t *RefreshToken) Validate() error {
 	// check id
 	if !t.ID().Valid() {
-		return fire.ValidationError("id", "invalid")
+		return fire.Safe(fmt.Errorf("invalid id"))
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.ValidationError("expires-at", "missing")
+		return fire.Safe(fmt.Errorf("expires at not set"))
 	}
 
 	return nil
@@ -188,27 +189,27 @@ func (a *Application) Validate() error {
 
 	// check id
 	if !a.ID().Valid() {
-		return fire.ValidationError("id", "invalid")
+		return fire.Safe(fmt.Errorf("invalid id"))
 	}
 
 	// check name
 	if a.Name == "" {
-		return fire.ValidationError("name", "missing")
+		return fire.Safe(fmt.Errorf("name not set"))
 	}
 
 	// check key
 	if a.Key == "" {
-		return fire.ValidationError("key", "missing")
+		return fire.Safe(fmt.Errorf("key not set"))
 	}
 
 	// check secret hash
 	if len(a.SecretHash) == 0 {
-		return fire.ValidationError("secret", "missing")
+		return fire.Safe(fmt.Errorf("secret hash not set"))
 	}
 
 	// check redirect uri
 	if a.RedirectURL != "" && !govalidator.IsURL(a.RedirectURL) {
-		return fire.ValidationError("redirect-uri", "invalid")
+		return fire.Safe(fmt.Errorf("invalid redirect url"))
 	}
 
 	return nil
@@ -288,22 +289,22 @@ func (u *User) Validate() error {
 
 	// check id
 	if !u.ID().Valid() {
-		return fire.ValidationError("id", "invalid")
+		return fire.Safe(fmt.Errorf("invalid id"))
 	}
 
 	// check name
 	if u.Name == "" {
-		return fire.ValidationError("name", "missing")
+		return fire.Safe(fmt.Errorf("name not set"))
 	}
 
 	// check email
 	if u.Email == "" || !govalidator.IsEmail(u.Email) {
-		return fire.ValidationError("email", "invalid")
+		return fire.Safe(fmt.Errorf("invalid email"))
 	}
 
 	// check password hash
 	if len(u.PasswordHash) == 0 {
-		return fire.ValidationError("password", "missing")
+		return fire.Safe(fmt.Errorf("password hash not set"))
 	}
 
 	return nil

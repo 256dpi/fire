@@ -7,7 +7,6 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/256dpi/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -49,12 +48,6 @@ func TestBasicAuthorizer(t *testing.T) {
 
 	err = tester.RunCallback(nil, authorizer)
 	assert.Error(t, err)
-}
-
-func TestValidationError(t *testing.T) {
-	err := ValidationError("foo", "bar")
-	assert.Equal(t, "bar", err.(*jsonapi.Error).Detail)
-	assert.Equal(t, "foo", err.(*jsonapi.Error).Source.Pointer)
 }
 
 func TestModelValidator(t *testing.T) {
