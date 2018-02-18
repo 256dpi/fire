@@ -62,21 +62,11 @@ func And(a, b *Authorizer) *Authorizer {
 	return A("ash/And", func(ctx *fire.Context) bool {
 		return a.Matcher(ctx) && b.Matcher(ctx)
 	}, func(ctx *fire.Context) ([]*Enforcer, error) {
-		// check if callback a can be run
-		if !a.Matcher(ctx) {
-			return nil, nil
-		}
-
 		// run first callback
 		enforcers1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
 		} else if enforcers1 == nil {
-			return nil, nil
-		}
-
-		// check if callback b can be run
-		if !b.Matcher(ctx) {
 			return nil, nil
 		}
 
