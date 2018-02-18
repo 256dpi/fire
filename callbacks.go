@@ -121,6 +121,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
+// ValidationError returns a JSON-API error that points to a specific attribute
+// or relationship.
+func ValidationError(pointer, detail string) error {
+	return jsonapi.BadRequestPointer(detail, pointer)
+}
+
 // The ValidatableModel interface can be additionally implemented to provide
 // a custom validation method that is used by the Validate function.
 type ValidatableModel interface {
