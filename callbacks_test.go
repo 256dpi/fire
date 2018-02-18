@@ -60,6 +60,7 @@ func TestModelValidator(t *testing.T) {
 	err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
 	assert.Equal(t, "Title: non zero value required;", err.Error())
+	assert.True(t, IsSafe(err))
 
 	post.Title = "Default Title"
 	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
@@ -68,6 +69,7 @@ func TestModelValidator(t *testing.T) {
 	post.Title = "error"
 	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
+	assert.True(t, IsSafe(err))
 }
 
 func TestTimestampValidator(t *testing.T) {

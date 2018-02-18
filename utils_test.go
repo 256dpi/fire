@@ -24,7 +24,7 @@ type postModel struct {
 
 func (p *postModel) Validate() error {
 	if p.Title == "error" {
-		return errors.New("error")
+		return Safe(errors.New("error"))
 	}
 
 	return nil

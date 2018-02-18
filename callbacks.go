@@ -148,7 +148,7 @@ func ModelValidator() *Callback {
 		// validate model
 		_, err := govalidator.ValidateStruct(ctx.Model)
 		if err != nil {
-			return err
+			return Safe(err)
 		}
 
 		return nil
