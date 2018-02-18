@@ -51,42 +51,11 @@ type Model interface {
 	initialize(Model)
 }
 
-// The ValidatableModel interface can be additionally implemented to provide
-// a custom validation method that is used by the Validate function.
-type ValidatableModel interface {
-	Model
-
-	// The Validate method that should return normal errors about invalid fields.
-	Validate() error
-}
-
-// Validate uses the govalidator package to validate the model based on
-// the "valid" struct tags. If the passed model also implements the
-// ValidatableModel interface, Validate method will be invoked after the struct
-// validation.
-func Validate(m Model) error {
-	// invoke custom validation method when available
-	if validatableModel, ok := m.(ValidatableModel); ok {
-		err := validatableModel.Validate()
-		if err != nil {
-			return err
-		}
-	}
-
-	// validate model
-	_, err := govalidator.ValidateStruct(m)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ValidateTimestamps is a helper function that can be used inside a models
-// Validate method to maintain created-at and updated-at timestamps.
+// UpdateTimestamps is a helper function that can be used to maintain
+// created-at and updated-at timestamps.
 //
 // Note: You can pass an empty string to disable certain timestamps.
-func ValidateTimestamps(m Model, createdAtField, updatedAtField string) {
+func UpdateTimestamps(m Model, createdAtField, updatedAtField string) {
 	// set the "created-at" field if present and not already set
 	if createdAtField != "" && m.MustGet(createdAtField).(time.Time).IsZero() {
 		m.MustSet(createdAtField, time.Now())

@@ -5,6 +5,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/256dpi/fire"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,13 +32,13 @@ func TestRefreshTokenInterfaces(t *testing.T) {
 
 func TestApplicationInterfaces(t *testing.T) {
 	var _ coal.Model = &Application{}
-	var _ coal.ValidatableModel = &Application{}
+	var _ fire.ValidatableModel = &Application{}
 	var _ Client = &Application{}
 }
 
 func TestUserInterfaces(t *testing.T) {
 	var _ coal.Model = &User{}
-	var _ coal.ValidatableModel = &User{}
+	var _ fire.ValidatableModel = &User{}
 	var _ ResourceOwner = &User{}
 }
 

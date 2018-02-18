@@ -9,6 +9,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/jsonapi"
+	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -120,17 +121,33 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
+// The ValidatableModel interface can be additionally implemented to provide
+// a custom validation method that is used by the Validate function.
+type ValidatableModel interface {
+	coal.Model
+
+	// The Validate method that should return normal errors about invalid fields.
+	Validate() error
+}
+
 // ModelValidator performs a validation of the model using the Validate
 // function.
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
 		// TODO: Add error source pointers.
 
-		// run validation
-		err := coal.Validate(ctx.Model)
+		// invoke custom validation method when available
+		if validatableModel, ok := ctx.Model.(ValidatableModel); ok {
+			err := validatableModel.Validate()
+			if err != nil {
+				return err
+			}
+		}
+
+		// validate model
+		_, err := govalidator.ValidateStruct(ctx.Model)
 		if err != nil {
-			// TODO: Are all errors safe?
-			return Safe(err)
+			return err
 		}
 
 		return nil

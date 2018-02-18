@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestInit(t *testing.T) {
@@ -17,30 +16,9 @@ func TestInitSlice(t *testing.T) {
 	assert.NotNil(t, m[0].Meta())
 }
 
-func TestValidate(t *testing.T) {
-	post := Init(&postModel{}).(*postModel)
-
-	post.DocID = ""
-	assert.Error(t, Validate(post))
-
-	post.DocID = bson.NewObjectId()
-	assert.Error(t, Validate(post))
-
-	post.Title = "foo"
-	assert.NoError(t, Validate(post))
-
-	post.Title = "error"
-	assert.Error(t, Validate(post))
-
-	post.DocID = "foo"
-	post.Title = "foo"
-	assert.Error(t, Validate(post))
-}
-
-func TestValidateTimestamps(t *testing.T) {
+func TestUpdateTimestamps(t *testing.T) {
 	note := Init(&noteModel{}).(*noteModel)
-	err := note.Validate()
-	assert.NoError(t, err)
+	UpdateTimestamps(note, "CreatedAt", "UpdatedAt")
 	assert.NotEmpty(t, note.CreatedAt)
 	assert.NotEmpty(t, note.UpdatedAt)
 }

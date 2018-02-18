@@ -1,7 +1,6 @@
 package coal
 
 import (
-	"errors"
 	"time"
 
 	"gopkg.in/mgo.v2/bson"
@@ -15,14 +14,6 @@ type postModel struct {
 	Comments   HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
 	Note       HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
-}
-
-func (p *postModel) Validate() error {
-	if p.Title == "error" {
-		return errors.New("error")
-	}
-
-	return nil
 }
 
 type commentModel struct {
@@ -44,10 +35,4 @@ type noteModel struct {
 	CreatedAt time.Time     `json:"created-at" bson:"created_at"`
 	UpdatedAt time.Time     `json:"updated-at" bson:"updated_at"`
 	Post      bson.ObjectId `json:"-" bson:"post_id" valid:"required,object-id" coal:"post:posts"`
-}
-
-func (n *noteModel) Validate() error {
-	ValidateTimestamps(n, "CreatedAt", "UpdatedAt")
-
-	return nil
 }
