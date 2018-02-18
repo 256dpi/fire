@@ -10,7 +10,6 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/jsonapi"
-	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -131,24 +130,19 @@ type ValidatableModel interface {
 	Validate() error
 }
 
-// ModelValidator performs a validation of the model using the govalidator
-// package to validate the model based on the "valid" struct tags. If the passed
-// model also implements the ValidatableModel interface, the Validate method will
-// be invoked after the struct validation.
+// ModelValidator performs a validation of the model using the Validate method.
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
-		// invoke custom validation method when available
-		if validatableModel, ok := ctx.Model.(ValidatableModel); ok {
-			err := validatableModel.Validate()
-			if err != nil {
-				return err
-			}
+		// check model
+		m, ok := ctx.Model.(ValidatableModel)
+		if !ok {
+			return fmt.Errorf("model is not validatable")
 		}
 
 		// validate model
-		_, err := govalidator.ValidateStruct(ctx.Model)
+		err := m.Validate()
 		if err != nil {
-			return Safe(err)
+			return err
 		}
 
 		return nil

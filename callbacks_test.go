@@ -52,29 +52,19 @@ func TestBasicAuthorizer(t *testing.T) {
 
 func TestModelValidator(t *testing.T) {
 	post := &postModel{
-		Title: "",
+		Title: "error",
 	}
 
 	validator := ModelValidator()
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
-	assert.Equal(t, "Title: non zero value required;", err.Error())
-	assert.True(t, IsSafe(err))
-
-	post.Title = "Default Title"
-	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
-	assert.NoError(t, err)
-
-	post.Title = "error"
-	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
-	assert.Error(t, err)
 	assert.True(t, IsSafe(err))
 }
 
 func TestTimestampValidator(t *testing.T) {
 	type model struct {
-		coal.Base `json:"-" bson:",inline" valid:"required" coal:"posts"`
+		coal.Base `json:"-" bson:",inline" coal:"posts"`
 		CreatedAt time.Time
 		UpdateAt  time.Time
 	}

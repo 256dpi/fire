@@ -58,7 +58,7 @@ func TestApplicationValidate(t *testing.T) {
 func TestUserValidate(t *testing.T) {
 	u := coal.Init(&User{
 		Name:     "foo",
-		Email:    "foo",
+		Email:    "foo@example.com",
 		Password: "foo",
 	}).(*User)
 
