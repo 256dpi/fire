@@ -46,8 +46,11 @@ func DenyAccess() *Enforcer {
 // AddFilter will enforce the authorization by adding the passed filter to the
 // Filter query of the context. It should be used if the candidate is allowed to
 // access the resource in general, but some records should be filtered out.
+//
+// Note: This enforcer cannot be used to authorize Create and CollectionAction
+// operations.
 func AddFilter(filter bson.M) *Enforcer {
-	return E("ash/AddFilter", fire.All(), func(ctx *fire.Context) error {
+	return E("ash/AddFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
 		// assign specified filter
 		ctx.Filters = append(ctx.Filters, filter)
 
@@ -57,8 +60,11 @@ func AddFilter(filter bson.M) *Enforcer {
 
 // WhitelistReadableFields will enforce the authorization by making sure only the
 // specified fields are returned for the client.
+//
+// Note: This enforcer cannot be used to authorize Delete, ResourceAction and
+// CollectionAction operations.
 func WhitelistReadableFields(fields ...string) *Enforcer {
-	return E("ash/WhitelistReadableFields", fire.All(), func(ctx *fire.Context) error {
+	return E("ash/WhitelistReadableFields", fire.Except(fire.Delete, fire.ResourceAction, fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
 		ctx.ReadableFields = fire.Intersect(ctx.ReadableFields, fields)
 
@@ -68,8 +74,10 @@ func WhitelistReadableFields(fields ...string) *Enforcer {
 
 // WhitelistWritableFields will enforce the authorization by making sure only the
 // specified fields can be changed by the client.
+//
+// Note: This enforcer can only be used to authorize Create and Update operations.
 func WhitelistWritableFields(fields ...string) *Enforcer {
-	return E("ash/WhitelistWritableFields", fire.All(), func(ctx *fire.Context) error {
+	return E("ash/WhitelistWritableFields", fire.Only(fire.Create, fire.Update), func(ctx *fire.Context) error {
 		// set new list
 		ctx.WritableFields = fire.Intersect(ctx.WritableFields, fields)
 

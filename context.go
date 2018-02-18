@@ -104,7 +104,8 @@ type Context struct {
 	// resource id, while on forwarded List operations the relationship filter
 	// is preset.
 	//
-	// Usage: Read Only, Availability: Authorizers (All)
+	// Usage: Read Only, Availability: Authorizers
+	// Operations: !CollectionAction
 	Selector bson.M
 
 	// TODO: Split up Selector in multiple fields?
@@ -115,33 +116,39 @@ type Context struct {
 	//
 	// On List operations, attribute and relationship filters are preset.
 	//
-	// Usage: Append Only, Availability: Authorizers (All)
+	// Usage: Append Only, Availability: Authorizers
+	// Operations: !Create, !CollectionAction
 	Filters []bson.M
 
 	// The sorting that will be used during List.
 	//
-	// Usage: No Restriction, Availability: Authorizers (All)
+	// Usage: No Restriction, Availability: Authorizers
+	// Operations: List
 	Sorting []string
 
 	// Only the whitelisted readable fields are exposed to the client as
 	// attributes and relationships.
 	//
-	// Usage: Reduce Only, Availability: Authorizers (All)
+	// Usage: Reduce Only, Availability: Authorizers
+	// Operations: !Delete, !ResourceAction, !CollectionAction
 	ReadableFields []string
 
 	// Only the whitelisted writable fields can be altered by requests.
 	//
-	// Usage: Reduce Only, Availability: Authorizers (All)
+	// Usage: Reduce Only, Availability: Authorizers
+	// Operations: Create, Update
 	WritableFields []string
 
 	// The Model that will be created, updated or deleted.
 	//
-	// Usage: Modify Only, Availability: Validators (Create, Update, Delete)
+	// Usage: Modify Only, Availability: Validators
+	// Operations: Create, Update, Delete
 	Model coal.Model
 
 	// The document that will be written to the client.
 	//
-	// Usage: Modify Only, Availability: Notifiers (All except Actions)
+	// Usage: Modify Only, Availability: Notifiers,
+	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
 
 	// The store that is used to retrieve and persist the model.
