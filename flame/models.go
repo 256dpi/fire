@@ -1,10 +1,13 @@
 package flame
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
+	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -23,11 +26,11 @@ type Token interface {
 
 // AccessToken is the built-in model used to store access tokens.
 type AccessToken struct {
-	coal.Base     `json:"-" bson:",inline" valid:"required" coal:"access-tokens:access_tokens"`
-	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
-	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
-	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+	coal.Base     `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
+	ExpiresAt     time.Time      `json:"expires-at" bson:"expires_at"`
+	Scope         []string       `json:"scope" bson:"scope"`
+	Client        bson.ObjectId  `json:"client-id" bson:"client_id"`
+	ResourceOwner *bson.ObjectId `json:"resource-owner-id" bson:"resource_owner_id"`
 }
 
 // AddAccessTokenIndexes will add access token indexes to the specified indexer.
@@ -59,13 +62,28 @@ func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client C
 	}
 }
 
+// Validate implements the fire.ValidatableModel interface.
+func (t *AccessToken) Validate() error {
+	// check id
+	if !t.ID().Valid() {
+		return fire.Safe(fmt.Errorf("invalid id"))
+	}
+
+	// check expires at
+	if t.ExpiresAt.IsZero() {
+		return fire.Safe(fmt.Errorf("expires at not set"))
+	}
+
+	return nil
+}
+
 // RefreshToken is the built-in model used to store refresh tokens.
 type RefreshToken struct {
-	coal.Base     `json:"-" bson:",inline" valid:"required" coal:"refresh-tokens:refresh_tokens"`
-	ExpiresAt     time.Time      `json:"expires-at" valid:"required" bson:"expires_at"`
-	Scope         []string       `json:"scope" valid:"required" bson:"scope"`
-	Client        bson.ObjectId  `json:"client-id" valid:"-" bson:"client_id"`
-	ResourceOwner *bson.ObjectId `json:"resource-owner-id" valid:"-" bson:"resource_owner_id"`
+	coal.Base     `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
+	ExpiresAt     time.Time      `json:"expires-at" bson:"expires_at"`
+	Scope         []string       `json:"scope" bson:"scope"`
+	Client        bson.ObjectId  `json:"client-id" bson:"client_id"`
+	ResourceOwner *bson.ObjectId `json:"resource-owner-id" bson:"resource_owner_id"`
 }
 
 // AddRefreshTokenIndexes will add refresh token indexes to the specified indexer.
@@ -97,6 +115,21 @@ func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client 
 	}
 }
 
+// Validate implements the fire.ValidatableModel interface.
+func (t *RefreshToken) Validate() error {
+	// check id
+	if !t.ID().Valid() {
+		return fire.Safe(fmt.Errorf("invalid id"))
+	}
+
+	// check expires at
+	if t.ExpiresAt.IsZero() {
+		return fire.Safe(fmt.Errorf("expires at not set"))
+	}
+
+	return nil
+}
+
 // Client is the interface that must be implemented by clients.
 type Client interface {
 	coal.Model
@@ -118,12 +151,12 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	coal.Base   `json:"-" bson:",inline" valid:"required" coal:"applications"`
-	Name        string `json:"name" valid:"required"`
-	Key         string `json:"key" valid:"required"`
+	coal.Base   `json:"-" bson:",inline" coal:"applications"`
+	Name        string `json:"name"`
+	Key         string `json:"key"`
 	Secret      string `json:"secret,omitempty" bson:"-"`
-	SecretHash  []byte `json:"-" valid:"required"`
-	RedirectURL string `json:"redirect_url" valid:"required,url"`
+	SecretHash  []byte `json:"-"`
+	RedirectURL string `json:"redirect_url"`
 }
 
 // AddApplicationIndexes will add application indexes to the specified indexer.
@@ -152,6 +185,31 @@ func (a *Application) Validate() error {
 	err := a.HashSecret()
 	if err != nil {
 		return err
+	}
+
+	// check id
+	if !a.ID().Valid() {
+		return fire.Safe(fmt.Errorf("invalid id"))
+	}
+
+	// check name
+	if a.Name == "" {
+		return fire.Safe(fmt.Errorf("name not set"))
+	}
+
+	// check key
+	if a.Key == "" {
+		return fire.Safe(fmt.Errorf("key not set"))
+	}
+
+	// check secret hash
+	if len(a.SecretHash) == 0 {
+		return fire.Safe(fmt.Errorf("secret hash not set"))
+	}
+
+	// check redirect uri
+	if a.RedirectURL != "" && !govalidator.IsURL(a.RedirectURL) {
+		return fire.Safe(fmt.Errorf("invalid redirect url"))
 	}
 
 	return nil
@@ -199,11 +257,11 @@ type ResourceOwner interface {
 
 // User is the built-in model used to store resource owners.
 type User struct {
-	coal.Base    `json:"-" bson:",inline" valid:"required" coal:"users"`
-	Name         string `json:"name" valid:"required"`
-	Email        string `json:"email" valid:"required,email"`
+	coal.Base    `json:"-" bson:",inline" coal:"users"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
 	Password     string `json:"password,omitempty" bson:"-"`
-	PasswordHash []byte `json:"-" valid:"required"`
+	PasswordHash []byte `json:"-"`
 }
 
 // AddUserIndexes will add user indexes to the specified indexer.
@@ -227,6 +285,26 @@ func (u *User) Validate() error {
 	err := u.HashPassword()
 	if err != nil {
 		return err
+	}
+
+	// check id
+	if !u.ID().Valid() {
+		return fire.Safe(fmt.Errorf("invalid id"))
+	}
+
+	// check name
+	if u.Name == "" {
+		return fire.Safe(fmt.Errorf("name not set"))
+	}
+
+	// check email
+	if u.Email == "" || !govalidator.IsEmail(u.Email) {
+		return fire.Safe(fmt.Errorf("invalid email"))
+	}
+
+	// check password hash
+	if len(u.PasswordHash) == 0 {
+		return fire.Safe(fmt.Errorf("password hash not set"))
 	}
 
 	return nil

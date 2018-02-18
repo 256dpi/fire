@@ -44,6 +44,8 @@ func TestUserInterfaces(t *testing.T) {
 
 func TestApplicationValidate(t *testing.T) {
 	a := coal.Init(&Application{
+		Name:   "foo",
+		Key:    "foo",
 		Secret: "foo",
 	}).(*Application)
 
@@ -55,6 +57,8 @@ func TestApplicationValidate(t *testing.T) {
 
 func TestUserValidate(t *testing.T) {
 	u := coal.Init(&User{
+		Name:     "foo",
+		Email:    "foo",
 		Password: "foo",
 	}).(*User)
 
