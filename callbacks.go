@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"time"
 
 	"github.com/256dpi/fire/coal"
 
@@ -150,6 +151,24 @@ func ModelValidator() *Callback {
 		_, err := govalidator.ValidateStruct(ctx.Model)
 		if err != nil {
 			return err
+		}
+
+		return nil
+	})
+}
+
+// TimestampValidator will set the specified timestamp fields on creation
+// and update operations.
+func TimestampValidator(createdAtField, updatedAtField string) *Callback {
+	return C("fire/TimestampValidator", Only(Create, Update), func(ctx *Context) error {
+		// set the created-at field if present and not already set
+		if createdAtField != "" && ctx.Model.MustGet(createdAtField).(time.Time).IsZero() {
+			ctx.Model.MustSet(createdAtField, time.Now())
+		}
+
+		// always set the updated-at field if present
+		if updatedAtField != "" {
+			ctx.Model.MustSet(updatedAtField, time.Now())
 		}
 
 		return nil

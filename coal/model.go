@@ -3,7 +3,6 @@ package coal
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/mgo.v2/bson"
@@ -49,24 +48,6 @@ type Model interface {
 	MustSet(string, interface{})
 
 	initialize(Model)
-}
-
-// UpdateTimestamps is a helper function that can be used to maintain
-// created-at and updated-at timestamps.
-//
-// Note: You can pass an empty string to disable certain timestamps.
-func UpdateTimestamps(m Model, createdAtField, updatedAtField string) {
-	// TODO: Move to fire.
-
-	// set the "created-at" field if present and not already set
-	if createdAtField != "" && m.MustGet(createdAtField).(time.Time).IsZero() {
-		m.MustSet(createdAtField, time.Now())
-	}
-
-	// always set the "updated-at" field if present
-	if updatedAtField != "" {
-		m.MustSet(updatedAtField, time.Now())
-	}
 }
 
 // Init initializes the internals of a model and should be called before using

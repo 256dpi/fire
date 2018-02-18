@@ -3,6 +3,7 @@ package fire
 import (
 	"encoding/base64"
 	"testing"
+	"time"
 
 	"github.com/256dpi/fire/coal"
 
@@ -67,6 +68,23 @@ func TestModelValidator(t *testing.T) {
 	post.Title = "error"
 	err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 	assert.Error(t, err)
+}
+
+func TestTimestampValidator(t *testing.T) {
+	type model struct {
+		coal.Base `json:"-" bson:",inline" valid:"required" coal:"posts"`
+		CreatedAt time.Time
+		UpdateAt  time.Time
+	}
+
+	m := &model{}
+
+	validator := TimestampValidator("CreatedAt", "UpdateAt")
+
+	err := tester.RunCallback(&Context{Operation: Create, Model: m}, validator)
+	assert.NoError(t, err)
+	assert.True(t, !m.CreatedAt.IsZero())
+	assert.True(t, !m.UpdateAt.IsZero())
 }
 
 func TestProtectedAttributesValidatorOnCreate(t *testing.T) {

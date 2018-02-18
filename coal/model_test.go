@@ -16,13 +16,6 @@ func TestInitSlice(t *testing.T) {
 	assert.NotNil(t, m[0].Meta())
 }
 
-func TestUpdateTimestamps(t *testing.T) {
-	note := Init(&noteModel{}).(*noteModel)
-	UpdateTimestamps(note, "CreatedAt", "UpdatedAt")
-	assert.NotEmpty(t, note.CreatedAt)
-	assert.NotEmpty(t, note.UpdatedAt)
-}
-
 func TestBaseID(t *testing.T) {
 	post := Init(&postModel{}).(*postModel)
 	assert.Equal(t, post.DocID, post.ID())
