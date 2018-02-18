@@ -137,8 +137,6 @@ type ValidatableModel interface {
 // be invoked after the struct validation.
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
-		// TODO: Add error source pointers.
-
 		// invoke custom validation method when available
 		if validatableModel, ok := ctx.Model.(ValidatableModel); ok {
 			err := validatableModel.Validate()
