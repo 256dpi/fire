@@ -140,11 +140,6 @@ func NewMeta(model Model) *Meta {
 				panic(`coal: expected to find a tag of the form bson:",inline" on Base`)
 			}
 
-			// check valid tag
-			if field.Tag.Get("valid") != "required" {
-				panic(`coal: expected to find a tag of the form valid:"required" on Base`)
-			}
-
 			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
 				panic(`coal: expected to find a tag of the form coal:"plural-name[:collection]" on Base`)
@@ -188,11 +183,6 @@ func NewMeta(model Model) *Meta {
 		// check if field is a valid to-one relationship
 		if field.Type == toOneType || field.Type == optionalToOneType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
-				// check valid tag
-				if !strings.Contains(field.Tag.Get("valid"), "object-id") {
-					panic(`coal: missing "object-id" validation on to-one relationship`)
-				}
-
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
 					panic(`coal: expected to find a tag of the form coal:"name:type" on to-one relationship`)
@@ -214,11 +204,6 @@ func NewMeta(model Model) *Meta {
 		// check if field is a valid to-many relationship
 		if field.Type == toManyType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
-				// check valid tag
-				if !strings.Contains(field.Tag.Get("valid"), "object-id") {
-					panic(`coal: missing "object-id" validation on to-many relationship`)
-				}
-
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
 					panic(`coal: expected to find a tag of the form coal:"name:type" on to-many relationship`)

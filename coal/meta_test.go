@@ -25,17 +25,9 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form valid:"required" on Base`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline"`
-		}
-
-		NewMeta(&m{})
-	})
-
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"plural-name[:collection]" on Base`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:""`
+			Base `json:"-" bson:",inline" coal:""`
 			Foo  string `json:"foo"`
 		}
 
@@ -45,7 +37,7 @@ func TestNewMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to Base as the first struct field`, func() {
 		type m struct {
 			Foo  string `json:"foo"`
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
 		}
 
 		NewMeta(&m{})
@@ -53,17 +45,8 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type" on to-one relationship`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
-			Foo  bson.ObjectId `coal:"foo:foo:foo" valid:"object-id"`
-		}
-
-		NewMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: missing "object-id" validation on to-one relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
-			Foo  bson.ObjectId `coal:"foo:foo"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  bson.ObjectId `coal:"foo:foo:foo"`
 		}
 
 		NewMeta(&m{})
@@ -71,17 +54,8 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type" on to-many relationship`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
-			Foo  []bson.ObjectId `coal:"foo:foo:foo" valid:"object-id"`
-		}
-
-		NewMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: missing "object-id" validation on to-many relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
-			Foo  []bson.ObjectId `coal:"foo:foo"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  []bson.ObjectId `coal:"foo:foo:foo"`
 		}
 
 		NewMeta(&m{})
@@ -89,7 +63,7 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type:inverse" on has-one relationship`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasOne
 		}
 
@@ -98,7 +72,7 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type:inverse" on has-many relationship`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasMany
 		}
 
@@ -107,7 +81,7 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: unexpected tag foo`, func() {
 		type m struct {
-			Base `json:"-" bson:",inline" valid:"required" coal:"foo:foos"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  string `coal:"foo"`
 		}
 
@@ -116,7 +90,7 @@ func TestNewMeta(t *testing.T) {
 
 	//assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
 	//	type m struct {
-	//		Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
+	//		Base  `json:"-" bson:",inline" coal:"ms"`
 	//		Text1 string `json:"text"`
 	//		Text2 string `json:"text"`
 	//	}
@@ -126,7 +100,7 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
 		type m struct {
-			Base  `json:"-" bson:",inline" valid:"required" coal:"ms"`
+			Base  `json:"-" bson:",inline" coal:"ms"`
 			Text1 string `bson:"text"`
 			Text2 string `bson:"text"`
 		}
@@ -136,9 +110,9 @@ func TestNewMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
 		type m struct {
-			Base    `json:"-" bson:",inline" valid:"required" coal:"ms"`
-			Parent1 bson.ObjectId `valid:"object-id" coal:"parent:parents"`
-			Parent2 bson.ObjectId `valid:"object-id" coal:"parent:parents"`
+			Base    `json:"-" bson:",inline" coal:"ms"`
+			Parent1 bson.ObjectId `coal:"parent:parents"`
+			Parent2 bson.ObjectId `coal:"parent:parents"`
 		}
 
 		NewMeta(&m{})
