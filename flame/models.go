@@ -330,3 +330,5 @@ func (u *User) HashPassword() error {
 
 	return nil
 }
+
+// TODO: Create a controller callback from HashSecret and HashPassword.
