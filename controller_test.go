@@ -2198,7 +2198,7 @@ func TestFiltering(t *testing.T) {
 			"errors":[{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship filter values are not object ids"
+				"detail": "relationship filter value is not an object id"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2890,7 +2890,7 @@ func TestReadableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "relationship is not readable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -2902,7 +2902,7 @@ func TestReadableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "relationship is not readable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -3003,7 +3003,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "relationship is not writable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -3022,7 +3022,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "relationship is not writable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -3041,7 +3041,7 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "relationship is not writable"
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})

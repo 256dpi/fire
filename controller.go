@@ -455,7 +455,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// check if relationship is readable
 	if !Contains(ctx.ReadableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
 	// get related controller
@@ -664,7 +664,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 
 	// check if relationship is readable
 	if !Contains(ctx.ReadableFields, field.Name) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
 	// get resource
@@ -701,7 +701,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// check if relationship is writable
 	if !Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// assign relationship
@@ -744,7 +744,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// check if relationship is writable
 	if !Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// process all references
@@ -812,7 +812,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 	// check if relationship is writable
 	if !Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// process all references
