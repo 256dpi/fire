@@ -3047,6 +3047,132 @@ func TestWritableFields(t *testing.T) {
 	})
 }
 
+func TestSoftProtection(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestWritableFields", All(), func(ctx *Context) error {
+				ctx.WritableFields = []string{"Title"}
+				return nil
+			}),
+		},
+		SoftProtection: true,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+		Authorizers: L{
+			C("TestWritableFields", All(), func(ctx *Context) error {
+				ctx.WritableFields = []string{}
+				return nil
+			}),
+		},
+		SoftProtection: true,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	// attempt to create post with protected field
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"title": "Post 1",
+				"published": true
+			},
+			"relationships": {}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{}).ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": ""
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+post+`/relationships/comments",
+							"related": "/posts/`+post+`/comments"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+post+`/relationships/note",
+							"related": "/posts/`+post+`/note"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+post+`/relationships/selections",
+							"related": "/posts/`+post+`/selections"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+post+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to create selection with protected relationship
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {},
+			"relationships": {
+				"posts": {
+					"data": [{
+						"type": "posts",
+						"id": "`+bson.NewObjectId().Hex()+`"
+					}]
+				}
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		selection := tester.FindLast(&selectionModel{}).ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "selections",
+				"id": "`+selection+`",
+				"attributes": {
+					"name": ""
+				},
+				"relationships": {
+					"posts": {
+						"data": [],
+						"links": {
+							"self": "/selections/`+selection+`/relationships/posts",
+							"related": "/selections/`+selection+`/posts"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/selections/`+selection+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
 func TestNoList(t *testing.T) {
 	tester.Clean()
 

@@ -107,6 +107,12 @@ type Controller struct {
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
+	// SoftProtection will not raise an error if a non-writable field is set
+	// during a Create or Update operation. Frameworks like Ember.js just
+	// serialize the complete state of a model and thus might send attributes
+	// and relationships that are not writable.
+	SoftProtection bool
+
 	parser jsonapi.Parser
 }
 
@@ -1136,6 +1142,11 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !Contains(whitelist, name) {
+			// ignore violation if soft protection is enabled
+			if c.SoftProtection {
+				continue
+			}
+
 			stack.Abort(jsonapi.BadRequest("attribute is not writable"))
 		}
 
@@ -1156,6 +1167,11 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
+			// ignore violation if soft protection is enabled
+			if c.SoftProtection {
+				continue
+			}
+
 			stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 		}
 
