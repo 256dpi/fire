@@ -1028,7 +1028,7 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 			var ids []bson.ObjectId
 			for _, str := range values {
 				if !bson.IsObjectIdHex(str) {
-					stack.Abort(jsonapi.BadRequest("relationship filter values are not object ids"))
+					stack.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
 				}
 				ids = append(ids, bson.ObjectIdHex(str))
 			}
