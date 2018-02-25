@@ -1,7 +1,8 @@
 language: go
 go:
-  - 1.9
-  - tip
+  - "1.9"
+  - "1.10"
+  - "tip"
 services:
   - mongodb
 before_install:
