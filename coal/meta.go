@@ -124,7 +124,7 @@ func NewMeta(model Model) *Meta {
 		if i == 0 {
 			// assert first field to be the base
 			if field.Type != baseType {
-				panic(`coal: expected to Base as the first struct field`)
+				panic(`coal: expected an embedded "coal.Base" as the first struct field`)
 			}
 
 			// split tag
@@ -132,17 +132,17 @@ func NewMeta(model Model) *Meta {
 
 			// check json tag
 			if field.Tag.Get("json") != "-" {
-				panic(`coal: expected to find a tag of the form json:"-" on Base`)
+				panic(`coal: expected to find a tag of the form 'json:"-"' on "coal.Base""`)
 			}
 
 			// check bson tag
 			if field.Tag.Get("bson") != ",inline" {
-				panic(`coal: expected to find a tag of the form bson:",inline" on Base`)
+				panic(`coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base""`)
 			}
 
 			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
-				panic(`coal: expected to find a tag of the form coal:"plural-name[:collection]" on Base`)
+				panic(`coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base""`)
 			}
 
 			// infer plural and collection names
@@ -185,7 +185,7 @@ func NewMeta(model Model) *Meta {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
-					panic(`coal: expected to find a tag of the form coal:"name:type" on to-one relationship`)
+					panic(`coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`)
 				}
 
 				// parse special to-one relationship tag
@@ -206,7 +206,7 @@ func NewMeta(model Model) *Meta {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
-					panic(`coal: expected to find a tag of the form coal:"name:type" on to-many relationship`)
+					panic(`coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`)
 				}
 
 				// parse special to-many relationship tag
@@ -226,7 +226,7 @@ func NewMeta(model Model) *Meta {
 		if field.Type == hasOneType {
 			// check tag
 			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
-				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-one relationship`)
+				panic(`coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-one relationship`)
 			}
 
 			// parse special has-one relationship tag
@@ -246,7 +246,7 @@ func NewMeta(model Model) *Meta {
 		if field.Type == hasManyType {
 			// check tag
 			if len(coalTags) != 1 || strings.Count(coalTags[0], ":") != 2 {
-				panic(`coal: expected to find a tag of the form coal:"name:type:inverse" on has-many relationship`)
+				panic(`coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`)
 			}
 
 			// parse special has-many relationship tag
@@ -264,7 +264,7 @@ func NewMeta(model Model) *Meta {
 
 		// panic on any additional tags
 		for _, tag := range coalTags {
-			panic("coal: unexpected tag " + tag)
+			panic(fmt.Sprintf(`coal: unexpected tag '%s'`, tag))
 		}
 
 		// add field

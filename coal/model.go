@@ -2,6 +2,7 @@
 package coal
 
 import (
+	"fmt"
 	"reflect"
 
 	"gopkg.in/mgo.v2/bson"
@@ -62,7 +63,7 @@ func (b *Base) MustGet(name string) interface{} {
 	// find field
 	field := b.meta.Fields[name]
 	if field == nil {
-		panic(`coal: field "` + name + `" not found on "` + b.meta.Name + `"`)
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, name, b.meta.Name))
 	}
 
 	// read value from model struct
@@ -76,7 +77,7 @@ func (b *Base) MustSet(name string, value interface{}) {
 	// find field
 	field := b.meta.Fields[name]
 	if field == nil {
-		panic(`coal: field "` + name + `" not found on "` + b.meta.Name + `"`)
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, name, b.meta.Name))
 	}
 
 	// set the value on model struct

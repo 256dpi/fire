@@ -1,6 +1,10 @@
 package coal
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"fmt"
+
+	"gopkg.in/mgo.v2/bson"
+)
 
 // C is a short-hand function to extract the collection of a model.
 func C(m Model) string {
@@ -13,7 +17,7 @@ func F(m Model, field string) string {
 	// find field
 	f := Init(m).Meta().Fields[field]
 	if f == nil {
-		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
 	}
 
 	return f.BSONField
@@ -25,7 +29,7 @@ func A(m Model, field string) string {
 	// find field
 	f := Init(m).Meta().Fields[field]
 	if f == nil {
-		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
 	}
 
 	return f.JSONKey
@@ -37,7 +41,7 @@ func R(m Model, field string) string {
 	// find field
 	f := Init(m).Meta().Fields[field]
 	if f == nil {
-		panic(`coal: field "` + field + `" not found on "` + m.Meta().Name + `"`)
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
 	}
 
 	return f.RelName

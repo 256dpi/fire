@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewMeta(t *testing.T) {
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form json:"-" on Base`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base""`, func() {
 		type m struct {
 			Base
 		}
@@ -17,7 +17,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form bson:",inline" on Base`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base""`, func() {
 		type m struct {
 			Base `json:"-"`
 		}
@@ -25,7 +25,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"plural-name[:collection]" on Base`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base""`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:""`
 			Foo  string `json:"foo"`
@@ -34,7 +34,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to Base as the first struct field`, func() {
+	assert.PanicsWithValue(t, `coal: expected an embedded "coal.Base" as the first struct field`, func() {
 		type m struct {
 			Foo  string `json:"foo"`
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
@@ -43,7 +43,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type" on to-one relationship`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  bson.ObjectId `coal:"foo:foo:foo"`
@@ -52,7 +52,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type" on to-many relationship`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  []bson.ObjectId `coal:"foo:foo:foo"`
@@ -61,7 +61,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type:inverse" on has-one relationship`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-one relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasOne
@@ -70,7 +70,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form coal:"name:type:inverse" on has-many relationship`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasMany
@@ -79,7 +79,7 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: unexpected tag foo`, func() {
+	assert.PanicsWithValue(t, `coal: unexpected tag 'foo'`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  string `coal:"foo"`
