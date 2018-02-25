@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/256dpi/fire/coal"
@@ -24,7 +23,7 @@ type postModel struct {
 
 func (p *postModel) Validate() error {
 	if p.Title == "error" {
-		return Safe(errors.New("error"))
+		return E("error")
 	}
 
 	return nil

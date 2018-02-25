@@ -1,7 +1,7 @@
 package fire
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -10,9 +10,9 @@ type safeError struct {
 	err error
 }
 
-// E is a short-hand function to construct a safe error from a string.
-func E(text string) error {
-	return Safe(errors.New(text))
+// E is a short-hand function to construct a safe error.
+func E(format string, a ...interface{}) error {
+	return Safe(fmt.Errorf(format, a...))
 }
 
 // Safe wraps an error and marks it as safe. Wrapped errors are safe to be

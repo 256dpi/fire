@@ -1,7 +1,6 @@
 package flame
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/256dpi/fire"
@@ -66,12 +65,12 @@ func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client C
 func (t *AccessToken) Validate() error {
 	// check id
 	if !t.ID().Valid() {
-		return fire.Safe(fmt.Errorf("invalid id"))
+		return fire.E("invalid id")
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.Safe(fmt.Errorf("expires at not set"))
+		return fire.E("expires at not set")
 	}
 
 	return nil
@@ -119,12 +118,12 @@ func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client 
 func (t *RefreshToken) Validate() error {
 	// check id
 	if !t.ID().Valid() {
-		return fire.Safe(fmt.Errorf("invalid id"))
+		return fire.E("invalid id")
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.Safe(fmt.Errorf("expires at not set"))
+		return fire.E("expires at not set")
 	}
 
 	return nil
@@ -189,27 +188,27 @@ func (a *Application) Validate() error {
 
 	// check id
 	if !a.ID().Valid() {
-		return fire.Safe(fmt.Errorf("invalid id"))
+		return fire.E("invalid id")
 	}
 
 	// check name
 	if a.Name == "" {
-		return fire.Safe(fmt.Errorf("name not set"))
+		return fire.E("name not set")
 	}
 
 	// check key
 	if a.Key == "" {
-		return fire.Safe(fmt.Errorf("key not set"))
+		return fire.E("key not set")
 	}
 
 	// check secret hash
 	if len(a.SecretHash) == 0 {
-		return fire.Safe(fmt.Errorf("secret hash not set"))
+		return fire.E("secret hash not set")
 	}
 
 	// check redirect uri
 	if a.RedirectURL != "" && !govalidator.IsURL(a.RedirectURL) {
-		return fire.Safe(fmt.Errorf("invalid redirect url"))
+		return fire.E("invalid redirect url")
 	}
 
 	return nil
@@ -289,22 +288,22 @@ func (u *User) Validate() error {
 
 	// check id
 	if !u.ID().Valid() {
-		return fire.Safe(fmt.Errorf("invalid id"))
+		return fire.E("invalid id")
 	}
 
 	// check name
 	if u.Name == "" {
-		return fire.Safe(fmt.Errorf("name not set"))
+		return fire.E("name not set")
 	}
 
 	// check email
 	if u.Email == "" || !govalidator.IsEmail(u.Email) {
-		return fire.Safe(fmt.Errorf("invalid email"))
+		return fire.E("invalid email")
 	}
 
 	// check password hash
 	if len(u.PasswordHash) == 0 {
-		return fire.Safe(fmt.Errorf("password hash not set"))
+		return fire.E("password hash not set")
 	}
 
 	return nil

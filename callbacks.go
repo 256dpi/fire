@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -199,7 +198,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), def) {
-					return Safe(errors.New("field " + field + " is protected"))
+					return E("field " + field + " is protected")
 				}
 			}
 		}
@@ -216,7 +215,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 			for field := range pairs {
 				// check equality
 				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
-					return Safe(errors.New("field " + field + " is protected"))
+					return E("field " + field + " is protected")
 				}
 			}
 		}
@@ -255,7 +254,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 
 			// return err of documents are found
 			if n != 0 {
-				return Safe(errors.New("resource has dependent resources"))
+				return E("resource has dependent resources")
 			}
 		}
 
@@ -309,7 +308,7 @@ func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 
 				// check for existence
 				if n != len(ids) {
-					return Safe(errors.New("missing references for field " + field))
+					return E("missing references for field " + field)
 				}
 
 				continue
@@ -328,7 +327,7 @@ func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 
 			// check for existence
 			if n != 1 {
-				return Safe(errors.New("missing reference for field " + field))
+				return E("missing reference for field " + field)
 			}
 		}
 
@@ -489,7 +488,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 
 		// return error if a document is missing (does not match)
 		if n != len(ids) {
-			return Safe(errors.New("references do not match"))
+			return E("references do not match")
 		}
 
 		return nil
@@ -549,7 +548,7 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 		if err != nil {
 			return err
 		} else if n != 0 {
-			return Safe(fmt.Errorf("attribute %s is not unique", field))
+			return E("attribute %s is not unique", field)
 		}
 		ctx.Tracer.Pop()
 
