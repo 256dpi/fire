@@ -1150,12 +1150,12 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	for name, rel := range res.Relationships {
 		// get relationship
 		field := c.Model.Meta().Relationships[name]
-		if field == nil || (!field.ToOne && !field.ToMany) {
+		if field == nil {
 			stack.Abort(jsonapi.BadRequest("invalid relationship"))
 		}
 
 		// check whitelist
-		if !Contains(whitelist, name) {
+		if !Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
 			stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 		}
 
