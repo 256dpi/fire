@@ -67,3 +67,16 @@ func TestContains(t *testing.T) {
 	assert.True(t, Contains([]bson.ObjectId{a, b, c}, c))
 	assert.False(t, Contains([]bson.ObjectId{a, b, c}, d))
 }
+
+func TestIncludes(t *testing.T) {
+	a := bson.NewObjectId()
+	b := bson.NewObjectId()
+	c := bson.NewObjectId()
+	d := bson.NewObjectId()
+
+	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a}))
+	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b}))
+	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b, c}))
+	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b, c, d}))
+	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{d}))
+}

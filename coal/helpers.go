@@ -83,3 +83,15 @@ func Contains(list []bson.ObjectId, id bson.ObjectId) bool {
 
 	return false
 }
+
+// Includes returns true if a list of object ids includes another list of object
+// ids.
+func Includes(all, subset []bson.ObjectId) bool {
+	for _, item := range subset {
+		if !Contains(all, item) {
+			return false
+		}
+	}
+
+	return true
+}

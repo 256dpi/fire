@@ -105,6 +105,17 @@ func Contains(list []string, str string) bool {
 	return false
 }
 
+// Includes returns true if a list of strings includes another list of strings.
+func Includes(all, subset []string) bool {
+	for _, item := range subset {
+		if !Contains(all, item) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Intersect will return the intersection of both lists.
 func Intersect(listA, listB []string) []string {
 	// prepare new list
