@@ -197,8 +197,8 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// prepare context
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
-	ctx.ReadableFields = c.initialFields(ctx.JSONAPIRequest, c.Model)
-	ctx.WritableFields = c.initialFields(nil, c.Model)
+	ctx.ReadableFields = c.initialFields(c.Model, ctx.JSONAPIRequest)
+	ctx.WritableFields = c.initialFields(c.Model, nil)
 
 	// copy store
 	store := c.Store.Copy()
@@ -468,8 +468,8 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	newCtx := &Context{
 		Selector:       bson.M{},
 		Filters:        []bson.M{},
-		ReadableFields: rc.initialFields(ctx.JSONAPIRequest, rc.Model),
-		WritableFields: rc.initialFields(nil, rc.Model),
+		ReadableFields: rc.initialFields(rc.Model, ctx.JSONAPIRequest),
+		WritableFields: rc.initialFields(rc.Model, nil),
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
@@ -921,7 +921,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) initialFields(r *jsonapi.Request, model coal.Model) []string {
+func (c *Controller) initialFields(model coal.Model, r *jsonapi.Request) []string {
 	// prepare list
 	list := make([]string, 0, len(model.Meta().Attributes)+len(model.Meta().Relationships))
 
