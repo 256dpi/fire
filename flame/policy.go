@@ -2,6 +2,7 @@ package flame
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/256dpi/oauth2"
@@ -37,6 +38,11 @@ type Policy struct {
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
 	ResourceOwners func(Client) []ResourceOwner
+
+	// Filter should return a filter that should be applied when looking up a
+	// resource owner. This callback can be used to select resource owners
+	// based on other request parameters.
+	Filter func(ResourceOwner, *http.Request) bson.M
 
 	// GrantStrategy is invoked by the authenticator with the grant type, the
 	// requested scope, the client and the resource owner before issuing an

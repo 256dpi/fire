@@ -722,8 +722,22 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	// get id field
 	field := coal.F(model, model.DescribeResourceOwner())
 
+	// prepare filter
+	filters := []bson.M{
+		{field: id},
+	}
+
+	// add additional filter if provided
+	if a.policy.Filter != nil {
+		if filter := a.policy.Filter(model, state.request); filter != nil {
+			filters = append(filters, filter)
+		}
+	}
+
 	// prepare query
-	query := bson.M{field: id}
+	query := bson.M{
+		"$and": filters,
+	}
 
 	// query db
 	state.tracer.Push("mgo/Query.One")

@@ -25,6 +25,10 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
+	p.Filter = func(ro ResourceOwner, req *http.Request) bson.M {
+		return bson.M{"_id": bson.M{"$exists": true}}
+	}
+
 	p.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
 		if !allowedScope.Includes(scope) {
 			return nil, ErrInvalidScope
