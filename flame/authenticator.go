@@ -301,6 +301,8 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 		}
 
 		a.handleImplicitGrant(state, req, client)
+	case oauth2.CodeResponseType:
+		stack.Abort(oauth2.UnsupportedResponseType(""))
 	}
 
 	// finish trace
@@ -391,6 +393,8 @@ func (a *Authenticator) tokenEndpoint(state *state) {
 		a.handleClientCredentialsGrant(state, req, client)
 	case oauth2.RefreshTokenGrantType:
 		a.handleRefreshTokenGrant(state, req, client)
+	case oauth2.AuthorizationCodeGrantType:
+		stack.Abort(oauth2.UnsupportedGrantType(""))
 	}
 
 	// finish trace
