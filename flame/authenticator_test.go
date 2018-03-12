@@ -1,6 +1,7 @@
 package flame
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,8 +26,8 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
-	p.Filter = func(ro ResourceOwner, req *http.Request) bson.M {
-		return bson.M{"_id": bson.M{"$exists": true}}
+	p.Filter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
+		return bson.M{"_id": bson.M{"$exists": true}}, nil
 	}
 
 	p.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
@@ -175,6 +176,67 @@ func TestContextKeys(t *testing.T) {
 	tester.Header["Authorization"] = "Bearer " + token
 	tester.Request("GET", "api/info", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Code, tester.DebugRequest(rq, r))
+	})
+}
+
+func TestInvalidFilter(t *testing.T) {
+	tester.Clean()
+
+	policy := DefaultPolicy("")
+	policy.PasswordGrant = true
+
+	authenticator := NewAuthenticator(tester.Store, policy)
+	handler := newHandler(authenticator, false)
+
+	application := tester.Save(&Application{
+		Key: "application",
+	}).(*Application)
+
+	policy.Filter = func(ResourceOwner, *http.Request) (bson.M, error) {
+		return nil, ErrInvalidFilter
+	}
+
+	spec.Do(handler, &spec.Request{
+		Method:   "POST",
+		Path:     "/oauth2/token",
+		Username: application.Key,
+		Password: application.Secret,
+		Form: map[string]string{
+			"grant_type": "password",
+			"username":   "foo",
+			"password":   "bar",
+			"scope":      "",
+		},
+		Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+			assert.JSONEq(t, r.Body.String(), `{
+				"error": "invalid_request",
+				"error_description": "invalid filter"
+			}`)
+		},
+	})
+
+	policy.Filter = func(ResourceOwner, *http.Request) (bson.M, error) {
+		return nil, errors.New("foo")
+	}
+
+	spec.Do(handler, &spec.Request{
+		Method:   "POST",
+		Path:     "/oauth2/token",
+		Username: application.Key,
+		Password: application.Secret,
+		Form: map[string]string{
+			"grant_type": "password",
+			"username":   "foo",
+			"password":   "bar",
+			"scope":      "",
+		},
+		Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusInternalServerError, r.Code)
+			assert.JSONEq(t, r.Body.String(), `{
+				"error": "server_error"
+			}`)
+		},
 	})
 }
 

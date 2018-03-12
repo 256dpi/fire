@@ -10,6 +10,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// ErrInvalidFilter should be returned by the Filter to indicate that the request
+// includes invalid filter parameters.
+var ErrInvalidFilter = errors.New("invalid filter")
+
 // ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
 // of the grant based on the provided conditions.
 var ErrGrantRejected = errors.New("grant rejected")
@@ -41,8 +45,9 @@ type Policy struct {
 
 	// Filter should return a filter that should be applied when looking up a
 	// resource owner. This callback can be used to select resource owners
-	// based on other request parameters.
-	Filter func(ResourceOwner, *http.Request) bson.M
+	// based on other request parameters. It can return ErrInvalidFilter to
+	// cancel the authentication request.
+	Filter func(ResourceOwner, *http.Request) (bson.M, error)
 
 	// GrantStrategy is invoked by the authenticator with the grant type, the
 	// requested scope, the client and the resource owner before issuing an
