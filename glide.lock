@@ -1,10 +1,10 @@
-hash: 1ed8abc1590bf2ed719330d3d293845f012e1eb4f6970e1cb1b69f915216c5e6
-updated: 2018-02-18T20:28:21.820253+01:00
+hash: aa23b8d0bf84fbd8c944b0787e6c60fbade5b3d44b28a067d1978c100640be41
+updated: 2018-03-12T21:58:08.643577+01:00
 imports:
 - name: github.com/256dpi/jsonapi
   version: dbfb1f4b466ccfb43d3de69dc46e955571d394e2
 - name: github.com/256dpi/oauth2
-  version: 893e79e85a99df8c99231a150d749bb724109642
+  version: dc3da45be566f68e8174a8448212f3058d7c5f7e
   subpackages:
   - bearer
   - revocation
@@ -14,7 +14,7 @@ imports:
 - name: github.com/asaskevich/govalidator
   version: 521b25f4b05fd26bec69d9dedeb8f9c9a83939a8
 - name: github.com/dgrijalva/jwt-go
-  version: dbeaa9332f19a944acb5736b4456cfcc02140e29
+  version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
 - name: github.com/goware/cors
   version: 6ad15f4e1489e41776ee8b008597eafea9a67fd9
 - name: github.com/opentracing/opentracing-go
@@ -76,6 +76,6 @@ testImports:
   - transport
   - utils
 - name: github.com/uber/jaeger-lib
-  version: 7f95f4f7e80028096410abddaae2556e4c61b59f
+  version: 4267858c0679cd4e47cefed8d7f70fd386cfb567
   subpackages:
   - metrics

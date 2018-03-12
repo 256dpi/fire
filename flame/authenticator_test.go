@@ -123,7 +123,12 @@ func TestIntegration(t *testing.T) {
 	config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
 	config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
-	config.AuthorizationParams = map[string]string{
+	config.InvalidAuthorizationParams = map[string]string{
+		"username": user.Email,
+		"password": "",
+	}
+
+	config.ValidAuthorizationParams = map[string]string{
 		"username": user.Email,
 		"password": testPassword,
 	}
