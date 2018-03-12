@@ -100,15 +100,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 		// trim and split path
 		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
-
-		// check length
-		if len(s) != 1 {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		// check resource
-		if s[0] != "authorize" && s[0] != "token" && s[0] != "revoke" {
+		if len(s) != 1 || (s[0] != "authorize" && s[0] != "token" && s[0] != "revoke") {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
