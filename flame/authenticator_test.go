@@ -179,6 +179,76 @@ func TestContextKeys(t *testing.T) {
 	})
 }
 
+func TestInvalidGrantType(t *testing.T) {
+	tester.Clean()
+
+	policy := DefaultPolicy("")
+
+	authenticator := NewAuthenticator(tester.Store, policy)
+	handler := newHandler(authenticator, false)
+
+	application := tester.Save(&Application{
+		Key: "application",
+	}).(*Application)
+
+	for _, gt := range []string{"password", "client_credentials", "authorization_code"} {
+		spec.Do(handler, &spec.Request{
+			Method:   "POST",
+			Path:     "/oauth2/token",
+			Username: application.Key,
+			Password: application.Secret,
+			Form: map[string]string{
+				"grant_type": gt,
+				"username":   "foo",
+				"password":   "bar",
+				"scope":      "",
+			},
+			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+				assert.Equal(t, http.StatusBadRequest, r.Code)
+				assert.JSONEq(t, r.Body.String(), `{
+				"error": "unsupported_grant_type"
+			}`)
+			},
+		})
+	}
+}
+
+func TestInvalidResponseType(t *testing.T) {
+	tester.Clean()
+
+	policy := DefaultPolicy("")
+
+	authenticator := NewAuthenticator(tester.Store, policy)
+	handler := newHandler(authenticator, false)
+
+	application := tester.Save(&Application{
+		Key:         "application",
+		RedirectURL: "https://example.com/",
+	}).(*Application)
+
+	for _, rt := range []string{"token", "code"} {
+		spec.Do(handler, &spec.Request{
+			Method:   "POST",
+			Path:     "/oauth2/authorize",
+			Username: application.Key,
+			Password: application.Secret,
+			Form: map[string]string{
+				"response_type": rt,
+				"client_id":     application.Key,
+				"redirect_uri":  "https://example.com/",
+				"scope":         "",
+				"state":         "xyz",
+			},
+			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+				assert.Equal(t, http.StatusBadRequest, r.Code)
+				assert.JSONEq(t, r.Body.String(), `{
+				"error": "unsupported_response_type"
+			}`)
+			},
+		})
+	}
+}
+
 func TestInvalidFilter(t *testing.T) {
 	tester.Clean()
 
