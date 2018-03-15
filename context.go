@@ -105,10 +105,8 @@ type Context struct {
 	// is preset.
 	//
 	// Usage: Read Only, Availability: Authorizers
-	// Operations: !CollectionAction
+	// Operations: !Create, !CollectionAction
 	Selector bson.M
-
-	// TODO: Split up Selector in multiple fields?
 
 	// The filters that will be used during an List, Find, Update, Delete or
 	// ResourceAction operation to further filter the selection of a list of
