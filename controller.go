@@ -1050,6 +1050,9 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 
 	// add sorting
 	for _, sorter := range ctx.JSONAPIRequest.Sorting {
+		// get direction
+		descending := strings.HasPrefix(sorter, "-")
+
 		// normalize sorter
 		normalizedSorter := strings.TrimPrefix(sorter, "-")
 
@@ -1065,7 +1068,11 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 		}
 
 		// add sorter
-		ctx.Sorting = append(ctx.Sorting, sorter)
+		if descending {
+			ctx.Sorting = append(ctx.Sorting, "-"+field.BSONField)
+		} else {
+			ctx.Sorting = append(ctx.Sorting, field.BSONField)
+		}
 	}
 
 	// honor list limit

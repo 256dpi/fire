@@ -2284,7 +2284,7 @@ func TestSorting(t *testing.T) {
 	tester.Assign("", &Controller{
 		Model:   &postModel{},
 		Store:   tester.Store,
-		Sorters: []string{"Title"},
+		Sorters: []string{"Title", "TextBody"},
 	}, &Controller{
 		Model:   &commentModel{},
 		Store:   tester.Store,
@@ -2299,13 +2299,16 @@ func TestSorting(t *testing.T) {
 
 	// create posts in random order
 	post2 := tester.Save(&postModel{
-		Title: "post-2",
+		Title:    "post-2",
+		TextBody: "body-2",
 	}).ID().Hex()
 	post1 := tester.Save(&postModel{
-		Title: "post-1",
+		Title:    "post-1",
+		TextBody: "body-1",
 	}).ID().Hex()
 	post3 := tester.Save(&postModel{
-		Title: "post-3",
+		Title:    "post-3",
+		TextBody: "body-3",
 	}).ID().Hex()
 
 	// test invalid sorter
@@ -2343,7 +2346,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-1",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-1"
 					},
 					"relationships": {
 						"comments": {
@@ -2375,7 +2378,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-2",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-2"
 					},
 					"relationships": {
 						"comments": {
@@ -2407,7 +2410,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-3",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-3"
 					},
 					"relationships": {
 						"comments": {
@@ -2451,7 +2454,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-3",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-3"
 					},
 					"relationships": {
 						"comments": {
@@ -2483,7 +2486,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-2",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-2"
 					},
 					"relationships": {
 						"comments": {
@@ -2515,7 +2518,7 @@ func TestSorting(t *testing.T) {
 					"attributes": {
 						"title": "post-1",
 						"published": false,
-						"text-body": ""
+						"text-body": "body-1"
 					},
 					"relationships": {
 						"comments": {
@@ -2537,6 +2540,114 @@ func TestSorting(t *testing.T) {
 							"links": {
 								"self": "/posts/`+post1+`/relationships/note",
 								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get posts in ascending order
+	tester.Request("GET", "posts?sort=text-body", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": "body-1"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": "body-2"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": "body-3"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
 							}
 						}
 					}
