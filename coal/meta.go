@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"gopkg.in/mgo.v2/bson"
 )
 
 var metaCache = make(map[string]*Meta)
+var metaCacheMutex sync.Mutex
 
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(bson.ObjectId(""))
@@ -92,6 +94,10 @@ type Meta struct {
 //
 // Note: This method panics if the passed Model has invalid fields and tags.
 func NewMeta(model Model) *Meta {
+	// acquire mutex
+	metaCacheMutex.Lock()
+	defer metaCacheMutex.Unlock()
+
 	// get type and name
 	modelType := reflect.TypeOf(model).Elem()
 	modelName := modelType.String()
