@@ -137,10 +137,11 @@ type Context struct {
 	// Operations: Create, Update
 	WritableFields []string
 
-	// The Model that will be created, updated or deleted.
+	// The Model that will be created, updated, deleted or is requested by a
+	// resource action.
 	//
 	// Usage: Modify Only, Availability: Validators
-	// Operations: Create, Update, Delete
+	// Operations: Create, Update, Delete, ResourceAction
 	Model coal.Model
 
 	// The document that will be written to the client.
