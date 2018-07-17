@@ -6,7 +6,6 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/pborman/uuid"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -45,7 +44,7 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 
 // EnsureApplication will ensure that an application with the provided name
 // exists and returns its key.
-func EnsureApplication(store *coal.Store, name string) (string, error) {
+func EnsureApplication(store *coal.Store, name, key, secret string) (string, error) {
 	// copy store
 	s := store.Copy()
 	defer s.Close()
@@ -70,9 +69,9 @@ func EnsureApplication(store *coal.Store, name string) (string, error) {
 
 	// create application
 	app := coal.Init(&Application{}).(*Application)
-	app.Key = uuid.New()
+	app.Key = key
 	app.Name = name
-	app.Secret = uuid.New()
+	app.Secret = secret
 
 	// validate model
 	err = app.Validate()
