@@ -10,7 +10,6 @@ script:
   - go get github.com/mattn/goveralls
   - go get golang.org/x/tools/cmd/cover
   - make setup
-  - env GO111MODULE=on go build
   - env GO111MODULE=on go test -coverprofile=fire.coverprofile
   - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./ash
   - env GO111MODULE=on go test -coverprofile=tools.coverprofile ./coal
