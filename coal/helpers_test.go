@@ -13,6 +13,7 @@ func TestC(t *testing.T) {
 
 func TestF(t *testing.T) {
 	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
+	assert.Equal(t, "-text_body", F(&postModel{}, "-TextBody"))
 
 	assert.PanicsWithValue(t, `coal: field "Foo" not found on "coal.postModel"`, func() {
 		F(&postModel{}, "Foo")

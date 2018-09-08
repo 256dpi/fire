@@ -2,6 +2,7 @@ package coal
 
 import (
 	"fmt"
+	"strings"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -12,18 +13,35 @@ func C(m Model) string {
 }
 
 // F is a short-hand function to extract the database BSON field name of a model
-// field. F will panic if no field has been found.
+// field. F will panic if no field has been found. Additionally, it supports the
+// "-" prefix for retrieving descending sort keys.
 func F(m Model, field string) string {
+	// check if prefixed
+	prefixed := strings.HasPrefix(field, "-")
+
+	// remove prefix
+	if prefixed {
+		field = strings.TrimLeft(field, "-")
+	}
+
 	// find field
 	f := Init(m).Meta().Fields[field]
 	if f == nil {
 		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
 	}
 
-	return f.BSONField
+	// get field
+	_field := f.BSONField
+
+	// prefix field again
+	if prefixed {
+		_field = "-" + _field
+	}
+
+	return _field
 }
 
-// A is a short-hand function to extract the attribute JSON ley of a model field.
+// A is a short-hand function to extract the attribute JSON key of a model field.
 // A will panic if no field has been found.
 func A(m Model, field string) string {
 	// find field
