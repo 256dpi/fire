@@ -34,9 +34,8 @@ func TestEnsureApplicationAndGetApplicationKey(t *testing.T) {
 
 	app := tester.FindLast(&Application{}).(*Application)
 	assert.Equal(t, "Foo", app.Name)
-	assert.NotEmpty(t, app.Key)
 	assert.Equal(t, "bar", app.Key)
-	assert.Equal(t, "baz", app.Secret)
+	assert.Empty(t, app.Secret)
 	assert.NotEmpty(t, app.SecretHash)
 }
 
