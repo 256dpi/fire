@@ -11,8 +11,8 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 )
 
 // L is a short-hand type to create a list of callbacks.

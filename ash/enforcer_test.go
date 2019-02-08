@@ -5,8 +5,8 @@ import (
 
 	"github.com/256dpi/fire"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestGrantAccess(t *testing.T) {

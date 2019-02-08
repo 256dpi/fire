@@ -1,6 +1,6 @@
 package coal
 
-import "gopkg.in/mgo.v2"
+import "github.com/globalsign/mgo"
 
 // MustCreateStore will dial the passed database and return a new store. It will
 // panic if the initial connection failed.

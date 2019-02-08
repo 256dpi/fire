@@ -1,6 +1,6 @@
 package coal
 
-import "gopkg.in/mgo.v2"
+import "github.com/globalsign/mgo"
 
 type index struct {
 	coll  string

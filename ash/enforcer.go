@@ -3,7 +3,7 @@ package ash
 import (
 	"github.com/256dpi/fire"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo/bson"
 )
 
 // E is a short-hand function to create an enforcer.

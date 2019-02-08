@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/opentracing/opentracing-go"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // RootTracer is a middleware that can be used to create root trace span for an

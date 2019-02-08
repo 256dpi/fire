@@ -7,9 +7,9 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // Token is the interface that must be implemented by the tokens.

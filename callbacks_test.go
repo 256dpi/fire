@@ -7,8 +7,8 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestC(t *testing.T) {

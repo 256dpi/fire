@@ -7,7 +7,7 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/dgrijalva/jwt-go"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo/bson"
 )
 
 // ErrInvalidFilter should be returned by the Filter to indicate that the request

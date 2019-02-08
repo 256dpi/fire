@@ -9,8 +9,8 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/spec"
+	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestIntegration(t *testing.T) {

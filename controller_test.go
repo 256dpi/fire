@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func TestBasicOperations(t *testing.T) {

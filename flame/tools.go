@@ -6,7 +6,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo/bson"
 )
 
 // TokenMigrator is a middleware that detects access tokens passed via query

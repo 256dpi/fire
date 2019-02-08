@@ -5,10 +5,10 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type postModel struct {
