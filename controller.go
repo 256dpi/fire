@@ -253,12 +253,12 @@ func (c *Controller) listResources(ctx *Context) {
 	ctx.Operation = List
 
 	// load models
-	models := c.loadModels(ctx)
+	c.loadModels(ctx)
 
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			Many: c.resourcesForModels(ctx, models),
+			Many: c.resourcesForModels(ctx, ctx.Models),
 		},
 		Links: c.listLinks(ctx.JSONAPIRequest.Self(), ctx),
 	}
@@ -555,12 +555,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.Selector["_id"] = bson.M{"$in": ids}
 
 		// load related models
-		models := rc.loadModels(newCtx)
+		rc.loadModels(newCtx)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, models),
+				Many: rc.resourcesForModels(newCtx, newCtx.Models),
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
@@ -588,8 +588,10 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		newCtx.Selector[relRel.BSONField] = ctx.Model.ID()
 
 		// load related models
-		models := rc.loadModels(newCtx)
-		if len(models) > 1 {
+		rc.loadModels(newCtx)
+
+		// check models
+		if len(newCtx.Models) > 1 {
 			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 		}
 
@@ -602,8 +604,8 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// add if model is found
-		if len(models) == 1 {
-			newCtx.Response.Data.One = rc.resourceForModel(newCtx, models[0])
+		if len(newCtx.Models) == 1 {
+			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Models[0])
 		}
 
 		// run notifiers
@@ -631,12 +633,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// load related models
-		models := rc.loadModels(newCtx)
+		rc.loadModels(newCtx)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, models),
+				Many: rc.resourcesForModels(newCtx, newCtx.Models),
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
@@ -999,7 +1001,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) loadModels(ctx *Context) []coal.Model {
+func (c *Controller) loadModels(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModels")
 
@@ -1106,13 +1108,11 @@ func (c *Controller) loadModels(ctx *Context) []coal.Model {
 	stack.AbortIf(query.All(slicePtr))
 	ctx.Tracer.Pop()
 
-	// get models
-	models := coal.InitSlice(slicePtr)
+	// set models
+	ctx.Models = coal.InitSlice(slicePtr)
 
 	// finish trace
 	ctx.Tracer.Pop()
-
-	return models
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {

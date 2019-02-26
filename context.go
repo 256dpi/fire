@@ -144,6 +144,12 @@ type Context struct {
 	// Operations: Create, Update, Delete, ResourceAction
 	Model coal.Model
 
+	// The models that will will be returned for a List operation.
+	//
+	// Usage: Modify Only, Availability: Decorators
+	// Operations: List
+	Models []coal.Model
+
 	// The document that will be written to the client.
 	//
 	// Usage: Modify Only, Availability: Notifiers,
