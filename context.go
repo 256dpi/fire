@@ -184,7 +184,7 @@ type Context struct {
 	// Usage: Read Only
 	Group *Group
 
-	// The Tracer used to tracer code execution.
+	// The Tracer used to trace code execution.
 	//
 	// Usage: Read Only
 	Tracer *Tracer
