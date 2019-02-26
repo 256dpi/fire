@@ -76,6 +76,12 @@ type Controller struct {
 	// attributes and relationships.
 	Validators []*Callback
 
+	// Decorators are run after the models or model have been loaded from the
+	// database for List and Find operations or the model has been saved or
+	// updated for Create and Update operations. Returned errors will cause the
+	// abortion of the request with an Internal Server Error status by default.
+	Decorators []*Callback
+
 	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
 	// about the applied changes. Returned errors will cause the abortion of the
@@ -255,6 +261,9 @@ func (c *Controller) listResources(ctx *Context) {
 	// load models
 	c.loadModels(ctx)
 
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
@@ -282,6 +291,9 @@ func (c *Controller) findResource(ctx *Context) {
 
 	// load model
 	c.loadModel(ctx)
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// compose response
 	ctx.Response = &jsonapi.Document{
@@ -343,6 +355,9 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	stack.AbortIf(ctx.Store.C(ctx.Model).Insert(ctx.Model))
 	ctx.Tracer.Pop()
 
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
@@ -393,6 +408,9 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 
 	// save model
 	c.updateModel(ctx)
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// compose response
 	ctx.Response = &jsonapi.Document{
@@ -531,6 +549,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			// load model
 			rc.loadModel(newCtx)
 
+			// run decorators
+			c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+
 			// set model
 			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Model)
 		}
@@ -556,6 +577,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// load related models
 		rc.loadModels(newCtx)
+
+		// run decorators
+		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
 
 		// compose response
 		newCtx.Response = &jsonapi.Document{
@@ -593,6 +617,11 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// check models
 		if len(newCtx.Models) > 1 {
 			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
+		}
+
+		// run decorators if found
+		if len(newCtx.Models) == 1 {
+			c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
 		}
 
 		// compose response
@@ -635,6 +664,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// load related models
 		rc.loadModels(newCtx)
 
+		// run decorators
+		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
@@ -674,6 +706,9 @@ func (c *Controller) getRelationship(ctx *Context) {
 	if !Contains(ctx.ReadableFields, field.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
@@ -717,6 +752,9 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// save model
 	c.updateModel(ctx)
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
@@ -785,6 +823,9 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// save model
 	c.updateModel(ctx)
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
@@ -860,6 +901,9 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 	// save model
 	c.updateModel(ctx)
+
+	// run decorators
+	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
 	// get resource
 	resource := c.resourceForModel(ctx, ctx.Model)
