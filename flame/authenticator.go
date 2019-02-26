@@ -247,7 +247,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// get resource owner
 			resourceOwner := a.getFirstResourceOwner(state, client, *resourceOwnerID)
-			if client == nil {
+			if resourceOwner == nil {
 				stack.Abort(errors.New("missing resource owner"))
 			}
 
