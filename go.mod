@@ -9,6 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
+	github.com/gorilla/websocket v1.4.0
 	github.com/goware/cors v0.0.0-20161025151409-6ad15f4e1489
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
