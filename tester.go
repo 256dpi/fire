@@ -107,6 +107,38 @@ func (t *Tester) FindLast(model coal.Model) coal.Model {
 	return coal.Init(model)
 }
 
+// Update will update the specified model.
+func (t *Tester) Update(model coal.Model) coal.Model {
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// initialize model
+	model = coal.Init(model)
+
+	// insert to collection
+	err := store.C(model).UpdateId(model.ID(), model)
+	if err != nil {
+		panic(err)
+	}
+
+	return model
+}
+
+// Delete will delete the specified model.
+func (t *Tester) Delete(model coal.Model) {
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// initialize model
+	model = coal.Init(model)
+
+	// insert to collection
+	err := store.C(model).RemoveId(model.ID())
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Path returns a root prefixed path for the supplied path.
 func (t *Tester) Path(path string) string {
 	// add root slash
