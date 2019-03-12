@@ -45,8 +45,9 @@ func NewTester(store *coal.Store, models ...coal.Model) *Tester {
 }
 
 // Assign will create a controller group with the specified controllers and
-// assign in to the Handler attribute of the tester.
-func (t *Tester) Assign(prefix string, controllers ...*Controller) {
+// assign in to the Handler attribute of the tester. It will return the created
+// group.
+func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 	group := NewGroup()
 	group.Add(controllers...)
 	group.Reporter = func(err error) {
@@ -54,6 +55,8 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) {
 	}
 
 	t.Handler = Compose(RootTracer(), group.Endpoint(prefix))
+
+	return group
 }
 
 // Clean will remove the collections of models that have been registered and
