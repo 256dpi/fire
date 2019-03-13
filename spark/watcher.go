@@ -107,8 +107,11 @@ func (w *Watcher) Collection(cb func(ctx *fire.Context) map[string]interface{}) 
 	return &fire.Action{
 		Methods: []string{"GET"},
 		Callback: fire.C("spark/Watcher.Collection", fire.All(), func(ctx *fire.Context) error {
-			// get filters
-			filters := cb(ctx)
+			// get filters if available
+			var filters bson.M
+			if cb != nil {
+				filters = cb(ctx)
+			}
 
 			// get now
 			now := time.Now()
