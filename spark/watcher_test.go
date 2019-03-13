@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
 )
 
 var tester = fire.NewTester(
@@ -58,7 +59,9 @@ func TestWatcher(t *testing.T) {
 	tester.Request("GET", "items/watch", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 
-		claims, ok, err := policy.ParseToken(r.Body.String())
+		token := gjson.Get(r.Body.String(), "token").String()
+
+		claims, ok, err := policy.ParseToken(token)
 		assert.NoError(t, err)
 		assert.False(t, ok)
 		assert.Equal(t, "items", claims.Subject)
@@ -67,21 +70,23 @@ func TestWatcher(t *testing.T) {
 			"bar": "bar",
 		}, claims.Data)
 
-		collectionWatchToken = r.Body.String()
+		collectionWatchToken = token
 	})
 
 	var resourceWatchToken string
 	tester.Request("GET", "items/"+item.ID().Hex()+"/watch", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 
-		claims, ok, err := policy.ParseToken(r.Body.String())
+		token := gjson.Get(r.Body.String(), "token").String()
+
+		claims, ok, err := policy.ParseToken(token)
 		assert.NoError(t, err)
 		assert.False(t, ok)
 		assert.Equal(t, "items", claims.Subject)
 		assert.Equal(t, item.ID().Hex(), claims.Id)
 		assert.Equal(t, map[string]interface{}(nil), claims.Data)
 
-		resourceWatchToken = r.Body.String()
+		resourceWatchToken = token
 	})
 
 	/* run server and create client */
