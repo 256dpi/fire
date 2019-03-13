@@ -10,6 +10,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
+	"github.com/256dpi/fire/spark"
 	"github.com/256dpi/fire/wood"
 
 	"github.com/goware/cors"
@@ -126,10 +127,14 @@ func createHandler(store *coal.Store, reporter func(error)) http.Handler {
 	// register authenticator
 	mux.Handle("/v1/auth/", a.Endpoint("/v1/auth/"))
 
+	// create watcher
+	watcher := spark.NewWatcher(store, spark.DefaultPolicy("watch-secret"))
+
 	// create group
 	g := fire.NewGroup()
 	g.Reporter = reporter
-	g.Add(itemController(store))
+	g.Add(itemController(store, watcher))
+	g.Handle("watch", watcher.GroupAction())
 
 	// register group
 	mux.Handle("/v1/api/", fire.Compose(
@@ -144,7 +149,7 @@ func createHandler(store *coal.Store, reporter func(error)) http.Handler {
 	return mux
 }
 
-func itemController(store *coal.Store) *fire.Controller {
+func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller {
 	return &fire.Controller{
 		Model:   &Item{},
 		Store:   store,
@@ -157,6 +162,12 @@ func itemController(store *coal.Store) *fire.Controller {
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
 		SoftProtection: true,
+		CollectionActions: fire.M{
+			"watch": watcher.Collection(nil),
+		},
+		ResourceActions: fire.M{
+			"watch": watcher.Resource(),
+		},
 	}
 }
 
