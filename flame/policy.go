@@ -85,6 +85,17 @@ func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2
 	return scope, nil
 }
 
+// DefaultTokenData adds the user's id to the token data claim.
+func DefaultTokenData(_ Client, ro ResourceOwner, _ Token) map[string]interface{} {
+	if ro != nil {
+		return map[string]interface{}{
+			"user": ro.ID(),
+		}
+	}
+
+	return nil
+}
+
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
 //
@@ -99,6 +110,7 @@ func DefaultPolicy(secret string) *Policy {
 			return []ResourceOwner{&User{}}
 		},
 		GrantStrategy:        DefaultGrantStrategy,
+		TokenData:            DefaultTokenData,
 		AccessTokenLifespan:  time.Hour,
 		RefreshTokenLifespan: 7 * 24 * time.Hour,
 	}
