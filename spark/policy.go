@@ -28,8 +28,8 @@ type TokenClaims struct {
 // Note: The secret should be at least 16 characters long.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret: []byte(secret),
-		TokenLifespan:  time.Hour,
+		Secret:        []byte(secret),
+		TokenLifespan: time.Hour,
 	}
 }
 
