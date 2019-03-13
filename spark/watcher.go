@@ -1,7 +1,6 @@
 package spark
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/256dpi/fire"
@@ -136,14 +135,8 @@ func (w *Watcher) Collection(cb func(ctx *fire.Context) map[string]interface{}) 
 				"token": token,
 			}
 
-			// encode response
-			bytes, err := json.Marshal(res)
-			if err != nil {
-				return err
-			}
-
-			// write token
-			_, err = ctx.ResponseWriter.Write(bytes)
+			// write response
+			err = ctx.Respond(res)
 			if err != nil {
 				return err
 			}
@@ -179,14 +172,8 @@ func (w *Watcher) Resource() *fire.Action {
 				"token": token,
 			}
 
-			// encode response
-			bytes, err := json.Marshal(res)
-			if err != nil {
-				return err
-			}
-
-			// write token
-			_, err = ctx.ResponseWriter.Write(bytes)
+			// write response
+			err = ctx.Respond(res)
 			if err != nil {
 				return err
 			}

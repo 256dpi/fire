@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/256dpi/fire/coal"
@@ -243,4 +244,21 @@ func (c *Context) Original() (coal.Model, error) {
 	c.Tracer.Pop()
 
 	return c.original, nil
+}
+
+// Respond will encode the provided value as JSON and write it to the client.
+func (c *Context) Respond(value interface{}) error {
+	// encode response
+	bytes, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	// write token
+	_, err = c.ResponseWriter.Write(bytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
