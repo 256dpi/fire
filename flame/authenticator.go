@@ -80,7 +80,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		defer stack.Resume(func(err error) {
 			// directly write oauth2 errors
 			if oauth2Error, ok := err.(*oauth2.Error); ok {
-				oauth2.WriteError(w, oauth2Error)
+				_ = oauth2.WriteError(w, oauth2Error)
 				return
 			}
 
@@ -95,7 +95,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			}
 
 			// ignore errors caused by writing critical errors
-			oauth2.WriteError(w, oauth2.ServerError(""))
+			_ = oauth2.WriteError(w, oauth2.ServerError(""))
 		})
 
 		// trim and split path
@@ -156,7 +156,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			defer stack.Resume(func(err error) {
 				// directly write bearer errors
 				if bearerError, ok := err.(*bearer.Error); ok {
-					bearer.WriteError(w, bearerError)
+					_ = bearer.WriteError(w, bearerError)
 					return
 				}
 
@@ -171,7 +171,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				}
 
 				// ignore errors caused by writing critical errors
-				bearer.WriteError(w, bearer.ServerError())
+				_ = bearer.WriteError(w, bearer.ServerError())
 			})
 
 			// parse scope
