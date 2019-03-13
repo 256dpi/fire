@@ -113,6 +113,11 @@ func (w *Watcher) Collection(cb func(ctx *fire.Context) map[string]interface{}) 
 				filters = cb(ctx)
 			}
 
+			// check nil map
+			if filters == nil {
+				filters = bson.M{}
+			}
+
 			// get now
 			now := time.Now()
 
