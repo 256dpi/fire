@@ -73,6 +73,7 @@ func main() {
 
 	// add tracer
 	handler = fire.Compose(
+		flame.TokenMigrator(true),
 		fire.RootTracer(),
 		protector,
 		handler,
