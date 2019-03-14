@@ -144,10 +144,6 @@ func createHandler(store *coal.Store, reporter func(error)) http.Handler {
 		g.Endpoint("/v1/api/"),
 	))
 
-	// TODO: Improve organization of max body and cors.
-	// -> max body should be defined by the handlers
-	// -> cors should be handled globally
-
 	return mux
 }
 
