@@ -38,3 +38,16 @@ func (c *Catalog) Add(models ...Model) {
 func (c *Catalog) Find(pluralName string) Model {
 	return c.models[pluralName]
 }
+
+// All returns a list of all registered models.
+func (c *Catalog) All() []Model {
+	// prepare models
+	models := make([]Model, 0, len(c.models))
+
+	// add models
+	for _, model := range c.models {
+		models = append(models, model)
+	}
+
+	return models
+}

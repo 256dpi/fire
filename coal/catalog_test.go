@@ -10,10 +10,14 @@ func TestCatalog(t *testing.T) {
 	c := NewCatalog()
 	assert.Nil(t, c.Find("posts"))
 
-	c.Add(&postModel{})
+	m := &postModel{}
+
+	c.Add(m)
 	assert.NotNil(t, c.Find("posts"))
 
 	assert.PanicsWithValue(t, `coal: model with name "posts" already exists in catalog`, func() {
 		c.Add(&postModel{})
 	})
+
+	assert.Equal(t, []Model{m}, c.All())
 }
