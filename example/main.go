@@ -49,9 +49,6 @@ func main() {
 		panic(err)
 	}
 
-	// create logger
-	reporter := wood.DefaultErrorReporter()
-
 	// check secret
 	if len(secret) < 16 {
 		panic("secret must be at least 16 characters")
@@ -66,7 +63,7 @@ func main() {
 	})
 
 	// create handler
-	handler := createHandler(store, reporter)
+	handler := createHandler(store)
 
 	// configure jaeger tracer
 	configureJaeger()
@@ -112,7 +109,10 @@ func prepareDatabase(store *coal.Store) error {
 	return nil
 }
 
-func createHandler(store *coal.Store, reporter func(error)) http.Handler {
+func createHandler(store *coal.Store) http.Handler {
+	// create reporter
+	reporter := wood.DefaultErrorReporter()
+
 	// create mux
 	mux := http.NewServeMux()
 
@@ -130,7 +130,8 @@ func createHandler(store *coal.Store, reporter func(error)) http.Handler {
 
 	// create & run watcher
 	watcher := spark.NewWatcher(store, spark.DefaultPolicy("watch-secret"))
-	watcher.Watch(&Item{})
+	watcher.Reporter = reporter
+	watcher.Watch(catalog.All()...)
 
 	// create group
 	g := fire.NewGroup()
