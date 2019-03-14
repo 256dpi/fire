@@ -147,7 +147,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				// check if action matches the context
 				if action.Callback.Matcher(ctx) {
 					// limit request body size
-					ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+					LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
 					// call action with context
 					stack.AbortIf(action.Callback.Handler(ctx))

@@ -193,11 +193,11 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// parse document if expected
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
-		// constrain reader
-		r := http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(c.DocumentLimit))
+		// limit request body size
+		LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(c.DocumentLimit))
 
 		// parse document and respect document limit
-		doc, err = jsonapi.ParseDocument(r)
+		doc, err = jsonapi.ParseDocument(ctx.HTTPRequest.Body)
 		stack.AbortIf(err)
 	}
 
@@ -935,7 +935,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	}
 
 	// limit request body size
-	ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
@@ -961,7 +961,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	}
 
 	// limit request body size
-	ctx.HTTPRequest.Body = http.MaxBytesReader(ctx.ResponseWriter, ctx.HTTPRequest.Body, int64(action.BodyLimit))
+	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
 	// load model
 	c.loadModel(ctx)

@@ -28,8 +28,8 @@ func NewProtector(maxBody string, corsOptions cors.Options) func(http.Handler) h
 
 	return func(next http.Handler) http.Handler {
 		return c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// replace read with a limited reader
-			r.Body = http.MaxBytesReader(w, r.Body, int64(fire.DataSize(maxBody)))
+			// limit request body size
+			fire.LimitBody(w, r, int64(fire.DataSize(maxBody)))
 
 			// call next handler
 			next.ServeHTTP(w, r)
