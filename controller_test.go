@@ -3691,7 +3691,7 @@ func TestSoftDelete(t *testing.T) {
 	tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
-		SoftDeleteField: "Deleted",
+		SoftDelete: true,
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,

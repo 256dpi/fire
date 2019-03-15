@@ -31,6 +31,10 @@ func (p *postModel) Validate() error {
 	return nil
 }
 
+func (p *postModel) SoftDeleteField() string {
+	return "Deleted"
+}
+
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
 	Message   string         `json:"message"`

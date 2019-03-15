@@ -120,14 +120,25 @@ type Controller struct {
 	// and relationships that are not writable.
 	SoftProtection bool
 
-	// SoftDeleteField can be set to a model field of type *time.Time that will
-	// be used to soft delete records. The controller will set this field to the
-	// time of deletion instead of removing the document while the API for the
-	// consumer does not change. It is advised to create a TTL index to delete
-	// the documents after a timeout.
-	SoftDeleteField string
+	// SoftDelete can be set to true to enable the soft delete mechanism. The
+	// controller will determine the timestamp field from the provided model.
+	// The controller will automatically set this field to the time of deletion
+	// instead of removing the document while the API for the consumer does not
+	// change. It is advised to create a TTL index to delete the documents after
+	// a timeout.
+	SoftDelete bool
 
 	parser jsonapi.Parser
+}
+
+// The SoftDeletableModel interface can be additionally implemented to support
+// soft deletion using a timestamp field.
+type SoftDeletableModel interface {
+	coal.Model
+
+	// The SoftDeleteField method that should return the name of the timestamp
+	// field.
+	SoftDeleteField() string
 }
 
 func (c *Controller) prepare() {
@@ -177,17 +188,26 @@ func (c *Controller) prepare() {
 		c.DocumentLimit = DataSize("8M")
 	}
 
-	// check soft delete field
-	if c.SoftDeleteField != "" {
-		// get field
-		field, ok := c.Model.Meta().Fields[c.SoftDeleteField]
+	// check soft delete
+	if c.SoftDelete {
+		// coerce model
+		sdm, ok := c.Model.(SoftDeletableModel)
 		if !ok {
-			panic(fmt.Sprintf(`fire: missing soft delete field "%s" for model "%s"`, c.SoftDeleteField, c.Model.Meta().Name))
+			panic(fmt.Sprintf(`fire: model "%s" does not support soft delete`, c.Model.Meta().Name))
+		}
+
+		// get field name
+		fieldName := sdm.SoftDeleteField()
+
+		// get field
+		field, ok := c.Model.Meta().Fields[fieldName]
+		if !ok {
+			panic(fmt.Sprintf(`fire: missing soft delete field "%s" for model "%s"`, fieldName, c.Model.Meta().Name))
 		}
 
 		// check field type
 		if field.Type.String() != "*time.Time" {
-			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, c.SoftDeleteField, c.Model.Meta().Name))
+			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, fieldName, c.Model.Meta().Name))
 		}
 	}
 }
@@ -468,13 +488,16 @@ func (c *Controller) deleteResource(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// soft delete or remove model
-	if c.SoftDeleteField != "" {
+	if c.SoftDelete {
+		// get soft delete field
+		softDeleteField := c.Model.(SoftDeletableModel).SoftDeleteField()
+
 		// soft delete model
 		ctx.Tracer.Push("mgo/Collection.UpdateId")
 		ctx.Tracer.Tag("model", ctx.Model)
 		stack.AbortIf(ctx.Store.C(c.Model).UpdateId(ctx.Model.ID(), bson.M{
 			"$set": bson.M{
-				coal.F(c.Model, c.SoftDeleteField): time.Now(),
+				coal.F(c.Model, softDeleteField): time.Now(),
 			},
 		}))
 		ctx.Tracer.Pop()
@@ -1058,8 +1081,12 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)
 
 	// filter out deleted records if configured
-	if c.SoftDeleteField != "" {
-		ctx.Selector[coal.F(c.Model, c.SoftDeleteField)] = nil
+	if c.SoftDelete {
+		// get soft delete field
+		softDeleteField := c.Model.(SoftDeletableModel).SoftDeleteField()
+
+		// set filter
+		ctx.Selector[coal.F(c.Model, softDeleteField)] = nil
 	}
 
 	// run authorizers
@@ -1090,8 +1117,12 @@ func (c *Controller) loadModels(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.loadModels")
 
 	// filter out deleted records if configured
-	if c.SoftDeleteField != "" {
-		ctx.Selector[coal.F(c.Model, c.SoftDeleteField)] = nil
+	if c.SoftDelete {
+		// get soft delete field
+		softDeleteField := c.Model.(SoftDeletableModel).SoftDeleteField()
+
+		// set filter
+		ctx.Selector[coal.F(c.Model, softDeleteField)] = nil
 	}
 
 	// add filters
@@ -1496,8 +1527,12 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 
 			// exclude soft deleted records
-			if rc.SoftDeleteField != "" {
-				query[coal.F(rc.Model, rc.SoftDeleteField)] = nil
+			if rc.SoftDelete {
+				// get soft delete field
+				softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
+
+				// set filter
+				query[coal.F(rc.Model, softDeleteField)] = nil
 			}
 
 			// load all referenced ids
@@ -1550,8 +1585,12 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			}
 
 			// exclude soft deleted records
-			if rc.SoftDeleteField != "" {
-				query[coal.F(rc.Model, rc.SoftDeleteField)] = nil
+			if rc.SoftDelete {
+				// get soft delete field
+				softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
+
+				// set filter
+				query[coal.F(rc.Model, softDeleteField)] = nil
 			}
 
 			// load all referenced ids
