@@ -158,7 +158,7 @@ func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller 
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
 		SoftProtection:  true,
-		SoftDeleteField: "Deleted",
+		SoftDelete: true,
 		CollectionActions: fire.M{
 			"watch": watcher.Collection(nil),
 		},

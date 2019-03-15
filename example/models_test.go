@@ -3,7 +3,9 @@ package main
 import (
 	"testing"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,4 +17,6 @@ func TestEnsureIndexes(t *testing.T) {
 
 func TestItem(t *testing.T) {
 	coal.Init(&Item{})
+	var _ fire.ValidatableModel = &Item{}
+	var _ fire.SoftDeletableModel = &Item{}
 }

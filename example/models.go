@@ -43,7 +43,7 @@ type Item struct {
 	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at"`
 }
 
-// Validate will validate the model.
+// Validate implements the fire.ValidatableModel interface.
 func (i *Item) Validate() error {
 	// check name
 	if utf8.RuneCountInString(i.Name) < 1 {
@@ -56,4 +56,9 @@ func (i *Item) Validate() error {
 	}
 
 	return nil
+}
+
+// SoftDeleteField implements the fire.SoftDeletableModel interface.
+func (i *Item) SoftDeleteField() string {
+	return "Deleted"
 }
