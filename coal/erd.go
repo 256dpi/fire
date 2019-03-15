@@ -6,8 +6,8 @@ import (
 	"sort"
 )
 
-// Visualize emits a string in dot format that when put through graphviz
-// visualizes the model dependencies.
+// Visualize emits a string in dot format which when rendered with graphviz
+// visualizes the models and their relationships.
 func (c *Catalog) Visualize(title string) string {
 	// prepare buffer
 	var out bytes.Buffer

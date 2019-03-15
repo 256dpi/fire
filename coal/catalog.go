@@ -9,13 +9,15 @@ type Catalog struct {
 
 // NewCatalog will create a new catalog.
 func NewCatalog(models ...Model) *Catalog {
-	g := &Catalog{
+	// create catalog
+	c := &Catalog{
 		models: make(map[string]Model),
 	}
 
-	g.Add(models...)
+	// add models
+	c.Add(models...)
 
-	return g
+	return c
 }
 
 // Add will add the specified models to the catalog.

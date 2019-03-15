@@ -14,8 +14,9 @@ func C(m Model) string {
 }
 
 // F is a short-hand function to extract the database BSON field name of a model
-// field. F will panic if no field has been found. Additionally, it supports the
-// "-" prefix for retrieving descending sort keys.
+// field. Additionally, it supports the "-" prefix for retrieving sort keys.
+//
+// Note: F will panic if no field has been found.
 func F(m Model, field string) string {
 	// check if prefixed
 	prefixed := strings.HasPrefix(field, "-")
@@ -32,18 +33,19 @@ func F(m Model, field string) string {
 	}
 
 	// get field
-	_field := f.BSONField
+	bsonField := f.BSONField
 
 	// prefix field again
 	if prefixed {
-		_field = "-" + _field
+		bsonField = "-" + bsonField
 	}
 
-	return _field
+	return bsonField
 }
 
 // A is a short-hand function to extract the attribute JSON key of a model field.
-// A will panic if no field has been found.
+//
+// Note: A will panic if no field has been found.
 func A(m Model, field string) string {
 	// find field
 	f := Init(m).Meta().Fields[field]
@@ -55,7 +57,8 @@ func A(m Model, field string) string {
 }
 
 // R is a short-hand function to extract the relationship name of a model field.
-// R will panic if no field has been found.
+//
+// Note: R will panic if no field has been found.
 func R(m Model, field string) string {
 	// find field
 	f := Init(m).Meta().Fields[field]
@@ -76,7 +79,7 @@ func N() *bson.ObjectId {
 	return nil
 }
 
-// T is a short-hand function to get a pointer to a timestamp.
+// T is a short-hand function to get a pointer of a timestamp.
 func T(t time.Time) *time.Time {
 	return &t
 }

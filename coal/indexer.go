@@ -11,7 +11,7 @@ type index struct {
 	index mgo.Index
 }
 
-// An Indexer can be used to ensure indexes for models.
+// An Indexer can be used to manage indexes for models.
 type Indexer struct {
 	indexes []index
 }
