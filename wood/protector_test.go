@@ -17,7 +17,7 @@ func TestProtectorBodyOverflow(t *testing.T) {
 		assert.Error(t, err)
 
 		w.WriteHeader(http.StatusContinue)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 	h := p(e)
 
@@ -35,7 +35,7 @@ func TestProtectorCORS(t *testing.T) {
 	p := DefaultProtector()
 	e := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusContinue)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 	h := p(e)
 

@@ -30,7 +30,7 @@ func NewAssetServer(prefix, directory string) http.Handler {
 		if err != nil {
 			r.URL.Path = "/"
 		} else if f != nil {
-			f.Close()
+			_ = f.Close()
 		}
 
 		// serve file

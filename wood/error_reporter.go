@@ -16,8 +16,8 @@ func DefaultErrorReporter() func(error) {
 // traces to the specified writer.
 func NewErrorReporter(out io.Writer) func(error) {
 	return func(err error) {
-		fmt.Fprintf(out, "===> Begin Error: %s\n", err.Error())
-		out.Write(debug.Stack())
-		fmt.Fprintln(out, "<=== End Error")
+		_, _ = fmt.Fprintf(out, "===> Begin Error: %s\n", err.Error())
+		_, _ = out.Write(debug.Stack())
+		_, _ = fmt.Fprintln(out, "<=== End Error")
 	}
 }
