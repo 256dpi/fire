@@ -7,8 +7,8 @@ import (
 )
 
 func TestIndexerEnsure(t *testing.T) {
-	store := MustCreateStore("mongodb://localhost/test-coal")
-	store.session.DB("").DropDatabase()
+	store := MustCreateStore("mongodb://0.0.0.0/test-coal")
+	_ = store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()
 	indexer.Add(&postModel{}, false, false, "Title")
@@ -17,12 +17,12 @@ func TestIndexerEnsure(t *testing.T) {
 	err := indexer.Ensure(store)
 	assert.NoError(t, err)
 
-	store.session.DB("").DropDatabase()
+	_ = store.session.DB("").DropDatabase()
 }
 
 func TestIndexerEnsureError(t *testing.T) {
-	store := MustCreateStore("mongodb://localhost/test-coal")
-	store.session.DB("").DropDatabase()
+	store := MustCreateStore("mongodb://0.0.0.0/test-coal")
+	_ = store.session.DB("").DropDatabase()
 
 	indexer := NewIndexer()
 	indexer.Add(&postModel{}, true, false, "Published")
@@ -34,5 +34,5 @@ func TestIndexerEnsureError(t *testing.T) {
 	indexer.Add(&postModel{}, false, false, "Published")
 	assert.Error(t, indexer.Ensure(store))
 
-	store.session.DB("").DropDatabase()
+	_ = store.session.DB("").DropDatabase()
 }
