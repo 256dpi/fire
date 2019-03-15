@@ -7,7 +7,6 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,11 +37,7 @@ func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&AccessToken{}, false, false, 0, "ResourceOwner")
 
 	if autoExpire {
-		i.AddRaw(coal.C(&AccessToken{}), mgo.Index{
-			Key:         []string{coal.F(&AccessToken{}, "ExpiresAt")},
-			ExpireAfter: time.Minute,
-			Background:  true,
-		})
+		i.Add(&AccessToken{}, false, false, time.Minute, "ExpiresAt")
 	}
 }
 
@@ -91,11 +86,7 @@ func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&RefreshToken{}, false, false, 0, "ResourceOwner")
 
 	if autoExpire {
-		i.AddRaw(coal.C(&RefreshToken{}), mgo.Index{
-			Key:         []string{coal.F(&RefreshToken{}, "ExpiresAt")},
-			ExpireAfter: time.Minute,
-			Background:  true,
-		})
+		i.Add(&RefreshToken{}, false, false, time.Minute, "ExpiresAt")
 	}
 }
 

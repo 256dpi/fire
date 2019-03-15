@@ -21,7 +21,7 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 
 	authorizer := auth.Authorizer("foo", force, true, true)
 	router.Handle("/api/protected", authorizer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})))
 
 	return router
@@ -38,15 +38,16 @@ func mustHash(password string) []byte {
 
 func TestMain(m *testing.M) {
 	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
-	defer tr.Close()
 
 	tracer, closer := jaeger.NewTracer("test-flame",
 		jaeger.NewConstSampler(true),
 		jaeger.NewRemoteReporter(tr),
 	)
-	defer closer.Close()
 
 	opentracing.SetGlobalTracer(tracer)
 
 	m.Run()
+
+	_ = closer.Close()
+	_ = tr.Close()
 }

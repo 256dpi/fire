@@ -17,7 +17,7 @@ func TestTokenMigrator(t *testing.T) {
 		assert.Equal(t, "Bearer foo", r.Header.Get("Authorization"))
 		assert.Equal(t, "", r.URL.Query().Get("access_token"))
 
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 
 	tester.Request("GET", "foo?access_token=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {

@@ -14,7 +14,7 @@ import (
 // remove the migrated query parameter from the request.
 //
 // Note: The TokenMigrator should be added before any logger in the middleware
-// chain to successfully protect the access_token from being exposed.
+// chain to successfully protect the access token from being exposed.
 func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

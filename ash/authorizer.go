@@ -30,7 +30,7 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 	}
 }
 
-// S is a short-hand for set of enforcers.
+// S is a short-hand for a set of enforcers.
 type S []*Enforcer
 
 // Handler is a function that inspects an operation context and eventually
