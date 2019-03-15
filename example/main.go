@@ -62,19 +62,16 @@ func main() {
 		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE"},
 	})
 
-	// create handler
-	handler := createHandler(store)
-
-	// configure jaeger tracer
-	configureJaeger()
-
-	// add tracer
-	handler = fire.Compose(
+	// compose handler
+	handler := fire.Compose(
 		flame.TokenMigrator(true),
 		fire.RootTracer(),
 		protector,
-		handler,
+		createHandler(store),
 	)
+
+	// configure jaeger tracer
+	configureJaeger()
 
 	// run http server
 	fmt.Printf("Running on http://0.0.0.0:%d\n", port)
