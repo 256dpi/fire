@@ -12,7 +12,7 @@ import (
 	"github.com/uber/jaeger-client-go/transport"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://localhost/test-ash"))
+var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-ash"))
 
 func blank() *Authorizer {
 	return A("blank", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {

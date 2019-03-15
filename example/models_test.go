@@ -8,7 +8,7 @@ import (
 )
 
 func TestEnsureIndexes(t *testing.T) {
-	store := coal.MustCreateStore("mongodb://localhost/fire-example-test")
+	store := coal.MustCreateStore("mongodb://0.0.0.0/fire-example-test")
 	assert.NoError(t, EnsureIndexes(store))
 	assert.NoError(t, EnsureIndexes(store))
 }
