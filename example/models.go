@@ -38,7 +38,7 @@ func EnsureIndexes(store *coal.Store) error {
 	return nil
 }
 
-// An Entry represents an instance of content.
+// Item represents a general item.
 type Item struct {
 	coal.Base `json:"-" bson:",inline" coal:"items"`
 	Name      string     `json:"name"`

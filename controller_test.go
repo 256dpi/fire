@@ -3689,8 +3689,8 @@ func TestSoftDelete(t *testing.T) {
 	tester.Clean()
 
 	tester.Assign("", &Controller{
-		Model: &postModel{},
-		Store: tester.Store,
+		Model:      &postModel{},
+		Store:      tester.Store,
 		SoftDelete: true,
 	}, &Controller{
 		Model: &commentModel{},

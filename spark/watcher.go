@@ -22,7 +22,7 @@ type Watcher struct {
 	Reporter func(error)
 }
 
-// NewWatch creates and returns a new watcher.
+// NewWatcher creates and returns a new watcher.
 func NewWatcher(store *coal.Store, policy *Policy) *Watcher {
 	// prepare watcher
 	w := &Watcher{
@@ -94,7 +94,8 @@ func (w *Watcher) watch(store *coal.SubStore, model coal.Model) error {
 	}
 
 	// close stream and check error
-	if err := cs.Close(); err != nil {
+	err = cs.Close()
+	if err != nil {
 		return err
 	}
 

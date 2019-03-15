@@ -147,8 +147,8 @@ func createHandler(store *coal.Store) http.Handler {
 
 func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller {
 	return &fire.Controller{
-		Model:   &Item{},
-		Store:   store,
+		Model: &Item{},
+		Store: store,
 		Validators: fire.L{
 			// set timestamps
 			fire.TimestampValidator("Created", ""),
@@ -157,8 +157,8 @@ func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller 
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
-		SoftProtection:  true,
-		SoftDelete: true,
+		SoftProtection: true,
+		SoftDelete:     true,
 		CollectionActions: fire.M{
 			"watch": watcher.Collection(nil),
 		},
