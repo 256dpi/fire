@@ -3,6 +3,7 @@ package coal
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/globalsign/mgo/bson"
 )
@@ -73,6 +74,11 @@ func P(id bson.ObjectId) *bson.ObjectId {
 // N is a short-hand function to get a typed nil object id pointer.
 func N() *bson.ObjectId {
 	return nil
+}
+
+// T is a short-hand function to get a pointer to a timestamp.
+func T(t time.Time) *time.Time {
+	return &t
 }
 
 // Unique is a helper to get a unique list of object ids.

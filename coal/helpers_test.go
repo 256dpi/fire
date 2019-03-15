@@ -2,6 +2,7 @@ package coal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
@@ -45,6 +46,12 @@ func TestN(t *testing.T) {
 	var id *bson.ObjectId
 	assert.Equal(t, id, N())
 	assert.NotEqual(t, nil, N())
+}
+
+func TestT(t *testing.T) {
+	t1 := time.Now()
+	t2 := T(t1)
+	assert.Equal(t, t1, *t2)
 }
 
 func TestUnique(t *testing.T) {
