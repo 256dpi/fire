@@ -3684,3 +3684,150 @@ func TestResourceActions(t *testing.T) {
 		assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 }
+
+func TestSoftDelete(t *testing.T) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+		SoftDeleteField: "Deleted",
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	id := tester.Save(&postModel{
+		Title: "Post 1",
+	}).ID().Hex()
+
+	// get list of posts
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [
+				{
+					"type": "posts",
+					"id": "`+id+`",
+					"attributes": {
+						"title": "Post 1",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+id+`/relationships/comments",
+								"related": "/posts/`+id+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+id+`/relationships/selections",
+								"related": "/posts/`+id+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+id+`/relationships/note",
+								"related": "/posts/`+id+`/note"
+							}
+						}
+					}
+				}
+			],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get single post
+	tester.Request("GET", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+id+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": ""
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/comments",
+							"related": "/posts/`+id+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/selections",
+							"related": "/posts/`+id+`/selections"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+id+`/relationships/note",
+							"related": "/posts/`+id+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// delete post
+	tester.Request("DELETE", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// check post
+	post := tester.FindLast(&postModel{}).(*postModel)
+	assert.NotNil(t, post)
+	assert.NotNil(t, post.Deleted)
+
+	// get empty list of posts
+	tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data":[],
+			"links": {
+				"self": "/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// get missing post
+	tester.Request("GET", "posts/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "404",
+					"title": "Not Found",
+					"detail": "resource not found"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// TODO: Test has one and has many relationships.
+}

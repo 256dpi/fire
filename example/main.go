@@ -151,13 +151,14 @@ func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller 
 		Store:   store,
 		Validators: fire.L{
 			// set timestamps
-			fire.TimestampValidator("CreatedAt", ""),
+			fire.TimestampValidator("Created", ""),
 
 			// basic model & relationship validations
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
-		SoftProtection: true,
+		SoftProtection:  true,
+		SoftDeleteField: "Deleted",
 		CollectionActions: fire.M{
 			"watch": watcher.Collection(nil),
 		},

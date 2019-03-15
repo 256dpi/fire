@@ -2,6 +2,7 @@ package fire
 
 import (
 	"testing"
+	"time"
 
 	"github.com/256dpi/fire/coal"
 
@@ -16,6 +17,7 @@ type postModel struct {
 	Title      string       `json:"title" bson:"title"`
 	Published  bool         `json:"published"`
 	TextBody   string       `json:"text-body" bson:"text_body"`
+	Deleted    *time.Time   `json:"-" bson:"deleted_at"`
 	Comments   coal.HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections coal.HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
 	Note       coal.HasOne  `json:"-" bson:"-" coal:"note:notes:post"`

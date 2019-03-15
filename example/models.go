@@ -38,8 +38,9 @@ func EnsureIndexes(store *coal.Store) error {
 // An Entry represents an instance of content.
 type Item struct {
 	coal.Base `json:"-" bson:",inline" coal:"items"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created-at" bson:"created_at"`
+	Name      string     `json:"name"`
+	Created   time.Time  `json:"created-at" bson:"created_at"`
+	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at"`
 }
 
 // Validate will validate the model.
@@ -50,7 +51,7 @@ func (i *Item) Validate() error {
 	}
 
 	// check created at
-	if i.CreatedAt.IsZero() {
+	if i.Created.IsZero() {
 		return fire.E("missing timestamp")
 	}
 

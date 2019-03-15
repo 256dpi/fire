@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/256dpi/fire/coal"
 
@@ -119,6 +120,13 @@ type Controller struct {
 	// and relationships that are not writable.
 	SoftProtection bool
 
+	// SoftDeleteField can be set to a model field of type *time.Time that will
+	// be used to soft delete records. The controller will set this field to the
+	// time of deletion instead of removing the document while the API for the
+	// consumer does not change. It is advised to create a TTL index to delete
+	// the documents after a timeout.
+	SoftDeleteField string
+
 	parser jsonapi.Parser
 }
 
@@ -167,6 +175,20 @@ func (c *Controller) prepare() {
 	// set default document limit
 	if c.DocumentLimit == 0 {
 		c.DocumentLimit = DataSize("8M")
+	}
+
+	// check soft delete field
+	if c.SoftDeleteField != "" {
+		// get field
+		field, ok := c.Model.Meta().Fields[c.SoftDeleteField]
+		if !ok {
+			panic(fmt.Sprintf(`fire: missing soft delete field "%s" for model "%s"`, c.SoftDeleteField, c.Model.Meta().Name))
+		}
+
+		// check field type
+		if field.Type.String() != "*time.Time" {
+			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, c.SoftDeleteField, c.Model.Meta().Name))
+		}
 	}
 }
 
@@ -445,11 +467,24 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
-	// remove model
-	ctx.Tracer.Push("mgo/Collection.RemoveId")
-	ctx.Tracer.Tag("model", ctx.Model)
-	stack.AbortIf(ctx.Store.C(c.Model).RemoveId(ctx.Model.ID()))
-	ctx.Tracer.Pop()
+	// soft delete or remove model
+	if c.SoftDeleteField != "" {
+		// soft delete model
+		ctx.Tracer.Push("mgo/Collection.UpdateId")
+		ctx.Tracer.Tag("model", ctx.Model)
+		stack.AbortIf(ctx.Store.C(c.Model).UpdateId(ctx.Model.ID(), bson.M{
+			"$set": bson.M{
+				coal.F(c.Model, c.SoftDeleteField): time.Now(),
+			},
+		}))
+		ctx.Tracer.Pop()
+	} else {
+		// remove model
+		ctx.Tracer.Push("mgo/Collection.RemoveId")
+		ctx.Tracer.Tag("model", ctx.Model)
+		stack.AbortIf(ctx.Store.C(c.Model).RemoveId(ctx.Model.ID()))
+		ctx.Tracer.Pop()
+	}
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
@@ -1022,6 +1057,11 @@ func (c *Controller) loadModel(ctx *Context) {
 	// set selector query
 	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)
 
+	// filter out deleted records if configured
+	if c.SoftDeleteField != "" {
+		ctx.Selector[coal.F(c.Model, c.SoftDeleteField)] = nil
+	}
+
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
@@ -1048,6 +1088,11 @@ func (c *Controller) loadModel(ctx *Context) {
 func (c *Controller) loadModels(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModels")
+
+	// filter out deleted records if configured
+	if c.SoftDeleteField != "" {
+		ctx.Selector[coal.F(c.Model, c.SoftDeleteField)] = nil
+	}
 
 	// add filters
 	for name, values := range ctx.JSONAPIRequest.Filters {
@@ -1450,6 +1495,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				rel.BSONField: model.ID(),
 			}
 
+			// exclude soft deleted records
+			if rc.SoftDeleteField != "" {
+				query[coal.F(rc.Model, rc.SoftDeleteField)] = nil
+			}
+
 			// load all referenced ids
 			var ids []bson.ObjectId
 			ctx.Tracer.Push("mgo/Query.Distinct")
@@ -1497,6 +1547,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				rel.BSONField: bson.M{
 					"$in": []bson.ObjectId{model.ID()},
 				},
+			}
+
+			// exclude soft deleted records
+			if rc.SoftDeleteField != "" {
+				query[coal.F(rc.Model, rc.SoftDeleteField)] = nil
 			}
 
 			// load all referenced ids
