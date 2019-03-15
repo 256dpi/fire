@@ -179,6 +179,27 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestDependentResourcesValidatorSoftDelete(t *testing.T) {
+	tester.Clean()
+
+	validator := DependentResourcesValidator(map[coal.Model]string{
+		&commentModel{}: "Post",
+	})
+
+	post := &postModel{}
+
+	err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
+	assert.NoError(t, err)
+
+	tester.Save(&commentModel{
+		Post:    post.ID(),
+		Deleted: coal.T(time.Now()),
+	})
+
+	err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
+	assert.NoError(t, err)
+}
+
 func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
@@ -485,4 +506,29 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 
 	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
 	assert.Error(t, err)
+}
+
+func TestUniqueFieldValidatorSoftDelete(t *testing.T) {
+	assert.NotEqual(t, NoZero, 0)
+
+	tester.Clean()
+
+	validator := UniqueFieldValidator("Title", "")
+
+	post1 := tester.Save(&postModel{
+		Title: "foo",
+	}).(*postModel)
+
+	err := tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	assert.NoError(t, err)
+
+	tester.Save(&postModel{
+		Title:   "bar",
+		Deleted: coal.T(time.Now()),
+	})
+
+	post1.Title = "bar"
+
+	err = tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	assert.NoError(t, err)
 }

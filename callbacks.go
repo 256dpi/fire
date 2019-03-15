@@ -236,12 +236,19 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 //		&Comment{}: "Author",
 //	})
 //
+// The callback supports models that use the soft delete mechanism.
 func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 	return C("DependentResourcesValidator", Only(Delete), func(ctx *Context) error {
 		// check all relations
 		for model, field := range pairs {
 			// prepare query
 			query := bson.M{coal.F(model, field): ctx.Model.ID()}
+
+			// exclude soft deleted documents
+			if sdm, ok := model.(SoftDeletableModel); ok {
+				field := sdm.SoftDeleteField()
+				query[coal.F(model, field)] = nil
+			}
 
 			// count referencing documents
 			ctx.Tracer.Push("mgo/Query.Count")
@@ -507,6 +514,8 @@ type noZero int
 //	fire.UniqueFieldValidator("Name", "", "Creator")
 //
 // The special NoZero value can be provided to skip the zero check.
+//
+// The callback supports models that use the soft delete mechanism.
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
 	return C("fire/UniqueFieldValidator", Only(Create, Update), func(ctx *Context) error {
 		// check if field has changed
@@ -539,6 +548,12 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 		// add filters
 		for _, field := range filters {
 			query[coal.F(ctx.Model, field)] = ctx.Model.MustGet(field)
+		}
+
+		// exclude soft deleted documents
+		if sdm, ok := ctx.Model.(SoftDeletableModel); ok {
+			field := sdm.SoftDeleteField()
+			query[coal.F(ctx.Model, field)] = nil
 		}
 
 		// count
