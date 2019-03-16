@@ -42,6 +42,7 @@ func EnsureIndexes(store *coal.Store) error {
 type Item struct {
 	coal.Base `json:"-" bson:",inline" coal:"items"`
 	Name      string     `json:"name"`
+	State     bool       `json:"state"`
 	Created   time.Time  `json:"created-at" bson:"created_at"`
 	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at"`
 }

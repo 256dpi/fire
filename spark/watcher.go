@@ -1,8 +1,6 @@
 package spark
 
 import (
-	"time"
-
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
@@ -14,79 +12,104 @@ import (
 
 // Watcher will watch multiple collections and serve watch requests by clients.
 type Watcher struct {
-	store  *coal.Store
-	hub    *hub
-	policy *Policy
+	hub     *hub
+	streams map[string]*Stream
 
 	// The function gets invoked by the watcher with critical errors.
 	Reporter func(error)
 }
 
 // NewWatcher creates and returns a new watcher.
-func NewWatcher(store *coal.Store, policy *Policy) *Watcher {
+func NewWatcher() *Watcher {
 	// prepare watcher
 	w := &Watcher{
-		store:  store,
-		policy: policy,
+		streams: make(map[string]*Stream),
 	}
 
 	// create and add hub
-	w.hub = newHub(policy, func(err error) {
-		if w.Reporter != nil {
-			w.Reporter(err)
-		}
-	})
+	w.hub = newHub(w)
 
 	return w
 }
 
-// Watch will run the watcher in the background for the specified models.
+// Add will add a stream to the watcher.
+func (w *Watcher) Add(stream *Stream) {
+	// initialize model
+	coal.Init(stream.Model)
+
+	// set name
+	stream.name = stream.Model.Meta().PluralName
+
+	// save stream
+	w.streams[stream.name] = stream
+}
+
+// Run will run the watcher in the background.
 //
 // Note: This method should only called once when booting the application.
-func (w *Watcher) Watch(models ...coal.Model) {
-	// copy store
-	store := w.store.Copy()
-
-	// run watch goroutines
-	for _, m := range models {
-		go w.watcher(store, m)
+func (w *Watcher) Run() {
+	// run watcher goroutines
+	for _, stream := range w.streams {
+		go w.watcher(stream)
 	}
 }
 
-func (w *Watcher) watcher(store *coal.SubStore, model coal.Model) {
+func (w *Watcher) watcher(stream *Stream) {
 	for {
 		// watch forever and call reporter with eventual error
-		err := w.watch(store, model)
+		err := w.watch(stream)
 		if err != nil {
-			w.Reporter(err)
+			// call reporter if available
+			if w.Reporter != nil {
+				w.Reporter(err)
+			}
 		}
 	}
 }
 
-func (w *Watcher) watch(store *coal.SubStore, model coal.Model) error {
+func (w *Watcher) watch(stream *Stream) error {
+	// copy store
+	store := stream.Store.Copy()
+	defer store.Close()
+
 	// start pipeline
-	cs, err := store.C(model).Watch([]bson.M{}, mgo.ChangeStreamOptions{
+	cs, err := store.C(stream.Model).Watch([]bson.M{}, mgo.ChangeStreamOptions{
 		FullDocument: mgo.UpdateLookup,
 	})
 	if err != nil {
 		return err
 	}
 
+	// ensure Stream is closed
+	defer cs.Close()
+
 	// iterate on elements forever
 	var ch change
 	for cs.Next(&ch) {
 		// parse change
-		op, id, ok := ch.parse()
+		typ, id, ok := ch.parse()
 		if !ok {
 			continue
 		}
 
+		// prepare record
+		var record coal.Model
+
+		// unmarshal document for created and updated events
+		if typ != Deleted {
+			record = stream.Model.Meta().Make()
+			err = ch.FullDocument.Unmarshal(record)
+			if err != nil {
+				return err
+			}
+		}
+
 		// create event
-		evt := event{
-			name: model.Meta().PluralName,
-			op:   op,
-			id:   id.Hex(),
-			doc:  ch.FullDocument,
+		evt := &Event{
+			Type:   typ,
+			ID:     id,
+			Model:  record,
+			Stream: stream,
 		}
 
 		// broadcast change
@@ -102,96 +125,14 @@ func (w *Watcher) watch(store *coal.SubStore, model coal.Model) error {
 	return nil
 }
 
-// Collection will return an action that generates watch tokens for the current
-// collection with filters returned by the specified callback.
-func (w *Watcher) Collection(cb func(ctx *fire.Context) map[string]interface{}) *fire.Action {
-	return &fire.Action{
-		Methods: []string{"GET"},
-		Callback: fire.C("spark/Watcher.Collection", fire.All(), func(ctx *fire.Context) error {
-			// get filters if available
-			var filters bson.M
-			if cb != nil {
-				filters = cb(ctx)
-			}
-
-			// check nil map
-			if filters == nil {
-				filters = bson.M{}
-			}
-
-			// get now
-			now := time.Now()
-
-			// get name
-			name := ctx.Controller.Model.Meta().PluralName
-
-			// generate token
-			token, err := w.policy.GenerateToken(name, "", now, now.Add(w.policy.TokenLifespan), filters)
-			if err != nil {
-				return err
-			}
-
-			// prepare response
-			res := map[string]string{
-				"token": token,
-			}
-
-			// write response
-			err = ctx.Respond(res)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}),
-	}
-}
-
-// Resource will return an action that generates watch tokens for the current
-// resource.
-func (w *Watcher) Resource() *fire.Action {
-	return &fire.Action{
-		Methods: []string{"GET"},
-		Callback: fire.C("spark/Watcher.Resource", fire.All(), func(ctx *fire.Context) error {
-			// get id
-			id := ctx.Model.ID()
-
-			// get now
-			now := time.Now()
-
-			// get name
-			name := ctx.Controller.Model.Meta().PluralName
-
-			// generate token
-			token, err := w.policy.GenerateToken(name, id.Hex(), now, now.Add(w.policy.TokenLifespan), nil)
-			if err != nil {
-				return err
-			}
-
-			// prepare response
-			res := map[string]string{
-				"token": token,
-			}
-
-			// write response
-			err = ctx.Respond(res)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}),
-	}
-}
-
-// GroupAction returns an action that should be registered in the group under
+// Action returns an action that should be registered in the group under
 // the "watch" name.
-func (w *Watcher) GroupAction() *fire.Action {
+func (w *Watcher) Action() *fire.Action {
 	return &fire.Action{
 		Methods: []string{"GET"},
-		Callback: fire.C("spark/Watcher.GroupAction", fire.All(), func(ctx *fire.Context) error {
+		Callback: fire.C("spark/Watcher.Action", fire.All(), func(ctx *fire.Context) error {
 			// handle connection
-			w.hub.handle(ctx.ResponseWriter, ctx.HTTPRequest)
+			w.hub.handle(ctx)
 
 			return nil
 		}),
@@ -203,17 +144,17 @@ type change struct {
 	DocumentKey   struct {
 		ID bson.ObjectId `bson:"_id"`
 	} `bson:"documentKey"`
-	FullDocument bson.M `bson:"fullDocument"`
+	FullDocument bson.Raw `bson:"fullDocument"`
 }
 
-func (c change) parse() (string, bson.ObjectId, bool) {
+func (c change) parse() (Type, bson.ObjectId, bool) {
 	// check operation type
 	if c.OperationType == "insert" {
-		return "create", c.DocumentKey.ID, true
+		return Created, c.DocumentKey.ID, true
 	} else if c.OperationType == "replace" || c.OperationType == "update" {
-		return "update", c.DocumentKey.ID, true
+		return Updated, c.DocumentKey.ID, true
 	} else if c.OperationType == "delete" {
-		return "delete", c.DocumentKey.ID, true
+		return Deleted, c.DocumentKey.ID, true
 	}
 
 	return "", "", false

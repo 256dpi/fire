@@ -126,15 +126,16 @@ func createHandler(store *coal.Store) http.Handler {
 	mux.Handle("/v1/auth/", a.Endpoint("/v1/auth/"))
 
 	// create & run watcher
-	watcher := spark.NewWatcher(store, spark.DefaultPolicy("watch-secret"))
+	watcher := spark.NewWatcher()
 	watcher.Reporter = reporter
-	watcher.Watch(catalog.All()...)
+	watcher.Add(itemStream(store))
+	watcher.Run()
 
 	// create group
 	g := fire.NewGroup()
 	g.Reporter = reporter
-	g.Add(itemController(store, watcher))
-	g.Handle("watch", watcher.GroupAction())
+	g.Add(itemController(store))
+	g.Handle("watch", watcher.Action())
 
 	// register group
 	mux.Handle("/v1/api/", fire.Compose(
@@ -145,7 +146,7 @@ func createHandler(store *coal.Store) http.Handler {
 	return mux
 }
 
-func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller {
+func itemController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
 		Model: &Item{},
 		Store: store,
@@ -159,11 +160,24 @@ func itemController(store *coal.Store, watcher *spark.Watcher) *fire.Controller 
 		},
 		SoftProtection: true,
 		SoftDelete:     true,
-		CollectionActions: fire.M{
-			"watch": watcher.Collection(nil),
+	}
+}
+
+func itemStream(store *coal.Store) *spark.Stream {
+	return &spark.Stream{
+		Model: &Item{},
+		Store: store,
+		Validator: func(sub *spark.Subscription) error {
+			// check state
+			if _, ok := sub.Data["state"].(bool); !ok {
+				return fire.E("invalid state")
+			}
+
+			return nil
 		},
-		ResourceActions: fire.M{
-			"watch": watcher.Resource(),
+		Selector: func(event *spark.Event, sub *spark.Subscription) bool {
+			// check insert and update events
+			return event.Model.(*Item).State == sub.Data["state"].(bool)
 		},
 	}
 }

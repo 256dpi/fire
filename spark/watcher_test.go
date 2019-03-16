@@ -2,7 +2,6 @@ package spark
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/gjson"
 )
 
 var tester = fire.NewTester(
@@ -30,64 +28,18 @@ func TestWatcher(t *testing.T) {
 
 	item := tester.Save(&itemModel{}).(*itemModel)
 
-	policy := DefaultPolicy("")
-
-	watcher := NewWatcher(tester.Store, policy)
-	watcher.Watch(&itemModel{})
+	watcher := NewWatcher()
+	watcher.Add(&Stream{
+		Model: &itemModel{},
+		Store: tester.Store,
+	})
+	watcher.Run()
 
 	group := tester.Assign("", &fire.Controller{
 		Model: &itemModel{},
 		Store: tester.Store,
-		CollectionActions: fire.M{
-			"watch": watcher.Collection(func(ctx *fire.Context) map[string]interface{} {
-				// only forward changes for "bar" models
-				return map[string]interface{}{
-					coal.F(&itemModel{}, "Bar"): "bar",
-				}
-			}),
-		},
-		ResourceActions: fire.M{
-			"watch": watcher.Resource(),
-		},
 	})
-
-	group.Handle("watch", watcher.GroupAction())
-
-	/* get watch tokens */
-
-	var collectionWatchToken string
-	tester.Request("GET", "items/watch", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-
-		token := gjson.Get(r.Body.String(), "token").String()
-
-		claims, ok, err := policy.ParseToken(token)
-		assert.NoError(t, err)
-		assert.False(t, ok)
-		assert.Equal(t, "items", claims.Subject)
-		assert.Equal(t, "", claims.Id)
-		assert.Equal(t, map[string]interface{}{
-			"bar": "bar",
-		}, claims.Data)
-
-		collectionWatchToken = token
-	})
-
-	var resourceWatchToken string
-	tester.Request("GET", "items/"+item.ID().Hex()+"/watch", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-
-		token := gjson.Get(r.Body.String(), "token").String()
-
-		claims, ok, err := policy.ParseToken(token)
-		assert.NoError(t, err)
-		assert.False(t, ok)
-		assert.Equal(t, "items", claims.Subject)
-		assert.Equal(t, item.ID().Hex(), claims.Id)
-		assert.Equal(t, map[string]interface{}(nil), claims.Data)
-
-		resourceWatchToken = token
-	})
+	group.Handle("watch", watcher.Action())
 
 	/* run server and create client */
 
@@ -103,18 +55,11 @@ func TestWatcher(t *testing.T) {
 
 	defer ws.Close()
 
-	/* subscribe watch tokens */
+	/* subscribe */
 
 	err = ws.WriteMessage(websocket.TextMessage, []byte(`{
 		"subscribe": {
-			"1": "`+collectionWatchToken+`"
-		}
-	}`))
-	assert.NoError(t, err)
-
-	err = ws.WriteMessage(websocket.TextMessage, []byte(`{
-		"subscribe": {
-			"2": "`+resourceWatchToken+`"
+			"items": {}
 		}
 	}`))
 	assert.NoError(t, err)
@@ -132,7 +77,7 @@ func TestWatcher(t *testing.T) {
 	assert.Equal(t, websocket.TextMessage, typ)
 	assert.JSONEq(t, `{
 		"items": {
-			"`+itm.ID().Hex()+`": "create"
+			"`+itm.ID().Hex()+`": "created"
 		}
 	}`, string(bytes))
 
@@ -147,20 +92,9 @@ func TestWatcher(t *testing.T) {
 	assert.Equal(t, websocket.TextMessage, typ)
 	assert.JSONEq(t, `{
 		"items": {
-			"`+itm.ID().Hex()+`": "update"
+			"`+itm.ID().Hex()+`": "updated"
 		}
 	}`, string(bytes))
-
-	/* unsubscribe watch token */
-
-	err = ws.WriteMessage(websocket.TextMessage, []byte(`{
-		"unsubscribe": ["1"]
-	}`))
-	assert.NoError(t, err)
-
-	itm.Foo = "baz"
-
-	tester.Update(itm)
 
 	/* delete model */
 
@@ -171,7 +105,7 @@ func TestWatcher(t *testing.T) {
 	assert.Equal(t, websocket.TextMessage, typ)
 	assert.JSONEq(t, `{
 		"items": {
-			"`+item.ID().Hex()+`": "delete"
+			"`+item.ID().Hex()+`": "deleted"
 		}
 	}`, string(bytes))
 }

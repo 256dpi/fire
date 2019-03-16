@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"reflect"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
+	"github.com/256dpi/fire"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -25,31 +25,17 @@ const (
 	receiveTimeout = 90 * time.Second
 )
 
-type queue chan event
+type queue chan *Event
 
 type request struct {
-	Subscribe   map[string]string `json:"subscribe"`
-	Unsubscribe []string          `json:"unsubscribe"`
-}
-
-type subscription struct {
-	name    string
-	id      string
-	filters map[string]interface{}
-}
-
-type event struct {
-	name string
-	op   string
-	id   string
-	doc  bson.M
+	Subscribe   map[string]Map `json:"subscribe"`
+	Unsubscribe []string       `json:"unsubscribe"`
 }
 
 type response map[string]map[string]string
 
 type hub struct {
-	policy   *Policy
-	reporter func(error)
+	watcher *Watcher
 
 	upgrader    *websocket.Upgrader
 	subscribe   chan queue
@@ -57,11 +43,10 @@ type hub struct {
 	unsubscribe chan queue
 }
 
-func newHub(policy *Policy, reporter func(error)) *hub {
+func newHub(w *Watcher) *hub {
 	// create hub
 	h := &hub{
-		policy:      policy,
-		reporter:    reporter,
+		watcher:     w,
 		upgrader:    &websocket.Upgrader{},
 		subscribe:   make(chan queue),
 		messages:    make(queue, 10),
@@ -107,7 +92,7 @@ func (h *hub) run() {
 	}
 }
 
-func (h *hub) broadcast(evt event) {
+func (h *hub) broadcast(evt *Event) {
 	// send message
 	select {
 	case h.messages <- evt:
@@ -116,14 +101,16 @@ func (h *hub) broadcast(evt event) {
 	}
 }
 
-func (h *hub) handle(w http.ResponseWriter, r *http.Request) {
+func (h *hub) handle(ctx *fire.Context) {
 	// try to upgrade connection
-	conn, err := h.upgrader.Upgrade(w, r, nil)
+	conn, err := h.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
 		// upgrader already responded with an error
 
-		// call reporter
-		h.reporter(err)
+		// call reporter if available
+		if h.watcher.Reporter != nil {
+			h.watcher.Reporter(err)
+		}
 
 		return
 	}
@@ -138,17 +125,19 @@ func (h *hub) handle(w http.ResponseWriter, r *http.Request) {
 	h.subscribe <- q
 
 	// process (reuse current goroutine)
-	err = h.process(conn, q)
+	err = h.process(ctx, conn, q)
 	if err != nil {
-		// call reporter
-		h.reporter(err)
+		// call reporter if available
+		if h.watcher.Reporter != nil {
+			h.watcher.Reporter(err)
+		}
 	}
 
 	// unsubscribe queue
 	h.unsubscribe <- q
 }
 
-func (h *hub) process(conn *websocket.Conn, queue queue) error {
+func (h *hub) process(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
@@ -205,7 +194,7 @@ func (h *hub) process(conn *websocket.Conn, queue queue) error {
 	}()
 
 	// prepare registry
-	reg := map[string]subscription{}
+	reg := map[string]*Subscription{}
 
 	// run writer
 	for {
@@ -213,41 +202,55 @@ func (h *hub) process(conn *websocket.Conn, queue queue) error {
 		// wait for a request
 		case req := <-inc:
 			// handle subscriptions
-			for key, token := range req.Subscribe {
-				// parse token
-				claims, expired, err := h.policy.ParseToken(token)
-				if err != nil {
-					return err
+			for name, data := range req.Subscribe {
+				// get stream
+				stream, ok := h.watcher.streams[name]
+				if !ok {
+					return errors.New("invalid subscription")
 				}
 
-				// continue if expired
-				if expired {
-					continue
+				// prepare subscription
+				sub := &Subscription{
+					Context: ctx,
+					Data:    data,
+					Stream:  stream,
+				}
+
+				// validate subscription if available
+				if stream.Validator != nil {
+					err := stream.Validator(sub)
+					if err != nil {
+						return err
+					}
 				}
 
 				// add subscription
-				reg[key] = subscription{
-					name:    claims.Subject,
-					id:      claims.Id,
-					filters: claims.Data,
-				}
+				reg[name] = sub
 			}
 
 			// handle unsubscriptions
-			for _, key := range req.Unsubscribe {
-				delete(reg, key)
+			for _, name := range req.Unsubscribe {
+				delete(reg, name)
 			}
 		// wait for message to send
 		case evt := <-queue:
-			// continue if event is not matched
-			if !match(evt, reg) {
+			// get subscription
+			sub, ok := reg[evt.Stream.name]
+			if !ok {
 				continue
+			}
+
+			// run selector if present
+			if evt.Stream.Selector != nil {
+				if !evt.Stream.Selector(evt, sub) {
+					continue
+				}
 			}
 
 			// create response
 			res := response{
-				evt.name: {
-					evt.id: evt.op,
+				evt.Stream.name: {
+					evt.ID.Hex(): string(evt.Type),
 				},
 			}
 
@@ -280,49 +283,4 @@ func (h *hub) process(conn *websocket.Conn, queue queue) error {
 			return err
 		}
 	}
-}
-
-func match(evt event, reg map[string]subscription) bool {
-	// check all subscriptions
-	for _, sub := range reg {
-		// continue if name does not match sub
-		if evt.name != sub.name {
-			continue
-		}
-
-		// check if resource sub
-		if sub.id != "" {
-			// return immediately if sub matches id
-			if evt.id == sub.id {
-				return true
-			}
-
-			// otherwise continue
-			continue
-		}
-
-		// is collection sub
-
-		// ignore delete operations
-		if evt.op == "delete" {
-			continue
-		}
-
-		// TODO: Improve equality check.
-
-		// check all filters
-		notEqual := false
-		for key, value := range sub.filters {
-			if !reflect.DeepEqual(evt.doc[key], value) {
-				notEqual = true
-			}
-		}
-
-		// return true if fields are equal
-		if !notEqual {
-			return true
-		}
-	}
-
-	return false
 }
