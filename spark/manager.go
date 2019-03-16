@@ -70,22 +70,23 @@ func (m *manager) run() {
 
 	for {
 		select {
-		// handle queue subscription
+		// handle subscribes
 		case q := <-m.subscribes:
 			// store queue
 			queues[q] = true
-		// handle message
-		case message := <-m.events:
+		// handle events
+		case e := <-m.events:
 			// add message to all queues
 			for q := range queues {
 				select {
-				case q <- message:
+				case q <- e:
 				default:
-					// skip if channel is full or closed
-					// TODO: Close queue.
+					// close and delete queue
+					close(q)
+					delete(queues, q)
 				}
 			}
-		// handle queue unsubscription
+		// handle unsubscribes
 		case q := <-m.unsubscribes:
 			// delete queue
 			delete(queues, q)
@@ -232,7 +233,12 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 				delete(reg, name)
 			}
 		// wait for message to send
-		case evt := <-queue:
+		case evt, ok := <-queue:
+			// check if closed
+			if !ok {
+				return errors.New("closed")
+			}
+
 			// get subscription
 			sub, ok := reg[evt.Stream.name]
 			if !ok {
