@@ -97,8 +97,6 @@ func (m *manager) run() {
 func (m *manager) broadcast(evt *Event) {
 	// queue event
 	m.events <- evt
-
-	// TODO: Log error if enqueuing takes too long?
 }
 
 func (m *manager) handle(ctx *fire.Context) {
@@ -149,8 +147,8 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 	// prepare read error channel
 	readErr := make(chan error, 1)
 
-	// prepare incoming channel
-	inc := make(chan request, 10)
+	// prepare requests channel
+	reqs := make(chan request, 10)
 
 	// run reader
 	go func() {
@@ -178,7 +176,7 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 				return
 			}
 
-			// decode message
+			// decode request
 			var req request
 			err = json.Unmarshal(bytes, &req)
 			if err != nil {
@@ -186,10 +184,8 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 				return
 			}
 
-			// TODO: Add timeout.
-
 			// forward request
-			inc <- req
+			reqs <- req
 		}
 	}()
 
@@ -199,8 +195,8 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 	// run writer
 	for {
 		select {
-		// wait for a request
-		case req := <-inc:
+		// handle request
+		case req := <-reqs:
 			// handle subscriptions
 			for name, data := range req.Subscribe {
 				// get stream
@@ -232,7 +228,7 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 			for _, name := range req.Unsubscribe {
 				delete(reg, name)
 			}
-		// wait for message to send
+		// handle events
 		case evt, ok := <-queue:
 			// check if closed
 			if !ok {
@@ -270,7 +266,7 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 			if err != nil {
 				return err
 			}
-		// wait for ping timeout
+		// handle pings
 		case <-time.After(pingTimeout):
 			// set write deadline
 			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
@@ -283,7 +279,7 @@ func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) 
 			if err != nil {
 				return err
 			}
-		// exit if on read err
+		// handle errors
 		case err := <-readErr:
 			return err
 		}
