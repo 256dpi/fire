@@ -57,9 +57,13 @@ func (w *Watcher) Run() {
 }
 
 func (w *Watcher) watcher(stream *Stream) {
+	// prepare error and resume token
+	var err error
+	var resumeToken *bson.Raw
+
 	for {
 		// watch forever and call reporter with eventual error
-		err := w.watch(stream)
+		resumeToken, err = w.watch(stream, resumeToken)
 		if err != nil {
 			// call reporter if available
 			if w.Reporter != nil {
@@ -69,7 +73,7 @@ func (w *Watcher) watcher(stream *Stream) {
 	}
 }
 
-func (w *Watcher) watch(stream *Stream) error {
+func (w *Watcher) watch(stream *Stream, resumeToken *bson.Raw) (*bson.Raw, error) {
 	// copy store
 	store := stream.Store.Copy()
 	defer store.Close()
@@ -77,9 +81,10 @@ func (w *Watcher) watch(stream *Stream) error {
 	// start pipeline
 	cs, err := store.C(stream.Model).Watch([]bson.M{}, mgo.ChangeStreamOptions{
 		FullDocument: mgo.UpdateLookup,
+		ResumeAfter:  resumeToken,
 	})
 	if err != nil {
-		return err
+		return resumeToken, err
 	}
 
 	// ensure Stream is closed
@@ -116,7 +121,7 @@ func (w *Watcher) watch(stream *Stream) error {
 			record = stream.Model.Meta().Make()
 			err = ch.FullDocument.Unmarshal(record)
 			if err != nil {
-				return err
+				return resumeToken, err
 			}
 
 			// init record
@@ -147,15 +152,18 @@ func (w *Watcher) watch(stream *Stream) error {
 
 		// broadcast change
 		w.hub.broadcast(evt)
+
+		// save resume token
+		resumeToken = &ch.ResumeToken
 	}
 
 	// close stream and check error
 	err = cs.Close()
 	if err != nil {
-		return err
+		return resumeToken, err
 	}
 
-	return nil
+	return resumeToken, nil
 }
 
 // Action returns an action that should be registered in the group under
@@ -173,7 +181,8 @@ func (w *Watcher) Action() *fire.Action {
 }
 
 type change struct {
-	OperationType string `bson:"operationType"`
+	ResumeToken   bson.Raw `bson:"_id"`
+	OperationType string   `bson:"operationType"`
 	DocumentKey   struct {
 		ID bson.ObjectId `bson:"_id"`
 	} `bson:"documentKey"`
