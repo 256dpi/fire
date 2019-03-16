@@ -125,11 +125,10 @@ func createHandler(store *coal.Store) http.Handler {
 	// register authenticator
 	mux.Handle("/v1/auth/", a.Endpoint("/v1/auth/"))
 
-	// create & run watcher
+	// create watcher
 	watcher := spark.NewWatcher()
 	watcher.Reporter = reporter
 	watcher.Add(itemStream(store))
-	watcher.Run()
 
 	// create group
 	g := fire.NewGroup()
