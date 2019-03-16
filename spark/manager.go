@@ -37,20 +37,20 @@ type response map[string]map[string]string
 type manager struct {
 	watcher *Watcher
 
-	upgrader    *websocket.Upgrader
-	subscribe   chan queue
-	messages    queue
-	unsubscribe chan queue
+	upgrader     *websocket.Upgrader
+	subscribes   chan queue
+	events       queue
+	unsubscribes chan queue
 }
 
 func newManager(w *Watcher) *manager {
 	// create manager
 	h := &manager{
-		watcher:     w,
-		upgrader:    &websocket.Upgrader{},
-		subscribe:   make(chan queue, 10),
-		messages:    make(queue, 10),
-		unsubscribe: make(chan queue, 10),
+		watcher:      w,
+		upgrader:     &websocket.Upgrader{},
+		subscribes:   make(chan queue, 10),
+		events:       make(queue, 10),
+		unsubscribes: make(chan queue, 10),
 	}
 
 	// do not check request origin
@@ -71,21 +71,22 @@ func (m *manager) run() {
 	for {
 		select {
 		// handle queue subscription
-		case q := <-m.subscribe:
+		case q := <-m.subscribes:
 			// store queue
 			queues[q] = true
 		// handle message
-		case message := <-m.messages:
+		case message := <-m.events:
 			// add message to all queues
 			for q := range queues {
 				select {
 				case q <- message:
 				default:
 					// skip if channel is full or closed
+					// TODO: Close queue.
 				}
 			}
 		// handle queue unsubscription
-		case q := <-m.unsubscribe:
+		case q := <-m.unsubscribes:
 			// delete queue
 			delete(queues, q)
 		}
@@ -93,12 +94,10 @@ func (m *manager) run() {
 }
 
 func (m *manager) broadcast(evt *Event) {
-	// send message
-	select {
-	case m.messages <- evt:
-	default:
-		// skip if full
-	}
+	// queue event
+	m.events <- evt
+
+	// TODO: Log error if enqueuing takes too long?
 }
 
 func (m *manager) handle(ctx *fire.Context) {
@@ -122,7 +121,7 @@ func (m *manager) handle(ctx *fire.Context) {
 	q := make(queue, 10)
 
 	// register queue
-	m.subscribe <- q
+	m.subscribes <- q
 
 	// process (reuse current goroutine)
 	err = m.process(ctx, conn, q)
@@ -134,7 +133,7 @@ func (m *manager) handle(ctx *fire.Context) {
 	}
 
 	// unsubscribe queue
-	m.unsubscribe <- q
+	m.unsubscribes <- q
 }
 
 func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
