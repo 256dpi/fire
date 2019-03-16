@@ -73,9 +73,9 @@ func main() {
 	// configure jaeger tracer
 	configureJaeger()
 
-	// run https server
-	fmt.Printf("Running on https://0.0.0.0:%d\n", port)
-	err = http.ListenAndServeTLS(fmt.Sprintf("0.0.0.0:%d", port), "localhost+1.pem", "localhost+1-key.pem", handler)
+	// run http server
+	fmt.Printf("Running on http://0.0.0.0:%d\n", port)
+	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), handler)
 	if err != nil {
 		panic(err)
 	}
