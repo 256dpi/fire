@@ -139,7 +139,6 @@ func TestWatcherSSE(t *testing.T) {
 		tester.Save(itm)
 
 		itm.Foo = "bar"
-
 		tester.Update(itm)
 
 		tester.Delete(itm)
