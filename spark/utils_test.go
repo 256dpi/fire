@@ -20,6 +20,6 @@ func (m *responseRecorder) CloseNotify() <-chan bool {
 func newResponseRecorder() *responseRecorder {
 	return &responseRecorder{
 		ResponseRecorder: httptest.NewRecorder(),
-		closeNotify: make(chan bool, 1),
+		closeNotify:      make(chan bool, 1),
 	}
 }

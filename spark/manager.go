@@ -246,7 +246,7 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 			}
 
 			// get subscription
-			sub, ok := reg[evt.Stream.name]
+			sub, ok := reg[evt.Stream.Name()]
 			if !ok {
 				continue
 			}
@@ -260,7 +260,7 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 
 			// create response
 			res := response{
-				evt.Stream.name: {
+				evt.Stream.Name(): {
 					evt.ID.Hex(): string(evt.Type),
 				},
 			}
@@ -424,7 +424,7 @@ func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan 
 
 			// create response
 			res := response{
-				evt.Stream.name: {
+				evt.Stream.Name(): {
 					evt.ID.Hex(): string(evt.Type),
 				},
 			}

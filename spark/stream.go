@@ -71,6 +71,9 @@ type Stream struct {
 
 	// SoftDelete can be set to true to support soft deleted documents.
 	SoftDelete bool
+}
 
-	name string
+// Name returns the name of the stream.
+func (s *Stream) Name() string {
+	return s.Model.Meta().PluralName
 }

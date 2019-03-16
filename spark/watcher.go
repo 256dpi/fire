@@ -39,11 +39,8 @@ func (w *Watcher) Add(stream *Stream) {
 	// initialize model
 	coal.Init(stream.Model)
 
-	// set name
-	stream.name = stream.Model.Meta().PluralName
-
 	// save stream
-	w.streams[stream.name] = stream
+	w.streams[stream.Name()] = stream
 }
 
 // Run will run the watcher in the background.
