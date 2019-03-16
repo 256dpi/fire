@@ -14,7 +14,7 @@ import (
 
 // Watcher will watch multiple collections and serve watch requests by clients.
 type Watcher struct {
-	hub     *hub
+	manager *manager
 	streams map[string]*Stream
 
 	// The function gets invoked by the watcher with critical errors.
@@ -28,8 +28,8 @@ func NewWatcher() *Watcher {
 		streams: make(map[string]*Stream),
 	}
 
-	// create and add hub
-	w.hub = newHub(w)
+	// create and add manager
+	w.manager = newManager(w)
 
 	return w
 }
@@ -151,7 +151,7 @@ func (w *Watcher) watch(stream *Stream, resumeToken *bson.Raw) (*bson.Raw, error
 		}
 
 		// broadcast change
-		w.hub.broadcast(evt)
+		w.manager.broadcast(evt)
 
 		// save resume token
 		resumeToken = &ch.ResumeToken
@@ -173,7 +173,7 @@ func (w *Watcher) Action() *fire.Action {
 		Methods: []string{"GET"},
 		Callback: fire.C("spark/Watcher.Action", fire.All(), func(ctx *fire.Context) error {
 			// handle connection
-			w.hub.handle(ctx)
+			w.manager.handle(ctx)
 
 			return nil
 		}),

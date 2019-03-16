@@ -34,7 +34,7 @@ type request struct {
 
 type response map[string]map[string]string
 
-type hub struct {
+type manager struct {
 	watcher *Watcher
 
 	upgrader    *websocket.Upgrader
@@ -43,14 +43,14 @@ type hub struct {
 	unsubscribe chan queue
 }
 
-func newHub(w *Watcher) *hub {
-	// create hub
-	h := &hub{
+func newManager(w *Watcher) *manager {
+	// create manager
+	h := &manager{
 		watcher:     w,
 		upgrader:    &websocket.Upgrader{},
-		subscribe:   make(chan queue),
+		subscribe:   make(chan queue, 10),
 		messages:    make(queue, 10),
-		unsubscribe: make(chan queue),
+		unsubscribe: make(chan queue, 10),
 	}
 
 	// do not check request origin
@@ -64,18 +64,18 @@ func newHub(w *Watcher) *hub {
 	return h
 }
 
-func (h *hub) run() {
+func (m *manager) run() {
 	// prepare queues
 	queues := map[queue]bool{}
 
 	for {
 		select {
 		// handle queue subscription
-		case q := <-h.subscribe:
+		case q := <-m.subscribe:
 			// store queue
 			queues[q] = true
 		// handle message
-		case message := <-h.messages:
+		case message := <-m.messages:
 			// add message to all queues
 			for q := range queues {
 				select {
@@ -85,31 +85,31 @@ func (h *hub) run() {
 				}
 			}
 		// handle queue unsubscription
-		case q := <-h.unsubscribe:
+		case q := <-m.unsubscribe:
 			// delete queue
 			delete(queues, q)
 		}
 	}
 }
 
-func (h *hub) broadcast(evt *Event) {
+func (m *manager) broadcast(evt *Event) {
 	// send message
 	select {
-	case h.messages <- evt:
+	case m.messages <- evt:
 	default:
 		// skip if full
 	}
 }
 
-func (h *hub) handle(ctx *fire.Context) {
+func (m *manager) handle(ctx *fire.Context) {
 	// try to upgrade connection
-	conn, err := h.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
+	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
 		// upgrader already responded with an error
 
 		// call reporter if available
-		if h.watcher.Reporter != nil {
-			h.watcher.Reporter(err)
+		if m.watcher.Reporter != nil {
+			m.watcher.Reporter(err)
 		}
 
 		return
@@ -122,22 +122,22 @@ func (h *hub) handle(ctx *fire.Context) {
 	q := make(queue, 10)
 
 	// register queue
-	h.subscribe <- q
+	m.subscribe <- q
 
 	// process (reuse current goroutine)
-	err = h.process(ctx, conn, q)
+	err = m.process(ctx, conn, q)
 	if err != nil {
 		// call reporter if available
-		if h.watcher.Reporter != nil {
-			h.watcher.Reporter(err)
+		if m.watcher.Reporter != nil {
+			m.watcher.Reporter(err)
 		}
 	}
 
 	// unsubscribe queue
-	h.unsubscribe <- q
+	m.unsubscribe <- q
 }
 
-func (h *hub) process(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
+func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
@@ -204,7 +204,7 @@ func (h *hub) process(ctx *fire.Context, conn *websocket.Conn, queue queue) erro
 			// handle subscriptions
 			for name, data := range req.Subscribe {
 				// get stream
-				stream, ok := h.watcher.streams[name]
+				stream, ok := m.watcher.streams[name]
 				if !ok {
 					return errors.New("invalid subscription")
 				}
