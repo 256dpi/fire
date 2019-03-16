@@ -179,6 +179,7 @@ func itemStream(store *coal.Store) *spark.Stream {
 			// check insert and update events
 			return event.Model.(*Item).State == sub.Data["state"].(bool)
 		},
+		SoftDelete: true,
 	}
 }
 

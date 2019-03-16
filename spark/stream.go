@@ -46,7 +46,8 @@ type Event struct {
 
 	// Model is the changed model.
 	//
-	// Note: The model is unavailable for deleted events.
+	// Note: The model is unavailable for deleted events unless soft delete
+	// has been enabled.
 	Model coal.Model
 
 	// Stream is the stream this event originated from.
@@ -67,6 +68,9 @@ type Stream struct {
 	// Selector is the callback used to decide which events are forwarded to
 	// a subscription.
 	Selector func(*Event, *Subscription) bool
+
+	// SoftDelete can be set to true to support soft deleted documents.
+	SoftDelete bool
 
 	name string
 }

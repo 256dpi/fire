@@ -1,6 +1,8 @@
 package spark
 
 import (
+	"time"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
@@ -86,9 +88,22 @@ func (w *Watcher) watch(stream *Stream) error {
 	// iterate on elements forever
 	var ch change
 	for cs.Next(&ch) {
-		// parse change
-		typ, id, ok := ch.parse()
-		if !ok {
+		// prepare type
+		var typ Type
+
+		// parse operation type
+		if ch.OperationType == "insert" {
+			typ = Created
+		} else if ch.OperationType == "replace" || ch.OperationType == "update" {
+			typ = Updated
+		} else if ch.OperationType == "delete" {
+			typ = Deleted
+		} else {
+			continue
+		}
+
+		// ignore real deleted events when soft delete has been enabled
+		if stream.SoftDelete && typ == Deleted {
 			continue
 		}
 
@@ -97,17 +112,35 @@ func (w *Watcher) watch(stream *Stream) error {
 
 		// unmarshal document for created and updated events
 		if typ != Deleted {
+			// unmarshal record
 			record = stream.Model.Meta().Make()
 			err = ch.FullDocument.Unmarshal(record)
 			if err != nil {
 				return err
+			}
+
+			// init record
+			coal.Init(record)
+
+			// check if soft delete is enabled
+			if stream.SoftDelete {
+				// get soft delete field
+				softDeleteField := stream.Model.(fire.SoftDeletableModel).SoftDeleteField()
+
+				// get deleted time
+				t := record.MustGet(softDeleteField).(*time.Time)
+
+				// change type if records has been soft deleted
+				if t != nil && !t.IsZero() {
+					typ = Deleted
+				}
 			}
 		}
 
 		// create event
 		evt := &Event{
 			Type:   typ,
-			ID:     id,
+			ID:     ch.DocumentKey.ID,
 			Model:  record,
 			Stream: stream,
 		}
@@ -145,17 +178,4 @@ type change struct {
 		ID bson.ObjectId `bson:"_id"`
 	} `bson:"documentKey"`
 	FullDocument bson.Raw `bson:"fullDocument"`
-}
-
-func (c change) parse() (Type, bson.ObjectId, bool) {
-	// check operation type
-	if c.OperationType == "insert" {
-		return Created, c.DocumentKey.ID, true
-	} else if c.OperationType == "replace" || c.OperationType == "update" {
-		return Updated, c.DocumentKey.ID, true
-	} else if c.OperationType == "delete" {
-		return Deleted, c.DocumentKey.ID, true
-	}
-
-	return "", "", false
 }
