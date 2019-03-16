@@ -1,6 +1,7 @@
 package spark
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -102,11 +103,13 @@ func (m *manager) broadcast(evt *Event) {
 func (m *manager) handle(ctx *fire.Context) {
 	// check if websocket upgrade
 	if websocket.IsWebSocketUpgrade(ctx.HTTPRequest) {
-		m.handleUpgrade(ctx)
+		m.handleWebsocket(ctx)
+	} else {
+		m.handleSSE(ctx)
 	}
 }
 
-func (m *manager) handleUpgrade(ctx *fire.Context) {
+func (m *manager) handleWebsocket(ctx *fire.Context) {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
@@ -130,7 +133,7 @@ func (m *manager) handleUpgrade(ctx *fire.Context) {
 	m.subscribes <- q
 
 	// process (reuse current goroutine)
-	err = m.handleWebsocket(ctx, conn, q)
+	err = m.websocketLoop(ctx, conn, q)
 	if err != nil {
 		// call reporter if available
 		if m.watcher.Reporter != nil {
@@ -142,7 +145,7 @@ func (m *manager) handleUpgrade(ctx *fire.Context) {
 	m.unsubscribes <- q
 }
 
-func (m *manager) handleWebsocket(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
+func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
@@ -289,6 +292,166 @@ func (m *manager) handleWebsocket(ctx *fire.Context, conn *websocket.Conn, queue
 		// handle errors
 		case err := <-readErr:
 			return err
+		}
+	}
+}
+
+func (m *manager) handleSSE(ctx *fire.Context) {
+	// check flusher support
+	flusher, ok := ctx.ResponseWriter.(http.Flusher)
+	if !ok {
+		http.Error(ctx.ResponseWriter, "flushing not supported", http.StatusNotImplemented)
+		return
+	}
+
+	// check close notifier support
+	closeNotifier, ok := ctx.ResponseWriter.(http.CloseNotifier)
+	if !ok {
+		http.Error(ctx.ResponseWriter, "closing not supported", http.StatusNotImplemented)
+		return
+	}
+
+	// get subscription
+	name := ctx.HTTPRequest.URL.Query().Get("s")
+	if name == "" {
+		http.Error(ctx.ResponseWriter, "missing stream name", http.StatusBadRequest)
+		return
+	}
+
+	// prepare data
+	data := Map{}
+
+	// get data
+	encodedData := ctx.HTTPRequest.URL.Query().Get("d")
+	if encodedData != "" {
+		// decode data
+		bytes, err := base64.StdEncoding.DecodeString(encodedData)
+		if err != nil {
+			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
+			return
+		}
+
+		// unmarshal data
+		err = json.Unmarshal(bytes, &data)
+		if err != nil {
+			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// get stream
+	stream, ok := m.watcher.streams[name]
+	if !ok {
+		http.Error(ctx.ResponseWriter, "stream not found", http.StatusBadRequest)
+		return
+	}
+
+	// create subscription
+	sub := &Subscription{
+		Context: ctx,
+		Data:    data,
+		Stream:  stream,
+	}
+
+	// validate subscription if present
+	if stream.Validator != nil {
+		err := stream.Validator(sub)
+		if err != nil {
+			http.Error(ctx.ResponseWriter, "invalid subscription", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// set headers for SSE
+	h := ctx.ResponseWriter.Header()
+	h.Set("Cache-Control", "no-cache")
+	h.Set("Connection", "keep-alive")
+	h.Set("Content-Type", "text/event-stream")
+
+	// write ok
+	ctx.ResponseWriter.WriteHeader(http.StatusOK)
+
+	// flush header
+	flusher.Flush()
+
+	// prepare queue
+	q := make(queue, 10)
+
+	// register queue
+	m.subscribes <- q
+
+	// process (reuse current goroutine)
+	err := m.sseLoop(ctx, flusher, closeNotifier.CloseNotify(), sub, q)
+	if err != nil {
+		// call reporter if available
+		if m.watcher.Reporter != nil {
+			m.watcher.Reporter(err)
+		}
+	}
+
+	// unsubscribe queue
+	m.unsubscribes <- q
+}
+
+func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan bool, sub *Subscription, queue queue) error {
+	// get response writer
+	w := ctx.ResponseWriter
+
+	// create encoder
+	enc := json.NewEncoder(w)
+
+	// run writer
+	for {
+		select {
+		// handle events
+		case evt, ok := <-queue:
+			// check if closed
+			if !ok {
+				return errors.New("closed")
+			}
+
+			// check stream
+			if evt.Stream != sub.Stream {
+				continue
+			}
+
+			// run selector if present
+			if evt.Stream.Selector != nil {
+				if !evt.Stream.Selector(evt, sub) {
+					continue
+				}
+			}
+
+			// create response
+			res := response{
+				evt.Stream.name: {
+					evt.ID.Hex(): string(evt.Type),
+				},
+			}
+
+			// write prefix
+			_, err := w.Write([]byte("data: "))
+			if err != nil {
+				return err
+			}
+
+			// write json
+			err = enc.Encode(res)
+			if err != nil {
+				return err
+			}
+
+			// write suffix
+			_, err = w.Write([]byte("\n\n"))
+			if err != nil {
+				return err
+			}
+
+			// flush writer
+			flusher.Flush()
+		// handle close
+		case <-close:
+			return nil
 		}
 	}
 }
