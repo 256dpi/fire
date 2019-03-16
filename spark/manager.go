@@ -100,6 +100,13 @@ func (m *manager) broadcast(evt *Event) {
 }
 
 func (m *manager) handle(ctx *fire.Context) {
+	// check if websocket upgrade
+	if websocket.IsWebSocketUpgrade(ctx.HTTPRequest) {
+		m.handleUpgrade(ctx)
+	}
+}
+
+func (m *manager) handleUpgrade(ctx *fire.Context) {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
@@ -123,7 +130,7 @@ func (m *manager) handle(ctx *fire.Context) {
 	m.subscribes <- q
 
 	// process (reuse current goroutine)
-	err = m.process(ctx, conn, q)
+	err = m.handleWebsocket(ctx, conn, q)
 	if err != nil {
 		// call reporter if available
 		if m.watcher.Reporter != nil {
@@ -135,7 +142,7 @@ func (m *manager) handle(ctx *fire.Context) {
 	m.unsubscribes <- q
 }
 
-func (m *manager) process(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
+func (m *manager) handleWebsocket(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
