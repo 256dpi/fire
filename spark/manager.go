@@ -442,7 +442,7 @@ func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan 
 			}
 
 			// write suffix
-			_, err = w.Write([]byte("\n\n"))
+			_, err = w.Write([]byte("\n"))
 			if err != nil {
 				return err
 			}

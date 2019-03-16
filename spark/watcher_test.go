@@ -1,7 +1,10 @@
 package spark
 
 import (
+	"encoding/base64"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,10 +26,8 @@ type itemModel struct {
 	Bar       string
 }
 
-func TestWatcher(t *testing.T) {
+func TestWatcherWebSockets(t *testing.T) {
 	tester.Clean()
-
-	item := tester.Save(&itemModel{}).(*itemModel)
 
 	watcher := NewWatcher()
 	watcher.Add(&Stream{
@@ -98,14 +99,65 @@ func TestWatcher(t *testing.T) {
 
 	/* delete model */
 
-	tester.Delete(item)
+	tester.Delete(itm)
 
 	typ, bytes, err = ws.ReadMessage()
 	assert.NoError(t, err)
 	assert.Equal(t, websocket.TextMessage, typ)
 	assert.JSONEq(t, `{
 		"items": {
-			"`+item.ID().Hex()+`": "deleted"
+			"`+itm.ID().Hex()+`": "deleted"
 		}
 	}`, string(bytes))
+}
+
+func TestWatcherSSE(t *testing.T) {
+	tester.Clean()
+
+	watcher := NewWatcher()
+	watcher.Add(&Stream{
+		Model: &itemModel{},
+		Store: tester.Store,
+	})
+	watcher.Run()
+
+	group := tester.Assign("", &fire.Controller{
+		Model: &itemModel{},
+		Store: tester.Store,
+	})
+	group.Handle("watch", watcher.Action())
+
+	rec := newResponseRecorder()
+	data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
+	req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
+
+	itm := coal.Init(&itemModel{
+		Bar: "bar",
+	}).(*itemModel)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+
+		tester.Save(itm)
+
+		itm.Foo = "bar"
+
+		tester.Update(itm)
+
+		tester.Delete(itm)
+
+		time.Sleep(100 * time.Millisecond)
+
+		rec.Close()
+	}()
+
+	group.Endpoint("").ServeHTTP(rec, req)
+
+	assert.Equal(t, 200, rec.Code)
+	assert.Equal(t, true, rec.Flushed)
+	assert.Equal(t, []string{
+		`data: {"items":{"` + itm.ID().Hex() + `":"created"}}`,
+		`data: {"items":{"` + itm.ID().Hex() + `":"updated"}}`,
+		`data: {"items":{"` + itm.ID().Hex() + `":"deleted"}}`,
+	}, strings.Split(strings.TrimSpace(rec.Body.String()), "\n\n"))
 }
