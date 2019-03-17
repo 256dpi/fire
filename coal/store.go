@@ -27,39 +27,41 @@ func CreateStore(uri string) (*Store, error) {
 // NewStore returns a Store that uses the passed session and its default database.
 func NewStore(session *mgo.Session) *Store {
 	return &Store{
-		session: session,
+		Session: session,
 	}
 }
 
 // A Store manages the usage of database connections.
 type Store struct {
-	session *mgo.Session
+	// The session used by the store.
+	Session *mgo.Session
 }
 
 // Copy will make a copy of the store and the underlying session. Copied stores
 // that are not used anymore must be closed.
 func (s *Store) Copy() *SubStore {
-	return &SubStore{s.session.Copy()}
+	return &SubStore{s.Session.Copy()}
 }
 
 // Close will close the store and its associated session.
 func (s *Store) Close() {
-	s.session.Close()
+	s.Session.Close()
 }
 
 // A SubStore allows access to the database.
 type SubStore struct {
-	session *mgo.Session
+	// The session used by the store.
+	Session *mgo.Session
 }
 
 // Close will close the store and its associated session.
 func (s *SubStore) Close() {
-	s.session.Close()
+	s.Session.Close()
 }
 
 // DB returns the database used by this store.
 func (s *SubStore) DB() *mgo.Database {
-	return s.session.DB("")
+	return s.Session.DB("")
 }
 
 // C will return the collection associated to the passed model.

@@ -27,7 +27,7 @@ func TestIndexerEnsureError(t *testing.T) {
 	indexer.Add(&postModel{}, true, 0, "Published")
 	assert.NoError(t, indexer.Ensure(tester.Store))
 
-	tester.Store.session.ResetIndexCache()
+	tester.Store.Session.ResetIndexCache()
 
 	indexer = NewIndexer()
 	indexer.Add(&postModel{}, false, 0, "Published")
