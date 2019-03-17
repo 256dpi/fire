@@ -1,6 +1,8 @@
 package coal
 
 import (
+	"sync"
+
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 )
@@ -43,10 +45,17 @@ func NewStream(store *Store, model Model) *Stream {
 }
 
 // Tail will continuously stream events to the specified receiver.
-func (s *Stream) Tail(rec Receiver) {
+func (s *Stream) Tail(rec Receiver, open func()) {
+	// prepare once
+	var once sync.Once
+
 	// watch forever and call reporter with eventual error
 	for {
-		err := s.tap(rec)
+		err := s.tap(rec, func() {
+			if open != nil {
+				once.Do(open)
+			}
+		})
 		if err != nil {
 			if s.Reporter != nil {
 				s.Reporter(err)
@@ -55,7 +64,7 @@ func (s *Stream) Tail(rec Receiver) {
 	}
 }
 
-func (s *Stream) tap(rec Receiver) error {
+func (s *Stream) tap(rec Receiver, open func()) error {
 	// copy store
 	store := s.store.Copy()
 	defer store.Close()
@@ -68,6 +77,9 @@ func (s *Stream) tap(rec Receiver) error {
 	if err != nil {
 		return err
 	}
+
+	// signal open
+	open()
 
 	// ensure stream is closed
 	defer cs.Close()

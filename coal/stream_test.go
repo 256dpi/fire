@@ -16,6 +16,7 @@ func TestStream(t *testing.T) {
 
 	stream := NewStream(store, &postModel{})
 
+	open := make(chan struct{})
 	done := make(chan struct{})
 
 	go func() {
@@ -40,10 +41,12 @@ func TestStream(t *testing.T) {
 			}
 
 			i++
+		}, func() {
+			close(open)
 		})
 	}()
 
-	time.Sleep(100 * time.Millisecond)
+	<-open
 
 	s := store.Copy()
 	defer s.Close()
