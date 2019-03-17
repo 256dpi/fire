@@ -13,15 +13,9 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// TODO: Move model related helpers to coal.Tester.
-
 // A Tester provides facilities to the test a fire API.
 type Tester struct {
-	// The store to use for cleaning the database.
-	Store *coal.Store
-
-	// The registered models.
-	Models []coal.Model
+	*coal.Tester
 
 	// The handler to be tested.
 	Handler http.Handler
@@ -39,8 +33,7 @@ type Tester struct {
 // NewTester returns a new tester.
 func NewTester(store *coal.Store, models ...coal.Model) *Tester {
 	return &Tester{
-		Store:   store,
-		Models:  models,
+		Tester:  coal.NewTester(store, models...),
 		Header:  make(map[string]string),
 		Context: context.Background(),
 	}
@@ -64,109 +57,14 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 // Clean will remove the collections of models that have been registered and
 // reset the header map.
 func (t *Tester) Clean() {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	for _, model := range t.Models {
-		// remove all is faster than dropping the collection
-		_, err := store.C(model).RemoveAll(nil)
-		if err != nil {
-			panic(err)
-		}
-	}
+	// clean models
+	t.Tester.Clean()
 
 	// reset header
 	t.Header = make(map[string]string)
 
 	// reset context
 	t.Context = context.Background()
-}
-
-// Save will save the specified model.
-func (t *Tester) Save(model coal.Model) coal.Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// initialize model
-	model = coal.Init(model)
-
-	// insert to collection
-	err := store.C(model).Insert(model)
-	if err != nil {
-		panic(err)
-	}
-
-	return model
-}
-
-// FindAll will return all saved models.
-func (t *Tester) FindAll(model coal.Model) interface{} {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// initialize model
-	model = coal.Init(model)
-
-	// find all documents
-	list := model.Meta().MakeSlice()
-	err := store.C(model).Find(nil).Sort("-_id").All(list)
-	if err != nil {
-		panic(err)
-	}
-
-	// initialize list
-	coal.InitSlice(list)
-
-	return list
-}
-
-// FindLast will return the last saved model.
-func (t *Tester) FindLast(model coal.Model) coal.Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// find last document
-	err := store.C(model).Find(nil).Sort("-_id").One(model)
-	if err != nil {
-		panic(err)
-	}
-
-	// initialize model
-	coal.Init(model)
-
-	return model
-}
-
-// Update will update the specified model.
-func (t *Tester) Update(model coal.Model) coal.Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// initialize model
-	model = coal.Init(model)
-
-	// insert to collection
-	err := store.C(model).UpdateId(model.ID(), model)
-	if err != nil {
-		panic(err)
-	}
-
-	return model
-}
-
-// Delete will delete the specified model.
-func (t *Tester) Delete(model coal.Model) {
-	store := t.Store.Copy()
-	defer store.Close()
-
-	// initialize model
-	model = coal.Init(model)
-
-	// insert to collection
-	err := store.C(model).RemoveId(model.ID())
-	if err != nil {
-		panic(err)
-	}
 }
 
 // Path returns a root prefixed path for the supplied path.
