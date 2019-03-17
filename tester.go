@@ -97,11 +97,30 @@ func (t *Tester) Save(model coal.Model) coal.Model {
 	return model
 }
 
+// FindAll will return all saved models.
+func (t *Tester) FindAll(model coal.Model) interface{} {
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// initialize model
+	model = coal.Init(model)
+
+	// find all documents
+	list := model.Meta().MakeSlice()
+	err := store.C(model).Find(nil).Sort("-_id").All(list)
+	if err != nil {
+		panic(err)
+	}
+
+	return coal.InitSlice(list)
+}
+
 // FindLast will return the last saved model.
 func (t *Tester) FindLast(model coal.Model) coal.Model {
 	store := t.Store.Copy()
 	defer store.Close()
 
+	// find last document
 	err := store.C(model).Find(nil).Sort("-_id").One(model)
 	if err != nil {
 		panic(err)
