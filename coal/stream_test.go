@@ -9,12 +9,11 @@ import (
 )
 
 func TestStream(t *testing.T) {
-	store := MustCreateStore("mongodb://0.0.0.0/test-coal")
-	_ = store.session.DB("").DropDatabase()
+	tester.Clean()
 
 	time.Sleep(100 * time.Millisecond)
 
-	stream := NewStream(store, &postModel{})
+	stream := NewStream(tester.Store, &postModel{})
 
 	open := make(chan struct{})
 	done := make(chan struct{})
@@ -48,7 +47,7 @@ func TestStream(t *testing.T) {
 
 	<-open
 
-	s := store.Copy()
+	s := tester.Store.Copy()
 	defer s.Close()
 
 	post := Init(&postModel{

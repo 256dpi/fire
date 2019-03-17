@@ -36,3 +36,7 @@ type noteModel struct {
 	UpdatedAt time.Time     `json:"updated-at" bson:"updated_at"`
 	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
 }
+
+var tester = NewTester(MustCreateStore("mongodb://0.0.0.0/fire-coal-test"),
+	&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{},
+)
