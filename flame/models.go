@@ -142,11 +142,11 @@ type Client interface {
 // Application is the built-in model used to store clients.
 type Application struct {
 	coal.Base   `json:"-" bson:",inline" coal:"applications"`
-	Name        string `json:"name"`
-	Key         string `json:"key"`
+	Name        string `json:"name" bson:"name"`
+	Key         string `json:"key" bson:"key"`
 	Secret      string `json:"secret,omitempty" bson:"-"`
-	SecretHash  []byte `json:"-"`
-	RedirectURL string `json:"redirect_url"`
+	SecretHash  []byte `json:"-" bson:"secret"`
+	RedirectURL string `json:"redirect-url" bson:"redirect_url"`
 }
 
 // AddApplicationIndexes will add application indexes to the specified indexer.
@@ -248,10 +248,10 @@ type ResourceOwner interface {
 // User is the built-in model used to store resource owners.
 type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
+	Name         string `json:"name" bson:"name"`
+	Email        string `json:"email" bson:"email"`
 	Password     string `json:"password,omitempty" bson:"-"`
-	PasswordHash []byte `json:"-"`
+	PasswordHash []byte `json:"-" bson:"password"`
 }
 
 // AddUserIndexes will add user indexes to the specified indexer.
