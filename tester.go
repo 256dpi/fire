@@ -13,6 +13,8 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+// TODO: Move model related helpers to coal.Tester.
+
 // A Tester provides facilities to the test a fire API.
 type Tester struct {
 	// The store to use for cleaning the database.
