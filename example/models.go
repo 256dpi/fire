@@ -21,10 +21,10 @@ func init() {
 	flame.AddRefreshTokenIndexes(indexer, true)
 
 	// add item index
-	indexer.Add(&Item{}, false, false, 0, "Name")
+	indexer.Add(&Item{}, false, 0, "Name")
 
 	// add background delete index
-	indexer.Add(&Item{}, false, false, time.Second, "Deleted")
+	indexer.Add(&Item{}, false, time.Second, "Deleted")
 }
 
 // EnsureIndexes will ensure that the required indexes exist.

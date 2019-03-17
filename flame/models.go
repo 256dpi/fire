@@ -33,11 +33,11 @@ type AccessToken struct {
 
 // AddAccessTokenIndexes will add access token indexes to the specified indexer.
 func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
-	i.Add(&AccessToken{}, false, false, 0, "Client")
-	i.Add(&AccessToken{}, false, false, 0, "ResourceOwner")
+	i.Add(&AccessToken{}, false, 0, "Client")
+	i.Add(&AccessToken{}, false, 0, "ResourceOwner")
 
 	if autoExpire {
-		i.Add(&AccessToken{}, false, false, time.Minute, "ExpiresAt")
+		i.Add(&AccessToken{}, false, time.Minute, "ExpiresAt")
 	}
 }
 
@@ -82,11 +82,11 @@ type RefreshToken struct {
 
 // AddRefreshTokenIndexes will add refresh token indexes to the specified indexer.
 func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
-	i.Add(&RefreshToken{}, false, false, 0, "Client")
-	i.Add(&RefreshToken{}, false, false, 0, "ResourceOwner")
+	i.Add(&RefreshToken{}, false, 0, "Client")
+	i.Add(&RefreshToken{}, false, 0, "ResourceOwner")
 
 	if autoExpire {
-		i.Add(&RefreshToken{}, false, false, time.Minute, "ExpiresAt")
+		i.Add(&RefreshToken{}, false, time.Minute, "ExpiresAt")
 	}
 }
 
@@ -151,7 +151,7 @@ type Application struct {
 
 // AddApplicationIndexes will add application indexes to the specified indexer.
 func AddApplicationIndexes(i *coal.Indexer) {
-	i.Add(&Application{}, true, false, 0, "Key")
+	i.Add(&Application{}, true, 0, "Key")
 }
 
 // DescribeClient implements the flame.Client interface.
@@ -256,7 +256,7 @@ type User struct {
 
 // AddUserIndexes will add user indexes to the specified indexer.
 func AddUserIndexes(i *coal.Indexer) {
-	i.Add(&User{}, true, false, 0, "Email")
+	i.Add(&User{}, true, 0, "Email")
 }
 
 // DescribeResourceOwner implements the flame.ResourceOwner interface.

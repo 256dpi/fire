@@ -67,11 +67,11 @@ type Job struct {
 // nature of data and access patterns.
 func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 	// add name index
-	indexer.Add(&Job{}, false, false, 0, "Name")
+	indexer.Add(&Job{}, false, 0, "Name")
 
 	// add status index
-	indexer.Add(&Job{}, false, false, 0, "Status")
+	indexer.Add(&Job{}, false, 0, "Status")
 
 	// add ended index
-	indexer.Add(&Job{}, false, false, removeAfter, "Ended")
+	indexer.Add(&Job{}, false, removeAfter, "Ended")
 }

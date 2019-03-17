@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 )
 
 type index struct {
@@ -24,7 +25,7 @@ func NewIndexer() *Indexer {
 // Add will add an index to the internal index list. Fields that are prefixed
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
-func (i *Indexer) Add(model Model, unique, sparse bool, expireAfter time.Duration, fields ...string) {
+func (i *Indexer) Add(model Model, unique bool, expireAfter time.Duration, fields ...string) {
 	// construct key from fields
 	var key []string
 	for _, f := range fields {
@@ -35,9 +36,26 @@ func (i *Indexer) Add(model Model, unique, sparse bool, expireAfter time.Duratio
 	i.AddRaw(C(model), mgo.Index{
 		Key:         key,
 		Unique:      unique,
-		Sparse:      sparse,
 		ExpireAfter: expireAfter,
 		Background:  true,
+	})
+}
+
+// AddPartial is similar to Add except that it adds a partial index.
+func (i *Indexer) AddPartial(model Model, unique bool, expireAfter time.Duration, fields []string, filter bson.M) {
+	// construct key from fields
+	var key []string
+	for _, f := range fields {
+		key = append(key, F(model, f))
+	}
+
+	// add index
+	i.AddRaw(C(model), mgo.Index{
+		Key:           key,
+		Unique:        unique,
+		ExpireAfter:   expireAfter,
+		PartialFilter: filter,
+		Background:    true,
 	})
 }
 
