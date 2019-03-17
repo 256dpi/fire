@@ -114,7 +114,10 @@ func (t *Tester) FindAll(model coal.Model) interface{} {
 		panic(err)
 	}
 
-	return coal.InitSlice(list)
+	// initialize list
+	coal.InitSlice(list)
+
+	return list
 }
 
 // FindLast will return the last saved model.
@@ -128,7 +131,10 @@ func (t *Tester) FindLast(model coal.Model) coal.Model {
 		panic(err)
 	}
 
-	return coal.Init(model)
+	// initialize model
+	coal.Init(model)
+
+	return model
 }
 
 // Update will update the specified model.
@@ -183,7 +189,7 @@ func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 
 // WithContext runs the given function with a prepared context.
 func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
-	t.RunHandler(ctx, func(ctx *Context) error {
+	_ = t.RunHandler(ctx, func(ctx *Context) error {
 		fn(ctx)
 		return nil
 	})
