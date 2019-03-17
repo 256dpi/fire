@@ -2,9 +2,12 @@ package spark
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+
+	"github.com/globalsign/mgo/bson"
 )
 
 // TODO: How to close a watcher?
@@ -44,8 +47,44 @@ func (w *Watcher) Add(stream *Stream) {
 	// save stream
 	w.streams[stream.Name()] = stream
 
-	// create and tail source in separate goroutine
-	go newSource(stream, w.Reporter, w.manager.broadcast).tail()
+	// prepare stream
+	s := coal.NewStream(stream.Store, stream.Model)
+
+	// set reporter
+	s.Reporter = w.Reporter
+
+	// tail stream forever
+	go s.Tail(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+		// ignore real deleted events when soft delete has been enabled
+		if stream.SoftDelete && e == coal.Deleted {
+			return
+		}
+
+		// handle soft deleted records
+		if stream.SoftDelete && e == coal.Updated {
+			// get soft delete field
+			softDeleteField := stream.Model.(fire.SoftDeletableModel).SoftDeleteField()
+
+			// get deleted time
+			t := m.MustGet(softDeleteField).(*time.Time)
+
+			// change type if records has been soft deleted
+			if t != nil && !t.IsZero() {
+				e = coal.Deleted
+			}
+		}
+
+		// create event
+		evt := &Event{
+			Type:   e,
+			ID:     id,
+			Model:  m,
+			Stream: stream,
+		}
+
+		// broadcast event
+		w.manager.broadcast(evt)
+	})
 }
 
 // Action returns an action that should be registered in the group under

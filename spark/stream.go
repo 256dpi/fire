@@ -7,20 +7,6 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// Type defines the event type.
-type Type string
-
-const (
-	// Created is emitted when a resource has been created.
-	Created = "created"
-
-	// Updated is emitted when a resource has been updated.
-	Updated = "updated"
-
-	// Deleted is emitted when a resource has been deleted.
-	Deleted = "deleted"
-)
-
 // Map holds custom data for a subscription.
 type Map map[string]interface{}
 
@@ -39,7 +25,7 @@ type Subscription struct {
 // Event describes an event.
 type Event struct {
 	// Type specifies the event type.
-	Type Type
+	Type coal.Event
 
 	// ID is the id of the changed resource.
 	ID bson.ObjectId
