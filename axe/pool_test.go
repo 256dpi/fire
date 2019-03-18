@@ -21,6 +21,7 @@ func TestPool(t *testing.T) {
 	done := make(chan struct{})
 
 	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "foo",
 		Model: &data{},
@@ -69,6 +70,7 @@ func TestPoolDelayed(t *testing.T) {
 	done := make(chan struct{})
 
 	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "delayed",
 		Model: &data{},
@@ -119,6 +121,7 @@ func TestPoolFailed(t *testing.T) {
 	i := 0
 
 	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "failed",
 		Model: &data{},
@@ -172,6 +175,7 @@ func TestPoolCancel(t *testing.T) {
 	done := make(chan struct{})
 
 	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
@@ -220,6 +224,7 @@ func TestPoolTimeout(t *testing.T) {
 	i := 0
 
 	p := NewPool()
+	//p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "timeout",
 		Model: &data{},
@@ -275,6 +280,7 @@ func TestPoolExisting(t *testing.T) {
 	done := make(chan struct{})
 
 	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "existing",
 		Model: &data{},

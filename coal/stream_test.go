@@ -14,6 +14,7 @@ func TestStream(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	stream := NewStream(tester.Store, &postModel{})
+	stream.Reporter = func(err error) { panic(err) }
 
 	open := make(chan struct{})
 	done := make(chan struct{})

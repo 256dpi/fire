@@ -30,6 +30,7 @@ func TestWatcherWebSockets(t *testing.T) {
 	tester.Clean()
 
 	watcher := NewWatcher()
+	watcher.Reporter = func(err error) { panic(err) }
 	watcher.Add(&Stream{
 		Model: &itemModel{},
 		Store: tester.Store,
@@ -114,6 +115,7 @@ func TestWatcherSSE(t *testing.T) {
 	tester.Clean()
 
 	watcher := NewWatcher()
+	watcher.Reporter = func(err error) { panic(err) }
 	watcher.Add(&Stream{
 		Model: &itemModel{},
 		Store: tester.Store,
