@@ -79,7 +79,7 @@ func (q *Queue) watcher(p *Pool) {
 
 		// handle job
 		switch job.Status {
-		case StatusEnqueued, StatusFailed, StatusDequeued:
+		case StatusEnqueued, StatusDequeued, StatusFailed:
 			// add job
 			board.Lock()
 			board.jobs[job.ID()] = job
@@ -105,10 +105,15 @@ func (q *Queue) watcher(p *Pool) {
 		return
 	}
 
-	// TODO: Add existing jobs.
+	// fill queue with existing jobs
+	err := q.fill()
+	if err != nil {
+		if p.Reporter != nil {
+			p.Reporter(err)
+		}
+	}
 
-	// TODO: Resync every minute and add missing jobs?
-
+	// wait close
 	select {
 	case <-p.closed:
 		// close stream
@@ -116,6 +121,39 @@ func (q *Queue) watcher(p *Pool) {
 
 		return
 	}
+}
+
+func (q *Queue) fill() error {
+	// copy store
+	store := q.Store.Copy()
+	defer store.Close()
+
+	// get existing jobs
+	var jobs []*Job
+	err := store.C(&Job{}).Find(bson.M{
+		coal.F(&Job{}, "Status"): bson.M{
+			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
+		},
+	}).All(&jobs)
+	if err != nil {
+		return err
+	}
+
+	// add jobs
+	for _, job := range jobs {
+		// get board
+		board, ok := q.boards[job.Name]
+		if !ok {
+			continue
+		}
+
+		// add job
+		board.Lock()
+		board.jobs[job.ID()] = job
+		board.Unlock()
+	}
+
+	return nil
 }
 
 func (q *Queue) get(name string) *Job {

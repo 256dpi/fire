@@ -235,7 +235,7 @@ func TestPoolTimeout(t *testing.T) {
 		},
 		Workers:     2,
 		MaxAttempts: 2,
-		Timeout: 10 * time.Millisecond,
+		Timeout:     10 * time.Millisecond,
 	})
 	p.Run()
 
@@ -258,6 +258,51 @@ func TestPoolTimeout(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 2, job.Attempts)
+	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, "", job.Reason)
+
+	p.Close()
+}
+
+func TestPoolExisting(t *testing.T) {
+	tester.Clean()
+
+	q := &Queue{Store: tester.Store}
+
+	job, err := q.Enqueue("existing", nil, 0)
+	assert.NoError(t, err)
+
+	done := make(chan struct{})
+
+	p := NewPool()
+	p.Add(&Task{
+		Name:  "existing",
+		Model: &data{},
+		Queue: q,
+		Handler: func(m Model) (bson.M, error) {
+			close(done)
+			return nil, nil
+		},
+		Workers:     2,
+		MaxAttempts: 2,
+		Timeout:     10 * time.Millisecond,
+	})
+	p.Run()
+
+	<-done
+
+	time.Sleep(100 * time.Millisecond)
+
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
+	assert.Equal(t, "existing", job.Name)
+	assert.Equal(t, &data{}, decodeRaw(job.Data, &data{}))
+	assert.Equal(t, StatusCompleted, job.Status)
+	assert.NotZero(t, job.Created)
+	assert.NotZero(t, job.Available)
+	assert.NotZero(t, job.Started)
+	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
+	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{}, job.Result)
 	assert.Equal(t, "", job.Reason)
 
