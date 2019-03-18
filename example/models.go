@@ -7,6 +7,8 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
+
+	"github.com/globalsign/mgo/bson"
 )
 
 var catalog = coal.NewCatalog(&Item{})
@@ -43,6 +45,7 @@ type Item struct {
 	coal.Base `json:"-" bson:",inline" coal:"items"`
 	Name      string     `json:"name"`
 	State     bool       `json:"state"`
+	Count     int        `json:"count"`
 	Created   time.Time  `json:"created-at" bson:"created_at"`
 	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at"`
 }
@@ -65,4 +68,8 @@ func (i *Item) Validate() error {
 // SoftDeleteField implements the fire.SoftDeletableModel interface.
 func (i *Item) SoftDeleteField() string {
 	return "Deleted"
+}
+
+type count struct {
+	Item bson.ObjectId `bson:"item_id"`
 }

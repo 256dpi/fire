@@ -8,11 +8,13 @@ import (
 	"strconv"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/spark"
 	"github.com/256dpi/fire/wood"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/goware/cors"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -130,10 +132,18 @@ func createHandler(store *coal.Store) http.Handler {
 	watcher.Reporter = reporter
 	watcher.Add(itemStream(store))
 
+	// create queue
+	queue := axe.NewQueue(store)
+
+	// create pool
+	pool := axe.NewPool()
+	pool.Add(incrementTask(store, queue))
+	pool.Run()
+
 	// create group
 	g := fire.NewGroup()
 	g.Reporter = reporter
-	g.Add(itemController(store))
+	g.Add(itemController(store, queue))
 	g.Handle("watch", watcher.Action())
 
 	// register group
@@ -145,7 +155,7 @@ func createHandler(store *coal.Store) http.Handler {
 	return mux
 }
 
-func itemController(store *coal.Store) *fire.Controller {
+func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 	return &fire.Controller{
 		Model: &Item{},
 		Store: store,
@@ -156,6 +166,16 @@ func itemController(store *coal.Store) *fire.Controller {
 			// basic model & relationship validations
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&Item{}, catalog),
+		},
+		ResourceActions: fire.M{
+			"add": &fire.Action{
+				Methods: []string{"POST"},
+				Callback: queue.Callback("increment", 0, fire.All(), func(ctx *fire.Context) axe.Model {
+					return &count{
+						Item: ctx.Model.ID(),
+					}
+				}),
+			},
 		},
 		SoftProtection: true,
 		SoftDelete:     true,
@@ -179,6 +199,33 @@ func itemStream(store *coal.Store) *spark.Stream {
 			return event.Model.(*Item).State == sub.Data["state"].(bool)
 		},
 		SoftDelete: true,
+	}
+}
+
+func incrementTask(store *coal.Store, queue *axe.Queue) *axe.Task {
+	return &axe.Task{
+		Name:  "increment",
+		Queue: queue,
+		Model: &count{},
+		Handler: func(model axe.Model) (bson.M, error) {
+			s := store.Copy()
+			defer s.Close()
+
+			c := model.(*count)
+
+			err := s.C(&Item{}).UpdateId(c.Item, bson.M{
+				"$inc": bson.M{
+					coal.F(&Item{}, "Count"): 1,
+				},
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, nil
+		},
+		Workers:     2,
+		MaxAttempts: 2,
 	}
 }
 
