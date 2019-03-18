@@ -58,10 +58,7 @@ type Job struct {
 	// The result submitted during completion.
 	Result bson.M `json:"result" bson:"result"`
 
-	// The error from the last failed attempt.
-	Error string `json:"error" bson:"error"`
-
-	// The reason that has been submitted when the job was cancelled.
+	// The last message submitted when the job was failed or cancelled.
 	Reason string `json:"reason" bson:"reason"`
 }
 
@@ -181,7 +178,7 @@ func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
 	return nil
 }
 
-func fail(store *coal.SubStore, id bson.ObjectId, error string, delay time.Duration) error {
+func fail(store *coal.SubStore, id bson.ObjectId, reason string, delay time.Duration) error {
 	// get time
 	now := time.Now()
 
@@ -189,7 +186,7 @@ func fail(store *coal.SubStore, id bson.ObjectId, error string, delay time.Durat
 	err := store.C(&Job{}).UpdateId(id, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):  StatusFailed,
-			coal.F(&Job{}, "Error"):   error,
+			coal.F(&Job{}, "Reason"):  reason,
 			coal.F(&Job{}, "Ended"):   now,
 			coal.F(&Job{}, "Delayed"): now.Add(delay),
 		},

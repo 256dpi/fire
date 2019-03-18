@@ -37,7 +37,6 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
 	assert.Equal(t, bson.M{}, list[0].Result)
-	assert.Equal(t, "", list[0].Error)
 	assert.Equal(t, "", list[0].Reason)
 
 	job, err = dequeue(store, job.ID(), time.Hour)
@@ -52,7 +51,6 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{}, job.Result)
-	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "", job.Reason)
 
 	err = complete(store, job.ID(), bson.M{"bar": "baz"})
@@ -69,7 +67,6 @@ func TestJob(t *testing.T) {
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{"bar": "baz"}, job.Result)
-	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "", job.Reason)
 }
 
@@ -138,7 +135,7 @@ func TestFailed(t *testing.T) {
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, StatusFailed, job.Status)
 	assert.NotZero(t, job.Ended)
-	assert.Equal(t, "some error", job.Error)
+	assert.Equal(t, "some error", job.Reason)
 
 	job2, err := dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
@@ -165,7 +162,7 @@ func TestFailedDelayed(t *testing.T) {
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, StatusFailed, job.Status)
 	assert.NotZero(t, job.Ended)
-	assert.Equal(t, "some error", job.Error)
+	assert.Equal(t, "some error", job.Reason)
 
 	job2, err := dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
@@ -176,7 +173,7 @@ func TestFailedDelayed(t *testing.T) {
 	job3, err := dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, job3.Attempts)
-	assert.Equal(t, "some error", job3.Error)
+	assert.Equal(t, "some error", job3.Reason)
 }
 
 func TestCancelled(t *testing.T) {

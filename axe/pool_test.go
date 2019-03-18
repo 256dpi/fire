@@ -55,7 +55,6 @@ func TestPool(t *testing.T) {
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
-	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "", job.Reason)
 
 	p.Close()
@@ -104,7 +103,6 @@ func TestPoolDelayed(t *testing.T) {
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
-	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "", job.Reason)
 
 	p.Close()
@@ -160,8 +158,7 @@ func TestPoolFailed(t *testing.T) {
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 2, job.Attempts)
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
-	assert.Equal(t, "foo", job.Error)
-	assert.Equal(t, "", job.Reason)
+	assert.Equal(t, "foo", job.Reason)
 
 	p.Close()
 }
@@ -207,7 +204,6 @@ func TestPoolCancel(t *testing.T) {
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{}, job.Result)
-	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "cancelled", job.Reason)
 
 	p.Close()
