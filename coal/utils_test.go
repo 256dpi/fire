@@ -37,6 +37,6 @@ type noteModel struct {
 	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
-var tester = NewTester(MustCreateStore("mongodb://0.0.0.0/fire-coal-test"),
+var tester = NewTester(MustCreateStore("mongodb://0.0.0.0/test-fire-coal"),
 	&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{},
 )

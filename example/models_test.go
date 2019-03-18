@@ -10,7 +10,7 @@ import (
 )
 
 func TestEnsureIndexes(t *testing.T) {
-	store := coal.MustCreateStore("mongodb://0.0.0.0/fire-example-test")
+	store := coal.MustCreateStore("mongodb://0.0.0.0/test-fire-example")
 	assert.NoError(t, EnsureIndexes(store))
 	assert.NoError(t, EnsureIndexes(store))
 }
