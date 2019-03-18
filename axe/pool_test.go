@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -69,7 +70,7 @@ func TestPoolDelayed(t *testing.T) {
 
 	p := NewPool()
 	p.Add(&Task{
-		Name:  "foo",
+		Name:  "delayed",
 		Model: &data{},
 		Queue: q,
 		Handler: func(m Model) (bson.M, error) {
@@ -85,7 +86,7 @@ func TestPoolDelayed(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("foo", &data{Foo: "bar"}, 100*time.Millisecond)
+	job, err := q.Enqueue("delayed", &data{Foo: "bar"}, 100*time.Millisecond)
 	assert.NoError(t, err)
 
 	<-done
@@ -93,7 +94,7 @@ func TestPoolDelayed(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
-	assert.Equal(t, "foo", job.Name)
+	assert.Equal(t, "delayed", job.Name)
 	assert.Equal(t, &data{Foo: "bar"}, decodeRaw(job.Data, &data{}))
 	assert.Equal(t, StatusCompleted, job.Status)
 	assert.NotZero(t, job.Created)
@@ -119,7 +120,7 @@ func TestPoolFailed(t *testing.T) {
 
 	p := NewPool()
 	p.Add(&Task{
-		Name:  "foo",
+		Name:  "failed",
 		Model: &data{},
 		Queue: q,
 		Handler: func(m Model) (bson.M, error) {
@@ -140,7 +141,7 @@ func TestPoolFailed(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("foo", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue("failed", &data{Foo: "bar"}, 0)
 	assert.NoError(t, err)
 
 	<-done
@@ -148,7 +149,7 @@ func TestPoolFailed(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
-	assert.Equal(t, "foo", job.Name)
+	assert.Equal(t, "failed", job.Name)
 	assert.Equal(t, &data{Foo: "bar"}, decodeRaw(job.Data, &data{}))
 	assert.Equal(t, StatusCompleted, job.Status)
 	assert.NotZero(t, job.Created)
