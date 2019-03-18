@@ -38,24 +38,18 @@ func (p *Pool) Add(task *Task) {
 }
 
 func (p *Pool) Run() {
-	// init all queues
+	// start all queues
 	for queue := range p.queues {
-		queue.init()
+		queue.start(p)
 	}
 
-	// run all queues
-	for queue := range p.queues {
-		go queue.run(p)
-	}
-
-	// run all tasks
+	// start all tasks
 	for _, task := range p.tasks {
-		go task.run(p)
+		task.start(p)
 	}
 }
 
-// Close will closer the pool.
+// Close will close the pool.
 func (p *Pool) Close() {
-	// close closer
 	close(p.closed)
 }

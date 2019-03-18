@@ -59,7 +59,7 @@ type Task struct {
 	Interval time.Duration
 }
 
-func (t *Task) run(p *Pool) {
+func (t *Task) start(p *Pool) {
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 1
@@ -75,7 +75,7 @@ func (t *Task) run(p *Pool) {
 		t.Interval = 100 * time.Millisecond
 	}
 
-	// run workers
+	// start workers
 	for i := 0; i < t.Workers; i++ {
 		go t.worker(p)
 	}
@@ -135,7 +135,7 @@ func (t *Task) execute(job *Job) error {
 		return err
 	}
 
-	// run handler
+	// start handler
 	result, err := t.Handler(data)
 	if _, ok := err.(*Error); !ok && err != nil {
 		return err
