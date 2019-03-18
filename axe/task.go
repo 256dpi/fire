@@ -57,6 +57,11 @@ type Task struct {
 	//
 	// Default: 100ms.
 	Interval time.Duration
+
+	// Delay is the time after a failed task is retried.
+	//
+	// Default: 1s.
+	Delay time.Duration
 }
 
 func (t *Task) start(p *Pool) {
@@ -73,6 +78,11 @@ func (t *Task) start(p *Pool) {
 	// set default interval
 	if t.Interval == 0 {
 		t.Interval = 100 * time.Millisecond
+	}
+
+	// set default delay
+	if t.Delay == 0 {
+		t.Delay = time.Second
 	}
 
 	// start workers
@@ -155,7 +165,7 @@ func (t *Task) execute(job *Job) error {
 		}
 
 		// fail job
-		err = fail(store, job.ID(), e.Reason, 0)
+		err = fail(store, job.ID(), e.Reason, t.Delay)
 		if err != nil {
 			return err
 		}
