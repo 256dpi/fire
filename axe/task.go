@@ -26,9 +26,6 @@ func E(reason string, retry bool) *Error {
 	}
 }
 
-// Model can be any BSON serializable type.
-type Model interface{}
-
 // Task is task that is executed asynchronously.
 type Task struct {
 	// Name is the unique name of the task.
@@ -104,8 +101,13 @@ func (t *Task) worker(p *Pool) {
 		// attempt to get job from queue
 		job := t.Queue.get(t.Name)
 		if job == nil {
-			// wait some time and try again
-			time.Sleep(t.Interval)
+			// wait some time before trying again
+			select {
+			case <-time.After(t.Interval):
+				// continue
+			case <-p.closed:
+				return
+			}
 
 			continue
 		}

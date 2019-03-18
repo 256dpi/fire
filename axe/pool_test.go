@@ -35,10 +35,7 @@ func TestPool(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	_, err := Enqueue(store, "foo", &data{
+	_, err := q.Enqueue("foo", &data{
 		Foo: "bar",
 	}, 0)
 	assert.NoError(t, err)

@@ -22,6 +22,22 @@ type Queue struct {
 	boards map[string]*board
 }
 
+// Enqueue will enqueue a job using the specified name and data. If a delay
+// is specified the job will not dequeued until the specified time has passed.
+func (q *Queue) Enqueue(name string, data Model, delay time.Duration) (*Job, error) {
+	// copy store
+	store := q.Store.Copy()
+	defer store.Close()
+
+	// enqueue job
+	job, err := Enqueue(store, name, data, delay)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
 func (q *Queue) start(p *Pool) {
 	// initialize boards
 	q.boards = make(map[string]*board)
