@@ -45,6 +45,8 @@ func TestStream(t *testing.T) {
 
 	<-open
 
+	time.Sleep(100 * time.Millisecond)
+
 	s := tester.Store.Copy()
 	defer s.Close()
 
