@@ -2,6 +2,7 @@ package axe
 
 import (
 	"sync"
+	"time"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/globalsign/mgo/bson"
@@ -100,9 +101,17 @@ func (q *Queue) get(name string) *Job {
 	board.Lock()
 	defer board.Unlock()
 
+	// get time
+	now := time.Now()
+
 	// get a random job
 	var job *Job
 	for _, job = range board.jobs {
+		// ignore jobs that are delayed
+		if job.Delayed.After(now) {
+			continue
+		}
+
 		break
 	}
 
