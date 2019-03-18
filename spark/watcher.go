@@ -54,7 +54,7 @@ func (w *Watcher) Add(stream *Stream) {
 	s.Reporter = w.Reporter
 
 	// tail stream forever
-	go s.Tail(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+	s.Tail(func(e coal.Event, id bson.ObjectId, m coal.Model) {
 		// ignore real deleted events when soft delete has been enabled
 		if stream.SoftDelete && e == coal.Deleted {
 			return

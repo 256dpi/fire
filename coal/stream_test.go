@@ -18,32 +18,30 @@ func TestStream(t *testing.T) {
 	open := make(chan struct{})
 	done := make(chan struct{})
 
-	go func() {
-		i := 1
+	i := 1
 
-		stream.Tail(func(e Event, id bson.ObjectId, m Model) {
-			switch i {
-			case 1:
-				assert.Equal(t, Created, e)
-				assert.NotZero(t, id)
-				assert.NotNil(t, m)
-			case 2:
-				assert.Equal(t, Updated, e)
-				assert.NotZero(t, id)
-				assert.NotNil(t, m)
-			case 3:
-				assert.Equal(t, Deleted, e)
-				assert.NotZero(t, id)
-				assert.Nil(t, m)
+	stream.Tail(func(e Event, id bson.ObjectId, m Model) {
+		switch i {
+		case 1:
+			assert.Equal(t, Created, e)
+			assert.NotZero(t, id)
+			assert.NotNil(t, m)
+		case 2:
+			assert.Equal(t, Updated, e)
+			assert.NotZero(t, id)
+			assert.NotNil(t, m)
+		case 3:
+			assert.Equal(t, Deleted, e)
+			assert.NotZero(t, id)
+			assert.Nil(t, m)
 
-				close(done)
-			}
+			close(done)
+		}
 
-			i++
-		}, func() {
-			close(open)
-		})
-	}()
+		i++
+	}, func() {
+		close(open)
+	})
 
 	<-open
 
@@ -66,4 +64,6 @@ func TestStream(t *testing.T) {
 	assert.NoError(t, err)
 
 	<-done
+
+	stream.Close()
 }
