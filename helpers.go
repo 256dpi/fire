@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// Map is a general purpose type to represent a map.
+type Map map[string]interface{}
+
 type safeError struct {
 	err error
 }

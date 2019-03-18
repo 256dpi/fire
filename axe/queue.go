@@ -4,7 +4,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -41,6 +43,46 @@ func (q *Queue) Enqueue(name string, data Model, delay time.Duration) (*Job, err
 	}
 
 	return job, nil
+}
+
+// Callback is a factory to create callbacks that can be used to enqueue jobs
+// during request processing.
+func (q *Queue) Callback(name string, delay time.Duration, matcher fire.Matcher, cb func(ctx *fire.Context) Model) *fire.Callback {
+	return fire.C("axe/Queue.Callback", matcher, func(ctx *fire.Context) error {
+		// set task tag
+		ctx.Tracer.Tag("task", name)
+
+		// get data
+		var data Model
+		if cb != nil {
+			data = cb(ctx)
+		}
+
+		// check if controller uses same store
+		if q.store == ctx.Controller.Store {
+			// enqueue job using context store
+			_, err := Enqueue(ctx.Store, name, data, delay)
+			if err != nil {
+				return err
+			}
+		} else {
+			// enqueue job using queue store
+			_, err := q.Enqueue(name, data, delay)
+			if err != nil {
+				return err
+			}
+		}
+
+		// respond with an empty object
+		if ctx.Operation.Action() {
+			err := ctx.Respond(fire.Map{})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (q *Queue) start(p *Pool) {
