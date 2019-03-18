@@ -16,7 +16,7 @@ type data struct {
 func TestPool(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
@@ -64,7 +64,7 @@ func TestPool(t *testing.T) {
 func TestPoolDelayed(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
@@ -112,7 +112,7 @@ func TestPoolDelayed(t *testing.T) {
 func TestPoolFailed(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
@@ -167,7 +167,7 @@ func TestPoolFailed(t *testing.T) {
 func TestPoolCancel(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
@@ -213,7 +213,7 @@ func TestPoolCancel(t *testing.T) {
 func TestPoolTimeout(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
@@ -267,7 +267,7 @@ func TestPoolTimeout(t *testing.T) {
 func TestPoolExisting(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	q := NewQueue(tester.Store)
 
 	job, err := q.Enqueue("existing", nil, 0)
 	assert.NoError(t, err)

@@ -135,7 +135,7 @@ func (t *Task) worker(p *Pool) {
 
 func (t *Task) execute(job *Job) error {
 	// get store
-	store := t.Queue.Store.Copy()
+	store := t.Queue.store.Copy()
 	defer store.Close()
 
 	// dequeue job

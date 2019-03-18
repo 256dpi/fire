@@ -15,18 +15,23 @@ type board struct {
 
 // Queue manages the queueing of jobs.
 type Queue struct {
-	// The store this queue should use to manage jobs.
-	Store *coal.Store
-
+	store  *coal.Store
 	tasks  []string
 	boards map[string]*board
+}
+
+// NewQueue creates and returns a new queue.
+func NewQueue(store *coal.Store) *Queue {
+	return &Queue{
+		store: store,
+	}
 }
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not dequeued until the specified time has passed.
 func (q *Queue) Enqueue(name string, data Model, delay time.Duration) (*Job, error) {
 	// copy store
-	store := q.Store.Copy()
+	store := q.store.Copy()
 	defer store.Close()
 
 	// enqueue job
@@ -55,7 +60,7 @@ func (q *Queue) start(p *Pool) {
 
 func (q *Queue) watcher(p *Pool) {
 	// create stream
-	s := coal.NewStream(q.Store, &Job{})
+	s := coal.NewStream(q.store, &Job{})
 	s.Reporter = p.Reporter
 
 	// prepare channel
@@ -125,7 +130,7 @@ func (q *Queue) watcher(p *Pool) {
 
 func (q *Queue) fill() error {
 	// copy store
-	store := q.Store.Copy()
+	store := q.store.Copy()
 	defer store.Close()
 
 	// get existing jobs
