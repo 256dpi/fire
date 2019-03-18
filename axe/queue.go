@@ -15,6 +15,7 @@ type board struct {
 
 // Queue manages the queueing of jobs.
 type Queue struct {
+	// The store this queue should use to manage jobs.
 	Store *coal.Store
 
 	tasks  []string
@@ -42,7 +43,7 @@ func (q *Queue) run(p *Pool) {
 	open := make(chan struct{})
 
 	// open stream
-	s.Tail(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+	s.Open(func(e coal.Event, id bson.ObjectId, m coal.Model) {
 		// ignore deleted events
 		if e == coal.Deleted {
 			return

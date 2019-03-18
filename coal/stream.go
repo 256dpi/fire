@@ -47,11 +47,11 @@ func NewStream(store *Store, model Model) *Stream {
 	}
 }
 
-// Tail will continuously stream events to the specified receiver until the
-// stream is closed. The provided open function is called when the stream has
-// been opened the first time.
-func (s *Stream) Tail(rec Receiver, open func()) {
-	go s.tail(rec, open)
+// Open will open the stream and continuously forward events to the specified
+// receiver until the stream is closed. The provided open function is called
+// when the stream has been opened the first time.
+func (s *Stream) Open(rec Receiver, open func()) {
+	go s.open(rec, open)
 }
 
 // Close will close the stream.
@@ -69,7 +69,7 @@ func (s *Stream) Close() {
 	}
 }
 
-func (s *Stream) tail(rec Receiver, open func()) {
+func (s *Stream) open(rec Receiver, open func()) {
 	// prepare once
 	var once sync.Once
 
@@ -94,8 +94,8 @@ func (s *Stream) tail(rec Receiver, open func()) {
 			return
 		}
 
-		// tap stream
-		err := s.tap(rec, opener)
+		// tail stream
+		err := s.tail(rec, opener)
 		if err != nil {
 			if s.Reporter != nil {
 				s.Reporter(err)
@@ -104,7 +104,7 @@ func (s *Stream) tail(rec Receiver, open func()) {
 	}
 }
 
-func (s *Stream) tap(rec Receiver, open func()) error {
+func (s *Stream) tail(rec Receiver, open func()) error {
 	// copy store
 	store := s.store.Copy()
 	defer store.Close()

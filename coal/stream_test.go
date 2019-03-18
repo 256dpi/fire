@@ -20,7 +20,7 @@ func TestStream(t *testing.T) {
 
 	i := 1
 
-	stream.Tail(func(e Event, id bson.ObjectId, m Model) {
+	stream.Open(func(e Event, id bson.ObjectId, m Model) {
 		switch i {
 		case 1:
 			assert.Equal(t, Created, e)

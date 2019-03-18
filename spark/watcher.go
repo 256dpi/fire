@@ -49,12 +49,10 @@ func (w *Watcher) Add(stream *Stream) {
 
 	// prepare stream
 	s := coal.NewStream(stream.Store, stream.Model)
-
-	// set reporter
 	s.Reporter = w.Reporter
 
-	// tail stream forever
-	s.Tail(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+	// open stream
+	s.Open(func(e coal.Event, id bson.ObjectId, m coal.Model) {
 		// ignore real deleted events when soft delete has been enabled
 		if stream.SoftDelete && e == coal.Deleted {
 			return
