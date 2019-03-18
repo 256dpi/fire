@@ -5,6 +5,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -74,4 +75,146 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 
 	// add ended index
 	indexer.Add(&Job{}, false, removeAfter, "Ended")
+}
+
+// Enqueue will enqueue a job using the specified name and data. If a delay
+// is specified the job will not dequeued until the specified time has passed.
+func Enqueue(store *coal.SubStore, name string, data interface{}, delay time.Duration) (*Job, error) {
+	// set default data
+	if data == nil {
+		data = bson.M{}
+	}
+
+	// prepare job
+	job := coal.Init(&Job{
+		Name:    name,
+		Status:  StatusEnqueued,
+		Created: time.Now(),
+		Delayed: coal.T(time.Now().Add(delay)),
+	}).(*Job)
+
+	// marshall data
+	raw, err := bson.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// marshall into job
+	err = bson.Unmarshal(raw, &job.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	// insert job
+	err = store.C(job).Insert(job)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Job, error) {
+	// dequeue job
+	var job Job
+	_, err := store.C(&Job{}).Find(bson.M{
+		"_id": id,
+		"$or": []bson.M{
+			{
+				coal.F(&Job{}, "Status"): bson.M{
+					"$in": []Status{StatusEnqueued, StatusFailed},
+				},
+				coal.F(&Job{}, "Delayed"): bson.M{
+					"$lte": time.Now(),
+				},
+			},
+			{
+				coal.F(&Job{}, "Status"): StatusDequeued,
+				coal.F(&Job{}, "Started"): bson.M{
+					"$lte": time.Now().Add(-timeout),
+				},
+			},
+		},
+	}).Sort("_id").Apply(mgo.Change{
+		Update: bson.M{
+			"$set": bson.M{
+				coal.F(&Job{}, "Status"):  StatusDequeued,
+				coal.F(&Job{}, "Started"): time.Now(),
+			},
+			"$inc": bson.M{
+				coal.F(&Job{}, "Attempts"): 1,
+			},
+		},
+		ReturnNew: true,
+	}, &job)
+	if err == mgo.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &job, nil
+}
+
+func fetch(store *coal.SubStore, id bson.ObjectId) (*Job, error) {
+	// find job
+	var job Job
+	err := store.C(&Job{}).FindId(id).One(&job)
+	if err != nil {
+		return nil, err
+	}
+
+	return &job, nil
+}
+
+func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
+	// update job
+	err := store.C(&Job{}).UpdateId(id, bson.M{
+		"$set": bson.M{
+			coal.F(&Job{}, "Status"): StatusCompleted,
+			coal.F(&Job{}, "Result"): result,
+			coal.F(&Job{}, "Ended"):  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func fail(store *coal.SubStore, id bson.ObjectId, error string, delay time.Duration) error {
+	// get time
+	now := time.Now()
+
+	// update job
+	err := store.C(&Job{}).UpdateId(id, bson.M{
+		"$set": bson.M{
+			coal.F(&Job{}, "Status"):  StatusFailed,
+			coal.F(&Job{}, "Error"):   error,
+			coal.F(&Job{}, "Ended"):   now,
+			coal.F(&Job{}, "Delayed"): now.Add(delay),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func cancel(store *coal.SubStore, id bson.ObjectId, reason string) error {
+	// update job
+	err := store.C(&Job{}).UpdateId(id, bson.M{
+		"$set": bson.M{
+			coal.F(&Job{}, "Status"): StatusCancelled,
+			coal.F(&Job{}, "Reason"): reason,
+			coal.F(&Job{}, "Ended"):  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

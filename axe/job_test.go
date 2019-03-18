@@ -16,12 +16,13 @@ var tester = fire.NewTester(
 	&Job{},
 )
 
-func TestQueue(t *testing.T) {
+func TestJob(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	store := tester.Store.Copy()
+	defer store.Close()
 
-	_, err := q.Enqueue("foo", &bson.M{"foo": "bar"}, 0)
+	job, err := Enqueue(store, "foo", &bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -38,7 +39,7 @@ func TestQueue(t *testing.T) {
 	assert.Equal(t, "", list[0].Error)
 	assert.Equal(t, "", list[0].Reason)
 
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
+	job, err = dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", job.Name)
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
@@ -52,10 +53,10 @@ func TestQueue(t *testing.T) {
 	assert.Equal(t, "", job.Error)
 	assert.Equal(t, "", job.Reason)
 
-	err = q.Complete(job.ID(), bson.M{"bar": "baz"})
+	err = complete(store, job.ID(), bson.M{"bar": "baz"})
 	assert.NoError(t, err)
 
-	job, err = q.Fetch(job.ID())
+	job, err = fetch(store, job.ID())
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", job.Name)
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
@@ -70,157 +71,131 @@ func TestQueue(t *testing.T) {
 	assert.Equal(t, "", job.Reason)
 }
 
-func TestQueueDelayed(t *testing.T) {
+func TestDelayed(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	store := tester.Store.Copy()
+	defer store.Close()
 
-	_, err := q.Enqueue("foo", nil, 100*time.Millisecond)
+	job, err := Enqueue(store, "foo", nil, 100*time.Millisecond)
 	assert.NoError(t, err)
 
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Nil(t, job)
-
-	time.Sleep(120 * time.Millisecond)
-
-	job, err = q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-
-	job, err = q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Nil(t, job)
-}
-
-func TestQueueTimeout(t *testing.T) {
-	tester.Clean()
-
-	q := &Queue{Store: tester.Store}
-
-	_, err := q.Enqueue("foo", nil, 0)
-	assert.NoError(t, err)
-
-	job, err := q.Dequeue([]string{"foo"}, 0)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-
-	job, err = q.Dequeue([]string{"foo"}, 100*time.Millisecond)
-	assert.NoError(t, err)
-	assert.Nil(t, job)
-
-	job, err = q.Dequeue([]string{"foo"}, 0)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-}
-
-func TestQueueOrdering(t *testing.T) {
-	tester.Clean()
-
-	q := &Queue{Store: tester.Store}
-
-	_, err := q.Enqueue("foo", bson.M{"first": true}, 0)
-	assert.NoError(t, err)
-
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-
-	err = q.Fail(job.ID(), "some error", 0)
-	assert.NoError(t, err)
-
-	_, err = q.Enqueue("foo", bson.M{"second": true}, 0)
-	assert.NoError(t, err)
-
-	job, err = q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Equal(t, &bson.M{"first": true}, decodeRaw(job.Data, &bson.M{}))
-
-	job, err = q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Equal(t, &bson.M{"second": true}, decodeRaw(job.Data, &bson.M{}))
-
-	job, err = q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Nil(t, job)
-}
-
-func TestQueueFailed(t *testing.T) {
-	tester.Clean()
-
-	q := &Queue{Store: tester.Store}
-
-	_, err := q.Enqueue("foo", nil, 0)
-	assert.NoError(t, err)
-
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-
-	err = q.Fail(job.ID(), "some error", 0)
-	assert.NoError(t, err)
-
-	job, err = q.Fetch(job.ID())
-	assert.NoError(t, err)
-	assert.Equal(t, StatusFailed, job.Status)
-	assert.NotZero(t, job.Ended)
-	assert.Equal(t, "some error", job.Error)
-
-	job2, err := q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.Equal(t, job.ID(), job2.ID())
-	assert.Equal(t, 2, job2.Attempts)
-}
-
-func TestQueueFailedDelayed(t *testing.T) {
-	tester.Clean()
-
-	q := &Queue{Store: tester.Store}
-
-	_, err := q.Enqueue("foo", nil, 0)
-	assert.NoError(t, err)
-
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
-	assert.NoError(t, err)
-	assert.NotNil(t, job)
-
-	err = q.Fail(job.ID(), "some error", 100*time.Millisecond)
-	assert.NoError(t, err)
-
-	job, err = q.Fetch(job.ID())
-	assert.NoError(t, err)
-	assert.Equal(t, StatusFailed, job.Status)
-	assert.NotZero(t, job.Ended)
-	assert.Equal(t, "some error", job.Error)
-
-	job2, err := q.Dequeue([]string{"foo"}, time.Hour)
+	job2, err := dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
 	time.Sleep(120 * time.Millisecond)
 
-	job3, err := q.Dequeue([]string{"foo"}, time.Hour)
+	job2, err = dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.NotNil(t, job2)
+
+	job2, err = dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.Nil(t, job2)
+}
+
+func TestTimeout(t *testing.T) {
+	tester.Clean()
+
+	store := tester.Store.Copy()
+	defer store.Close()
+
+	job, err := Enqueue(store, "foo", nil, 0)
+	assert.NoError(t, err)
+
+	job2, err := dequeue(store, job.ID(), 0)
+	assert.NoError(t, err)
+	assert.NotNil(t, job2)
+
+	job2, err = dequeue(store, job.ID(), 100*time.Millisecond)
+	assert.NoError(t, err)
+	assert.Nil(t, job2)
+
+	job2, err = dequeue(store, job.ID(), 0)
+	assert.NoError(t, err)
+	assert.NotNil(t, job2)
+}
+
+func TestFailed(t *testing.T) {
+	tester.Clean()
+
+	store := tester.Store.Copy()
+	defer store.Close()
+
+	job, err := Enqueue(store, "foo", nil, 0)
+	assert.NoError(t, err)
+
+	job, err = dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.NotNil(t, job)
+
+	err = fail(store, job.ID(), "some error", 0)
+	assert.NoError(t, err)
+
+	job, err = fetch(store, job.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, StatusFailed, job.Status)
+	assert.NotZero(t, job.Ended)
+	assert.Equal(t, "some error", job.Error)
+
+	job2, err := dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.Equal(t, job.ID(), job2.ID())
+	assert.Equal(t, 2, job2.Attempts)
+}
+
+func TestFailedDelayed(t *testing.T) {
+	tester.Clean()
+
+	store := tester.Store.Copy()
+	defer store.Close()
+
+	job, err := Enqueue(store, "foo", nil, 0)
+	assert.NoError(t, err)
+
+	job, err = dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.NotNil(t, job)
+
+	err = fail(store, job.ID(), "some error", 100*time.Millisecond)
+	assert.NoError(t, err)
+
+	job, err = fetch(store, job.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, StatusFailed, job.Status)
+	assert.NotZero(t, job.Ended)
+	assert.Equal(t, "some error", job.Error)
+
+	job2, err := dequeue(store, job.ID(), time.Hour)
+	assert.NoError(t, err)
+	assert.Nil(t, job2)
+
+	time.Sleep(120 * time.Millisecond)
+
+	job3, err := dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, job3.Attempts)
 	assert.Equal(t, "some error", job3.Error)
 }
 
-func TestQueueCancelled(t *testing.T) {
+func TestCancelled(t *testing.T) {
 	tester.Clean()
 
-	q := &Queue{Store: tester.Store}
+	store := tester.Store.Copy()
+	defer store.Close()
 
-	_, err := q.Enqueue("foo", nil, 0)
+	job, err := Enqueue(store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job, err := q.Dequeue([]string{"foo"}, time.Hour)
+	job, err = dequeue(store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 
-	err = q.Cancel(job.ID(), "some reason")
+	err = cancel(store, job.ID(), "some reason")
 	assert.NoError(t, err)
 
-	job, err = q.Fetch(job.ID())
+	job, err = fetch(store, job.ID())
 	assert.NoError(t, err)
 	assert.Equal(t, StatusCancelled, job.Status)
 	assert.NotZero(t, job.Ended)
