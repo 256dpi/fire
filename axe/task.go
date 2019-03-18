@@ -127,6 +127,8 @@ func (t *Task) execute(job *Job) error {
 	store := t.Queue.Store.Copy()
 	defer store.Close()
 
+	// TODO: Configure timeout?
+
 	// dequeue job
 	job, err := dequeue(store, job.ID(), time.Hour)
 	if err != nil {
@@ -149,9 +151,6 @@ func (t *Task) execute(job *Job) error {
 
 	// start handler
 	result, err := t.Handler(data)
-	if _, ok := err.(*Error); !ok && err != nil {
-		return err
-	}
 
 	// check error
 	if e, ok := err.(*Error); ok {
@@ -171,6 +170,13 @@ func (t *Task) execute(job *Job) error {
 		if err != nil {
 			return err
 		}
+
+		return nil
+	}
+
+	// handle other errors
+	if err != nil {
+		return err
 	}
 
 	// complete job

@@ -72,7 +72,10 @@ func (q *Queue) watcher(p *Pool) {
 		job := m.(*Job)
 
 		// get board
-		board := q.boards[job.Name]
+		board, ok := q.boards[job.Name]
+		if !ok {
+			return
+		}
 
 		// handle job
 		switch job.Status {
@@ -131,6 +134,7 @@ func (q *Queue) get(name string) *Job {
 	for _, job = range board.jobs {
 		// ignore jobs that are delayed
 		if job.Delayed.After(now) {
+			job = nil
 			continue
 		}
 
