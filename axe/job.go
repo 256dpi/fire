@@ -43,7 +43,7 @@ type Job struct {
 	// The time until the job is delayed for execution.
 	Delayed *time.Time `json:"delayed-at" bson:"delayed_at"`
 
-	// The time when the job was the last time dequeued.
+	// The time when the job was dequeue the last time.
 	Started *time.Time `json:"started-at" bson:"started_at"`
 
 	// The time when the last attempt ended (completed, failed or cancelled).
@@ -52,11 +52,10 @@ type Job struct {
 	// The time when the job was finished (completed or cancelled).
 	Finished *time.Time `json:"finished-at" bson:"finished_at"`
 
-	// Attempts can be used to determine if a job should be cancelled after too
-	// many attempts.
+	// Attempts is incremented with each execution attempt.
 	Attempts int `json:"attempts" bson:"attempts"`
 
-	// The supplied result submitted during completion.
+	// The result submitted during completion.
 	Result bson.M `json:"result" bson:"result"`
 
 	// The error from the last failed attempt.
