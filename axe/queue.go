@@ -133,7 +133,7 @@ func (q *Queue) get(name string) *Job {
 	var job *Job
 	for _, job = range board.jobs {
 		// ignore jobs that are delayed
-		if job.Delayed.After(now) {
+		if job.Available.After(now) {
 			job = nil
 			continue
 		}

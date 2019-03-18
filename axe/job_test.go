@@ -31,7 +31,7 @@ func TestJob(t *testing.T) {
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
 	assert.Equal(t, StatusEnqueued, list[0].Status)
 	assert.NotZero(t, list[0].Created)
-	assert.NotZero(t, list[0].Delayed)
+	assert.NotZero(t, list[0].Available)
 	assert.Zero(t, list[0].Started)
 	assert.Zero(t, list[0].Ended)
 	assert.Zero(t, list[0].Finished)
@@ -45,7 +45,7 @@ func TestJob(t *testing.T) {
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
 	assert.Equal(t, StatusDequeued, job.Status)
 	assert.NotZero(t, job.Created)
-	assert.NotZero(t, job.Delayed)
+	assert.NotZero(t, job.Available)
 	assert.NotZero(t, job.Started)
 	assert.Zero(t, job.Ended)
 	assert.Zero(t, job.Finished)
@@ -61,7 +61,7 @@ func TestJob(t *testing.T) {
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
 	assert.Equal(t, StatusCompleted, job.Status)
 	assert.NotZero(t, job.Created)
-	assert.NotZero(t, job.Delayed)
+	assert.NotZero(t, job.Available)
 	assert.NotZero(t, job.Started)
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
@@ -103,7 +103,7 @@ func TestTimeout(t *testing.T) {
 	job, err := Enqueue(store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job2, err := dequeue(store, job.ID(), 0)
+	job2, err := dequeue(store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 
@@ -111,7 +111,9 @@ func TestTimeout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
-	job2, err = dequeue(store, job.ID(), 0)
+	time.Sleep(150 * time.Millisecond)
+
+	job2, err = dequeue(store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 }

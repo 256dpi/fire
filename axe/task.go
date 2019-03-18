@@ -60,8 +60,8 @@ type Task struct {
 	// Default: 1s.
 	Delay time.Duration
 
-	// Timeout is the after which a task can be dequeue again in case the work
-	// was not able to set its status.
+	// Timeout is the time after which a task can be dequeue again in case the
+	// worker was not able to set its status.
 	//
 	// Default: 10m.
 	Timeout time.Duration

@@ -40,8 +40,8 @@ type Job struct {
 	// The time when the job was created.
 	Created time.Time `json:"created-at" bson:"created_at"`
 
-	// The time until the job is delayed for execution.
-	Delayed *time.Time `json:"delayed-at" bson:"delayed_at"`
+	// The time when the job is available for execution.
+	Available time.Time `json:"available-at" bson:"available_at"`
 
 	// The time when the job was dequeue the last time.
 	Started *time.Time `json:"started-at" bson:"started_at"`
@@ -87,12 +87,15 @@ func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration)
 		data = bson.M{}
 	}
 
+	// get time
+	now := time.Now()
+
 	// prepare job
 	job := coal.Init(&Job{
-		Name:    name,
-		Status:  StatusEnqueued,
-		Created: time.Now(),
-		Delayed: coal.T(time.Now().Add(delay)),
+		Name:      name,
+		Status:    StatusEnqueued,
+		Created:   now,
+		Available: now.Add(delay),
 	}).(*Job)
 
 	// marshall data
@@ -117,31 +120,25 @@ func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration)
 }
 
 func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Job, error) {
+	// get time
+	now := time.Now()
+
 	// dequeue job
 	var job Job
 	_, err := store.C(&Job{}).Find(bson.M{
 		"_id": id,
-		"$or": []bson.M{
-			{
-				coal.F(&Job{}, "Status"): bson.M{
-					"$in": []Status{StatusEnqueued, StatusFailed},
-				},
-				coal.F(&Job{}, "Delayed"): bson.M{
-					"$lte": time.Now(),
-				},
-			},
-			{
-				coal.F(&Job{}, "Status"): StatusDequeued,
-				coal.F(&Job{}, "Started"): bson.M{
-					"$lte": time.Now().Add(-timeout),
-				},
-			},
+		coal.F(&Job{}, "Status"): bson.M{
+			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
+		},
+		coal.F(&Job{}, "Available"): bson.M{
+			"$lte": now,
 		},
 	}).Sort("_id").Apply(mgo.Change{
 		Update: bson.M{
 			"$set": bson.M{
-				coal.F(&Job{}, "Status"):  StatusDequeued,
-				coal.F(&Job{}, "Started"): time.Now(),
+				coal.F(&Job{}, "Status"):    StatusDequeued,
+				coal.F(&Job{}, "Started"):   now,
+				coal.F(&Job{}, "Available"): now.Add(timeout),
 			},
 			"$inc": bson.M{
 				coal.F(&Job{}, "Attempts"): 1,
@@ -185,10 +182,10 @@ func fail(store *coal.SubStore, id bson.ObjectId, reason string, delay time.Dura
 	// update job
 	err := store.C(&Job{}).UpdateId(id, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"):  StatusFailed,
-			coal.F(&Job{}, "Reason"):  reason,
-			coal.F(&Job{}, "Ended"):   now,
-			coal.F(&Job{}, "Delayed"): now.Add(delay),
+			coal.F(&Job{}, "Status"):    StatusFailed,
+			coal.F(&Job{}, "Reason"):    reason,
+			coal.F(&Job{}, "Ended"):     now,
+			coal.F(&Job{}, "Available"): now.Add(delay),
 		},
 	})
 	if err != nil {
