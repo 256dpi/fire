@@ -59,6 +59,12 @@ type Task struct {
 	//
 	// Default: 1s.
 	Delay time.Duration
+
+	// Timeout is the after which a task can be dequeue again in case the work
+	// was not able to set its status.
+	//
+	// Default: 10m.
+	Timeout time.Duration
 }
 
 func (t *Task) start(p *Pool) {
@@ -80,6 +86,11 @@ func (t *Task) start(p *Pool) {
 	// set default delay
 	if t.Delay == 0 {
 		t.Delay = time.Second
+	}
+
+	// set default timeout
+	if t.Timeout == 0 {
+		t.Timeout = 10 * time.Minute
 	}
 
 	// start workers
@@ -127,10 +138,8 @@ func (t *Task) execute(job *Job) error {
 	store := t.Queue.Store.Copy()
 	defer store.Close()
 
-	// TODO: Configure timeout?
-
 	// dequeue job
-	job, err := dequeue(store, job.ID(), time.Hour)
+	job, err := dequeue(store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
