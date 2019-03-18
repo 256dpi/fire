@@ -38,9 +38,14 @@ func (p *Pool) Add(task *Task) {
 }
 
 func (p *Pool) Run() {
-	// initialize all queues
+	// init all queues
 	for queue := range p.queues {
-		go queue.init(p)
+		queue.init()
+	}
+
+	// run all queues
+	for queue := range p.queues {
+		go queue.run(p)
 	}
 
 	// run all tasks

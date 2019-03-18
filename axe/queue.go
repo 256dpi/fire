@@ -21,7 +21,7 @@ type Queue struct {
 	boards map[string]*board
 }
 
-func (q *Queue) init(p *Pool) {
+func (q *Queue) init() {
 	// initialize boards
 	q.boards = make(map[string]*board)
 
@@ -31,7 +31,9 @@ func (q *Queue) init(p *Pool) {
 			jobs: make(map[bson.ObjectId]*Job),
 		}
 	}
+}
 
+func (q *Queue) run(p *Pool) {
 	// create stream
 	s := coal.NewStream(q.Store, &Job{})
 	s.Reporter = p.Reporter

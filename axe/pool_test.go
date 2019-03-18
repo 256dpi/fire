@@ -2,6 +2,7 @@ package axe
 
 import (
 	"testing"
+	"time"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,8 @@ func TestPool(t *testing.T) {
 		MaxAttempts: 2,
 	})
 	p.Run()
+
+	time.Sleep(100 * time.Millisecond)
 
 	store := tester.Store.Copy()
 	defer store.Close()
