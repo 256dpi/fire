@@ -149,9 +149,21 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
+	// prepare pinger ticker
+	pinger := time.NewTimer(pingTimeout)
+
 	// reset read readline if a pong has been received
 	conn.SetPongHandler(func(string) error {
-		return conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+		// reset read timeout
+		err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+		if err != nil {
+			return err
+		}
+
+		// reset pinger
+		pinger.Reset(pingTimeout)
+
+		return nil
 	})
 
 	// prepare read error channel
@@ -193,6 +205,9 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 				readErr <- err
 				return
 			}
+
+			// reset pinger
+			pinger.Reset(pingTimeout)
 
 			// forward request
 			reqs <- req
@@ -277,7 +292,7 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 				return err
 			}
 		// handle pings
-		case <-time.After(pingTimeout):
+		case <-pinger.C:
 			// set write deadline
 			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			if err != nil {
