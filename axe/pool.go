@@ -4,15 +4,17 @@ import (
 	"fmt"
 )
 
+// Pool manages tasks and queues.
 type Pool struct {
 	tasks  map[string]*Task
 	queues map[*Queue]bool
-
 	closed chan struct{}
 
+	// The function gets invoked by the pool with critical errors.
 	Reporter func(error)
 }
 
+// NewPool creates and returns a new pool.
 func NewPool() *Pool {
 	return &Pool{
 		tasks:  make(map[string]*Task),
@@ -21,6 +23,7 @@ func NewPool() *Pool {
 	}
 }
 
+// Add will add the specified task and its queue to the pool.
 func (p *Pool) Add(task *Task) {
 	// check existence
 	if p.tasks[task.Name] != nil {
@@ -37,6 +40,7 @@ func (p *Pool) Add(task *Task) {
 	p.queues[task.Queue] = true
 }
 
+// Run will launch the queue watchers and task workers in the background.
 func (p *Pool) Run() {
 	// start all queues
 	for queue := range p.queues {
