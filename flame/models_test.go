@@ -3,9 +3,9 @@ package flame
 import (
 	"testing"
 
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/256dpi/fire"
 	"github.com/stretchr/testify/assert"
 )
 
