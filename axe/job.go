@@ -43,8 +43,11 @@ type Job struct {
 	// The time when the job was the last time dequeued.
 	Started *time.Time `json:"started-at" bson:"started_at"`
 
-	// The time when the job was ended (completed, failed or cancelled).
+	// The time when the last attempt ended (completed, failed or cancelled).
 	Ended *time.Time `json:"ended-at" bson:"ended_at"`
+
+	// The time when the job was finished (completed or cancelled).
+	Finished *time.Time `json:"finished-at" bson:"finished_at"`
 
 	// Attempts can be used to determine if a job should be cancelled after too
 	// many attempts.
@@ -61,8 +64,8 @@ type Job struct {
 }
 
 // AddJobIndexes will add user indexes to the specified indexer. If removeAfter
-// is specified, jobs are automatically removed when their ended timestamp falls
-// behind the specified duration. Warning: this also applies to failed jobs!
+// is specified, completed and cancelled jobs are automatically removed when
+// their finished timestamp falls behind the specified duration.
 //
 // Note: It is recommended to create custom indexes that support the exact
 // nature of data and access patterns.
@@ -73,8 +76,8 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 	// add status index
 	indexer.Add(&Job{}, false, 0, "Status")
 
-	// add ended index
-	indexer.Add(&Job{}, false, removeAfter, "Ended")
+	// add finished index
+	indexer.Add(&Job{}, false, removeAfter, "Finished")
 }
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
@@ -168,12 +171,16 @@ func fetch(store *coal.SubStore, id bson.ObjectId) (*Job, error) {
 }
 
 func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
+	// get time
+	now := time.Now()
+
 	// update job
 	err := store.C(&Job{}).UpdateId(id, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"): StatusCompleted,
-			coal.F(&Job{}, "Result"): result,
-			coal.F(&Job{}, "Ended"):  time.Now(),
+			coal.F(&Job{}, "Status"):   StatusCompleted,
+			coal.F(&Job{}, "Result"):   result,
+			coal.F(&Job{}, "Ended"):    now,
+			coal.F(&Job{}, "Finished"): now,
 		},
 	})
 	if err != nil {
@@ -204,12 +211,16 @@ func fail(store *coal.SubStore, id bson.ObjectId, error string, delay time.Durat
 }
 
 func cancel(store *coal.SubStore, id bson.ObjectId, reason string) error {
+	// get time
+	now := time.Now()
+
 	// update job
 	err := store.C(&Job{}).UpdateId(id, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"): StatusCancelled,
-			coal.F(&Job{}, "Reason"): reason,
-			coal.F(&Job{}, "Ended"):  time.Now(),
+			coal.F(&Job{}, "Status"):   StatusCancelled,
+			coal.F(&Job{}, "Reason"):   reason,
+			coal.F(&Job{}, "Ended"):    now,
+			coal.F(&Job{}, "Finished"): now,
 		},
 	})
 	if err != nil {

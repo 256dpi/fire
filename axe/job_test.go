@@ -34,6 +34,7 @@ func TestJob(t *testing.T) {
 	assert.NotZero(t, list[0].Delayed)
 	assert.Zero(t, list[0].Started)
 	assert.Zero(t, list[0].Ended)
+	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
 	assert.Equal(t, bson.M{}, list[0].Result)
 	assert.Equal(t, "", list[0].Error)
@@ -48,6 +49,7 @@ func TestJob(t *testing.T) {
 	assert.NotZero(t, job.Delayed)
 	assert.NotZero(t, job.Started)
 	assert.Zero(t, job.Ended)
+	assert.Zero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{}, job.Result)
 	assert.Equal(t, "", job.Error)
@@ -65,6 +67,7 @@ func TestJob(t *testing.T) {
 	assert.NotZero(t, job.Delayed)
 	assert.NotZero(t, job.Started)
 	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M{"bar": "baz"}, job.Result)
 	assert.Equal(t, "", job.Error)
@@ -199,6 +202,7 @@ func TestCancelled(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, StatusCancelled, job.Status)
 	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
 	assert.Equal(t, "some reason", job.Reason)
 }
 
