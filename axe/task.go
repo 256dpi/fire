@@ -7,6 +7,25 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+// Error is used to signal failed job executions.
+type Error struct {
+	Reason string
+	Retry  bool
+}
+
+// Error implements the error interface.
+func (c *Error) Error() string {
+	return c.Reason
+}
+
+// E is a short-hand to construct an error.
+func E(reason string, retry bool) *Error {
+	return &Error{
+		Reason: reason,
+		Retry:  retry,
+	}
+}
+
 // Model can be any BSON serializable type.
 type Model interface{}
 
@@ -92,13 +111,11 @@ func (t *Task) worker(p *Pool) {
 }
 
 func (t *Task) execute(job *Job) error {
-	// TODO: Dequeue specified job.
-
 	// get store
 	store := t.Queue.Store.Copy()
 	defer store.Close()
 
-	// dequeue task
+	// dequeue job
 	job, err := dequeue(store, job.ID(), time.Hour)
 	if err != nil {
 		return err
@@ -120,14 +137,31 @@ func (t *Task) execute(job *Job) error {
 
 	// run handler
 	result, err := t.Handler(data)
-	if err != nil {
+	if _, ok := err.(*Error); !ok && err != nil {
 		return err
 	}
 
-	// TODO: Fail task on error.
-	// TODO: Cancel task if max attempts has been reached.
+	// check error
+	if e, ok := err.(*Error); ok {
+		// check retry and attempts
+		if !e.Retry || job.Attempts >= t.MaxAttempts {
+			// cancel job
+			err = cancel(store, job.ID(), e.Reason)
+			if err != nil {
+				return err
+			}
 
-	// complete task
+			return nil
+		}
+
+		// fail job
+		err = fail(store, job.ID(), e.Reason, 0)
+		if err != nil {
+			return err
+		}
+	}
+
+	// complete job
 	err = complete(store, job.ID(), result)
 	if err != nil {
 		return err
