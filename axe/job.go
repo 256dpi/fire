@@ -159,17 +159,6 @@ func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Jo
 	return &job, nil
 }
 
-func fetch(store *coal.SubStore, id bson.ObjectId) (*Job, error) {
-	// find job
-	var job Job
-	err := store.C(&Job{}).FindId(id).One(&job)
-	if err != nil {
-		return nil, err
-	}
-
-	return &job, nil
-}
-
 func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
 	// get time
 	now := time.Now()

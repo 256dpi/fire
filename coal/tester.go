@@ -1,5 +1,7 @@
 package coal
 
+import "github.com/globalsign/mgo/bson"
+
 // A Tester provides facilities to the test a fire API.
 type Tester struct {
 	// The store to use for cleaning the database.
@@ -77,6 +79,23 @@ func (t *Tester) FindLast(model Model) Model {
 
 	// find last document
 	err := store.C(model).Find(nil).Sort("-_id").One(model)
+	if err != nil {
+		panic(err)
+	}
+
+	// initialize model
+	Init(model)
+
+	return model
+}
+
+// Fetch will return the saved model.
+func (t *Tester) Fetch(model Model, id bson.ObjectId) Model {
+	store := t.Store.Copy()
+	defer store.Close()
+
+	// find specific document
+	err := store.C(model).FindId(id).One(model)
 	if err != nil {
 		panic(err)
 	}

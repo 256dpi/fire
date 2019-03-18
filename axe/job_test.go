@@ -58,8 +58,7 @@ func TestJob(t *testing.T) {
 	err = complete(store, job.ID(), bson.M{"bar": "baz"})
 	assert.NoError(t, err)
 
-	job, err = fetch(store, job.ID())
-	assert.NoError(t, err)
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, "foo", job.Name)
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
 	assert.Equal(t, StatusCompleted, job.Status)
@@ -136,8 +135,7 @@ func TestFailed(t *testing.T) {
 	err = fail(store, job.ID(), "some error", 0)
 	assert.NoError(t, err)
 
-	job, err = fetch(store, job.ID())
-	assert.NoError(t, err)
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, StatusFailed, job.Status)
 	assert.NotZero(t, job.Ended)
 	assert.Equal(t, "some error", job.Error)
@@ -164,8 +162,7 @@ func TestFailedDelayed(t *testing.T) {
 	err = fail(store, job.ID(), "some error", 100*time.Millisecond)
 	assert.NoError(t, err)
 
-	job, err = fetch(store, job.ID())
-	assert.NoError(t, err)
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, StatusFailed, job.Status)
 	assert.NotZero(t, job.Ended)
 	assert.Equal(t, "some error", job.Error)
@@ -198,8 +195,7 @@ func TestCancelled(t *testing.T) {
 	err = cancel(store, job.ID(), "some reason")
 	assert.NoError(t, err)
 
-	job, err = fetch(store, job.ID())
-	assert.NoError(t, err)
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, StatusCancelled, job.Status)
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
