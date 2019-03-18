@@ -79,12 +79,12 @@ func (q *Queue) watcher(p *Pool) {
 
 		// handle job
 		switch job.Status {
-		case StatusEnqueued, StatusFailed:
+		case StatusEnqueued, StatusFailed, StatusDequeued:
 			// add job
 			board.Lock()
 			board.jobs[job.ID()] = job
 			board.Unlock()
-		case StatusDequeued, StatusCompleted, StatusCancelled:
+		case StatusCompleted, StatusCancelled:
 			// remove job
 			board.Lock()
 			delete(board.jobs, job.ID())
