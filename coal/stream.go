@@ -172,6 +172,9 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 
 		// call receiver
 		rec(typ, ch.DocumentKey.ID, record)
+
+		// save token
+		s.token = &ch.ResumeToken
 	}
 
 	// close stream and check error
@@ -185,13 +188,11 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 	s.current = nil
 	s.mutex.Unlock()
 
-	// save token
-	s.token = cs.ResumeToken()
-
 	return nil
 }
 
 type change struct {
+	ResumeToken bson.Raw `bson:"_id"`
 	OperationType string `bson:"operationType"`
 	DocumentKey   struct {
 		ID bson.ObjectId `bson:"_id"`
