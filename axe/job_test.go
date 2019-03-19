@@ -4,16 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
-)
-
-var tester = fire.NewTester(
-	coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire-axe"),
-	&Job{},
 )
 
 func TestJob(t *testing.T) {

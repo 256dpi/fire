@@ -9,15 +9,24 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// Status describes a jobs status.
+// Status defines the allows statuses of a job.
 type Status string
 
 // The available job statuses.
 const (
-	StatusEnqueued  Status = "enqueued"
-	StatusDequeued  Status = "dequeued"
+	// StatusEnqueued is used as the initial status when jobs are created.
+	StatusEnqueued Status = "enqueued"
+
+	// StatusDequeued is set when a job has been successfully dequeued.
+	StatusDequeued Status = "dequeued"
+
+	// StatusCompleted is set when a jobs has been successfully executed.
 	StatusCompleted Status = "completed"
-	StatusFailed    Status = "failed"
+
+	// StatusFailed is set when an execution of a job failed.
+	StatusFailed Status = "failed"
+
+	// StatusCancelled is set when a jobs has been cancelled.
 	StatusCancelled Status = "cancelled"
 )
 
@@ -80,7 +89,7 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 }
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
-// is specified the job will not dequeued until the specified time has passed.
+// is specified the job will not be dequeued until the specified time has passed.
 func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration) (*Job, error) {
 	// set default data
 	if data == nil {
