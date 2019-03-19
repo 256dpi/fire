@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -162,6 +163,60 @@ func TestPoolFailed(t *testing.T) {
 	assert.Equal(t, 2, job.Attempts)
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
 	assert.Equal(t, "foo", job.Reason)
+
+	p.Close()
+}
+
+func TestPoolCrashed(t *testing.T) {
+	tester.Clean()
+
+	q := NewQueue(tester.Store)
+
+	done := make(chan struct{})
+
+	i := 0
+
+	p := NewPool()
+	// p.Reporter = func(err error) { panic(err) }
+	p.Add(&Task{
+		Name:  "crashed",
+		Model: &data{},
+		Queue: q,
+		Handler: func(m Model) (bson.M, error) {
+			if i == 0 {
+				i++
+				return nil, io.EOF
+			} else {
+				close(done)
+				return nil, nil
+			}
+		},
+		Workers:     2,
+		MaxAttempts: 2,
+	})
+	p.Run()
+
+	time.Sleep(100 * time.Millisecond)
+
+	job, err := q.Enqueue("crashed", &data{}, 0)
+	assert.NoError(t, err)
+
+	<-done
+
+	time.Sleep(100 * time.Millisecond)
+
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
+	assert.Equal(t, "crashed", job.Name)
+	assert.Equal(t, &data{}, decodeRaw(job.Data, &data{}))
+	assert.Equal(t, StatusCompleted, job.Status)
+	assert.NotZero(t, job.Created)
+	assert.NotZero(t, job.Available)
+	assert.NotZero(t, job.Started)
+	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
+	assert.Equal(t, 2, job.Attempts)
+	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, "EOF", job.Reason)
 
 	p.Close()
 }
