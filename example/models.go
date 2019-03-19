@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 
@@ -21,6 +22,9 @@ func init() {
 	flame.AddUserIndexes(indexer)
 	flame.AddAccessTokenIndexes(indexer, true)
 	flame.AddRefreshTokenIndexes(indexer, true)
+
+	// add axe indexes
+	axe.AddJobIndexes(indexer, time.Minute)
 
 	// add item index
 	indexer.Add(&Item{}, false, 0, "Name")
