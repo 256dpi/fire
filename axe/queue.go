@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"math/rand"
 	"sync"
 	"time"
 
@@ -17,6 +18,17 @@ type board struct {
 
 // Queue manages the queueing of jobs.
 type Queue struct {
+	// MaxLag defines the maximum amount of lag that should be applied to every
+	// dequeue attempt.
+	//
+	// By default multiple processes compete with each other when getting jobs
+	// from the same queue. An artificial lag prevents multiple simultaneous
+	// dequeue attempts and allows the worker with the smallest lag to dequeue
+	// the job and inform the other processed to prevent another dequeue attempt.
+	//
+	// Default: 0.
+	MaxLag time.Duration
+
 	store  *coal.Store
 	tasks  []string
 	boards map[string]*board
@@ -127,6 +139,12 @@ func (q *Queue) watcher(p *Pool) {
 		// handle job
 		switch job.Status {
 		case StatusEnqueued, StatusDequeued, StatusFailed:
+			// apply random lag if configured
+			if q.MaxLag > 0 {
+				lag := time.Duration(rand.Int63n(int64(q.MaxLag)))
+				job.Available = job.Available.Add(lag)
+			}
+
 			// add job
 			board.Lock()
 			board.jobs[job.ID()] = job
