@@ -12,6 +12,8 @@ before_script:
   - mkdir /tmp/data
   - ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --replSet rs0 --dbpath /tmp/data --logpath /tmp/mongodb.log --bind_ip 0.0.0.0 --fork
   - sleep 10
+  - ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongo --eval 'rs.initiate()'
+  - sleep 10
 script:
   - go get github.com/modocache/gover
   - go get github.com/mattn/goveralls
