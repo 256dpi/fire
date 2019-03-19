@@ -26,7 +26,7 @@ func E(reason string, retry bool) *Error {
 	}
 }
 
-// Task is task that is executed asynchronously.
+// Task describes work that is managed using a job queue.
 type Task struct {
 	// Name is the unique name of the task.
 	Name string
@@ -34,25 +34,24 @@ type Task struct {
 	// Model is the model that holds task related data.
 	Model Model
 
-	// Queue is the queue that is used to managed the jobs.
+	// Queue is the queue that is used to manage the jobs.
 	Queue *Queue
 
 	// Handler is the callback called with jobs for processing. The handler
 	// should return errors formatted with E to properly indicate the status of
-	// the job. Other errors are directly returned and the task status is not
-	// updated. If a task execution is successful the handler might return some
+	// the job. If a task execution is successful the handler might return some
 	// data that is attached to the job.
 	Handler func(Model) (bson.M, error)
 
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs.
 	//
-	// Default: 1.
+	// Default: 2.
 	Workers int
 
 	// MaxAttempts defines the maximum attempts to complete a task.
 	//
-	// Default: 1
+	// Default: 3
 	MaxAttempts int
 
 	// Interval defines the rate at which the worker will request a job from the
@@ -76,12 +75,12 @@ type Task struct {
 func (t *Task) start(p *Pool) {
 	// set default workers
 	if t.Workers == 0 {
-		t.Workers = 1
+		t.Workers = 2
 	}
 
 	// set default max attempts
 	if t.MaxAttempts == 0 {
-		t.MaxAttempts = 1
+		t.MaxAttempts = 3
 	}
 
 	// set default interval

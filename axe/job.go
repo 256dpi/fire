@@ -9,7 +9,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// Status defines the allows statuses of a job.
+// Status defines the allowed statuses of a job.
 type Status string
 
 // The available job statuses.
@@ -71,7 +71,7 @@ type Job struct {
 	Reason string `json:"reason" bson:"reason"`
 }
 
-// AddJobIndexes will add user indexes to the specified indexer. If removeAfter
+// AddJobIndexes will add job indexes to the specified indexer. If removeAfter
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
 //
