@@ -37,10 +37,15 @@ type Task struct {
 	// Queue is the queue that is used to managed the jobs.
 	Queue *Queue
 
-	// Handler is the callback called with tasks.
+	// Handler is the callback called with jobs for processing. The handler
+	// should return errors formatted with E to properly indicate the status of
+	// the job. Other errors are directly returned and the task status is not
+	// updated. If a task execution is successful the handler might return some
+	// data that is attached to the job.
 	Handler func(Model) (bson.M, error)
 
-	// Workers defines the number for spawned workers.
+	// Workers defines the number for spawned workers that dequeue and execute
+	// jobs.
 	//
 	// Default: 1.
 	Workers int
@@ -50,7 +55,8 @@ type Task struct {
 	// Default: 1
 	MaxAttempts int
 
-	// Interval is interval at which the worker will request a job from the queue.
+	// Interval defines the rate at which the worker will request a job from the
+	// queue.
 	//
 	// Default: 100ms.
 	Interval time.Duration
@@ -123,7 +129,7 @@ func (t *Task) worker(p *Pool) {
 			continue
 		}
 
-		// execute worker and report errors
+		// execute job and report errors
 		err := t.execute(job)
 		if err != nil {
 			if p.Reporter != nil {
@@ -144,7 +150,7 @@ func (t *Task) execute(job *Job) error {
 		return err
 	}
 
-	// return if missing
+	// return if missing (might be dequeued already by another process)
 	if job == nil {
 		return nil
 	}
@@ -158,7 +164,7 @@ func (t *Task) execute(job *Job) error {
 		return err
 	}
 
-	// start handler
+	// run handler
 	result, err := t.Handler(data)
 
 	// check error
@@ -185,6 +191,9 @@ func (t *Task) execute(job *Job) error {
 
 	// handle other errors
 	if err != nil {
+		// attempt to fail job
+		_ = fail(store, job.ID(), err.Error(), t.Delay)
+
 		return err
 	}
 

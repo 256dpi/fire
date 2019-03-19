@@ -1,7 +1,6 @@
 package axe
 
 import (
-	"io"
 	"testing"
 	"time"
 
@@ -224,7 +223,7 @@ func TestPoolTimeout(t *testing.T) {
 	i := 0
 
 	p := NewPool()
-	//p.Reporter = func(err error) { panic(err) }
+	p.Reporter = func(err error) { panic(err) }
 	p.Add(&Task{
 		Name:  "timeout",
 		Model: &data{},
@@ -232,7 +231,8 @@ func TestPoolTimeout(t *testing.T) {
 		Handler: func(m Model) (bson.M, error) {
 			if i == 0 {
 				i++
-				return nil, io.EOF
+				time.Sleep(5 * time.Second)
+				return nil, nil
 			} else {
 				close(done)
 				return nil, nil
