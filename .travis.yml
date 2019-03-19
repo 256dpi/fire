@@ -29,6 +29,7 @@ script:
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 after_script:
   - pkill mongod
+  - cat /tmp/mongodb.log
 matrix:
   allow_failures:
     - go: tip
