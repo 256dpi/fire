@@ -130,12 +130,12 @@ func TestPoolFailed(t *testing.T) {
 			if i == 0 {
 				i++
 				return nil, E("foo", true)
-			} else {
-				close(done)
-				return bson.M{
-					"foo": "bar",
-				}, nil
 			}
+
+			close(done)
+			return bson.M{
+				"foo": "bar",
+			}, nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -186,10 +186,10 @@ func TestPoolCrashed(t *testing.T) {
 			if i == 0 {
 				i++
 				return nil, io.EOF
-			} else {
-				close(done)
-				return nil, nil
 			}
+
+			close(done)
+			return nil, nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -288,10 +288,10 @@ func TestPoolTimeout(t *testing.T) {
 				i++
 				time.Sleep(5 * time.Second)
 				return nil, nil
-			} else {
-				close(done)
-				return nil, nil
 			}
+
+			close(done)
+			return nil, nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,

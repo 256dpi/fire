@@ -192,8 +192,8 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 }
 
 type change struct {
-	ResumeToken bson.Raw `bson:"_id"`
-	OperationType string `bson:"operationType"`
+	ResumeToken   bson.Raw `bson:"_id"`
+	OperationType string   `bson:"operationType"`
 	DocumentKey   struct {
 		ID bson.ObjectId `bson:"_id"`
 	} `bson:"documentKey"`
