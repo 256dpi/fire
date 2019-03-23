@@ -55,6 +55,7 @@ func (s *Strategy) Callback() *fire.Callback {
 		s.ResourceAction = make(map[string][]*Authorizer)
 	}
 
+	// construct and return callback
 	return fire.C("ash/Strategy.Callback", fire.All(), func(ctx *fire.Context) (err error) {
 		switch ctx.Operation {
 		case fire.List:
@@ -93,8 +94,8 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 				return err
 			}
 
-			// run enforcers on success
-			if enforcers != nil {
+			// run enforcers if provided
+			if len(enforcers) > 0 {
 				for _, enforcer := range enforcers {
 					// check if enforcer can be run
 					if !enforcer.Matcher(ctx) {

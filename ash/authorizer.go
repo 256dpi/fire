@@ -10,6 +10,7 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 		panic("ash: missing matcher or handler")
 	}
 
+	// construct and return authorizer
 	return &Authorizer{
 		Matcher: m,
 		Handler: func(ctx *fire.Context) ([]*Enforcer, error) {
