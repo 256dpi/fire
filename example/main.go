@@ -144,6 +144,7 @@ func createHandler(store *coal.Store) http.Handler {
 	g := fire.NewGroup()
 	g.Reporter = reporter
 	g.Add(itemController(store, queue))
+	g.Add(userController(store))
 	g.Handle("watch", watcher.Action())
 
 	// register group
@@ -179,6 +180,22 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 		},
 		SoftProtection: true,
 		SoftDelete:     true,
+	}
+}
+
+func userController(store *coal.Store) *fire.Controller {
+	return &fire.Controller{
+		Model: &flame.User{},
+		Store: store,
+		Validators: fire.L{
+			// set timestamps
+			fire.TimestampValidator("Created", ""),
+
+			// basic model & relationship validations
+			fire.ModelValidator(),
+			fire.RelationshipValidator(&flame.User{}, catalog),
+		},
+		SoftProtection: true,
 	}
 }
 
