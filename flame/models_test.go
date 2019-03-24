@@ -22,12 +22,12 @@ func TestAddIndexes(t *testing.T) {
 
 func TestAccessTokenInterfaces(t *testing.T) {
 	var _ coal.Model = &AccessToken{}
-	var _ Token = &AccessToken{}
+	var _ GenericToken = &AccessToken{}
 }
 
 func TestRefreshTokenInterfaces(t *testing.T) {
 	var _ coal.Model = &RefreshToken{}
-	var _ Token = &RefreshToken{}
+	var _ GenericToken = &RefreshToken{}
 }
 
 func TestApplicationInterfaces(t *testing.T) {

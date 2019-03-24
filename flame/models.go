@@ -11,8 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Token is the interface that must be implemented by the tokens.
-type Token interface {
+// GenericToken is the interface that must be implemented by the tokens.
+type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
@@ -41,12 +41,12 @@ func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	}
 }
 
-// GetTokenData implements the flame.Token interface.
+// GetTokenData implements the flame.GenericToken interface.
 func (t *AccessToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
 	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
 }
 
-// SetTokenData implements the flame.Token interface.
+// SetTokenData implements the flame.GenericToken interface.
 func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
 	t.Scope = scope
 	t.ExpiresAt = expiresAt
@@ -90,12 +90,12 @@ func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	}
 }
 
-// GetTokenData implements the flame.Token interface.
+// GetTokenData implements the flame.GenericToken interface.
 func (t *RefreshToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
 	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
 }
 
-// SetTokenData implements the flame.Token interface.
+// SetTokenData implements the flame.GenericToken interface.
 func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
 	t.Scope = scope
 	t.ExpiresAt = expiresAt

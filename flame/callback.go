@@ -17,7 +17,7 @@ func Callback(scope string) *fire.Callback {
 		s := oauth2.ParseScope(scope)
 
 		// get access token
-		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(Token)
+		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(GenericToken)
 		if !ok || accessToken == nil {
 			return fire.ErrAccessDenied
 		}

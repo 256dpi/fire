@@ -33,8 +33,8 @@ type Policy struct {
 	ImplicitGrant          bool
 
 	// The token models.
-	AccessToken  Token
-	RefreshToken Token
+	AccessToken  GenericToken
+	RefreshToken GenericToken
 
 	// The client models.
 	Clients []Client
@@ -66,7 +66,7 @@ type Policy struct {
 
 	// TokenData should return a map of data that should be included in the JWT
 	// tokens under the "dat" field.
-	TokenData func(Client, ResourceOwner, Token) map[string]interface{}
+	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
 
 	// The token used lifespans.
 	AccessTokenLifespan  time.Duration
@@ -92,7 +92,7 @@ func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2
 }
 
 // DefaultTokenData adds the user's id to the token data claim.
-func DefaultTokenData(_ Client, ro ResourceOwner, _ Token) map[string]interface{} {
+func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]interface{} {
 	if ro != nil {
 		return map[string]interface{}{
 			"user": ro.ID(),
@@ -123,7 +123,7 @@ func DefaultPolicy(secret string) *Policy {
 }
 
 // GenerateToken returns a new token for the provided information.
-func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token Token) (string, error) {
+func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
 	// prepare claims
 	claims := &TokenClaims{}
 	claims.Id = id.Hex()

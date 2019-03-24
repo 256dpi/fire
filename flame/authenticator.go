@@ -833,7 +833,7 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id b
 	return resourceOwner
 }
 
-func (a *Authenticator) getToken(state *state, model Token, id bson.ObjectId) Token {
+func (a *Authenticator) getToken(state *state, model GenericToken, id bson.ObjectId) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getToken")
 
@@ -852,7 +852,7 @@ func (a *Authenticator) getToken(state *state, model Token, id bson.ObjectId) To
 	state.tracer.Pop()
 
 	// initialize access token
-	accessToken := coal.Init(obj).(Token)
+	accessToken := coal.Init(obj).(GenericToken)
 
 	// finish trace
 	state.tracer.Pop()
@@ -860,12 +860,12 @@ func (a *Authenticator) getToken(state *state, model Token, id bson.ObjectId) To
 	return accessToken
 }
 
-func (a *Authenticator) saveToken(state *state, model Token, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) Token {
+func (a *Authenticator) saveToken(state *state, model GenericToken, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.saveToken")
 
 	// prepare access token
-	token := model.Meta().Make().(Token)
+	token := model.Meta().Make().(GenericToken)
 
 	// set access token data
 	token.SetTokenData(scope, expiresAt, client, resourceOwner)
@@ -883,7 +883,7 @@ func (a *Authenticator) saveToken(state *state, model Token, scope []string, exp
 	return token
 }
 
-func (a *Authenticator) deleteToken(state *state, model Token, id bson.ObjectId) {
+func (a *Authenticator) deleteToken(state *state, model GenericToken, id bson.ObjectId) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.deleteToken")
 
