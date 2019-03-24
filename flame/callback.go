@@ -6,26 +6,51 @@ import (
 	"github.com/256dpi/oauth2"
 )
 
-// Callback returns a callback that can be used to protect resources by
-// requiring an access token with the provided scope to be granted.
+// AuthInfoDataKey is the key used to store the auth info struct.
+const AuthInfoDataKey = "flame:auth-info"
+
+// AuthInfo is the collected authentication info stored in the data map.
+type AuthInfo struct {
+	Client        Client
+	ResourceOwner ResourceOwner
+	AccessToken   GenericToken
+}
+
+// Callback returns a callback that can be used in controllers to protect
+// resources by requiring an access token with the provided scope to be granted.
 //
-// Note: It requires that the request has already been authorized using the
-// Authorizer middleware from a Authenticator.
-func Callback(scope ...string) *fire.Callback {
+// Note: The callback requires that the request has already been authorized
+// using the Authorizer middleware from an Authenticator.
+func Callback(force bool, scope ...string) *fire.Callback {
 	return fire.C("flame/Callback", fire.All(), func(ctx *fire.Context) error {
 		// coerce scope
 		s := oauth2.Scope(scope)
 
+		// get client
+		client, _ := ctx.HTTPRequest.Context().Value(ClientContextKey).(Client)
+
+		// get resource owner
+		resourceOwner, _ := ctx.HTTPRequest.Context().Value(ResourceOwnerContextKey).(ResourceOwner)
+
 		// get access token
-		accessToken, ok := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(GenericToken)
-		if !ok || accessToken == nil {
+		accessToken, _ := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(GenericToken)
+		if force && accessToken == nil {
 			return fire.ErrAccessDenied
 		}
 
-		// validate scope
-		_, scope, _, _, _ := accessToken.GetTokenData()
-		if !oauth2.Scope(scope).Includes(s) {
-			return fire.ErrAccessDenied
+		// validate scope if token is present
+		if accessToken != nil {
+			_, scope, _, _, _ := accessToken.GetTokenData()
+			if !oauth2.Scope(scope).Includes(s) {
+				return fire.ErrAccessDenied
+			}
+		}
+
+		// store auth info
+		ctx.Data[AuthInfoDataKey] = &AuthInfo{
+			Client:        client,
+			ResourceOwner: resourceOwner,
+			AccessToken:   accessToken,
 		}
 
 		return nil
