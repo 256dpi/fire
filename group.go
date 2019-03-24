@@ -97,7 +97,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		defer stack.Resume(func(err error) {
 			// directly write jsonapi errors
 			if jsonapiError, ok := err.(*jsonapi.Error); ok {
-				jsonapi.WriteError(w, jsonapiError)
+				_ = jsonapi.WriteError(w, jsonapiError)
 				return
 			}
 
@@ -112,7 +112,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			}
 
 			// ignore errors caused by writing critical errors
-			jsonapi.WriteError(w, jsonapi.InternalServerError(""))
+			_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
 		})
 
 		// trim path
