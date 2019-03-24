@@ -27,7 +27,7 @@ func TestCallbackInsufficientAccessToken(t *testing.T) {
 
 func TestCallbackProperAccessToken(t *testing.T) {
 	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
-		Scope: []string{"foo"},
+		Scope: []string{"foo", "bar"},
 	})
 
 	authorizer := Callback("foo")
