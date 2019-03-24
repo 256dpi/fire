@@ -97,9 +97,12 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 	// set context if missing
 	if ctx == nil {
-		ctx = &Context{
-			Data: Map{},
-		}
+		ctx = &Context{}
+	}
+
+	// set data if missing
+	if ctx.Data == nil {
+		ctx.Data = Map{}
 	}
 
 	// set operation if missing
