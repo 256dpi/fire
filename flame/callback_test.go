@@ -15,7 +15,7 @@ func TestCallbackMissingAccessToken(t *testing.T) {
 }
 
 func TestCallbackInsufficientAccessToken(t *testing.T) {
-	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &AccessToken{
+	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
 		Scope: []string{"bar"},
 	})
 
@@ -26,7 +26,7 @@ func TestCallbackInsufficientAccessToken(t *testing.T) {
 }
 
 func TestCallbackProperAccessToken(t *testing.T) {
-	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &AccessToken{
+	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
 		Scope: []string{"foo"},
 	})
 

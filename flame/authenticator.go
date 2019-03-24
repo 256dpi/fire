@@ -53,9 +53,8 @@ type Authenticator struct {
 
 // NewAuthenticator constructs a new Authenticator from a store and policy.
 func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
-	// initialize models
-	coal.Init(policy.AccessToken)
-	coal.Init(policy.RefreshToken)
+	// initialize token
+	coal.Init(policy.Token)
 
 	// initialize clients
 	for _, model := range policy.Clients {
@@ -202,13 +201,18 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get token
-			accessToken := a.getToken(state, a.policy.AccessToken, bson.ObjectIdHex(claims.Id))
+			accessToken := a.getToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("unknown token"))
 			}
 
 			// get additional data
-			scope, expiresAt, clientID, resourceOwnerID := accessToken.GetTokenData()
+			typ, scope, expiresAt, clientID, resourceOwnerID := accessToken.GetTokenData()
+
+			// validate token type
+			if typ != AccessToken {
+				stack.Abort(bearer.InvalidToken("invalid type"))
+			}
 
 			// validate expiration
 			if expiresAt.Before(time.Now()) {
@@ -470,13 +474,18 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// get stored refresh token by signature
-	rt := a.getToken(state, a.policy.RefreshToken, bson.ObjectIdHex(claims.Id))
+	rt := a.getToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
 
 	// get data
-	scope, expiresAt, clientID, resourceOwnerID := rt.GetTokenData()
+	typ, scope, expiresAt, clientID, resourceOwnerID := rt.GetTokenData()
+
+	// validate type
+	if typ != RefreshToken {
+		stack.Abort(oauth2.InvalidGrant("invalid type"))
+	}
 
 	// validate expiration
 	if expiresAt.Before(time.Now()) {
@@ -508,7 +517,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	res := a.issueTokens(state, true, req.Scope, client, ro)
 
 	// delete refresh token
-	a.deleteToken(state, a.policy.RefreshToken, rt.ID())
+	a.deleteToken(state, a.policy.Token, rt.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -538,11 +547,8 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 		return
 	}
 
-	// delete access token
-	a.deleteToken(state, a.policy.AccessToken, bson.ObjectIdHex(claims.Id))
-
-	// delete refresh token
-	a.deleteToken(state, a.policy.RefreshToken, bson.ObjectIdHex(claims.Id))
+	// delete token
+	a.deleteToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
 
 	// write header
 	state.writer.WriteHeader(http.StatusOK)
@@ -560,7 +566,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
 
 	// save access token
-	at := a.saveToken(state, a.policy.AccessToken, scope, atExpiry, client, resourceOwner)
+	at := a.saveToken(state, a.policy.Token, AccessToken, scope, atExpiry, client, resourceOwner)
 
 	// generate new access token
 	atSignature, err := a.policy.GenerateToken(at.ID(), time.Now(), atExpiry, client, resourceOwner, at)
@@ -575,7 +581,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	// issue a refresh token if requested
 	if refreshable {
 		// save refresh token
-		rt := a.saveToken(state, a.policy.RefreshToken, scope, rtExpiry, client, resourceOwner)
+		rt := a.saveToken(state, a.policy.Token, RefreshToken, scope, rtExpiry, client, resourceOwner)
 
 		// generate new refresh token
 		rtSignature, err := a.policy.GenerateToken(rt.ID(), time.Now(), rtExpiry, client, resourceOwner, rt)
@@ -860,7 +866,7 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id bson.Objec
 	return accessToken
 }
 
-func (a *Authenticator) saveToken(state *state, model GenericToken, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) GenericToken {
+func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.saveToken")
 
@@ -868,7 +874,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, scope []stri
 	token := model.Meta().Make().(GenericToken)
 
 	// set access token data
-	token.SetTokenData(scope, expiresAt, client, resourceOwner)
+	token.SetTokenData(typ, scope, expiresAt, client, resourceOwner)
 
 	// save access token
 	state.tracer.Push("mgo/Collection.Insert")

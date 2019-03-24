@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-flame"), &User{}, &Application{}, &AccessToken{}, &RefreshToken{})
+var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-flame"), &User{}, &Application{}, &Token{})
 
 func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()

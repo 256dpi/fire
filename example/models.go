@@ -20,8 +20,7 @@ func init() {
 	// add flame indexes
 	flame.AddApplicationIndexes(indexer)
 	flame.AddUserIndexes(indexer)
-	flame.AddAccessTokenIndexes(indexer, true)
-	flame.AddRefreshTokenIndexes(indexer, true)
+	flame.AddTokenIndexes(indexer, true)
 
 	// add axe indexes
 	axe.AddJobIndexes(indexer, time.Minute)

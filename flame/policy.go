@@ -32,9 +32,8 @@ type Policy struct {
 	ClientCredentialsGrant bool
 	ImplicitGrant          bool
 
-	// The token models.
-	AccessToken  GenericToken
-	RefreshToken GenericToken
+	// The token model.
+	Token GenericToken
 
 	// The client models.
 	Clients []Client
@@ -108,10 +107,9 @@ func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]int
 // Note: The secret should be at least 16 characters long.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret:       []byte(secret),
-		AccessToken:  &AccessToken{},
-		RefreshToken: &RefreshToken{},
-		Clients:      []Client{&Application{}},
+		Secret:  []byte(secret),
+		Token:   &Token{},
+		Clients: []Client{&Application{}},
 		ResourceOwners: func(_ Client) []ResourceOwner {
 			return []ResourceOwner{&User{}}
 		},

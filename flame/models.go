@@ -11,43 +11,65 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// TokenType defines the type of a token.
+type TokenType string
+
+const (
+	// AccessToken defines an access token.
+	AccessToken TokenType = "access"
+
+	// RefreshToken defines a refresh token.
+	RefreshToken TokenType = "refresh"
+)
+
 // GenericToken is the interface that must be implemented by the tokens.
 type GenericToken interface {
 	coal.Model
 
+	// DescribeToken should return a the token type field.
+	DescribeToken() (typeField string)
+
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() (scope []string, expiresAt time.Time, client bson.ObjectId, resourceOwner *bson.ObjectId)
+	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client bson.ObjectId, resourceOwner *bson.ObjectId)
 
 	// SetTokenData should set the specified token data.
-	SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
+	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
 }
 
-// AccessToken is the built-in model used to store access tokens.
-type AccessToken struct {
-	coal.Base     `json:"-" bson:",inline" coal:"access-tokens:access_tokens"`
+// Token is the built-in model used to store access and refresh tokens.
+type Token struct {
+	coal.Base     `json:"-" bson:",inline" coal:"tokens:tokens"`
+	Type          TokenType      `json:"type"`
 	ExpiresAt     time.Time      `json:"expires-at" bson:"expires_at"`
 	Scope         []string       `json:"scope" bson:"scope"`
 	Client        bson.ObjectId  `json:"client-id" bson:"client_id"`
 	ResourceOwner *bson.ObjectId `json:"resource-owner-id" bson:"resource_owner_id"`
 }
 
-// AddAccessTokenIndexes will add access token indexes to the specified indexer.
-func AddAccessTokenIndexes(i *coal.Indexer, autoExpire bool) {
-	i.Add(&AccessToken{}, false, 0, "Client")
-	i.Add(&AccessToken{}, false, 0, "ResourceOwner")
+// AddTokenIndexes will add access token indexes to the specified indexer.
+func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
+	i.Add(&Token{}, false, 0, "Type")
+	i.Add(&Token{}, false, 0, "Client")
+	i.Add(&Token{}, false, 0, "ResourceOwner")
 
 	if autoExpire {
-		i.Add(&AccessToken{}, false, time.Minute, "ExpiresAt")
+		i.Add(&Token{}, false, time.Minute, "ExpiresAt")
 	}
 }
 
+// DescribeToken implements the flame.GenericToken interface.
+func (t *Token) DescribeToken() string {
+	return "Type"
+}
+
 // GetTokenData implements the flame.GenericToken interface.
-func (t *AccessToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
-	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
+func (t *Token) GetTokenData() (TokenType, []string, time.Time, bson.ObjectId, *bson.ObjectId) {
+	return t.Type, t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
 }
 
 // SetTokenData implements the flame.GenericToken interface.
-func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
+func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
+	t.Type = typ
 	t.Scope = scope
 	t.ExpiresAt = expiresAt
 	t.Client = client.ID()
@@ -57,56 +79,7 @@ func (t *AccessToken) SetTokenData(scope []string, expiresAt time.Time, client C
 }
 
 // Validate implements the fire.ValidatableModel interface.
-func (t *AccessToken) Validate() error {
-	// check id
-	if !t.ID().Valid() {
-		return fire.E("invalid id")
-	}
-
-	// check expires at
-	if t.ExpiresAt.IsZero() {
-		return fire.E("expires at not set")
-	}
-
-	return nil
-}
-
-// RefreshToken is the built-in model used to store refresh tokens.
-type RefreshToken struct {
-	coal.Base     `json:"-" bson:",inline" coal:"refresh-tokens:refresh_tokens"`
-	ExpiresAt     time.Time      `json:"expires-at" bson:"expires_at"`
-	Scope         []string       `json:"scope" bson:"scope"`
-	Client        bson.ObjectId  `json:"client-id" bson:"client_id"`
-	ResourceOwner *bson.ObjectId `json:"resource-owner-id" bson:"resource_owner_id"`
-}
-
-// AddRefreshTokenIndexes will add refresh token indexes to the specified indexer.
-func AddRefreshTokenIndexes(i *coal.Indexer, autoExpire bool) {
-	i.Add(&RefreshToken{}, false, 0, "Client")
-	i.Add(&RefreshToken{}, false, 0, "ResourceOwner")
-
-	if autoExpire {
-		i.Add(&RefreshToken{}, false, time.Minute, "ExpiresAt")
-	}
-}
-
-// GetTokenData implements the flame.GenericToken interface.
-func (t *RefreshToken) GetTokenData() ([]string, time.Time, bson.ObjectId, *bson.ObjectId) {
-	return t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
-}
-
-// SetTokenData implements the flame.GenericToken interface.
-func (t *RefreshToken) SetTokenData(scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
-	t.Scope = scope
-	t.ExpiresAt = expiresAt
-	t.Client = client.ID()
-	if resourceOwner != nil {
-		t.ResourceOwner = coal.P(resourceOwner.ID())
-	}
-}
-
-// Validate implements the fire.ValidatableModel interface.
-func (t *RefreshToken) Validate() error {
+func (t *Token) Validate() error {
 	// check id
 	if !t.ID().Valid() {
 		return fire.E("invalid id")

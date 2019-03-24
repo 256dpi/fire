@@ -11,8 +11,7 @@ import (
 
 func TestAddIndexes(t *testing.T) {
 	i := coal.NewIndexer()
-	AddAccessTokenIndexes(i, true)
-	AddRefreshTokenIndexes(i, true)
+	AddTokenIndexes(i, true)
 	AddApplicationIndexes(i)
 	AddUserIndexes(i)
 
@@ -20,14 +19,9 @@ func TestAddIndexes(t *testing.T) {
 	assert.NoError(t, i.Ensure(tester.Store))
 }
 
-func TestAccessTokenInterfaces(t *testing.T) {
-	var _ coal.Model = &AccessToken{}
-	var _ GenericToken = &AccessToken{}
-}
-
-func TestRefreshTokenInterfaces(t *testing.T) {
-	var _ coal.Model = &RefreshToken{}
-	var _ GenericToken = &RefreshToken{}
+func TestTokenInterfaces(t *testing.T) {
+	var _ coal.Model = &Token{}
+	var _ GenericToken = &Token{}
 }
 
 func TestApplicationInterfaces(t *testing.T) {
