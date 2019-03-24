@@ -188,9 +188,6 @@ func userController(store *coal.Store) *fire.Controller {
 		Model: &flame.User{},
 		Store: store,
 		Validators: fire.L{
-			// set timestamps
-			fire.TimestampValidator("Created", ""),
-
 			// basic model & relationship validations
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&flame.User{}, catalog),
