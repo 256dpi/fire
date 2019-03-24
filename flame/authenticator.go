@@ -620,8 +620,31 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	// get id field
 	field := coal.F(model, model.DescribeClient())
 
+	// prepare filter
+	filters := []bson.M{
+		{field: id},
+	}
+
+	// add additional filter if provided
+	if a.policy.ClientFilter != nil {
+		// run filter function
+		filter, err := a.policy.ClientFilter(model, state.request)
+		if err == ErrInvalidFilter {
+			stack.Abort(oauth2.InvalidRequest("invalid filter"))
+		} else if err != nil {
+			stack.Abort(err)
+		}
+
+		// add filter if present
+		if filter != nil {
+			filters = append(filters, filter)
+		}
+	}
+
 	// prepare query
-	query := bson.M{field: id}
+	query := bson.M{
+		"$and": filters,
+	}
 
 	// query db
 	state.tracer.Push("mgo/Query.One")

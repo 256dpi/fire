@@ -26,6 +26,10 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
+	p.ClientFilter = func(c Client, req *http.Request) (bson.M, error) {
+		return bson.M{"_id": bson.M{"$exists": true}}, nil
+	}
+
 	p.ResourceOwnerFilter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
 		return bson.M{"_id": bson.M{"$exists": true}}, nil
 	}
@@ -254,7 +258,68 @@ func TestInvalidResponseType(t *testing.T) {
 	}
 }
 
-func TestInvalidFilter(t *testing.T) {
+func TestInvalidClientFilter(t *testing.T) {
+	tester.Clean()
+
+	policy := DefaultPolicy("")
+	policy.PasswordGrant = true
+
+	authenticator := NewAuthenticator(tester.Store, policy)
+	handler := newHandler(authenticator, false)
+
+	application := tester.Save(&Application{
+		Key: "application",
+	}).(*Application)
+
+	policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
+		return nil, ErrInvalidFilter
+	}
+
+	spec.Do(handler, &spec.Request{
+		Method:   "POST",
+		Path:     "/oauth2/token",
+		Username: application.Key,
+		Password: application.Secret,
+		Form: map[string]string{
+			"grant_type": "password",
+			"username":   "foo",
+			"password":   "bar",
+			"scope":      "",
+		},
+		Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+			assert.JSONEq(t, r.Body.String(), `{
+				"error": "invalid_request",
+				"error_description": "invalid filter"
+			}`)
+		},
+	})
+
+	policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
+		return nil, errors.New("foo")
+	}
+
+	spec.Do(handler, &spec.Request{
+		Method:   "POST",
+		Path:     "/oauth2/token",
+		Username: application.Key,
+		Password: application.Secret,
+		Form: map[string]string{
+			"grant_type": "password",
+			"username":   "foo",
+			"password":   "bar",
+			"scope":      "",
+		},
+		Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusInternalServerError, r.Code)
+			assert.JSONEq(t, r.Body.String(), `{
+				"error": "server_error"
+			}`)
+		},
+	})
+}
+
+func TestInvalidResourceOwnerFilter(t *testing.T) {
 	tester.Clean()
 
 	policy := DefaultPolicy("")

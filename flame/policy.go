@@ -39,6 +39,12 @@ type Policy struct {
 	// The client models.
 	Clients []Client
 
+	// ClientFilter should return a filter that should be applied when looking
+	// up a client. This callback can be used to select clients based on other
+	// request parameters. It can return ErrInvalidFilter to cancel the
+	// authentication request.
+	ClientFilter func(Client, *http.Request) (bson.M, error)
+
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
 	ResourceOwners func(Client) []ResourceOwner
