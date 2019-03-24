@@ -724,9 +724,9 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	}
 
 	// add additional filter if provided
-	if a.policy.Filter != nil {
+	if a.policy.ResourceOwnerFilter != nil {
 		// run filter function
-		filter, err := a.policy.Filter(model, state.request)
+		filter, err := a.policy.ResourceOwnerFilter(model, state.request)
 		if err == ErrInvalidFilter {
 			stack.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {

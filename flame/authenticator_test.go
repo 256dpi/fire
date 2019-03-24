@@ -26,7 +26,7 @@ func TestIntegration(t *testing.T) {
 	p.ClientCredentialsGrant = true
 	p.ImplicitGrant = true
 
-	p.Filter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
+	p.ResourceOwnerFilter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
 		return bson.M{"_id": bson.M{"$exists": true}}, nil
 	}
 
@@ -267,7 +267,7 @@ func TestInvalidFilter(t *testing.T) {
 		Key: "application",
 	}).(*Application)
 
-	policy.Filter = func(ResourceOwner, *http.Request) (bson.M, error) {
+	policy.ResourceOwnerFilter = func(ResourceOwner, *http.Request) (bson.M, error) {
 		return nil, ErrInvalidFilter
 	}
 
@@ -291,7 +291,7 @@ func TestInvalidFilter(t *testing.T) {
 		},
 	})
 
-	policy.Filter = func(ResourceOwner, *http.Request) (bson.M, error) {
+	policy.ResourceOwnerFilter = func(ResourceOwner, *http.Request) (bson.M, error) {
 		return nil, errors.New("foo")
 	}
 
