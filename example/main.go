@@ -145,7 +145,9 @@ func createHandler(store *coal.Store) http.Handler {
 	g.Reporter = reporter
 	g.Add(itemController(store, queue))
 	g.Add(userController(store))
-	g.Handle("watch", watcher.Action())
+	g.Handle("watch", &fire.GroupAction{
+		Action: watcher.Action(),
+	})
 
 	// register group
 	mux.Handle("/v1/api/", fire.Compose(

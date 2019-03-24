@@ -11,10 +11,21 @@ import (
 	"github.com/256dpi/stack"
 )
 
+// GroupAction defines a group action.
+type GroupAction struct {
+	// Authorizers authorize the group action and are run before the action.
+	// Returned errors will cause the abortion of the request with an
+	// unauthorized status by default.
+	Authorizers []*Callback
+
+	// Action is the action that should be executed.
+	Action *Action
+}
+
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
 	controllers map[string]*Controller
-	actions     map[string]*Action
+	actions     map[string]*GroupAction
 
 	// The function gets invoked by the controller with critical errors.
 	Reporter func(error)
@@ -24,7 +35,7 @@ type Group struct {
 func NewGroup() *Group {
 	return &Group{
 		controllers: make(map[string]*Controller),
-		actions:     make(map[string]*Action),
+		actions:     make(map[string]*GroupAction),
 	}
 }
 
@@ -51,14 +62,14 @@ func (g *Group) Add(controllers ...*Controller) {
 // when no controller matches the request.
 //
 // Note: The passed context is more or less empty.
-func (g *Group) Handle(name string, a *Action) {
+func (g *Group) Handle(name string, a *GroupAction) {
 	if name == "" {
 		panic(fmt.Sprintf(`fire: invalid group action "%s"`, name))
 	}
 
 	// set default body limit
-	if a.BodyLimit == 0 {
-		a.BodyLimit = DataSize("8M")
+	if a.Action.BodyLimit == 0 {
+		a.Action.BodyLimit = DataSize("8M")
 	}
 
 	// check existence
@@ -142,14 +153,33 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		action, ok := g.actions[s[0]]
 		if ok {
 			// check if action is allowed
-			if Contains(action.Methods, r.Method) {
+			if Contains(action.Action.Methods, r.Method) {
 				// check if action matches the context
-				if action.Callback.Matcher(ctx) {
+				if action.Action.Callback.Matcher(ctx) {
+					// run authorizers and handle errors
+					for _, cb := range action.Authorizers {
+						// check if callback should be run
+						if !cb.Matcher(ctx) {
+							continue
+						}
+
+						// call callback
+						err := cb.Handler(ctx)
+						if IsSafe(err) {
+							stack.Abort(&jsonapi.Error{
+								Status: http.StatusUnauthorized,
+								Detail: err.Error(),
+							})
+						} else if err != nil {
+							stack.Abort(err)
+						}
+					}
+
 					// limit request body size
-					LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
+					LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
 
 					// call action with context
-					stack.AbortIf(action.Callback.Handler(ctx))
+					stack.AbortIf(action.Action.Callback.Handler(ctx))
 
 					return
 				}

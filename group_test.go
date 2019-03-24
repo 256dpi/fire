@@ -67,20 +67,34 @@ func TestGroupStackAbort(t *testing.T) {
 func TestGroupAction(t *testing.T) {
 	group := NewGroup()
 
-	group.Handle("foo", &Action{
-		Methods: []string{"GET", "PUT"},
-		Callback: C("TestGroupAction", All(), func(ctx *Context) error {
-			ctx.ResponseWriter.WriteHeader(http.StatusFound)
-			return nil
-		}),
+	group.Handle("foo", &GroupAction{
+		Authorizers: L{
+			C("TestGroupAction", All(), func(ctx *Context) error {
+				if ctx.HTTPRequest.Method == "DELETE" {
+					return E("error")
+				}
+				return nil
+			}),
+		},
+		Action: &Action{
+			Methods: []string{"GET", "PUT", "DELETE"},
+			Callback: C("TestGroupAction", All(), func(ctx *Context) error {
+				ctx.ResponseWriter.WriteHeader(http.StatusFound)
+				return nil
+			}),
+		},
 	})
 
 	assert.PanicsWithValue(t, `fire: invalid group action ""`, func() {
-		group.Handle("", &Action{})
+		group.Handle("", &GroupAction{
+			Action: &Action{},
+		})
 	})
 
 	assert.PanicsWithValue(t, `fire: action with name "foo" already exists`, func() {
-		group.Handle("foo", &Action{})
+		group.Handle("foo", &GroupAction{
+			Action: &Action{},
+		})
 	})
 
 	tester.Handler = group.Endpoint("")
@@ -95,5 +109,9 @@ func TestGroupAction(t *testing.T) {
 
 	tester.Request("PUT", "bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+	})
+
+	tester.Request("DELETE", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode)
 	})
 }

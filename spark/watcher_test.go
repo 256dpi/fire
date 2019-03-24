@@ -40,7 +40,9 @@ func TestWatcherWebSockets(t *testing.T) {
 		Model: &itemModel{},
 		Store: tester.Store,
 	})
-	group.Handle("watch", watcher.Action())
+	group.Handle("watch", &fire.GroupAction{
+		Action: watcher.Action(),
+	})
 
 	/* run server and create client */
 
@@ -125,7 +127,9 @@ func TestWatcherSSE(t *testing.T) {
 		Model: &itemModel{},
 		Store: tester.Store,
 	})
-	group.Handle("watch", watcher.Action())
+	group.Handle("watch", &fire.GroupAction{
+		Action: watcher.Action(),
+	})
 
 	rec := newResponseRecorder()
 	data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
