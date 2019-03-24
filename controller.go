@@ -548,6 +548,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// copy context and request
 	newCtx := &Context{
+		Data:           Map{},
 		Selector:       bson.M{},
 		Filters:        []bson.M{},
 		ReadableFields: rc.initialFields(rc.Model, ctx.JSONAPIRequest),

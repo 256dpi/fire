@@ -93,6 +93,9 @@ func (o Operation) String() string {
 
 // A Context provides useful contextual information.
 type Context struct {
+	// Data can be used to carry data between callbacks.
+	Data Map
+
 	// The current operation in process.
 	//
 	// Usage: Read Only, Availability: Authorizers

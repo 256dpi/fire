@@ -119,6 +119,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 		// prepare context
 		ctx := &Context{
+			Data:           Map{},
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Group:          g,
