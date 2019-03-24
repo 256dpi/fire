@@ -147,7 +147,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// immediately pass on request if force is not set and there is
 			// no authentication information provided
 			if !force && r.Header.Get("Authorization") == "" {
+				// call next handler
 				next.ServeHTTP(w, r)
+
 				return
 			}
 
@@ -188,7 +190,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				stack.Abort(bearer.InvalidToken("malformed token"))
 			}
 
-			// copy tore
+			// copy store
 			store := a.store.Copy()
 			defer store.Close()
 
@@ -229,7 +231,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// call next handler if client should not be loaded
 			if !loadClient {
+				// call next handler
 				next.ServeHTTP(w, r.WithContext(ctx))
+
 				return
 			}
 
@@ -245,7 +249,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// call next handler if resource owner does not exist or should not
 			// be loaded
 			if resourceOwnerID == nil || !loadResourceOwner {
+				// call next handler
 				next.ServeHTTP(w, r.WithContext(ctx))
+
 				return
 			}
 
