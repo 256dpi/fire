@@ -231,7 +231,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 // Dependent resources are defined by passing pairs of models and fields that
 // reference the current model.
 //
-//	fire.DependentResourcesValidator(map[string]string{
+//	fire.DependentResourcesValidator(map[coal.Model]string{
 //		&Post{}: "Author",
 //		&Comment{}: "Author",
 //	})
@@ -276,7 +276,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 // References are defined by passing pairs of fields and models who might be
 // referenced by the current model:
 //
-//	fire.VerifyReferencesValidator(map[string]string{
+//	fire.VerifyReferencesValidator(map[string]coal.Model{
 //		"Post": &Post{},
 //		"Author": &User{},
 //	})
