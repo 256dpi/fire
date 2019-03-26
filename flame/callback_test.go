@@ -9,35 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCallbackMissingAccessToken(t *testing.T) {
-	tester.Clean()
-
-	cb := Callback(true, "foo")
-
-	ctx := &fire.Context{}
-	err := tester.RunCallback(ctx, cb)
-	assert.Error(t, err)
-
-	assert.Len(t, ctx.Data, 0)
-}
-
-func TestCallbackInsufficientAccessToken(t *testing.T) {
-	tester.Clean()
-
-	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
-		Scope: []string{"bar"},
-	})
-
-	cb := Callback(true, "foo")
-
-	ctx := &fire.Context{}
-	err := tester.RunCallback(ctx, cb)
-	assert.Error(t, err)
-
-	assert.Len(t, ctx.Data, 0)
-}
-
-func TestCallbackProperAccessToken(t *testing.T) {
+func TestCallback(t *testing.T) {
 	tester.Clean()
 
 	client := &Application{
@@ -68,4 +40,44 @@ func TestCallbackProperAccessToken(t *testing.T) {
 		ResourceOwner: resourceOwner,
 		AccessToken:   token,
 	}, *ctx.Data[AuthInfoDataKey].(*AuthInfo))
+}
+
+func TestCallbackNoAuthentication(t *testing.T) {
+	tester.Clean()
+
+	cb := Callback(false, "foo")
+
+	ctx := &fire.Context{}
+	err := tester.RunCallback(ctx, cb)
+	assert.NoError(t, err)
+
+	assert.Len(t, ctx.Data, 0)
+}
+
+func TestCallbackMissingAuthentication(t *testing.T) {
+	tester.Clean()
+
+	cb := Callback(true, "foo")
+
+	ctx := &fire.Context{}
+	err := tester.RunCallback(ctx, cb)
+	assert.Error(t, err)
+
+	assert.Len(t, ctx.Data, 0)
+}
+
+func TestCallbackInsufficientAccessToken(t *testing.T) {
+	tester.Clean()
+
+	tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
+		Scope: []string{"bar"},
+	})
+
+	cb := Callback(true, "foo")
+
+	ctx := &fire.Context{}
+	err := tester.RunCallback(ctx, cb)
+	assert.Error(t, err)
+
+	assert.Len(t, ctx.Data, 0)
 }

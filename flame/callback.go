@@ -26,25 +26,30 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		// coerce scope
 		s := oauth2.Scope(scope)
 
-		// get client
-		client, _ := ctx.HTTPRequest.Context().Value(ClientContextKey).(Client)
-
-		// get resource owner
-		resourceOwner, _ := ctx.HTTPRequest.Context().Value(ResourceOwnerContextKey).(ResourceOwner)
-
 		// get access token
 		accessToken, _ := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(GenericToken)
-		if force && accessToken == nil {
+
+		// check access token
+		if accessToken == nil {
+			// return error if authentication is required
+			if force {
+				return fire.ErrAccessDenied
+			}
+
+			return nil
+		}
+
+		// validate scope
+		_, scope, _, _, _ := accessToken.GetTokenData()
+		if !oauth2.Scope(scope).Includes(s) {
 			return fire.ErrAccessDenied
 		}
 
-		// validate scope if token is present
-		if accessToken != nil {
-			_, scope, _, _, _ := accessToken.GetTokenData()
-			if !oauth2.Scope(scope).Includes(s) {
-				return fire.ErrAccessDenied
-			}
-		}
+		// get client
+		client := ctx.HTTPRequest.Context().Value(ClientContextKey).(Client)
+
+		// get resource owner
+		resourceOwner, _ := ctx.HTTPRequest.Context().Value(ResourceOwnerContextKey).(ResourceOwner)
 
 		// store auth info
 		ctx.Data[AuthInfoDataKey] = &AuthInfo{
