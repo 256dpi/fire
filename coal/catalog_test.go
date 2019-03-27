@@ -30,7 +30,6 @@ func TestCatalogVisualize(t *testing.T) {
   nodesep="0.4";
   pad="0.4,0.4";
   margin="0,0";
-  concentrate="true";
   labelloc="t";
   fontsize="13";
   fontname="Arial BoldMT";

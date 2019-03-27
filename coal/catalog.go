@@ -71,7 +71,6 @@ func (c *Catalog) Visualize(title string) string {
 	out.WriteString("  nodesep=\"0.4\";\n")
 	out.WriteString("  pad=\"0.4,0.4\";\n")
 	out.WriteString("  margin=\"0,0\";\n")
-	out.WriteString("  concentrate=\"true\";\n")
 	out.WriteString("  labelloc=\"t\";\n")
 	out.WriteString("  fontsize=\"13\";\n")
 	out.WriteString("  fontname=\"Arial BoldMT\";\n")
