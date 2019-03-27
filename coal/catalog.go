@@ -76,6 +76,7 @@ func (c *Catalog) Visualize(title string) string {
 	out.WriteString("  fontsize=\"13\";\n")
 	out.WriteString("  fontname=\"Arial BoldMT\";\n")
 	out.WriteString("  splines=\"spline\";\n")
+	out.WriteString("  outputorder=\"edgesfirst\";\n")
 	out.WriteString("  label=\"" + title + "\";\n")
 
 	// get a sorted list of model names and lookup table
@@ -93,7 +94,7 @@ func (c *Catalog) Visualize(title string) string {
 		model := c.models[name]
 
 		// write begin of node
-		out.WriteString(fmt.Sprintf(`  "%s" [ label=`, lookup[name]))
+		out.WriteString(fmt.Sprintf(`  "%s" [ style=filled, fillcolor=white, label=`, lookup[name]))
 
 		// write head table
 		out.WriteString(fmt.Sprintf(`<<table border="0" align="center" cellspacing="0.5" cellpadding="0" width="134"><tr><td align="center" valign="bottom" width="130"><font face="Arial BoldMT" point-size="11">%s</font></td></tr></table>|`, lookup[name]))
