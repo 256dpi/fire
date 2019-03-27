@@ -173,20 +173,14 @@ func (c *Catalog) Visualize(title string) string {
 			style = "dotted"
 		}
 
-		// get arrow head
-		arrowHead := "none"
-		if r.dstMany {
-			arrowHead = "normal"
-		}
-
-		// get arrow tail
-		arrowTail := "none"
+		// get color
+		color := "black"
 		if r.srcMany {
-			arrowTail = "normal"
+			color = "black:white:black"
 		}
 
 		// write edge
-		out.WriteString(fmt.Sprintf(`  "%s"->"%s"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, arrowHead, arrowTail) + "\n")
+		out.WriteString(fmt.Sprintf(`  "%s"->"%s"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, color="%s", arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, color, "normal", "none") + "\n")
 	}
 
 	// end graph
