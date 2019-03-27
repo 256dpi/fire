@@ -77,6 +77,7 @@ func (c *Catalog) Visualize(title string) string {
 	out.WriteString("  fontname=\"Arial BoldMT\";\n")
 	out.WriteString("  splines=\"spline\";\n")
 	out.WriteString("  outputorder=\"edgesfirst\";\n")
+	out.WriteString("  edge[headclip=true, tailclip=false];\n")
 	out.WriteString("  label=\"" + title + "\";\n")
 
 	// get a sorted list of model names and lookup table
