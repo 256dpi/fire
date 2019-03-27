@@ -31,10 +31,10 @@ func RootTracer() func(http.Handler) http.Handler {
 
 			// create root span from request
 			tracer := NewTracerFromRequest(r, name)
+			tracer.Tag("peer.address", r.RemoteAddr)
 			tracer.Tag("http.proto", r.Proto)
 			tracer.Tag("http.method", r.Method)
 			tracer.Tag("http.host", r.Host)
-			tracer.Tag("peer.address", r.RemoteAddr)
 			tracer.Log("http.url", r.URL.String())
 			tracer.Log("http.length", r.ContentLength)
 			tracer.Log("http.header", r.Header)

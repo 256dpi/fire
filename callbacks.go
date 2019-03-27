@@ -120,8 +120,8 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
-// The ValidatableModel interface can be additionally implemented to provide
-// a custom validation method that is used by the Validate function.
+// The ValidatableModel interface is used by the ModelValidator to validate
+// models.
 type ValidatableModel interface {
 	coal.Model
 
