@@ -352,7 +352,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	references := make(map[string]coal.Model)
 
 	// iterate through all fields
-	for _, field := range coal.Init(model).Meta().Fields {
+	for _, field := range coal.Init(model).Meta().Relationships {
 		// exclude field if requested
 		if Contains(excludedFields, field.Name) {
 			continue
@@ -368,7 +368,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 
 			// get related bson field
 			bsonField := ""
-			for _, relatedField := range relatedModel.Meta().Fields {
+			for _, relatedField := range relatedModel.Meta().Relationships {
 				if relatedField.RelName == field.RelInverse {
 					bsonField = relatedField.Name
 				}
