@@ -1439,12 +1439,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 	}
 
 	// go through all relationships
-	for _, field := range model.Meta().Fields {
-		// check if relationship
-		if !field.ToOne && !field.ToMany && !field.HasOne && !field.HasMany {
-			continue
-		}
-
+	for _, field := range model.Meta().Relationships {
 		// check if whitelisted
 		if !Contains(whitelist, field.RelName) {
 			continue
