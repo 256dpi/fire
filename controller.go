@@ -337,10 +337,13 @@ func (c *Controller) findResource(ctx *Context) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			One: c.resourceForModel(ctx, ctx.Model),
+			One: c.resourceForModel(ctx, ctx.Model, relationships),
 		},
 		Links: &jsonapi.DocumentLinks{
 			Self: ctx.JSONAPIRequest.Self(),
@@ -400,10 +403,13 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			One: c.resourceForModel(ctx, ctx.Model),
+			One: c.resourceForModel(ctx, ctx.Model, relationships),
 		},
 		Links: &jsonapi.DocumentLinks{
 			Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
@@ -454,10 +460,13 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			One: c.resourceForModel(ctx, ctx.Model),
+			One: c.resourceForModel(ctx, ctx.Model, relationships),
 		},
 		Links: &jsonapi.DocumentLinks{
 			Self: ctx.JSONAPIRequest.Self(),
@@ -611,8 +620,11 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			// run decorators
 			c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
 
+			// preload relationships
+			relationships := c.preloadRelationships(newCtx, []coal.Model{newCtx.Model})
+
 			// set model
-			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Model)
+			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Model, relationships)
 		}
 
 		// run notifiers
@@ -693,7 +705,11 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// add if model is found
 		if len(newCtx.Models) == 1 {
-			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Models[0])
+			// preload relationships
+			relationships := c.preloadRelationships(newCtx, []coal.Model{newCtx.Models[0]})
+
+			// set model
+			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Models[0], relationships)
 		}
 
 		// run notifiers
@@ -769,8 +785,11 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
+	resource := c.resourceForModel(ctx, ctx.Model, relationships)
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
@@ -815,8 +834,11 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
+	resource := c.resourceForModel(ctx, ctx.Model, relationships)
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
@@ -886,8 +908,11 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
+	resource := c.resourceForModel(ctx, ctx.Model, relationships)
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
@@ -964,8 +989,11 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
+
 	// get resource
-	resource := c.resourceForModel(ctx, ctx.Model)
+	resource := c.resourceForModel(ctx, ctx.Model, relationships)
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
@@ -1397,7 +1425,7 @@ func (c *Controller) updateModel(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.Resource {
+func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
@@ -1505,40 +1533,11 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				},
 			}
 		} else if field.HasOne {
-			// get related controller
-			rc := ctx.Group.controllers[field.RelType]
-			if rc == nil {
-				stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
-			}
+			// get preloaded references
+			refs, _ := relationships[field.RelName][model.ID()]
 
-			// find relationship
-			rel := rc.Model.Meta().Relationships[field.RelInverse]
-			if rel == nil {
-				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
-			}
-
-			// prepare query
-			query := bson.M{
-				rel.BSONField: model.ID(),
-			}
-
-			// exclude soft deleted records
-			if rc.SoftDelete {
-				// get soft delete field
-				softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
-
-				// set filter
-				query[coal.F(rc.Model, softDeleteField)] = nil
-			}
-
-			// load all referenced ids
-			var ids []bson.ObjectId
-			ctx.Tracer.Push("mgo/Query.Distinct")
-			ctx.Tracer.Tag("query", query)
-			err := ctx.Store.C(rc.Model).Find(query).Distinct("_id", &ids)
-			stack.AbortIf(err)
-			ctx.Tracer.Pop()
-			if len(ids) > 1 {
+			// check length
+			if len(refs) > 1 {
 				stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 			}
 
@@ -1546,10 +1545,10 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 			var reference *jsonapi.Resource
 
 			// set reference
-			if len(ids) == 1 {
+			if len(refs) == 1 {
 				reference = &jsonapi.Resource{
-					Type: rc.Model.Meta().PluralName,
-					ID:   ids[0].Hex(),
+					Type: field.RelType,
+					ID:   refs[0].Hex(),
 				}
 			}
 
@@ -1561,49 +1560,16 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model) *jsonapi.R
 				},
 			}
 		} else if field.HasMany {
-			// get related controller
-			rc := ctx.Group.controllers[field.RelType]
-			if rc == nil {
-				stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
-			}
-
-			// find relationship
-			rel := rc.Model.Meta().Relationships[field.RelInverse]
-			if rel == nil {
-				stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
-			}
-
-			// prepare query
-			query := bson.M{
-				rel.BSONField: bson.M{
-					"$in": []bson.ObjectId{model.ID()},
-				},
-			}
-
-			// exclude soft deleted records
-			if rc.SoftDelete {
-				// get soft delete field
-				softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
-
-				// set filter
-				query[coal.F(rc.Model, softDeleteField)] = nil
-			}
-
-			// load all referenced ids
-			var ids []bson.ObjectId
-			ctx.Tracer.Push("mgo/Query.Distinct")
-			ctx.Tracer.Tag("query", query)
-			err := ctx.Store.C(rc.Model).Find(query).Distinct("_id", &ids)
-			stack.AbortIf(err)
-			ctx.Tracer.Pop()
+			// get preloaded references
+			refs, _ := relationships[field.RelName][model.ID()]
 
 			// prepare references
-			references := make([]*jsonapi.Resource, len(ids))
+			references := make([]*jsonapi.Resource, len(refs))
 
 			// set all references
-			for i, id := range ids {
+			for i, id := range refs {
 				references[i] = &jsonapi.Resource{
-					Type: rc.Model.Meta().PluralName,
+					Type: field.RelType,
 					ID:   id.Hex(),
 				}
 			}
@@ -1631,15 +1597,142 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*js
 	// prepare resources
 	resources := make([]*jsonapi.Resource, len(models))
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, models)
+
 	// create resources
 	for i, model := range models {
-		resources[i] = c.resourceForModel(ctx, model)
+		resources[i] = c.resourceForModel(ctx, model, relationships)
 	}
 
 	// finish trace
 	ctx.Tracer.Pop()
 
 	return resources
+}
+
+func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[bson.ObjectId][]bson.ObjectId {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.preloadRelationships")
+
+	// prepare relationships
+	relationships := make(map[string]map[bson.ObjectId][]bson.ObjectId)
+
+	// prepare whitelist
+	whitelist := make([]string, 0, len(ctx.ReadableFields))
+
+	// covert field names to relationships
+	for _, field := range ctx.ReadableFields {
+		// get field
+		f := ctx.Controller.Model.Meta().Fields[field]
+		if f == nil {
+			stack.Abort(fmt.Errorf("unknown readable field %s", field))
+		}
+
+		// add relationships
+		if f.RelName != "" {
+			whitelist = append(whitelist, f.RelName)
+		}
+	}
+
+	// go through all relationships
+	for _, field := range ctx.Controller.Model.Meta().Relationships {
+		// skip to one and to many relationships
+		if field.ToOne || field.ToMany {
+			continue
+		}
+
+		// check if whitelisted
+		if !Contains(whitelist, field.RelName) {
+			continue
+		}
+
+		// get related controller
+		rc := ctx.Group.controllers[field.RelType]
+		if rc == nil {
+			stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
+		}
+
+		// find relationship
+		rel := rc.Model.Meta().Relationships[field.RelInverse]
+		if rel == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
+		}
+
+		// collect model ids
+		modelIDs := make([]bson.ObjectId, 0, len(models))
+		for _, model := range models {
+			modelIDs = append(modelIDs, model.ID())
+		}
+
+		// prepare query
+		query := bson.M{
+			rel.BSONField: bson.M{
+				"$in": modelIDs,
+			},
+		}
+
+		// exclude soft deleted records
+		if rc.SoftDelete {
+			// get soft delete field
+			softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
+
+			// set filter
+			query[coal.F(rc.Model, softDeleteField)] = nil
+		}
+
+		// load all references
+		var references []bson.M
+		ctx.Tracer.Push("mgo/Query.All")
+		ctx.Tracer.Tag("query", query)
+		err := ctx.Store.C(rc.Model).Find(query).Select(bson.M{
+			"_id":         1,
+			rel.BSONField: 1,
+		}).All(&references)
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+
+		// prepare entry
+		entry := make(map[bson.ObjectId][]bson.ObjectId)
+
+		// collect references
+		for _, modelID := range modelIDs {
+			// go through all related documents
+			for _, reference := range references {
+				// handle to one references
+				if rel.ToOne {
+					// get reference id
+					rid, _ := reference[rel.BSONField].(bson.ObjectId)
+					if rid.Valid() && rid == modelID {
+						// add reference
+						entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+					}
+				}
+
+				// handle to many references
+				if rel.ToMany {
+					// get reference ids
+					rids, _ := reference[rel.BSONField].([]interface{})
+					for _, _rid := range rids {
+						// get reference id
+						rid, _ := _rid.(bson.ObjectId)
+						if rid.Valid() && rid == modelID {
+							// add reference
+							entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+						}
+					}
+				}
+			}
+		}
+
+		// set references
+		relationships[field.RelName] = entry
+	}
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return relationships
 }
 
 func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
