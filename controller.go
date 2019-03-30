@@ -1422,6 +1422,151 @@ func (c *Controller) updateModel(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
+func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.resourceForModels")
+
+	// prepare resources
+	resources := make([]*jsonapi.Resource, len(models))
+
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, models)
+
+	// create resources
+	for i, model := range models {
+		resources[i] = c.resourceForModel(ctx, model, relationships)
+	}
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return resources
+}
+
+func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[bson.ObjectId][]bson.ObjectId {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.preloadRelationships")
+
+	// prepare relationships
+	relationships := make(map[string]map[bson.ObjectId][]bson.ObjectId)
+
+	// prepare whitelist
+	whitelist := make([]string, 0, len(ctx.ReadableFields))
+
+	// covert field names to relationships
+	for _, field := range ctx.ReadableFields {
+		// get field
+		f := ctx.Controller.Model.Meta().Fields[field]
+		if f == nil {
+			stack.Abort(fmt.Errorf("unknown readable field %s", field))
+		}
+
+		// add relationships
+		if f.RelName != "" {
+			whitelist = append(whitelist, f.RelName)
+		}
+	}
+
+	// go through all relationships
+	for _, field := range ctx.Controller.Model.Meta().Relationships {
+		// skip to one and to many relationships
+		if field.ToOne || field.ToMany {
+			continue
+		}
+
+		// check if whitelisted
+		if !Contains(whitelist, field.RelName) {
+			continue
+		}
+
+		// get related controller
+		rc := ctx.Group.controllers[field.RelType]
+		if rc == nil {
+			stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
+		}
+
+		// find relationship
+		rel := rc.Model.Meta().Relationships[field.RelInverse]
+		if rel == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
+		}
+
+		// collect model ids
+		modelIDs := make([]bson.ObjectId, 0, len(models))
+		for _, model := range models {
+			modelIDs = append(modelIDs, model.ID())
+		}
+
+		// prepare query
+		query := bson.M{
+			rel.BSONField: bson.M{
+				"$in": modelIDs,
+			},
+		}
+
+		// exclude soft deleted records
+		if rc.SoftDelete {
+			// get soft delete field
+			softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
+
+			// set filter
+			query[coal.F(rc.Model, softDeleteField)] = nil
+		}
+
+		// load all references
+		var references []bson.M
+		ctx.Tracer.Push("mgo/Query.All")
+		ctx.Tracer.Tag("query", query)
+		err := ctx.Store.C(rc.Model).Find(query).Select(bson.M{
+			"_id":         1,
+			rel.BSONField: 1,
+		}).All(&references)
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+
+		// prepare entry
+		entry := make(map[bson.ObjectId][]bson.ObjectId)
+
+		// collect references
+		for _, modelID := range modelIDs {
+			// go through all related documents
+			for _, reference := range references {
+				// handle to one references
+				if rel.ToOne {
+					// get reference id
+					rid, _ := reference[rel.BSONField].(bson.ObjectId)
+					if rid.Valid() && rid == modelID {
+						// add reference
+						entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+					}
+				}
+
+				// handle to many references
+				if rel.ToMany {
+					// get reference ids
+					rids, _ := reference[rel.BSONField].([]interface{})
+					for _, _rid := range rids {
+						// get reference id
+						rid, _ := _rid.(bson.ObjectId)
+						if rid.Valid() && rid == modelID {
+							// add reference
+							entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+						}
+					}
+				}
+			}
+		}
+
+		// set references
+		relationships[field.RelName] = entry
+	}
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return relationships
+}
+
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
@@ -1611,151 +1756,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 	ctx.Tracer.Pop()
 
 	return resource
-}
-
-func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
-	// begin trace
-	ctx.Tracer.Push("fire/Controller.resourceForModels")
-
-	// prepare resources
-	resources := make([]*jsonapi.Resource, len(models))
-
-	// preload relationships
-	relationships := c.preloadRelationships(ctx, models)
-
-	// create resources
-	for i, model := range models {
-		resources[i] = c.resourceForModel(ctx, model, relationships)
-	}
-
-	// finish trace
-	ctx.Tracer.Pop()
-
-	return resources
-}
-
-func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[bson.ObjectId][]bson.ObjectId {
-	// begin trace
-	ctx.Tracer.Push("fire/Controller.preloadRelationships")
-
-	// prepare relationships
-	relationships := make(map[string]map[bson.ObjectId][]bson.ObjectId)
-
-	// prepare whitelist
-	whitelist := make([]string, 0, len(ctx.ReadableFields))
-
-	// covert field names to relationships
-	for _, field := range ctx.ReadableFields {
-		// get field
-		f := ctx.Controller.Model.Meta().Fields[field]
-		if f == nil {
-			stack.Abort(fmt.Errorf("unknown readable field %s", field))
-		}
-
-		// add relationships
-		if f.RelName != "" {
-			whitelist = append(whitelist, f.RelName)
-		}
-	}
-
-	// go through all relationships
-	for _, field := range ctx.Controller.Model.Meta().Relationships {
-		// skip to one and to many relationships
-		if field.ToOne || field.ToMany {
-			continue
-		}
-
-		// check if whitelisted
-		if !Contains(whitelist, field.RelName) {
-			continue
-		}
-
-		// get related controller
-		rc := ctx.Group.controllers[field.RelType]
-		if rc == nil {
-			stack.Abort(fmt.Errorf("missing related controller %s", field.RelType))
-		}
-
-		// find relationship
-		rel := rc.Model.Meta().Relationships[field.RelInverse]
-		if rel == nil {
-			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
-		}
-
-		// collect model ids
-		modelIDs := make([]bson.ObjectId, 0, len(models))
-		for _, model := range models {
-			modelIDs = append(modelIDs, model.ID())
-		}
-
-		// prepare query
-		query := bson.M{
-			rel.BSONField: bson.M{
-				"$in": modelIDs,
-			},
-		}
-
-		// exclude soft deleted records
-		if rc.SoftDelete {
-			// get soft delete field
-			softDeleteField := rc.Model.(SoftDeletableModel).SoftDeleteField()
-
-			// set filter
-			query[coal.F(rc.Model, softDeleteField)] = nil
-		}
-
-		// load all references
-		var references []bson.M
-		ctx.Tracer.Push("mgo/Query.All")
-		ctx.Tracer.Tag("query", query)
-		err := ctx.Store.C(rc.Model).Find(query).Select(bson.M{
-			"_id":         1,
-			rel.BSONField: 1,
-		}).All(&references)
-		stack.AbortIf(err)
-		ctx.Tracer.Pop()
-
-		// prepare entry
-		entry := make(map[bson.ObjectId][]bson.ObjectId)
-
-		// collect references
-		for _, modelID := range modelIDs {
-			// go through all related documents
-			for _, reference := range references {
-				// handle to one references
-				if rel.ToOne {
-					// get reference id
-					rid, _ := reference[rel.BSONField].(bson.ObjectId)
-					if rid.Valid() && rid == modelID {
-						// add reference
-						entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
-					}
-				}
-
-				// handle to many references
-				if rel.ToMany {
-					// get reference ids
-					rids, _ := reference[rel.BSONField].([]interface{})
-					for _, _rid := range rids {
-						// get reference id
-						rid, _ := _rid.(bson.ObjectId)
-						if rid.Valid() && rid == modelID {
-							// add reference
-							entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
-						}
-					}
-				}
-			}
-		}
-
-		// set references
-		relationships[field.RelName] = entry
-	}
-
-	// finish trace
-	ctx.Tracer.Pop()
-
-	return relationships
 }
 
 func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
