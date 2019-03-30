@@ -3849,7 +3849,7 @@ func BenchmarkList(b *testing.B) {
 		Store: tester.Store,
 	})
 
-	for i:=0; i<100; i++ {
+	for i := 0; i < 100; i++ {
 		tester.Save(&postModel{
 			Title: "Post 1",
 		})
