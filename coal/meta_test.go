@@ -324,5 +324,6 @@ func TestMetaMakeSlice(t *testing.T) {
 func BenchmarkNewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		NewMeta(&postModel{})
+		delete(metaCache, "coal.postModel")
 	}
 }
