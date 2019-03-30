@@ -65,8 +65,9 @@ func (c *Catalog) Visualize(title string) string {
 	var out bytes.Buffer
 
 	// start graph
-	out.WriteString("digraph G {\n")
+	out.WriteString("graph G {\n")
 	out.WriteString("  rankdir=\"LR\";\n")
+	out.WriteString("  sep=\"0.3\";\n")
 	out.WriteString("  ranksep=\"0.5\";\n")
 	out.WriteString("  nodesep=\"0.4\";\n")
 	out.WriteString("  pad=\"0.4,0.4\";\n")
@@ -75,6 +76,7 @@ func (c *Catalog) Visualize(title string) string {
 	out.WriteString("  fontsize=\"13\";\n")
 	out.WriteString("  fontname=\"Arial BoldMT\";\n")
 	out.WriteString("  splines=\"spline\";\n")
+	out.WriteString("  overlap=\"voronoi\";\n")
 	out.WriteString("  outputorder=\"edgesfirst\";\n")
 	out.WriteString("  edge[headclip=true, tailclip=false];\n")
 	out.WriteString("  label=\"" + title + "\";\n")
@@ -181,7 +183,7 @@ func (c *Catalog) Visualize(title string) string {
 		}
 
 		// write edge
-		out.WriteString(fmt.Sprintf(`  "%s"->"%s"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, color="%s", arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, color, "normal", "none") + "\n")
+		out.WriteString(fmt.Sprintf(`  "%s"--"%s"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, color="%s", arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, color, "normal", "none") + "\n")
 	}
 
 	// end graph
