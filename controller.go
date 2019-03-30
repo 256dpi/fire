@@ -403,13 +403,10 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
-	// preload relationships
-	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
-
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			One: c.resourceForModel(ctx, ctx.Model, relationships),
+			One: c.resourceForModel(ctx, ctx.Model, nil),
 		},
 		Links: &jsonapi.DocumentLinks{
 			Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
@@ -1533,6 +1530,19 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 				},
 			}
 		} else if field.HasOne {
+			// skip if nil
+			if relationships == nil {
+				// set links and empty reference
+				resource.Relationships[field.RelName] = &jsonapi.Document{
+					Links: links,
+					Data: &jsonapi.HybridResource{
+						One: nil,
+					},
+				}
+
+				continue
+			}
+
 			// get preloaded references
 			refs, _ := relationships[field.RelName][model.ID()]
 
@@ -1560,6 +1570,19 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 				},
 			}
 		} else if field.HasMany {
+			// skip if nil
+			if relationships == nil {
+				// set links and empty references
+				resource.Relationships[field.RelName] = &jsonapi.Document{
+					Links: links,
+					Data: &jsonapi.HybridResource{
+						Many: []*jsonapi.Resource{},
+					},
+				}
+
+				continue
+			}
+
 			// get preloaded references
 			refs, _ := relationships[field.RelName][model.ID()]
 
