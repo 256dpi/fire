@@ -1555,6 +1555,19 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	return relationships
 }
 
+func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.resourceForModel")
+
+	// construct resource
+	resource := c.constructResource(ctx, model, relationships)
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return resource
+}
+
 func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) []*jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModels")
@@ -1572,19 +1585,6 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 	ctx.Tracer.Pop()
 
 	return resources
-}
-
-func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
-	// begin trace
-	ctx.Tracer.Push("fire/Controller.resourceForModel")
-
-	// construct resource
-	resource := c.constructResource(ctx, model, relationships)
-
-	// finish trace
-	ctx.Tracer.Pop()
-
-	return resource
 }
 
 func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
