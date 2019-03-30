@@ -306,10 +306,13 @@ func (c *Controller) listResources(ctx *Context) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// preload relationships
+	relationships := c.preloadRelationships(ctx, ctx.Models)
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
-			Many: c.resourcesForModels(ctx, ctx.Models),
+			Many: c.resourcesForModels(ctx, ctx.Models, relationships),
 		},
 		Links: c.listLinks(ctx.JSONAPIRequest.Self(), ctx),
 	}
@@ -649,10 +652,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run decorators
 		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
 
+		// preload relationships
+		relationships := rc.preloadRelationships(newCtx, newCtx.Models)
+
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, newCtx.Models),
+				Many: rc.resourcesForModels(newCtx, newCtx.Models, relationships),
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
@@ -739,10 +745,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run decorators
 		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
 
+		// preload relationships
+		relationships := rc.preloadRelationships(newCtx, newCtx.Models)
+
 		// compose response
 		newCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, newCtx.Models),
+				Many: rc.resourcesForModels(newCtx, newCtx.Models, relationships),
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
@@ -1422,28 +1431,6 @@ func (c *Controller) updateModel(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
-	// begin trace
-	ctx.Tracer.Push("fire/Controller.resourceForModels")
-	ctx.Tracer.Tag("count", len(models))
-
-	// prepare resources
-	resources := make([]*jsonapi.Resource, len(models))
-
-	// preload relationships
-	relationships := c.preloadRelationships(ctx, models)
-
-	// construct resources
-	for i, model := range models {
-		resources[i] = c.constructResource(ctx, model, relationships)
-	}
-
-	// finish trace
-	ctx.Tracer.Pop()
-
-	return resources
-}
-
 func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[bson.ObjectId][]bson.ObjectId {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.preloadRelationships")
@@ -1566,6 +1553,25 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	ctx.Tracer.Pop()
 
 	return relationships
+}
+
+func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) []*jsonapi.Resource {
+	// begin trace
+	ctx.Tracer.Push("fire/Controller.resourceForModels")
+	ctx.Tracer.Tag("count", len(models))
+
+	// prepare resources
+	resources := make([]*jsonapi.Resource, len(models))
+
+	// construct resources
+	for i, model := range models {
+		resources[i] = c.constructResource(ctx, model, relationships)
+	}
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return resources
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
