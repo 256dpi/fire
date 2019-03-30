@@ -1425,6 +1425,7 @@ func (c *Controller) updateModel(ctx *Context) {
 func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModels")
+	ctx.Tracer.Tag("count", len(models))
 
 	// prepare resources
 	resources := make([]*jsonapi.Resource, len(models))
@@ -1432,9 +1433,9 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model) []*js
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, models)
 
-	// create resources
+	// construct resources
 	for i, model := range models {
-		resources[i] = c.resourceForModel(ctx, model, relationships)
+		resources[i] = c.constructResource(ctx, model, relationships)
 	}
 
 	// finish trace
@@ -1570,6 +1571,18 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
+
+	// construct resource
+	resource := c.constructResource(ctx, model, relationships)
+
+	// finish trace
+	ctx.Tracer.Pop()
+
+	return resource
+}
+
+func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
+	// do not trace this call
 
 	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
@@ -1751,9 +1764,6 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 			}
 		}
 	}
-
-	// finish trace
-	ctx.Tracer.Pop()
 
 	return resource
 }
