@@ -3831,3 +3831,32 @@ func TestSoftDelete(t *testing.T) {
 
 	// TODO: Test has one and has many relationships.
 }
+
+func BenchmarkList(b *testing.B) {
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	for i:=0; i<100; i++ {
+		tester.Save(&postModel{
+			Title: "Post 1",
+		})
+	}
+
+	for i := 0; i < b.N; i++ {
+		// get list of posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {})
+	}
+}
