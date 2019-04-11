@@ -35,19 +35,19 @@ type GenericToken interface {
 
 // Token is the built-in model used to store access and refresh tokens.
 type Token struct {
-	coal.Base     `json:"-" bson:",inline" coal:"tokens:tokens"`
-	Type          TokenType      `json:"type"`
-	ExpiresAt     time.Time      `json:"expires-at" bson:"expires_at"`
-	Scope         []string       `json:"scope" bson:"scope"`
-	Client        bson.ObjectId  `json:"client-id" bson:"client_id"`
-	ResourceOwner *bson.ObjectId `json:"resource-owner-id" bson:"resource_owner_id"`
+	coal.Base   `json:"-" bson:",inline" coal:"tokens:tokens"`
+	Type        TokenType      `json:"type"`
+	ExpiresAt   time.Time      `json:"expires-at" bson:"expires_at"`
+	Scope       []string       `json:"scope" bson:"scope"`
+	Application bson.ObjectId  `json:"-" bson:"application_id" coal:"application:applications"`
+	User        *bson.ObjectId `json:"-" bson:"user_id" coal:"user:users"`
 }
 
 // AddTokenIndexes will add access token indexes to the specified indexer.
 func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	i.Add(&Token{}, false, 0, "Type")
-	i.Add(&Token{}, false, 0, "Client")
-	i.Add(&Token{}, false, 0, "ResourceOwner")
+	i.Add(&Token{}, false, 0, "Application")
+	i.Add(&Token{}, false, 0, "User")
 
 	if autoExpire {
 		i.Add(&Token{}, false, time.Minute, "ExpiresAt")
@@ -56,7 +56,7 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 
 // GetTokenData implements the flame.GenericToken interface.
 func (t *Token) GetTokenData() (TokenType, []string, time.Time, bson.ObjectId, *bson.ObjectId) {
-	return t.Type, t.Scope, t.ExpiresAt, t.Client, t.ResourceOwner
+	return t.Type, t.Scope, t.ExpiresAt, t.Application, t.User
 }
 
 // SetTokenData implements the flame.GenericToken interface.
@@ -64,9 +64,9 @@ func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time,
 	t.Type = typ
 	t.Scope = scope
 	t.ExpiresAt = expiresAt
-	t.Client = client.ID()
+	t.Application = client.ID()
 	if resourceOwner != nil {
-		t.ResourceOwner = coal.P(resourceOwner.ID())
+		t.User = coal.P(resourceOwner.ID())
 	}
 }
 

@@ -93,17 +93,17 @@ func TestIntegration(t *testing.T) {
 	config.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
 
 	expiredToken := tester.Save(&Token{
-		Type:      AccessToken,
-		ExpiresAt: time.Now().Add(-authenticator.policy.AccessTokenLifespan),
-		Scope:     []string{"foo"},
-		Client:    app1.ID(),
+		Type:        AccessToken,
+		ExpiresAt:   time.Now().Add(-authenticator.policy.AccessTokenLifespan),
+		Scope:       []string{"foo"},
+		Application: app1.ID(),
 	}).(*Token)
 
 	insufficientToken := tester.Save(&Token{
-		Type:      AccessToken,
-		ExpiresAt: time.Now().Add(authenticator.policy.AccessTokenLifespan),
-		Scope:     []string{},
-		Client:    app1.ID(),
+		Type:        AccessToken,
+		ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
+		Scope:       []string{},
+		Application: app1.ID(),
 	}).(*Token)
 
 	config.UnknownToken = mustGenerateAccessToken(p, bson.NewObjectId(), time.Now())
@@ -114,17 +114,17 @@ func TestIntegration(t *testing.T) {
 	config.SecondaryRedirectURI = "http://example.com/callback2"
 
 	validRefreshToken := tester.Save(&Token{
-		Type:      RefreshToken,
-		ExpiresAt: time.Now().Add(authenticator.policy.RefreshTokenLifespan),
-		Scope:     []string{"foo", "bar"},
-		Client:    app1.ID(),
+		Type:        RefreshToken,
+		ExpiresAt:   time.Now().Add(authenticator.policy.RefreshTokenLifespan),
+		Scope:       []string{"foo", "bar"},
+		Application: app1.ID(),
 	}).(*Token)
 
 	expiredRefreshToken := tester.Save(&Token{
-		Type:      RefreshToken,
-		ExpiresAt: time.Now().Add(-authenticator.policy.RefreshTokenLifespan),
-		Scope:     []string{"foo", "bar"},
-		Client:    app1.ID(),
+		Type:        RefreshToken,
+		ExpiresAt:   time.Now().Add(-authenticator.policy.RefreshTokenLifespan),
+		Scope:       []string{"foo", "bar"},
+		Application: app1.ID(),
 	}).(*Token)
 
 	config.UnknownRefreshToken = mustGenerateRefreshToken(p, bson.NewObjectId(), time.Now())
@@ -171,10 +171,10 @@ func TestContextKeys(t *testing.T) {
 	}).(*User).ID()
 
 	accessToken := tester.Save(&Token{
-		Type:          AccessToken,
-		ExpiresAt:     time.Now().Add(authenticator.policy.AccessTokenLifespan),
-		Client:        application,
-		ResourceOwner: &user,
+		Type:        AccessToken,
+		ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
+		Application: application,
+		User:        &user,
 	}).(*Token).ID()
 
 	token := mustGenerateAccessToken(authenticator.policy, accessToken, time.Now().Add(time.Hour))
