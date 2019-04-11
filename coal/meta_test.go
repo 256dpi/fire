@@ -79,15 +79,6 @@ func TestNewMeta(t *testing.T) {
 		NewMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: unexpected tag 'foo'`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  string `coal:"foo"`
-		}
-
-		NewMeta(&m{})
-	})
-
 	//assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
 	//	type m struct {
 	//		Base  `json:"-" bson:",inline" coal:"ms"`
@@ -133,6 +124,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "title",
 				BSONField: "title",
+				Flags:     []string{"foo"},
 				index:     1,
 			},
 			"Published": {
@@ -141,6 +133,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.Bool,
 				JSONKey:   "published",
 				BSONField: "published",
+				Flags:     []string{"foo", "bar"},
 				index:     2,
 			},
 			"TextBody": {
@@ -149,12 +142,14 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "text-body",
 				BSONField: "text_body",
+				Flags:     []string{"bar"},
 				index:     3,
 			},
 			"Comments": {
 				Name:       "Comments",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
+				Flags:      []string{},
 				HasMany:    true,
 				RelName:    "comments",
 				RelType:    "comments",
@@ -165,6 +160,7 @@ func TestMeta(t *testing.T) {
 				Name:       "Selections",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
+				Flags:      []string{},
 				HasMany:    true,
 				RelName:    "selections",
 				RelType:    "selections",
@@ -175,6 +171,7 @@ func TestMeta(t *testing.T) {
 				Name:       "Note",
 				Type:       hasOneType,
 				Kind:       reflect.Struct,
+				Flags:      []string{},
 				HasOne:     true,
 				RelName:    "note",
 				RelType:    "notes",
@@ -205,6 +202,16 @@ func TestMeta(t *testing.T) {
 			"selections": post.Fields["Selections"],
 			"note":       post.Fields["Note"],
 		},
+		FlaggedFields: map[string][]*Field{
+			"foo": {
+				post.Fields["Title"],
+				post.Fields["Published"],
+			},
+			"bar": {
+				post.Fields["Published"],
+				post.Fields["TextBody"],
+			},
+		},
 		model: post.model,
 	}, post)
 
@@ -220,6 +227,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "message",
 				BSONField: "message",
+				Flags:     []string{},
 				index:     1,
 			},
 			"Parent": {
@@ -228,6 +236,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "",
 				BSONField: "parent",
+				Flags:     []string{},
 				Optional:  true,
 				ToOne:     true,
 				RelName:   "parent",
@@ -240,6 +249,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "",
 				BSONField: "post_id",
+				Flags:     []string{},
 				ToOne:     true,
 				RelName:   "post",
 				RelType:   "posts",
@@ -263,7 +273,8 @@ func TestMeta(t *testing.T) {
 			"parent": comment.Fields["Parent"],
 			"post":   comment.Fields["Post"],
 		},
-		model: comment.model,
+		FlaggedFields: map[string][]*Field{},
+		model:         comment.model,
 	}, comment)
 
 	selection := Init(&selectionModel{}).Meta()
@@ -278,6 +289,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "name",
 				BSONField: "name",
+				Flags:     []string{},
 				index:     1,
 			},
 			"Posts": {
@@ -285,6 +297,7 @@ func TestMeta(t *testing.T) {
 				Type:      toManyType,
 				Kind:      reflect.Slice,
 				BSONField: "post_ids",
+				Flags:     []string{},
 				ToMany:    true,
 				RelName:   "posts",
 				RelType:   "posts",
@@ -305,7 +318,8 @@ func TestMeta(t *testing.T) {
 		Relationships: map[string]*Field{
 			"posts": selection.Fields["Posts"],
 		},
-		model: selection.model,
+		FlaggedFields: map[string][]*Field{},
+		model:         selection.model,
 	}, selection)
 }
 

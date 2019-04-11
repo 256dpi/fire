@@ -44,6 +44,9 @@ type Field struct {
 	// The BSON document field e.g. "tire_size".
 	BSONField string
 
+	// The custom flags.
+	Flags []string
+
 	// Whether the field is a pointer and thus optional.
 	Optional bool
 
@@ -87,6 +90,9 @@ type Meta struct {
 	// The relationships.
 	Relationships map[string]*Field
 
+	// The flagged fields.
+	FlaggedFields map[string][]*Field
+
 	model Model
 }
 
@@ -116,6 +122,7 @@ func NewMeta(model Model) *Meta {
 		DatabaseFields: make(map[string]*Field),
 		Attributes:     make(map[string]*Field),
 		Relationships:  make(map[string]*Field),
+		FlaggedFields:  make(map[string][]*Field),
 	}
 
 	// iterate through all fields
@@ -268,9 +275,10 @@ func NewMeta(model Model) *Meta {
 			coalTags = coalTags[1:]
 		}
 
-		// panic on any additional tags
-		for _, tag := range coalTags {
-			panic(fmt.Sprintf(`coal: unexpected tag '%s'`, tag))
+		// save additional tags as flags
+		metaField.Flags = coalTags
+		if metaField.Flags == nil {
+			metaField.Flags = []string{}
 		}
 
 		// add field
@@ -308,6 +316,18 @@ func NewMeta(model Model) *Meta {
 
 			// add field
 			meta.Relationships[metaField.RelName] = metaField
+		}
+
+		// add flagged fields
+		for _, flag := range metaField.Flags {
+			// get list
+			list, _ := meta.FlaggedFields[flag]
+
+			// add field
+			list = append(list, metaField)
+
+			// save list
+			meta.FlaggedFields[flag] = list
 		}
 	}
 
