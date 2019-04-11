@@ -71,15 +71,21 @@ func R(m Model, field string) string {
 
 // L is a short-hand function to lookup a flagged field of a model.
 //
-// Note: L will panic if no or multiple flagged field have been found.
-func L(m Model, flag string) string {
+// Note: L will panic if multiple flagged fields have been found or force is
+// requested and no flagged field has been found.
+func L(m Model, flag string, force bool) string {
 	// lookup fields
 	fields, _ := Init(m).Meta().FlaggedFields[flag]
-	if len(fields) != 1 {
+	if len(fields) > 1 || (force && len(fields) == 0) {
 		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" found on "%s"`, flag, m.Meta().Name))
 	}
 
-	return fields[0].Name
+	// return name if found
+	if len(fields) > 0 {
+		return fields[0].Name
+	}
+
+	return ""
 }
 
 // P is a short-hand function to get a pointer of the passed object id.
