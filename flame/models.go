@@ -85,7 +85,8 @@ func (t *Token) Validate() error {
 	return nil
 }
 
-// Client is the interface that must be implemented by clients.
+// Client is the interface that must be implemented by clients. The field used
+// to uniquely identify the client must be flagged with "flame-client-id".
 type Client interface {
 	coal.Model
 
@@ -184,7 +185,9 @@ func (a *Application) HashSecret() error {
 	return nil
 }
 
-// ResourceOwner is the interface that must be implemented resource owners.
+// ResourceOwner is the interface that must be implemented resource owners. The
+// field used to uniquely identify the resource owner must be flagged with
+// "flame-resource-owner-id".
 type ResourceOwner interface {
 	coal.Model
 
