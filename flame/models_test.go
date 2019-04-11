@@ -28,12 +28,14 @@ func TestApplicationInterfaces(t *testing.T) {
 	var _ coal.Model = &Application{}
 	var _ fire.ValidatableModel = &Application{}
 	var _ Client = &Application{}
+	coal.L(&Application{}, "flame-client-id")
 }
 
 func TestUserInterfaces(t *testing.T) {
 	var _ coal.Model = &User{}
 	var _ fire.ValidatableModel = &User{}
 	var _ ResourceOwner = &User{}
+	coal.L(&User{}, "flame-resource-owner-id")
 }
 
 func TestApplicationValidate(t *testing.T) {
