@@ -45,7 +45,7 @@ func DenyAccess() *Enforcer {
 
 // AddFilter will enforce the authorization by adding the passed filter to the
 // Filter query of the context. It should be used if the candidate is allowed to
-// access the resource in general, but some records should be filtered out.
+// access the resource in general, but some documents should be filtered out.
 //
 // Note: This enforcer cannot be used to authorize Create and CollectionAction
 // operations.

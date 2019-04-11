@@ -1099,7 +1099,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// set selector query
 	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)
 
-	// filter out deleted records if configured
+	// filter out deleted documents if configured
 	if c.SoftDelete {
 		// get soft delete field
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
@@ -1135,7 +1135,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModels")
 
-	// filter out deleted records if configured
+	// filter out deleted documents if configured
 	if c.SoftDelete {
 		// get soft delete field
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
@@ -1476,7 +1476,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 			},
 		}
 
-		// exclude soft deleted records
+		// exclude soft deleted documents
 		if rc.SoftDelete {
 			// get soft delete field
 			softDeleteField := coal.L(rc.Model, "fire-soft-delete", true)

@@ -154,24 +154,24 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 			continue
 		}
 
-		// prepare record
-		var record Model
+		// prepare document
+		var doc Model
 
 		// unmarshal document for created and updated events
 		if typ != Deleted {
-			// unmarshal record
-			record = s.model.Meta().Make()
-			err = ch.FullDocument.Unmarshal(record)
+			// unmarshal document
+			doc = s.model.Meta().Make()
+			err = ch.FullDocument.Unmarshal(doc)
 			if err != nil {
 				return err
 			}
 
-			// init record
-			Init(record)
+			// init document
+			Init(doc)
 		}
 
 		// call receiver
-		rec(typ, ch.DocumentKey.ID, record)
+		rec(typ, ch.DocumentKey.ID, doc)
 
 		// save token
 		s.token = &ch.ResumeToken
