@@ -50,7 +50,7 @@ type Item struct {
 	State     bool       `json:"state"`
 	Count     int        `json:"count"`
 	Created   time.Time  `json:"created-at" bson:"created_at"`
-	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at"`
+	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
 }
 
 // Validate implements the fire.ValidatableModel interface.
@@ -66,11 +66,6 @@ func (i *Item) Validate() error {
 	}
 
 	return nil
-}
-
-// SoftDeleteField implements the fire.SoftDeletableModel interface.
-func (i *Item) SoftDeleteField() string {
-	return "Deleted"
 }
 
 type count struct {

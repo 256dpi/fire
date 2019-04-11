@@ -18,5 +18,5 @@ func TestEnsureIndexes(t *testing.T) {
 func TestItem(t *testing.T) {
 	coal.Init(&Item{})
 	var _ fire.ValidatableModel = &Item{}
-	var _ fire.SoftDeletableModel = &Item{}
+	coal.L(&Item{}, "fire-soft-delete", true)
 }

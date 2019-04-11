@@ -17,7 +17,7 @@ type postModel struct {
 	Title      string       `json:"title" bson:"title"`
 	Published  bool         `json:"published"`
 	TextBody   string       `json:"text-body" bson:"text_body"`
-	Deleted    *time.Time   `json:"-" bson:"deleted_at"`
+	Deleted    *time.Time   `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
 	Comments   coal.HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections coal.HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
 	Note       coal.HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
@@ -31,20 +31,12 @@ func (p *postModel) Validate() error {
 	return nil
 }
 
-func (p *postModel) SoftDeleteField() string {
-	return "Deleted"
-}
-
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
 	Message   string         `json:"message"`
-	Deleted   *time.Time     `json:"-" bson:"deleted_at"`
+	Deleted   *time.Time     `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
 	Parent    *bson.ObjectId `json:"-" bson:"parent_id" coal:"parent:comments"`
 	Post      bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
-}
-
-func (p *commentModel) SoftDeleteField() string {
-	return "Deleted"
 }
 
 type selectionModel struct {

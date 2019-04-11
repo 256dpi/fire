@@ -244,10 +244,9 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 			// prepare query
 			query := bson.M{coal.F(model, field): ctx.Model.ID()}
 
-			// exclude soft deleted documents
-			if sdm, ok := model.(SoftDeletableModel); ok {
-				field := sdm.SoftDeleteField()
-				query[coal.F(model, field)] = nil
+			// exclude soft deleted documents if supported
+			if sdm := coal.L(model, "fire-soft-delete", false); sdm != "" {
+				query[coal.F(model, sdm)] = nil
 			}
 
 			// count referencing documents
@@ -550,10 +549,9 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 			query[coal.F(ctx.Model, field)] = ctx.Model.MustGet(field)
 		}
 
-		// exclude soft deleted documents
-		if sdm, ok := ctx.Model.(SoftDeletableModel); ok {
-			field := sdm.SoftDeleteField()
-			query[coal.F(ctx.Model, field)] = nil
+		// exclude soft deleted documents if supported
+		if sdm := coal.L(ctx.Model, "fire-soft-delete", false); sdm != "" {
+			query[coal.F(ctx.Model, sdm)] = nil
 		}
 
 		// count

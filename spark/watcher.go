@@ -61,7 +61,7 @@ func (w *Watcher) Add(stream *Stream) {
 		// handle soft deleted records
 		if stream.SoftDelete && e == coal.Updated {
 			// get soft delete field
-			softDeleteField := stream.Model.(fire.SoftDeletableModel).SoftDeleteField()
+			softDeleteField := coal.L(stream.Model, "fire-soft-delete", true)
 
 			// get deleted time
 			t := m.MustGet(softDeleteField).(*time.Time)
