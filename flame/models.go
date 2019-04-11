@@ -184,12 +184,6 @@ func (a *Application) HashSecret() error {
 	return nil
 }
 
-// A ResourceOwnerDescription is returned by a ResourceOwner model to specify
-// details about its implementation.
-type ResourceOwnerDescription struct {
-	IdentifierField string
-}
-
 // ResourceOwner is the interface that must be implemented resource owners.
 type ResourceOwner interface {
 	coal.Model
