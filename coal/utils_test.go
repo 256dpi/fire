@@ -9,8 +9,8 @@ import (
 type postModel struct {
 	Base       `json:"-" bson:",inline" coal:"posts"`
 	Title      string  `json:"title" bson:"title" coal:"foo"`
-	Published  bool    `json:"published" coal:"foo,bar"`
-	TextBody   string  `json:"text-body" bson:"text_body" coal:"bar"`
+	Published  bool    `json:"published" coal:"bar"`
+	TextBody   string  `json:"text-body" bson:"text_body" coal:"bar,baz"`
 	Comments   HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
 	Selections HasMany `json:"-" bson:"-" coal:"selections:selections:posts"`
 	Note       HasOne  `json:"-" bson:"-" coal:"note:notes:post"`

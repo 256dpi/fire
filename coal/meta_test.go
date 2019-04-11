@@ -133,7 +133,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.Bool,
 				JSONKey:   "published",
 				BSONField: "published",
-				Flags:     []string{"foo", "bar"},
+				Flags:     []string{"bar"},
 				index:     2,
 			},
 			"TextBody": {
@@ -142,7 +142,7 @@ func TestMeta(t *testing.T) {
 				Kind:      reflect.String,
 				JSONKey:   "text-body",
 				BSONField: "text_body",
-				Flags:     []string{"bar"},
+				Flags:     []string{"bar", "baz"},
 				index:     3,
 			},
 			"Comments": {
@@ -205,10 +205,12 @@ func TestMeta(t *testing.T) {
 		FlaggedFields: map[string][]*Field{
 			"foo": {
 				post.Fields["Title"],
-				post.Fields["Published"],
 			},
 			"bar": {
 				post.Fields["Published"],
+				post.Fields["TextBody"],
+			},
+			"baz": {
 				post.Fields["TextBody"],
 			},
 		},

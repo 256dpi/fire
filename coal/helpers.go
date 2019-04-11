@@ -69,6 +69,19 @@ func R(m Model, field string) string {
 	return f.RelName
 }
 
+// L is a short-hand function to lookup a flagged field of a model.
+//
+// Note: L will panic if no or multiple flagged field have been found.
+func L(m Model, flag string) string {
+	// lookup fields
+	fields, _ := Init(m).Meta().FlaggedFields[flag]
+	if len(fields) != 1 {
+		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" found on "%s"`, flag, m.Meta().Name))
+	}
+
+	return fields[0].Name
+}
+
 // P is a short-hand function to get a pointer of the passed object id.
 func P(id bson.ObjectId) *bson.ObjectId {
 	return &id

@@ -37,6 +37,18 @@ func TestR(t *testing.T) {
 	})
 }
 
+func TestL(t *testing.T) {
+	assert.Equal(t, "Title", L(&postModel{}, "foo"))
+
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" found on "coal.postModel"`, func() {
+		L(&postModel{}, "bar")
+	})
+
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" found on "coal.postModel"`, func() {
+		L(&postModel{}, "quz")
+	})
+}
+
 func TestP(t *testing.T) {
 	id := bson.NewObjectId()
 	assert.Equal(t, &id, P(id))
