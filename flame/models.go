@@ -26,9 +26,6 @@ const (
 type GenericToken interface {
 	coal.Model
 
-	// DescribeToken should return a the token type field.
-	DescribeToken() (typeField string)
-
 	// GetTokenData should collect and return the tokens data.
 	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client bson.ObjectId, resourceOwner *bson.ObjectId)
 
@@ -55,11 +52,6 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 	if autoExpire {
 		i.Add(&Token{}, false, time.Minute, "ExpiresAt")
 	}
-}
-
-// DescribeToken implements the flame.GenericToken interface.
-func (t *Token) DescribeToken() string {
-	return "Type"
 }
 
 // GetTokenData implements the flame.GenericToken interface.
@@ -97,9 +89,6 @@ func (t *Token) Validate() error {
 type Client interface {
 	coal.Model
 
-	// DescribeClient should return a the clients identifier field.
-	DescribeClient() (identifierField string)
-
 	// ValidRedirectURL should return whether the specified redirect url can be
 	// used by this client.
 	//
@@ -116,7 +105,7 @@ type Client interface {
 type Application struct {
 	coal.Base   `json:"-" bson:",inline" coal:"applications"`
 	Name        string `json:"name" bson:"name"`
-	Key         string `json:"key" bson:"key"`
+	Key         string `json:"key" bson:"key" coal:"flame-client-id"`
 	Secret      string `json:"secret,omitempty" bson:"-"`
 	SecretHash  []byte `json:"-" bson:"secret"`
 	RedirectURL string `json:"redirect-url" bson:"redirect_url"`
@@ -125,11 +114,6 @@ type Application struct {
 // AddApplicationIndexes will add application indexes to the specified indexer.
 func AddApplicationIndexes(i *coal.Indexer) {
 	i.Add(&Application{}, true, 0, "Key")
-}
-
-// DescribeClient implements the flame.Client interface.
-func (a *Application) DescribeClient() string {
-	return "Key"
 }
 
 // ValidRedirectURL implements the flame.Client interface.
@@ -210,9 +194,6 @@ type ResourceOwnerDescription struct {
 type ResourceOwner interface {
 	coal.Model
 
-	// DescribeResourceOwner should return the resource owners identifier field.
-	DescribeResourceOwner() (identifierField string)
-
 	// ValidSecret should determine whether the specified plain text password
 	// matches the stored hashed password.
 	ValidPassword(string) bool
@@ -222,7 +203,7 @@ type ResourceOwner interface {
 type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
 	Name         string `json:"name" bson:"name"`
-	Email        string `json:"email" bson:"email"`
+	Email        string `json:"email" bson:"email" coal:"flame-resource-owner-id"`
 	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" bson:"password"`
 }
@@ -230,11 +211,6 @@ type User struct {
 // AddUserIndexes will add user indexes to the specified indexer.
 func AddUserIndexes(i *coal.Indexer) {
 	i.Add(&User{}, true, 0, "Email")
-}
-
-// DescribeResourceOwner implements the flame.ResourceOwner interface.
-func (u *User) DescribeResourceOwner() string {
-	return "Email"
 }
 
 // ValidPassword implements the flame.ResourceOwner interface.

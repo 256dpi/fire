@@ -629,8 +629,8 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	// prepare object
 	obj := model.Meta().Make()
 
-	// get id field
-	field := coal.F(model, model.DescribeClient())
+	// lookup id field
+	field := coal.F(model, coal.L(model, "flame-client-id"))
 
 	// prepare filter
 	filters := []bson.M{
@@ -750,8 +750,8 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	// prepare object
 	obj := coal.Init(model).Meta().Make()
 
-	// get id field
-	field := coal.F(model, model.DescribeResourceOwner())
+	// lookup id field
+	field := coal.F(model, coal.L(model, "flame-resource-owner-id"))
 
 	// prepare filter
 	filters := []bson.M{
