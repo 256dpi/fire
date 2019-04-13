@@ -2274,8 +2274,6 @@ func TestFiltering(t *testing.T) {
 		  	}
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
-
-	// TODO: Test array filtering.
 }
 
 func TestSorting(t *testing.T) {
