@@ -25,7 +25,7 @@ func NewBodyLimiter(w http.ResponseWriter, r *http.Request, n int64) *BodyLimite
 // specified amount of bytes. Earlier calls to LimitBody will be overwritten
 // which essentially allows callers to increase the limit from a default limit.
 func LimitBody(w http.ResponseWriter, r *http.Request, n int64) {
-	// get original read from existing limiter
+	// get original body from existing limiter
 	if bl, ok := r.Body.(*BodyLimiter); ok {
 		r.Body = bl.Original
 	}
