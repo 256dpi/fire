@@ -61,8 +61,8 @@ func (i *Item) Validate() error {
 		return fire.E("missing name")
 	}
 
-	// check created at
-	if i.Created.IsZero() {
+	// check timestamps
+	if i.Created.IsZero() || i.Updated.IsZero() {
 		return fire.E("missing timestamp")
 	}
 
