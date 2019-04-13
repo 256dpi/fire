@@ -24,7 +24,7 @@ const (
 // Receiver is a callback that receives stream events.
 type Receiver func(Event, bson.ObjectId, Model)
 
-// Stream simplifies the handling of change streams to receives changes to
+// Stream simplifies the handling of change streams to receive changes to
 // documents.
 type Stream struct {
 	store *Store
