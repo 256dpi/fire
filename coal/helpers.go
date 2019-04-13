@@ -141,3 +141,12 @@ func Includes(all, subset []bson.ObjectId) bool {
 
 	return true
 }
+
+// Require will check if the specified flags are set on the specified model and
+// panic if one is missing.
+func Require(m Model, flags ...string) {
+	// check all flags
+	for _, f := range flags {
+		L(m, f, true)
+	}
+}

@@ -25,17 +25,21 @@ func TestTokenInterfaces(t *testing.T) {
 }
 
 func TestApplicationInterfaces(t *testing.T) {
+	coal.Init(&Application{})
+	coal.Require(&Application{}, "flame-client-id")
+
 	var _ coal.Model = &Application{}
 	var _ fire.ValidatableModel = &Application{}
 	var _ Client = &Application{}
-	coal.L(&Application{}, "flame-client-id", true)
 }
 
 func TestUserInterfaces(t *testing.T) {
+	coal.Init(&User{})
+	coal.Require(&User{}, "flame-resource-owner-id")
+
 	var _ coal.Model = &User{}
 	var _ fire.ValidatableModel = &User{}
 	var _ ResourceOwner = &User{}
-	coal.L(&User{}, "flame-resource-owner-id", true)
 }
 
 func TestApplicationValidate(t *testing.T) {

@@ -100,3 +100,17 @@ func TestIncludes(t *testing.T) {
 	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b, c, d}))
 	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{d}))
 }
+
+func TestRequire(t *testing.T) {
+	assert.NotPanics(t, func() {
+		Require(&postModel{}, "foo")
+	})
+
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" found on "coal.postModel"`, func() {
+		Require(&postModel{}, "bar")
+	})
+
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" found on "coal.postModel"`, func() {
+		Require(&postModel{}, "quz")
+	})
+}
