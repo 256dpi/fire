@@ -49,7 +49,8 @@ type Item struct {
 	Name      string     `json:"name"`
 	State     bool       `json:"state"`
 	Count     int        `json:"count"`
-	Created   time.Time  `json:"created-at" bson:"created_at"`
+	Created   time.Time  `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
+	Updated   time.Time  `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
 	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
 }
 

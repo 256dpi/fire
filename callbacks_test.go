@@ -65,13 +65,13 @@ func TestModelValidator(t *testing.T) {
 func TestTimestampValidator(t *testing.T) {
 	type model struct {
 		coal.Base `json:"-" bson:",inline" coal:"posts"`
-		CreatedAt time.Time
-		UpdateAt  time.Time
+		CreatedAt time.Time `coal:"fire-created-timestamp"`
+		UpdateAt  time.Time `coal:"fire-updated-timestamp"`
 	}
 
 	m := &model{}
 
-	validator := TimestampValidator("CreatedAt", "UpdateAt")
+	validator := TimestampValidator()
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: m}, validator)
 	assert.NoError(t, err)

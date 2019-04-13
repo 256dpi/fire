@@ -164,7 +164,7 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 		Store: store,
 		Validators: fire.L{
 			// set timestamps
-			fire.TimestampValidator("Created", ""),
+			fire.TimestampValidator(),
 
 			// basic model & relationship validations
 			fire.ModelValidator(),

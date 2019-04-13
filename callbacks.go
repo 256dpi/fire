@@ -148,18 +148,32 @@ func ModelValidator() *Callback {
 	})
 }
 
-// TimestampValidator will set the specified timestamp fields on creation
-// and update operations.
-func TimestampValidator(createdAtField, updatedAtField string) *Callback {
+// TimestampValidator will set timestamp fields on create and update operations.
+// The fields are inferred from the model using the "fire-created-timestamp" and
+// "fire-updated-timestamp" flags. Missing created timestamps are retroactively
+// set using the timestamp encoded in the model id.
+func TimestampValidator() *Callback {
 	return C("fire/TimestampValidator", Only(Create, Update), func(ctx *Context) error {
-		// set the created-at field if present and not already set
-		if createdAtField != "" && ctx.Model.MustGet(createdAtField).(time.Time).IsZero() {
-			ctx.Model.MustSet(createdAtField, time.Now())
+		// get time
+		now := time.Now()
+
+		// get timestamp fields
+		ctf := coal.L(ctx.Model, "fire-created-timestamp", false)
+		utf := coal.L(ctx.Model, "fire-updated-timestamp", false)
+
+		// set created timestamp on creation and set missing create timestamps
+		// to the timestamp inferred from the model id
+		if ctf != "" {
+			if ctx.Operation == Create {
+				ctx.Model.MustSet(ctf, now)
+			} else if t := ctx.Model.MustGet(ctf).(time.Time); t.IsZero() {
+				ctx.Model.MustSet(ctf, ctx.Model.ID().Time())
+			}
 		}
 
-		// always set the updated-at field if present
-		if updatedAtField != "" {
-			ctx.Model.MustSet(updatedAtField, time.Now())
+		// always set updated timestamp
+		if utf != "" {
+			ctx.Model.MustSet(utf, now)
 		}
 
 		return nil
