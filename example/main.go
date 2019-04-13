@@ -163,10 +163,8 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 		Model: &Item{},
 		Store: store,
 		Validators: fire.L{
-			// set timestamps
+			// add basic validators
 			fire.TimestampValidator(),
-
-			// basic model & relationship validations
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
