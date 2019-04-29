@@ -337,6 +337,18 @@ func TestMetaMakeSlice(t *testing.T) {
 	assert.Equal(t, "<*[]*coal.postModel Value>", reflect.ValueOf(posts).String())
 }
 
+func TestMetaSpecial(t *testing.T) {
+	type m struct {
+		Base `json:"-" bson:",inline" coal:"foos"`
+		Foo  string `json:",omitempty" bson:",omitempty"`
+	}
+
+	meta := NewMeta(&m{})
+
+	assert.Equal(t, "Foo", meta.Fields["Foo"].JSONKey)
+	assert.Equal(t, "foo", meta.Fields["Foo"].BSONField)
+}
+	
 func BenchmarkNewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		NewMeta(&postModel{})

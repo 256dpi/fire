@@ -368,7 +368,7 @@ func getJSONFieldName(field *reflect.StructField) string {
 	}
 
 	// check first value
-	if len(tag) > 0 || len(values[0]) > 0 {
+	if len(values) > 0 && len(values[0]) > 0 {
 		return values[0]
 	}
 
@@ -385,7 +385,7 @@ func getBSONFieldName(field *reflect.StructField) string {
 	}
 
 	// check first value
-	if len(tag) > 0 || len(values[0]) > 0 {
+	if len(values) > 0 && len(values[0]) > 0 {
 		return values[0]
 	}
 
