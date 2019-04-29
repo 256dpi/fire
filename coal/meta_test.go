@@ -348,7 +348,7 @@ func TestMetaSpecial(t *testing.T) {
 	assert.Equal(t, "Foo", meta.Fields["Foo"].JSONKey)
 	assert.Equal(t, "foo", meta.Fields["Foo"].BSONField)
 }
-	
+
 func BenchmarkNewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		NewMeta(&postModel{})
