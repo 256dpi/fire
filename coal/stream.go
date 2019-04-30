@@ -30,41 +30,43 @@ type Stream struct {
 	store *Store
 	model Model
 
-	// The function gets invoked by the watcher with critical errors.
-	Reporter func(error)
+	token    *bson.Raw
+	reporter func(error)
 
 	mutex   sync.Mutex
 	current *mgo.ChangeStream
-	token   *bson.Raw
 	closed  bool
 }
 
-// NewStream creates and returns a new stream. If token is present it will be
-// used to resume to stream.
-func NewStream(store *Store, model Model, token []byte) *Stream {
-	// prepare token
-	var tok *bson.Raw
+// OpenStream will open a stream and continuously forward events to the specified
+// receiver until the stream is closed.If token is present it will be used to
+// resume the stream. The provided open function is called when the stream has
+// been opened the first time. The error reporter is called with errors returned
+// by the underlying change stream.
+func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open func(), reporter func(error)) *Stream {
+	// prepare resume token
+	var resumeToken *bson.Raw
 
-	// create token if available
+	// create resume token if available
 	if token != nil {
-		tok = &bson.Raw{
+		resumeToken = &bson.Raw{
 			Kind: bson.ElementDocument,
 			Data: token,
 		}
 	}
 
-	return &Stream{
-		store: store,
-		model: model,
-		token: tok,
+	// create stream
+	s := &Stream{
+		store:    store,
+		model:    model,
+		reporter: reporter,
+		token:    resumeToken,
 	}
-}
 
-// Open will open the stream and continuously forward events to the specified
-// receiver until the stream is closed. The provided open function is called
-// when the stream has been opened the first time.
-func (s *Stream) Open(rec Receiver, open func()) {
-	go s.open(rec, open)
+	// open stream
+	go s.open(receiver, open)
+
+	return s
 }
 
 // Close will close the stream.
@@ -82,7 +84,7 @@ func (s *Stream) Close() {
 	}
 }
 
-func (s *Stream) open(rec Receiver, open func()) {
+func (s *Stream) open(receiver Receiver, open func()) {
 	// prepare once
 	var once sync.Once
 
@@ -97,21 +99,11 @@ func (s *Stream) open(rec Receiver, open func()) {
 
 	// run forever and call reporter with eventual errors
 	for {
-		// check status
-		s.mutex.Lock()
-		closed := s.closed
-		s.mutex.Unlock()
-
-		// return if closed
-		if closed {
-			return
-		}
-
 		// tail stream
-		err := s.tail(rec, opener)
+		err := s.tail(receiver, opener)
 		if err != nil {
-			if s.Reporter != nil {
-				s.Reporter(err)
+			if s.reporter != nil {
+				s.reporter(err)
 			}
 		}
 	}

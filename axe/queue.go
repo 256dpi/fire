@@ -113,15 +113,11 @@ func (q *Queue) start(p *Pool) {
 }
 
 func (q *Queue) watcher(p *Pool) {
-	// create stream
-	s := coal.NewStream(q.store, &Job{})
-	s.Reporter = p.Reporter
-
 	// prepare channel
 	open := make(chan struct{})
 
 	// open stream
-	s.Open(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id bson.ObjectId, m coal.Model, token []byte) {
 		// ignore deleted events
 		if e == coal.Deleted {
 			return
@@ -157,7 +153,7 @@ func (q *Queue) watcher(p *Pool) {
 		}
 	}, func() {
 		close(open)
-	})
+	}, p.Reporter)
 
 	// await steam open
 	select {

@@ -47,12 +47,8 @@ func (w *Watcher) Add(stream *Stream) {
 	// save stream
 	w.streams[stream.Name()] = stream
 
-	// prepare stream
-	s := coal.NewStream(stream.Store, stream.Model)
-	s.Reporter = w.Reporter
-
 	// open stream
-	s.Open(func(e coal.Event, id bson.ObjectId, m coal.Model) {
+	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id bson.ObjectId, m coal.Model, token []byte) {
 		// ignore real deleted events when soft delete has been enabled
 		if stream.SoftDelete && e == coal.Deleted {
 			return
@@ -82,7 +78,7 @@ func (w *Watcher) Add(stream *Stream) {
 
 		// broadcast event
 		w.manager.broadcast(evt)
-	}, nil)
+	}, nil, w.Reporter)
 }
 
 // Action returns an action that should be registered in the group under
