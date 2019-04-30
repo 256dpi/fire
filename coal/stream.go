@@ -27,10 +27,11 @@ type Receiver func(Event, bson.ObjectId, Model, []byte)
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
 type Stream struct {
-	store *Store
-	model Model
-
+	store    *Store
+	model    Model
 	token    *bson.Raw
+	receiver Receiver
+	opened   func()
 	reporter func(error)
 
 	mutex   sync.Mutex
@@ -41,9 +42,9 @@ type Stream struct {
 // OpenStream will open a stream and continuously forward events to the specified
 // receiver until the stream is closed.If token is present it will be used to
 // resume the stream. The provided open function is called when the stream has
-// been opened the first time. The error reporter is called with errors returned
+// been opened the first time. The passed reporter is called with errors returned
 // by the underlying change stream.
-func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open func(), reporter func(error)) *Stream {
+func OpenStream(store *Store, model Model, token []byte, receiver Receiver, opened func(), reporter func(error)) *Stream {
 	// prepare resume token
 	var resumeToken *bson.Raw
 
@@ -59,12 +60,14 @@ func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open
 	s := &Stream{
 		store:    store,
 		model:    model,
-		reporter: reporter,
 		token:    resumeToken,
+		receiver: receiver,
+		opened:   opened,
+		reporter: reporter,
 	}
 
 	// open stream
-	go s.open(receiver, open)
+	go s.open()
 
 	return s
 }
@@ -84,15 +87,15 @@ func (s *Stream) Close() {
 	}
 }
 
-func (s *Stream) open(receiver Receiver, open func()) {
+func (s *Stream) open() {
 	// prepare once
 	var once sync.Once
 
-	// prepare opener
-	opener := func() {
+	// prepare opened
+	opened := func() {
 		once.Do(func() {
-			if open != nil {
-				open()
+			if s.opened != nil {
+				s.opened()
 			}
 		})
 	}
@@ -100,7 +103,7 @@ func (s *Stream) open(receiver Receiver, open func()) {
 	// run forever and call reporter with eventual errors
 	for {
 		// tail stream
-		err := s.tail(receiver, opener)
+		err := s.tail(s.receiver, opened)
 		if err != nil {
 			if s.reporter != nil {
 				s.reporter(err)
@@ -109,7 +112,7 @@ func (s *Stream) open(receiver Receiver, open func()) {
 	}
 }
 
-func (s *Stream) tail(rec Receiver, open func()) error {
+func (s *Stream) tail(rec Receiver, opened func()) error {
 	// copy store
 	store := s.store.Copy()
 	defer store.Close()
@@ -140,7 +143,7 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 	}
 
 	// signal open
-	open()
+	opened()
 
 	// iterate on elements forever
 	var ch change
