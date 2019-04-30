@@ -13,7 +13,7 @@ func TestStream(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	stream := NewStream(tester.Store, &postModel{})
+	stream := NewStream(tester.Store, &postModel{}, nil)
 	stream.Reporter = func(err error) { panic(err) }
 
 	open := make(chan struct{})
@@ -21,20 +21,23 @@ func TestStream(t *testing.T) {
 
 	i := 1
 
-	stream.Open(func(e Event, id bson.ObjectId, m Model) {
+	stream.Open(func(e Event, id bson.ObjectId, m Model, token []byte) {
 		switch i {
 		case 1:
 			assert.Equal(t, Created, e)
 			assert.NotZero(t, id)
 			assert.NotNil(t, m)
+			assert.NotNil(t, token)
 		case 2:
 			assert.Equal(t, Updated, e)
 			assert.NotZero(t, id)
 			assert.NotNil(t, m)
+			assert.NotNil(t, token)
 		case 3:
 			assert.Equal(t, Deleted, e)
 			assert.NotZero(t, id)
 			assert.Nil(t, m)
+			assert.NotNil(t, token)
 
 			close(done)
 		}

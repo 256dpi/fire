@@ -22,7 +22,7 @@ const (
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(Event, bson.ObjectId, Model)
+type Receiver func(Event, bson.ObjectId, Model, []byte)
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
@@ -39,11 +39,24 @@ type Stream struct {
 	closed  bool
 }
 
-// NewStream creates and returns a new stream.
-func NewStream(store *Store, model Model) *Stream {
+// NewStream creates and returns a new stream. If token is present it will be
+// used to resume to stream.
+func NewStream(store *Store, model Model, token []byte) *Stream {
+	// prepare token
+	var tok *bson.Raw
+
+	// create token if available
+	if token != nil {
+		tok = &bson.Raw{
+			Kind: bson.ElementDocument,
+			Data: token,
+		}
+	}
+
 	return &Stream{
 		store: store,
 		model: model,
+		token: tok,
 	}
 }
 
@@ -171,7 +184,7 @@ func (s *Stream) tail(rec Receiver, open func()) error {
 		}
 
 		// call receiver
-		rec(typ, ch.DocumentKey.ID, doc)
+		rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken.Data)
 
 		// save token
 		s.token = &ch.ResumeToken
