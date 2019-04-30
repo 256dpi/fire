@@ -43,8 +43,12 @@ type Stream struct {
 // receiver until the stream is closed. If a token is present it will be used to
 // resume the stream. The provided opened function is called when the stream has
 // been opened the first time. The passed manager is called with errors returned
-// by the underlying change stream. The managers result ist used to determine if
+// by the underlying change stream. The managers result is used to determine if
 // the stream should be opened again.
+//
+// The stream automatically resumes on errors using an internally stored resume
+// token. Applications that need more control should store the token externally
+// and reopen the stream manually to resume from a specific position.
 func OpenStream(store *Store, model Model, token []byte, receiver Receiver, opened func(), manager func(error) bool) *Stream {
 	// prepare resume token
 	var resumeToken *bson.Raw
