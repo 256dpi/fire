@@ -30,7 +30,7 @@ type Stream struct {
 	store *Store
 	model Model
 
-	// Reporter is called with errors.
+	// The function gets invoked by the watcher with critical errors.
 	Reporter func(error)
 
 	mutex   sync.Mutex
