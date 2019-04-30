@@ -78,7 +78,12 @@ func (w *Watcher) Add(stream *Stream) {
 
 		// broadcast event
 		w.manager.broadcast(evt)
-	}, nil, w.Reporter)
+	}, nil, func(err error) bool {
+		// report error
+		w.Reporter(err)
+
+		return true
+	})
 }
 
 // Action returns an action that should be registered in the group under

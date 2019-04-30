@@ -152,8 +152,14 @@ func (q *Queue) watcher(p *Pool) {
 			board.Unlock()
 		}
 	}, func() {
+		// signal open
 		close(open)
-	}, p.Reporter)
+	}, func(err error) bool {
+		// report error
+		p.Reporter(err)
+
+		return true
+	})
 
 	// await steam open
 	select {
