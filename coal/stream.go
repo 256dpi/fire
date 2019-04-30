@@ -151,6 +151,8 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 		// prepare type
 		var typ Event
 
+		// TODO: Handle "drop", "rename" and "invalidate" events.
+
 		// parse operation type
 		if ch.OperationType == "insert" {
 			typ = Created
