@@ -41,7 +41,7 @@ func TestStream(t *testing.T) {
 		i++
 	}, func() {
 		close(open)
-	}, func(err error) {
+	}, func(err error) bool {
 		panic(err)
 	})
 
@@ -90,7 +90,7 @@ func TestStreamResumption(t *testing.T) {
 		close(done1)
 	}, func() {
 		close(open1)
-	}, func(err error) {
+	}, func(err error) bool {
 		panic(err)
 	})
 
@@ -137,11 +137,44 @@ func TestStreamResumption(t *testing.T) {
 		}
 
 		i++
-	}, nil, func(err error) {
+	}, nil, func(err error) bool {
 		panic(err)
 	})
 
 	<-done2
 
 	stream2.Close()
+}
+
+func TestStreamError(t *testing.T) {
+	tester.Clean()
+
+	time.Sleep(100 * time.Millisecond)
+
+	i := 1
+	done := make(chan struct{})
+
+	bytes, err := bson.Marshal(map[string]string{"foo": "bar"})
+	assert.NoError(t, err)
+
+	OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id bson.ObjectId, m Model, token []byte) {
+		// skip
+	}, nil, func(err error) bool {
+		switch i {
+		case 1:
+			i++
+		case 2:
+			close(done)
+			i++
+			return false
+		default:
+			panic(err)
+		}
+
+		return true
+	})
+
+	<-done
+
+	time.Sleep(100 * time.Millisecond)
 }

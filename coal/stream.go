@@ -32,7 +32,7 @@ type Stream struct {
 	token    *bson.Raw
 	receiver Receiver
 	opened   func()
-	reporter func(error)
+	manager  func(error) bool
 
 	mutex   sync.Mutex
 	current *mgo.ChangeStream
@@ -40,11 +40,12 @@ type Stream struct {
 }
 
 // OpenStream will open a stream and continuously forward events to the specified
-// receiver until the stream is closed.If token is present it will be used to
-// resume the stream. The provided open function is called when the stream has
-// been opened the first time. The passed reporter is called with errors returned
-// by the underlying change stream.
-func OpenStream(store *Store, model Model, token []byte, receiver Receiver, opened func(), reporter func(error)) *Stream {
+// receiver until the stream is closed. If a token is present it will be used to
+// resume the stream. The provided opened function is called when the stream has
+// been opened the first time. The passed manager is called with errors returned
+// by the underlying change stream. The managers result ist used to determine if
+// the stream should be opened again.
+func OpenStream(store *Store, model Model, token []byte, receiver Receiver, opened func(), manager func(error) bool) *Stream {
 	// prepare resume token
 	var resumeToken *bson.Raw
 
@@ -63,7 +64,7 @@ func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open
 		token:    resumeToken,
 		receiver: receiver,
 		opened:   opened,
-		reporter: reporter,
+		manager:  manager,
 	}
 
 	// open stream
@@ -100,13 +101,25 @@ func (s *Stream) open() {
 		})
 	}
 
-	// run forever and call reporter with eventual errors
+	// run forever and call manager with eventual errors
 	for {
+		// check status
+		s.mutex.Lock()
+		closed := s.closed
+		s.mutex.Unlock()
+
+		// return if closed
+		if closed {
+			return
+		}
+
 		// tail stream
 		err := s.tail(s.receiver, opened)
 		if err != nil {
-			if s.reporter != nil {
-				s.reporter(err)
+			if s.manager != nil {
+				if !s.manager(err) {
+					return
+				}
 			}
 		}
 	}
