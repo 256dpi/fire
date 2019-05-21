@@ -5,7 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // C is a short-hand function to extract the collection of a model.
@@ -89,12 +90,12 @@ func L(m Model, flag string, force bool) string {
 }
 
 // P is a short-hand function to get a pointer of the passed object id.
-func P(id bson.ObjectId) *bson.ObjectId {
+func P(id primitive.ObjectID) *primitive.ObjectID {
 	return &id
 }
 
 // N is a short-hand function to get a typed nil object id pointer.
-func N() *bson.ObjectId {
+func N() *primitive.ObjectID {
 	return nil
 }
 
@@ -104,10 +105,10 @@ func T(t time.Time) *time.Time {
 }
 
 // Unique is a helper to get a unique list of object ids.
-func Unique(ids []bson.ObjectId) []bson.ObjectId {
+func Unique(ids []primitive.ObjectID) []primitive.ObjectID {
 	// prepare map
-	m := make(map[bson.ObjectId]bool)
-	l := make([]bson.ObjectId, 0, len(ids))
+	m := make(map[primitive.ObjectID]bool)
+	l := make([]primitive.ObjectID, 0, len(ids))
 
 	for _, id := range ids {
 		if _, ok := m[id]; !ok {
@@ -120,7 +121,7 @@ func Unique(ids []bson.ObjectId) []bson.ObjectId {
 }
 
 // Contains returns true if a list of object ids contains the specified id.
-func Contains(list []bson.ObjectId, id bson.ObjectId) bool {
+func Contains(list []primitive.ObjectID, id primitive.ObjectID) bool {
 	for _, item := range list {
 		if item == id {
 			return true
@@ -132,7 +133,7 @@ func Contains(list []bson.ObjectId, id bson.ObjectId) bool {
 
 // Includes returns true if a list of object ids includes another list of object
 // ids.
-func Includes(all, subset []bson.ObjectId) bool {
+func Includes(all, subset []primitive.ObjectID) bool {
 	for _, item := range subset {
 		if !Contains(all, item) {
 			return false
@@ -149,4 +150,36 @@ func Require(m Model, flags ...string) {
 	for _, f := range flags {
 		L(m, f, true)
 	}
+}
+
+// Sort is a helper function to compute a sort object based on a list of fields
+// with dash prefixes for descending sorting.
+func Sort(fields ...string) bson.D {
+	// prepare sort
+	var sort bson.D
+
+	// add fields
+	for _, field := range fields {
+		// check if prefixed
+		prefixed := strings.HasPrefix(field, "-")
+
+		// remove prefix
+		if prefixed {
+			field = strings.TrimLeft(field, "-")
+		}
+
+		// prepare value
+		value := 1
+		if prefixed {
+			value = -1
+		}
+
+		// add field
+		sort = append(sort, bson.E{
+			Key:   field,
+			Value: value,
+		})
+	}
+
+	return sort
 }

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestNewMeta(t *testing.T) {
@@ -46,7 +46,7 @@ func TestNewMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  bson.ObjectId `coal:"foo:foo:foo"`
+			Foo  primitive.ObjectID `coal:"foo:foo:foo"`
 		}
 
 		NewMeta(&m{})
@@ -55,7 +55,7 @@ func TestNewMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  []bson.ObjectId `coal:"foo:foo:foo"`
+			Foo  []primitive.ObjectID `coal:"foo:foo:foo"`
 		}
 
 		NewMeta(&m{})
@@ -102,8 +102,8 @@ func TestNewMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
 		type m struct {
 			Base    `json:"-" bson:",inline" coal:"ms"`
-			Parent1 bson.ObjectId `coal:"parent:parents"`
-			Parent2 bson.ObjectId `coal:"parent:parents"`
+			Parent1 primitive.ObjectID `coal:"parent:parents"`
+			Parent2 primitive.ObjectID `coal:"parent:parents"`
 		}
 
 		NewMeta(&m{})
@@ -235,7 +235,7 @@ func TestMeta(t *testing.T) {
 			"Parent": {
 				Name:      "Parent",
 				Type:      optionalToOneType,
-				Kind:      reflect.String,
+				Kind:      reflect.Array,
 				JSONKey:   "",
 				BSONField: "parent",
 				Flags:     []string{},
@@ -248,7 +248,7 @@ func TestMeta(t *testing.T) {
 			"Post": {
 				Name:      "Post",
 				Type:      toOneType,
-				Kind:      reflect.String,
+				Kind:      reflect.Array,
 				JSONKey:   "",
 				BSONField: "post_id",
 				Flags:     []string{},

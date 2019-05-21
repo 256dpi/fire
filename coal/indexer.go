@@ -1,15 +1,17 @@
 package coal
 
 import (
+	"context"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type index struct {
 	coll  string
-	index mgo.Index
+	model mongo.IndexModel
 }
 
 // An Indexer can be used to manage indexes for models.
@@ -32,12 +34,20 @@ func (i *Indexer) Add(model Model, unique bool, expireAfter time.Duration, field
 		key = append(key, F(model, f))
 	}
 
+	// prepare options
+	opts := options.Index().
+		SetUnique(unique).
+		SetBackground(true)
+
+	// set expire if available
+	if expireAfter > 0 {
+		opts.SetExpireAfterSeconds(int32(expireAfter / time.Second))
+	}
+
 	// add index
-	i.AddRaw(C(model), mgo.Index{
-		Key:         key,
-		Unique:      unique,
-		ExpireAfter: expireAfter,
-		Background:  true,
+	i.AddRaw(C(model), mongo.IndexModel{
+		Keys:    Sort(key...),
+		Options: opts,
 	})
 }
 
@@ -49,35 +59,39 @@ func (i *Indexer) AddPartial(model Model, unique bool, expireAfter time.Duration
 		key = append(key, F(model, f))
 	}
 
+	// prepare options
+	opts := options.Index().
+		SetPartialFilterExpression(filter).
+		SetUnique(unique).
+		SetBackground(true)
+
+	// set expire if available
+	if expireAfter > 0 {
+		opts.SetExpireAfterSeconds(int32(expireAfter / time.Second))
+	}
+
 	// add index
-	i.AddRaw(C(model), mgo.Index{
-		Key:           key,
-		Unique:        unique,
-		ExpireAfter:   expireAfter,
-		PartialFilter: filter,
-		Background:    true,
+	i.AddRaw(C(model), mongo.IndexModel{
+		Keys:    Sort(key...),
+		Options: opts,
 	})
 }
 
 // AddRaw will add a raw mgo.Index to the internal index list.
-func (i *Indexer) AddRaw(coll string, idx mgo.Index) {
+func (i *Indexer) AddRaw(coll string, model mongo.IndexModel) {
 	i.indexes = append(i.indexes, index{
 		coll:  coll,
-		index: idx,
+		model: model,
 	})
 }
 
 // Ensure will ensure that the required indexes exist. It may fail early if some
 // of the indexes are already existing and do not match the supplied index.
 func (i *Indexer) Ensure(store *Store) error {
-	// copy store
-	s := store.Copy()
-	defer s.Close()
-
 	// go through all raw indexes
 	for _, i := range i.indexes {
 		// ensure single index
-		err := s.DB().C(i.coll).EnsureIndex(i.index)
+		_, err := store.DB().Collection(i.coll).Indexes().CreateOne(context.Background(), i.model)
 		if err != nil {
 			return err
 		}

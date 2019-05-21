@@ -1,6 +1,12 @@
 package coal
 
-import "github.com/globalsign/mgo/bson"
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
 
 // A Tester provides facilities to the test a fire API.
 type Tester struct {
@@ -22,12 +28,9 @@ func NewTester(store *Store, models ...Model) *Tester {
 // Clean will remove the collections of models that have been registered and
 // reset the header map.
 func (t *Tester) Clean() {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	for _, model := range t.Models {
 		// remove all is faster than dropping the collection
-		_, err := store.C(model).RemoveAll(nil)
+		_, err := t.Store.C(model).DeleteMany(context.Background(), bson.M{})
 		if err != nil {
 			panic(err)
 		}
@@ -36,14 +39,11 @@ func (t *Tester) Clean() {
 
 // Save will save the specified model.
 func (t *Tester) Save(model Model) Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	// initialize model
 	model = Init(model)
 
 	// insert to collection
-	err := store.C(model).Insert(model)
+	_, err := t.Store.C(model).InsertOne(context.Background(), model)
 	if err != nil {
 		panic(err)
 	}
@@ -53,15 +53,18 @@ func (t *Tester) Save(model Model) Model {
 
 // FindAll will return all saved models.
 func (t *Tester) FindAll(model Model) interface{} {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	// initialize model
 	model = Init(model)
 
 	// find all documents
 	list := model.Meta().MakeSlice()
-	err := store.C(model).Find(nil).Sort("-_id").All(list)
+	cursor, err := t.Store.C(model).Find(context.Background(), nil, options.Find().SetSort(Sort("_id")))
+	if err != nil {
+		panic(err)
+	}
+
+	// get all results
+	err = cursor.All(context.Background(), list)
 	if err != nil {
 		panic(err)
 	}
@@ -74,11 +77,8 @@ func (t *Tester) FindAll(model Model) interface{} {
 
 // FindLast will return the last saved model.
 func (t *Tester) FindLast(model Model) Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	// find last document
-	err := store.C(model).Find(nil).Sort("-_id").One(model)
+	err := t.Store.C(model).FindOne(context.Background(), nil, options.FindOne().SetSort(Sort("_id"))).Decode(model)
 	if err != nil {
 		panic(err)
 	}
@@ -90,12 +90,11 @@ func (t *Tester) FindLast(model Model) Model {
 }
 
 // Fetch will return the saved model.
-func (t *Tester) Fetch(model Model, id bson.ObjectId) Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
+func (t *Tester) Fetch(model Model, id primitive.ObjectID) Model {
 	// find specific document
-	err := store.C(model).FindId(id).One(model)
+	err := t.Store.C(model).FindOne(context.Background(), bson.M{
+		"_id": id,
+	}).Decode(model)
 	if err != nil {
 		panic(err)
 	}
@@ -108,14 +107,13 @@ func (t *Tester) Fetch(model Model, id bson.ObjectId) Model {
 
 // Update will update the specified model.
 func (t *Tester) Update(model Model) Model {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	// initialize model
 	model = Init(model)
 
 	// insert to collection
-	err := store.C(model).UpdateId(model.ID(), model)
+	_, err := t.Store.C(model).ReplaceOne(context.Background(), bson.M{
+		"_id": model.ID(),
+	}, model)
 	if err != nil {
 		panic(err)
 	}
@@ -125,14 +123,13 @@ func (t *Tester) Update(model Model) Model {
 
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
-	store := t.Store.Copy()
-	defer store.Close()
-
 	// initialize model
 	model = Init(model)
 
 	// insert to collection
-	err := store.C(model).RemoveId(model.ID())
+	_, err := t.Store.C(model).DeleteOne(context.Background(), bson.M{
+		"_id": model.ID(),
+	})
 	if err != nil {
 		panic(err)
 	}

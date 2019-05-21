@@ -6,6 +6,7 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestStream(t *testing.T) {
@@ -17,7 +18,7 @@ func TestStream(t *testing.T) {
 	open := make(chan struct{})
 	done := make(chan struct{})
 
-	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id bson.ObjectId, m Model, token []byte) {
+	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, m Model, token []byte) {
 		switch i {
 		case 1:
 			assert.Equal(t, Created, e)
@@ -47,23 +48,15 @@ func TestStream(t *testing.T) {
 
 	<-open
 
-	s := tester.Store.Copy()
-	defer s.Close()
-
 	post := Init(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
-	err := s.C(post).Insert(post)
-	assert.NoError(t, err)
+	tester.Save(post)
 
 	post.Title = "bar"
-
-	err = s.C(post).UpdateId(post.ID(), post)
-	assert.NoError(t, err)
-
-	err = s.C(post).RemoveId(post.ID())
-	assert.NoError(t, err)
+	tester.Update(post)
+	tester.Delete(post)
 
 	<-done
 
@@ -80,7 +73,7 @@ func TestStreamResumption(t *testing.T) {
 
 	var resumeToken []byte
 
-	stream1 := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id bson.ObjectId, m Model, token []byte) {
+	stream1 := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, m Model, token []byte) {
 		assert.Equal(t, Created, e)
 		assert.NotZero(t, id)
 		assert.NotNil(t, m)
@@ -96,31 +89,23 @@ func TestStreamResumption(t *testing.T) {
 
 	<-open1
 
-	s := tester.Store.Copy()
-	defer s.Close()
-
 	post := Init(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
-	err := s.C(post).Insert(post)
-	assert.NoError(t, err)
+	tester.Save(post)
 
 	<-done1
 	stream1.Close()
 
 	post.Title = "bar"
-
-	err = s.C(post).UpdateId(post.ID(), post)
-	assert.NoError(t, err)
-
-	err = s.C(post).RemoveId(post.ID())
-	assert.NoError(t, err)
+	tester.Update(post)
+	tester.Delete(post)
 
 	i := 1
 	done2 := make(chan struct{})
 
-	stream2 := OpenStream(tester.Store, &postModel{}, resumeToken, func(e Event, id bson.ObjectId, m Model, token []byte) {
+	stream2 := OpenStream(tester.Store, &postModel{}, resumeToken, func(e Event, id primitive.ObjectID, m Model, token []byte) {
 		switch i {
 		case 1:
 			assert.Equal(t, Updated, e)
@@ -157,7 +142,7 @@ func TestStreamError(t *testing.T) {
 	bytes, err := bson.Marshal(map[string]string{"foo": "bar"})
 	assert.NoError(t, err)
 
-	OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id bson.ObjectId, m Model, token []byte) {
+	OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id primitive.ObjectID, m Model, token []byte) {
 		// skip
 	}, nil, func(err error) bool {
 		switch i {

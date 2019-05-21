@@ -1,10 +1,13 @@
 package coal
 
 import (
+	"context"
 	"sync"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Event defines the event type.
@@ -22,7 +25,7 @@ const (
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(Event, bson.ObjectId, Model, []byte)
+type Receiver func(Event, primitive.ObjectID, Model, []byte)
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
@@ -35,7 +38,7 @@ type Stream struct {
 	manager  func(error) bool
 
 	mutex   sync.Mutex
-	current *mgo.ChangeStream
+	current *mongo.ChangeStream
 	closed  bool
 }
 
@@ -55,10 +58,8 @@ func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open
 
 	// create resume token if available
 	if token != nil {
-		resumeToken = &bson.Raw{
-			Kind: bson.ElementDocument,
-			Data: token,
-		}
+		rawToken := bson.Raw(token)
+		resumeToken = &rawToken
 	}
 
 	// create stream
@@ -88,7 +89,7 @@ func (s *Stream) Close() {
 
 	// close active change stream
 	if s.current != nil {
-		_ = s.current.Close()
+		_ = s.current.Close(context.Background())
 	}
 }
 
@@ -130,21 +131,20 @@ func (s *Stream) open() {
 }
 
 func (s *Stream) tail(rec Receiver, opened func()) error {
-	// copy store
-	store := s.store.Copy()
-	defer store.Close()
+	// prepare opts
+	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
+	if s.token != nil {
+		opts.SetResumeAfter(*s.token)
+	}
 
 	// open change stream
-	cs, err := store.C(s.model).Watch([]bson.M{}, mgo.ChangeStreamOptions{
-		FullDocument: mgo.UpdateLookup,
-		ResumeAfter:  s.token,
-	})
+	cs, err := s.store.C(s.model).Watch(context.Background(), []bson.M{}, opts)
 	if err != nil {
 		return err
 	}
 
 	// ensure stream is closed
-	defer cs.Close()
+	defer cs.Close(context.Background())
 
 	// save reference and get status
 	s.mutex.Lock()
@@ -163,8 +163,14 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	opened()
 
 	// iterate on elements forever
-	var ch change
-	for cs.Next(&ch) {
+	for cs.Next(context.Background()) {
+		// decode result
+		var ch change
+		err = cs.Decode(&ch)
+		if err != nil {
+			return err
+		}
+
 		// prepare type
 		var typ Event
 
@@ -188,7 +194,7 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 		if typ != Deleted {
 			// unmarshal document
 			doc = s.model.Meta().Make()
-			err = ch.FullDocument.Unmarshal(doc)
+			err = bson.Unmarshal(ch.FullDocument, doc)
 			if err != nil {
 				return err
 			}
@@ -198,14 +204,14 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 		}
 
 		// call receiver
-		rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken.Data)
+		rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken)
 
 		// save token
 		s.token = &ch.ResumeToken
 	}
 
 	// close stream and check error
-	err = cs.Close()
+	err = cs.Close(context.Background())
 	if err != nil {
 		return err
 	}
@@ -222,7 +228,7 @@ type change struct {
 	ResumeToken   bson.Raw `bson:"_id"`
 	OperationType string   `bson:"operationType"`
 	DocumentKey   struct {
-		ID bson.ObjectId `bson:"_id"`
+		ID primitive.ObjectID `bson:"_id"`
 	} `bson:"documentKey"`
 	FullDocument bson.Raw `bson:"fullDocument"`
 }

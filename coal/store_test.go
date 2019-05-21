@@ -7,20 +7,17 @@ import (
 )
 
 func TestCreateStore(t *testing.T) {
-	store1 := MustCreateStore("mongodb://0.0.0.0/test-coal")
-	assert.NotNil(t, store1.Session)
+	store := MustCreateStore("mongodb://0.0.0.0/test-coal")
+	assert.NotNil(t, store.Client)
 
-	store2 := store1.Copy()
-	assert.NotNil(t, store2)
+	assert.Equal(t, "posts", store.C(&postModel{}).Name())
 
-	assert.Equal(t, "posts", store2.C(&postModel{}).Name)
-
-	store2.Close()
-	store1.Close()
+	err := store.Close()
+	assert.NoError(t, err)
 }
 
 func TestCreateStoreError(t *testing.T) {
 	assert.Panics(t, func() {
-		MustCreateStore("mongodb://0.0.0.0/test-coal?make=fail")
+		MustCreateStore("mongodb://0.0.0.0/test-coal?authMechanism=fail")
 	})
 }

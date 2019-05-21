@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestC(t *testing.T) {
@@ -50,12 +51,12 @@ func TestL(t *testing.T) {
 }
 
 func TestP(t *testing.T) {
-	id := bson.NewObjectId()
+	id := primitive.NewObjectID()
 	assert.Equal(t, &id, P(id))
 }
 
 func TestN(t *testing.T) {
-	var id *bson.ObjectId
+	var id *primitive.ObjectID
 	assert.Equal(t, id, N())
 	assert.NotEqual(t, nil, N())
 }
@@ -67,38 +68,38 @@ func TestT(t *testing.T) {
 }
 
 func TestUnique(t *testing.T) {
-	id1 := bson.NewObjectId()
-	id2 := bson.NewObjectId()
+	id1 := primitive.NewObjectID()
+	id2 := primitive.NewObjectID()
 
-	assert.Equal(t, []bson.ObjectId{id1}, Unique([]bson.ObjectId{id1}))
-	assert.Equal(t, []bson.ObjectId{id1}, Unique([]bson.ObjectId{id1, id1}))
-	assert.Equal(t, []bson.ObjectId{id1, id2}, Unique([]bson.ObjectId{id1, id2, id1}))
-	assert.Equal(t, []bson.ObjectId{id1, id2}, Unique([]bson.ObjectId{id1, id2, id1, id2}))
+	assert.Equal(t, []primitive.ObjectID{id1}, Unique([]primitive.ObjectID{id1}))
+	assert.Equal(t, []primitive.ObjectID{id1}, Unique([]primitive.ObjectID{id1, id1}))
+	assert.Equal(t, []primitive.ObjectID{id1, id2}, Unique([]primitive.ObjectID{id1, id2, id1}))
+	assert.Equal(t, []primitive.ObjectID{id1, id2}, Unique([]primitive.ObjectID{id1, id2, id1, id2}))
 }
 
 func TestContains(t *testing.T) {
-	a := bson.NewObjectId()
-	b := bson.NewObjectId()
-	c := bson.NewObjectId()
-	d := bson.NewObjectId()
+	a := primitive.NewObjectID()
+	b := primitive.NewObjectID()
+	c := primitive.NewObjectID()
+	d := primitive.NewObjectID()
 
-	assert.True(t, Contains([]bson.ObjectId{a, b, c}, a))
-	assert.True(t, Contains([]bson.ObjectId{a, b, c}, b))
-	assert.True(t, Contains([]bson.ObjectId{a, b, c}, c))
-	assert.False(t, Contains([]bson.ObjectId{a, b, c}, d))
+	assert.True(t, Contains([]primitive.ObjectID{a, b, c}, a))
+	assert.True(t, Contains([]primitive.ObjectID{a, b, c}, b))
+	assert.True(t, Contains([]primitive.ObjectID{a, b, c}, c))
+	assert.False(t, Contains([]primitive.ObjectID{a, b, c}, d))
 }
 
 func TestIncludes(t *testing.T) {
-	a := bson.NewObjectId()
-	b := bson.NewObjectId()
-	c := bson.NewObjectId()
-	d := bson.NewObjectId()
+	a := primitive.NewObjectID()
+	b := primitive.NewObjectID()
+	c := primitive.NewObjectID()
+	d := primitive.NewObjectID()
 
-	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a}))
-	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b}))
-	assert.True(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b, c}))
-	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{a, b, c, d}))
-	assert.False(t, Includes([]bson.ObjectId{a, b, c}, []bson.ObjectId{d}))
+	assert.True(t, Includes([]primitive.ObjectID{a, b, c}, []primitive.ObjectID{a}))
+	assert.True(t, Includes([]primitive.ObjectID{a, b, c}, []primitive.ObjectID{a, b}))
+	assert.True(t, Includes([]primitive.ObjectID{a, b, c}, []primitive.ObjectID{a, b, c}))
+	assert.False(t, Includes([]primitive.ObjectID{a, b, c}, []primitive.ObjectID{a, b, c, d}))
+	assert.False(t, Includes([]primitive.ObjectID{a, b, c}, []primitive.ObjectID{d}))
 }
 
 func TestRequire(t *testing.T) {
@@ -113,4 +114,14 @@ func TestRequire(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" found on "coal.postModel"`, func() {
 		Require(&postModel{}, "quz")
 	})
+}
+
+func TestSort(t *testing.T) {
+	sort := Sort("foo", "-bar", "baz", "-_id")
+	assert.Equal(t, bson.D{
+		bson.E{Key: "foo", Value: 1},
+		bson.E{Key: "bar", Value: -1},
+		bson.E{Key: "baz", Value: 1},
+		bson.E{Key: "_id", Value: -1},
+	}, sort)
 }

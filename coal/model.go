@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
-	ID() bson.ObjectId
+	ID() primitive.ObjectID
 	Meta() *Meta
 
 	MustGet(string) interface{}
@@ -46,14 +46,14 @@ func InitSlice(ptr interface{}) []Model {
 
 // Base is the base for every coal model.
 type Base struct {
-	DocID bson.ObjectId `json:"-" bson:"_id"`
+	DocID primitive.ObjectID `json:"-" bson:"_id"`
 
 	model interface{}
 	meta  *Meta
 }
 
 // ID returns the models id.
-func (b *Base) ID() bson.ObjectId {
+func (b *Base) ID() primitive.ObjectID {
 	return b.DocID
 }
 
@@ -93,8 +93,8 @@ func (b *Base) initialize(model Model) {
 	b.model = model
 
 	// set id if missing
-	if !b.DocID.Valid() {
-		b.DocID = bson.NewObjectId()
+	if b.DocID.IsZero() {
+		b.DocID = primitive.NewObjectID()
 	}
 
 	// assign meta

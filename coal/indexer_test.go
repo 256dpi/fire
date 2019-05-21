@@ -3,8 +3,8 @@ package coal
 import (
 	"testing"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestIndexerEnsure(t *testing.T) {
@@ -26,8 +26,6 @@ func TestIndexerEnsureError(t *testing.T) {
 	indexer := NewIndexer()
 	indexer.Add(&postModel{}, true, 0, "Published")
 	assert.NoError(t, indexer.Ensure(tester.Store))
-
-	tester.Store.Session.ResetIndexCache()
 
 	indexer = NewIndexer()
 	indexer.Add(&postModel{}, false, 0, "Published")
