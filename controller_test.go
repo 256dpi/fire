@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -75,7 +74,7 @@ func TestBasicOperations(t *testing.T) {
 	tester.Request("POST", "posts", `{
 		"data": {
 			"type": "posts",
-			"id": "`+bson.NewObjectId().Hex()+`"
+			"id": "`+primitive.NewObjectID().Hex()+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -242,7 +241,7 @@ func TestBasicOperations(t *testing.T) {
 	tester.Request("PATCH", "posts/"+id, `{
 		"data": {
 			"type": "posts",
-			"id": "`+bson.NewObjectId().Hex()+`"
+			"id": "`+primitive.NewObjectID().Hex()+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		post := tester.FindLast(&postModel{})
@@ -364,7 +363,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// attempt to get not existing post
-	tester.Request("GET", "posts/"+bson.NewObjectId().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+primitive.NewObjectID().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"errors": [{
@@ -3077,7 +3076,7 @@ func TestWritableFields(t *testing.T) {
 				"posts": {
 					"data": [{
 						"type": "posts",
-						"id": "`+bson.NewObjectId().Hex()+`"
+						"id": "`+primitive.NewObjectID().Hex()+`"
 					}]
 				}
 			}
@@ -3104,7 +3103,7 @@ func TestWritableFields(t *testing.T) {
 		"data": [
 			{
 				"type": "posts",
-				"id": "`+bson.NewObjectId().Hex()+`"
+				"id": "`+primitive.NewObjectID().Hex()+`"
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -3123,7 +3122,7 @@ func TestWritableFields(t *testing.T) {
 		"data": [
 			{
 				"type": "posts",
-				"id": "`+bson.NewObjectId().Hex()+`"
+				"id": "`+primitive.NewObjectID().Hex()+`"
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -3250,7 +3249,7 @@ func TestSoftProtection(t *testing.T) {
 				"posts": {
 					"data": [{
 						"type": "posts",
-						"id": "`+bson.NewObjectId().Hex()+`"
+						"id": "`+primitive.NewObjectID().Hex()+`"
 					}]
 				}
 			}
