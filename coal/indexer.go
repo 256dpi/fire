@@ -88,10 +88,14 @@ func (i *Indexer) AddRaw(coll string, model mongo.IndexModel) {
 // Ensure will ensure that the required indexes exist. It may fail early if some
 // of the indexes are already existing and do not match the supplied index.
 func (i *Indexer) Ensure(store *Store) error {
+	// create context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	// go through all raw indexes
 	for _, i := range i.indexes {
 		// ensure single index
-		_, err := store.DB().Collection(i.coll).Indexes().CreateOne(context.Background(), i.model)
+		_, err := store.DB().Collection(i.coll).Indexes().CreateOne(ctx, i.model)
 		if err != nil {
 			return err
 		}

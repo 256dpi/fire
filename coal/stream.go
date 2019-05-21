@@ -89,7 +89,7 @@ func (s *Stream) Close() {
 
 	// close active change stream
 	if s.current != nil {
-		_ = s.current.Close(context.Background())
+		_ = s.current.Close(nil)
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	}
 
 	// ensure stream is closed
-	defer cs.Close(context.Background())
+	defer cs.Close(nil)
 
 	// save reference and get status
 	s.mutex.Lock()
@@ -163,7 +163,7 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	opened()
 
 	// iterate on elements forever
-	for cs.Next(context.Background()) {
+	for cs.Next(nil) {
 		// decode result
 		var ch change
 		err = cs.Decode(&ch)
@@ -211,7 +211,7 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	}
 
 	// close stream and check error
-	err = cs.Close(context.Background())
+	err = cs.Close(nil)
 	if err != nil {
 		return err
 	}

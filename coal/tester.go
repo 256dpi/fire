@@ -1,8 +1,6 @@
 package coal
 
 import (
-	"context"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -30,7 +28,7 @@ func NewTester(store *Store, models ...Model) *Tester {
 func (t *Tester) Clean() {
 	for _, model := range t.Models {
 		// remove all is faster than dropping the collection
-		_, err := t.Store.C(model).DeleteMany(context.Background(), bson.M{})
+		_, err := t.Store.C(model).DeleteMany(nil, bson.M{})
 		if err != nil {
 			panic(err)
 		}
@@ -43,7 +41,7 @@ func (t *Tester) Save(model Model) Model {
 	model = Init(model)
 
 	// insert to collection
-	_, err := t.Store.C(model).InsertOne(context.Background(), model)
+	_, err := t.Store.C(model).InsertOne(nil, model)
 	if err != nil {
 		panic(err)
 	}
@@ -58,13 +56,13 @@ func (t *Tester) FindAll(model Model) interface{} {
 
 	// find all documents
 	list := model.Meta().MakeSlice()
-	cursor, err := t.Store.C(model).Find(context.Background(), nil, options.Find().SetSort(Sort("_id")))
+	cursor, err := t.Store.C(model).Find(nil, nil, options.Find().SetSort(Sort("_id")))
 	if err != nil {
 		panic(err)
 	}
 
 	// get all results
-	err = cursor.All(context.Background(), list)
+	err = cursor.All(nil, list)
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +76,7 @@ func (t *Tester) FindAll(model Model) interface{} {
 // FindLast will return the last saved model.
 func (t *Tester) FindLast(model Model) Model {
 	// find last document
-	err := t.Store.C(model).FindOne(context.Background(), nil, options.FindOne().SetSort(Sort("_id"))).Decode(model)
+	err := t.Store.C(model).FindOne(nil, nil, options.FindOne().SetSort(Sort("_id"))).Decode(model)
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +90,7 @@ func (t *Tester) FindLast(model Model) Model {
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id primitive.ObjectID) Model {
 	// find specific document
-	err := t.Store.C(model).FindOne(context.Background(), bson.M{
+	err := t.Store.C(model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(model)
 	if err != nil {
@@ -111,7 +109,7 @@ func (t *Tester) Update(model Model) Model {
 	model = Init(model)
 
 	// insert to collection
-	_, err := t.Store.C(model).ReplaceOne(context.Background(), bson.M{
+	_, err := t.Store.C(model).ReplaceOne(nil, bson.M{
 		"_id": model.ID(),
 	}, model)
 	if err != nil {
@@ -127,7 +125,7 @@ func (t *Tester) Delete(model Model) {
 	model = Init(model)
 
 	// insert to collection
-	_, err := t.Store.C(model).DeleteOne(context.Background(), bson.M{
+	_, err := t.Store.C(model).DeleteOne(nil, bson.M{
 		"_id": model.ID(),
 	})
 	if err != nil {

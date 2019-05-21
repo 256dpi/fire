@@ -1,10 +1,8 @@
 package coal
 
 import (
-	"context"
 	"net/url"
 	"strings"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,10 +23,6 @@ func MustCreateStore(uri string) *Store {
 // CreateStore will connect to the specified database and return a new store.
 // It will return an error if the initial connection failed
 func CreateStore(uri string) (*Store, error) {
-	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
@@ -49,13 +43,13 @@ func CreateStore(uri string) (*Store, error) {
 	}
 
 	// create client
-	client, err := mongo.Connect(ctx, opts)
+	client, err := mongo.Connect(nil, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// ping server
-	err = client.Ping(context.Background(), nil)
+	err = client.Ping(nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -92,12 +86,8 @@ func (s *Store) C(model Model) *mongo.Collection {
 
 // Close will close the store and its associated client.
 func (s *Store) Close() error {
-	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	// disconnect client
-	err := s.Client.Disconnect(ctx)
+	err := s.Client.Disconnect(nil)
 	if err != nil {
 		return err
 	}
