@@ -56,13 +56,19 @@ func (t *Tester) FindAll(model Model) interface{} {
 
 	// find all documents
 	list := model.Meta().MakeSlice()
-	cursor, err := t.Store.C(model).Find(nil, nil, options.Find().SetSort(Sort("_id")))
+	cursor, err := t.Store.C(model).Find(nil, bson.M{}, options.Find().SetSort(Sort("_id")))
 	if err != nil {
 		panic(err)
 	}
 
 	// get all results
 	err = cursor.All(nil, list)
+	if err != nil {
+		panic(err)
+	}
+
+	// close cursor
+	err = cursor.Close(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +82,7 @@ func (t *Tester) FindAll(model Model) interface{} {
 // FindLast will return the last saved model.
 func (t *Tester) FindLast(model Model) Model {
 	// find last document
-	err := t.Store.C(model).FindOne(nil, nil, options.FindOne().SetSort(Sort("_id"))).Decode(model)
+	err := t.Store.C(model).FindOne(nil, bson.M{}, options.FindOne().SetSort(Sort("-_id"))).Decode(model)
 	if err != nil {
 		panic(err)
 	}
