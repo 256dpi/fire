@@ -339,9 +339,8 @@ func NewMeta(model Model) *Meta {
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.
 //
-// Note: Libraries like mongo might replace the pointer content with a new
-// structure, therefore the model eventually needs to be initialized again
-// using Init().
+// Note: Operations might replace the pointer content with a new structure,
+// therefore the model eventually needs to be initialized again using Init().
 func (m *Meta) Make() Model {
 	pointer := reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
 	return Init(pointer.(Model))
@@ -350,7 +349,7 @@ func (m *Meta) Make() Model {
 // MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.
 //
 // Note: Don't forget to initialize the slice using InitSlice() after adding
-// elements with libraries like mgo.
+// elements.
 func (m *Meta) MakeSlice() interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(m.model)), 0, 0)
 	pointer := reflect.New(slice.Type())
