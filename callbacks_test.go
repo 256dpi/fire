@@ -324,8 +324,8 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 
 	candidate := &fooModel{
 		Foo:    existing.ID(),
-		Bar:    primitive.NewObjectID(),                  // <- not the same
-		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		Bar:    primitive.NewObjectID(),                       // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),               // <- not the same
 		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 
@@ -368,9 +368,9 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 
 	candidate := &fooModel{
 		Foo:    primitive.NewObjectID(),
-		OptFoo: nil,                                 // <- missing
-		Bar:    primitive.NewObjectID(),                  // <- not the same
-		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		OptFoo: nil,                                           // <- missing
+		Bar:    primitive.NewObjectID(),                       // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),               // <- not the same
 		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 
@@ -418,9 +418,9 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 
 	candidate := &fooModel{
 		Foo:    primitive.NewObjectID(),
-		Foos:   nil,                                 // <- missing
-		Bar:    primitive.NewObjectID(),                  // <- not the same
-		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		Foos:   nil,                                           // <- missing
+		Bar:    primitive.NewObjectID(),                       // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),               // <- not the same
 		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 

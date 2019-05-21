@@ -33,21 +33,21 @@ func (p *postModel) Validate() error {
 
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
-	Message   string         `json:"message"`
-	Deleted   *time.Time     `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
+	Message   string              `json:"message"`
+	Deleted   *time.Time          `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
 	Parent    *primitive.ObjectID `json:"-" bson:"parent_id" coal:"parent:comments"`
 	Post      primitive.ObjectID  `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 type selectionModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"selections:selections"`
-	Name      string          `json:"name"`
+	Name      string               `json:"name"`
 	Posts     []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
 type noteModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"notes"`
-	Title     string        `json:"title" bson:"title"`
+	Title     string             `json:"title" bson:"title"`
 	Post      primitive.ObjectID `json:"-" bson:"post_id" coal:"post:posts"`
 }
 

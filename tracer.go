@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/opentracing/opentracing-go"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RootTracer is a middleware that can be used to create root trace span for an
@@ -20,7 +19,7 @@ func RootTracer() func(http.Handler) http.Handler {
 
 			// replace ids
 			for i, s := range segments {
-				if bson.IsObjectIdHex(s) {
+				if isValidObjectID(s) {
 					segments[i] = ":id"
 				}
 			}
