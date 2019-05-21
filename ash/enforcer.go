@@ -3,7 +3,7 @@ package ash
 import (
 	"github.com/256dpi/fire"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // E is a short-hand function to create an enforcer.

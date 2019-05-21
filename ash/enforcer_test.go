@@ -5,8 +5,8 @@ import (
 
 	"github.com/256dpi/fire"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestGrantAccess(t *testing.T) {
