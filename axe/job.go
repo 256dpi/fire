@@ -5,8 +5,10 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Status defines the allowed statuses of a job.
@@ -90,7 +92,7 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not be dequeued until the specified time has passed.
-func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration) (*Job, error) {
+func Enqueue(store *coal.Store, name string, data Model, delay time.Duration) (*Job, error) {
 	// set default data
 	if data == nil {
 		data = bson.M{}
@@ -120,7 +122,7 @@ func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration)
 	}
 
 	// insert job
-	err = store.C(job).Insert(job)
+	_, err = store.C(job).InsertOne(nil, job)
 	if err != nil {
 		return nil, err
 	}
@@ -128,13 +130,13 @@ func Enqueue(store *coal.SubStore, name string, data Model, delay time.Duration)
 	return job, nil
 }
 
-func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Job, error) {
+func dequeue(store *coal.Store, id primitive.ObjectID, timeout time.Duration) (*Job, error) {
 	// get time
 	now := time.Now()
 
 	// dequeue job
 	var job Job
-	_, err := store.C(&Job{}).Find(bson.M{
+	err := store.C(&Job{}).FindOneAndUpdate(nil, bson.M{
 		"_id": id,
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
@@ -142,20 +144,17 @@ func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Jo
 		coal.F(&Job{}, "Available"): bson.M{
 			"$lte": now,
 		},
-	}).Sort("_id").Apply(mgo.Change{
-		Update: bson.M{
-			"$set": bson.M{
-				coal.F(&Job{}, "Status"):    StatusDequeued,
-				coal.F(&Job{}, "Started"):   now,
-				coal.F(&Job{}, "Available"): now.Add(timeout),
-			},
-			"$inc": bson.M{
-				coal.F(&Job{}, "Attempts"): 1,
-			},
+	}, bson.M{
+		"$set": bson.M{
+			coal.F(&Job{}, "Status"):    StatusDequeued,
+			coal.F(&Job{}, "Started"):   now,
+			coal.F(&Job{}, "Available"): now.Add(timeout),
 		},
-		ReturnNew: true,
-	}, &job)
-	if err == mgo.ErrNotFound {
+		"$inc": bson.M{
+			coal.F(&Job{}, "Attempts"): 1,
+		},
+	}, options.FindOneAndUpdate().SetSort(coal.Sort("_id")).SetReturnDocument(options.After)).Decode(&job)
+	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -164,12 +163,14 @@ func dequeue(store *coal.SubStore, id bson.ObjectId, timeout time.Duration) (*Jo
 	return &job, nil
 }
 
-func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
+func complete(store *coal.Store, id primitive.ObjectID, result bson.M) error {
 	// get time
 	now := time.Now()
 
 	// update job
-	err := store.C(&Job{}).UpdateId(id, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+		"_id": id,
+	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):   StatusCompleted,
 			coal.F(&Job{}, "Result"):   result,
@@ -184,12 +185,14 @@ func complete(store *coal.SubStore, id bson.ObjectId, result bson.M) error {
 	return nil
 }
 
-func fail(store *coal.SubStore, id bson.ObjectId, reason string, delay time.Duration) error {
+func fail(store *coal.Store, id primitive.ObjectID, reason string, delay time.Duration) error {
 	// get time
 	now := time.Now()
 
 	// update job
-	err := store.C(&Job{}).UpdateId(id, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+		"_id": id,
+	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):    StatusFailed,
 			coal.F(&Job{}, "Reason"):    reason,
@@ -204,12 +207,14 @@ func fail(store *coal.SubStore, id bson.ObjectId, reason string, delay time.Dura
 	return nil
 }
 
-func cancel(store *coal.SubStore, id bson.ObjectId, reason string) error {
+func cancel(store *coal.Store, id primitive.ObjectID, reason string) error {
 	// get time
 	now := time.Now()
 
 	// update job
-	err := store.C(&Job{}).UpdateId(id, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+		"_id": id,
+	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):   StatusCancelled,
 			coal.F(&Job{}, "Reason"):   reason,

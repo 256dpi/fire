@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type data struct {
@@ -215,7 +215,7 @@ func TestPoolCrashed(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 2, job.Attempts)
-	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "EOF", job.Reason)
 
 	p.Close()
@@ -262,7 +262,7 @@ func TestPoolCancel(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
-	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "cancelled", job.Reason)
 
 	p.Close()
@@ -318,7 +318,7 @@ func TestPoolTimeout(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 2, job.Attempts)
-	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "", job.Reason)
 
 	p.Close()
@@ -364,7 +364,7 @@ func TestPoolExisting(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
-	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "", job.Reason)
 
 	p.Close()

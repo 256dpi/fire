@@ -6,17 +6,14 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestJob(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", &bson.M{"foo": "bar"}, 0)
+	job, err := Enqueue(tester.Store, "foo", &bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -30,10 +27,10 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, list[0].Ended)
 	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, bson.M{}, list[0].Result)
+	assert.Equal(t, bson.M(nil), list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
-	job, err = dequeue(store, job.ID(), time.Hour)
+	job, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", job.Name)
 	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
@@ -44,10 +41,10 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, job.Ended)
 	assert.Zero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
-	assert.Equal(t, bson.M{}, job.Result)
+	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	err = complete(store, job.ID(), bson.M{"bar": "baz"})
+	err = complete(tester.Store, job.ID(), bson.M{"bar": "baz"})
 	assert.NoError(t, err)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
@@ -67,23 +64,20 @@ func TestJob(t *testing.T) {
 func TestDelayed(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", nil, 100*time.Millisecond)
+	job, err := Enqueue(tester.Store, "foo", nil, 100*time.Millisecond)
 	assert.NoError(t, err)
 
-	job2, err := dequeue(store, job.ID(), time.Hour)
+	job2, err := dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
 	time.Sleep(120 * time.Millisecond)
 
-	job2, err = dequeue(store, job.ID(), time.Hour)
+	job2, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 
-	job2, err = dequeue(store, job.ID(), time.Hour)
+	job2, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 }
@@ -91,23 +85,20 @@ func TestDelayed(t *testing.T) {
 func TestTimeout(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job2, err := dequeue(store, job.ID(), 100*time.Millisecond)
+	job2, err := dequeue(tester.Store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 
-	job2, err = dequeue(store, job.ID(), 100*time.Millisecond)
+	job2, err = dequeue(tester.Store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
 	time.Sleep(150 * time.Millisecond)
 
-	job2, err = dequeue(store, job.ID(), 100*time.Millisecond)
+	job2, err = dequeue(tester.Store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 }
@@ -115,17 +106,14 @@ func TestTimeout(t *testing.T) {
 func TestFailed(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job, err = dequeue(store, job.ID(), time.Hour)
+	job, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 
-	err = fail(store, job.ID(), "some error", 0)
+	err = fail(tester.Store, job.ID(), "some error", 0)
 	assert.NoError(t, err)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
@@ -133,7 +121,7 @@ func TestFailed(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.Equal(t, "some error", job.Reason)
 
-	job2, err := dequeue(store, job.ID(), time.Hour)
+	job2, err := dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, job.ID(), job2.ID())
 	assert.Equal(t, 2, job2.Attempts)
@@ -142,17 +130,14 @@ func TestFailed(t *testing.T) {
 func TestFailedDelayed(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job, err = dequeue(store, job.ID(), time.Hour)
+	job, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 
-	err = fail(store, job.ID(), "some error", 100*time.Millisecond)
+	err = fail(tester.Store, job.ID(), "some error", 100*time.Millisecond)
 	assert.NoError(t, err)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
@@ -160,13 +145,13 @@ func TestFailedDelayed(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.Equal(t, "some error", job.Reason)
 
-	job2, err := dequeue(store, job.ID(), time.Hour)
+	job2, err := dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
 	time.Sleep(120 * time.Millisecond)
 
-	job3, err := dequeue(store, job.ID(), time.Hour)
+	job3, err := dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, job3.Attempts)
 	assert.Equal(t, "some error", job3.Reason)
@@ -175,17 +160,14 @@ func TestFailedDelayed(t *testing.T) {
 func TestCancelled(t *testing.T) {
 	tester.Clean()
 
-	store := tester.Store.Copy()
-	defer store.Close()
-
-	job, err := Enqueue(store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, "foo", nil, 0)
 	assert.NoError(t, err)
 
-	job, err = dequeue(store, job.ID(), time.Hour)
+	job, err = dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
 
-	err = cancel(store, job.ID(), "some reason")
+	err = cancel(tester.Store, job.ID(), "some reason")
 	assert.NoError(t, err)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)

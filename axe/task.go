@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Error is used to signal failed job executions.
@@ -139,12 +139,8 @@ func (t *Task) worker(p *Pool) {
 }
 
 func (t *Task) execute(job *Job) error {
-	// get store
-	store := t.Queue.store.Copy()
-	defer store.Close()
-
 	// dequeue job
-	job, err := dequeue(store, job.ID(), t.Timeout)
+	job, err := dequeue(t.Queue.store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -158,7 +154,7 @@ func (t *Task) execute(job *Job) error {
 	data := reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
 
 	// unmarshal data
-	err = job.Data.Unmarshal(data)
+	err = bson.Unmarshal(job.Data, data)
 	if err != nil {
 		return err
 	}
@@ -171,7 +167,7 @@ func (t *Task) execute(job *Job) error {
 		// check retry and attempts
 		if !e.Retry || job.Attempts >= t.MaxAttempts {
 			// cancel job
-			err = cancel(store, job.ID(), e.Reason)
+			err = cancel(t.Queue.store, job.ID(), e.Reason)
 			if err != nil {
 				return err
 			}
@@ -180,7 +176,7 @@ func (t *Task) execute(job *Job) error {
 		}
 
 		// fail job
-		err = fail(store, job.ID(), e.Reason, t.Delay)
+		err = fail(t.Queue.store, job.ID(), e.Reason, t.Delay)
 		if err != nil {
 			return err
 		}
@@ -191,13 +187,13 @@ func (t *Task) execute(job *Job) error {
 	// handle other errors
 	if err != nil {
 		// attempt to fail job
-		_ = fail(store, job.ID(), err.Error(), t.Delay)
+		_ = fail(t.Queue.store, job.ID(), err.Error(), t.Delay)
 
 		return err
 	}
 
 	// complete job
-	err = complete(store, job.ID(), result)
+	err = complete(t.Queue.store, job.ID(), result)
 	if err != nil {
 		return err
 	}

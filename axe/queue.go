@@ -8,12 +8,13 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type board struct {
 	sync.Mutex
-	jobs map[bson.ObjectId]*Job
+	jobs map[primitive.ObjectID]*Job
 }
 
 // Queue manages the queueing of jobs.
@@ -44,12 +45,8 @@ func NewQueue(store *coal.Store) *Queue {
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not dequeued until the specified time has passed.
 func (q *Queue) Enqueue(name string, data Model, delay time.Duration) (*Job, error) {
-	// copy store
-	store := q.store.Copy()
-	defer store.Close()
-
 	// enqueue job
-	job, err := Enqueue(store, name, data, delay)
+	job, err := Enqueue(q.store, name, data, delay)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +101,7 @@ func (q *Queue) start(p *Pool) {
 	// create boards
 	for _, task := range q.tasks {
 		q.boards[task] = &board{
-			jobs: make(map[bson.ObjectId]*Job),
+			jobs: make(map[primitive.ObjectID]*Job),
 		}
 	}
 
@@ -117,7 +114,7 @@ func (q *Queue) watcher(p *Pool) {
 	open := make(chan struct{})
 
 	// open stream
-	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id bson.ObjectId, m coal.Model, token []byte) {
+	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) {
 		// ignore deleted events
 		if e == coal.Deleted {
 			return
@@ -191,17 +188,25 @@ func (q *Queue) watcher(p *Pool) {
 }
 
 func (q *Queue) fill() error {
-	// copy store
-	store := q.store.Copy()
-	defer store.Close()
-
 	// get existing jobs
 	var jobs []*Job
-	err := store.C(&Job{}).Find(bson.M{
+	cursor, err := q.store.C(&Job{}).Find(nil, bson.M{
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
-	}).All(&jobs)
+	})
+	if err != nil {
+		return err
+	}
+
+	// decode all results
+	err = cursor.All(nil, &jobs)
+	if err != nil {
+		return err
+	}
+
+	// close cursor
+	err = cursor.Close(nil)
 	if err != nil {
 		return err
 	}

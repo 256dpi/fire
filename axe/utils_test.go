@@ -4,7 +4,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var tester = fire.NewTester(
@@ -13,7 +13,7 @@ var tester = fire.NewTester(
 )
 
 func decodeRaw(e bson.Raw, m interface{}) interface{} {
-	err := e.Unmarshal(m)
+	err := bson.Unmarshal(e, m)
 	if err != nil {
 		panic(err)
 	}
