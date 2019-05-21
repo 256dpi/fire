@@ -7,7 +7,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // TODO: How to close a watcher?
@@ -48,7 +48,7 @@ func (w *Watcher) Add(stream *Stream) {
 	w.streams[stream.Name()] = stream
 
 	// open stream
-	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id bson.ObjectId, m coal.Model, token []byte) {
+	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) {
 		// ignore real deleted events when soft delete has been enabled
 		if stream.SoftDelete && e == coal.Deleted {
 			return

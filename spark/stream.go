@@ -4,7 +4,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Map holds custom data for a subscription.
@@ -28,7 +28,7 @@ type Event struct {
 	Type coal.Event
 
 	// ID is the id of the changed resource.
-	ID bson.ObjectId
+	ID primitive.ObjectID
 
 	// Model is the changed model.
 	//
