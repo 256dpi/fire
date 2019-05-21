@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var catalog = coal.NewCatalog(&Item{})
@@ -70,5 +70,5 @@ func (i *Item) Validate() error {
 }
 
 type count struct {
-	Item bson.ObjectId `bson:"item_id"`
+	Item primitive.ObjectID `bson:"item_id"`
 }

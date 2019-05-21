@@ -14,11 +14,11 @@ import (
 	"github.com/256dpi/fire/spark"
 	"github.com/256dpi/fire/wood"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/goware/cors"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var port = getEnv("PORT", "8000")
@@ -222,12 +222,13 @@ func incrementTask(store *coal.Store, queue *axe.Queue) *axe.Task {
 		Queue: queue,
 		Model: &count{},
 		Handler: func(model axe.Model) (bson.M, error) {
-			s := store.Copy()
-			defer s.Close()
-
+			// get count
 			c := model.(*count)
 
-			err := s.C(&Item{}).UpdateId(c.Item, bson.M{
+			// update document
+			_, err := store.C(&Item{}).UpdateOne(nil, bson.M{
+				"_id": c.Item,
+			}, bson.M{
 				"$inc": bson.M{
 					coal.F(&Item{}, "Count"): 1,
 				},
