@@ -7,8 +7,8 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestC(t *testing.T) {
@@ -168,10 +168,10 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 	assert.NoError(t, err)
 
 	tester.Save(&selectionModel{
-		Posts: []bson.ObjectId{
-			bson.NewObjectId(),
+		Posts: []primitive.ObjectID{
+			primitive.NewObjectID(),
 			post.ID(),
-			bson.NewObjectId(),
+			primitive.NewObjectID(),
 		},
 	})
 
@@ -210,43 +210,43 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	})
 
 	existing := tester.Save(&barModel{
-		Foo: bson.NewObjectId(),
+		Foo: primitive.NewObjectID(),
 	})
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
-		Bar:    bson.NewObjectId(), // <- missing
+		Foo:    primitive.NewObjectID(),
+		Bar:    primitive.NewObjectID(), // <- missing
 		OptBar: coal.P(existing.ID()),
-		Bars:   []bson.ObjectId{existing.ID()},
+		Bars:   []primitive.ObjectID{existing.ID()},
 	})}, validator)
 	assert.Error(t, err)
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    existing.ID(),
-		OptBar: coal.P(bson.NewObjectId()), // <- missing
-		Bars:   []bson.ObjectId{existing.ID()},
+		OptBar: coal.P(primitive.NewObjectID()), // <- missing
+		Bars:   []primitive.ObjectID{existing.ID()},
 	})}, validator)
 	assert.Error(t, err)
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
-		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- missing
+		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- missing
 	})}, validator)
 	assert.Error(t, err)
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    existing.ID(),
 		OptBar: nil, // <- not set
-		Bars:   []bson.ObjectId{existing.ID()},
+		Bars:   []primitive.ObjectID{existing.ID()},
 	})}, validator)
 	assert.NoError(t, err)
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
 		Bars:   nil, // <- not set
@@ -254,10 +254,10 @@ func TestVerifyReferencesValidatorToOne(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    existing.ID(),
 		OptBar: coal.P(existing.ID()),
-		Bars:   []bson.ObjectId{existing.ID()},
+		Bars:   []primitive.ObjectID{existing.ID()},
 	})}, validator)
 	assert.NoError(t, err)
 }
@@ -288,7 +288,7 @@ func TestRelationshipValidatorVerifyReferences(t *testing.T) {
 	validator := RelationshipValidator(&commentModel{}, catalog)
 
 	comment1 := tester.Save(&commentModel{
-		Post: bson.NewObjectId(),
+		Post: primitive.NewObjectID(),
 	})
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: comment1}, validator)
@@ -313,20 +313,20 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 		"Bars":   "Bars",
 	})
 
-	id := bson.NewObjectId()
+	id := primitive.NewObjectID()
 
 	existing := tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    id,
 		OptBar: coal.P(id),
-		Bars:   []bson.ObjectId{id},
+		Bars:   []primitive.ObjectID{id},
 	})
 
 	candidate := &fooModel{
 		Foo:    existing.ID(),
-		Bar:    bson.NewObjectId(),                  // <- not the same
-		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
-		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+		Bar:    primitive.NewObjectID(),                  // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
@@ -342,7 +342,7 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
-	candidate.Bars = []bson.ObjectId{id}
+	candidate.Bars = []primitive.ObjectID{id}
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
@@ -357,21 +357,21 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 		"Bars":   "Bars",
 	})
 
-	id := bson.NewObjectId()
+	id := primitive.NewObjectID()
 
 	existing := tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    id,
 		OptBar: coal.P(id),
-		Bars:   []bson.ObjectId{id},
+		Bars:   []primitive.ObjectID{id},
 	})
 
 	candidate := &fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		OptFoo: nil,                                 // <- missing
-		Bar:    bson.NewObjectId(),                  // <- not the same
-		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
-		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+		Bar:    primitive.NewObjectID(),                  // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
@@ -392,7 +392,7 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
-	candidate.Bars = []bson.ObjectId{id}
+	candidate.Bars = []primitive.ObjectID{id}
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
@@ -407,27 +407,27 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 		"Bars":   "Bars",
 	})
 
-	id := bson.NewObjectId()
+	id := primitive.NewObjectID()
 
 	existing := tester.Save(&fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Bar:    id,
 		OptBar: coal.P(id),
-		Bars:   []bson.ObjectId{id},
+		Bars:   []primitive.ObjectID{id},
 	})
 
 	candidate := &fooModel{
-		Foo:    bson.NewObjectId(),
+		Foo:    primitive.NewObjectID(),
 		Foos:   nil,                                 // <- missing
-		Bar:    bson.NewObjectId(),                  // <- not the same
-		OptBar: coal.P(bson.NewObjectId()),          // <- not the same
-		Bars:   []bson.ObjectId{bson.NewObjectId()}, // <- not the same
+		Bar:    primitive.NewObjectID(),                  // <- not the same
+		OptBar: coal.P(primitive.NewObjectID()),          // <- not the same
+		Bars:   []primitive.ObjectID{primitive.NewObjectID()}, // <- not the same
 	}
 
 	err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
 
-	candidate.Foos = []bson.ObjectId{existing.ID()}
+	candidate.Foos = []primitive.ObjectID{existing.ID()}
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
@@ -442,7 +442,7 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.Error(t, err)
 
-	candidate.Bars = []bson.ObjectId{id}
+	candidate.Bars = []primitive.ObjectID{id}
 
 	err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 	assert.NoError(t, err)
@@ -478,27 +478,27 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 	validator := UniqueFieldValidator("Parent", nil)
 
 	comment1 := tester.Save(&commentModel{
-		Post:   bson.NewObjectId(),
+		Post:   primitive.NewObjectID(),
 		Parent: nil,
 	}).(*commentModel)
 
 	err := tester.RunCallback(&Context{Operation: Update, Model: comment1}, validator)
 	assert.NoError(t, err)
 
-	id1 := coal.P(bson.NewObjectId())
+	id1 := coal.P(primitive.NewObjectID())
 
 	comment2 := tester.Save(&commentModel{
-		Post:   bson.NewObjectId(),
+		Post:   primitive.NewObjectID(),
 		Parent: id1,
 	}).(*commentModel)
 
 	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
 	assert.NoError(t, err)
 
-	id2 := coal.P(bson.NewObjectId())
+	id2 := coal.P(primitive.NewObjectID())
 
 	tester.Save(&commentModel{
-		Post:   bson.NewObjectId(),
+		Post:   primitive.NewObjectID(),
 		Parent: id2,
 	})
 

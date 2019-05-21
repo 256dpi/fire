@@ -10,6 +10,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestBasicOperations(t *testing.T) {
@@ -942,7 +943,7 @@ func TestToOneRelationship(t *testing.T) {
 	// create comment
 	comment1 := tester.Save(&commentModel{
 		Message: "Comment 1",
-		Post:    bson.ObjectIdHex(post1),
+		Post:    mustObjectIDFromHex(post1),
 	}).ID().Hex()
 
 	var comment2 string
@@ -1810,10 +1811,10 @@ func TestFiltering(t *testing.T) {
 	// create selections
 	selection := tester.Save(&selectionModel{
 		Name: "selection-1",
-		Posts: []bson.ObjectId{
-			bson.ObjectIdHex(post1),
-			bson.ObjectIdHex(post2),
-			bson.ObjectIdHex(post3),
+		Posts: []primitive.ObjectID{
+			mustObjectIDFromHex(post1),
+			mustObjectIDFromHex(post2),
+			mustObjectIDFromHex(post3),
 		},
 	}).ID().Hex()
 	tester.Save(&selectionModel{
@@ -1823,11 +1824,11 @@ func TestFiltering(t *testing.T) {
 	// create notes
 	note := tester.Save(&noteModel{
 		Title: "note-1",
-		Post:  bson.ObjectIdHex(post1),
+		Post:  mustObjectIDFromHex(post1),
 	}).ID().Hex()
 	tester.Save(&noteModel{
 		Title: "note-2",
-		Post:  bson.NewObjectId(),
+		Post:  primitive.NewObjectID(),
 	})
 
 	// test invalid filter
@@ -3092,10 +3093,10 @@ func TestWritableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	post := bson.NewObjectId()
+	post := primitive.NewObjectID()
 
 	selection := tester.Save(&selectionModel{
-		Posts: []bson.ObjectId{post},
+		Posts: []primitive.ObjectID{post},
 	}).ID().Hex()
 
 	// attempt to update posts relationship
@@ -3331,7 +3332,7 @@ func TestPagination(t *testing.T) {
 	})
 
 	// prepare ids
-	var ids []bson.ObjectId
+	var ids []primitive.ObjectID
 
 	// create some posts
 	for i := 0; i < 10; i++ {

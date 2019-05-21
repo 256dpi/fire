@@ -7,7 +7,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/jsonapi"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // An Operation indicates the purpose of a yield to a callback in the processing
@@ -163,7 +163,7 @@ type Context struct {
 	// The store that is used to retrieve and persist the model.
 	//
 	// Usage: Read Only
-	Store *coal.SubStore
+	Store *coal.Store
 
 	// The underlying JSON-API request.
 	//
@@ -204,7 +204,24 @@ type Context struct {
 
 // Query returns the composite query of Selector and Filter.
 func (c *Context) Query() bson.M {
-	return bson.M{"$and": append([]bson.M{c.Selector}, c.Filters...)}
+	// prepare sub queries
+	var subQueries []bson.M
+
+	// add selector if present
+	if len(c.Selector) > 0 {
+		subQueries = append(subQueries, c.Selector)
+	}
+
+	// add filters
+	subQueries = append(subQueries, c.Filters...)
+
+	// return empty query if no sub queries are present
+	if len(subQueries) == 0 {
+		return bson.M{}
+	}
+
+	// otherwise return $and query
+	return bson.M{"$and": subQueries}
 }
 
 // Original will return the stored version of the model. This method is intended
@@ -232,9 +249,11 @@ func (c *Context) Original() (coal.Model, error) {
 	m := c.Model.Meta().Make()
 
 	// read original document
-	c.Tracer.Push("mgo/Query.One")
+	c.Tracer.Push("mongo/Collection.FindOne")
 	c.Tracer.Tag("id", c.Model.ID())
-	err := c.Store.C(c.Model).FindId(c.Model.ID()).One(m)
+	err := c.Store.C(c.Model).FindOne(nil, bson.M{
+		"_id": c.Model.ID(),
+	}).Decode(m)
 	if err != nil {
 		return nil, err
 	}

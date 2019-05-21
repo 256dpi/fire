@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/jsonapi"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // A Tester provides facilities to the test a fire API.
@@ -112,8 +112,7 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 
 	// set store if unset
 	if ctx.Store == nil {
-		ctx.Store = t.Store.Copy()
-		defer ctx.Store.Close()
+		ctx.Store = t.Store
 	}
 
 	// init model if present

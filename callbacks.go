@@ -10,6 +10,8 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // C is a short-hand function to construct a callback. It will also add tracing
@@ -167,7 +169,7 @@ func TimestampValidator() *Callback {
 			if ctx.Operation == Create {
 				ctx.Model.MustSet(ctf, now)
 			} else if t := ctx.Model.MustGet(ctf).(time.Time); t.IsZero() {
-				ctx.Model.MustSet(ctf, ctx.Model.ID().Time())
+				ctx.Model.MustSet(ctf, ctx.Model.ID().Timestamp())
 			}
 		}
 
@@ -264,9 +266,9 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 			}
 
 			// count referencing documents
-			ctx.Tracer.Push("mgo/Query.Count")
+			ctx.Tracer.Push("mongo/Collection.CountDocuments")
 			ctx.Tracer.Tag("query", query)
-			n, err := ctx.Store.DB().C(coal.C(model)).Find(query).Limit(1).Count()
+			n, err := ctx.Store.C(model).CountDocuments(nil, query, options.Count().SetLimit(1))
 			if err != nil {
 				return err
 			}
@@ -303,31 +305,31 @@ func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 			ref := ctx.Model.MustGet(field)
 
 			// continue if reference is not set
-			if oid, ok := ref.(*bson.ObjectId); ok && oid == nil {
+			if oid, ok := ref.(*primitive.ObjectID); ok && oid == nil {
 				continue
 			}
 
 			// continue if slice is empty
-			if ids, ok := ref.([]bson.ObjectId); ok && ids == nil {
+			if ids, ok := ref.([]primitive.ObjectID); ok && ids == nil {
 				continue
 			}
 
 			// handle to-many relationships
-			if ids, ok := ref.([]bson.ObjectId); ok {
+			if ids, ok := ref.([]primitive.ObjectID); ok {
 				// prepare query
 				query := bson.M{"_id": bson.M{"$in": ids}}
 
 				// count entities in database
-				ctx.Tracer.Push("mgo/Query.Count")
+				ctx.Tracer.Push("mongo/Collection.CountDocuments")
 				ctx.Tracer.Tag("query", query)
-				n, err := ctx.Store.DB().C(coal.C(collection)).Find(query).Count()
+				n, err := ctx.Store.C(collection).CountDocuments(nil, query)
 				if err != nil {
 					return err
 				}
 				ctx.Tracer.Pop()
 
 				// check for existence
-				if n != len(ids) {
+				if int(n) != len(ids) {
 					return E("missing references for field " + field)
 				}
 
@@ -337,9 +339,11 @@ func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 			// handle to-one relationships
 
 			// count entities in database
-			ctx.Tracer.Push("mgo/Query.Count")
+			ctx.Tracer.Push("mongo/Collection.CountDocuments")
 			ctx.Tracer.Tag("id", ref)
-			n, err := ctx.Store.DB().C(coal.C(collection)).FindId(ref).Limit(1).Count()
+			n, err := ctx.Store.C(collection).CountDocuments(nil, bson.M{
+				"_id": ref,
+			}, options.Count().SetLimit(1))
 			if err != nil {
 				return err
 			}
@@ -450,29 +454,29 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 func MatchingReferencesValidator(reference string, target coal.Model, matcher map[string]string) *Callback {
 	return C("fire/MatchingReferencesValidator", Only(Create, Update), func(ctx *Context) error {
 		// prepare ids
-		var ids []bson.ObjectId
+		var ids []primitive.ObjectID
 
 		// get reference
 		ref := ctx.Model.MustGet(reference)
 
 		// handle to-one reference
-		if id, ok := ref.(bson.ObjectId); ok {
-			ids = []bson.ObjectId{id}
+		if id, ok := ref.(primitive.ObjectID); ok {
+			ids = []primitive.ObjectID{id}
 		}
 
 		// handle optional to-one reference
-		if oid, ok := ref.(*bson.ObjectId); ok {
+		if oid, ok := ref.(*primitive.ObjectID); ok {
 			// return immediately if not set
 			if oid == nil {
 				return nil
 			}
 
 			// set id
-			ids = []bson.ObjectId{*oid}
+			ids = []primitive.ObjectID{*oid}
 		}
 
 		// handle to-many reference
-		if list, ok := ref.([]bson.ObjectId); ok {
+		if list, ok := ref.([]primitive.ObjectID); ok {
 			// return immediately if empty
 			if len(list) == 0 {
 				return nil
@@ -498,16 +502,16 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		}
 
 		// find matching documents
-		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Push("mongo/Collection.CountDocuments")
 		ctx.Tracer.Tag("query", query)
-		n, err := ctx.Store.DB().C(coal.C(target)).Find(query).Count()
+		n, err := ctx.Store.C(target).CountDocuments(nil, query)
 		if err != nil {
 			return err
 		}
 		ctx.Tracer.Pop()
 
 		// return error if a document is missing (does not match)
-		if n != len(ids) {
+		if int(n) != len(ids) {
 			return E("references do not match")
 		}
 
@@ -569,9 +573,9 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 		}
 
 		// count
-		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Push("mongo/Collection.CountDocuments")
 		ctx.Tracer.Tag("query", query)
-		n, err := ctx.Store.C(ctx.Model).Find(query).Limit(1).Count()
+		n, err := ctx.Store.C(ctx.Model).CountDocuments(nil, query, options.Count().SetLimit(1))
 		if err != nil {
 			return err
 		} else if n != 0 {

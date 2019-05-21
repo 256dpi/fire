@@ -6,10 +6,10 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type postModel struct {
@@ -35,35 +35,35 @@ type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
 	Message   string         `json:"message"`
 	Deleted   *time.Time     `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
-	Parent    *bson.ObjectId `json:"-" bson:"parent_id" coal:"parent:comments"`
-	Post      bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
+	Parent    *primitive.ObjectID `json:"-" bson:"parent_id" coal:"parent:comments"`
+	Post      primitive.ObjectID  `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 type selectionModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"selections:selections"`
 	Name      string          `json:"name"`
-	Posts     []bson.ObjectId `json:"-" bson:"post_ids" coal:"posts:posts"`
+	Posts     []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
 type noteModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"notes"`
 	Title     string        `json:"title" bson:"title"`
-	Post      bson.ObjectId `json:"-" bson:"post_id" coal:"post:posts"`
+	Post      primitive.ObjectID `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"foos"`
-	Foo       bson.ObjectId   `json:"-" bson:"foo_id" coal:"foo:foos"`
-	OptFoo    *bson.ObjectId  `json:"-" bson:"opt_foo_id" coal:"o-foo:foos"`
-	Foos      []bson.ObjectId `json:"-" bson:"foo_ids" coal:"foos:foos"`
-	Bar       bson.ObjectId   `json:"-" bson:"bar_id" coal:"bar:bars"`
-	OptBar    *bson.ObjectId  `json:"-" bson:"opt_bar_id" coal:"o-bar:bars"`
-	Bars      []bson.ObjectId `json:"-" bson:"bar_ids" coal:"bars:bars"`
+	Foo       primitive.ObjectID   `json:"-" bson:"foo_id" coal:"foo:foos"`
+	OptFoo    *primitive.ObjectID  `json:"-" bson:"opt_foo_id" coal:"o-foo:foos"`
+	Foos      []primitive.ObjectID `json:"-" bson:"foo_ids" coal:"foos:foos"`
+	Bar       primitive.ObjectID   `json:"-" bson:"bar_id" coal:"bar:bars"`
+	OptBar    *primitive.ObjectID  `json:"-" bson:"opt_bar_id" coal:"o-bar:bars"`
+	Bars      []primitive.ObjectID `json:"-" bson:"bar_ids" coal:"bars:bars"`
 }
 
 type barModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"bars"`
-	Foo       bson.ObjectId `json:"-" bson:"foo_id" coal:"foo:foos"`
+	Foo       primitive.ObjectID `json:"-" bson:"foo_id" coal:"foo:foos"`
 }
 
 var tester = NewTester(

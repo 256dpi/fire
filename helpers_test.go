@@ -27,19 +27,19 @@ func TestSafe(t *testing.T) {
 
 func TestCompose(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("H"))
+		_, _ = w.Write([]byte("H"))
 	})
 
 	m1 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("1"))
+			_, _ = w.Write([]byte("1"))
 			next.ServeHTTP(w, r)
 		})
 	}
 
 	m2 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("2"))
+			_, _ = w.Write([]byte("2"))
 			next.ServeHTTP(w, r)
 		})
 	}

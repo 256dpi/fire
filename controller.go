@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"net/http"
@@ -12,8 +13,10 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // L is a short-hand type to create a list of callbacks.
@@ -144,7 +147,7 @@ func (c *Controller) prepare() {
 	// add collection actions
 	for name, action := range c.CollectionActions {
 		// check collision
-		if name == "" || bson.IsObjectIdHex(name) {
+		if name == "" || isValidObjectID(name) {
 			panic(fmt.Sprintf(`fire: invalid collection action "%s"`, name))
 		}
 
@@ -228,7 +231,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// validate id if present
-	if req.ResourceID != "" && !bson.IsObjectIdHex(req.ResourceID) {
+	if req.ResourceID != "" && !isValidObjectID(req.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
@@ -238,12 +241,8 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	ctx.ReadableFields = c.initialFields(c.Model, ctx.JSONAPIRequest)
 	ctx.WritableFields = c.initialFields(c.Model, nil)
 
-	// copy store
-	store := c.Store.Copy()
-	defer store.Close()
-
 	// set store
-	ctx.Store = store
+	ctx.Store = c.Store
 
 	// call specific handlers
 	switch req.Intent {
@@ -382,9 +381,10 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// insert model
-	ctx.Tracer.Push("mgo/Collection.Insert")
+	ctx.Tracer.Push("mongo/Collection.InsertOne")
 	ctx.Tracer.Tag("model", ctx.Model)
-	stack.AbortIf(ctx.Store.C(ctx.Model).Insert(ctx.Model))
+	_, err := ctx.Store.C(ctx.Model).InsertOne(nil, ctx.Model)
+	stack.AbortIf(err)
 	ctx.Tracer.Pop()
 
 	// run decorators
@@ -486,19 +486,25 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		ctx.Tracer.Push("mgo/Collection.UpdateId")
+		ctx.Tracer.Push("mongo/Collection.UpdateOne")
 		ctx.Tracer.Tag("model", ctx.Model)
-		stack.AbortIf(ctx.Store.C(c.Model).UpdateId(ctx.Model.ID(), bson.M{
+		_, err := ctx.Store.C(c.Model).UpdateOne(nil, bson.M{
+			"_id": ctx.Model.ID(),
+		}, bson.M{
 			"$set": bson.M{
 				coal.F(c.Model, softDeleteField): time.Now(),
 			},
-		}))
+		})
+		stack.AbortIf(err)
 		ctx.Tracer.Pop()
 	} else {
 		// remove model
-		ctx.Tracer.Push("mgo/Collection.RemoveId")
+		ctx.Tracer.Push("mongo/Collection.DeleteOne")
 		ctx.Tracer.Tag("model", ctx.Model)
-		stack.AbortIf(ctx.Store.C(c.Model).RemoveId(ctx.Model.ID()))
+		_, err := ctx.Store.C(c.Model).DeleteOne(nil, bson.M{
+			"_id": ctx.Model.ID(),
+		})
+		stack.AbortIf(err)
 		ctx.Tracer.Pop()
 	}
 
@@ -573,12 +579,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// lookup id of related resource
 		if rel.Optional {
-			oid := ctx.Model.MustGet(rel.Name).(*bson.ObjectId)
+			oid := ctx.Model.MustGet(rel.Name).(*primitive.ObjectID)
 			if oid != nil {
 				id = oid.Hex()
 			}
 		} else {
-			id = ctx.Model.MustGet(rel.Name).(bson.ObjectId).Hex()
+			id = ctx.Model.MustGet(rel.Name).(primitive.ObjectID).Hex()
 		}
 
 		// tweak context
@@ -621,7 +627,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// finish to-many relationship
 	if rel.ToMany {
 		// get ids from loaded model
-		ids := ctx.Model.MustGet(rel.Name).([]bson.ObjectId)
+		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
 
 		// tweak context
 		newCtx.Operation = List
@@ -720,7 +726,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// set selector query (supports to-one and to-many relationships)
 		newCtx.Selector[relRel.BSONField] = bson.M{
-			"$in": []bson.ObjectId{ctx.Model.ID()},
+			"$in": []primitive.ObjectID{ctx.Model.ID()},
 		}
 
 		// load related models
@@ -871,16 +877,14 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// return error for an invalid id
-		if !bson.IsObjectIdHex(ref.ID) {
+		// get id
+		refID, err := primitive.ObjectIDFromHex(ref.ID)
+		if err != nil {
 			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
-		// get id
-		refID := bson.ObjectIdHex(ref.ID)
-
 		// get current ids
-		ids := ctx.Model.MustGet(rel.Name).([]bson.ObjectId)
+		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
 
 		// check if id is already present
 		if coal.Contains(ids, refID) {
@@ -945,19 +949,17 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// return error for an invalid id
-		if !bson.IsObjectIdHex(ref.ID) {
+		// get id
+		refID, err := primitive.ObjectIDFromHex(ref.ID)
+		if err != nil {
 			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
-
-		// get id
-		refID := bson.ObjectIdHex(ref.ID)
 
 		// prepare mark
 		var pos = -1
 
 		// get current ids
-		ids := ctx.Model.MustGet(rel.Name).([]bson.ObjectId)
+		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
 
 		// check if id is already present
 		for i, id := range ids {
@@ -1096,8 +1098,8 @@ func (c *Controller) loadModel(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.loadModel")
 
-	// set selector query
-	ctx.Selector["_id"] = bson.ObjectIdHex(ctx.JSONAPIRequest.ResourceID)
+	// set selector query (id has been validated earlier)
+	ctx.Selector["_id"] = mustObjectIDFromHex(ctx.JSONAPIRequest.ResourceID)
 
 	// filter out deleted documents if configured
 	if c.SoftDelete {
@@ -1115,10 +1117,10 @@ func (c *Controller) loadModel(ctx *Context) {
 	obj := c.Model.Meta().Make()
 
 	// query db
-	ctx.Tracer.Push("mgo/Query.One")
+	ctx.Tracer.Push("mongo/Collection.FindOne")
 	ctx.Tracer.Tag("query", ctx.Query())
-	err := ctx.Store.C(c.Model).Find(ctx.Query()).One(obj)
-	if err == mgo.ErrNotFound {
+	err := ctx.Store.C(c.Model).FindOne(nil, ctx.Query()).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
 	stack.AbortIf(err)
@@ -1172,12 +1174,13 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 
 			// convert to object ids
-			var ids []bson.ObjectId
+			var ids []primitive.ObjectID
 			for _, str := range values {
-				if !bson.IsObjectIdHex(str) {
+				refID, err := primitive.ObjectIDFromHex(str)
+				if err != nil {
 					stack.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
 				}
-				ids = append(ids, bson.ObjectIdHex(str))
+				ids = append(ids, refID)
 			}
 
 			// set relationship filter
@@ -1233,18 +1236,27 @@ func (c *Controller) loadModels(ctx *Context) {
 	// prepare slice
 	slicePtr := c.Model.Meta().MakeSlice()
 
-	// prepare query
-	query := ctx.Store.C(c.Model).Find(ctx.Query()).Sort(ctx.Sorting...)
+	// prepare options
+	opts := options.Find()
+
+	// add sorting if present
+	if len(ctx.Sorting) > 0 {
+		opts = opts.SetSort(coal.Sort(ctx.Sorting...))
+	}
 
 	// add pagination
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
-		query = query.Limit(int(ctx.JSONAPIRequest.PageSize)).Skip(int((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize))
+		opts = opts.SetLimit(int64(ctx.JSONAPIRequest.PageSize))
+		opts = opts.SetSkip(int64((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize))
 	}
 
 	// query db
-	ctx.Tracer.Push("mgo/Query.All")
+	ctx.Tracer.Push("mongo/Collection.Find")
 	ctx.Tracer.Tag("query", ctx.Query())
-	stack.AbortIf(query.All(slicePtr))
+	cursor, err := ctx.Store.C(c.Model).Find(nil, ctx.Query(), opts)
+	stack.AbortIf(err)
+	stack.AbortIf(cursor.All(nil, slicePtr))
+	stack.AbortIf(cursor.Close(nil))
 	ctx.Tracer.Pop()
 
 	// set models
@@ -1336,7 +1348,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// handle to-one relationship
 	if field.ToOne {
 		// prepare zero value
-		var id bson.ObjectId
+		var id primitive.ObjectID
 
 		// set and check id if available
 		if rel.Data != nil && rel.Data.One != nil {
@@ -1345,13 +1357,14 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
-			// check id
-			if !bson.IsObjectIdHex(rel.Data.One.ID) {
+			// get id
+			relID, err := primitive.ObjectIDFromHex(rel.Data.One.ID)
+			if err != nil {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 
 			// extract id
-			id = bson.ObjectIdHex(rel.Data.One.ID)
+			id = relID
 		}
 
 		// set non optional id
@@ -1361,7 +1374,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 		}
 
 		// set valid optional id
-		if id.Valid() {
+		if !id.IsZero() {
 			ctx.Model.MustSet(field.Name, &id)
 			return
 		}
@@ -1373,7 +1386,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// handle to-many relationship
 	if field.ToMany {
 		// prepare ids
-		ids := make([]bson.ObjectId, len(rel.Data.Many))
+		ids := make([]primitive.ObjectID, len(rel.Data.Many))
 
 		// convert all ids
 		for i, r := range rel.Data.Many {
@@ -1382,13 +1395,14 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
-			// check id
-			if !bson.IsObjectIdHex(r.ID) {
+			// get id
+			relID, err := primitive.ObjectIDFromHex(r.ID)
+			if err != nil {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 
 			// set id
-			ids[i] = bson.ObjectIdHex(r.ID)
+			ids[i] = relID
 		}
 
 		// set ids
@@ -1407,20 +1421,23 @@ func (c *Controller) updateModel(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	ctx.Tracer.Push("mgo/Collection.UpdateId")
-	stack.AbortIf(ctx.Store.C(ctx.Model).UpdateId(ctx.Model.ID(), ctx.Model))
+	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
+	_, err := ctx.Store.C(ctx.Model).ReplaceOne(nil, bson.M{
+		"_id": ctx.Model.ID(),
+	}, ctx.Model)
+	stack.AbortIf(err)
 	ctx.Tracer.Pop()
 
 	// finish trace
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[bson.ObjectId][]bson.ObjectId {
+func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[primitive.ObjectID][]primitive.ObjectID {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.preloadRelationships")
 
 	// prepare relationships
-	relationships := make(map[string]map[bson.ObjectId][]bson.ObjectId)
+	relationships := make(map[string]map[primitive.ObjectID][]primitive.ObjectID)
 
 	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
@@ -1464,7 +1481,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		}
 
 		// collect model ids
-		modelIDs := make([]bson.ObjectId, 0, len(models))
+		modelIDs := make([]primitive.ObjectID, 0, len(models))
 		for _, model := range models {
 			modelIDs = append(modelIDs, model.ID())
 		}
@@ -1487,17 +1504,19 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// load all references
 		var references []bson.M
-		ctx.Tracer.Push("mgo/Query.All")
+		ctx.Tracer.Push("mongo/Collection.Find")
 		ctx.Tracer.Tag("query", query)
-		err := ctx.Store.C(rc.Model).Find(query).Select(bson.M{
+		cursor, err := ctx.Store.C(rc.Model).Find(nil, query, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
-		}).All(&references)
+		}))
 		stack.AbortIf(err)
+		stack.AbortIf(cursor.All(nil, &references))
+		stack.AbortIf(cursor.Close(nil))
 		ctx.Tracer.Pop()
 
 		// prepare entry
-		entry := make(map[bson.ObjectId][]bson.ObjectId)
+		entry := make(map[primitive.ObjectID][]primitive.ObjectID)
 
 		// collect references
 		for _, modelID := range modelIDs {
@@ -1506,23 +1525,23 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 				// handle to one references
 				if rel.ToOne {
 					// get reference id
-					rid, _ := reference[rel.BSONField].(bson.ObjectId)
-					if rid.Valid() && rid == modelID {
+					rid, _ := reference[rel.BSONField].(primitive.ObjectID)
+					if !rid.IsZero() && bytes.Equal(rid[:], modelID[:]) {
 						// add reference
-						entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+						entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
 					}
 				}
 
 				// handle to many references
 				if rel.ToMany {
 					// get reference ids
-					rids, _ := reference[rel.BSONField].([]interface{})
+					rids, _ := reference[rel.BSONField].(primitive.A)
 					for _, _rid := range rids {
 						// get reference id
-						rid, _ := _rid.(bson.ObjectId)
-						if rid.Valid() && rid == modelID {
+						rid, _ := _rid.(primitive.ObjectID)
+						if !rid.IsZero() && bytes.Equal(rid[:], modelID[:]) {
 							// add reference
-							entry[modelID] = append(entry[modelID], reference["_id"].(bson.ObjectId))
+							entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
 						}
 					}
 				}
@@ -1539,7 +1558,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	return relationships
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
+func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) *jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
@@ -1552,7 +1571,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 	return resource
 }
 
-func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) []*jsonapi.Resource {
+func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) []*jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModels")
 	ctx.Tracer.Tag("count", len(models))
@@ -1571,7 +1590,7 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 	return resources
 }
 
-func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[bson.ObjectId][]bson.ObjectId) *jsonapi.Resource {
+func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) *jsonapi.Resource {
 	// do not trace this call
 
 	// prepare whitelist
@@ -1631,7 +1650,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			if field.Optional {
 				// get and check optional field
-				oid := model.MustGet(field.Name).(*bson.ObjectId)
+				oid := model.MustGet(field.Name).(*primitive.ObjectID)
 
 				// create reference if id is available
 				if oid != nil {
@@ -1644,7 +1663,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
-					ID:   model.MustGet(field.Name).(bson.ObjectId).Hex(),
+					ID:   model.MustGet(field.Name).(primitive.ObjectID).Hex(),
 				}
 			}
 
@@ -1657,7 +1676,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			}
 		} else if field.ToMany {
 			// get ids
-			ids := model.MustGet(field.Name).([]bson.ObjectId)
+			ids := model.MustGet(field.Name).([]primitive.ObjectID)
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))
@@ -1770,9 +1789,9 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		ctx.Tracer.Push("mgo/Query.Count")
+		ctx.Tracer.Push("mongo/Collection.CountDocuments")
 		ctx.Tracer.Tag("query", ctx.Query())
-		n, err := ctx.Store.C(c.Model).Find(ctx.Query()).Count()
+		n, err := ctx.Store.C(c.Model).CountDocuments(nil, ctx.Query())
 		stack.AbortIf(err)
 		ctx.Tracer.Pop()
 
