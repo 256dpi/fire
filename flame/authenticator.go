@@ -3,6 +3,7 @@
 package flame
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
@@ -16,8 +17,9 @@ import (
 	"github.com/256dpi/oauth2/bearer"
 	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ctxKey string
@@ -36,7 +38,7 @@ const (
 type state struct {
 	request *http.Request
 	writer  http.ResponseWriter
-	store   *coal.SubStore
+	store   *coal.Store
 	tracer  *fire.Tracer
 }
 
@@ -104,15 +106,11 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			return
 		}
 
-		// copy store
-		store := a.store.Copy()
-		defer store.Close()
-
 		// create
 		state := &state{
 			request: r,
 			writer:  w,
-			store:   store,
+			store:   a.store,
 			tracer:  tracer,
 		}
 
@@ -190,20 +188,22 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				stack.Abort(bearer.InvalidToken("malformed token"))
 			}
 
-			// copy store
-			store := a.store.Copy()
-			defer store.Close()
-
 			// create state
 			state := &state{
 				request: r,
 				writer:  w,
-				store:   store,
+				store:   a.store,
 				tracer:  tracer,
 			}
 
+			// get id
+			id, err := primitive.ObjectIDFromHex(claims.Id)
+			if err != nil {
+				stack.Abort(bearer.InvalidToken("invalid id"))
+			}
+
 			// get token
-			accessToken := a.getToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
+			accessToken := a.getToken(state, a.policy.Token, id)
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("unknown token"))
 			}
@@ -479,8 +479,14 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
+	// get id
+	id, err := primitive.ObjectIDFromHex(claims.Id)
+	if err != nil {
+		stack.Abort(oauth2.InvalidRequest("invalid id"))
+	}
+
 	// get stored refresh token by signature
-	rt := a.getToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
+	rt := a.getToken(state, a.policy.Token, id)
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
@@ -499,7 +505,8 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// validate ownership
-	if clientID != client.ID() {
+	cid := client.ID()
+	if !bytes.Equal(clientID[:], cid[:]) {
 		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
@@ -553,8 +560,15 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 		return
 	}
 
+	// parse id
+	id, err := primitive.ObjectIDFromHex(claims.Id)
+	if err != nil {
+		state.tracer.Pop()
+		return
+	}
+
 	// delete token
-	a.deleteToken(state, a.policy.Token, bson.ObjectIdHex(claims.Id))
+	a.deleteToken(state, a.policy.Token, id)
 
 	// write header
 	state.writer.WriteHeader(http.StatusOK)
@@ -659,10 +673,10 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	}
 
 	// query db
-	state.tracer.Push("mgo/Query.One")
+	state.tracer.Push("mongo/Collection.FindOne")
 	state.tracer.Tag("query", query)
-	err := state.store.C(model).Find(query).One(obj)
-	if err == mgo.ErrNotFound {
+	err := state.store.C(model).FindOne(nil, query).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		state.tracer.Pop()
 		return nil
 	}
@@ -678,7 +692,7 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	return client
 }
 
-func (a *Authenticator) getFirstClient(state *state, id bson.ObjectId) Client {
+func (a *Authenticator) getFirstClient(state *state, id primitive.ObjectID) Client {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getFirstClient")
 
@@ -697,7 +711,7 @@ func (a *Authenticator) getFirstClient(state *state, id bson.ObjectId) Client {
 	return nil
 }
 
-func (a *Authenticator) getClient(state *state, model Client, id bson.ObjectId) Client {
+func (a *Authenticator) getClient(state *state, model Client, id primitive.ObjectID) Client {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getClient")
 
@@ -705,10 +719,12 @@ func (a *Authenticator) getClient(state *state, model Client, id bson.ObjectId) 
 	obj := model.Meta().Make()
 
 	// query db
-	state.tracer.Push("mgo/Query.One")
+	state.tracer.Push("mongo/Collection.FindOne")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindId(id).One(obj)
-	if err == mgo.ErrNotFound {
+	err := state.store.C(model).FindOne(nil, bson.M{
+		"_id": id,
+	}).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		state.tracer.Pop()
 		return nil
 	}
@@ -780,10 +796,10 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	}
 
 	// query db
-	state.tracer.Push("mgo/Query.One")
+	state.tracer.Push("mongo/Collection.FindOne")
 	state.tracer.Tag("query", query)
-	err := state.store.C(model).Find(query).One(obj)
-	if err == mgo.ErrNotFound {
+	err := state.store.C(model).FindOne(nil, query).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		state.tracer.Pop()
 		return nil
 	}
@@ -799,7 +815,7 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	return resourceOwner
 }
 
-func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id bson.ObjectId) ResourceOwner {
+func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id primitive.ObjectID) ResourceOwner {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getFirstResourceOwner")
 
@@ -818,7 +834,7 @@ func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id bs
 	return nil
 }
 
-func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id bson.ObjectId) ResourceOwner {
+func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id primitive.ObjectID) ResourceOwner {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getResourceOwner")
 
@@ -826,10 +842,12 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id b
 	obj := coal.Init(model).Meta().Make()
 
 	// query db
-	state.tracer.Push("mgo/Query.One")
+	state.tracer.Push("mongo/Collection.FindOne")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindId(id).One(obj)
-	if err == mgo.ErrNotFound {
+	err := state.store.C(model).FindOne(nil, bson.M{
+		"_id": id,
+	}).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		state.tracer.Pop()
 		return nil
 	}
@@ -845,7 +863,7 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id b
 	return resourceOwner
 }
 
-func (a *Authenticator) getToken(state *state, model GenericToken, id bson.ObjectId) GenericToken {
+func (a *Authenticator) getToken(state *state, model GenericToken, id primitive.ObjectID) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getToken")
 
@@ -853,10 +871,12 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id bson.Objec
 	obj := model.Meta().Make()
 
 	// fetch access token
-	state.tracer.Push("mgo/Query.One")
+	state.tracer.Push("mongo/Collection.FindOne")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindId(id).One(obj)
-	if err == mgo.ErrNotFound {
+	err := state.store.C(model).FindOne(nil, bson.M{
+		"_id": id,
+	}).Decode(obj)
+	if err == mongo.ErrNoDocuments {
 		state.tracer.Pop()
 		return nil
 	}
@@ -883,9 +903,9 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	token.SetTokenData(typ, scope, expiresAt, client, resourceOwner)
 
 	// save access token
-	state.tracer.Push("mgo/Collection.Insert")
+	state.tracer.Push("mongo/Collection.InsertOne")
 	state.tracer.Tag("model", token)
-	err := state.store.C(token).Insert(token)
+	_, err := state.store.C(token).InsertOne(nil, token)
 	stack.AbortIf(err)
 	state.tracer.Pop()
 
@@ -895,15 +915,17 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	return token
 }
 
-func (a *Authenticator) deleteToken(state *state, model GenericToken, id bson.ObjectId) {
+func (a *Authenticator) deleteToken(state *state, model GenericToken, id primitive.ObjectID) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.deleteToken")
 
 	// delete token
-	state.tracer.Push("mgo/Collection.RemoveId")
+	state.tracer.Push("mongo/Collection.DeleteOne")
 	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).RemoveId(id)
-	if err == mgo.ErrNotFound {
+	_, err := state.store.C(model).DeleteOne(nil, bson.M{
+		"_id": id,
+	})
+	if err == mongo.ErrNoDocuments {
 		err = nil
 	}
 	stack.AbortIf(err)

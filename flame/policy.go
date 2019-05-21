@@ -7,7 +7,8 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
@@ -121,7 +122,7 @@ func DefaultPolicy(secret string) *Policy {
 }
 
 // GenerateToken returns a new token for the provided information.
-func (p *Policy) GenerateToken(id bson.ObjectId, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
+func (p *Policy) GenerateToken(id primitive.ObjectID, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
 	// prepare claims
 	claims := &TokenClaims{}
 	claims.Id = id.Hex()
@@ -157,7 +158,11 @@ func (p *Policy) ParseToken(str string) (*TokenClaims, bool, error) {
 		return nil, true, err
 	} else if err != nil {
 		return nil, false, err
-	} else if !bson.IsObjectIdHex(claims.Id) {
+	}
+
+	// parse id
+	_, err = primitive.ObjectIDFromHex(claims.Id)
+	if err != nil {
 		return nil, false, errors.New("invalid id")
 	}
 

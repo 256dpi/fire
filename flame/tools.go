@@ -6,7 +6,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // TokenMigrator is a middleware that detects access tokens passed via query
@@ -45,15 +45,23 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 // EnsureApplication will ensure that an application with the provided name
 // exists and returns its key.
 func EnsureApplication(store *coal.Store, name, key, secret string) (string, error) {
-	// copy store
-	s := store.Copy()
-	defer s.Close()
-
 	// count main applications
 	var apps []Application
-	err := s.C(&Application{}).Find(bson.M{
+	cursor, err := store.C(&Application{}).Find(nil, bson.M{
 		coal.F(&Application{}, "Name"): name,
-	}).All(&apps)
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// decode results
+	err = cursor.All(nil, &apps)
+	if err != nil {
+		return "", err
+	}
+
+	// close cursor
+	err = cursor.Close(nil)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +88,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string) (string, err
 	}
 
 	// save application
-	err = s.C(app).Insert(app)
+	_, err = store.C(app).InsertOne(nil, app)
 	if err != nil {
 		return "", err
 	}
@@ -91,12 +99,8 @@ func EnsureApplication(store *coal.Store, name, key, secret string) (string, err
 // EnsureFirstUser ensures the existence of a first user if no other has been
 // created.
 func EnsureFirstUser(store *coal.Store, name, email, password string) error {
-	// copy store
-	s := store.Copy()
-	defer s.Close()
-
 	// check existence
-	n, err := s.C(&User{}).Count()
+	n, err := store.C(&User{}).CountDocuments(nil, bson.M{})
 	if err != nil {
 		return err
 	} else if n > 0 {
@@ -118,7 +122,7 @@ func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 	}
 
 	// save user
-	err = s.C(user).Insert(user)
+	_, err = store.C(user).InsertOne(nil, user)
 	if err != nil {
 		return err
 	}

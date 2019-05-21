@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestPolicyParseAndGenerateToken(t *testing.T) {
-	id := bson.NewObjectId()
+	id := primitive.NewObjectID()
 	tt := time.Now()
 
 	p := DefaultPolicy("")

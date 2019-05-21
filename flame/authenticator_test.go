@@ -9,8 +9,9 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/spec"
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestIntegration(t *testing.T) {
@@ -106,7 +107,7 @@ func TestIntegration(t *testing.T) {
 		Application: app1.ID(),
 	}).(*Token)
 
-	config.UnknownToken = mustGenerateAccessToken(p, bson.NewObjectId(), time.Now())
+	config.UnknownToken = mustGenerateAccessToken(p, primitive.NewObjectID(), time.Now())
 	config.ExpiredToken = mustGenerateAccessToken(p, expiredToken.ID(), expiredToken.ExpiresAt)
 	config.InsufficientToken = mustGenerateAccessToken(p, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
@@ -127,7 +128,7 @@ func TestIntegration(t *testing.T) {
 		Application: app1.ID(),
 	}).(*Token)
 
-	config.UnknownRefreshToken = mustGenerateRefreshToken(p, bson.NewObjectId(), time.Now())
+	config.UnknownRefreshToken = mustGenerateRefreshToken(p, primitive.NewObjectID(), time.Now())
 	config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
 	config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
@@ -385,7 +386,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 	})
 }
 
-func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
+func mustGenerateAccessToken(p *Policy, id primitive.ObjectID, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)
@@ -394,7 +395,7 @@ func mustGenerateAccessToken(p *Policy, id bson.ObjectId, expiresAt time.Time) s
 	return str
 }
 
-func mustGenerateRefreshToken(p *Policy, id bson.ObjectId, expiresAt time.Time) string {
+func mustGenerateRefreshToken(p *Policy, id primitive.ObjectID, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)

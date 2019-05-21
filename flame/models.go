@@ -7,7 +7,7 @@ import (
 	"github.com/256dpi/fire/coal"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,7 +27,7 @@ type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client bson.ObjectId, resourceOwner *bson.ObjectId)
+	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client primitive.ObjectID, resourceOwner *primitive.ObjectID)
 
 	// SetTokenData should set the specified token data.
 	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
@@ -36,11 +36,11 @@ type GenericToken interface {
 // Token is the built-in model used to store access and refresh tokens.
 type Token struct {
 	coal.Base   `json:"-" bson:",inline" coal:"tokens:tokens"`
-	Type        TokenType      `json:"type"`
-	ExpiresAt   time.Time      `json:"expires-at" bson:"expires_at"`
-	Scope       []string       `json:"scope" bson:"scope"`
-	Application bson.ObjectId  `json:"-" bson:"application_id" coal:"application:applications"`
-	User        *bson.ObjectId `json:"-" bson:"user_id" coal:"user:users"`
+	Type        TokenType           `json:"type"`
+	ExpiresAt   time.Time           `json:"expires-at" bson:"expires_at"`
+	Scope       []string            `json:"scope" bson:"scope"`
+	Application primitive.ObjectID  `json:"-" bson:"application_id" coal:"application:applications"`
+	User        *primitive.ObjectID `json:"-" bson:"user_id" coal:"user:users"`
 }
 
 // AddTokenIndexes will add access token indexes to the specified indexer.
@@ -55,7 +55,7 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.GenericToken interface.
-func (t *Token) GetTokenData() (TokenType, []string, time.Time, bson.ObjectId, *bson.ObjectId) {
+func (t *Token) GetTokenData() (TokenType, []string, time.Time, primitive.ObjectID, *primitive.ObjectID) {
 	return t.Type, t.Scope, t.ExpiresAt, t.Application, t.User
 }
 
@@ -73,7 +73,7 @@ func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time,
 // Validate implements the fire.ValidatableModel interface.
 func (t *Token) Validate() error {
 	// check id
-	if !t.ID().Valid() {
+	if t.ID().IsZero() {
 		return fire.E("invalid id")
 	}
 
@@ -136,7 +136,7 @@ func (a *Application) Validate() error {
 	}
 
 	// check id
-	if !a.ID().Valid() {
+	if a.ID().IsZero() {
 		return fire.E("invalid id")
 	}
 
@@ -224,7 +224,7 @@ func (u *User) Validate() error {
 	}
 
 	// check id
-	if !u.ID().Valid() {
+	if u.ID().IsZero() {
 		return fire.E("invalid id")
 	}
 
