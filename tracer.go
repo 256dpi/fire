@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/opentracing/opentracing-go"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RootTracer is a middleware that can be used to create root trace span for an

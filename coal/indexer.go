@@ -77,7 +77,7 @@ func (i *Indexer) AddPartial(model Model, unique bool, expireAfter time.Duration
 	})
 }
 
-// AddRaw will add a raw mgo.Index to the internal index list.
+// AddRaw will add a raw mongo.IndexModel to the internal index list.
 func (i *Indexer) AddRaw(coll string, model mongo.IndexModel) {
 	i.indexes = append(i.indexes, index{
 		coll:  coll,

@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

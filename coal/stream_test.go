@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

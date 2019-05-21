@@ -339,7 +339,7 @@ func NewMeta(model Model) *Meta {
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.
 //
-// Note: Other libraries like mgo might replace the pointer content with a new
+// Note: Libraries like mongo might replace the pointer content with a new
 // structure, therefore the model eventually needs to be initialized again
 // using Init().
 func (m *Meta) Make() Model {
