@@ -184,7 +184,7 @@ func Sort(fields ...string) bson.D {
 	return sort
 }
 
-// IsValidObjectID will assess whether the provided string is a valid hex
+// IsValidHexObjectID will assess whether the provided string is a valid hex
 // encoded object id.
 func IsValidHexObjectID(str string) bool {
 	_, err := primitive.ObjectIDFromHex(str)
