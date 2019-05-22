@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"net/http"
@@ -1526,7 +1525,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 				if rel.ToOne {
 					// get reference id
 					rid, _ := reference[rel.BSONField].(primitive.ObjectID)
-					if !rid.IsZero() && bytes.Equal(rid[:], modelID[:]) {
+					if !rid.IsZero() && rid == modelID {
 						// add reference
 						entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
 					}
@@ -1539,7 +1538,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 					for _, _rid := range rids {
 						// get reference id
 						rid, _ := _rid.(primitive.ObjectID)
-						if !rid.IsZero() && bytes.Equal(rid[:], modelID[:]) {
+						if !rid.IsZero() && rid == modelID {
 							// add reference
 							entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
 						}

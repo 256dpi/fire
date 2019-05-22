@@ -3,7 +3,6 @@
 package flame
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"net/http"
@@ -505,8 +504,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// validate ownership
-	cid := client.ID()
-	if !bytes.Equal(clientID[:], cid[:]) {
+	if clientID != client.ID() {
 		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
