@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -19,7 +21,7 @@ func RootTracer() func(http.Handler) http.Handler {
 
 			// replace ids
 			for i, s := range segments {
-				if isValidObjectID(s) {
+				if coal.IsValidHexObjectID(s) {
 					segments[i] = ":id"
 				}
 			}

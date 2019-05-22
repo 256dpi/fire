@@ -125,3 +125,19 @@ func TestSort(t *testing.T) {
 		bson.E{Key: "_id", Value: -1},
 	}, sort)
 }
+
+func TestIsValidHexObjectID(t *testing.T) {
+	assert.False(t, IsValidHexObjectID("foo"))
+	assert.False(t, IsValidHexObjectID(""))
+	assert.True(t, IsValidHexObjectID(primitive.NewObjectID().Hex()))
+}
+
+func TestMustObjectIDFromHex(t *testing.T) {
+	assert.NotPanics(t, func() {
+		MustObjectIDFromHex(primitive.NewObjectID().Hex())
+	})
+
+	assert.Panics(t, func() {
+		MustObjectIDFromHex("foo")
+	})
+}

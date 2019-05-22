@@ -146,7 +146,7 @@ func (c *Controller) prepare() {
 	// add collection actions
 	for name, action := range c.CollectionActions {
 		// check collision
-		if name == "" || isValidObjectID(name) {
+		if name == "" || coal.IsValidHexObjectID(name) {
 			panic(fmt.Sprintf(`fire: invalid collection action "%s"`, name))
 		}
 
@@ -230,7 +230,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// validate id if present
-	if req.ResourceID != "" && !isValidObjectID(req.ResourceID) {
+	if req.ResourceID != "" && !coal.IsValidHexObjectID(req.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
@@ -1098,7 +1098,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.loadModel")
 
 	// set selector query (id has been validated earlier)
-	ctx.Selector["_id"] = mustObjectIDFromHex(ctx.JSONAPIRequest.ResourceID)
+	ctx.Selector["_id"] = coal.MustObjectIDFromHex(ctx.JSONAPIRequest.ResourceID)
 
 	// filter out deleted documents if configured
 	if c.SoftDelete {

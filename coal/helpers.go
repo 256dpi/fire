@@ -183,3 +183,21 @@ func Sort(fields ...string) bson.D {
 
 	return sort
 }
+
+// IsValidObjectID will assess whether the provided string is a valid hex
+// encoded object id.
+func IsValidHexObjectID(str string) bool {
+	_, err := primitive.ObjectIDFromHex(str)
+	return err == nil
+}
+
+// MustObjectIDFromHex will convert the provided string to a object id and panic
+// if the string is not a valid object id.
+func MustObjectIDFromHex(str string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return id
+}

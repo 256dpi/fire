@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/256dpi/fire/coal"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -942,7 +944,7 @@ func TestToOneRelationship(t *testing.T) {
 	// create comment
 	comment1 := tester.Save(&commentModel{
 		Message: "Comment 1",
-		Post:    mustObjectIDFromHex(post1),
+		Post:    coal.MustObjectIDFromHex(post1),
 	}).ID().Hex()
 
 	var comment2 string
@@ -1811,9 +1813,9 @@ func TestFiltering(t *testing.T) {
 	selection := tester.Save(&selectionModel{
 		Name: "selection-1",
 		Posts: []primitive.ObjectID{
-			mustObjectIDFromHex(post1),
-			mustObjectIDFromHex(post2),
-			mustObjectIDFromHex(post3),
+			coal.MustObjectIDFromHex(post1),
+			coal.MustObjectIDFromHex(post2),
+			coal.MustObjectIDFromHex(post3),
 		},
 	}).ID().Hex()
 	tester.Save(&selectionModel{
@@ -1823,7 +1825,7 @@ func TestFiltering(t *testing.T) {
 	// create notes
 	note := tester.Save(&noteModel{
 		Title: "note-1",
-		Post:  mustObjectIDFromHex(post1),
+		Post:  coal.MustObjectIDFromHex(post1),
 	}).ID().Hex()
 	tester.Save(&noteModel{
 		Title: "note-2",
