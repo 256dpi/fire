@@ -137,6 +137,7 @@ func createHandler(store *coal.Store) http.Handler {
 
 	// create pool
 	pool := axe.NewPool()
+	pool.Reporter = reporter
 	pool.Add(incrementTask(store, queue))
 	pool.Run()
 
