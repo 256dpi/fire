@@ -1,9 +1,9 @@
 package flame
 
 import (
-	"github.com/256dpi/fire"
-
 	"github.com/256dpi/oauth2"
+
+	"github.com/256dpi/fire"
 )
 
 // AuthInfoDataKey is the key used to store the auth info struct.

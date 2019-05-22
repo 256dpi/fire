@@ -4,12 +4,12 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var catalog = coal.NewCatalog(&Item{})

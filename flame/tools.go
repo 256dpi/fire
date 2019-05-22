@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/256dpi/fire/coal"
-
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // TokenMigrator is a middleware that detects access tokens passed via query

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/256dpi/fire"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire"
 )
 
 func TestCallback(t *testing.T) {

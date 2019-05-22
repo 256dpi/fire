@@ -4,12 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-ash"))

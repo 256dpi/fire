@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/256dpi/fire"
-
 	"github.com/gorilla/websocket"
+
+	"github.com/256dpi/fire"
 )
 
 const (

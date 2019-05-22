@@ -3,12 +3,12 @@ package flame
 import (
 	"time"
 
-	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
-
 	"github.com/asaskevich/govalidator"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 // TokenType defines the type of a token.

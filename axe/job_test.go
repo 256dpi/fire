@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestJob(t *testing.T) {

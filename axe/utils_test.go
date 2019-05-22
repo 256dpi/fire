@@ -1,10 +1,10 @@
 package axe
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 var tester = fire.NewTester(

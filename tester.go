@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/256dpi/jsonapi"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // A Tester provides facilities to the test a fire API.

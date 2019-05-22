@@ -4,9 +4,9 @@ package wood
 import (
 	"net/http"
 
-	"github.com/256dpi/fire"
-
 	"github.com/goware/cors"
+
+	"github.com/256dpi/fire"
 )
 
 // DefaultProtector constructs a middleware that by default limits the request

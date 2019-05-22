@@ -1,10 +1,10 @@
 package spark
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Map holds custom data for a subscription.

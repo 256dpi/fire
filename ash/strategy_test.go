@@ -3,10 +3,10 @@ package ash
 import (
 	"testing"
 
-	"github.com/256dpi/fire"
-
 	"github.com/256dpi/jsonapi"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire"
 )
 
 func TestCallback1(t *testing.T) {

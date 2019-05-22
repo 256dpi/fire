@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 type board struct {

@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestBasicOperations(t *testing.T) {

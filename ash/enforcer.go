@@ -1,9 +1,9 @@
 package ash
 
 import (
-	"github.com/256dpi/fire"
-
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire"
 )
 
 // E is a short-hand function to create an enforcer.

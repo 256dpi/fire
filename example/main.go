@@ -7,18 +7,18 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/goware/cors"
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/transport"
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/spark"
 	"github.com/256dpi/fire/wood"
-
-	"github.com/goware/cors"
-	"github.com/opentracing/opentracing-go"
-	"github.com/uber/jaeger-client-go"
-	"github.com/uber/jaeger-client-go/transport"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 var port = getEnv("PORT", "8000")

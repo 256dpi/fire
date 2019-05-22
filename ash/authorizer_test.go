@@ -3,9 +3,9 @@ package ash
 import (
 	"testing"
 
-	"github.com/256dpi/fire"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire"
 )
 
 func TestA(t *testing.T) {

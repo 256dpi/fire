@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
-
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 var tester = fire.NewTester(

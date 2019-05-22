@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/256dpi/jsonapi"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // C is a short-hand function to construct a callback. It will also add tracing

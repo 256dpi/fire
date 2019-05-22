@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/256dpi/jsonapi"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // An Operation indicates the purpose of a yield to a callback in the processing

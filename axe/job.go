@@ -3,12 +3,12 @@ package axe
 import (
 	"time"
 
-	"github.com/256dpi/fire/coal"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // Status defines the allowed statuses of a job.

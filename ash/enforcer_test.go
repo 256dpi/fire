@@ -3,10 +3,10 @@ package ash
 import (
 	"testing"
 
-	"github.com/256dpi/fire"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire"
 )
 
 func TestGrantAccess(t *testing.T) {

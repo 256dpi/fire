@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // L is a short-hand type to create a list of callbacks.

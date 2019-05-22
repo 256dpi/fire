@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/opentracing/opentracing-go"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // RootTracer is a middleware that can be used to create root trace span for an

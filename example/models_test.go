@@ -3,10 +3,10 @@ package main
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEnsureIndexes(t *testing.T) {

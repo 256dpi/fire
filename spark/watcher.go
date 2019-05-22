@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // TODO: How to close a watcher?
