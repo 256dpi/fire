@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -3830,6 +3831,187 @@ func TestSoftDelete(t *testing.T) {
 	})
 
 	// TODO: Test has one and has many relationships.
+}
+
+func TestUseTransactions(t *testing.T) {
+	tester.Clean()
+
+	group := tester.Assign("", &Controller{
+		Model:           &postModel{},
+		Store:           tester.Store,
+		UseTransactions: true,
+		Notifiers: L{
+			C("foo", All(), func(ctx *Context) error {
+				if ctx.Model.(*postModel).Title == "FAIL" {
+					return errors.New("foo")
+				} else {
+					return nil
+				}
+			}),
+		},
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	group.Reporter = nil
+
+	var id string
+
+	// create post
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"title": "Post 1"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+id+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": ""
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/comments",
+							"related": "/posts/`+id+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/selections",
+							"related": "/posts/`+id+`/selections"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+id+`/relationships/note",
+							"related": "/posts/`+id+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// create post error
+	tester.Request("POST", "posts", `{
+		"data": {
+			"type": "posts",
+			"attributes": {
+				"title": "FAIL"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		post := tester.FindLast(&postModel{})
+		id = post.ID().Hex()
+
+		assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "500",
+					"title": "Internal Server Error"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// update post
+	tester.Request("PATCH", "posts/"+id, `{
+		"data": {
+			"type": "posts",
+			"id": "`+id+`",
+			"attributes": {
+				"text-body": "Post 1 Text"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "posts",
+				"id": "`+id+`",
+				"attributes": {
+					"title": "Post 1",
+					"published": false,
+					"text-body": "Post 1 Text"
+				},
+				"relationships": {
+					"comments": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/comments",
+							"related": "/posts/`+id+`/comments"
+						}
+					},
+					"selections": {
+						"data": [],
+						"links": {
+							"self": "/posts/`+id+`/relationships/selections",
+							"related": "/posts/`+id+`/selections"
+						}
+					},
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+id+`/relationships/note",
+							"related": "/posts/`+id+`/note"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/posts/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// update post
+	tester.Request("PATCH", "posts/"+id, `{
+		"data": {
+			"type": "posts",
+			"id": "`+id+`",
+			"attributes": {
+				"title": "FAIL"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "500",
+					"title": "Internal Server Error"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	assert.Equal(t, 1, tester.Count(&postModel{}))
+	assert.Equal(t, "Post 1", tester.Fetch(&postModel{}, coal.MustObjectIDFromHex(id)).MustGet("Title"))
 }
 
 func BenchmarkList(b *testing.B) {

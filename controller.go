@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -130,6 +131,12 @@ type Controller struct {
 	// a TTL index to delete the documents automatically after some timeout.
 	SoftDelete bool
 
+	// UseTransactions can be set to true to enable transactions for create,
+	// update and delete operations. If enabled, a transaction will be created
+	// and used for all database requests. The created session can be accessed
+	// through the context to use it in callbacks.
+	UseTransactions bool
+
 	parser jsonapi.Parser
 }
 
@@ -243,8 +250,43 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// set store
 	ctx.Store = c.Store
 
+	// run operation without transaction if not configured
+	if !c.UseTransactions {
+		c.runOperation(ctx, doc)
+		ctx.Tracer.Pop()
+		return
+	}
+
+	// run operation with transaction if enabled
+	stack.AbortIf(c.Store.Client.UseSession(context.Background(), func(sc mongo.SessionContext) error {
+		// start transaction
+		err = sc.StartTransaction()
+		if err != nil {
+			return err
+		}
+
+		// assign session
+		ctx.Session = sc
+
+		// run operation
+		c.runOperation(ctx, doc)
+
+		// commit transaction
+		err = sc.CommitTransaction(context.Background())
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}))
+
+	// finish trace
+	ctx.Tracer.Pop()
+}
+
+func (c *Controller) runOperation(ctx *Context, doc *jsonapi.Document) {
 	// call specific handlers
-	switch req.Intent {
+	switch ctx.JSONAPIRequest.Intent {
 	case jsonapi.ListResources:
 		c.listResources(ctx)
 	case jsonapi.FindResource:
@@ -270,9 +312,6 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	case jsonapi.ResourceAction:
 		c.handleResourceAction(ctx)
 	}
-
-	// finish trace
-	ctx.Tracer.Pop()
 }
 
 func (c *Controller) listResources(ctx *Context) {
@@ -382,7 +421,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// insert model
 	ctx.Tracer.Push("mongo/Collection.InsertOne")
 	ctx.Tracer.Tag("model", ctx.Model)
-	_, err := ctx.Store.C(ctx.Model).InsertOne(nil, ctx.Model)
+	_, err := ctx.Store.C(ctx.Model).InsertOne(ctx.Session, ctx.Model)
 	stack.AbortIf(err)
 	ctx.Tracer.Pop()
 
@@ -487,7 +526,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		// soft delete model
 		ctx.Tracer.Push("mongo/Collection.UpdateOne")
 		ctx.Tracer.Tag("model", ctx.Model)
-		_, err := ctx.Store.C(c.Model).UpdateOne(nil, bson.M{
+		_, err := ctx.Store.C(c.Model).UpdateOne(ctx.Session, bson.M{
 			"_id": ctx.Model.ID(),
 		}, bson.M{
 			"$set": bson.M{
@@ -500,7 +539,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		// remove model
 		ctx.Tracer.Push("mongo/Collection.DeleteOne")
 		ctx.Tracer.Tag("model", ctx.Model)
-		_, err := ctx.Store.C(c.Model).DeleteOne(nil, bson.M{
+		_, err := ctx.Store.C(c.Model).DeleteOne(ctx.Session, bson.M{
 			"_id": ctx.Model.ID(),
 		})
 		stack.AbortIf(err)
@@ -1421,7 +1460,7 @@ func (c *Controller) updateModel(ctx *Context) {
 
 	// update model
 	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-	_, err := ctx.Store.C(ctx.Model).ReplaceOne(nil, bson.M{
+	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)

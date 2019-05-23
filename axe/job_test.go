@@ -13,7 +13,7 @@ import (
 func TestJob(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", &bson.M{"foo": "bar"}, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", &bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -64,7 +64,7 @@ func TestJob(t *testing.T) {
 func TestDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", nil, 100*time.Millisecond)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 100*time.Millisecond)
 	assert.NoError(t, err)
 
 	job2, err := dequeue(tester.Store, job.ID(), time.Hour)
@@ -85,7 +85,7 @@ func TestDelayed(t *testing.T) {
 func TestTimeout(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
 	assert.NoError(t, err)
 
 	job2, err := dequeue(tester.Store, job.ID(), 100*time.Millisecond)
@@ -106,7 +106,7 @@ func TestTimeout(t *testing.T) {
 func TestFailed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = dequeue(tester.Store, job.ID(), time.Hour)
@@ -130,7 +130,7 @@ func TestFailed(t *testing.T) {
 func TestFailedDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = dequeue(tester.Store, job.ID(), time.Hour)
@@ -160,7 +160,7 @@ func TestFailedDelayed(t *testing.T) {
 func TestCancelled(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = dequeue(tester.Store, job.ID(), time.Hour)

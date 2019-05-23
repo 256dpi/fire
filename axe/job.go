@@ -92,7 +92,7 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not be dequeued until the specified time has passed.
-func Enqueue(store *coal.Store, name string, data Model, delay time.Duration) (*Job, error) {
+func Enqueue(store *coal.Store, session mongo.SessionContext, name string, data Model, delay time.Duration) (*Job, error) {
 	// set default data
 	if data == nil {
 		data = bson.M{}
@@ -122,7 +122,7 @@ func Enqueue(store *coal.Store, name string, data Model, delay time.Duration) (*
 	}
 
 	// insert job
-	_, err = store.C(job).InsertOne(nil, job)
+	_, err = store.C(job).InsertOne(session, job)
 	if err != nil {
 		return nil, err
 	}

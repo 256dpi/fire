@@ -46,7 +46,7 @@ func NewQueue(store *coal.Store) *Queue {
 // is specified the job will not dequeued until the specified time has passed.
 func (q *Queue) Enqueue(name string, data Model, delay time.Duration) (*Job, error) {
 	// enqueue job
-	job, err := Enqueue(q.store, name, data, delay)
+	job, err := Enqueue(q.store, nil, name, data, delay)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (q *Queue) Callback(name string, delay time.Duration, matcher fire.Matcher,
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, name, data, delay)
+			_, err := Enqueue(ctx.Store, ctx.Session, name, data, delay)
 			if err != nil {
 				return err
 			}
