@@ -93,6 +93,17 @@ func (t *Tester) FindLast(model Model) Model {
 	return model
 }
 
+// Count will count all saved models.
+func (t *Tester) Count(model Model) int {
+	// count all documents
+	n, err := t.Store.C(model).CountDocuments(nil, bson.M{})
+	if err != nil {
+		panic(err)
+	}
+
+	return int(n)
+}
+
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id primitive.ObjectID) Model {
 	// find specific document
