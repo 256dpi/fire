@@ -78,7 +78,7 @@ func L(m Model, flag string, force bool) string {
 	// lookup fields
 	fields, _ := Init(m).Meta().FlaggedFields[flag]
 	if len(fields) > 1 || (force && len(fields) == 0) {
-		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" found on "%s"`, flag, m.Meta().Name))
+		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" on "%s"`, flag, m.Meta().Name))
 	}
 
 	// return name if found
