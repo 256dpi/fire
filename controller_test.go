@@ -3689,6 +3689,31 @@ func TestResourceActions(t *testing.T) {
 func TestSoftDelete(t *testing.T) {
 	tester.Clean()
 
+	// missing field on model
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-soft-delete" on "fire.missingSoftDeleteField"`, func() {
+		type missingSoftDeleteField struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:      &missingSoftDeleteField{},
+			SoftDelete: true,
+		})
+	})
+
+	// invalid field type
+	assert.PanicsWithValue(t, `fire: soft delete field "Foo" for model "fire.invalidSoftDeleteFieldType" is not of type "*time.Time"`, func() {
+		type invalidSoftDeleteFieldType struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+			Foo       int `coal:"fire-soft-delete"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:      &invalidSoftDeleteFieldType{},
+			SoftDelete: true,
+		})
+	})
+
 	tester.Assign("", &Controller{
 		Model:      &postModel{},
 		Store:      tester.Store,

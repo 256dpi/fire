@@ -187,18 +187,10 @@ func (c *Controller) prepare() {
 		c.DocumentLimit = DataSize("8M")
 	}
 
-	// check soft delete
+	// check soft delete field
 	if c.SoftDelete {
-		// get soft delete field
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
-
-		// get field
-		field, ok := c.Model.Meta().Fields[softDeleteField]
-		if !ok {
-			panic(fmt.Sprintf(`fire: missing soft delete field "%s" for model "%s"`, softDeleteField, c.Model.Meta().Name))
-		}
-
-		// check field type
+		field, _ := c.Model.Meta().Fields[softDeleteField]
 		if field.Type.String() != "*time.Time" {
 			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, softDeleteField, c.Model.Meta().Name))
 		}
