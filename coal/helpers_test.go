@@ -41,11 +41,11 @@ func TestR(t *testing.T) {
 func TestL(t *testing.T) {
 	assert.Equal(t, "Title", L(&postModel{}, "foo", true))
 
-	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" found on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" on "coal.postModel"`, func() {
 		L(&postModel{}, "bar", true)
 	})
 
-	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" found on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" on "coal.postModel"`, func() {
 		L(&postModel{}, "quz", true)
 	})
 }
@@ -107,11 +107,11 @@ func TestRequire(t *testing.T) {
 		Require(&postModel{}, "foo")
 	})
 
-	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" found on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "bar" on "coal.postModel"`, func() {
 		Require(&postModel{}, "bar")
 	})
 
-	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" found on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "quz" on "coal.postModel"`, func() {
 		Require(&postModel{}, "quz")
 	})
 }

@@ -4188,9 +4188,8 @@ func TestUseTransactions(t *testing.T) {
 			C("foo", All(), func(ctx *Context) error {
 				if ctx.Model.(*postModel).Title == "FAIL" {
 					return errors.New("foo")
-				} else {
-					return nil
 				}
+				return nil
 			}),
 		},
 	}, &Controller{
