@@ -179,8 +179,8 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 				}),
 			},
 		},
-		SoftProtection: true,
-		SoftDelete:     true,
+		TolerateViolations: true,
+		SoftDelete:         true,
 	}
 }
 
@@ -193,7 +193,7 @@ func userController(store *coal.Store) *fire.Controller {
 			fire.ModelValidator(),
 			fire.RelationshipValidator(&flame.User{}, catalog),
 		},
-		SoftProtection: true,
+		TolerateViolations: true,
 	}
 }
 

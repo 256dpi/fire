@@ -3171,7 +3171,7 @@ func TestSoftProtection(t *testing.T) {
 				return nil
 			}),
 		},
-		SoftProtection: true,
+		TolerateViolations: true,
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,
@@ -3184,7 +3184,7 @@ func TestSoftProtection(t *testing.T) {
 				return nil
 			}),
 		},
-		SoftProtection: true,
+		TolerateViolations: true,
 	}, &Controller{
 		Model: &noteModel{},
 		Store: tester.Store,

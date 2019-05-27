@@ -123,11 +123,11 @@ type Controller struct {
 	// through the context to use it in callbacks.
 	UseTransactions bool
 
-	// SoftProtection will not raise an error if a non-writable field is set
-	// during a Create or Update operation. Frameworks like Ember.js just
+	// TolerateViolations will not raise an error if a non-writable field is
+	// set during a Create or Update operation. Frameworks like Ember.js just
 	// serialize the complete state of a model and thus might send attributes
 	// and relationships that are not writable.
-	SoftProtection bool
+	TolerateViolations bool
 
 	// IdempotentCreate can be set to true to enable the idempotent create
 	// mechanism. When creating resources, clients have to generate and submit a
@@ -1510,8 +1510,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !Contains(whitelist, name) {
-			// ignore violation if soft protection is enabled
-			if c.SoftProtection {
+			// ignore violation if tolerated
+			if c.TolerateViolations {
 				continue
 			}
 
@@ -1535,8 +1535,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
-			// ignore violation if soft protection is enabled
-			if c.SoftProtection {
+			// ignore violation if tolerated
+			if c.TolerateViolations {
 				continue
 			}
 
