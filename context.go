@@ -155,6 +155,13 @@ type Context struct {
 	// Operations: List
 	Models []coal.Model
 
+	// The original model that is being updated. Can be used to lookup up
+	// original values of changed fields.
+	//
+	// Usage: Ready Only, Availability: Validators
+	// Operations: Update
+	Original coal.Model
+
 	// The document that will be written to the client.
 	//
 	// Usage: Modify Only, Availability: Notifiers,
@@ -206,8 +213,6 @@ type Context struct {
 	//
 	// Usage: Read Only
 	Tracer *Tracer
-
-	original coal.Model
 }
 
 // Query returns the composite query of Selector and Filter.
@@ -230,50 +235,6 @@ func (c *Context) Query() bson.M {
 
 	// otherwise return $and query
 	return bson.M{"$and": subQueries}
-}
-
-// Original will return the stored version of the model. This method is intended
-// to be used to calculate the changed fields during an Update operation. Any
-// returned error is already marked as fatal. This function will cache and reuse
-// loaded models between multiple callbacks.
-//
-// Note: The method will panic if being used during any other operation than Update.
-func (c *Context) Original() (coal.Model, error) {
-	// begin trace
-	c.Tracer.Push("fire/Context.Original")
-
-	// check operation
-	if c.Operation != Update {
-		panic("fire: the original can only be loaded during an update operation")
-	}
-
-	// return cached model
-	if c.original != nil {
-		c.Tracer.Pop()
-		return c.original, nil
-	}
-
-	// create a new model
-	m := c.Model.Meta().Make()
-
-	// read original document
-	c.Tracer.Push("mongo/Collection.FindOne")
-	c.Tracer.Tag("id", c.Model.ID())
-	err := c.Store.C(c.Model).FindOne(nil, bson.M{
-		"_id": c.Model.ID(),
-	}).Decode(m)
-	if err != nil {
-		return nil, err
-	}
-	c.Tracer.Pop()
-
-	// cache model
-	c.original = coal.Init(m)
-
-	// finish trace
-	c.Tracer.Pop()
-
-	return c.original, nil
 }
 
 // Respond will encode the provided value as JSON and write it to the client.

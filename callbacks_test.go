@@ -127,11 +127,11 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		Title: "Title",
 	}
 
-	err := tester.RunCallback(&Context{Operation: Update, Model: post}, validator)
+	err := tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
 	assert.Error(t, err)
 
 	post.Title = "Another Title"
-	err = tester.RunCallback(&Context{Operation: Update, Model: post}, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
 	assert.NoError(t, err)
 }
 
@@ -455,45 +455,48 @@ func TestUniqueFieldValidator(t *testing.T) {
 
 	validator := UniqueFieldValidator("Title", "")
 
-	post1 := tester.Save(&postModel{
+	savedPost := tester.Save(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
-	err := tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	err := tester.RunCallback(&Context{Operation: Update, Model: savedPost, Original: savedPost}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&postModel{
 		Title: "bar",
 	})
 
-	post1.Title = "bar"
+	post := &postModel{
+		Base:  coal.Base{DocID: savedPost.ID()},
+		Title: "bar",
+	}
 
-	err = tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
 	assert.Error(t, err)
 }
 
 func TestUniqueFieldValidatorOptional(t *testing.T) {
 	tester.Clean()
 
-	validator := UniqueFieldValidator("Parent", nil)
+	validator := UniqueFieldValidator("Parent", coal.N())
 
-	comment1 := tester.Save(&commentModel{
+	comment1 := &commentModel{
 		Post:   primitive.NewObjectID(),
 		Parent: nil,
-	}).(*commentModel)
+	}
 
-	err := tester.RunCallback(&Context{Operation: Update, Model: comment1}, validator)
+	err := tester.RunCallback(&Context{Operation: Create, Model: comment1}, validator)
 	assert.NoError(t, err)
 
-	id1 := coal.P(primitive.NewObjectID())
-
-	comment2 := tester.Save(&commentModel{
+	comment2 := &commentModel{
 		Post:   primitive.NewObjectID(),
-		Parent: id1,
-	}).(*commentModel)
+		Parent: coal.P(primitive.NewObjectID()),
+	}
 
-	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
+	err = tester.RunCallback(&Context{Operation: Create, Model: comment2}, validator)
 	assert.NoError(t, err)
+
+	tester.Save(comment2)
 
 	id2 := coal.P(primitive.NewObjectID())
 
@@ -502,9 +505,13 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 		Parent: id2,
 	})
 
-	comment2.Parent = id2
+	newComment := &commentModel{
+		Base:   coal.Base{DocID: comment2.ID()},
+		Post:   comment2.Post,
+		Parent: id2,
+	}
 
-	err = tester.RunCallback(&Context{Operation: Update, Model: comment2}, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: newComment, Original: comment2}, validator)
 	assert.Error(t, err)
 }
 
@@ -515,11 +522,11 @@ func TestUniqueFieldValidatorSoftDelete(t *testing.T) {
 
 	validator := UniqueFieldValidator("Title", "")
 
-	post1 := tester.Save(&postModel{
+	savedPost := tester.Save(&postModel{
 		Title: "foo",
 	}).(*postModel)
 
-	err := tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	err := tester.RunCallback(&Context{Operation: Update, Model: savedPost, Original: savedPost}, validator)
 	assert.NoError(t, err)
 
 	tester.Save(&postModel{
@@ -527,8 +534,11 @@ func TestUniqueFieldValidatorSoftDelete(t *testing.T) {
 		Deleted: coal.T(time.Now()),
 	})
 
-	post1.Title = "bar"
+	newPost := &postModel{
+		Base:  coal.Base{DocID: savedPost.ID()},
+		Title: "bar",
+	}
 
-	err = tester.RunCallback(&Context{Operation: Update, Model: post1}, validator)
+	err = tester.RunCallback(&Context{Operation: Update, Model: newPost, Original: savedPost}, validator)
 	assert.NoError(t, err)
 }

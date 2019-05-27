@@ -1315,12 +1315,13 @@ func (c *Controller) loadModel(ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// prepare object
-	obj := c.Model.Meta().Make()
+	model := c.Model.Meta().Make()
 
 	// query db
 	ctx.Tracer.Push("mongo/Collection.FindOne")
 	ctx.Tracer.Tag("query", ctx.Query())
-	err := ctx.Store.C(c.Model).FindOne(nil, ctx.Query()).Decode(obj)
+	res := ctx.Store.C(c.Model).FindOne(nil, ctx.Query())
+	err := res.Decode(model)
 	if err == mongo.ErrNoDocuments {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
@@ -1328,7 +1329,15 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Tracer.Pop()
 
 	// initialize and set model
-	ctx.Model = coal.Init(obj.(coal.Model))
+	ctx.Model = coal.Init(model.(coal.Model))
+
+	// set original on update operations
+	if ctx.Operation == Update {
+		original := c.Model.Meta().Make()
+		err = res.Decode(original)
+		stack.AbortIf(err)
+		ctx.Original = coal.Init(original.(coal.Model))
+	}
 
 	// finish trace
 	ctx.Tracer.Pop()

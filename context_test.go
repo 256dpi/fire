@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/256dpi/fire/coal"
 )
 
 func TestOperation(t *testing.T) {
@@ -32,53 +30,4 @@ func TestOperation(t *testing.T) {
 		assert.Equal(t, entry.a, entry.o.Action())
 		assert.Equal(t, entry.s, entry.o.String())
 	}
-}
-
-func TestContextOriginal(t *testing.T) {
-	tester.Clean()
-
-	savedPost := coal.Init(&postModel{
-		Title: "foo",
-	}).(*postModel)
-
-	tester.Save(savedPost)
-
-	post := coal.Init(&postModel{
-		Title: "bar",
-	}).(*postModel)
-
-	post.DocID = savedPost.DocID
-
-	tester.WithContext(&Context{Operation: Update, Model: post}, func(ctx *Context) {
-		m, err := ctx.Original()
-		assert.NoError(t, err)
-		assert.Equal(t, savedPost.ID(), m.ID())
-		assert.Equal(t, savedPost.MustGet("Title"), m.MustGet("Title"))
-
-		m2, err := ctx.Original()
-		assert.NoError(t, err)
-		assert.Equal(t, m, m2)
-	})
-}
-
-func TestContextOriginalWrongOperation(t *testing.T) {
-	tester.WithContext(nil, func(ctx *Context) {
-		assert.PanicsWithValue(t, `fire: the original can only be loaded during an update operation`, func() {
-			_, _ = ctx.Original()
-		})
-	})
-}
-
-func TestContextOriginalNonExisting(t *testing.T) {
-	tester.Clean()
-
-	post := coal.Init(&postModel{
-		Title: "foo",
-	}).(*postModel)
-
-	tester.WithContext(&Context{Operation: Update, Model: post}, func(ctx *Context) {
-		m, err := ctx.Original()
-		assert.Error(t, err)
-		assert.Nil(t, m)
-	})
 }

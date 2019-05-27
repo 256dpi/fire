@@ -221,16 +221,10 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 
 		// handle resource updates
 		if ctx.Operation == Update {
-			// read the original
-			original, err := ctx.Original()
-			if err != nil {
-				return err
-			}
-
 			// check all fields
 			for field := range pairs {
 				// check equality
-				if !reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
+				if !reflect.DeepEqual(ctx.Model.MustGet(field), ctx.Original.MustGet(field)) {
 					return E("field " + field + " is protected")
 				}
 			}
@@ -535,18 +529,9 @@ type noZero int
 // The callback supports models that use the soft delete mechanism.
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
 	return C("fire/UniqueFieldValidator", Only(Create, Update), func(ctx *Context) error {
-		// check if field has changed
-		if ctx.Operation == Update {
-			// get original model
-			original, err := ctx.Original()
-			if err != nil {
-				return err
-			}
-
-			// return if field has not been changed
-			if reflect.DeepEqual(ctx.Model.MustGet(field), original.MustGet(field)) {
-				return nil
-			}
+		// return if field has not been changed when updating
+		if ctx.Operation == Update && reflect.DeepEqual(ctx.Model.MustGet(field), ctx.Original.MustGet(field)) {
+			return nil
 		}
 
 		// get value
