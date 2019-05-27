@@ -117,6 +117,12 @@ type Controller struct {
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
+	// UseTransactions can be set to true to enable transactions for create,
+	// update and delete operations. If enabled, a transaction will be created
+	// and used for all database requests. The created session can be accessed
+	// through the context to use it in callbacks.
+	UseTransactions bool
+
 	// SoftProtection will not raise an error if a non-writable field is set
 	// during a Create or Update operation. Frameworks like Ember.js just
 	// serialize the complete state of a model and thus might send attributes
@@ -149,12 +155,6 @@ type Controller struct {
 	// provided model using the "fire-soft-delete" flag. It is advised to create
 	// a TTL index to delete the documents automatically after some timeout.
 	SoftDelete bool
-
-	// UseTransactions can be set to true to enable transactions for create,
-	// update and delete operations. If enabled, a transaction will be created
-	// and used for all database requests. The created session can be accessed
-	// through the context to use it in callbacks.
-	UseTransactions bool
 
 	parser jsonapi.Parser
 }
