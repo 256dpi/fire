@@ -123,6 +123,25 @@ type Controller struct {
 	// and relationships that are not writable.
 	SoftProtection bool
 
+	// IdempotentCreate can be set to true to enable the idempotent create
+	// mechanism. When creating resources, clients have to generate and submit a
+	// unique "create token". The controller will then first check if a record
+	// with the supplied token has already been created. The controller will
+	// determine the token field from the provided model using the
+	// "fire-idempotent-create" flag. It is recommended to add a unique index on
+	// the token field and also enable the soft delete mechanism to prevent
+	// duplicates if a short-lived record has already been deleted.
+	IdempotentCreate bool
+
+	// ConsistentUpdate can be set to true to enable the consistent update
+	// mechanism. When updating a resource, the client has to first load the most
+	// recent resource and retain the server generated "update token" and send
+	// it with the update in the defined update token field. The controller will
+	// then check if the stored record still has the same token. The controller
+	// will determine the token field from the provided model using the
+	// "fire-consistent-update" flag.
+	ConsistentUpdate bool
+
 	// SoftDelete can be set to true to enable the soft delete mechanism. If
 	// enabled, the controller will flag documents as deleted instead of
 	// immediately removing them. It will also exclude soft deleted documents
@@ -189,10 +208,25 @@ func (c *Controller) prepare() {
 
 	// check soft delete field
 	if c.SoftDelete {
-		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
-		field, _ := c.Model.Meta().Fields[softDeleteField]
-		if field.Type.String() != "*time.Time" {
-			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, softDeleteField, c.Model.Meta().Name))
+		fieldName := coal.L(c.Model, "fire-soft-delete", true)
+		if c.Model.Meta().Fields[fieldName].Type.String() != "*time.Time" {
+			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, fieldName, c.Model.Meta().Name))
+		}
+	}
+
+	// check idempotent create field
+	if c.IdempotentCreate {
+		fieldName := coal.L(c.Model, "fire-idempotent-create", true)
+		if c.Model.Meta().Fields[fieldName].Type.String() != "string" {
+			panic(fmt.Sprintf(`fire: idempotent create field "%s" for model "%s" is not of type "string"`, fieldName, c.Model.Meta().Name))
+		}
+	}
+
+	// check consistent update field
+	if c.ConsistentUpdate {
+		fieldName := coal.L(c.Model, "fire-consistent-update", true)
+		if c.Model.Meta().Fields[fieldName].Type.String() != "string" {
+			panic(fmt.Sprintf(`fire: consistent update field "%s" for model "%s" is not of type "string"`, fieldName, c.Model.Meta().Name))
 		}
 	}
 }
@@ -410,12 +444,46 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
-	// insert model
-	ctx.Tracer.Push("mongo/Collection.InsertOne")
-	ctx.Tracer.Tag("model", ctx.Model)
-	_, err := ctx.Store.C(ctx.Model).InsertOne(ctx.Session, ctx.Model)
-	stack.AbortIf(err)
-	ctx.Tracer.Pop()
+	// set initial update token if consistent update is enabled
+	if c.ConsistentUpdate {
+		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
+		ctx.Model.MustSet(consistentUpdateField, primitive.NewObjectID().Hex())
+	}
+
+	// check if idempotent create is enabled
+	if c.IdempotentCreate {
+		// get idempotent create field
+		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
+
+		// get supplied idempotent create token
+		idempotentCreateToken := ctx.Model.MustGet(idempotentCreateField).(string)
+		if idempotentCreateToken == "" {
+			stack.Abort(jsonapi.BadRequest("missing idempotent create token"))
+		}
+
+		// insert model
+		ctx.Tracer.Push("mongo/Collection.UpdateOne")
+		ctx.Tracer.Tag("model", ctx.Model)
+		res, err := ctx.Store.C(ctx.Model).UpdateOne(ctx.Session, bson.M{
+			coal.F(ctx.Model, idempotentCreateField): idempotentCreateToken,
+		}, bson.M{
+			"$setOnInsert": ctx.Model,
+		}, options.Update().SetUpsert(true))
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+
+		// fail if already existing
+		if res.MatchedCount != 0 {
+			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with same idempotent create token"))
+		}
+	} else {
+		// insert model
+		ctx.Tracer.Push("mongo/Collection.InsertOne")
+		ctx.Tracer.Tag("model", ctx.Model)
+		_, err := ctx.Store.C(ctx.Model).InsertOne(ctx.Session, ctx.Model)
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+	}
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -465,11 +533,75 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// load model
 	c.loadModel(ctx)
 
+	// get stored idempotent create token
+	var storedIdempotentCreateToken string
+	if c.IdempotentCreate {
+		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
+		storedIdempotentCreateToken = ctx.Model.MustGet(idempotentCreateField).(string)
+	}
+
+	// get and reset stored consistent update token
+	var storedConsistentUpdateToken string
+	if c.ConsistentUpdate {
+		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
+		storedConsistentUpdateToken = ctx.Model.MustGet(consistentUpdateField).(string)
+		ctx.Model.MustSet(consistentUpdateField, "")
+	}
+
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
 
-	// save model
-	c.updateModel(ctx)
+	// check if idempotent create token has been changed
+	if c.IdempotentCreate {
+		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
+		idempotentCreateToken := ctx.Model.MustGet(idempotentCreateField).(string)
+		if storedIdempotentCreateToken != idempotentCreateToken {
+			stack.Abort(jsonapi.BadRequest("idempotent create token cannot be changed"))
+		}
+	}
+
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+
+	// check if consistent update is enabled
+	if c.ConsistentUpdate {
+		// get consistency update field
+		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
+
+		// get consistent update token
+		consistentUpdateToken := ctx.Model.MustGet(consistentUpdateField).(string)
+		if consistentUpdateToken != storedConsistentUpdateToken {
+			stack.Abort(jsonapi.BadRequest("invalid consistent update token"))
+		}
+
+		// generate new update token
+		ctx.Model.MustSet(consistentUpdateField, primitive.NewObjectID().Hex())
+
+		// update model
+		ctx.Tracer.Push("mongo/Collection.UpdateOne")
+		ctx.Tracer.Tag("model", ctx.Model)
+		res, err := ctx.Store.C(ctx.Model).UpdateOne(ctx.Session, bson.M{
+			"_id":                                    ctx.Model.ID(),
+			coal.F(ctx.Model, consistentUpdateField): consistentUpdateToken,
+		}, bson.M{
+			"$set": ctx.Model,
+		})
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+
+		// fail if not updated
+		if res.ModifiedCount != 1 {
+			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with different consistent update token"))
+		}
+	} else {
+		// update model
+		ctx.Tracer.Push("mongo/Collection.ReplaceOne")
+		_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+			"_id": ctx.Model.ID(),
+		}, ctx.Model)
+		stack.AbortIf(err)
+		ctx.Tracer.Pop()
+	}
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -510,7 +642,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
-	// soft delete or remove model
+	// check if soft delete has been enabled
 	if c.SoftDelete {
 		// get soft delete field
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
@@ -834,6 +966,11 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.setRelationship")
 
+	// abort if consistent update is enabled
+	if c.ConsistentUpdate {
+		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+	}
+
 	// get relationship
 	rel := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || (!rel.ToOne && !rel.ToMany) {
@@ -854,8 +991,16 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// assign relationship
 	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc, rel)
 
-	// save model
-	c.updateModel(ctx)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+
+	// update model
+	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
+	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+		"_id": ctx.Model.ID(),
+	}, ctx.Model)
+	stack.AbortIf(err)
+	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -882,6 +1027,11 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.appendToRelationship")
+
+	// abort if consistent update is enabled
+	if c.ConsistentUpdate {
+		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+	}
 
 	// get relationship
 	rel := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
@@ -926,8 +1076,16 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 		ctx.Model.MustSet(rel.Name, ids)
 	}
 
-	// save model
-	c.updateModel(ctx)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+
+	// update model
+	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
+	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+		"_id": ctx.Model.ID(),
+	}, ctx.Model)
+	stack.AbortIf(err)
+	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -954,6 +1112,11 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
+
+	// abort if consistent update is enabled
+	if c.ConsistentUpdate {
+		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+	}
 
 	// get relationship
 	rel := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
@@ -1005,8 +1168,16 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 		}
 	}
 
-	// save model
-	c.updateModel(ctx)
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+
+	// update model
+	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
+	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+		"_id": ctx.Model.ID(),
+	}, ctx.Model)
+	stack.AbortIf(err)
+	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1438,25 +1609,6 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 		// set ids
 		ctx.Model.MustSet(field.Name, ids)
 	}
-
-	// finish trace
-	ctx.Tracer.Pop()
-}
-
-func (c *Controller) updateModel(ctx *Context) {
-	// begin trace
-	ctx.Tracer.Push("fire/Controller.updateModel")
-
-	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
-
-	// update model
-	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
-		"_id": ctx.Model.ID(),
-	}, ctx.Model)
-	stack.AbortIf(err)
-	ctx.Tracer.Pop()
 
 	// finish trace
 	ctx.Tracer.Pop()

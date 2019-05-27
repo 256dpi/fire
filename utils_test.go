@@ -40,9 +40,11 @@ type commentModel struct {
 }
 
 type selectionModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"selections:selections"`
-	Name      string               `json:"name"`
-	Posts     []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	coal.Base   `json:"-" bson:",inline" coal:"selections:selections"`
+	Name        string               `json:"name"`
+	CreateToken string               `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
+	UpdateToken string               `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
+	Posts       []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
 type noteModel struct {

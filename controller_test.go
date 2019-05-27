@@ -3858,6 +3858,325 @@ func TestSoftDelete(t *testing.T) {
 	// TODO: Test has one and has many relationships.
 }
 
+func TestIdempotentCreate(t *testing.T) {
+	tester.Clean()
+
+	// missing field on model
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-idempotent-create" on "fire.missingIdempotentCreateField"`, func() {
+		type missingIdempotentCreateField struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:            &missingIdempotentCreateField{},
+			IdempotentCreate: true,
+		})
+	})
+
+	// invalid field type
+	assert.PanicsWithValue(t, `fire: idempotent create field "Foo" for model "fire.invalidIdempotentCreateFieldType" is not of type "string"`, func() {
+		type invalidIdempotentCreateFieldType struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+			Foo       int `coal:"fire-idempotent-create"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:            &invalidIdempotentCreateFieldType{},
+			IdempotentCreate: true,
+		})
+	})
+
+	group := tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model:            &selectionModel{},
+		Store:            tester.Store,
+		IdempotentCreate: true,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	group.Reporter = nil
+
+	// missing create token
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {
+				"name": "test"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "400",
+					"title": "Bad Request",
+					"detail": "missing idempotent create token"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	var id string
+
+	// create selection
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {
+				"name": "Selection 1",
+				"create-token": "foo123"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		selection := tester.FindLast(&selectionModel{})
+		id = selection.ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "selections",
+				"id": "`+id+`",
+				"attributes": {
+					"name": "Selection 1",
+					"create-token": "foo123"
+				},
+				"relationships": {
+					"posts": {
+						"data": [],
+						"links": {
+							"self": "/selections/`+id+`/relationships/posts",
+							"related": "/selections/`+id+`/posts"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/selections/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to create duplicate
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {
+				"name": "Selection 1",
+				"create-token": "foo123"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusConflict, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "409",
+					"title": "Conflict",
+					"detail": "existing document with same idempotent create token"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// attempt to change create token
+	tester.Request("PATCH", "selections/"+id, `{
+		"data": {
+			"type": "selections",
+			"id": "`+id+`",
+			"attributes": {
+				"create-token": "bar456"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "400",
+					"title": "Bad Request",
+					"detail": "idempotent create token cannot be changed"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
+func TestEnsureConsistency(t *testing.T) {
+	tester.Clean()
+
+	// missing field on model
+	assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-consistent-update" on "fire.missingConsistentUpdateField"`, func() {
+		type missingConsistentUpdateField struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:            &missingConsistentUpdateField{},
+			ConsistentUpdate: true,
+		})
+	})
+
+	// invalid field type
+	assert.PanicsWithValue(t, `fire: consistent update field "Foo" for model "fire.invalidConsistentUpdateFieldType" is not of type "string"`, func() {
+		type invalidConsistentUpdateFieldType struct {
+			coal.Base `json:"-" bson:",inline" coal:"models"`
+			Foo       int `coal:"fire-consistent-update"`
+		}
+
+		tester.Assign("", &Controller{
+			Model:            &invalidConsistentUpdateFieldType{},
+			ConsistentUpdate: true,
+		})
+	})
+
+	group := tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model:            &selectionModel{},
+		Store:            tester.Store,
+		ConsistentUpdate: true,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	group.Reporter = nil
+	group.Reporter = func(e error) {
+		println(e.Error())
+	}
+
+	var id string
+	var selection *selectionModel
+
+	// create selection
+	tester.Request("POST", "selections", `{
+		"data": {
+			"type": "selections",
+			"attributes": {
+				"name": "Selection 1"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		selection = tester.FindLast(&selectionModel{}).(*selectionModel)
+		id = selection.ID().Hex()
+
+		assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "selections",
+				"id": "`+id+`",
+				"attributes": {
+					"name": "Selection 1",
+					"update-token": "`+selection.UpdateToken+`"
+				},
+				"relationships": {
+					"posts": {
+						"data": [],
+						"links": {
+							"self": "/selections/`+id+`/relationships/posts",
+							"related": "/selections/`+id+`/posts"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/selections/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// missing update token
+	tester.Request("PATCH", "selections/"+id, `{
+		"data": {
+			"type": "selections",
+			"id": "`+id+`",
+			"attributes": {}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "400",
+					"title": "Bad Request",
+					"detail": "invalid consistent update token"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// invalid update token
+	tester.Request("PATCH", "selections/"+id, `{
+		"data": {
+			"type": "selections",
+			"id": "`+id+`",
+			"attributes": {
+				"update-token": "bar123"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"errors": [
+				{
+					"status": "400",
+					"title": "Bad Request",
+					"detail": "invalid consistent update token"
+				}
+			]
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
+	// update selection
+	tester.Request("PATCH", "selections/"+id, `{
+		"data": {
+			"type": "selections",
+			"id": "`+id+`",
+			"attributes": {
+				"update-token": "`+selection.UpdateToken+`"
+			}
+		}
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		selection = tester.FindLast(&selectionModel{}).(*selectionModel)
+
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": {
+				"type": "selections",
+				"id": "`+id+`",
+				"attributes": {
+					"name": "Selection 1",
+					"update-token": "`+selection.UpdateToken+`"
+				},
+				"relationships": {
+					"posts": {
+						"data": [],
+						"links": {
+							"self": "/selections/`+id+`/relationships/posts",
+							"related": "/selections/`+id+`/posts"
+						}
+					}
+				}
+			},
+			"links": {
+				"self": "/selections/`+id+`"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+}
+
 func TestUseTransactions(t *testing.T) {
 	tester.Clean()
 
