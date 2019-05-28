@@ -58,14 +58,14 @@ type Controller struct {
 	Sorters []string
 
 	// Authorizers authorize the requested operation on the requested resource
-	// and are run before any models are loaded from the DB. Returned errors
+	// and are run before any models are loaded from the store. Returned errors
 	// will cause the abortion of the request with an unauthorized status by
 	// default.
 	//
 	// The callbacks are expected to return an error if the requester should be
-	// informed about him being unauthorized to access the resource, or add
-	// filters to the context to only return accessible resources. The later
-	// improves privacy as a protected resource would appear as being not found.
+	// informed about being unauthorized to access the resource, or add filters
+	// to the context to only return accessible resources. The later improves
+	// privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
 
 	// Validators are run to validate Create, Update and Delete operations
@@ -111,9 +111,9 @@ type Controller struct {
 
 	// CollectionActions and ResourceActions are custom actions that are run
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
-	// "posts/1/recover-password"). The request context is forwarded to
-	// the specified callback after running the authorizers. No validators and
-	// notifiers are run for the request.
+	// "users/1/recover-password"). The request context is forwarded to
+	// the specified callback after running the authorizers. No validators,
+	// notifiers and decorators are run for the request.
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
