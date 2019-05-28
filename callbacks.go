@@ -86,10 +86,6 @@ func Except(ops ...Operation) Matcher {
 }
 
 // A Callback is called during the request processing flow of a controller.
-//
-// Note: If the callback returns an error wrapped using Fatal() the API returns
-// an InternalServerError status and the error will be logged. All other errors
-// are serialized to an error object and returned.
 type Callback struct {
 	// The matcher that decides whether the callback should be run.
 	Matcher Matcher
