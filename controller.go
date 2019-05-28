@@ -83,13 +83,13 @@ type Controller struct {
 	// Decorators are run after the models or model have been loaded from the
 	// database for List and Find operations or the model has been saved or
 	// updated for Create and Update operations. Returned errors will cause the
-	// abortion of the request with an Internal Server Error status by default.
+	// abortion of the request with an InternalServerError status by default.
 	Decorators []*Callback
 
 	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
 	// about the applied changes. Returned errors will cause the abortion of the
-	// request with an Internal Server Error status by default.
+	// request with an InternalServerError status by default.
 	Notifiers []*Callback
 
 	// NoList can be set to true if the resource is only listed through
