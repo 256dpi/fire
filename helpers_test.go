@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -117,4 +118,50 @@ func TestLimitBody(t *testing.T) {
 	bytes, err := ioutil.ReadAll(r.Body)
 	assert.Error(t, err)
 	assert.Equal(t, "hello", string(bytes))
+}
+
+func TestAssetServer(t *testing.T) {
+	as1 := AssetServer("/", "../.test/assets/")
+
+	testRequest(as1, "GET", "/", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+
+	testRequest(as1, "GET", "/foo", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+
+	testRequest(as1, "GET", "/foo/bar", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+
+	as2 := AssetServer("/foo/", "../.test/assets/")
+
+	testRequest(as2, "GET", "/foo/", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+
+	testRequest(as2, "GET", "/foo/foo", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+
+	testRequest(as2, "GET", "/foo/bar", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, 200, r.Code)
+		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
+	})
+}
+
+func TestErrorReporter(t *testing.T) {
+	buf := new(bytes.Buffer)
+	reporter := ErrorReporter(buf)
+
+	reporter(errors.New("foo"))
+	assert.Contains(t, buf.String(), "===> Begin Error: foo\n")
+	assert.Contains(t, buf.String(), "github.com/256dpi/fire/wood.TestReporter")
+	assert.Contains(t, buf.String(), "<=== End Error\n")
 }

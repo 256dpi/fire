@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
 // Map is a general purpose type to represent a map.
@@ -153,5 +155,44 @@ func LimitBody(w http.ResponseWriter, r *http.Request, n int64) {
 	r.Body = &bodyLimiter{
 		Original:   r.Body,
 		ReadCloser: http.MaxBytesReader(w, r.Body, n),
+	}
+}
+
+// AssetServer constructs an asset server handler that serves an asset
+// directory on a specified path and serves the index file for not found paths
+// which is needed to run single page applications like Ember.
+func AssetServer(prefix, directory string) http.Handler {
+	// ensure prefix
+	prefix = "/" + strings.Trim(prefix, "/")
+
+	// create dir server
+	dir := http.Dir(directory)
+
+	// create file server
+	fs := http.FileServer(dir)
+
+	h := func(w http.ResponseWriter, r *http.Request) {
+		// pre-check if file does exist
+		f, err := dir.Open(r.URL.Path)
+		if err != nil {
+			r.URL.Path = "/"
+		} else if f != nil {
+			_ = f.Close()
+		}
+
+		// serve file
+		fs.ServeHTTP(w, r)
+	}
+
+	return http.StripPrefix(prefix, http.HandlerFunc(h))
+}
+
+// ErrorReporter returns a very basic reporter that writes errors and stack
+// traces to the specified writer.
+func ErrorReporter(out io.Writer) func(error) {
+	return func(err error) {
+		_, _ = fmt.Fprintf(out, "===> Begin Error: %s\n", err.Error())
+		_, _ = out.Write(debug.Stack())
+		_, _ = fmt.Fprintln(out, "<=== End Error")
 	}
 }

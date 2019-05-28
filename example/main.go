@@ -18,7 +18,6 @@ import (
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/spark"
-	"github.com/256dpi/fire/wood"
 )
 
 var port = getEnv("PORT", "8000")
@@ -110,7 +109,7 @@ func prepareDatabase(store *coal.Store) error {
 
 func createHandler(store *coal.Store) http.Handler {
 	// create reporter
-	reporter := wood.DefaultErrorReporter()
+	reporter := fire.ErrorReporter(os.Stderr)
 
 	// create mux
 	mux := http.NewServeMux()
