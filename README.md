@@ -54,14 +54,14 @@ A basic declaration of models looks like the following example for a blog system
 
 ```go
 type Post struct {
-	fire.Base  `json:"-" bson:",inline" coal:"posts"`
+	coal.Base  `json:"-" bson:",inline" coal:"posts"`
 	Title      string        `json:"title" bson:"title"`
 	TextBody   string        `json:"text-body" bson:"text_body"`
-	Comments   fire.HasMany  `json:"-" bson:"-" coal:"comments:comments:post"`
+	Comments   coal.HasMany  `json:"-" bson:"-" coal:"comments:comments:post"`
 }
 
 type Comment struct {
-	fire.Base  `json:"-" bson:",inline" coal:"comments"`
+	coal.Base  `json:"-" bson:",inline" coal:"comments"`
 	Message    string         `json:"message"`
 	Parent     *bson.ObjectId `json:"-" coal:"parent:comments"`
 	PostID     bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
