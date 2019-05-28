@@ -1,9 +1,6 @@
 package wood
 
 import (
-	"bytes"
-	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -24,10 +21,4 @@ func testRequest(h http.Handler, method, path string, headers map[string]string,
 	h.ServeHTTP(w, r)
 
 	callback(w, r)
-}
-
-func randomReader(size int) io.Reader {
-	b := make([]byte, size)
-	rand.Read(b)
-	return bytes.NewReader(b)
 }

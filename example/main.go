@@ -56,19 +56,19 @@ func main() {
 		panic("secret must be at least 16 characters")
 	}
 
-	// create protector
-	protector := wood.NewProtector("32M", cors.Options{
+	// prepare cors options
+	corsOptions := cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedHeaders: []string{"Origin", "Accept", "Content-Type",
 			"Authorization", "Cache-Control", "X-Requested-With"},
 		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE"},
-	})
+	}
 
 	// compose handler
 	handler := fire.Compose(
 		flame.TokenMigrator(true),
 		fire.RootTracer(),
-		protector,
+		cors.New(corsOptions).Handler,
 		createHandler(store),
 	)
 
