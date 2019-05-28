@@ -106,6 +106,127 @@ The JSON API is now available at `http://0.0.0.0:4000/api` and ready to be integ
 
 Go on Fire provides various advanced features to hook into the request processing flow and adds for example authentication or more complex validation of models. Please read the following documentation carefully to get an overview of all available features.
 
+## Models
+
+Go on Fire implements a small introspection library that is able to infer all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `coal` struct tag that is used to declare to-one, to-many and has-many relationships.
+
+### Basics
+
+The [`Base`](https://godoc.org/github.com/256dpi/fire/coal#Base) struct has to be embedded in every Go on Fire model as it holds the document id and defines the models plural name and collection via the `coal:"plural-name[:collection]"` struct tag:
+
+```go
+type Post struct {
+    coal.Base `json:"-" bson:",inline" coal:"posts"`
+    // ...
+}
+```
+
+- If the collection is not explicitly set the plural name is used instead.
+- The plural name of the model is also the type for to-one, to-many and has-many relationships.
+
+Note: Ember Data requires you to use dashed names for multi-word model names like `blog-posts`.
+
+All other fields of a struct are treated as attributes except for relationships (more on that later):
+
+```go
+type Post struct {
+    // ...
+    Title    string `json:"title" bson:"title"`
+    TextBody string `json:"text-body" bson:"text_body"`
+    // ...
+}
+```
+
+- Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
+- The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty" bson:"-"`.
+- The `coal` tag may used on fields to tag them with custom and builtin tags.
+
+Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`.
+
+### Helpers
+
+The [`ID`](https://godoc.org/github.com/256dpi/fire/coal#Base.ID) method can be used to get the document id:
+
+```go
+post.ID()
+```
+
+The [`MustGet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustGet) and [`MustSet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustSet) method can be used to get and set any field on the model:
+
+```go
+title := post.MustGet("title")
+post.MustSet("title", "New Title")
+```
+
+- Both methods use the field name e.g. `TextBody` to find the value and panic if no matching field is found.
+- Calling [`MustSet`](https://godoc.org/github.com/256dpi/fire#Base.MustSet) with a different type than the field causes a panic.
+
+### Meta
+
+All parsed information from the model struct and its tags is saved to the [`Meta`](https://godoc.org/github.com/256dpi/fire/coal#Meta) struct that can be accessed using the [`Meta`](https://godoc.org/github.com/256dpi/fire/coal#Base.Meta) method:
+
+```go
+post.Meta().Name
+post.Meta().PluralName
+post.Meta().Collection
+post.Meta().Fields
+post.Meta().OrderedFields
+post.Meta().DatabaseFields
+post.Meta().Attributes
+post.Meta().Relationships
+post.Meta().FlaggedFields
+```
+
+### To-One Relationships
+
+Fields of the type `primitive.ObjectID` or `*primitive.ObjectID` can be marked as to-one relationships using the `coal:"name:type"` struct tag:
+
+```go
+type Comment struct {
+	// ...
+	Post primitive.ObjectID `json:"-" bson:"post_id" coal:"post:posts"`
+    // ...
+}
+```
+
+- Fields of the type `*primitive.ObjectID` are treated as optional relationships
+
+Note: To-one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag.
+
+Note: Ember Data requires you to use dashed names for multi-word relationship names like `last-posts`.
+
+### To-Many Relationships
+
+Fields of the type `[]primitive.ObjectID` can be marked as to-many relationships using the `coal:"name:type"` struct tag:
+
+```go
+type Selection struct {
+    // ...
+	Posts []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	// ...
+}
+```
+
+Note: To-many relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag.
+
+Note: Ember Data requires you to use dashed names for multi-word relationship names like `favorited-posts`.
+
+### Has-Many Relationships
+
+Fields that have a `HasMany` as their type define the inverse of a to-one relationship and require the `coal:"name:type:inverse"` struct tag:
+
+```go
+type Post struct {
+    // ...
+	Comments coal.HasMany `json:"-" bson:"-" coal:"comments:comments:post"`
+	// ...
+}
+```
+
+Note: Ember Data requires you to use dashed names for multi-word relationship names like `authored-posts`.
+
+Note: These fields should have the `json:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
+
 ## License
 
 The MIT License (MIT)
