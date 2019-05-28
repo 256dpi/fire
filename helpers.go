@@ -2,6 +2,7 @@ package fire
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -132,4 +133,25 @@ func Intersect(listA, listB []string) []string {
 	}
 
 	return list
+}
+
+type bodyLimiter struct {
+	io.ReadCloser
+	Original io.ReadCloser
+}
+
+// LimitBody will limit reading from the body of the supplied request to the
+// specified amount of bytes. Earlier calls to LimitBody will be overwritten
+// which essentially allows callers to increase the limit from a default limit.
+func LimitBody(w http.ResponseWriter, r *http.Request, n int64) {
+	// get original body from existing limiter
+	if bl, ok := r.Body.(*bodyLimiter); ok {
+		r.Body = bl.Original
+	}
+
+	// set new limiter
+	r.Body = &bodyLimiter{
+		Original:   r.Body,
+		ReadCloser: http.MaxBytesReader(w, r.Body, n),
+	}
 }
