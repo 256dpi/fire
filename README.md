@@ -16,6 +16,20 @@ The deliberate and tight integration of these components provides a very simple 
 
 To quickly get started with building an API with Go on Fire follow the [quickstart guide](https://github.com/256dpi/fire#quickstart), read the detailed sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
 
+## Features
+
+Go on Fire ships with builtin support for various features to also provide a complete toolkit for advanced projects:
+
+- Declarative definition of models and resource controllers.
+- Custom group, collection and resource actions.
+- Builtin validators incl. automatic relationship validation.
+- Callback based plugin system for easy extendability.
+- Integrated asynchronous and distributed job queuing system.
+- Event sourcing via SSE and WebSockets.
+- Declarative authentication and authorization framework.
+- Integrated OAuth2 authenticator and authorizer.
+- Support for tracing via [opentracing](https://opentracing.io).
+
 ## Example
 
 The [example](https://github.com/256dpi/fire/tree/master/example) application implements an API will all Go on Fire features.
