@@ -62,9 +62,9 @@ type Post struct {
 
 type Comment struct {
 	coal.Base  `json:"-" bson:",inline" coal:"comments"`
-	Message    string         `json:"message"`
-	Parent     *bson.ObjectId `json:"-" coal:"parent:comments"`
-	PostID     bson.ObjectId  `json:"-" bson:"post_id" coal:"post:posts"`
+	Message    string              `json:"message"`
+	Parent     *primitive.ObjectID `json:"-" coal:"parent:comments"`
+	PostID     primitive.ObjectID  `json:"-" bson:"post_id" coal:"post:posts"`
 }
 ```
 
@@ -138,7 +138,8 @@ type Post struct {
 ```
 
 - Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
-- The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`. Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty" bson:"-"`.
+- The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`.
+- Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty" bson:"-"`.
 - The `coal` tag may used on fields to tag them with custom and builtin tags.
 
 Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`.
