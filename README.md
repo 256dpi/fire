@@ -227,6 +227,100 @@ Note: Ember Data requires you to use dashed names for multi-word relationship na
 
 Note: These fields should have the `json:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
+## Controllers
+
+Go on Fire implements the JSON API specification and provides the management of the previously declared models via a set of controllers that are combined to a group which provides the necessary interconnection between resources.
+
+Controllers are declared by creating a [`Controller`](https://godoc.org/github.com/256dpi/fire#Controller) and providing a reference to the model and a store:
+
+```go
+postsController := &fire.Controller{
+    Model: &Post{},
+    Store: store,
+    // ...
+}
+```
+
+### Groups
+
+Controller groups provide the necessary interconnection and integration between controllers. A [`Group`](https://godoc.org/github.com/256dpi/fire#Group) can be created by calling [`NewGroup`](https://godoc.org/github.com/256dpi/fire#NewGroup) while controllers are added using [`Add`](https://godoc.org/github.com/256dpi/fire#Group.Add):
+
+```go
+group := fire.NewGroup()
+
+group.Add(postsController)
+group.Add(commentsController)
+````
+
+### Filtering & Sorting
+
+To enable the built-in support for filtering and sorting via the JSON API specification you need to specify the allowed fields for each feature:
+
+```go
+postsController := &fire.Controller{
+    // ...
+    Filters: []string{"Title", "Published"},
+    Sorters: []string{"Title"},
+    // ...
+}
+```
+
+Filters can be activated using the `/posts?filter[published]=true` query parameter while the sorting can be specified with the `/posts?sort=created-at` (ascending) or `/posts?sort=-created-at` (descending) query parameter.
+
+Note: `true` and `false` are automatically converted to boolean values if the field has the `bool` type.
+
+More information about filtering and sorting can be found in the [JSON API Spec](http://jsonapi.org/format/#fetching-sorting).
+
+### Sparse Fieldsets
+
+Sparse Fieldsets are automatically supported on all responses an can be activated using the `/posts?fields[posts]=bar` query parameter.
+
+More information about sparse fieldsets can be found in the [JSON API Spec](http://jsonapi.org/format/#fetching-sparse-fieldsets).
+
+### Callbacks
+
+Controllers support the definition of multiple callbacks that are called while processing the requests:
+
+```go
+postsController := &fire.Controller{
+    // ...
+    Authorizers: []fire.Callback{
+        fire.C("MyAuthorizer", fire.All(), func(ctx *fire.Context) error {
+            // ...
+        }),
+        // ...
+    },
+    Validators: []fire.Callback{
+        fire.C("MyValidator", fire.All(), func(ctx *fire.Context) error {
+            // ...
+        }),
+        // ...
+    },
+}
+```
+
+The [`Authorizer`](https://godoc.org/github.com/256dpi/fire#Callback) callbacks are run after inferring all available data from the request and are therefore perfectly suited to do a general user authentication. The [`Validator`](https://godoc.org/github.com/256dpi/fire#Callback) callbacks are only run before creating, updating or deleting a model and are ideal to protect resources from certain actions.
+
+Errors returned by the callbacks are serialize to an JSON API compliant error object and yield an "unauthorized" status code from an authorizer and a "bad request" status code from a validator.
+
+### Safe Errors
+
+If errors are marked as [`Safe`](https://godoc.org/github.com/256dpi/fire#Safe) or constructed using the [`E`](https://godoc.org/github.com/256dpi/fire#E) helper, the error message is serialized and returned in the JSON-API error response:
+
+### Built-in Callbacks
+
+Fire ships with several built-in callbacks that implement common concerns:
+
+- [Basic Authorizer](https://godoc.org/github.com/256dpi/fire#BasicAuthorizer)
+- [Model Validator](https://godoc.org/github.com/256dpi/fire#ModelValidator)
+- [Protected Fields Validator](https://godoc.org/github.com/256dpi/fire#ProtectedFieldsValidator)
+- [Dependent Resources Validator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
+- [Referenced Resources Validator](https://godoc.org/github.com/256dpi/fire#ReferencedResourcesValidator)
+- [Matching References Validator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)
+- [Unique Field Validator](https://godoc.org/github.com/256dpi/fire#UniqueFieldValidator)
+- [Relationship Validator](https://godoc.org/github.com/256dpi/fire#RelationshipValidator)
+- [Timestamp Validator](https://godoc.org/github.com/256dpi/fire#TimestampValidator)
+
 ## License
 
 The MIT License (MIT)
