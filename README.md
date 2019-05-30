@@ -321,6 +321,71 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [Relationship Validator](https://godoc.org/github.com/256dpi/fire#RelationshipValidator)
 - [Timestamp Validator](https://godoc.org/github.com/256dpi/fire#TimestampValidator)
 
+## Authenticator
+
+The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) sub package implements the OAuth2 specification and provides the Resource Owner Password, Client Credentials and Implicit grant. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
+
+Every authenticator needs a [`Policy`](https://godoc.org/github.com/256dpi/fire/flame#Policy) that describes how the authentication is enforced. A basic policy can be created and extended using [`DefaultPolicy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultPolicy):
+
+```go
+policy := flame.DefaultPolicy("a-very-long-secret")
+policy.PasswordGrant = true
+```
+
+- The default policy uses the built-in [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token), [`User`](https://godoc.org/github.com/256dpi/fire/flame#User) and [`Application`](https://godoc.org/github.com/256dpi/fire/flame#Application) model and the [`DefaultGrantStrategy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultGrantStrategy).
+
+An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator) is created by specifying the policy and store. After that, it can be mounted and served using for example the built-in http package:
+
+```go
+authenticator := flame.NewAuthenticator(store, policy)
+
+http.Handle("/auth/", authenticator.Endpoint("/auth/"))
+```
+
+More information about OAuth2 flows can be found [here](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2).
+
+### Scope
+
+The default grant strategy grants the requested scope if the client satisfies the scope. However, most applications want to grant the scope based on client types and owner roles. A custom grant strategy can be implemented by setting a different `GrantStrategy`.
+
+The following example callback grants the `default` scope and additionally the `admin` scope if the user has the admin flag set:
+ 
+```go
+policy.GrantStrategy = func(scope oauth2.Scope, client flame.Client, ro flame.ResourceOwner) (oauth2.Scope, error) {
+    list := oauth2.Scope{"default"}
+    
+    if ro != nil && ro.(*User).Admin {
+        list = append(list, "admin")
+    }
+
+    return list, nil
+}
+```
+
+### Authorization
+
+The authenticator can be used to authorize access to JSON API resources by using the  [`Callback`](https://godoc.org/github.com/256dpi/fire/flame#Callback) with a scope that must have been granted:
+
+```go
+postsController := &fire.Controller{
+    // ...
+    Authorizers: []fire.Callback{
+        flame.Callback(true, "admin"),
+        // ...
+    },
+    // ...
+}
+```
+
+- The authorizer will assign the authorized [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token) to the context using the [`AccessTokenContextKey`](https://godoc.org/github.com/256dpi/fire/flame#AccessTokenContextKey) key.
+
+## Tools
+
+Go on Fire ships with a selection of built-in tools that provide common functionality used by many applications:
+
+- [Asset Server](https://godoc.org/github.com/256dpi/fire#AssetServer)
+- [Error Reporter](https://godoc.org/github.com/256dpi/fire#ErrorReporter)
+
 ## License
 
 The MIT License (MIT)
