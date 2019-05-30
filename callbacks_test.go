@@ -200,10 +200,10 @@ func TestDependentResourcesValidatorSoftDelete(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestVerifyReferencesValidatorToOne(t *testing.T) {
+func TestReferencedResourcesValidatorToOne(t *testing.T) {
 	tester.Clean()
 
-	validator := VerifyReferencesValidator(map[string]coal.Model{
+	validator := ReferencedResourcesValidator(map[string]coal.Model{
 		"Bar":    &barModel{},
 		"OptBar": &barModel{},
 		"Bars":   &barModel{},
@@ -281,7 +281,7 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestRelationshipValidatorVerifyReferences(t *testing.T) {
+func TestRelationshipValidatorReferencedResources(t *testing.T) {
 	tester.Clean()
 
 	catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})

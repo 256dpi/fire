@@ -231,14 +231,14 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 }
 
 // DependentResourcesValidator counts related documents and returns an error if
-// some get found. This callback is meant to protect resources from breaking
+// some are found. This callback is meant to protect resources from breaking
 // relations when requested to be deleted.
 //
 // Dependent resources are defined by passing pairs of models and fields that
 // reference the current model.
 //
 //	fire.DependentResourcesValidator(map[coal.Model]string{
-//		&Post{}: "Author",
+//		&Post{}:    "Author",
 //		&Comment{}: "Author",
 //	})
 //
@@ -275,20 +275,20 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 	})
 }
 
-// VerifyReferencesValidator makes sure all references in the document are
-// existing by counting the references on the related collections.
+// ReferencedResourcesValidator makes sure all references in the document are
+// existing by counting the referenced documents.
 //
 // References are defined by passing pairs of fields and models who might be
 // referenced by the current model:
 //
-//	fire.VerifyReferencesValidator(map[string]coal.Model{
-//		"Post": &Post{},
+//	fire.ReferencedResourcesValidator(map[string]coal.Model{
+//		"Post":   &Post{},
 //		"Author": &User{},
 //	})
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
-func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
-	return C("fire/VerifyReferencesValidator", Only(Create, Update), func(ctx *Context) error {
+func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
+	return C("fire/ReferencedResourcesValidator", Only(Create, Update), func(ctx *Context) error {
 		// check all references
 		for field, collection := range pairs {
 			// read referenced id
@@ -352,7 +352,7 @@ func VerifyReferencesValidator(pairs map[string]coal.Model) *Callback {
 
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by combining a DependentResourcesValidator and a
-// VerifyReferencesValidator based on the specified model and catalog.
+// ReferencedResourcesValidator based on the specified model and catalog.
 func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) *Callback {
 	// prepare lists
 	dependentResources := make(map[coal.Model]string)
@@ -403,7 +403,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 
 	// create callbacks
 	cb1 := DependentResourcesValidator(dependentResources)
-	cb2 := VerifyReferencesValidator(references)
+	cb2 := ReferencedResourcesValidator(references)
 
 	return C("RelationshipValidator", func(ctx *Context) bool {
 		return cb1.Matcher(ctx) || cb2.Matcher(ctx)
