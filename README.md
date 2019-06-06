@@ -255,32 +255,17 @@ Controllers support the definition of multiple callbacks that are called while p
 ```go
 postsController := &fire.Controller{
     // ...
-    Authorizers: []fire.Callback{
-        fire.C("MyAuthorizer", fire.All(), func(ctx *fire.Context) error {
-            // ...
-        }),
-        // ...
-    },
-    Validators: []fire.Callback{
-        fire.C("MyValidator", fire.All(), func(ctx *fire.Context) error {
-            // ...
-        }),
-        // ...
-    },
+    Authorizers: []fire.Callback{},
+    Validators: []fire.Callback{},
+    Decorators: []fire.Callack{},
+    Notifiers:  []fire.Callback{},
+    // ...
 }
 ```
 
-The [`Authorizer`](https://godoc.org/github.com/256dpi/fire#Callback) callbacks are run after inferring all available data from the request and are therefore perfectly suited to do a general user authentication. The [`Validator`](https://godoc.org/github.com/256dpi/fire#Callback) callbacks are only run before creating, updating or deleting a model and are ideal to protect resources from certain actions.
+The [`Authorizers`](https://godoc.org/github.com/256dpi/fire#Controller.Authorizers) are run after inferring all available data from the request and are therefore perfectly suited to do a general user authentication. The [`Validators`](https://godoc.org/github.com/256dpi/fire#Controller.Validators) are only run before creating, updating or deleting a model and are ideal to protect resources from certain actions. The [`Decorators`](https://godoc.org/github.com/256dpi/fire#Controller.Decorators) are run after the models or model have been loaded from the database or the model has been saved or updated. Finally, the [`Notifiers`]() are run before the final response is written to the client. Errors returned by the callbacks are serialize to an JSON API compliant error object and yield a status code appropriate to the class of callback.
 
-Errors returned by the callbacks are serialize to an JSON API compliant error object and yield an "unauthorized" status code from an authorizer and a "bad request" status code from a validator.
-
-### Safe Errors
-
-If errors are marked as [`Safe`](https://godoc.org/github.com/256dpi/fire#Safe) or constructed using the [`E`](https://godoc.org/github.com/256dpi/fire#E) helper, the error message is serialized and returned in the JSON-API error response:
-
-### Built-in Callbacks
-
-Fire ships with several built-in callbacks that implement common concerns:
+Go on Fire ships with several built-in callbacks that implement common concerns:
 
 - [Basic Authorizer](https://godoc.org/github.com/256dpi/fire#BasicAuthorizer)
 - [Model Validator](https://godoc.org/github.com/256dpi/fire#ModelValidator)
@@ -291,6 +276,20 @@ Fire ships with several built-in callbacks that implement common concerns:
 - [Unique Field Validator](https://godoc.org/github.com/256dpi/fire#UniqueFieldValidator)
 - [Relationship Validator](https://godoc.org/github.com/256dpi/fire#RelationshipValidator)
 - [Timestamp Validator](https://godoc.org/github.com/256dpi/fire#TimestampValidator)
+
+Custom callbacks can be created using the [`C`](https://godoc.org/github.com/256dpi/fire#C) helper:
+
+```go
+fire.C("MyAuthorizer", fire.All(), func(ctx *fire.Context) error {
+    // ...
+}),
+```
+
+- The first argument is the name of the callback (this is used to augment the tracing spans).
+- The second argument is the matcher that decides for which operations the callback is executed.
+- The third argument is the function of the callback that receives the current request context.
+
+If returned errors from callbacks are marked as [`Safe`](https://godoc.org/github.com/256dpi/fire#Safe) or constructed using the [`E`](https://godoc.org/github.com/256dpi/fire#E) helper, the error message is serialized and returned in the JSON-API error response.
 
 ## Authenticator
 
