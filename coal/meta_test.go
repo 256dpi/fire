@@ -8,13 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestNewMeta(t *testing.T) {
+func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base""`, func() {
 		type m struct {
 			Base
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base""`, func() {
@@ -22,7 +22,7 @@ func TestNewMeta(t *testing.T) {
 			Base `json:"-"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base""`, func() {
@@ -31,7 +31,7 @@ func TestNewMeta(t *testing.T) {
 			Foo  string `json:"foo"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected an embedded "coal.Base" as the first struct field`, func() {
@@ -40,7 +40,7 @@ func TestNewMeta(t *testing.T) {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
@@ -49,7 +49,7 @@ func TestNewMeta(t *testing.T) {
 			Foo  primitive.ObjectID `coal:"foo:foo:foo"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
@@ -58,7 +58,7 @@ func TestNewMeta(t *testing.T) {
 			Foo  []primitive.ObjectID `coal:"foo:foo:foo"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-one relationship`, func() {
@@ -67,7 +67,7 @@ func TestNewMeta(t *testing.T) {
 			Foo  HasOne
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`, func() {
@@ -76,7 +76,7 @@ func TestNewMeta(t *testing.T) {
 			Foo  HasMany
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	//assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
@@ -86,7 +86,7 @@ func TestNewMeta(t *testing.T) {
 	//		Text2 string `json:"text"`
 	//	}
 	//
-	//	NewMeta(&m{})
+	//	GetMeta(&m{})
 	//})
 
 	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
@@ -96,7 +96,7 @@ func TestNewMeta(t *testing.T) {
 			Text2 string `bson:"text"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 
 	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
@@ -106,7 +106,7 @@ func TestNewMeta(t *testing.T) {
 			Parent2 primitive.ObjectID `coal:"parent:parents"`
 		}
 
-		NewMeta(&m{})
+		GetMeta(&m{})
 	})
 }
 
@@ -343,15 +343,15 @@ func TestMetaSpecial(t *testing.T) {
 		Foo  string `json:",omitempty" bson:",omitempty"`
 	}
 
-	meta := NewMeta(&m{})
+	meta := GetMeta(&m{})
 
 	assert.Equal(t, "Foo", meta.Fields["Foo"].JSONKey)
 	assert.Equal(t, "foo", meta.Fields["Foo"].BSONField)
 }
 
-func BenchmarkNewMeta(b *testing.B) {
+func BenchmarkGewMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		NewMeta(&postModel{})
+		GetMeta(&postModel{})
 		delete(metaCache, "coal.postModel")
 	}
 }

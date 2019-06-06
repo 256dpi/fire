@@ -96,10 +96,10 @@ type Meta struct {
 	model Model
 }
 
-// NewMeta returns the Meta structure for the passed Model.
+// GetMeta returns the Meta structure for the passed Model.
 //
 // Note: This method panics if the passed Model has invalid fields and tags.
-func NewMeta(model Model) *Meta {
+func GetMeta(model Model) *Meta {
 	// acquire mutex
 	metaCacheMutex.Lock()
 	defer metaCacheMutex.Unlock()

@@ -98,5 +98,5 @@ func (b *Base) initialize(model Model) {
 	}
 
 	// assign meta
-	b.meta = NewMeta(model)
+	b.meta = GetMeta(model)
 }
