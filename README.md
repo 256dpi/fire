@@ -324,9 +324,18 @@ postsController := &fire.Controller{
 
 The `fire` package offers the following advanced features:
 
-- [`Compose`] creats compositions of HTTP middlewares and handlers.
+- [`NoList`](https://godoc.org/github.com/256dpi/fire#Controller.NoList): disables resource listing.
+- [`ListLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): enforces pagination of list responses.
+- [`DocumentLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): protects the API from big requests.
+- [`UseTransactions`](https://godoc.org/github.com/256dpi/fire#Controller.UseTransactions): ensure atomicity using database transactions.
+- [`TolerateViolations`](https://godoc.org/github.com/256dpi/fire#Controller.TolerateViolations): tolerates writs to inaccessible fields.
+- [`IdempotentCreate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures idempotency of resource creations.
+- [`ConsistentUpdate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures consistency of parallel resource updates.
+- [`SoftDelete`](https://godoc.org/github.com/256dpi/fire#Controller.SoftDelete): soft deletes records using a timestamp field.
+- [`Compose`](https://godoc.org/github.com/256dpi/fire#Compose) creates compositions of HTTP middleware and handlers.
 - [`AssetServer`](https://godoc.org/github.com/256dpi/fire#AssetServer): serves a static website from a directory.
 - [`ErrorReporter`](https://godoc.org/github.com/256dpi/fire#ErrorReporter): prints stack-traces of request errors.
+- [`Tracer`](https://godoc.org/github.com/256dpi/fire#Tracer): enables tracing of requests.
 
 ## Authenticator
 
