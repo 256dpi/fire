@@ -34,7 +34,7 @@ Go on Fire ships with builtin support for various features to also provide a com
 
 The [example](https://github.com/256dpi/fire/tree/master/example) application implements an API that uses most Go on Fire features.
 
-## Installations
+## Installation
 
 To get started, install the package using the go tool:
 
