@@ -168,7 +168,7 @@ Note: These fields should have the `json:"-" bson"-"` tag set, as they are only 
 
 ### Stores
 
-Access to the database is managed using the [`coal.Store`](https://godoc.org/github.com/256dpi/fire/coal#Store) struct: 
+Access to the database is managed using the [`Store`](https://godoc.org/github.com/256dpi/fire/coal#Store) struct: 
 
 ```go
 store := coal.MustCreateStore("mongodb://localhost/my-app")
@@ -186,9 +186,9 @@ The store does not provide other typical ORM methods that wrap the underlying dr
 
 The `coal` package offers the following advanced features:
 
-- [`coal.Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of create, updated and deleted models.
-- [`coal.Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
-- [`coal.Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
+- [`Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of create, updated and deleted models.
+- [`Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
+- [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
 
 ## Controllers
 
@@ -291,6 +291,43 @@ fire.C("MyAuthorizer", fire.All(), func(ctx *fire.Context) error {
 
 If returned errors from callbacks are marked as [`Safe`](https://godoc.org/github.com/256dpi/fire#Safe) or constructed using the [`E`](https://godoc.org/github.com/256dpi/fire#E) helper, the error message is serialized and returned in the JSON-API error response.
 
+### Custom Actions
+
+Controllers allow the definition of custom [`CollectionActions`](https://godoc.org/github.com/256dpi/fire#Controller.CollectionActions) and [`ResourceActions`](https://godoc.org/github.com/256dpi/fire#Controller.ResourceActions):
+
+```go
+postsController := &fire.Controller{
+    // ...
+    CollectionActions: fire.M{
+    	// POST /posts/clear
+    	"clear": &fire.Action{
+            Methods: []string{"POST"},
+            Callback: C("Clear", All(), func(ctx *Context) error {
+                // ...
+            }),
+        },
+    },
+    ResourceActions: fire.M{
+    	// GET /posts/#/avatar
+    	"avatar": &fire.Action{
+    		Methods: []string{"GET"},
+            Callback: C("Avatar", All(), func(ctx *Context) error {
+                // ...
+            }),
+    	},
+    },
+    // ...
+}
+```
+
+### Advanced Features
+
+The `fire` package offers the following advanced features:
+
+- [`Compose`] creats compositions of HTTP middlewares and handlers.
+- [`AssetServer`](https://godoc.org/github.com/256dpi/fire#AssetServer): serves a static website from a directory.
+- [`ErrorReporter`](https://godoc.org/github.com/256dpi/fire#ErrorReporter): prints stack-traces of request errors.
+
 ## Authenticator
 
 The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) sub package implements the OAuth2 specification and provides the Resource Owner Password, Client Credentials and Implicit grant. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
@@ -348,13 +385,6 @@ postsController := &fire.Controller{
 ```
 
 - The authorizer will assign the authorized [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token) to the context using the [`AccessTokenContextKey`](https://godoc.org/github.com/256dpi/fire/flame#AccessTokenContextKey) key.
-
-## Tools
-
-Go on Fire ships with a selection of built-in tools that provide common functionality used by many applications:
-
-- [Asset Server](https://godoc.org/github.com/256dpi/fire#AssetServer)
-- [Error Reporter](https://godoc.org/github.com/256dpi/fire#ErrorReporter)
 
 ## License
 
