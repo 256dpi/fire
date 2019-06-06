@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// A Tester provides facilities to the test a fire API.
+// Tester provides facilities to work with coal models in tests.
 type Tester struct {
 	// The store to use for cleaning the database.
 	Store *Store

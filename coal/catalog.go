@@ -60,6 +60,8 @@ func (c *Catalog) All() []Model {
 
 // Visualize emits a string in dot format which when rendered with graphviz
 // visualizes the models and their relationships.
+//
+//	fdp -Tpdf models.dot > models.pdf
 func (c *Catalog) Visualize(title string) string {
 	// prepare buffer
 	var out bytes.Buffer
