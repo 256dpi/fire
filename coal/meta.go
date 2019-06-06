@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var metaCache = make(map[string]*Meta)
+var metaCache = make(map[reflect.Type]*Meta)
 var metaCacheMutex sync.Mutex
 
 var baseType = reflect.TypeOf(Base{})
@@ -93,7 +93,7 @@ type Meta struct {
 	// The flagged fields.
 	FlaggedFields map[string][]*Field
 
-	model Model
+	typ reflect.Type
 }
 
 // GetMeta returns the Meta structure for the passed Model.
@@ -106,18 +106,17 @@ func GetMeta(model Model) *Meta {
 
 	// get type and name
 	modelType := reflect.TypeOf(model).Elem()
-	modelName := modelType.String()
 
 	// check if meta has already been cached
-	meta, ok := metaCache[modelName]
+	meta, ok := metaCache[modelType]
 	if ok {
 		return meta
 	}
 
 	// create new meta
 	meta = &Meta{
-		Name:           modelName,
-		model:          model,
+		typ:            modelType,
+		Name:           modelType.String(),
 		Fields:         make(map[string]*Field),
 		DatabaseFields: make(map[string]*Field),
 		Attributes:     make(map[string]*Field),
@@ -332,7 +331,7 @@ func GetMeta(model Model) *Meta {
 	}
 
 	// cache meta
-	metaCache[modelName] = meta
+	metaCache[modelType] = meta
 
 	return meta
 }
@@ -342,7 +341,7 @@ func GetMeta(model Model) *Meta {
 // Note: Operations might replace the pointer content with a new structure,
 // therefore the model eventually needs to be initialized again using Init().
 func (m *Meta) Make() Model {
-	pointer := reflect.New(reflect.TypeOf(m.model).Elem()).Interface()
+	pointer := reflect.New(m.typ).Interface()
 	return Init(pointer.(Model))
 }
 
@@ -351,7 +350,7 @@ func (m *Meta) Make() Model {
 // Note: Don't forget to initialize the slice using InitSlice() after adding
 // elements.
 func (m *Meta) MakeSlice() interface{} {
-	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(m.model)), 0, 0)
+	slice := reflect.MakeSlice(reflect.SliceOf(reflect.PtrTo(m.typ)), 0, 0)
 	pointer := reflect.New(slice.Type())
 	pointer.Elem().Set(slice)
 	return pointer.Interface()

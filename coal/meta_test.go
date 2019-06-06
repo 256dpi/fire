@@ -214,7 +214,7 @@ func TestMeta(t *testing.T) {
 				post.Fields["TextBody"],
 			},
 		},
-		model: post.model,
+		typ: reflect.TypeOf(postModel{}),
 	}, post)
 
 	comment := Init(&commentModel{}).Meta()
@@ -276,7 +276,7 @@ func TestMeta(t *testing.T) {
 			"post":   comment.Fields["Post"],
 		},
 		FlaggedFields: map[string][]*Field{},
-		model:         comment.model,
+		typ:           reflect.TypeOf(commentModel{}),
 	}, comment)
 
 	selection := Init(&selectionModel{}).Meta()
@@ -321,7 +321,7 @@ func TestMeta(t *testing.T) {
 			"posts": selection.Fields["Posts"],
 		},
 		FlaggedFields: map[string][]*Field{},
-		model:         selection.model,
+		typ:           reflect.TypeOf(selectionModel{}),
 	}, selection)
 }
 
@@ -350,8 +350,10 @@ func TestMetaSpecial(t *testing.T) {
 }
 
 func BenchmarkGewMeta(b *testing.B) {
+	typ := reflect.TypeOf(postModel{})
+
 	for i := 0; i < b.N; i++ {
 		GetMeta(&postModel{})
-		delete(metaCache, "coal.postModel")
+		delete(metaCache, typ)
 	}
 }
