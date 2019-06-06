@@ -10,7 +10,7 @@
 
 **An idiomatic micro-framework for building Ember.js compatible APIs with Go.**
 
-[Go on Fire](https://gonfire.org) is built on top of the wonderful built-in [http](https://golang.org/pkg/net/http) package, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/256dpi/jsonapi) library, uses the official [mongo](https://github.com/mongodb/mongo-go-driver) driver for persisting resources with [MongoDB](https://www.mongodb.com) and leverages the dedicated [oauth2](https://github.com/256dpi/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/) authentication using [JWT](https://jwt.io) tokens.
+[Go on Fire](https://gonfire.org) is built on top of the wonderful built-in [http](https://golang.org/pkg/net/http) package, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/256dpi/jsonapi) library, uses the official [mongo](https://github.com/mongodb/mongo-go-driver) driver for persisting resources with [MongoDB](https://www.mongodb.com) and leverages the dedicated [oauth2](https://github.com/256dpi/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/) authentication using [JWT](https://jwt.io) tokens. Additionally, it provides packages for request authorization, asynchronous job processing and WebSocket/SSE based event sourcing.  
 
 The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
 
@@ -24,87 +24,23 @@ Go on Fire ships with builtin support for various features to also provide a com
 - Custom group, collection and resource actions.
 - Builtin validators incl. automatic relationship validation.
 - Callback based plugin system for easy extendability.
-- Integrated asynchronous and distributed job queuing system.
-- Event sourcing via SSE and WebSockets.
+- Integrated asynchronous and distributed job processing system.
+- Event sourcing via WebSockets and SSE.
 - Declarative authentication and authorization framework.
 - Integrated OAuth2 authenticator and authorizer.
 - Support for tracing via [opentracing](https://opentracing.io).
 
 ## Example
 
-The [example](https://github.com/256dpi/fire/tree/master/example) application implements an API will all Go on Fire features.
+The [example](https://github.com/256dpi/fire/tree/master/example) application implements an API that uses most Go on Fire features.
 
-## Quickstart
+## Installations
 
-First of all, install the package using the go tool:
+To get started, install the package using the go tool:
 
 ```bash
 $ go get -u github.com/256dpi/fire
 ```
-
-Then import the `fire` package in your Go project:
-
-```go
-import "github.com/256dpi/fire"
-```
-
-### Declare Models
-
-A basic declaration of models looks like the following example for a blog system:
-
-```go
-type Post struct {
-	coal.Base  `json:"-" bson:",inline" coal:"posts"`
-	Title      string        `json:"title" bson:"title"`
-	TextBody   string        `json:"text-body" bson:"text_body"`
-	Comments   coal.HasMany  `json:"-" bson:"-" coal:"comments:comments:post"`
-}
-
-type Comment struct {
-	coal.Base  `json:"-" bson:",inline" coal:"comments"`
-	Message    string              `json:"message"`
-	Parent     *primitive.ObjectID `json:"-" coal:"parent:comments"`
-	PostID     primitive.ObjectID  `json:"-" bson:"post_id" coal:"post:posts"`
-}
-```
-
-Following that we need to create a store that is responsible for managing the database connection: 
-
-```go
-store := coal.MustCreateStore("mongodb://localhost/my-app")
-```
-
-### Create Controllers
-
-Controllers make the previously declared models available from the JSON API:
-
-```go
-group := fire.NewGroup()
-
-group.Add(&fire.Controller{
-    Model: &Post{},
-    Store: store,
-})
-
-group.Add(&fire.Controller{
-    Model: &Comment{},
-    Store: store,
-})
-```
-
-### Run Application
-
-Finally, the controller group can be served using the built-in http package:
-
-```go
-http.Handle("/api/", group.Endpoint("/api/"))
-
-http.ListenAndServe(":4000", nil)
-```
-
-The JSON API is now available at `http://0.0.0.0:4000/api` and ready to be integrated in an Ember project.
-
-Go on Fire provides various advanced features to hook into the request processing flow and adds for example authentication or more complex validation of models. Please read the following documentation carefully to get an overview of all available features.
 
 ## Models
 
@@ -139,8 +75,8 @@ type Post struct {
 
 - Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
 - The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`.
-- Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional using `json:"password,omitempty" bson:"-"`.
-- The `coal` tag may used on fields to tag them with custom and builtin tags.
+- Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional and temporary using `json:"password,omitempty" bson:"-"`.
+- The `coal` tag may be used on fields to tag them with custom and builtin tags.
 
 Note: Ember Data requires you to use dashed names for multi-word attribute names like `text-body`.
 
@@ -152,7 +88,7 @@ The [`ID`](https://godoc.org/github.com/256dpi/fire/coal#Base.ID) method can be 
 post.ID()
 ```
 
-The [`MustGet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustGet) and [`MustSet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustSet) method can be used to get and set any field on the model:
+The [`MustGet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustGet) and [`MustSet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustSet) methods can be used to get and set any field on the model:
 
 ```go
 title := post.MustGet("title")
@@ -178,9 +114,11 @@ post.Meta().Relationships
 post.Meta().FlaggedFields
 ```
 
+- The `Meta` struct is read-only and should not be modified.
+
 ### To-One Relationships
 
-Fields of the type `primitive.ObjectID` or `*primitive.ObjectID` can be marked as to-one relationships using the `coal:"name:type"` struct tag:
+Fields of the type `primitive.ObjectID` can be marked as to-one relationships using the `coal:"name:type"` struct tag:
 
 ```go
 type Comment struct {
@@ -190,7 +128,7 @@ type Comment struct {
 }
 ```
 
-- Fields of the type `*primitive.ObjectID` are treated as optional relationships
+- Fields of the type `*primitive.ObjectID` are treated as optional relationships.
 
 Note: To-one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag.
 
@@ -214,7 +152,7 @@ Note: Ember Data requires you to use dashed names for multi-word relationship na
 
 ### Has-Many Relationships
 
-Fields that have a `HasMany` as their type define the inverse of a to-one relationship and require the `coal:"name:type:inverse"` struct tag:
+Fields that have a `coal.HasMany` as their type define the inverse of a to-one relationship and require the `coal:"name:type:inverse"` struct tag:
 
 ```go
 type Post struct {
@@ -228,11 +166,35 @@ Note: Ember Data requires you to use dashed names for multi-word relationship na
 
 Note: These fields should have the `json:"-" bson"-"` tag set, as they are only syntactic sugar and hold no other information.
 
+### Stores
+
+Access to the database is managed using the [`coal.Store`](https://godoc.org/github.com/256dpi/fire/coal#Store) struct: 
+
+```go
+store := coal.MustCreateStore("mongodb://localhost/my-app")
+```
+
+The [`C`](https://godoc.org/github.com/256dpi/fire/coal#Store.C) method can be used to easily get the collection for a model:
+
+```go
+coll := store.C(&Post{})
+```
+
+The store does not provide other typical ORM methods that wrap the underlying driver, instead custom code should use the underlying directly to get access to all offered features.
+
+### Advanced Features
+
+The `coal` package offers the following advanced features:
+
+- [`coal.Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of create, updated and deleted models.
+- [`coal.Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
+- [`coal.Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
+
 ## Controllers
 
 Go on Fire implements the JSON API specification and provides the management of the previously declared models via a set of controllers that are combined to a group which provides the necessary interconnection between resources.
 
-Controllers are declared by creating a [`Controller`](https://godoc.org/github.com/256dpi/fire#Controller) and providing a reference to the model and a store:
+Controllers are declared by creating a [`Controller`](https://godoc.org/github.com/256dpi/fire#Controller) and providing a reference to the model and store:
 
 ```go
 postsController := &fire.Controller{
@@ -244,14 +206,22 @@ postsController := &fire.Controller{
 
 ### Groups
 
-Controller groups provide the necessary interconnection and integration between controllers. A [`Group`](https://godoc.org/github.com/256dpi/fire#Group) can be created by calling [`NewGroup`](https://godoc.org/github.com/256dpi/fire#NewGroup) while controllers are added using [`Add`](https://godoc.org/github.com/256dpi/fire#Group.Add):
+Controller groups provide the necessary interconnection and integration between controllers as well as the main endpoint for incoming requests. A [`Group`](https://godoc.org/github.com/256dpi/fire#Group) can be created by calling [`NewGroup`](https://godoc.org/github.com/256dpi/fire#NewGroup) while controllers are added using [`Add`](https://godoc.org/github.com/256dpi/fire#Group.Add):
 
 ```go
 group := fire.NewGroup()
-
 group.Add(postsController)
 group.Add(commentsController)
 ````
+
+The controller group can be served using the built-in http package:
+
+```go
+http.Handle("/api/", group.Endpoint("/api/"))
+http.ListenAndServe(":4000", nil)
+```
+
+The JSON API is now available at `http://0.0.0.0:4000/api`.
 
 ### Filtering & Sorting
 
