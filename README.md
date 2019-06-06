@@ -337,9 +337,9 @@ The `fire` package offers the following advanced features:
 - [`ErrorReporter`](https://godoc.org/github.com/256dpi/fire#ErrorReporter): prints stack-traces of request errors.
 - [`Tracer`](https://godoc.org/github.com/256dpi/fire#Tracer): enables tracing of requests.
 
-## Authenticator
+## Authentication
 
-The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) sub package implements the OAuth2 specification and provides the Resource Owner Password, Client Credentials and Implicit grant. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
+The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) package implements the OAuth2 specification and provides the Resource Owner Password, Client Credentials and Implicit grant. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
 
 Every authenticator needs a [`Policy`](https://godoc.org/github.com/256dpi/fire/flame#Policy) that describes how the authentication is enforced. A basic policy can be created and extended using [`DefaultPolicy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultPolicy):
 
@@ -349,6 +349,7 @@ policy.PasswordGrant = true
 ```
 
 - The default policy uses the built-in [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token), [`User`](https://godoc.org/github.com/256dpi/fire/flame#User) and [`Application`](https://godoc.org/github.com/256dpi/fire/flame#Application) model and the [`DefaultGrantStrategy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultGrantStrategy).
+- You might want to add the indexer for the built-on models using [`AddTokenIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddTokenIndexes), [`AddApplicationIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddApplicationIndexes) and [`AddUserIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddUserIndexes).
 
 An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator) is created by specifying the policy and store. After that, it can be mounted and served using for example the built-in http package:
 
@@ -356,6 +357,15 @@ An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticato
 authenticator := flame.NewAuthenticator(store, policy)
 
 http.Handle("/auth/", authenticator.Endpoint("/auth/"))
+```
+
+A controller group or other endpoints can then be proctected by adding the [`Authorizer`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator.Authorizer) middleware:
+
+```
+endpoint := flame.Compose(
+    authenticator.Authorizer("", true, true),
+    group.Endpoint("/api/"),
+)
 ```
 
 More information about OAuth2 flows can be found [here](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2).
@@ -378,9 +388,9 @@ policy.GrantStrategy = func(scope oauth2.Scope, client flame.Client, ro flame.Re
 }
 ```
 
-### Authorization
+### Callback
 
-The authenticator can be used to authorize access to JSON API resources by using the  [`Callback`](https://godoc.org/github.com/256dpi/fire/flame#Callback) with a scope that must have been granted:
+The authenticator [`Callback`](https://godoc.org/github.com/256dpi/fire/flame#Callback) can be used to authorize access to JSON API resources by requiring a scope that must have been granted:
 
 ```go
 postsController := &fire.Controller{
@@ -394,6 +404,17 @@ postsController := &fire.Controller{
 ```
 
 - The authorizer will assign the authorized [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token) to the context using the [`AccessTokenContextKey`](https://godoc.org/github.com/256dpi/fire/flame#AccessTokenContextKey) key.
+
+### Advanced Features
+
+The `flame` package offers the following advanced features:
+
+- [`ClientFilter`](https://godoc.org/github.com/256dpi/fire/flame#Policy.ClientFilter): dynamic filtering of clients based on request parameters.
+- [`ResourceOwnerFilter`](https://godoc.org/github.com/256dpi/fire/flame#Policy.ResourceOwnerFilter): dynamic filtering of resource owners based on request parameters.
+- [`TokenData`](https://godoc.org/github.com/256dpi/fire/flame#Policy.TokenData): custom token data.
+- [`TokenMigrator`](https://godoc.org/github.com/256dpi/fire/flame#TokenMigrator): migration of tokens in queries to headers.
+- [`EnsureApplication`](https://godoc.org/github.com/256dpi/fire/flame#EnsureApplication): ensure the availability of a default application.
+- [`EnsureFirstUser`](https://godoc.org/github.com/256dpi/fire/flame#EnsureFirstUser): ensure the availability of a first user.
 
 ## License
 
