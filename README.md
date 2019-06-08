@@ -335,7 +335,7 @@ The `fire` package offers the following advanced features:
 - [`ListLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): enforces pagination of list responses.
 - [`DocumentLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): protects the API from big requests.
 - [`UseTransactions`](https://godoc.org/github.com/256dpi/fire#Controller.UseTransactions): ensure atomicity using database transactions.
-- [`TolerateViolations`](https://godoc.org/github.com/256dpi/fire#Controller.TolerateViolations): tolerates writs to inaccessible fields.
+- [`TolerateViolations`](https://godoc.org/github.com/256dpi/fire#Controller.TolerateViolations): tolerates writes to inaccessible fields.
 - [`IdempotentCreate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures idempotency of resource creations.
 - [`ConsistentUpdate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures consistency of parallel resource updates.
 - [`SoftDelete`](https://godoc.org/github.com/256dpi/fire#Controller.SoftDelete): soft deletes records using a timestamp field.
