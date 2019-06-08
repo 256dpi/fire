@@ -14,7 +14,14 @@
 
 The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
 
-To quickly get started with building an API with Go on Fire follow the [quickstart guide](https://github.com/256dpi/fire#quickstart), read the detailed sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
+To quickly get started with building an API with Go on Fire read the following sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
+
+- [Features](#features)
+- [Example](#example)
+- [Installation](#installation)
+- [Models](#models)
+- [Controllers](#controllers)
+- [Authentication](#authentication)
 
 ## Features
 
@@ -255,10 +262,10 @@ Controllers support the definition of multiple callbacks that are called while p
 ```go
 postsController := &fire.Controller{
     // ...
-    Authorizers: []fire.Callback{},
-    Validators: []fire.Callback{},
-    Decorators: []fire.Callack{},
-    Notifiers:  []fire.Callback{},
+    Authorizers: fire.L{},
+    Validators: fire.L{},
+    Decorators: fire.L{},
+    Notifiers:  fire.L{},
     // ...
 }
 ```
