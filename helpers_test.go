@@ -121,7 +121,7 @@ func TestLimitBody(t *testing.T) {
 }
 
 func TestAssetServer(t *testing.T) {
-	as1 := AssetServer("/", "test/assets/")
+	as1 := AssetServer("/", ".test/assets/")
 
 	testRequest(as1, "GET", "/", nil, "", func(r *httptest.ResponseRecorder, _ *http.Request) {
 		assert.Equal(t, 200, r.Code)
@@ -138,7 +138,7 @@ func TestAssetServer(t *testing.T) {
 		assert.Equal(t, "<h1>Hello</h1>\n", r.Body.String())
 	})
 
-	as2 := AssetServer("/foo/", "test/assets/")
+	as2 := AssetServer("/foo/", ".test/assets/")
 
 	testRequest(as2, "GET", "/foo/", nil, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, 200, r.Code)
@@ -162,6 +162,6 @@ func TestErrorReporter(t *testing.T) {
 
 	reporter(errors.New("foo"))
 	assert.Contains(t, buf.String(), "===> Begin Error: foo\n")
-	assert.Contains(t, buf.String(), "github.com/256dpi/fire/wood.TestReporter")
+	assert.Contains(t, buf.String(), "github.com/256dpi/fire.TestErrorReporter")
 	assert.Contains(t, buf.String(), "<=== End Error\n")
 }
