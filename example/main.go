@@ -178,7 +178,10 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 				}),
 			},
 		},
+		UseTransactions:    true,
 		TolerateViolations: true,
+		IdempotentCreate:   true,
+		ConsistentUpdate:   true,
 		SoftDelete:         true,
 	}
 }

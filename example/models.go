@@ -30,6 +30,9 @@ func init() {
 
 	// add background delete index
 	indexer.Add(&Item{}, false, time.Second, "Deleted")
+
+	// add unique create token index
+	indexer.Add(&Item{}, true, 0, "CreateToken")
 }
 
 // EnsureIndexes will ensure that the required indexes exist.
@@ -45,13 +48,15 @@ func EnsureIndexes(store *coal.Store) error {
 
 // Item represents a general item.
 type Item struct {
-	coal.Base `json:"-" bson:",inline" coal:"items"`
-	Name      string     `json:"name"`
-	State     bool       `json:"state"`
-	Count     int        `json:"count"`
-	Created   time.Time  `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
-	Updated   time.Time  `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
-	Deleted   *time.Time `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
+	coal.Base   `json:"-" bson:",inline" coal:"items"`
+	Name        string     `json:"name"`
+	State       bool       `json:"state"`
+	Count       int        `json:"count"`
+	Created     time.Time  `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
+	Updated     time.Time  `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
+	Deleted     *time.Time `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
+	CreateToken string     `json:"create-token" bson:"create_token" coal:"fire-idempotent-create"`
+	UpdateToken string     `json:"update-token" bson:"update" coal:"fire-consistent-update"`
 }
 
 // Validate implements the fire.ValidatableModel interface.
