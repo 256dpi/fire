@@ -35,13 +35,6 @@ func CreateStore(uri string) (*Store, error) {
 	// prepare options
 	opts := options.Client().ApplyURI(uri)
 
-	// TODO: Remove when https://jira.mongodb.org/browse/GODRIVER-1021 is fixed.
-
-	// remove auth if default db is set as auth source
-	if opts.Auth.AuthMechanism == "" && opts.Auth.Username == "" && opts.Auth.Password == "" && opts.Auth.AuthSource == defaultDB {
-		opts.Auth = nil
-	}
-
 	// create client
 	client, err := mongo.Connect(nil, opts)
 	if err != nil {
