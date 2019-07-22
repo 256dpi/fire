@@ -6,8 +6,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/tomb.v2"
 )
 
 // Event defines the event type.
@@ -37,9 +37,7 @@ type Stream struct {
 	opened   func()
 	manager  func(error) bool
 
-	mutex   sync.Mutex
-	current *mongo.ChangeStream
-	closed  bool
+	tomb tomb.Tomb
 }
 
 // OpenStream will open a stream and continuously forward events to the specified
@@ -73,27 +71,19 @@ func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open
 	}
 
 	// open stream
-	go s.open()
+	s.tomb.Go(s.open)
 
 	return s
 }
 
 // Close will close the stream.
 func (s *Stream) Close() {
-	// get mutex
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// set flag
-	s.closed = true
-
-	// close active change stream
-	if s.current != nil {
-		_ = s.current.Close(nil)
-	}
+	// kill and wait
+	s.tomb.Kill(nil)
+	_ = s.tomb.Wait()
 }
 
-func (s *Stream) open() {
+func (s *Stream) open() error {
 	// prepare once
 	var once sync.Once
 
@@ -108,14 +98,9 @@ func (s *Stream) open() {
 
 	// run forever and call manager with eventual errors
 	for {
-		// check status
-		s.mutex.Lock()
-		closed := s.closed
-		s.mutex.Unlock()
-
-		// return if closed
-		if closed {
-			return
+		// check if alive
+		if !s.tomb.Alive() {
+			return tomb.ErrDying
 		}
 
 		// tail stream
@@ -123,7 +108,7 @@ func (s *Stream) open() {
 		if err != nil {
 			if s.manager != nil {
 				if !s.manager(err) {
-					return
+					return err
 				}
 			}
 		}
@@ -146,24 +131,11 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	// ensure stream is closed
 	defer cs.Close(nil)
 
-	// save reference and get status
-	s.mutex.Lock()
-	closed := s.closed
-	if !closed {
-		s.current = cs
-	}
-	s.mutex.Unlock()
-
-	// return if closed
-	if closed {
-		return nil
-	}
-
 	// signal open
 	opened()
 
 	// iterate on elements forever
-	for cs.Next(nil) {
+	for cs.Next(s.tomb.Context(nil)) {
 		// decode result
 		var ch change
 		err = cs.Decode(&ch)
@@ -215,11 +187,6 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	if err != nil {
 		return err
 	}
-
-	// unset reference
-	s.mutex.Lock()
-	s.current = nil
-	s.mutex.Unlock()
 
 	return nil
 }

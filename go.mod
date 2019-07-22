@@ -28,4 +28,5 @@ require (
 	golang.org/x/net v0.0.0-20160126033523-f315505cf334 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/text v0.3.2 // indirect
+	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )

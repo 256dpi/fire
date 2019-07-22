@@ -73,14 +73,19 @@ func TestStreamResumption(t *testing.T) {
 
 	var resumeToken []byte
 
+	i := 1
 	stream1 := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, m Model, token []byte) {
-		assert.Equal(t, Created, e)
-		assert.NotZero(t, id)
-		assert.NotNil(t, m)
-		assert.NotNil(t, token)
+		if i == 1 {
+			assert.Equal(t, Created, e)
+			assert.NotZero(t, id)
+			assert.NotNil(t, m)
+			assert.NotNil(t, token)
 
-		resumeToken = token
-		close(done1)
+			resumeToken = token
+			close(done1)
+		}
+
+		i++
 	}, func() {
 		close(open1)
 	}, func(err error) bool {
@@ -102,11 +107,11 @@ func TestStreamResumption(t *testing.T) {
 	tester.Update(post)
 	tester.Delete(post)
 
-	i := 1
 	done2 := make(chan struct{})
 
+	j := 1
 	stream2 := OpenStream(tester.Store, &postModel{}, resumeToken, func(e Event, id primitive.ObjectID, m Model, token []byte) {
-		switch i {
+		switch j {
 		case 1:
 			assert.Equal(t, Updated, e)
 			assert.NotZero(t, id)
@@ -121,13 +126,12 @@ func TestStreamResumption(t *testing.T) {
 			close(done2)
 		}
 
-		i++
+		j++
 	}, nil, func(err error) bool {
 		panic(err)
 	})
 
 	<-done2
-
 	stream2.Close()
 }
 
