@@ -42,8 +42,8 @@ github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c h1:u40Z8hqBAAQyv+vATcGgV
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v1.0.0 h1:d9X0esnoa3dFsV0FG35rAT0RIhYFlPq7MiP+DW89La0=
 github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
-go.mongodb.org/mongo-driver v1.0.1-0.20190607141521-4c20e1372951 h1:Uza2V8DOGEjucC7HpcDC2ABeCOu8IP/RsjW0FiIJm5E=
-go.mongodb.org/mongo-driver v1.0.1-0.20190607141521-4c20e1372951/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
+go.mongodb.org/mongo-driver v1.0.1-0.20190704002045-216e392ea5ac h1:xOTuPHjM69JegB5ta/difVSDWG93qvqkuKof5JsbAG0=
+go.mongodb.org/mongo-driver v1.0.1-0.20190704002045-216e392ea5ac/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
 golang.org/x/crypto v0.0.0-20160317202102-c197bcf24cde h1:HyfCV9sRlPeuclQzQYleAEuweqh8N29XHvBiGH/ZCMk=
 golang.org/x/crypto v0.0.0-20160317202102-c197bcf24cde/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/net v0.0.0-20160126033523-f315505cf334 h1:TUmEkOSSnKLH69ouTtjMxfkRrhs65JmJ61O6KjDVgPg=
