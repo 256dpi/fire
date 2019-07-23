@@ -1,0 +1,199 @@
+//= require_self
+//= require _syntax
+
+$light-grey: #F5F5F5
+$signal-red: #F82C2C
+$light-red: lighten($signal-red, 40)
+$darkgrey: #191919
+
+$radius: 3px
+$max-width: 960px
+
+@mixin breakpoint($media)
+  @if $media == mobile
+    @media (min-width: 0) and (max-width: $max-width - 1)
+      @content
+  @else if $media == desktop
+    @media (min-width: $max-width)
+      @content
+
+body
+  font-family: 'Fira Sans', sans-serif
+  font-size: 18px
+  line-height: 1.5
+  color: $darkgrey
+  a
+    color: inherit
+
+.hero
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  min-height: 100vh
+  background-color: $light-grey
+  margin: 0
+  padding: 50px 0
+  box-sizing: border-box
+  overflow: hidden
+  .flame
+    display: block
+    width: 150px
+    height: 150px
+    margin-top: 40px
+  h1
+    font-size: 64px
+    font-family: 'Carter One', cursive
+    font-weight: normal
+    color: $signal-red
+    margin: 0
+    margin-top: 30px
+  h2
+    font-size: 20px
+    font-weight: 500
+    margin: 0
+    margin-top: 30px
+    text-align: center
+  ul
+    margin: 0
+    padding: 0
+    margin-top: 40px
+    margin-bottom: 30px
+    list-style: none
+    text-align: center
+    li
+      display: inline-block
+      margin: 10px 0
+      margin-left: 10px
+      &:first-child
+        margin-left: 0
+      a
+        display: inline-block
+        color: $signal-red
+        font-size: 18px
+        border: 2px solid $signal-red
+        border-radius: $radius
+        padding: 8px 20px 6px
+        text-decoration: none
+        &:hover
+          background-color: $signal-red
+          color: $light-grey
+
+nav
+  background-color: $light-grey
+  padding: 20px 0
+  ul
+    display: flex
+    align-items: center
+    max-width: $max-width
+    margin: 0 auto
+    padding: 0 20px
+    list-style: none
+    li
+      display: block
+      padding: 20px 0 16px
+      margin-left: 20px
+      &.logo
+        margin-left: 0
+        .flame
+          display: inline-block
+          width: 50px
+          height: 50px
+      &.title
+        margin-right: 20px
+        h1
+          display: inline-block
+          font-size: 24px
+          line-height: 1.2
+          font-family: 'Carter One', cursive
+          font-weight: normal
+          color: $signal-red
+          margin: 0
+          a
+            text-decoration: none
+      &.button
+        a
+          display: inline-block
+          color: black
+          font-size: 18px
+          border: 2px solid black
+          border-radius: $radius
+          padding: 8px 20px 6px
+          text-decoration: none
+          &:hover
+            background-color: black
+            color: white
+
+section
+  max-width: $max-width
+  margin: 0 auto
+  padding: 20px
+
+aside
+  width: 15%
+  float: right
+  margin-top: 160px
+  @include breakpoint(mobile)
+    display: none
+  ul
+    border-left: 2px solid $light-grey
+    margin: 0
+    padding: 0
+    padding-left: 15px
+    list-style: none
+    line-height: 1
+    li
+      margin-top: 10px
+      &.current, &:hover
+        color: $signal-red
+        font-weight: 500
+      &:first-child
+        margin: 0
+      a
+        text-decoration: none
+
+article
+  width: 75%
+  @include breakpoint(mobile)
+    width: 100%
+  h2
+    margin-top: 75px
+    font-size: 36px
+    font-family: 'Carter One', cursive
+    font-weight: normal
+  p
+    &.note
+      background-color: $light-red
+      border-radius: $radius
+      padding: 10px 10px 6px
+  p, ul, ol
+    a
+      color: $signal-red
+      text-decoration: none
+      &:hover
+        text-decoration: underline
+    code
+      background-color: rgba(0, 0, 0, 0.05)
+      padding: 2px 5px 0
+      border-radius: $radius
+      font-family: 'Fira Mono', monospace
+      font-size: 16px
+  pre.highlight
+    background-color: $light-grey
+    border-radius: $radius
+    padding: 10px 10px 8px
+    font-family: 'Fira Mono', monospace
+    font-size: 15px
+    margin: 0
+
+footer
+  overflow: hidden
+  p
+    margin: 0
+    padding: 50px
+    font-size: 14px
+    text-align: center
+    a
+      text-decoration: none
+      &:hover
+        color: $signal-red

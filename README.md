@@ -10,18 +10,26 @@
 
 **An idiomatic micro-framework for building Ember.js compatible APIs with Go.**
 
-[Go on Fire](https://gonfire.org) is built on top of the wonderful built-in [http](https://golang.org/pkg/net/http) package, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/256dpi/jsonapi) library, uses the official [mongo](https://github.com/mongodb/mongo-go-driver) driver for persisting resources with [MongoDB](https://www.mongodb.com) and leverages the dedicated [oauth2](https://github.com/256dpi/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/) authentication using [JWT](https://jwt.io) tokens. Additionally, it provides packages for request authorization, asynchronous job processing and WebSocket/SSE based event sourcing.  
-
-The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
-
-To quickly get started with building an API with Go on Fire read the following sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
-
+- [Introduction](#introduction)
 - [Features](#features)
 - [Example](#example)
 - [Installation](#installation)
 - [Models](#models)
 - [Controllers](#controllers)
 - [Authentication](#authentication)
+- [Authorization](#authorization)
+- [Event Sourcing](#event-sourcing)
+- [Job Processing](#job-processing)
+
+<!-- BEGIN DOCS -->
+
+## Introduction
+
+[Go on Fire](https://gonfire.org) is built on top of the wonderful built-in [http](https://golang.org/pkg/net/http) package, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/256dpi/jsonapi) library, uses the official [mongo](https://github.com/mongodb/mongo-go-driver) driver for persisting resources with [MongoDB](https://www.mongodb.com) and leverages the dedicated [oauth2](https://github.com/256dpi/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/) authentication using [JWT](https://jwt.io) tokens. Additionally, it provides packages for request authorization, asynchronous job processing and WebSocket/SSE based event sourcing.  
+
+The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
+
+To quickly get started with building an API with Go on Fire read the following sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
 
 ## Features
 
@@ -422,6 +430,35 @@ The `flame` package offers the following advanced features:
 - [`TokenMigrator`](https://godoc.org/github.com/256dpi/fire/flame#TokenMigrator): migration of tokens in queries to headers.
 - [`EnsureApplication`](https://godoc.org/github.com/256dpi/fire/flame#EnsureApplication): ensure the availability of a default application.
 - [`EnsureFirstUser`](https://godoc.org/github.com/256dpi/fire/flame#EnsureFirstUser): ensure the availability of a first user.
+
+## Authorization
+
+The [`ash`](https://godoc.org/github.com/256dpi/fire/ash) package implements a simple framework for declaratively define authorization of resources.
+
+Authorization rules are defined using a [`Strategy`](https://godoc.org/github.com/256dpi/fire/ash#Strategy) that can be converted into a callback using the [`C`](https://godoc.org/github.com/256dpi/fire/ash#C) helper:
+
+```go
+postsController := &fire.Controller{
+    // ...
+    Authorizers: fire.L{
+        ash.C(&ash.Strategy{
+        	// ...
+        	Read: ash.L{},
+            Write: ash.L{},
+            // ...
+        }),
+    },
+    // ...
+}
+```
+
+## Event Sourcing
+
+The [`spark`](https://godoc.org/github.com/256dpi/fire/spark) package implements ...
+
+## Job Processing
+
+The [`axe`](https://godoc.org/github.com/256dpi/fire/axe) package implements ...
 
 ## License
 
