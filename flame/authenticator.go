@@ -671,15 +671,11 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	}
 
 	// query db
-	state.tracer.Push("mongo/Collection.FindOne")
-	state.tracer.Tag("query", query)
-	err := state.store.C(model).FindOne(nil, query).Decode(obj)
+	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(obj)
 	if err == mongo.ErrNoDocuments {
-		state.tracer.Pop()
 		return nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// initialize model
 	client := coal.Init(obj).(Client)
@@ -717,17 +713,13 @@ func (a *Authenticator) getClient(state *state, model Client, id primitive.Objec
 	obj := model.Meta().Make()
 
 	// query db
-	state.tracer.Push("mongo/Collection.FindOne")
-	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindOne(nil, bson.M{
+	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
 	if err == mongo.ErrNoDocuments {
-		state.tracer.Pop()
 		return nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// initialize model
 	client := coal.Init(obj).(Client)
@@ -794,15 +786,11 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	}
 
 	// query db
-	state.tracer.Push("mongo/Collection.FindOne")
-	state.tracer.Tag("query", query)
-	err := state.store.C(model).FindOne(nil, query).Decode(obj)
+	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(obj)
 	if err == mongo.ErrNoDocuments {
-		state.tracer.Pop()
 		return nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// initialize model
 	resourceOwner := coal.Init(obj).(ResourceOwner)
@@ -840,17 +828,13 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id p
 	obj := coal.Init(model).Meta().Make()
 
 	// query db
-	state.tracer.Push("mongo/Collection.FindOne")
-	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindOne(nil, bson.M{
+	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
 	if err == mongo.ErrNoDocuments {
-		state.tracer.Pop()
 		return nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// initialize model
 	resourceOwner := coal.Init(obj).(ResourceOwner)
@@ -869,17 +853,13 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id primitive.
 	obj := model.Meta().Make()
 
 	// fetch access token
-	state.tracer.Push("mongo/Collection.FindOne")
-	state.tracer.Tag("id", id.Hex())
-	err := state.store.C(model).FindOne(nil, bson.M{
+	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
 	if err == mongo.ErrNoDocuments {
-		state.tracer.Pop()
 		return nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// initialize access token
 	accessToken := coal.Init(obj).(GenericToken)
@@ -901,11 +881,8 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	token.SetTokenData(typ, scope, expiresAt, client, resourceOwner)
 
 	// save access token
-	state.tracer.Push("mongo/Collection.InsertOne")
-	state.tracer.Tag("model", token)
-	_, err := state.store.C(token).InsertOne(nil, token)
+	_, err := state.store.TC(state.tracer, token).InsertOne(nil, token)
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// finish trace
 	state.tracer.Pop()
@@ -918,16 +895,13 @@ func (a *Authenticator) deleteToken(state *state, model GenericToken, id primiti
 	state.tracer.Push("flame/Authenticator.deleteToken")
 
 	// delete token
-	state.tracer.Push("mongo/Collection.DeleteOne")
-	state.tracer.Tag("id", id.Hex())
-	_, err := state.store.C(model).DeleteOne(nil, bson.M{
+	_, err := state.store.TC(state.tracer, model).DeleteOne(nil, bson.M{
 		"_id": id,
 	})
 	if err == mongo.ErrNoDocuments {
 		err = nil
 	}
 	stack.AbortIf(err)
-	state.tracer.Pop()
 
 	// finish trace
 	state.tracer.Pop()

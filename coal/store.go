@@ -77,6 +77,14 @@ func (s *Store) C(model Model) *mongo.Collection {
 	return s.DB().Collection(C(model))
 }
 
+// TC will return a traced collection for the passed model.
+func (s *Store) TC(tracer Tracer, model Model) *TracedCollection {
+	return &TracedCollection{
+		coll:   s.C(model),
+		tracer: tracer,
+	}
+}
+
 // Close will close the store and its associated client.
 func (s *Store) Close() error {
 	// disconnect client

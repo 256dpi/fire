@@ -462,15 +462,12 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		}
 
 		// insert model
-		ctx.Tracer.Push("mongo/Collection.UpdateOne")
-		ctx.Tracer.Tag("model", ctx.Model)
-		res, err := ctx.Store.C(ctx.Model).UpdateOne(ctx.Session, bson.M{
+		res, err := ctx.Store.TC(ctx.Tracer, ctx.Model).UpdateOne(ctx.Session, bson.M{
 			coal.F(ctx.Model, idempotentCreateField): idempotentCreateToken,
 		}, bson.M{
 			"$setOnInsert": ctx.Model,
 		}, options.Update().SetUpsert(true))
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 
 		// fail if already existing
 		if res.MatchedCount != 0 {
@@ -478,11 +475,8 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		}
 	} else {
 		// insert model
-		ctx.Tracer.Push("mongo/Collection.InsertOne")
-		ctx.Tracer.Tag("model", ctx.Model)
-		_, err := ctx.Store.C(ctx.Model).InsertOne(ctx.Session, ctx.Model)
+		_, err := ctx.Store.TC(ctx.Tracer, ctx.Model).InsertOne(ctx.Session, ctx.Model)
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 	}
 
 	// run decorators
@@ -578,16 +572,13 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		ctx.Model.MustSet(consistentUpdateField, primitive.NewObjectID().Hex())
 
 		// update model
-		ctx.Tracer.Push("mongo/Collection.UpdateOne")
-		ctx.Tracer.Tag("model", ctx.Model)
-		res, err := ctx.Store.C(ctx.Model).UpdateOne(ctx.Session, bson.M{
+		res, err := ctx.Store.TC(ctx.Tracer, ctx.Model).UpdateOne(ctx.Session, bson.M{
 			"_id":                                    ctx.Model.ID(),
 			coal.F(ctx.Model, consistentUpdateField): consistentUpdateToken,
 		}, bson.M{
 			"$set": ctx.Model,
 		})
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 
 		// fail if not updated
 		if res.ModifiedCount != 1 {
@@ -595,12 +586,10 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		}
 	} else {
 		// update model
-		ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-		_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+		_, err := ctx.Store.TC(ctx.Tracer, ctx.Model).ReplaceOne(ctx.Session, bson.M{
 			"_id": ctx.Model.ID(),
 		}, ctx.Model)
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 	}
 
 	// run decorators
@@ -648,9 +637,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		ctx.Tracer.Push("mongo/Collection.UpdateOne")
-		ctx.Tracer.Tag("model", ctx.Model)
-		_, err := ctx.Store.C(c.Model).UpdateOne(ctx.Session, bson.M{
+		_, err := ctx.Store.TC(ctx.Tracer, c.Model).UpdateOne(ctx.Session, bson.M{
 			"_id": ctx.Model.ID(),
 		}, bson.M{
 			"$set": bson.M{
@@ -658,16 +645,12 @@ func (c *Controller) deleteResource(ctx *Context) {
 			},
 		})
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 	} else {
 		// remove model
-		ctx.Tracer.Push("mongo/Collection.DeleteOne")
-		ctx.Tracer.Tag("model", ctx.Model)
-		_, err := ctx.Store.C(c.Model).DeleteOne(ctx.Session, bson.M{
+		_, err := ctx.Store.TC(ctx.Tracer, c.Model).DeleteOne(ctx.Session, bson.M{
 			"_id": ctx.Model.ID(),
 		})
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 	}
 
 	// run notifiers
@@ -995,12 +978,10 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.Store.TC(ctx.Tracer, ctx.Model).ReplaceOne(ctx.Session, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
-	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1080,12 +1061,10 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.Store.TC(ctx.Tracer, ctx.Model).ReplaceOne(ctx.Session, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
-	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1172,12 +1151,10 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	ctx.Tracer.Push("mongo/Collection.ReplaceOne")
-	_, err := ctx.Store.C(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.Store.TC(ctx.Tracer, ctx.Model).ReplaceOne(ctx.Session, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
-	ctx.Tracer.Pop()
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1318,15 +1295,12 @@ func (c *Controller) loadModel(ctx *Context) {
 	model := c.Model.Meta().Make()
 
 	// query db
-	ctx.Tracer.Push("mongo/Collection.FindOne")
-	ctx.Tracer.Tag("query", ctx.Query())
-	res := ctx.Store.C(c.Model).FindOne(nil, ctx.Query())
+	res := ctx.Store.TC(ctx.Tracer, c.Model).FindOne(nil, ctx.Query())
 	err := res.Decode(model)
 	if err == mongo.ErrNoDocuments {
 		stack.Abort(jsonapi.NotFound("resource not found"))
 	}
 	stack.AbortIf(err)
-	ctx.Tracer.Pop()
 
 	// initialize and set model
 	ctx.Model = coal.Init(model.(coal.Model))
@@ -1461,13 +1435,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// query db
-	ctx.Tracer.Push("mongo/Collection.Find")
-	ctx.Tracer.Tag("query", ctx.Query())
-	cursor, err := ctx.Store.C(c.Model).Find(nil, ctx.Query(), opts)
-	stack.AbortIf(err)
-	stack.AbortIf(cursor.All(nil, slicePtr))
-	stack.AbortIf(cursor.Close(nil))
-	ctx.Tracer.Pop()
+	stack.AbortIf(ctx.Store.TC(ctx.Tracer, c.Model).FindAll(nil, slicePtr, ctx.Query(), opts))
 
 	// set models
 	ctx.Models = coal.InitSlice(slicePtr)
@@ -1695,16 +1663,10 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// load all references
 		var references []bson.M
-		ctx.Tracer.Push("mongo/Collection.Find")
-		ctx.Tracer.Tag("query", query)
-		cursor, err := ctx.Store.C(rc.Model).Find(nil, query, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.Store.TC(ctx.Tracer, rc.Model).FindAll(nil, &references, query, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
-		}))
-		stack.AbortIf(err)
-		stack.AbortIf(cursor.All(nil, &references))
-		stack.AbortIf(cursor.Close(nil))
-		ctx.Tracer.Pop()
+		})))
 
 		// prepare entry
 		entry := make(map[primitive.ObjectID][]primitive.ObjectID)
@@ -1980,11 +1942,8 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		ctx.Tracer.Push("mongo/Collection.CountDocuments")
-		ctx.Tracer.Tag("query", ctx.Query())
-		n, err := ctx.Store.C(c.Model).CountDocuments(nil, ctx.Query())
+		n, err := ctx.Store.TC(ctx.Tracer, c.Model).CountDocuments(nil, ctx.Query())
 		stack.AbortIf(err)
-		ctx.Tracer.Pop()
 
 		// calculate last page
 		lastPage := uint64(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
