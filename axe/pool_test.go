@@ -170,11 +170,12 @@ func TestPoolCrashed(t *testing.T) {
 	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
+	errs := make(chan error, 1)
 
 	i := 0
 
 	p := NewPool()
-	// p.Reporter = func(err error) { panic(err) }
+	p.Reporter = func(err error) { errs <- err }
 	p.Add(&Task{
 		Name:  "crashed",
 		Model: &data{},
@@ -199,6 +200,7 @@ func TestPoolCrashed(t *testing.T) {
 	assert.NoError(t, err)
 
 	<-done
+	assert.Equal(t, io.EOF, <-errs)
 
 	time.Sleep(100 * time.Millisecond)
 
