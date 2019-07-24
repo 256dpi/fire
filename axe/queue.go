@@ -158,7 +158,7 @@ func (q *Queue) watcher(p *Pool) {
 		return true
 	})
 
-	// await steam open
+	// await stream open
 	select {
 	case <-open:
 		// continue

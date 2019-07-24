@@ -39,12 +39,12 @@ type Task struct {
 
 	// Handler is the callback called with jobs for processing. The handler
 	// should return errors formatted with E to properly indicate the status of
-	// the job. If a task execution is successful the handler might return some
+	// the job. If a task execution is successful the handler may return some
 	// data that is attached to the job.
 	Handler func(Model) (bson.M, error)
 
 	// Workers defines the number for spawned workers that dequeue and execute
-	// jobs.
+	// jobs in parallel.
 	//
 	// Default: 2.
 	Workers int
