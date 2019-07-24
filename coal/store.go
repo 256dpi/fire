@@ -72,12 +72,12 @@ func (s *Store) DB() *mongo.Database {
 	return s.Client.Database(s.DefaultDB)
 }
 
-// C will return the collection associated to the passed model.
+// C will return the collection associated to the specified model.
 func (s *Store) C(model Model) *mongo.Collection {
 	return s.DB().Collection(C(model))
 }
 
-// TC will return a traced collection for the passed model.
+// TC will return a traced collection for the specified model.
 func (s *Store) TC(tracer Tracer, model Model) *TracedCollection {
 	return &TracedCollection{
 		coll:   s.C(model),
