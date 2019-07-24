@@ -26,11 +26,10 @@ func TestPool(t *testing.T) {
 		Name:  "foo",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			close(done)
-			return bson.M{
-				"foo": "bar",
-			}, nil
+			ctx.Result = bson.M{"foo": "bar"}
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -75,11 +74,10 @@ func TestPoolDelayed(t *testing.T) {
 		Name:  "delayed",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			close(done)
-			return bson.M{
-				"foo": "bar",
-			}, nil
+			ctx.Result = bson.M{"foo": "bar"}
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -126,16 +124,15 @@ func TestPoolFailed(t *testing.T) {
 		Name:  "failed",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
-				return nil, E("foo", true)
+				return E("foo", true)
 			}
 
 			close(done)
-			return bson.M{
-				"foo": "bar",
-			}, nil
+			ctx.Result = bson.M{"foo": "bar"}
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -182,14 +179,14 @@ func TestPoolCrashed(t *testing.T) {
 		Name:  "crashed",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
-				return nil, io.EOF
+				return io.EOF
 			}
 
 			close(done)
-			return nil, nil
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -234,9 +231,9 @@ func TestPoolCancel(t *testing.T) {
 		Name:  "cancel",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			close(done)
-			return nil, E("cancelled", false)
+			return E("cancelled", false)
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -283,15 +280,15 @@ func TestPoolTimeout(t *testing.T) {
 		Name:  "timeout",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
 				time.Sleep(5 * time.Second)
-				return nil, nil
+				return nil
 			}
 
 			close(done)
-			return nil, nil
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,
@@ -340,9 +337,9 @@ func TestPoolExisting(t *testing.T) {
 		Name:  "existing",
 		Model: &data{},
 		Queue: q,
-		Handler: func(m Model) (bson.M, error) {
+		Handler: func(ctx *Context) error {
 			close(done)
-			return nil, nil
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,

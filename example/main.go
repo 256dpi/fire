@@ -137,7 +137,7 @@ func createHandler(store *coal.Store) http.Handler {
 	// create pool
 	pool := axe.NewPool()
 	pool.Reporter = reporter
-	pool.Add(incrementTask(store, queue))
+	pool.Add(incrementTask(queue))
 	pool.Run()
 
 	// create group
@@ -219,17 +219,17 @@ func itemStream(store *coal.Store) *spark.Stream {
 	}
 }
 
-func incrementTask(store *coal.Store, queue *axe.Queue) *axe.Task {
+func incrementTask(queue *axe.Queue) *axe.Task {
 	return &axe.Task{
 		Name:  "increment",
 		Queue: queue,
 		Model: &count{},
-		Handler: func(model axe.Model) (bson.M, error) {
+		Handler: func(ctx *axe.Context) error {
 			// get count
-			c := model.(*count)
+			c := ctx.Model.(*count)
 
 			// update document
-			_, err := store.C(&Item{}).UpdateOne(nil, bson.M{
+			_, err := ctx.TC(&Item{}).UpdateOne(nil, bson.M{
 				"_id": c.Item,
 			}, bson.M{
 				"$inc": bson.M{
@@ -237,10 +237,10 @@ func incrementTask(store *coal.Store, queue *axe.Queue) *axe.Task {
 				},
 			})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			return nil, nil
+			return nil
 		},
 		Workers:     2,
 		MaxAttempts: 2,

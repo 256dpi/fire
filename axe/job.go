@@ -32,9 +32,6 @@ const (
 	StatusCancelled Status = "cancelled"
 )
 
-// Model can be any BSON serializable type.
-type Model interface{}
-
 // Job is a single job managed by a queue.
 type Job struct {
 	coal.Base `json:"-" bson:",inline" coal:"jobs"`
@@ -92,10 +89,10 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not be dequeued until the specified time has passed.
-func Enqueue(store *coal.Store, session mongo.SessionContext, name string, data Model, delay time.Duration) (*Job, error) {
-	// set default data
-	if data == nil {
-		data = bson.M{}
+func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model Model, delay time.Duration) (*Job, error) {
+	// set default model
+	if model == nil {
+		model = bson.M{}
 	}
 
 	// get time
@@ -109,8 +106,8 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, data 
 		Available: now.Add(delay),
 	}).(*Job)
 
-	// marshall data
-	raw, err := bson.Marshal(data)
+	// marshall model
+	raw, err := bson.Marshal(model)
 	if err != nil {
 		return nil, err
 	}

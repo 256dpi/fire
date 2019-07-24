@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 // Error is used to signal failed job executions.
@@ -26,6 +29,48 @@ func E(reason string, retry bool) *Error {
 	}
 }
 
+// Model can be any BSON serializable type.
+type Model interface{}
+
+// Context holds and stores contextual data.
+type Context struct {
+	// Model is the model carried by the job.
+	Model Model
+
+	// Result can be set with a custom result.
+	Result bson.M
+
+	// Task is the task that processes this job.
+	//
+	// Usage: Read Only
+	Task *Task
+
+	// Queue is the queue this job was dequeued from.
+	//
+	// Usage: Read Only
+	Queue *Queue
+
+	// Pool is the pool that manages the queue and task.
+	//
+	// Usage: Read Only
+	Pool *Pool
+
+	// Store is the store used by the queue.
+	//
+	// Usage: Read Only
+	Store *coal.Store
+
+	// The tracer used to trace code execution.
+	//
+	// Usage: Read Only
+	Tracer *fire.Tracer
+}
+
+// TC is a shorthand to get a traced collection for the specified model.
+func (c *Context) TC(model coal.Model) *coal.TracedCollection {
+	return c.Store.TC(c.Tracer, model)
+}
+
 // Task describes work that is managed using a job queue.
 type Task struct {
 	// Name is the unique name of the task.
@@ -41,7 +86,7 @@ type Task struct {
 	// should return errors formatted with E to properly indicate the status of
 	// the job. If a task execution is successful the handler may return some
 	// data that is attached to the job.
-	Handler func(Model) (bson.M, error)
+	Handler func(*Context) error
 
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs in parallel.
@@ -151,16 +196,29 @@ func (t *Task) execute(job *Job) error {
 	}
 
 	// instantiate model
-	data := reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
+	model := reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
 
-	// unmarshal data
-	err = bson.Unmarshal(job.Data, data)
+	// unmarshal model
+	err = bson.Unmarshal(job.Data, model)
 	if err != nil {
 		return err
 	}
 
+	// create tracer
+	tracer := fire.NewTracerWithRoot(t.Name)
+	defer tracer.Finish(true)
+
+	// prepare context
+	ctx := &Context{
+		Model:  model,
+		Task:   t,
+		Queue:  t.Queue,
+		Store:  t.Queue.store,
+		Tracer: tracer,
+	}
+
 	// run handler
-	result, err := t.Handler(data)
+	err = t.Handler(ctx)
 
 	// check error
 	if e, ok := err.(*Error); ok {
@@ -193,7 +251,7 @@ func (t *Task) execute(job *Job) error {
 	}
 
 	// complete job
-	err = complete(t.Queue.store, job.ID(), result)
+	err = complete(t.Queue.store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}
