@@ -215,6 +215,11 @@ type Context struct {
 	Tracer *Tracer
 }
 
+// TC is a shorthand to get a traced collection for the specified model.
+func (c *Context) TC(model coal.Model) *coal.TracedCollection {
+	return c.Store.TC(c.Tracer, model)
+}
+
 // Query returns the composite query of Selector and Filter.
 func (c *Context) Query() bson.M {
 	// prepare sub queries

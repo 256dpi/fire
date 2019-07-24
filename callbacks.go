@@ -256,7 +256,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 			}
 
 			// count referencing documents
-			n, err := ctx.Store.TC(ctx.Tracer, model).CountDocuments(nil, query, options.Count().SetLimit(1))
+			n, err := ctx.TC(model).CountDocuments(nil, query, options.Count().SetLimit(1))
 			if err != nil {
 				return err
 			}
@@ -307,7 +307,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 				query := bson.M{"_id": bson.M{"$in": ids}}
 
 				// count entities in database
-				n, err := ctx.Store.TC(ctx.Tracer, collection).CountDocuments(nil, query)
+				n, err := ctx.TC(collection).CountDocuments(nil, query)
 				if err != nil {
 					return err
 				}
@@ -323,7 +323,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 			// handle to-one relationships
 
 			// count entities in database
-			n, err := ctx.Store.TC(ctx.Tracer, collection).CountDocuments(nil, bson.M{
+			n, err := ctx.TC(collection).CountDocuments(nil, bson.M{
 				"_id": ref,
 			}, options.Count().SetLimit(1))
 			if err != nil {
@@ -483,7 +483,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		}
 
 		// find matching documents
-		n, err := ctx.Store.TC(ctx.Tracer, target).CountDocuments(nil, query)
+		n, err := ctx.TC(target).CountDocuments(nil, query)
 		if err != nil {
 			return err
 		}
@@ -542,7 +542,7 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 		}
 
 		// count
-		n, err := ctx.Store.TC(ctx.Tracer, ctx.Model).CountDocuments(nil, query, options.Count().SetLimit(1))
+		n, err := ctx.TC(ctx.Model).CountDocuments(nil, query, options.Count().SetLimit(1))
 		if err != nil {
 			return err
 		} else if n != 0 {
