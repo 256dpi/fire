@@ -242,6 +242,17 @@ func (c *Context) Query() bson.M {
 	return bson.M{"$and": subQueries}
 }
 
+// Parse will decode a custom JSON body to the specified object.
+func (c *Context) Parse(obj interface{}) error {
+	// unmarshal json
+	err := json.NewDecoder(c.HTTPRequest.Body).Decode(obj)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Respond will encode the provided value as JSON and write it to the client.
 func (c *Context) Respond(value interface{}) error {
 	// encode response
