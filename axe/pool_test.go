@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -220,7 +221,7 @@ func TestPoolCrashed(t *testing.T) {
 	p.Close()
 }
 
-func TestPoolCancel(t *testing.T) {
+func TestPoolCancelNoRetry(t *testing.T) {
 	tester.Clean()
 
 	q := NewQueue(tester.Store)
@@ -263,6 +264,112 @@ func TestPoolCancel(t *testing.T) {
 	assert.Equal(t, 1, job.Attempts)
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "cancelled", job.Reason)
+
+	p.Close()
+}
+
+func TestPoolCancelRetry(t *testing.T) {
+	tester.Clean()
+
+	q := NewQueue(tester.Store)
+
+	done := make(chan struct{})
+
+	i := 0
+
+	p := NewPool()
+	p.Reporter = func(err error) { panic(err) }
+	p.Add(&Task{
+		Name:  "cancel",
+		Model: &data{},
+		Queue: q,
+		Handler: func(ctx *Context) error {
+			i++
+			if i == 2 {
+				close(done)
+			}
+			return E("cancelled", true)
+		},
+		Workers:     2,
+		MaxAttempts: 2,
+	})
+	p.Run()
+
+	time.Sleep(100 * time.Millisecond)
+
+	job, err := q.Enqueue("cancel", &data{Foo: "bar"}, 0)
+	assert.NoError(t, err)
+
+	<-done
+
+	time.Sleep(100 * time.Millisecond)
+
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
+	assert.Equal(t, "cancel", job.Name)
+	assert.Equal(t, &data{Foo: "bar"}, decodeRaw(job.Data, &data{}))
+	assert.Equal(t, StatusCancelled, job.Status)
+	assert.NotZero(t, job.Created)
+	assert.NotZero(t, job.Available)
+	assert.NotZero(t, job.Started)
+	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
+	assert.Equal(t, 2, job.Attempts)
+	assert.Equal(t, bson.M(nil), job.Result)
+	assert.Equal(t, "cancelled", job.Reason)
+
+	p.Close()
+}
+
+func TestPoolCancelCrash(t *testing.T) {
+	tester.Clean()
+
+	q := NewQueue(tester.Store)
+
+	done := make(chan struct{})
+	errs := make(chan error, 2)
+
+	i := 0
+
+	p := NewPool()
+	p.Reporter = func(err error) { errs <- err }
+	p.Add(&Task{
+		Name:  "cancel",
+		Model: &data{},
+		Queue: q,
+		Handler: func(ctx *Context) error {
+			i++
+			if i == 2 {
+				close(done)
+			}
+			return errors.New("foo")
+		},
+		Workers:     2,
+		MaxAttempts: 2,
+	})
+	p.Run()
+
+	time.Sleep(100 * time.Millisecond)
+
+	job, err := q.Enqueue("cancel", &data{Foo: "bar"}, 0)
+	assert.NoError(t, err)
+
+	<-done
+	assert.Equal(t, "foo", (<-errs).Error())
+
+	time.Sleep(100 * time.Millisecond)
+
+	job = tester.Fetch(&Job{}, job.ID()).(*Job)
+	assert.Equal(t, "cancel", job.Name)
+	assert.Equal(t, &data{Foo: "bar"}, decodeRaw(job.Data, &data{}))
+	assert.Equal(t, StatusCancelled, job.Status)
+	assert.NotZero(t, job.Created)
+	assert.NotZero(t, job.Available)
+	assert.NotZero(t, job.Started)
+	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
+	assert.Equal(t, 2, job.Attempts)
+	assert.Equal(t, bson.M(nil), job.Result)
+	assert.Equal(t, "foo", job.Reason)
 
 	p.Close()
 }

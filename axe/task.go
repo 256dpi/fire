@@ -223,9 +223,9 @@ func (t *Task) execute(job *Job) error {
 	// check error
 	if e, ok := err.(*Error); ok {
 		// check retry and attempts
-		if !e.Retry || job.Attempts >= t.MaxAttempts {
-			// cancel job
-			err = cancel(t.Queue.store, job.ID(), e.Reason)
+		if e.Retry && job.Attempts < t.MaxAttempts {
+			// fail job
+			err = fail(t.Queue.store, job.ID(), e.Reason, t.Delay)
 			if err != nil {
 				return err
 			}
@@ -233,8 +233,8 @@ func (t *Task) execute(job *Job) error {
 			return nil
 		}
 
-		// fail job
-		err = fail(t.Queue.store, job.ID(), e.Reason, t.Delay)
+		// cancel job
+		err = cancel(t.Queue.store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -244,8 +244,16 @@ func (t *Task) execute(job *Job) error {
 
 	// handle other errors
 	if err != nil {
-		// attempt to fail job
-		_ = fail(t.Queue.store, job.ID(), err.Error(), t.Delay)
+		// check attempts
+		if job.Attempts < t.MaxAttempts {
+			// fail job
+			_ = fail(t.Queue.store, job.ID(), err.Error(), t.Delay)
+
+			return err
+		}
+
+		// cancel job
+		_ = cancel(t.Queue.store, job.ID(), err.Error())
 
 		return err
 	}
