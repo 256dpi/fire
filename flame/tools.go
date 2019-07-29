@@ -4,10 +4,32 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
 )
+
+// JWTClaims extends the standard JWT claims to include the "dat" attribute.
+type JWTClaims struct {
+	jwt.StandardClaims
+
+	// Data contains user defined key value pairs.
+	Data map[string]interface{} `json:"dat,omitempty"`
+}
+
+// GenerateJWTToken will generate a custom JWT token.
+func GenerateJWTToken(secret string, claims JWTClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// ParseJWTToken will parse a custom JWT token.
+func ParseJWTToken(secret, token string, claims *JWTClaims) (*jwt.Token, error) {
+	return jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+}
 
 // TokenMigrator is a middleware that detects access tokens passed via query
 // parameters and migrates them to a Bearer Token header. Additionally it may

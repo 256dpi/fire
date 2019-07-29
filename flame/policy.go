@@ -26,7 +26,7 @@ var ErrInvalidScope = errors.New("invalid scope")
 // A Policy configures the provided authentication schemes.
 type Policy struct {
 	// The secret should be at least 16 characters long.
-	Secret []byte
+	Secret string
 
 	// The available grants.
 	PasswordGrant          bool
@@ -73,14 +73,6 @@ type Policy struct {
 	RefreshTokenLifespan time.Duration
 }
 
-// TokenClaims represents the data included in an access token and refresh token.
-type TokenClaims struct {
-	jwt.StandardClaims
-
-	// Data contains user defined key value pairs.
-	Data map[string]interface{} `json:"dat"`
-}
-
 // DefaultGrantStrategy grants only empty scopes.
 func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
 	// check scope
@@ -108,7 +100,7 @@ func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]int
 // Note: The secret should be at least 16 characters long.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret:  []byte(secret),
+		Secret:  secret,
 		Token:   &Token{},
 		Clients: []Client{&Application{}},
 		ResourceOwners: func(_ Client) []ResourceOwner {
@@ -124,7 +116,7 @@ func DefaultPolicy(secret string) *Policy {
 // GenerateToken returns a new token for the provided information.
 func (p *Policy) GenerateToken(id primitive.ObjectID, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
 	// prepare claims
-	claims := &TokenClaims{}
+	claims := JWTClaims{}
 	claims.Id = id.Hex()
 	claims.IssuedAt = issuedAt.Unix()
 	claims.ExpiresAt = expiresAt.Unix()
@@ -135,10 +127,7 @@ func (p *Policy) GenerateToken(id primitive.ObjectID, issuedAt, expiresAt time.T
 	}
 
 	// create token
-	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// sign token
-	str, err := tkn.SignedString(p.Secret)
+	str, err := GenerateJWTToken(p.Secret, claims)
 	if err != nil {
 		return "", nil
 	}
@@ -148,12 +137,10 @@ func (p *Policy) GenerateToken(id primitive.ObjectID, issuedAt, expiresAt time.T
 
 // ParseToken will parse the presented token and return its claims, if it is
 // expired and eventual errors.
-func (p *Policy) ParseToken(str string) (*TokenClaims, bool, error) {
-	// parse token and check id
-	var claims TokenClaims
-	_, err := jwt.ParseWithClaims(str, &claims, func(_ *jwt.Token) (interface{}, error) {
-		return p.Secret, nil
-	})
+func (p *Policy) ParseToken(str string) (*JWTClaims, bool, error) {
+	// parse token and check expired errors
+	var claims JWTClaims
+	_, err := ParseJWTToken(p.Secret, str, &claims)
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
 		return nil, true, err
 	} else if err != nil {
