@@ -201,7 +201,8 @@ The store does not provide other typical ORM methods that wrap the underlying dr
 
 The `coal` package offers the following advanced features:
 
-- [`Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of create, updated and deleted models.
+- [`Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of created, updated and deleted models.
+- [`Reconcile`](https://godoc.org/github.com/256dpi/fire/coal#Reconcile) uses streams to provide an simple API to synchronize a collection of models.
 - [`Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
 - [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
 
