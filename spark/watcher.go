@@ -2,15 +2,10 @@ package spark
 
 import (
 	"fmt"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
-
-// TODO: How to close a watcher?
 
 // Watcher will watch multiple collections and serve watch requests by clients.
 type Watcher struct {
@@ -48,52 +43,7 @@ func (w *Watcher) Add(stream *Stream) {
 	w.streams[stream.Name()] = stream
 
 	// open stream
-	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id primitive.ObjectID, model coal.Model, err error, token []byte) error {
-		// ignore opened, resumed and stopped events
-		if e == coal.Opened || e == coal.Resumed || e == coal.Stopped {
-			return nil
-		}
-
-		// handle errors
-		if e == coal.Errored {
-			// report error
-			w.Reporter(err)
-
-			return nil
-		}
-
-		// ignore real deleted events when soft delete has been enabled
-		if stream.SoftDelete && e == coal.Deleted {
-			return nil
-		}
-
-		// handle soft deleted documents
-		if stream.SoftDelete && e == coal.Updated {
-			// get soft delete field
-			softDeleteField := coal.L(stream.Model, "fire-soft-delete", true)
-
-			// get deleted time
-			t := model.MustGet(softDeleteField).(*time.Time)
-
-			// change type if document has been soft deleted
-			if t != nil && !t.IsZero() {
-				e = coal.Deleted
-			}
-		}
-
-		// create event
-		evt := &Event{
-			Type:   e,
-			ID:     id,
-			Model:  model,
-			Stream: stream,
-		}
-
-		// broadcast event
-		w.manager.broadcast(evt)
-
-		return nil
-	})
+	stream.open(w.manager, w.Reporter)
 }
 
 // Action returns an action that should be registered in the group under
@@ -108,4 +58,14 @@ func (w *Watcher) Action() *fire.Action {
 			return nil
 		}),
 	}
+}
+
+// Close will close the watcher and all opened streams.
+func (w *Watcher) Close() {
+	// close all stream
+	for _, stream := range w.streams {
+		stream.close()
+	}
+
+	// TODO: Close manager.
 }

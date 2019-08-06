@@ -1,6 +1,8 @@
 package spark
 
 import (
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire"
@@ -57,9 +59,65 @@ type Stream struct {
 
 	// SoftDelete can be set to true to support soft deleted documents.
 	SoftDelete bool
+
+	stream *coal.Stream
 }
 
 // Name returns the name of the stream.
 func (s *Stream) Name() string {
 	return s.Model.Meta().PluralName
+}
+
+func (s *Stream) open(manager *manager, reporter func(error)) {
+	// open stream
+	s.stream = coal.OpenStream(s.Store, s.Model, nil, func(e coal.Event, id primitive.ObjectID, model coal.Model, err error, token []byte) error {
+		// ignore opened, resumed and stopped events
+		if e == coal.Opened || e == coal.Resumed || e == coal.Stopped {
+			return nil
+		}
+
+		// handle errors
+		if e == coal.Errored {
+			// report error
+			reporter(err)
+
+			return nil
+		}
+
+		// ignore real deleted events when soft delete has been enabled
+		if s.SoftDelete && e == coal.Deleted {
+			return nil
+		}
+
+		// handle soft deleted documents
+		if s.SoftDelete && e == coal.Updated {
+			// get soft delete field
+			softDeleteField := coal.L(s.Model, "fire-soft-delete", true)
+
+			// get deleted time
+			t := model.MustGet(softDeleteField).(*time.Time)
+
+			// change type if document has been soft deleted
+			if t != nil && !t.IsZero() {
+				e = coal.Deleted
+			}
+		}
+
+		// create event
+		evt := &Event{
+			Type:   e,
+			ID:     id,
+			Model:  model,
+			Stream: s,
+		}
+
+		// broadcast event
+		manager.broadcast(evt)
+
+		return nil
+	})
+}
+
+func (s *Stream) close() {
+	s.stream.Close()
 }

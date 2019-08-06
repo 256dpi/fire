@@ -111,6 +111,8 @@ func TestWatcherWebSockets(t *testing.T) {
 			"`+itm.ID().Hex()+`": "deleted"
 		}
 	}`, string(bytes))
+
+	watcher.Close()
 }
 
 func TestWatcherSSE(t *testing.T) {
@@ -163,4 +165,6 @@ func TestWatcherSSE(t *testing.T) {
 		`data: {"items":{"` + itm.ID().Hex() + `":"updated"}}`,
 		`data: {"items":{"` + itm.ID().Hex() + `":"deleted"}}`,
 	}, strings.Split(strings.TrimSpace(rec.Body.String()), "\n\n"))
+
+	watcher.Close()
 }
