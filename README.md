@@ -88,7 +88,7 @@ type Post struct {
 }
 ```
 
-- Fire will use the `bson` struct tag to infer the database field or fallback to the lowercase version of the field name.
+- The `bson` struct tag is used to infer the database field or fallback to the lowercase version of the field name.
 - The `json` struct tag is used for marshaling and unmarshaling the models attributes from or to a JSON API resource object. Hidden fields can be marked with the tag `json:"-"`.
 - Fields that may only be present while creating the resource (e.g. a plain password field) can be made optional and temporary using `json:"password,omitempty" bson:"-"`.
 - The `coal` tag may be used on fields to tag them with custom and builtin tags.
@@ -106,8 +106,8 @@ post.ID()
 The [`MustGet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustGet) and [`MustSet`](https://godoc.org/github.com/256dpi/fire/coal#Base.MustSet) methods can be used to get and set any field on the model:
 
 ```go
-title := post.MustGet("title")
-post.MustSet("title", "New Title")
+title := post.MustGet("Title")
+post.MustSet("Title", "New Title")
 ```
 
 - Both methods use the field name e.g. `TextBody` to find the value and panic if no matching field is found.
@@ -195,7 +195,7 @@ The [`C`](https://godoc.org/github.com/256dpi/fire/coal#Store.C) method can be u
 coll := store.C(&Post{})
 ```
 
-The store does not provide other typical ORM methods that wrap the underlying driver, instead custom code should use the underlying directly to get access to all offered features.
+The store does not provide other typical ORM methods that wrap the underlying driver, instead custom code should use the driver directly to get access to all offered features.
 
 ### Advanced Features
 
@@ -205,6 +205,7 @@ The `coal` package offers the following advanced features:
 - [`Reconcile`](https://godoc.org/github.com/256dpi/fire/coal#Reconcile) uses streams to provide an simple API to synchronize a collection of models.
 - [`Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
 - [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
+- Various helpers to DRY up the code.
 
 ## Controllers
 
@@ -343,7 +344,7 @@ The `fire` package offers the following advanced features:
 - [`NoList`](https://godoc.org/github.com/256dpi/fire#Controller.NoList): disables resource listing.
 - [`ListLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): enforces pagination of list responses.
 - [`DocumentLimit`](https://godoc.org/github.com/256dpi/fire#Controller.ListLimit): protects the API from big requests.
-- [`UseTransactions`](https://godoc.org/github.com/256dpi/fire#Controller.UseTransactions): ensure atomicity using database transactions.
+- [`UseTransactions`](https://godoc.org/github.com/256dpi/fire#Controller.UseTransactions): ensures atomicity using database transactions.
 - [`TolerateViolations`](https://godoc.org/github.com/256dpi/fire#Controller.TolerateViolations): tolerates writes to inaccessible fields.
 - [`IdempotentCreate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures idempotency of resource creations.
 - [`ConsistentUpdate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures consistency of parallel resource updates.
@@ -355,7 +356,7 @@ The `fire` package offers the following advanced features:
 
 ## Authentication
 
-The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) package implements the OAuth2 specification and provides the Resource Owner Password, Client Credentials and Implicit grant. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
+The [`flame`](https://godoc.org/github.com/256dpi/fire/flame) package implements the OAuth2 specification and provides the "Resource Owner Password", "Client Credentials" and "Implicit" grants. The issued access and refresh tokens are [JWT](https://jwt.io) tokens and are thus able to transport custom data.
 
 Every authenticator needs a [`Policy`](https://godoc.org/github.com/256dpi/fire/flame#Policy) that describes how the authentication is enforced. A basic policy can be created and extended using [`DefaultPolicy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultPolicy):
 
@@ -367,11 +368,15 @@ policy.PasswordGrant = true
 - The default policy uses the built-in [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token), [`User`](https://godoc.org/github.com/256dpi/fire/flame#User) and [`Application`](https://godoc.org/github.com/256dpi/fire/flame#Application) model and the [`DefaultGrantStrategy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultGrantStrategy).
 - You might want to add the indexer for the built-on models using [`AddTokenIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddTokenIndexes), [`AddApplicationIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddApplicationIndexes) and [`AddUserIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddUserIndexes).
 
-An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator) is created by specifying the policy and store. After that, it can be mounted and served using for example the built-in http package:
+An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator) is created by specifying the policy and store:
 
 ```go
 authenticator := flame.NewAuthenticator(store, policy)
+```
+ 
+After that, it can be mounted and served using the built-in http package:
 
+```go
 http.Handle("/auth/", authenticator.Endpoint("/auth/"))
 ```
 
@@ -379,7 +384,7 @@ A controller group or other endpoints can then be proctected by adding the [`Aut
 
 ```
 endpoint := flame.Compose(
-    authenticator.Authorizer("", true, true),
+    authenticator.Authorizer("custom-scope", true, true),
     group.Endpoint("/api/"),
 )
 ```
