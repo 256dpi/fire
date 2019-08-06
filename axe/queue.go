@@ -25,7 +25,7 @@ type Queue struct {
 	// By default multiple processes compete with each other when getting jobs
 	// from the same queue. An artificial lag prevents multiple simultaneous
 	// dequeue attempts and allows the worker with the smallest lag to dequeue
-	// the job and inform the other processed to prevent another dequeue attempt.
+	// the job and inform the other processes to prevent another dequeue attempt.
 	//
 	// Default: 0.
 	MaxLag time.Duration
