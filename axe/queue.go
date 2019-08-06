@@ -26,8 +26,14 @@ type Queue struct {
 	// dequeue attempts and allows the worker with the smallest lag to dequeue
 	// the job and inform the other processes to prevent another dequeue attempt.
 	//
-	// Default: 0.
+	// Default: 100ms.
 	MaxLag time.Duration
+
+	// DequeueInterval defines the time after a worker might try to dequeue a job
+	// again that has not yet been associated.
+	//
+	// Default: 2s.
+	DequeueInterval time.Duration
 
 	store  *coal.Store
 	tasks  []string
@@ -94,6 +100,16 @@ func (q *Queue) Callback(name string, delay time.Duration, matcher fire.Matcher,
 }
 
 func (q *Queue) start(p *Pool) {
+	// set default max lag
+	if q.MaxLag == 0 {
+		q.MaxLag = 100 * time.Millisecond
+	}
+
+	// set default dequeue interval
+	if q.DequeueInterval == 0 {
+		q.DequeueInterval = 2 * time.Second
+	}
+
 	// initialize boards
 	q.boards = make(map[string]*board)
 
@@ -151,7 +167,7 @@ func (q *Queue) update(job *Job) {
 	}
 }
 
-func (q *Queue) get(name string, timeout time.Duration) *Job {
+func (q *Queue) get(name string) *Job {
 	// get board
 	board := q.boards[name]
 
@@ -182,7 +198,7 @@ func (q *Queue) get(name string, timeout time.Duration) *Job {
 	// make job unavailable until the specified timeout has been reached. this
 	// ensures that a job dequeued by a crashed worker will be picked up by
 	// another worker at some point
-	job.Available = job.Available.Add(timeout)
+	job.Available = job.Available.Add(q.DequeueInterval)
 
 	return job
 }

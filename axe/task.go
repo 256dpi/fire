@@ -160,7 +160,7 @@ func (t *Task) worker(p *Pool) {
 		}
 
 		// attempt to get job from queue
-		job := t.Queue.get(t.Name, t.Timeout)
+		job := t.Queue.get(t.Name)
 		if job == nil {
 			// wait some time before trying again
 			select {
