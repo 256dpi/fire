@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire"
@@ -110,107 +109,49 @@ func (q *Queue) start(p *Pool) {
 }
 
 func (q *Queue) watcher(p *Pool) {
-	// open stream
-	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, model coal.Model, err error, token []byte) error {
-		// ignore resumed, deleted and stopped events
-		if e == coal.Resumed || e == coal.Deleted || e == coal.Stopped {
-			return nil
-		}
-
-		// handle errors
-		if e == coal.Errored {
-			// report error
-			p.Reporter(err)
-
-			return nil
-		}
-
-		// check for opened event
-		if e == coal.Opened {
-			return q.fill()
-		}
-
-		// get job
-		job := model.(*Job)
-
-		// get board
-		board, ok := q.boards[job.Name]
-		if !ok {
-			return nil
-		}
-
-		// handle job
-		switch job.Status {
-		case StatusEnqueued, StatusDequeued, StatusFailed:
-			// apply random lag if configured
-			if q.MaxLag > 0 {
-				lag := time.Duration(rand.Int63n(int64(q.MaxLag)))
-				job.Available = job.Available.Add(lag)
-			}
-
-			// add job
-			board.Lock()
-			board.jobs[job.ID()] = job
-			board.Unlock()
-		case StatusCompleted, StatusCancelled:
-			// remove job
-			board.Lock()
-			delete(board.jobs, job.ID())
-			board.Unlock()
-		}
-
-		return nil
-	})
+	// reconcile jobs
+	stream := coal.Reconcile(q.store, &Job{}, func(model coal.Model) {
+		q.update(model.(*Job))
+	}, func(model coal.Model) {
+		q.update(model.(*Job))
+	}, nil, p.Reporter)
 
 	// await close
 	<-p.closed
 
 	// close stream
-	s.Close()
+	stream.Close()
 }
 
-func (q *Queue) fill() error {
-	// get existing jobs
-	var jobs []*Job
-	cursor, err := q.store.C(&Job{}).Find(nil, bson.M{
-		coal.F(&Job{}, "Status"): bson.M{
-			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
-		},
-	})
-	if err != nil {
-		return err
+func (q *Queue) update(job *Job) {
+	// get board
+	board, ok := q.boards[job.Name]
+	if !ok {
+		return
 	}
 
-	// decode all results
-	err = cursor.All(nil, &jobs)
-	if err != nil {
-		return err
-	}
+	// lock board
+	board.Lock()
+	defer board.Unlock()
 
-	// close cursor
-	err = cursor.Close(nil)
-	if err != nil {
-		return err
-	}
-
-	// add jobs
-	for _, job := range jobs {
-		// get board
-		board, ok := q.boards[job.Name]
-		if !ok {
-			continue
+	// handle job
+	switch job.Status {
+	case StatusEnqueued, StatusDequeued, StatusFailed:
+		// apply random lag if configured
+		if q.MaxLag > 0 {
+			lag := time.Duration(rand.Int63n(int64(q.MaxLag)))
+			job.Available = job.Available.Add(lag)
 		}
 
-		// add job
-		board.Lock()
+		// updated job
 		board.jobs[job.ID()] = job
-		board.Unlock()
+	case StatusCompleted, StatusCancelled:
+		// remove job
+		delete(board.jobs, job.ID())
 	}
-
-	return nil
 }
 
-func (q *Queue) get(name string) *Job {
+func (q *Queue) get(name string, timeout time.Duration) *Job {
 	// get board
 	board := q.boards[name]
 
@@ -224,7 +165,7 @@ func (q *Queue) get(name string) *Job {
 	// get a random job
 	var job *Job
 	for _, job = range board.jobs {
-		// ignore jobs that are delayed
+		// ignore jobs that are not yet available
 		if job.Available.After(now) {
 			job = nil
 			continue
@@ -233,13 +174,15 @@ func (q *Queue) get(name string) *Job {
 		break
 	}
 
-	// return nil if not found
+	// check job
 	if job == nil {
 		return nil
 	}
 
-	// delete job
-	delete(board.jobs, job.ID())
+	// make job unavailable until the specified timeout has been reached. this
+	// ensures that a job dequeued by a crashed worker will be picked up by
+	// another worker at some point
+	job.Available = job.Available.Add(timeout)
 
 	return job
 }
