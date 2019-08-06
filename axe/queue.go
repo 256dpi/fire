@@ -111,24 +111,27 @@ func (q *Queue) start(p *Pool) {
 
 func (q *Queue) watcher(p *Pool) {
 	// open stream
-	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) error {
+	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, model coal.Model, err error, token []byte) error {
+		// ignore resumed, deleted and stopped events
+		if e == coal.Resumed || e == coal.Deleted || e == coal.Stopped {
+			return nil
+		}
+
+		// handle errors
+		if e == coal.Errored {
+			// report error
+			p.Reporter(err)
+
+			return nil
+		}
+
 		// check for opened event
 		if e == coal.Opened {
 			return q.fill()
 		}
 
-		// ignore resumed events
-		if e == coal.Resumed {
-			return nil
-		}
-
-		// ignore deleted events
-		if e == coal.Deleted {
-			return nil
-		}
-
 		// get job
-		job := m.(*Job)
+		job := model.(*Job)
 
 		// get board
 		board, ok := q.boards[job.Name]
@@ -157,11 +160,6 @@ func (q *Queue) watcher(p *Pool) {
 		}
 
 		return nil
-	}, func(err error) bool {
-		// report error
-		p.Reporter(err)
-
-		return true
 	})
 
 	// wait close
