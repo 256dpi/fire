@@ -2,12 +2,16 @@ package coal
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/tomb.v2"
 )
+
+// ErrStop may be returned by a receiver to stop the stream.
+var ErrStop = errors.New("stop")
 
 // Event defines the event type.
 type Event string
@@ -29,19 +33,25 @@ const (
 
 	// Deleted is emitted when a document has been deleted.
 	Deleted Event = "deleted"
+
+	// Errored is emitted when the underlying stream or the receiver returned an
+	// error.
+	Errored Event = "errored"
+
+	// Stopped is emitted when the stream has been stopped
+	Stopped Event = "stopped"
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(Event, primitive.ObjectID, Model, []byte) error
+type Receiver func(Event, primitive.ObjectID, Model, error, []byte) error
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
 type Stream struct {
 	store    *Store
 	model    Model
-	token    *bson.Raw
+	token    []byte
 	receiver Receiver
-	manager  func(error) bool
 
 	opened bool
 	tomb   tomb.Tomb
@@ -56,23 +66,13 @@ type Stream struct {
 // The stream automatically resumes on errors using an internally stored resume
 // token. Applications that need more control should store the token externally
 // and reopen the stream manually to resume from a specific position.
-func OpenStream(store *Store, model Model, token []byte, receiver Receiver, manager func(error) bool) *Stream {
-	// prepare resume token
-	var resumeToken *bson.Raw
-
-	// create resume token if available
-	if token != nil {
-		rawToken := bson.Raw(token)
-		resumeToken = &rawToken
-	}
-
+func OpenStream(store *Store, model Model, token []byte, receiver Receiver) *Stream {
 	// create stream
 	s := &Stream{
 		store:    store,
 		model:    model,
-		token:    resumeToken,
+		token:    token,
 		receiver: receiver,
-		manager:  manager,
 	}
 
 	// open stream
@@ -97,22 +97,24 @@ func (s *Stream) open() error {
 		}
 
 		// tail stream
-		err := s.tail(s.receiver)
-		if err != nil {
-			if s.manager != nil {
-				if !s.manager(err) {
-					return err
-				}
-			}
+		err := s.tail()
+		if err == ErrStop {
+			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
+		}
+
+		// emit error
+		err = s.receiver(Errored, primitive.NilObjectID, nil, err, s.token)
+		if err == ErrStop {
+			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
 		}
 	}
 }
 
-func (s *Stream) tail(rec Receiver) error {
+func (s *Stream) tail() error {
 	// prepare opts
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	if s.token != nil {
-		opts.SetResumeAfter(*s.token)
+		opts.SetResumeAfter(bson.Raw(s.token))
 	}
 
 	// open change stream
@@ -127,13 +129,13 @@ func (s *Stream) tail(rec Receiver) error {
 	// check if stream has been opened before
 	if !s.opened {
 		// signal opened
-		err = rec(Opened, primitive.NilObjectID, nil, nil)
+		err = s.receiver(Opened, primitive.NilObjectID, nil, nil, s.token)
 		if err != nil {
 			return err
 		}
 	} else {
 		// signal resumed
-		err = rec(Resumed, primitive.NilObjectID, nil, nil)
+		err = s.receiver(Resumed, primitive.NilObjectID, nil, nil, s.token)
 		if err != nil {
 			return err
 		}
@@ -184,13 +186,13 @@ func (s *Stream) tail(rec Receiver) error {
 		}
 
 		// call receiver
-		err = rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken)
+		err = s.receiver(typ, ch.DocumentKey.ID, doc, nil, ch.ResumeToken)
 		if err != nil {
 			return err
 		}
 
 		// save token
-		s.token = &ch.ResumeToken
+		s.token = ch.ResumeToken
 	}
 
 	// close stream and check error
@@ -199,7 +201,7 @@ func (s *Stream) tail(rec Receiver) error {
 		return err
 	}
 
-	return nil
+	return ErrStop
 }
 
 type change struct {

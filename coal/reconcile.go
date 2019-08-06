@@ -45,7 +45,7 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 	}
 
 	// open stream
-	stream := OpenStream(store, model, nil, func(event Event, id primitive.ObjectID, model Model, bytes []byte) error {
+	stream := OpenStream(store, model, nil, func(event Event, id primitive.ObjectID, model Model, err error, bytes []byte) error {
 		// handle events
 		switch event {
 		case Opened:
@@ -65,16 +65,14 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 			if deleted != nil {
 				deleted(id)
 			}
+		case Errored:
+			// call callback if available
+			if report != nil {
+				report(err)
+			}
 		}
 
 		return nil
-	}, func(err error) bool {
-		// call callback if available
-		if report != nil {
-			report(err)
-		}
-
-		return true
 	})
 
 	return stream
