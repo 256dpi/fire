@@ -48,10 +48,15 @@ func (w *Watcher) Add(stream *Stream) {
 	w.streams[stream.Name()] = stream
 
 	// open stream
-	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) {
+	coal.OpenStream(stream.Store, stream.Model, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) error {
+		// ignore opened and resumed events
+		if e == coal.Opened || e == coal.Resumed {
+			return nil
+		}
+
 		// ignore real deleted events when soft delete has been enabled
 		if stream.SoftDelete && e == coal.Deleted {
-			return
+			return nil
 		}
 
 		// handle soft deleted documents
@@ -78,7 +83,9 @@ func (w *Watcher) Add(stream *Stream) {
 
 		// broadcast event
 		w.manager.broadcast(evt)
-	}, nil, func(err error) bool {
+
+		return nil
+	}, func(err error) bool {
 		// report error
 		w.Reporter(err)
 

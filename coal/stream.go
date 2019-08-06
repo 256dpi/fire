@@ -2,7 +2,6 @@ package coal
 
 import (
 	"context"
-	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,6 +13,14 @@ import (
 type Event string
 
 const (
+	// Opened is emitted when the stream has been opened the first time. If the
+	// receiver returns without and error it will not be emitted again in favor
+	// of the resumed event.
+	Opened Event = "opened"
+
+	// Resumed is emitted after the stream has been resumed.
+	Resumed Event = "resumed"
+
 	// Created is emitted when a document has been created.
 	Created Event = "created"
 
@@ -25,7 +32,7 @@ const (
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(Event, primitive.ObjectID, Model, []byte)
+type Receiver func(Event, primitive.ObjectID, Model, []byte) error
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
@@ -34,23 +41,22 @@ type Stream struct {
 	model    Model
 	token    *bson.Raw
 	receiver Receiver
-	opened   func()
 	manager  func(error) bool
 
-	tomb tomb.Tomb
+	opened bool
+	tomb   tomb.Tomb
 }
 
 // OpenStream will open a stream and continuously forward events to the specified
 // receiver until the stream is closed. If a token is present it will be used to
-// resume the stream. The provided opened function is called when the stream has
-// been opened the first time. The passed manager is called with errors returned
-// by the underlying change stream. The managers result is used to determine if
-// the stream should be opened again.
+// resume the stream. The passed manager is called with errors returned by the
+// underlying change stream and the receiver function. The managers result is
+// used to determine if the stream should be resumed.
 //
 // The stream automatically resumes on errors using an internally stored resume
 // token. Applications that need more control should store the token externally
 // and reopen the stream manually to resume from a specific position.
-func OpenStream(store *Store, model Model, token []byte, receiver Receiver, opened func(), manager func(error) bool) *Stream {
+func OpenStream(store *Store, model Model, token []byte, receiver Receiver, manager func(error) bool) *Stream {
 	// prepare resume token
 	var resumeToken *bson.Raw
 
@@ -66,7 +72,6 @@ func OpenStream(store *Store, model Model, token []byte, receiver Receiver, open
 		model:    model,
 		token:    resumeToken,
 		receiver: receiver,
-		opened:   opened,
 		manager:  manager,
 	}
 
@@ -84,18 +89,6 @@ func (s *Stream) Close() {
 }
 
 func (s *Stream) open() error {
-	// prepare once
-	var once sync.Once
-
-	// prepare opened
-	opened := func() {
-		once.Do(func() {
-			if s.opened != nil {
-				s.opened()
-			}
-		})
-	}
-
 	// run forever and call manager with eventual errors
 	for {
 		// check if alive
@@ -104,7 +97,7 @@ func (s *Stream) open() error {
 		}
 
 		// tail stream
-		err := s.tail(s.receiver, opened)
+		err := s.tail(s.receiver)
 		if err != nil {
 			if s.manager != nil {
 				if !s.manager(err) {
@@ -115,7 +108,7 @@ func (s *Stream) open() error {
 	}
 }
 
-func (s *Stream) tail(rec Receiver, opened func()) error {
+func (s *Stream) tail(rec Receiver) error {
 	// prepare opts
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	if s.token != nil {
@@ -131,8 +124,23 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 	// ensure stream is closed
 	defer cs.Close(nil)
 
-	// signal open
-	opened()
+	// check if stream has been opened before
+	if !s.opened {
+		// signal opened
+		err = rec(Opened, primitive.NilObjectID, nil, nil)
+		if err != nil {
+			return err
+		}
+	} else {
+		// signal resumed
+		err = rec(Resumed, primitive.NilObjectID, nil, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	// set flag
+	s.opened = true
 
 	// iterate on elements forever
 	for cs.Next(s.tomb.Context(nil)) {
@@ -176,7 +184,10 @@ func (s *Stream) tail(rec Receiver, opened func()) error {
 		}
 
 		// call receiver
-		rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken)
+		err = rec(typ, ch.DocumentKey.ID, doc, ch.ResumeToken)
+		if err != nil {
+			return err
+		}
 
 		// save token
 		s.token = &ch.ResumeToken

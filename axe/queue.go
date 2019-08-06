@@ -110,14 +110,21 @@ func (q *Queue) start(p *Pool) {
 }
 
 func (q *Queue) watcher(p *Pool) {
-	// prepare channel
-	open := make(chan struct{})
-
 	// open stream
-	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) {
+	s := coal.OpenStream(q.store, &Job{}, nil, func(e coal.Event, id primitive.ObjectID, m coal.Model, token []byte) error {
+		// check for opened event
+		if e == coal.Opened {
+			return q.fill()
+		}
+
+		// ignore resumed events
+		if e == coal.Resumed {
+			return nil
+		}
+
 		// ignore deleted events
 		if e == coal.Deleted {
-			return
+			return nil
 		}
 
 		// get job
@@ -126,7 +133,7 @@ func (q *Queue) watcher(p *Pool) {
 		// get board
 		board, ok := q.boards[job.Name]
 		if !ok {
-			return
+			return nil
 		}
 
 		// handle job
@@ -148,34 +155,14 @@ func (q *Queue) watcher(p *Pool) {
 			delete(board.jobs, job.ID())
 			board.Unlock()
 		}
-	}, func() {
-		// signal open
-		close(open)
+
+		return nil
 	}, func(err error) bool {
 		// report error
 		p.Reporter(err)
 
 		return true
 	})
-
-	// await stream open
-	select {
-	case <-open:
-		// continue
-	case <-p.closed:
-		// close stream
-		s.Close()
-
-		return
-	}
-
-	// fill queue with existing jobs
-	err := q.fill()
-	if err != nil {
-		if p.Reporter != nil {
-			p.Reporter(err)
-		}
-	}
 
 	// wait close
 	select {
