@@ -387,6 +387,8 @@ func TestStreamInvalidation(t *testing.T) {
 			assert.Nil(t, model)
 			assert.Equal(t, ErrInvalidated, err)
 			assert.NotNil(t, token)
+
+			return ErrStop
 		case 4:
 			assert.Equal(t, Stopped, e)
 			assert.Zero(t, id)

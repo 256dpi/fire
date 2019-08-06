@@ -156,28 +156,19 @@ func (s *Stream) tail() error {
 			return err
 		}
 
-		// handle invalidate events
-		if ch.OperationType == "invalidate" {
-			err = s.receiver(Errored, primitive.NilObjectID, nil, ErrInvalidated, s.token)
-			if err != nil {
-				return err
-			}
-
-			return ErrStop
-		}
-
 		// prepare type
 		var typ Event
 
 		// parse operation type
-		if ch.OperationType == "insert" {
+		switch ch.OperationType {
+		case "insert":
 			typ = Created
-		} else if ch.OperationType == "replace" || ch.OperationType == "update" {
+		case "replace", "update":
 			typ = Updated
-		} else if ch.OperationType == "delete" {
+		case "delete":
 			typ = Deleted
-		} else {
-			continue
+		case "drop", "renamed", "dropDatabase", "invalidate":
+			return ErrInvalidated
 		}
 
 		// prepare document
