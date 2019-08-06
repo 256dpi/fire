@@ -1,6 +1,7 @@
 package spark
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -133,9 +134,12 @@ func TestWatcherSSE(t *testing.T) {
 		Action: watcher.Action(),
 	})
 
-	rec := newResponseRecorder()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	rec := httptest.NewRecorder()
 	data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
 	req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
+	req = req.WithContext(ctx)
 
 	itm := coal.Init(&itemModel{
 		Bar: "bar",
@@ -153,7 +157,7 @@ func TestWatcherSSE(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 
-		rec.Close()
+		cancel()
 	}()
 
 	group.Endpoint("").ServeHTTP(rec, req)

@@ -53,7 +53,12 @@ func (w *Watcher) Action() *fire.Action {
 		Methods: []string{"GET"},
 		Callback: fire.C("spark/Watcher.Action", fire.All(), func(ctx *fire.Context) error {
 			// handle connection
-			w.manager.handle(ctx)
+			err := w.manager.handle(ctx)
+			if err != nil {
+				if w.Reporter != nil {
+					w.Reporter(err)
+				}
+			}
 
 			return nil
 		}),

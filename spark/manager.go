@@ -100,27 +100,20 @@ func (m *manager) broadcast(evt *Event) {
 	m.events <- evt
 }
 
-func (m *manager) handle(ctx *fire.Context) {
+func (m *manager) handle(ctx *fire.Context) error {
 	// check if websocket upgrade
 	if websocket.IsWebSocketUpgrade(ctx.HTTPRequest) {
-		m.handleWebsocket(ctx)
-	} else {
-		m.handleSSE(ctx)
+		return m.handleWebsocket(ctx)
 	}
+
+	return m.handleSSE(ctx)
 }
 
-func (m *manager) handleWebsocket(ctx *fire.Context) {
+func (m *manager) handleWebsocket(ctx *fire.Context) error {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
-		// upgrader already responded with an error
-
-		// call reporter if available
-		if m.watcher.Reporter != nil {
-			m.watcher.Reporter(err)
-		}
-
-		return
+		return err
 	}
 
 	// ensure the connections gets closed
@@ -132,17 +125,18 @@ func (m *manager) handleWebsocket(ctx *fire.Context) {
 	// register queue
 	m.subscribes <- q
 
+	// ensure unsubscribe
+	defer func() {
+		m.unsubscribes <- q
+	}()
+
 	// process (reuse current goroutine)
 	err = m.websocketLoop(ctx, conn, q)
 	if err != nil {
-		// call reporter if available
-		if m.watcher.Reporter != nil {
-			m.watcher.Reporter(err)
-		}
+		return err
 	}
 
-	// unsubscribe queue
-	m.unsubscribes <- q
+	return nil
 }
 
 func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
@@ -311,26 +305,19 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 	}
 }
 
-func (m *manager) handleSSE(ctx *fire.Context) {
+func (m *manager) handleSSE(ctx *fire.Context) error {
 	// check flusher support
 	flusher, ok := ctx.ResponseWriter.(http.Flusher)
 	if !ok {
 		http.Error(ctx.ResponseWriter, "flushing not supported", http.StatusNotImplemented)
-		return
-	}
-
-	// check close notifier support
-	closeNotifier, ok := ctx.ResponseWriter.(http.CloseNotifier)
-	if !ok {
-		http.Error(ctx.ResponseWriter, "closing not supported", http.StatusNotImplemented)
-		return
+		return nil
 	}
 
 	// get subscription
 	name := ctx.HTTPRequest.URL.Query().Get("s")
 	if name == "" {
 		http.Error(ctx.ResponseWriter, "missing stream name", http.StatusBadRequest)
-		return
+		return nil
 	}
 
 	// prepare data
@@ -343,14 +330,14 @@ func (m *manager) handleSSE(ctx *fire.Context) {
 		bytes, err := base64.StdEncoding.DecodeString(encodedData)
 		if err != nil {
 			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
-			return
+			return nil
 		}
 
 		// unmarshal data
 		err = json.Unmarshal(bytes, &data)
 		if err != nil {
 			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
-			return
+			return nil
 		}
 	}
 
@@ -358,7 +345,7 @@ func (m *manager) handleSSE(ctx *fire.Context) {
 	stream, ok := m.watcher.streams[name]
 	if !ok {
 		http.Error(ctx.ResponseWriter, "stream not found", http.StatusBadRequest)
-		return
+		return nil
 	}
 
 	// create subscription
@@ -373,7 +360,7 @@ func (m *manager) handleSSE(ctx *fire.Context) {
 		err := stream.Validator(sub)
 		if err != nil {
 			http.Error(ctx.ResponseWriter, "invalid subscription", http.StatusBadRequest)
-			return
+			return nil
 		}
 	}
 
@@ -395,20 +382,21 @@ func (m *manager) handleSSE(ctx *fire.Context) {
 	// register queue
 	m.subscribes <- q
 
+	// ensure unsubscribe
+	defer func() {
+		m.unsubscribes <- q
+	}()
+
 	// process (reuse current goroutine)
-	err := m.sseLoop(ctx, flusher, closeNotifier.CloseNotify(), sub, q)
+	err := m.sseLoop(ctx, flusher, ctx.HTTPRequest.Context().Done(), sub, q)
 	if err != nil {
-		// call reporter if available
-		if m.watcher.Reporter != nil {
-			m.watcher.Reporter(err)
-		}
+		return err
 	}
 
-	// unsubscribe queue
-	m.unsubscribes <- q
+	return nil
 }
 
-func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan bool, sub *Subscription, queue queue) error {
+func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan struct{}, sub *Subscription, queue queue) error {
 	// get response writer
 	w := ctx.ResponseWriter
 
