@@ -2,6 +2,7 @@ package flame
 
 import (
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/opentracing/opentracing-go"
@@ -46,8 +47,10 @@ func TestMain(m *testing.M) {
 
 	opentracing.SetGlobalTracer(tracer)
 
-	m.Run()
+	ret := m.Run()
 
 	_ = closer.Close()
 	_ = tr.Close()
+
+	os.Exit(ret)
 }

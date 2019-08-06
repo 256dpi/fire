@@ -3,6 +3,7 @@ package fire
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -88,7 +89,7 @@ func TestMain(m *testing.M) {
 
 	opentracing.SetGlobalTracer(tracer)
 
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {

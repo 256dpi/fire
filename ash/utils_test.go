@@ -2,6 +2,7 @@ package ash
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/opentracing/opentracing-go"
@@ -58,5 +59,5 @@ func TestMain(m *testing.M) {
 
 	opentracing.SetGlobalTracer(tracer)
 
-	m.Run()
+	os.Exit(m.Run())
 }
