@@ -162,14 +162,11 @@ func (q *Queue) watcher(p *Pool) {
 		return nil
 	})
 
-	// wait close
-	select {
-	case <-p.closed:
-		// close stream
-		s.Close()
+	// await close
+	<-p.closed
 
-		return
-	}
+	// close stream
+	s.Close()
 }
 
 func (q *Queue) fill() error {
