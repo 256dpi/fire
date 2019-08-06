@@ -1,7 +1,6 @@
 package coal
 
 import (
-	"context"
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -43,7 +42,7 @@ const (
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(Event, primitive.ObjectID, Model, error, []byte) error
+type Receiver func(event Event, id primitive.ObjectID, model Model, err error, token []byte) error
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
@@ -59,9 +58,7 @@ type Stream struct {
 
 // OpenStream will open a stream and continuously forward events to the specified
 // receiver until the stream is closed. If a token is present it will be used to
-// resume the stream. The passed manager is called with errors returned by the
-// underlying change stream and the receiver function. The managers result is
-// used to determine if the stream should be resumed.
+// resume the stream.
 //
 // The stream automatically resumes on errors using an internally stored resume
 // token. Applications that need more control should store the token externally
@@ -89,11 +86,10 @@ func (s *Stream) Close() {
 }
 
 func (s *Stream) open() error {
-	// run forever and call manager with eventual errors
 	for {
 		// check if alive
 		if !s.tomb.Alive() {
-			return tomb.ErrDying
+			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
 		}
 
 		// tail stream
@@ -111,6 +107,9 @@ func (s *Stream) open() error {
 }
 
 func (s *Stream) tail() error {
+	// prepare context
+	ctx := s.tomb.Context(nil)
+
 	// prepare opts
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	if s.token != nil {
@@ -118,13 +117,13 @@ func (s *Stream) tail() error {
 	}
 
 	// open change stream
-	cs, err := s.store.C(s.model).Watch(context.Background(), []bson.M{}, opts)
+	cs, err := s.store.C(s.model).Watch(ctx, []bson.M{}, opts)
 	if err != nil {
 		return err
 	}
 
 	// ensure stream is closed
-	defer cs.Close(nil)
+	defer cs.Close(ctx)
 
 	// check if stream has been opened before
 	if !s.opened {
@@ -145,7 +144,7 @@ func (s *Stream) tail() error {
 	s.opened = true
 
 	// iterate on elements forever
-	for cs.Next(s.tomb.Context(nil)) {
+	for cs.Next(ctx) {
 		// decode result
 		var ch change
 		err = cs.Decode(&ch)
@@ -196,7 +195,7 @@ func (s *Stream) tail() error {
 	}
 
 	// close stream and check error
-	err = cs.Close(nil)
+	err = cs.Close(ctx)
 	if err != nil {
 		return err
 	}
