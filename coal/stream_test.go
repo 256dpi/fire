@@ -355,3 +355,67 @@ func TestStreamError(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 }
+
+func TestStreamInvalidation(t *testing.T) {
+	tester.Clean()
+
+	time.Sleep(100 * time.Millisecond)
+
+	open := make(chan struct{})
+	done := make(chan struct{})
+
+	i := 0
+	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+		i++
+
+		switch i {
+		case 1:
+			assert.Zero(t, id)
+			assert.Nil(t, model)
+			assert.Nil(t, token)
+
+			close(open)
+		case 2:
+			assert.Equal(t, Created, e)
+			assert.NotZero(t, id)
+			assert.NotNil(t, model)
+			assert.NoError(t, err)
+			assert.NotNil(t, token)
+		case 3:
+			assert.Equal(t, Errored, e)
+			assert.Zero(t, id)
+			assert.Nil(t, model)
+			assert.Equal(t, ErrInvalidated, err)
+			assert.NotNil(t, token)
+		case 4:
+			assert.Equal(t, Stopped, e)
+			assert.Zero(t, id)
+			assert.Nil(t, model)
+			assert.NoError(t, err)
+			assert.NotNil(t, token)
+
+			close(done)
+		default:
+			panic(e)
+		}
+
+		return nil
+	})
+
+	<-open
+
+	post := Init(&postModel{
+		Title: "foo",
+	}).(*postModel)
+
+	tester.Save(post)
+
+	err := tester.Store.C(&postModel{}).Drop(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	<-done
+
+	stream.Close()
+}

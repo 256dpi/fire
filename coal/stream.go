@@ -12,6 +12,10 @@ import (
 // ErrStop may be returned by a receiver to stop the stream.
 var ErrStop = errors.New("stop")
 
+// ErrInvalidated may be returned to the receiver if the underlying collection
+// has been invalidated due to a drop or rename of the collection or database.
+var ErrInvalidated = errors.New("invalidated")
+
 // Event defines the event type.
 type Event string
 
@@ -152,10 +156,18 @@ func (s *Stream) tail() error {
 			return err
 		}
 
+		// handle invalidate events
+		if ch.OperationType == "invalidate" {
+			err = s.receiver(Errored, primitive.NilObjectID, nil, ErrInvalidated, s.token)
+			if err != nil {
+				return err
+			}
+
+			return ErrStop
+		}
+
 		// prepare type
 		var typ Event
-
-		// TODO: Handle "drop", "rename" and "invalidate" events.
 
 		// parse operation type
 		if ch.OperationType == "insert" {
