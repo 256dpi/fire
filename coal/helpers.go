@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // C is a short-hand function to extract the collection of a model.
@@ -89,58 +88,9 @@ func L(m Model, flag string, force bool) string {
 	return ""
 }
 
-// P is a short-hand function to get a pointer of the passed object id.
-func P(id primitive.ObjectID) *primitive.ObjectID {
-	return &id
-}
-
-// N is a short-hand function to get a typed nil object id pointer.
-func N() *primitive.ObjectID {
-	return nil
-}
-
 // T is a short-hand function to get a pointer of a timestamp.
 func T(t time.Time) *time.Time {
 	return &t
-}
-
-// Unique is a helper to get a unique list of object ids.
-func Unique(ids []primitive.ObjectID) []primitive.ObjectID {
-	// prepare map
-	m := make(map[primitive.ObjectID]bool)
-	l := make([]primitive.ObjectID, 0, len(ids))
-
-	for _, id := range ids {
-		if _, ok := m[id]; !ok {
-			m[id] = true
-			l = append(l, id)
-		}
-	}
-
-	return l
-}
-
-// Contains returns true if a list of object ids contains the specified id.
-func Contains(list []primitive.ObjectID, id primitive.ObjectID) bool {
-	for _, item := range list {
-		if item == id {
-			return true
-		}
-	}
-
-	return false
-}
-
-// Includes returns true if a list of object ids includes another list of object
-// ids.
-func Includes(all, subset []primitive.ObjectID) bool {
-	for _, item := range subset {
-		if !Contains(all, item) {
-			return false
-		}
-	}
-
-	return true
 }
 
 // Require will check if the specified flags are set on the specified model and
@@ -182,22 +132,4 @@ func Sort(fields ...string) bson.D {
 	}
 
 	return sort
-}
-
-// IsValidHexObjectID will assess whether the provided string is a valid hex
-// encoded object id.
-func IsValidHexObjectID(str string) bool {
-	_, err := primitive.ObjectIDFromHex(str)
-	return err == nil
-}
-
-// MustObjectIDFromHex will convert the provided string to a object id and panic
-// if the string is not a valid object id.
-func MustObjectIDFromHex(str string) primitive.ObjectID {
-	id, err := primitive.ObjectIDFromHex(str)
-	if err != nil {
-		panic(err)
-	}
-
-	return id
 }

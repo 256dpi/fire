@@ -8,7 +8,8 @@ import (
 	"github.com/256dpi/oauth2"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
@@ -114,7 +115,7 @@ func DefaultPolicy(secret string) *Policy {
 }
 
 // GenerateToken returns a new token for the provided information.
-func (p *Policy) GenerateToken(id primitive.ObjectID, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
+func (p *Policy) GenerateToken(id coal.ID, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
 	// prepare claims
 	claims := JWTClaims{}
 	claims.Id = id.Hex()
@@ -148,7 +149,7 @@ func (p *Policy) ParseToken(str string) (*JWTClaims, bool, error) {
 	}
 
 	// parse id
-	_, err = primitive.ObjectIDFromHex(claims.Id)
+	_, err = coal.FromHex(claims.Id)
 	if err != nil {
 		return nil, false, errors.New("invalid id")
 	}

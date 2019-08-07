@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestReconcile(t *testing.T) {
@@ -29,7 +28,7 @@ func TestReconcile(t *testing.T) {
 	}, func(model Model) {
 		assert.Equal(t, post.ID(), model.ID())
 		assert.Equal(t, "bar", model.(*postModel).Title)
-	}, func(id primitive.ObjectID) {
+	}, func(id ID) {
 		assert.Equal(t, post.ID(), id)
 		close(done)
 	}, func(err error) {

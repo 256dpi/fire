@@ -11,7 +11,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -37,39 +36,39 @@ func (p *postModel) Validate() error {
 
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
-	Message   string              `json:"message"`
-	Deleted   *time.Time          `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
-	Parent    *primitive.ObjectID `json:"-" bson:"parent_id" coal:"parent:comments"`
-	Post      primitive.ObjectID  `json:"-" bson:"post_id" coal:"post:posts"`
+	Message   string     `json:"message"`
+	Deleted   *time.Time `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
+	Parent    *coal.ID   `json:"-" bson:"parent_id" coal:"parent:comments"`
+	Post      coal.ID    `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 type selectionModel struct {
 	coal.Base   `json:"-" bson:",inline" coal:"selections:selections"`
-	Name        string               `json:"name"`
-	CreateToken string               `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
-	UpdateToken string               `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
-	Posts       []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	Name        string    `json:"name"`
+	CreateToken string    `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
+	UpdateToken string    `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
+	Posts       []coal.ID `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
 type noteModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"notes"`
-	Title     string             `json:"title" bson:"title"`
-	Post      primitive.ObjectID `json:"-" bson:"post_id" coal:"post:posts"`
+	Title     string  `json:"title" bson:"title"`
+	Post      coal.ID `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"foos"`
-	Foo       primitive.ObjectID   `json:"-" bson:"foo_id" coal:"foo:foos"`
-	OptFoo    *primitive.ObjectID  `json:"-" bson:"opt_foo_id" coal:"o-foo:foos"`
-	Foos      []primitive.ObjectID `json:"-" bson:"foo_ids" coal:"foos:foos"`
-	Bar       primitive.ObjectID   `json:"-" bson:"bar_id" coal:"bar:bars"`
-	OptBar    *primitive.ObjectID  `json:"-" bson:"opt_bar_id" coal:"o-bar:bars"`
-	Bars      []primitive.ObjectID `json:"-" bson:"bar_ids" coal:"bars:bars"`
+	Foo       coal.ID   `json:"-" bson:"foo_id" coal:"foo:foos"`
+	OptFoo    *coal.ID  `json:"-" bson:"opt_foo_id" coal:"o-foo:foos"`
+	Foos      []coal.ID `json:"-" bson:"foo_ids" coal:"foos:foos"`
+	Bar       coal.ID   `json:"-" bson:"bar_id" coal:"bar:bars"`
+	OptBar    *coal.ID  `json:"-" bson:"opt_bar_id" coal:"o-bar:bars"`
+	Bars      []coal.ID `json:"-" bson:"bar_ids" coal:"bars:bars"`
 }
 
 type barModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"bars"`
-	Foo       primitive.ObjectID `json:"-" bson:"foo_id" coal:"foo:foos"`
+	Foo       coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
 }
 
 var tester = NewTester(

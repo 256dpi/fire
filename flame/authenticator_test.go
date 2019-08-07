@@ -11,7 +11,8 @@ import (
 	"github.com/256dpi/oauth2/spec"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestIntegration(t *testing.T) {
@@ -107,7 +108,7 @@ func TestIntegration(t *testing.T) {
 		Application: app1.ID(),
 	}).(*Token)
 
-	config.UnknownToken = mustGenerateAccessToken(p, primitive.NewObjectID(), time.Now())
+	config.UnknownToken = mustGenerateAccessToken(p, coal.New(), time.Now())
 	config.ExpiredToken = mustGenerateAccessToken(p, expiredToken.ID(), expiredToken.ExpiresAt)
 	config.InsufficientToken = mustGenerateAccessToken(p, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
@@ -128,7 +129,7 @@ func TestIntegration(t *testing.T) {
 		Application: app1.ID(),
 	}).(*Token)
 
-	config.UnknownRefreshToken = mustGenerateRefreshToken(p, primitive.NewObjectID(), time.Now())
+	config.UnknownRefreshToken = mustGenerateRefreshToken(p, coal.New(), time.Now())
 	config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
 	config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
@@ -386,7 +387,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 	})
 }
 
-func mustGenerateAccessToken(p *Policy, id primitive.ObjectID, expiresAt time.Time) string {
+func mustGenerateAccessToken(p *Policy, id coal.ID, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)
@@ -395,7 +396,7 @@ func mustGenerateAccessToken(p *Policy, id primitive.ObjectID, expiresAt time.Ti
 	return str
 }
 
-func mustGenerateRefreshToken(p *Policy, id primitive.ObjectID, expiresAt time.Time) string {
+func mustGenerateRefreshToken(p *Policy, id coal.ID, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/tomb.v2"
 )
@@ -46,7 +45,7 @@ const (
 )
 
 // Receiver is a callback that receives stream events.
-type Receiver func(event Event, id primitive.ObjectID, model Model, err error, token []byte) error
+type Receiver func(event Event, id ID, model Model, err error, token []byte) error
 
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
@@ -93,19 +92,19 @@ func (s *Stream) open() error {
 	for {
 		// check if alive
 		if !s.tomb.Alive() {
-			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
+			return s.receiver(Stopped, Z(), nil, nil, s.token)
 		}
 
 		// tail stream
 		err := s.tail()
 		if err == ErrStop {
-			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
+			return s.receiver(Stopped, Z(), nil, nil, s.token)
 		}
 
 		// emit error
-		err = s.receiver(Errored, primitive.NilObjectID, nil, err, s.token)
+		err = s.receiver(Errored, Z(), nil, err, s.token)
 		if err == ErrStop {
-			return s.receiver(Stopped, primitive.NilObjectID, nil, nil, s.token)
+			return s.receiver(Stopped, Z(), nil, nil, s.token)
 		}
 	}
 }
@@ -132,13 +131,13 @@ func (s *Stream) tail() error {
 	// check if stream has been opened before
 	if !s.opened {
 		// signal opened
-		err = s.receiver(Opened, primitive.NilObjectID, nil, nil, s.token)
+		err = s.receiver(Opened, Z(), nil, nil, s.token)
 		if err != nil {
 			return err
 		}
 	} else {
 		// signal resumed
-		err = s.receiver(Resumed, primitive.NilObjectID, nil, nil, s.token)
+		err = s.receiver(Resumed, Z(), nil, nil, s.token)
 		if err != nil {
 			return err
 		}
@@ -210,7 +209,7 @@ type change struct {
 	ResumeToken   bson.Raw `bson:"_id"`
 	OperationType string   `bson:"operationType"`
 	DocumentKey   struct {
-		ID primitive.ObjectID `bson:"_id"`
+		ID ID `bson:"_id"`
 	} `bson:"documentKey"`
 	FullDocument bson.Raw `bson:"fullDocument"`
 }

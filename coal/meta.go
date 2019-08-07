@@ -5,17 +5,15 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var metaCache = make(map[reflect.Type]*Meta)
 var metaCacheMutex sync.Mutex
 
 var baseType = reflect.TypeOf(Base{})
-var toOneType = reflect.TypeOf(primitive.NewObjectID())
-var optionalToOneType = reflect.TypeOf(new(primitive.ObjectID))
-var toManyType = reflect.TypeOf(make([]primitive.ObjectID, 0))
+var toOneType = reflect.TypeOf(New())
+var optionalToOneType = reflect.TypeOf(new(ID))
+var toManyType = reflect.TypeOf(make([]ID, 0))
 var hasOneType = reflect.TypeOf(HasOne{})
 var hasManyType = reflect.TypeOf(HasMany{})
 

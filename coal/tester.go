@@ -2,7 +2,6 @@ package coal
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -105,7 +104,7 @@ func (t *Tester) Count(model Model) int {
 }
 
 // Fetch will return the saved model.
-func (t *Tester) Fetch(model Model, id primitive.ObjectID) Model {
+func (t *Tester) Fetch(model Model, id ID) Model {
 	// find specific document
 	err := t.Store.C(model).FindOne(nil, bson.M{
 		"_id": id,

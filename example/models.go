@@ -4,8 +4,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
@@ -75,5 +73,5 @@ func (i *Item) Validate() error {
 }
 
 type count struct {
-	Item primitive.ObjectID `bson:"item_id"`
+	Item coal.ID `bson:"item_id"`
 }

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -127,7 +126,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 	return job, nil
 }
 
-func dequeue(store *coal.Store, id primitive.ObjectID, timeout time.Duration) (*Job, error) {
+func dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
 	// get time
 	now := time.Now()
 
@@ -160,7 +159,7 @@ func dequeue(store *coal.Store, id primitive.ObjectID, timeout time.Duration) (*
 	return &job, nil
 }
 
-func complete(store *coal.Store, id primitive.ObjectID, result bson.M) error {
+func complete(store *coal.Store, id coal.ID, result bson.M) error {
 	// get time
 	now := time.Now()
 
@@ -182,7 +181,7 @@ func complete(store *coal.Store, id primitive.ObjectID, result bson.M) error {
 	return nil
 }
 
-func fail(store *coal.Store, id primitive.ObjectID, reason string, delay time.Duration) error {
+func fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
 	// get time
 	now := time.Now()
 
@@ -204,7 +203,7 @@ func fail(store *coal.Store, id primitive.ObjectID, reason string, delay time.Du
 	return nil
 }
 
-func cancel(store *coal.Store, id primitive.ObjectID, reason string) error {
+func cancel(store *coal.Store, id coal.ID, reason string) error {
 	// get time
 	now := time.Now()
 

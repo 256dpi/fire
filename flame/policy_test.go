@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestPolicyParseAndGenerateToken(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := coal.New()
 	tt := time.Now()
 
 	p := DefaultPolicy("")

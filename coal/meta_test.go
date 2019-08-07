@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestGetMeta(t *testing.T) {
@@ -46,7 +45,7 @@ func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  primitive.ObjectID `coal:"foo:foo:foo"`
+			Foo  ID `coal:"foo:foo:foo"`
 		}
 
 		GetMeta(&m{})
@@ -55,7 +54,7 @@ func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  []primitive.ObjectID `coal:"foo:foo:foo"`
+			Foo  []ID `coal:"foo:foo:foo"`
 		}
 
 		GetMeta(&m{})
@@ -102,8 +101,8 @@ func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
 		type m struct {
 			Base    `json:"-" bson:",inline" coal:"ms"`
-			Parent1 primitive.ObjectID `coal:"parent:parents"`
-			Parent2 primitive.ObjectID `coal:"parent:parents"`
+			Parent1 ID `coal:"parent:parents"`
+			Parent2 ID `coal:"parent:parents"`
 		}
 
 		GetMeta(&m{})

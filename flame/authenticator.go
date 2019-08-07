@@ -14,7 +14,6 @@ import (
 	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/fire"
@@ -196,7 +195,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get id
-			id, err := primitive.ObjectIDFromHex(claims.Id)
+			id, err := coal.FromHex(claims.Id)
 			if err != nil {
 				stack.Abort(bearer.InvalidToken("invalid id"))
 			}
@@ -479,7 +478,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// get id
-	id, err := primitive.ObjectIDFromHex(claims.Id)
+	id, err := coal.FromHex(claims.Id)
 	if err != nil {
 		stack.Abort(oauth2.InvalidRequest("invalid id"))
 	}
@@ -559,7 +558,7 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 	}
 
 	// parse id
-	id, err := primitive.ObjectIDFromHex(claims.Id)
+	id, err := coal.FromHex(claims.Id)
 	if err != nil {
 		state.tracer.Pop()
 		return
@@ -686,7 +685,7 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	return client
 }
 
-func (a *Authenticator) getFirstClient(state *state, id primitive.ObjectID) Client {
+func (a *Authenticator) getFirstClient(state *state, id coal.ID) Client {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getFirstClient")
 
@@ -705,7 +704,7 @@ func (a *Authenticator) getFirstClient(state *state, id primitive.ObjectID) Clie
 	return nil
 }
 
-func (a *Authenticator) getClient(state *state, model Client, id primitive.ObjectID) Client {
+func (a *Authenticator) getClient(state *state, model Client, id coal.ID) Client {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getClient")
 
@@ -801,7 +800,7 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	return resourceOwner
 }
 
-func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id primitive.ObjectID) ResourceOwner {
+func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id coal.ID) ResourceOwner {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getFirstResourceOwner")
 
@@ -820,7 +819,7 @@ func (a *Authenticator) getFirstResourceOwner(state *state, client Client, id pr
 	return nil
 }
 
-func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id primitive.ObjectID) ResourceOwner {
+func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id coal.ID) ResourceOwner {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getResourceOwner")
 
@@ -845,7 +844,7 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id p
 	return resourceOwner
 }
 
-func (a *Authenticator) getToken(state *state, model GenericToken, id primitive.ObjectID) GenericToken {
+func (a *Authenticator) getToken(state *state, model GenericToken, id coal.ID) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getToken")
 
@@ -890,7 +889,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	return token
 }
 
-func (a *Authenticator) deleteToken(state *state, model GenericToken, id primitive.ObjectID) {
+func (a *Authenticator) deleteToken(state *state, model GenericToken, id coal.ID) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.deleteToken")
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // A Catalog provides a mechanism for models to access each others meta data.
@@ -108,7 +109,8 @@ func (c *Catalog) Visualize(title string) string {
 
 		// write attributes
 		for _, field := range model.Meta().OrderedFields {
-			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial ItalicMT" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, field.Type.String()))
+			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
+			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial ItalicMT" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, typ))
 		}
 
 		// write end of tail table

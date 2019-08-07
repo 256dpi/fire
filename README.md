@@ -133,17 +133,17 @@ post.Meta().FlaggedFields
 
 ### To-One Relationships
 
-Fields of the type `primitive.ObjectID` can be marked as to-one relationships using the `coal:"name:type"` struct tag:
+Fields of the type `coal.ID` can be marked as to-one relationships using the `coal:"name:type"` struct tag:
 
 ```go
 type Comment struct {
 	// ...
-	Post primitive.ObjectID `json:"-" bson:"post_id" coal:"post:posts"`
+	Post coal.ID `json:"-" bson:"post_id" coal:"post:posts"`
     // ...
 }
 ```
 
-- Fields of the type `*primitive.ObjectID` are treated as optional relationships.
+- Fields of the type `*coal.ID` are treated as optional relationships.
 
 Note: To-one relationship fields should be excluded from the attributes object by using the `json:"-"` struct tag.
 
@@ -151,12 +151,12 @@ Note: Ember Data requires you to use dashed names for multi-word relationship na
 
 ### To-Many Relationships
 
-Fields of the type `[]primitive.ObjectID` can be marked as to-many relationships using the `coal:"name:type"` struct tag:
+Fields of the type `[]coal.ID` can be marked as to-many relationships using the `coal:"name:type"` struct tag:
 
 ```go
 type Selection struct {
     // ...
-	Posts []primitive.ObjectID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	Posts []coal.ID `json:"-" bson:"post_ids" coal:"posts:posts"`
 	// ...
 }
 ```

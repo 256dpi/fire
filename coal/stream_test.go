@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestStream(t *testing.T) {
@@ -19,7 +18,7 @@ func TestStream(t *testing.T) {
 	done := make(chan struct{})
 
 	i := 0
-	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
 		i++
 
 		switch i {
@@ -91,7 +90,7 @@ func TestStreamAutoResumption(t *testing.T) {
 	done := make(chan struct{})
 
 	i := 0
-	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
 		i++
 
 		switch i {
@@ -210,7 +209,7 @@ func TestStreamManualResumption(t *testing.T) {
 	done1 := make(chan struct{})
 
 	i := 0
-	stream1 := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	stream1 := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
 		i++
 
 		switch i {
@@ -265,7 +264,7 @@ func TestStreamManualResumption(t *testing.T) {
 	done2 := make(chan struct{})
 
 	j := 0
-	stream2 := OpenStream(tester.Store, &postModel{}, resumeToken, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	stream2 := OpenStream(tester.Store, &postModel{}, resumeToken, func(e Event, id ID, model Model, err error, token []byte) error {
 		j++
 
 		switch j {
@@ -318,7 +317,7 @@ func TestStreamError(t *testing.T) {
 	assert.NoError(t, err)
 
 	i := 1
-	OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id ID, model Model, err error, token []byte) error {
 		i++
 
 		switch i {
@@ -365,7 +364,7 @@ func TestStreamInvalidation(t *testing.T) {
 	done := make(chan struct{})
 
 	i := 0
-	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id primitive.ObjectID, model Model, err error, token []byte) error {
+	stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
 		i++
 
 		switch i {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
@@ -292,17 +291,17 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 			ref := ctx.Model.MustGet(field)
 
 			// continue if reference is not set
-			if oid, ok := ref.(*primitive.ObjectID); ok && oid == nil {
+			if oid, ok := ref.(*coal.ID); ok && oid == nil {
 				continue
 			}
 
 			// continue if slice is empty
-			if ids, ok := ref.([]primitive.ObjectID); ok && ids == nil {
+			if ids, ok := ref.([]coal.ID); ok && ids == nil {
 				continue
 			}
 
 			// handle to-many relationships
-			if ids, ok := ref.([]primitive.ObjectID); ok {
+			if ids, ok := ref.([]coal.ID); ok {
 				// prepare query
 				query := bson.M{"_id": bson.M{"$in": ids}}
 
@@ -435,29 +434,29 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 func MatchingReferencesValidator(reference string, target coal.Model, matcher map[string]string) *Callback {
 	return C("fire/MatchingReferencesValidator", Only(Create, Update), func(ctx *Context) error {
 		// prepare ids
-		var ids []primitive.ObjectID
+		var ids []coal.ID
 
 		// get reference
 		ref := ctx.Model.MustGet(reference)
 
 		// handle to-one reference
-		if id, ok := ref.(primitive.ObjectID); ok {
-			ids = []primitive.ObjectID{id}
+		if id, ok := ref.(coal.ID); ok {
+			ids = []coal.ID{id}
 		}
 
 		// handle optional to-one reference
-		if oid, ok := ref.(*primitive.ObjectID); ok {
+		if oid, ok := ref.(*coal.ID); ok {
 			// return immediately if not set
 			if oid == nil {
 				return nil
 			}
 
 			// set id
-			ids = []primitive.ObjectID{*oid}
+			ids = []coal.ID{*oid}
 		}
 
 		// handle to-many reference
-		if list, ok := ref.([]primitive.ObjectID); ok {
+		if list, ok := ref.([]coal.ID); ok {
 			// return immediately if empty
 			if len(list) == 0 {
 				return nil

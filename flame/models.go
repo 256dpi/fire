@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/256dpi/fire"
@@ -27,7 +26,7 @@ type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client primitive.ObjectID, resourceOwner *primitive.ObjectID)
+	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client coal.ID, resourceOwner *coal.ID)
 
 	// SetTokenData should set the specified token data.
 	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
@@ -36,11 +35,11 @@ type GenericToken interface {
 // Token is the built-in model used to store access and refresh tokens.
 type Token struct {
 	coal.Base   `json:"-" bson:",inline" coal:"tokens:tokens"`
-	Type        TokenType           `json:"type"`
-	ExpiresAt   time.Time           `json:"expires-at" bson:"expires_at"`
-	Scope       []string            `json:"scope" bson:"scope"`
-	Application primitive.ObjectID  `json:"-" bson:"application_id" coal:"application:applications"`
-	User        *primitive.ObjectID `json:"-" bson:"user_id" coal:"user:users"`
+	Type        TokenType `json:"type"`
+	ExpiresAt   time.Time `json:"expires-at" bson:"expires_at"`
+	Scope       []string  `json:"scope" bson:"scope"`
+	Application coal.ID   `json:"-" bson:"application_id" coal:"application:applications"`
+	User        *coal.ID  `json:"-" bson:"user_id" coal:"user:users"`
 }
 
 // AddTokenIndexes will add access token indexes to the specified indexer.
@@ -55,7 +54,7 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.GenericToken interface.
-func (t *Token) GetTokenData() (TokenType, []string, time.Time, primitive.ObjectID, *primitive.ObjectID) {
+func (t *Token) GetTokenData() (TokenType, []string, time.Time, coal.ID, *coal.ID) {
 	return t.Type, t.Scope, t.ExpiresAt, t.Application, t.User
 }
 

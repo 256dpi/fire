@@ -3,8 +3,6 @@ package spark
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
@@ -30,7 +28,7 @@ type Event struct {
 	Type coal.Event
 
 	// ID is the id of the changed resource.
-	ID primitive.ObjectID
+	ID coal.ID
 
 	// Model is the changed model.
 	//
@@ -70,7 +68,7 @@ func (s *Stream) Name() string {
 
 func (s *Stream) open(manager *manager, reporter func(error)) {
 	// open stream
-	s.stream = coal.OpenStream(s.Store, s.Model, nil, func(e coal.Event, id primitive.ObjectID, model coal.Model, err error, token []byte) error {
+	s.stream = coal.OpenStream(s.Store, s.Model, nil, func(e coal.Event, id coal.ID, model coal.Model, err error, token []byte) error {
 		// ignore opened, resumed and stopped events
 		if e == coal.Opened || e == coal.Resumed || e == coal.Stopped {
 			return nil

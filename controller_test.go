@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -77,7 +76,7 @@ func TestBasicOperations(t *testing.T) {
 	tester.Request("POST", "posts", `{
 		"data": {
 			"type": "posts",
-			"id": "`+primitive.NewObjectID().Hex()+`"
+			"id": "`+coal.New().Hex()+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
@@ -244,7 +243,7 @@ func TestBasicOperations(t *testing.T) {
 	tester.Request("PATCH", "posts/"+id, `{
 		"data": {
 			"type": "posts",
-			"id": "`+primitive.NewObjectID().Hex()+`"
+			"id": "`+coal.New().Hex()+`"
 		}
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
 		post := tester.FindLast(&postModel{})
@@ -366,7 +365,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 
 	// attempt to get not existing post
-	tester.Request("GET", "posts/"+primitive.NewObjectID().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+	tester.Request("GET", "posts/"+coal.New().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode, tester.DebugRequest(rq, r))
 		assert.JSONEq(t, `{
 			"errors": [{
@@ -945,7 +944,7 @@ func TestToOneRelationship(t *testing.T) {
 	// create comment
 	comment1 := tester.Save(&commentModel{
 		Message: "Comment 1",
-		Post:    coal.MustObjectIDFromHex(post1),
+		Post:    coal.MustFromHex(post1),
 	}).ID().Hex()
 
 	var comment2 string
@@ -1813,10 +1812,10 @@ func TestFiltering(t *testing.T) {
 	// create selections
 	selection := tester.Save(&selectionModel{
 		Name: "selection-1",
-		Posts: []primitive.ObjectID{
-			coal.MustObjectIDFromHex(post1),
-			coal.MustObjectIDFromHex(post2),
-			coal.MustObjectIDFromHex(post3),
+		Posts: []coal.ID{
+			coal.MustFromHex(post1),
+			coal.MustFromHex(post2),
+			coal.MustFromHex(post3),
 		},
 	}).ID().Hex()
 	tester.Save(&selectionModel{
@@ -1826,11 +1825,11 @@ func TestFiltering(t *testing.T) {
 	// create notes
 	note := tester.Save(&noteModel{
 		Title: "note-1",
-		Post:  coal.MustObjectIDFromHex(post1),
+		Post:  coal.MustFromHex(post1),
 	}).ID().Hex()
 	tester.Save(&noteModel{
 		Title: "note-2",
-		Post:  primitive.NewObjectID(),
+		Post:  coal.New(),
 	})
 
 	// test invalid filter
@@ -3079,7 +3078,7 @@ func TestWritableFields(t *testing.T) {
 				"posts": {
 					"data": [{
 						"type": "posts",
-						"id": "`+primitive.NewObjectID().Hex()+`"
+						"id": "`+coal.New().Hex()+`"
 					}]
 				}
 			}
@@ -3095,10 +3094,10 @@ func TestWritableFields(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
-	post := primitive.NewObjectID()
+	post := coal.New()
 
 	selection := tester.Save(&selectionModel{
-		Posts: []primitive.ObjectID{post},
+		Posts: []coal.ID{post},
 	}).ID().Hex()
 
 	// attempt to update posts relationship
@@ -3106,7 +3105,7 @@ func TestWritableFields(t *testing.T) {
 		"data": [
 			{
 				"type": "posts",
-				"id": "`+primitive.NewObjectID().Hex()+`"
+				"id": "`+coal.New().Hex()+`"
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -3125,7 +3124,7 @@ func TestWritableFields(t *testing.T) {
 		"data": [
 			{
 				"type": "posts",
-				"id": "`+primitive.NewObjectID().Hex()+`"
+				"id": "`+coal.New().Hex()+`"
 			}
 		]
 	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -3252,7 +3251,7 @@ func TestSoftProtection(t *testing.T) {
 				"posts": {
 					"data": [{
 						"type": "posts",
-						"id": "`+primitive.NewObjectID().Hex()+`"
+						"id": "`+coal.New().Hex()+`"
 					}]
 				}
 			}
@@ -3334,7 +3333,7 @@ func TestPagination(t *testing.T) {
 	})
 
 	// prepare ids
-	var ids []primitive.ObjectID
+	var ids []coal.ID
 
 	// create some posts
 	for i := 0; i < 10; i++ {
@@ -4354,7 +4353,7 @@ func TestUseTransactions(t *testing.T) {
 	})
 
 	assert.Equal(t, 1, tester.Count(&postModel{}))
-	assert.Equal(t, "Post 1", tester.Fetch(&postModel{}, coal.MustObjectIDFromHex(id)).MustGet("Title"))
+	assert.Equal(t, "Post 1", tester.Fetch(&postModel{}, coal.MustFromHex(id)).MustGet("Title"))
 }
 
 func BenchmarkList(b *testing.B) {

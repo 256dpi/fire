@@ -12,7 +12,6 @@ import (
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -172,7 +171,7 @@ func (c *Controller) prepare() {
 	// add collection actions
 	for name, action := range c.CollectionActions {
 		// check collision
-		if name == "" || coal.IsValidHexObjectID(name) {
+		if name == "" || coal.IsHex(name) {
 			panic(fmt.Sprintf(`fire: invalid collection action "%s"`, name))
 		}
 
@@ -263,7 +262,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// validate id if present
-	if req.ResourceID != "" && !coal.IsValidHexObjectID(req.ResourceID) {
+	if req.ResourceID != "" && !coal.IsHex(req.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
@@ -447,7 +446,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// set initial update token if consistent update is enabled
 	if c.ConsistentUpdate {
 		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
-		ctx.Model.MustSet(consistentUpdateField, primitive.NewObjectID().Hex())
+		ctx.Model.MustSet(consistentUpdateField, coal.New().Hex())
 	}
 
 	// check if idempotent create is enabled
@@ -569,7 +568,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		}
 
 		// generate new update token
-		ctx.Model.MustSet(consistentUpdateField, primitive.NewObjectID().Hex())
+		ctx.Model.MustSet(consistentUpdateField, coal.New().Hex())
 
 		// update model
 		res, err := ctx.TC(ctx.Model).UpdateOne(ctx.Session, bson.M{
@@ -724,12 +723,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// lookup id of related resource
 		if rel.Optional {
-			oid := ctx.Model.MustGet(rel.Name).(*primitive.ObjectID)
+			oid := ctx.Model.MustGet(rel.Name).(*coal.ID)
 			if oid != nil {
 				id = oid.Hex()
 			}
 		} else {
-			id = ctx.Model.MustGet(rel.Name).(primitive.ObjectID).Hex()
+			id = ctx.Model.MustGet(rel.Name).(coal.ID).Hex()
 		}
 
 		// tweak context
@@ -772,7 +771,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// finish to-many relationship
 	if rel.ToMany {
 		// get ids from loaded model
-		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
+		ids := ctx.Model.MustGet(rel.Name).([]coal.ID)
 
 		// tweak context
 		newCtx.Operation = List
@@ -871,7 +870,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// set selector query (supports to-one and to-many relationships)
 		newCtx.Selector[relRel.BSONField] = bson.M{
-			"$in": []primitive.ObjectID{ctx.Model.ID()},
+			"$in": []coal.ID{ctx.Model.ID()},
 		}
 
 		// load related models
@@ -1039,13 +1038,13 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 		}
 
 		// get id
-		refID, err := primitive.ObjectIDFromHex(ref.ID)
+		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
 			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
 		// get current ids
-		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
+		ids := ctx.Model.MustGet(rel.Name).([]coal.ID)
 
 		// check if id is already present
 		if coal.Contains(ids, refID) {
@@ -1122,7 +1121,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 		}
 
 		// get id
-		refID, err := primitive.ObjectIDFromHex(ref.ID)
+		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
 			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
@@ -1131,7 +1130,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 		var pos = -1
 
 		// get current ids
-		ids := ctx.Model.MustGet(rel.Name).([]primitive.ObjectID)
+		ids := ctx.Model.MustGet(rel.Name).([]coal.ID)
 
 		// check if id is already present
 		for i, id := range ids {
@@ -1277,7 +1276,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.loadModel")
 
 	// set selector query (id has been validated earlier)
-	ctx.Selector["_id"] = coal.MustObjectIDFromHex(ctx.JSONAPIRequest.ResourceID)
+	ctx.Selector["_id"] = coal.MustFromHex(ctx.JSONAPIRequest.ResourceID)
 
 	// filter out deleted documents if configured
 	if c.SoftDelete {
@@ -1358,9 +1357,9 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 
 			// convert to object ids
-			var ids []primitive.ObjectID
+			var ids []coal.ID
 			for _, str := range values {
-				refID, err := primitive.ObjectIDFromHex(str)
+				refID, err := coal.FromHex(str)
 				if err != nil {
 					stack.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
 				}
@@ -1526,7 +1525,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// handle to-one relationship
 	if field.ToOne {
 		// prepare zero value
-		var id primitive.ObjectID
+		var id coal.ID
 
 		// set and check id if available
 		if rel.Data != nil && rel.Data.One != nil {
@@ -1536,7 +1535,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			}
 
 			// get id
-			relID, err := primitive.ObjectIDFromHex(rel.Data.One.ID)
+			relID, err := coal.FromHex(rel.Data.One.ID)
 			if err != nil {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
@@ -1564,7 +1563,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// handle to-many relationship
 	if field.ToMany {
 		// prepare ids
-		ids := make([]primitive.ObjectID, len(rel.Data.Many))
+		ids := make([]coal.ID, len(rel.Data.Many))
 
 		// convert all ids
 		for i, r := range rel.Data.Many {
@@ -1574,7 +1573,7 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			}
 
 			// get id
-			relID, err := primitive.ObjectIDFromHex(r.ID)
+			relID, err := coal.FromHex(r.ID)
 			if err != nil {
 				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
@@ -1591,12 +1590,12 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[primitive.ObjectID][]primitive.ObjectID {
+func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[coal.ID][]coal.ID {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.preloadRelationships")
 
 	// prepare relationships
-	relationships := make(map[string]map[primitive.ObjectID][]primitive.ObjectID)
+	relationships := make(map[string]map[coal.ID][]coal.ID)
 
 	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
@@ -1640,7 +1639,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		}
 
 		// collect model ids
-		modelIDs := make([]primitive.ObjectID, 0, len(models))
+		modelIDs := make([]coal.ID, 0, len(models))
 		for _, model := range models {
 			modelIDs = append(modelIDs, model.ID())
 		}
@@ -1669,7 +1668,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		})))
 
 		// prepare entry
-		entry := make(map[primitive.ObjectID][]primitive.ObjectID)
+		entry := make(map[coal.ID][]coal.ID)
 
 		// collect references
 		for _, modelID := range modelIDs {
@@ -1678,23 +1677,23 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 				// handle to one references
 				if rel.ToOne {
 					// get reference id
-					rid, _ := reference[rel.BSONField].(primitive.ObjectID)
+					rid, _ := reference[rel.BSONField].(coal.ID)
 					if !rid.IsZero() && rid == modelID {
 						// add reference
-						entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
+						entry[modelID] = append(entry[modelID], reference["_id"].(coal.ID))
 					}
 				}
 
 				// handle to many references
 				if rel.ToMany {
 					// get reference ids
-					rids, _ := reference[rel.BSONField].(primitive.A)
+					rids, _ := reference[rel.BSONField].(bson.A)
 					for _, _rid := range rids {
 						// get reference id
-						rid, _ := _rid.(primitive.ObjectID)
+						rid, _ := _rid.(coal.ID)
 						if !rid.IsZero() && rid == modelID {
 							// add reference
-							entry[modelID] = append(entry[modelID], reference["_id"].(primitive.ObjectID))
+							entry[modelID] = append(entry[modelID], reference["_id"].(coal.ID))
 						}
 					}
 				}
@@ -1711,7 +1710,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	return relationships
 }
 
-func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) *jsonapi.Resource {
+func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[coal.ID][]coal.ID) *jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModel")
 
@@ -1724,7 +1723,7 @@ func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationsh
 	return resource
 }
 
-func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) []*jsonapi.Resource {
+func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[coal.ID][]coal.ID) []*jsonapi.Resource {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.resourceForModels")
 	ctx.Tracer.Tag("count", len(models))
@@ -1743,7 +1742,7 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 	return resources
 }
 
-func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[primitive.ObjectID][]primitive.ObjectID) *jsonapi.Resource {
+func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[coal.ID][]coal.ID) *jsonapi.Resource {
 	// do not trace this call
 
 	// prepare whitelist
@@ -1803,7 +1802,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			if field.Optional {
 				// get and check optional field
-				oid := model.MustGet(field.Name).(*primitive.ObjectID)
+				oid := model.MustGet(field.Name).(*coal.ID)
 
 				// create reference if id is available
 				if oid != nil {
@@ -1816,7 +1815,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
-					ID:   model.MustGet(field.Name).(primitive.ObjectID).Hex(),
+					ID:   model.MustGet(field.Name).(coal.ID).Hex(),
 				}
 			}
 
@@ -1829,7 +1828,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			}
 		} else if field.ToMany {
 			// get ids
-			ids := model.MustGet(field.Name).([]primitive.ObjectID)
+			ids := model.MustGet(field.Name).([]coal.ID)
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))

@@ -21,7 +21,7 @@ func RootTracer() func(http.Handler) http.Handler {
 
 			// replace ids
 			for i, s := range segments {
-				if coal.IsValidHexObjectID(s) {
+				if coal.IsHex(s) {
 					segments[i] = ":id"
 				}
 			}

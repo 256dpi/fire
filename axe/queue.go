@@ -5,15 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
 
 type board struct {
 	sync.Mutex
-	jobs map[primitive.ObjectID]*Job
+	jobs map[coal.ID]*Job
 }
 
 // Queue manages the queueing of jobs.
@@ -116,7 +114,7 @@ func (q *Queue) start(p *Pool) {
 	// create boards
 	for _, task := range q.tasks {
 		q.boards[task] = &board{
-			jobs: make(map[primitive.ObjectID]*Job),
+			jobs: make(map[coal.ID]*Job),
 		}
 	}
 
