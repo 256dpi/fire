@@ -3,7 +3,6 @@ package spark
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -140,6 +139,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
+		// error has already been written to client
 		return nil
 	}
 
@@ -172,22 +172,12 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 
 	// reset read deadline if a pong has been received
 	conn.SetPongHandler(func(string) error {
-		// reset read timeout
-		err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
-		if err != nil {
-			return err
-		}
-
-		// reset pinger
 		pinger.Reset(pingTimeout)
-
-		return nil
+		return conn.SetReadDeadline(time.Now().Add(receiveTimeout))
 	})
 
-	// prepare error channel
+	// prepare channels
 	errs := make(chan error, 1)
-
-	// prepare requests channel
 	reqs := make(chan request, 10)
 
 	// run reader
@@ -196,39 +186,24 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 			// reset read timeout
 			err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
 			if err != nil {
-				select {
-				case errs <- err:
-				default:
-				}
-
+				errs <- err
 				return
 			}
 
 			// read on the connection for ever
 			typ, bytes, err := conn.ReadMessage()
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				select {
-				case errs <- nil:
-				default:
-				}
-
+				close(errs)
 				return
 			} else if err != nil {
-				select {
-				case errs <- err:
-				default:
-				}
-
+				errs <- err
 				return
 			}
 
 			// check message type
 			if typ != websocket.TextMessage {
-				select {
-				case errs <- errors.New("not a text message"):
-				default:
-				}
-
+				m.websocketWriteError(conn, "not a text message")
+				close(errs)
 				return
 			}
 
@@ -236,11 +211,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 			var req request
 			err = json.Unmarshal(bytes, &req)
 			if err != nil {
-				select {
-				case errs <- err:
-				default:
-				}
-
+				errs <- err
 				return
 			}
 
@@ -251,18 +222,14 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 			select {
 			case reqs <- req:
 			case <-m.tomb.Dying():
-				select {
-				case errs <- nil:
-				default:
-				}
+				close(errs)
+				return
 			}
 		}
 	}()
 
 	// prepare registry
 	reg := map[string]*Subscription{}
-
-	// TODO: Write errors to client.
 
 	// run writer
 	for {
@@ -274,7 +241,8 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				// get stream
 				stream, ok := m.watcher.streams[name]
 				if !ok {
-					return errors.New("invalid subscription")
+					m.websocketWriteError(conn, "invalid subscription")
+					return nil
 				}
 
 				// prepare subscription
@@ -288,7 +256,8 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				if stream.Validator != nil {
 					err := stream.Validator(sub)
 					if err != nil {
-						return err
+						m.websocketWriteError(conn, "invalid subscription")
+						return nil
 					}
 				}
 
@@ -354,15 +323,22 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 		// handle errors
 		case err := <-errs:
 			return err
+		// handle close
+		case <-m.tomb.Dying():
+			return nil
 		}
 	}
+}
+
+func (m *manager) websocketWriteError(conn *websocket.Conn, msg string) {
+	_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, msg), time.Time{})
 }
 
 func (m *manager) handleSSE(ctx *fire.Context) error {
 	// check flusher support
 	flusher, ok := ctx.ResponseWriter.(http.Flusher)
 	if !ok {
-		http.Error(ctx.ResponseWriter, "flushing not supported", http.StatusNotImplemented)
+		http.Error(ctx.ResponseWriter, "SSE not supported", http.StatusNotImplemented)
 		return nil
 	}
 
