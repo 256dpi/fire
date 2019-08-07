@@ -242,8 +242,6 @@ func incrementTask(queue *axe.Queue) *axe.Task {
 
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
 	}
 }
 
