@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/fire"
 )
@@ -26,8 +27,6 @@ const (
 	receiveTimeout = 90 * time.Second
 )
 
-type queue chan *Event
-
 type request struct {
 	Subscribe   map[string]Map `json:"subscribe"`
 	Unsubscribe []string       `json:"unsubscribe"`
@@ -39,35 +38,37 @@ type manager struct {
 	watcher *Watcher
 
 	upgrader     *websocket.Upgrader
-	subscribes   chan queue
-	events       queue
-	unsubscribes chan queue
+	events       chan *Event
+	subscribes   chan chan *Event
+	unsubscribes chan chan *Event
+
+	tomb tomb.Tomb
 }
 
 func newManager(w *Watcher) *manager {
 	// create manager
-	h := &manager{
+	m := &manager{
 		watcher:      w,
 		upgrader:     &websocket.Upgrader{},
-		subscribes:   make(chan queue, 10),
-		events:       make(queue, 10),
-		unsubscribes: make(chan queue, 10),
+		events:       make(chan *Event, 10),
+		subscribes:   make(chan chan *Event, 10),
+		unsubscribes: make(chan chan *Event, 10),
 	}
 
 	// do not check request origin
-	h.upgrader.CheckOrigin = func(r *http.Request) bool {
+	m.upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
 
 	// run background process
-	go h.run()
+	m.tomb.Go(m.run)
 
-	return h
+	return m
 }
 
-func (m *manager) run() {
+func (m *manager) run() error {
 	// prepare queues
-	queues := map[queue]bool{}
+	queues := map[chan *Event]bool{}
 
 	for {
 		select {
@@ -91,16 +92,37 @@ func (m *manager) run() {
 		case q := <-m.unsubscribes:
 			// delete queue
 			delete(queues, q)
+		case <-m.tomb.Dying():
+			// close all queues
+			for queue := range queues {
+				close(queue)
+			}
+
+			// closed all subscribes
+			close(m.subscribes)
+			for sub := range m.subscribes {
+				close(sub)
+			}
+
+			return tomb.ErrDying
 		}
 	}
 }
 
 func (m *manager) broadcast(evt *Event) {
 	// queue event
-	m.events <- evt
+	select {
+	case m.events <- evt:
+	case <-m.tomb.Dying():
+	}
 }
 
 func (m *manager) handle(ctx *fire.Context) error {
+	// check if alive
+	if !m.tomb.Alive() {
+		return tomb.ErrDying
+	}
+
 	// check if websocket upgrade
 	if websocket.IsWebSocketUpgrade(ctx.HTTPRequest) {
 		return m.handleWebsocket(ctx)
@@ -109,44 +131,46 @@ func (m *manager) handle(ctx *fire.Context) error {
 	return m.handleSSE(ctx)
 }
 
+func (m *manager) close() {
+	m.tomb.Kill(nil)
+	_ = m.tomb.Wait()
+}
+
 func (m *manager) handleWebsocket(ctx *fire.Context) error {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	// ensure the connections gets closed
 	defer conn.Close()
 
 	// prepare queue
-	q := make(queue, 10)
+	queue := make(chan *Event, 10)
 
 	// register queue
-	m.subscribes <- q
+	select {
+	case m.subscribes <- queue:
+	case <-m.tomb.Dying():
+		return tomb.ErrDying
+	}
 
 	// ensure unsubscribe
 	defer func() {
-		m.unsubscribes <- q
+		select {
+		case m.unsubscribes <- queue:
+		case <-m.tomb.Dying():
+		}
 	}()
 
-	// process (reuse current goroutine)
-	err = m.websocketLoop(ctx, conn, q)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue queue) error {
 	// set read limit (we only expect pong messages)
 	conn.SetReadLimit(maxMessageSize)
 
 	// prepare pinger ticker
 	pinger := time.NewTimer(pingTimeout)
 
-	// reset read readline if a pong has been received
+	// reset read deadline if a pong has been received
 	conn.SetPongHandler(func(string) error {
 		// reset read timeout
 		err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
@@ -160,8 +184,8 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 		return nil
 	})
 
-	// prepare read error channel
-	readErr := make(chan error, 1)
+	// prepare error channel
+	errs := make(chan error, 1)
 
 	// prepare requests channel
 	reqs := make(chan request, 10)
@@ -172,23 +196,39 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 			// reset read timeout
 			err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
 			if err != nil {
-				readErr <- err
+				select {
+				case errs <- err:
+				default:
+				}
+
 				return
 			}
 
 			// read on the connection for ever
 			typ, bytes, err := conn.ReadMessage()
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				readErr <- nil
+				select {
+				case errs <- nil:
+				default:
+				}
+
 				return
 			} else if err != nil {
-				readErr <- err
+				select {
+				case errs <- err:
+				default:
+				}
+
 				return
 			}
 
 			// check message type
 			if typ != websocket.TextMessage {
-				readErr <- errors.New("not a text message")
+				select {
+				case errs <- errors.New("not a text message"):
+				default:
+				}
+
 				return
 			}
 
@@ -196,7 +236,11 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 			var req request
 			err = json.Unmarshal(bytes, &req)
 			if err != nil {
-				readErr <- err
+				select {
+				case errs <- err:
+				default:
+				}
+
 				return
 			}
 
@@ -204,12 +248,21 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 			pinger.Reset(pingTimeout)
 
 			// forward request
-			reqs <- req
+			select {
+			case reqs <- req:
+			case <-m.tomb.Dying():
+				select {
+				case errs <- nil:
+				default:
+				}
+			}
 		}
 	}()
 
 	// prepare registry
 	reg := map[string]*Subscription{}
+
+	// TODO: Write errors to client.
 
 	// run writer
 	for {
@@ -251,7 +304,7 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 		case evt, ok := <-queue:
 			// check if closed
 			if !ok {
-				return errors.New("closed")
+				return nil
 			}
 
 			// get subscription
@@ -299,7 +352,7 @@ func (m *manager) websocketLoop(ctx *fire.Context, conn *websocket.Conn, queue q
 				return err
 			}
 		// handle errors
-		case err := <-readErr:
+		case err := <-errs:
 			return err
 		}
 	}
@@ -377,26 +430,23 @@ func (m *manager) handleSSE(ctx *fire.Context) error {
 	flusher.Flush()
 
 	// prepare queue
-	q := make(queue, 10)
+	queue := make(chan *Event, 10)
 
 	// register queue
-	m.subscribes <- q
+	select {
+	case m.subscribes <- queue:
+	case <-m.tomb.Dying():
+		return tomb.ErrDying
+	}
 
 	// ensure unsubscribe
 	defer func() {
-		m.unsubscribes <- q
+		select {
+		case m.unsubscribes <- queue:
+		case <-m.tomb.Dying():
+		}
 	}()
 
-	// process (reuse current goroutine)
-	err := m.sseLoop(ctx, flusher, ctx.HTTPRequest.Context().Done(), sub, q)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan struct{}, sub *Subscription, queue queue) error {
 	// get response writer
 	w := ctx.ResponseWriter
 
@@ -410,7 +460,7 @@ func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan 
 		case evt, ok := <-queue:
 			// check if closed
 			if !ok {
-				return errors.New("closed")
+				return nil
 			}
 
 			// check stream
@@ -453,7 +503,7 @@ func (m *manager) sseLoop(ctx *fire.Context, flusher http.Flusher, close <-chan 
 			// flush writer
 			flusher.Flush()
 		// handle close
-		case <-close:
+		case <-ctx.HTTPRequest.Context().Done():
 			return nil
 		}
 	}

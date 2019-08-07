@@ -72,5 +72,6 @@ func (w *Watcher) Close() {
 		stream.close()
 	}
 
-	// TODO: Close manager.
+	// close manager
+	w.manager.close()
 }
