@@ -107,10 +107,21 @@ type Task struct {
 	// Default: 100ms.
 	Interval time.Duration
 
-	// Delay is the time after a failed task is retried.
+	// MinDelay is the minimal time after a failed task is retried.
 	//
 	// Default: 1s.
-	Delay time.Duration
+	MinDelay time.Duration
+
+	// MaxDelay is the maximal time after a failed task is retried.
+	//
+	// Default: 10m.
+	MaxDelay time.Duration
+
+	// DelayFactor defines the exponential increase of the delay after individual
+	// attempts.
+	//
+	// Default: 2.
+	DelayFactor float64
 
 	// Timeout is the time after which a task can be dequeue again in case the
 	// worker was not able to set its status.
@@ -130,9 +141,19 @@ func (t *Task) start(p *Pool) {
 		t.Interval = 100 * time.Millisecond
 	}
 
-	// set default delay
-	if t.Delay == 0 {
-		t.Delay = time.Second
+	// set default minimal delay
+	if t.MinDelay == 0 {
+		t.MinDelay = time.Second
+	}
+
+	// set default maximal delay
+	if t.MaxDelay == 0 {
+		t.MaxDelay = 10 * time.Minute
+	}
+
+	// set default delay factor
+	if t.DelayFactor <= 1 {
+		t.DelayFactor = 2
 	}
 
 	// set default timeout
@@ -222,7 +243,7 @@ func (t *Task) execute(job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = fail(t.Queue.store, job.ID(), e.Reason, t.Delay)
+			err = fail(t.Queue.store, job.ID(), e.Reason, backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -244,7 +265,7 @@ func (t *Task) execute(job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = fail(t.Queue.store, job.ID(), err.Error(), t.Delay)
+			_ = fail(t.Queue.store, job.ID(), err.Error(), backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}

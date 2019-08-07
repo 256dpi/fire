@@ -32,8 +32,6 @@ func TestPool(t *testing.T) {
 			ctx.Result = bson.M{"foo": "bar"}
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
 	})
 	p.Run()
 
@@ -80,8 +78,6 @@ func TestPoolDelayed(t *testing.T) {
 			ctx.Result = bson.M{"foo": "bar"}
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
 	})
 	p.Run()
 
@@ -135,8 +131,7 @@ func TestPoolFailed(t *testing.T) {
 			ctx.Result = bson.M{"foo": "bar"}
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
+		MinDelay: 10 * time.Millisecond,
 	})
 	p.Run()
 
@@ -190,8 +185,7 @@ func TestPoolCrashed(t *testing.T) {
 			close(done)
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
+		MinDelay: 10 * time.Millisecond,
 	})
 	p.Run()
 
@@ -238,8 +232,6 @@ func TestPoolCancelNoRetry(t *testing.T) {
 			close(done)
 			return E("cancelled", false)
 		},
-		Workers:     2,
-		MaxAttempts: 2,
 	})
 	p.Run()
 
@@ -290,8 +282,7 @@ func TestPoolCancelRetry(t *testing.T) {
 			}
 			return E("cancelled", i < 2)
 		},
-		Workers:     2,
-		MaxAttempts: 2,
+		MinDelay: 10 * time.Millisecond,
 	})
 	p.Run()
 
@@ -343,7 +334,7 @@ func TestPoolCancelCrash(t *testing.T) {
 			}
 			return errors.New("foo")
 		},
-		Workers:     2,
+		MinDelay:    10 * time.Millisecond,
 		MaxAttempts: 2,
 	})
 	p.Run()
@@ -399,9 +390,7 @@ func TestPoolTimeout(t *testing.T) {
 			close(done)
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
-		Timeout:     10 * time.Millisecond,
+		Timeout: 10 * time.Millisecond,
 	})
 	p.Run()
 
@@ -450,9 +439,7 @@ func TestPoolExisting(t *testing.T) {
 			close(done)
 			return nil
 		},
-		Workers:     2,
-		MaxAttempts: 2,
-		Timeout:     10 * time.Millisecond,
+		Timeout: 10 * time.Millisecond,
 	})
 	p.Run()
 
