@@ -94,9 +94,11 @@ type Task struct {
 	// Default: 2.
 	Workers int
 
-	// MaxAttempts defines the maximum attempts to complete a task.
+	// MaxAttempts defines the maximum attempts to complete a task. Zero means
+	// that the jobs is retried forever. The error retry field will take
+	// precedence to this setting and allow retry beyond the configured maximum.
 	//
-	// Default: 3
+	// Default: 0
 	MaxAttempts int
 
 	// Interval defines the rate at which the worker will request a job from the
@@ -121,11 +123,6 @@ func (t *Task) start(p *Pool) {
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 2
-	}
-
-	// set default max attempts
-	if t.MaxAttempts == 0 {
-		t.MaxAttempts = 3
 	}
 
 	// set default interval
@@ -222,8 +219,8 @@ func (t *Task) execute(job *Job) error {
 
 	// check error
 	if e, ok := err.(*Error); ok {
-		// check retry and attempts
-		if e.Retry && job.Attempts < t.MaxAttempts {
+		// check retry
+		if e.Retry {
 			// fail job
 			err = fail(t.Queue.store, job.ID(), e.Reason, t.Delay)
 			if err != nil {
@@ -245,7 +242,7 @@ func (t *Task) execute(job *Job) error {
 	// handle other errors
 	if err != nil {
 		// check attempts
-		if job.Attempts < t.MaxAttempts {
+		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
 			_ = fail(t.Queue.store, job.ID(), err.Error(), t.Delay)
 

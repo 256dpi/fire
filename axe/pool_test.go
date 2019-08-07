@@ -288,7 +288,7 @@ func TestPoolCancelRetry(t *testing.T) {
 			if i == 2 {
 				close(done)
 			}
-			return E("cancelled", true)
+			return E("cancelled", i < 2)
 		},
 		Workers:     2,
 		MaxAttempts: 2,
