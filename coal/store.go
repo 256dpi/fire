@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"context"
 	"net/url"
 	"strings"
 
@@ -83,6 +84,38 @@ func (s *Store) TC(tracer Tracer, model Model) *TracedCollection {
 		coll:   s.C(model),
 		tracer: tracer,
 	}
+}
+
+// TX will create a transaction around the specified callback. If the callback
+// returns no error the transaction will be committed.
+func (s *Store) TX(ctx context.Context, fn func(sc mongo.SessionContext) error) error {
+	// set context background
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// start transaction
+	return s.Client.UseSession(ctx, func(sc mongo.SessionContext) error {
+		// start transaction
+		err := sc.StartTransaction()
+		if err != nil {
+			return err
+		}
+
+		// call function
+		err = fn(sc)
+		if err != nil {
+			return err
+		}
+
+		// commit transaction
+		err = sc.CommitTransaction(sc)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 // Close will close the store and its associated client.
