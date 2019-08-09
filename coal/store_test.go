@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateStore(t *testing.T) {
-	store := MustCreateStore("mongodb://0.0.0.0/test-coal")
+	store := MustCreateStore("mongodb://0.0.0.0/test-fire-coal")
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Name())
@@ -18,6 +18,6 @@ func TestCreateStore(t *testing.T) {
 
 func TestCreateStoreError(t *testing.T) {
 	assert.Panics(t, func() {
-		MustCreateStore("mongodb://0.0.0.0/test-coal?authMechanism=fail")
+		MustCreateStore("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail")
 	})
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-ash"))
+var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-fire-ash"))
 
 func blank() *Authorizer {
 	return A("blank", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {

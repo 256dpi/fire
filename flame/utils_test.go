@@ -14,7 +14,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-flame"), &User{}, &Application{}, &Token{})
+var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire-flame"), &User{}, &Application{}, &Token{})
 
 func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()
