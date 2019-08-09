@@ -14,7 +14,7 @@ func TestLock(t *testing.T) {
 
 	// invalid token
 
-	locked, err := Lock(tester.Store, "test", "foo", coal.Z(), time.Minute)
+	locked, err := Lock(tester.Store, "test", "foo", coal.Z(), time.Minute, 0)
 	assert.Equal(t, "invalid token", err.Error())
 	assert.False(t, locked)
 
@@ -22,7 +22,7 @@ func TestLock(t *testing.T) {
 
 	token := coal.New()
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute)
+	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
 	assert.NoError(t, err)
 	assert.True(t, locked)
 
@@ -35,7 +35,7 @@ func TestLock(t *testing.T) {
 
 	// additional lock (same token)
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute)
+	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
 	assert.NoError(t, err)
 	assert.True(t, locked)
 
@@ -48,7 +48,7 @@ func TestLock(t *testing.T) {
 
 	// lock attempt (different token)
 
-	locked, err = Lock(tester.Store, "test", "foo", coal.New(), time.Minute)
+	locked, err = Lock(tester.Store, "test", "foo", coal.New(), time.Minute, 0)
 	assert.NoError(t, err)
 	assert.False(t, locked)
 
@@ -121,7 +121,7 @@ func TestLock(t *testing.T) {
 
 	// unlock with different token
 
-	unlocked, err := Unlock(tester.Store, "test", "foo", coal.New())
+	unlocked, err := Unlock(tester.Store, "test", "foo", coal.New(), 0)
 	assert.NoError(t, err)
 	assert.False(t, unlocked)
 
@@ -134,7 +134,7 @@ func TestLock(t *testing.T) {
 
 	// unlock with token
 
-	unlocked, err = Unlock(tester.Store, "test", "foo", token)
+	unlocked, err = Unlock(tester.Store, "test", "foo", token, 0)
 	assert.NoError(t, err)
 	assert.True(t, unlocked)
 
@@ -162,7 +162,7 @@ func TestLock(t *testing.T) {
 
 	token = coal.New()
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute)
+	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
 	assert.NoError(t, err)
 	assert.True(t, locked)
 

@@ -12,11 +12,17 @@ import (
 
 // Lock will lock the specified value using the specified token for the
 // specified duration. Lock may create a new value in the process and lock it
-// right away.
-func Lock(store *coal.Store, component, name string, token coal.ID, timeout time.Duration) (bool, error) {
+// right away. It will also update the deadline of the value if TTL is set.
+func Lock(store *coal.Store, component, name string, token coal.ID, timeout, ttl time.Duration) (bool, error) {
 	// check token
 	if token.IsZero() {
 		return false, fmt.Errorf("invalid token")
+	}
+
+	// prepare deadline
+	var deadline *time.Time
+	if ttl > 0 {
+		deadline = coal.T(time.Now().Add(ttl))
 	}
 
 	// get locked
@@ -30,8 +36,9 @@ func Lock(store *coal.Store, component, name string, token coal.ID, timeout time
 			coal.F(&Value{}, "Name"):      name,
 		}).SetUpdate(bson.M{
 			"$setOnInsert": bson.M{
-				coal.F(&Value{}, "Locked"): locked,
-				coal.F(&Value{}, "Token"):  token,
+				coal.F(&Value{}, "Locked"):   locked,
+				coal.F(&Value{}, "Token"):    token,
+				coal.F(&Value{}, "Deadline"): deadline,
 			},
 		}).SetUpsert(true),
 
@@ -63,8 +70,9 @@ func Lock(store *coal.Store, component, name string, token coal.ID, timeout time
 			},
 		}).SetUpdate(bson.M{
 			"$set": bson.M{
-				coal.F(&Value{}, "Locked"): locked,
-				coal.F(&Value{}, "Token"):  token,
+				coal.F(&Value{}, "Locked"):   locked,
+				coal.F(&Value{}, "Token"):    token,
+				coal.F(&Value{}, "Deadline"): deadline,
 			},
 		}),
 	})
@@ -140,11 +148,18 @@ func DelLocked(store *coal.Store, component, name string, token coal.ID) (bool, 
 	return res.DeletedCount > 0, nil
 }
 
-// Unlock will unlock the specified value if the provided token does match.
-func Unlock(store *coal.Store, component, name string, token coal.ID) (bool, error) {
+// Unlock will unlock the specified value if the provided token does match. It
+// will also update the deadline of the value if TTL is set.
+func Unlock(store *coal.Store, component, name string, token coal.ID, ttl time.Duration) (bool, error) {
 	// check token
 	if token.IsZero() {
 		return false, fmt.Errorf("invalid token")
+	}
+
+	// prepare deadline
+	var deadline *time.Time
+	if ttl > 0 {
+		deadline = coal.T(time.Now().Add(ttl))
 	}
 
 	// replace value
@@ -154,8 +169,9 @@ func Unlock(store *coal.Store, component, name string, token coal.ID) (bool, err
 		coal.F(&Value{}, "Token"):     token,
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Value{}, "Locked"): nil,
-			coal.F(&Value{}, "Token"):  nil,
+			coal.F(&Value{}, "Locked"):   nil,
+			coal.F(&Value{}, "Token"):    nil,
+			coal.F(&Value{}, "Deadline"): deadline,
 		},
 	})
 	if err != nil {
