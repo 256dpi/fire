@@ -17,6 +17,9 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 			return err
 		}
 
+		// ensure cursor is closed
+		defer cursor.Close(nil)
+
 		// prepare model
 		model := model.Meta().Make()
 
