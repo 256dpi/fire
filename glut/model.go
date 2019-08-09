@@ -20,7 +20,7 @@ type Value struct {
 	Data []byte `json:"data"`
 
 	// The time after the value can be deleted.
-	Deadline *time.Time
+	Deadline *time.Time `json:"deadline"`
 
 	// The time until the value is locked.
 	Locked *time.Time `json:"locked"`
