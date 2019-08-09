@@ -25,6 +25,7 @@ script:
   - env GO111MODULE=on go test -coverprofile=tools.coverprofile ./coal
   - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./example
   - env GO111MODULE=on go test -coverprofile=tools.coverprofile ./flame
+  - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./glut
   - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./spark
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
