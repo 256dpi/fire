@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -283,24 +282,12 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// run operation with transaction if enabled
-	stack.AbortIf(c.Store.Client.UseSession(context.Background(), func(sc mongo.SessionContext) error {
-		// start transaction
-		err = sc.StartTransaction()
-		if err != nil {
-			return err
-		}
-
+	stack.AbortIf(c.Store.TX(ctx.HTTPRequest.Context(), func(sc mongo.SessionContext) error {
 		// assign session
 		ctx.Session = sc
 
 		// run operation
 		c.runOperation(ctx, doc)
-
-		// commit transaction
-		err = sc.CommitTransaction(context.Background())
-		if err != nil {
-			return err
-		}
 
 		return nil
 	}))
