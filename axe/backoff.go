@@ -1,4 +1,3 @@
-// Package backoff provides an exponential-backoff implementation.
 package axe
 
 import (
