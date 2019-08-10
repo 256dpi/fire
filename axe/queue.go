@@ -138,22 +138,23 @@ func (q *Queue) Run() {
 		}
 	}
 
+	// run process
+	q.tomb.Go(q.process)
+}
+
+// Close will close the queue.
+func (q *Queue) Close() {
+	// kill and wait
+	q.tomb.Kill(nil)
+	_ = q.tomb.Wait()
+}
+
+func (q *Queue) process() error {
 	// start tasks
 	for _, task := range q.tasks {
 		task.start(q)
 	}
 
-	// run watcher
-	q.tomb.Go(q.watcher)
-}
-
-// Close will close the queue.
-func (q *Queue) Close() {
-	q.tomb.Kill(nil)
-	_ = q.tomb.Wait()
-}
-
-func (q *Queue) watcher() error {
 	// reconcile jobs
 	stream := coal.Reconcile(q.store, &Job{}, func(model coal.Model) {
 		q.update(model.(*Job))

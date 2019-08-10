@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
@@ -156,18 +157,20 @@ func (t *Task) start(q *Queue) {
 		t.Timeout = 10 * time.Minute
 	}
 
-	// start workers
+	// start workers for queue
 	for i := 0; i < t.Workers; i++ {
-		go t.worker(q)
+		q.tomb.Go(func() error {
+			return t.worker(q)
+		})
 	}
 }
 
-func (t *Task) worker(q *Queue) {
+func (t *Task) worker(q *Queue) error {
 	// run forever
 	for {
-		// return if closed
+		// return if queue is closed
 		if !q.tomb.Alive() {
-			return
+			return tomb.ErrDying
 		}
 
 		// attempt to get job from queue
@@ -176,9 +179,8 @@ func (t *Task) worker(q *Queue) {
 			// wait some time before trying again
 			select {
 			case <-time.After(t.Interval):
-				// continue
 			case <-q.tomb.Dying():
-				return
+				return tomb.ErrDying
 			}
 
 			continue
