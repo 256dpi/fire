@@ -365,7 +365,7 @@ func TestQueueTimeout(t *testing.T) {
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
-				time.Sleep(5 * time.Second)
+				time.Sleep(time.Second)
 				return nil
 			}
 
