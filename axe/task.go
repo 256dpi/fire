@@ -194,8 +194,8 @@ func (t *Task) worker(p *Pool) {
 		// execute job and report errors
 		err := t.execute(job)
 		if err != nil {
-			if p.Reporter != nil {
-				p.Reporter(err)
+			if p.reporter != nil {
+				p.reporter(err)
 			}
 		}
 	}

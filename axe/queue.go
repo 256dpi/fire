@@ -128,7 +128,7 @@ func (q *Queue) watcher(p *Pool) {
 		q.update(model.(*Job))
 	}, func(model coal.Model) {
 		q.update(model.(*Job))
-	}, nil, p.Reporter)
+	}, nil, p.reporter)
 
 	// await close
 	<-p.closed

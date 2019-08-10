@@ -6,20 +6,19 @@ import (
 
 // Pool manages tasks and queues.
 type Pool struct {
-	tasks  map[string]*Task
-	queues map[*Queue]bool
-	closed chan struct{}
-
-	// The function gets invoked by the pool with critical errors.
-	Reporter func(error)
+	reporter func(error)
+	tasks    map[string]*Task
+	queues   map[*Queue]bool
+	closed   chan struct{}
 }
 
 // NewPool creates and returns a new pool.
-func NewPool() *Pool {
+func NewPool(reporter func(error)) *Pool {
 	return &Pool{
-		tasks:  make(map[string]*Task),
-		queues: make(map[*Queue]bool),
-		closed: make(chan struct{}),
+		reporter: reporter,
+		tasks:    make(map[string]*Task),
+		queues:   make(map[*Queue]bool),
+		closed:   make(chan struct{}),
 	}
 }
 
