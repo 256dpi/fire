@@ -13,7 +13,7 @@ import (
 func TestJob(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", &bson.M{"foo": "bar"}, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", &bson.M{"foo": "bar"}, 0, false)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -64,7 +64,7 @@ func TestJob(t *testing.T) {
 func TestDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 100*time.Millisecond)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 100*time.Millisecond, false)
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), time.Hour)
@@ -85,7 +85,7 @@ func TestDelayed(t *testing.T) {
 func TestTimeout(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
@@ -106,7 +106,7 @@ func TestTimeout(t *testing.T) {
 func TestFailed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -130,7 +130,7 @@ func TestFailed(t *testing.T) {
 func TestFailedDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -160,7 +160,7 @@ func TestFailedDelayed(t *testing.T) {
 func TestCancelled(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -175,6 +175,72 @@ func TestCancelled(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, "some reason", job.Reason)
+}
+
+func TestEnqueueExclusive(t *testing.T) {
+	tester.Clean()
+
+	job1, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "bar"}, 0, true)
+	assert.NoError(t, err)
+	assert.NotNil(t, job1)
+
+	list := *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
+	assert.Equal(t, StatusEnqueued, list[0].Status)
+	assert.NotZero(t, list[0].Created)
+	assert.NotZero(t, list[0].Available)
+	assert.Zero(t, list[0].Started)
+	assert.Zero(t, list[0].Ended)
+	assert.Zero(t, list[0].Finished)
+	assert.Equal(t, 0, list[0].Attempts)
+	assert.Equal(t, bson.M(nil), list[0].Result)
+	assert.Equal(t, "", list[0].Reason)
+
+	job2, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "bar"}, 0, true)
+	assert.NoError(t, err)
+	assert.Nil(t, job2)
+
+	list = *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
+	assert.Equal(t, StatusEnqueued, list[0].Status)
+	assert.NotZero(t, list[0].Created)
+	assert.NotZero(t, list[0].Available)
+	assert.Zero(t, list[0].Started)
+	assert.Zero(t, list[0].Ended)
+	assert.Zero(t, list[0].Finished)
+	assert.Equal(t, 0, list[0].Attempts)
+	assert.Equal(t, bson.M(nil), list[0].Result)
+	assert.Equal(t, "", list[0].Reason)
+
+	_, err = Dequeue(tester.Store, job1.ID(), time.Second)
+	assert.NoError(t, err)
+
+	err = Complete(tester.Store, job1.ID(), nil)
+	assert.NoError(t, err)
+
+	time.Sleep(time.Second)
+
+	job3, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "baz"}, 0, true)
+	assert.NoError(t, err)
+	assert.NotNil(t, job3)
+
+	list = *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 2)
+	assert.Equal(t, "foo", list[1].Name)
+	assert.Equal(t, &bson.M{"foo": "baz"}, decodeRaw(list[1].Data, &bson.M{}))
+	assert.Equal(t, StatusEnqueued, list[1].Status)
+	assert.NotZero(t, list[1].Created)
+	assert.NotZero(t, list[1].Available)
+	assert.Zero(t, list[1].Started)
+	assert.Zero(t, list[1].Ended)
+	assert.Zero(t, list[1].Finished)
+	assert.Equal(t, 0, list[1].Attempts)
+	assert.Equal(t, bson.M(nil), list[1].Result)
+	assert.Equal(t, "", list[1].Reason)
 }
 
 func TestAddJobIndexes(t *testing.T) {

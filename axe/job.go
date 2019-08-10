@@ -85,7 +85,9 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not be dequeued until the specified time has passed.
-func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model Model, delay time.Duration) (*Job, error) {
+// If exclusive is enabled the won't be queued if another job from this class
+// is still available.
+func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model Model, delay time.Duration, exclusive bool) (*Job, error) {
 	// set default model
 	if model == nil {
 		model = bson.M{}
@@ -114,10 +116,30 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 		return nil, err
 	}
 
-	// insert job
-	_, err = store.C(job).InsertOne(session, job)
+	// check exclusiveness
+	if !exclusive {
+		// insert job
+		_, err = store.C(job).InsertOne(session, job)
+		if err != nil {
+			return nil, err
+		}
+
+		return job, nil
+	}
+
+	// insert job if there is no other job in an available state
+	res, err := store.C(job).UpdateOne(session, bson.M{
+		coal.F(&Job{}, "Name"): name,
+		coal.F(&Job{}, "Status"): bson.M{
+			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
+		},
+	}, bson.M{
+		"$setOnInsert": job,
+	}, options.Update().SetUpsert(true))
 	if err != nil {
 		return nil, err
+	} else if res.UpsertedCount == 0 {
+		return nil, nil
 	}
 
 	return job, nil

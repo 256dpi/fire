@@ -164,7 +164,7 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 		ResourceActions: fire.M{
 			"add": &fire.Action{
 				Methods: []string{"POST"},
-				Callback: queue.Callback("increment", 0, fire.All(), func(ctx *fire.Context) axe.Model {
+				Callback: queue.Callback("increment", 0, false, fire.All(), func(ctx *fire.Context) axe.Model {
 					return &count{
 						Item: ctx.Model.ID(),
 					}
