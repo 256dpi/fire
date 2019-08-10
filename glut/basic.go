@@ -38,7 +38,7 @@ func Set(store *coal.Store, component, name string, data []byte, ttl time.Durati
 		deadline = coal.T(time.Now().Add(ttl))
 	}
 
-	// replace value
+	// update value
 	res, err := store.C(&Value{}).UpdateOne(nil, bson.M{
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,

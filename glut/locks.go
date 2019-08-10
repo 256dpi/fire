@@ -19,6 +19,16 @@ func Lock(store *coal.Store, component, name string, token coal.ID, timeout, ttl
 		return false, fmt.Errorf("invalid token")
 	}
 
+	// check timeout
+	if timeout == 0 {
+		return false, fmt.Errorf("invalid timeout")
+	}
+
+	// check ttl
+	if ttl > 0 && ttl < timeout {
+		return false, fmt.Errorf("invalid ttl")
+	}
+
 	// prepare deadline
 	var deadline *time.Time
 	if ttl > 0 {
@@ -91,11 +101,14 @@ func SetLocked(store *coal.Store, component, name string, data []byte, token coa
 		return false, fmt.Errorf("invalid token")
 	}
 
-	// replace value
+	// update value
 	res, err := store.C(&Value{}).UpdateOne(nil, bson.M{
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 		coal.F(&Value{}, "Token"):     token,
+		coal.F(&Value{}, "Locked"): bson.M{
+			"$gt": time.Now(),
+		},
 	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Value{}, "Data"): data,
@@ -117,6 +130,9 @@ func GetLocked(store *coal.Store, component, name string, token coal.ID) ([]byte
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 		coal.F(&Value{}, "Token"):     token,
+		coal.F(&Value{}, "Locked"): bson.M{
+			"$gt": time.Now(),
+		},
 	}).Decode(&value)
 	if err == mongo.ErrNoDocuments {
 		return nil, false, nil
@@ -140,6 +156,9 @@ func DelLocked(store *coal.Store, component, name string, token coal.ID) (bool, 
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 		coal.F(&Value{}, "Token"):     token,
+		coal.F(&Value{}, "Locked"): bson.M{
+			"$gt": time.Now(),
+		},
 	})
 	if err != nil {
 		return false, err
@@ -167,6 +186,9 @@ func Unlock(store *coal.Store, component, name string, token coal.ID, ttl time.D
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 		coal.F(&Value{}, "Token"):     token,
+		coal.F(&Value{}, "Locked"): bson.M{
+			"$gt": time.Now(),
+		},
 	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Value{}, "Locked"):   nil,
