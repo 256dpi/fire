@@ -27,11 +27,14 @@ type itemModel struct {
 	Bar       string
 }
 
+func panicReporter(err error) {
+	panic(err)
+}
+
 func TestWatcherWebSockets(t *testing.T) {
 	tester.Clean()
 
-	watcher := NewWatcher()
-	watcher.Reporter = func(err error) { panic(err) }
+	watcher := NewWatcher(panicReporter)
 	watcher.Add(&Stream{
 		Model: &itemModel{},
 		Store: tester.Store,
@@ -119,8 +122,7 @@ func TestWatcherWebSockets(t *testing.T) {
 func TestWatcherSSE(t *testing.T) {
 	tester.Clean()
 
-	watcher := NewWatcher()
-	watcher.Reporter = func(err error) { panic(err) }
+	watcher := NewWatcher(panicReporter)
 	watcher.Add(&Stream{
 		Model: &itemModel{},
 		Store: tester.Store,

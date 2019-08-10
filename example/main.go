@@ -126,8 +126,7 @@ func createHandler(store *coal.Store) http.Handler {
 	mux.Handle("/auth/", a.Endpoint("/auth/"))
 
 	// create watcher
-	watcher := spark.NewWatcher()
-	watcher.Reporter = reporter
+	watcher := spark.NewWatcher(reporter)
 	watcher.Add(itemStream(store))
 
 	// create queue

@@ -9,18 +9,17 @@ import (
 
 // Watcher will watch multiple collections and serve watch requests by clients.
 type Watcher struct {
-	manager *manager
-	streams map[string]*Stream
-
-	// The function gets invoked by the watcher with critical errors.
-	Reporter func(error)
+	reporter func(error)
+	manager  *manager
+	streams  map[string]*Stream
 }
 
 // NewWatcher creates and returns a new watcher.
-func NewWatcher() *Watcher {
+func NewWatcher(reporter func(error)) *Watcher {
 	// prepare watcher
 	w := &Watcher{
-		streams: make(map[string]*Stream),
+		reporter: reporter,
+		streams:  make(map[string]*Stream),
 	}
 
 	// create and add manager
@@ -43,7 +42,7 @@ func (w *Watcher) Add(stream *Stream) {
 	w.streams[stream.Name()] = stream
 
 	// open stream
-	stream.open(w.manager, w.Reporter)
+	stream.open(w.manager, w.reporter)
 }
 
 // Action returns an action that should be registered in the group under
@@ -55,8 +54,8 @@ func (w *Watcher) Action() *fire.Action {
 			// handle connection
 			err := w.manager.handle(ctx)
 			if err != nil {
-				if w.Reporter != nil {
-					w.Reporter(err)
+				if w.reporter != nil {
+					w.reporter(err)
 				}
 			}
 
