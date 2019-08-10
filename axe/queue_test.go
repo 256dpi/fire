@@ -441,3 +441,41 @@ func TestQueueExisting(t *testing.T) {
 
 	q.Close()
 }
+
+func TestQueuePeriodically(t *testing.T) {
+	tester.Clean()
+
+	done := make(chan struct{})
+
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
+		Name:  "foo",
+		Queue: q,
+		Handler: func(ctx *Context) error {
+			close(done)
+			ctx.Result = bson.M{"foo": "bar"}
+			return nil
+		},
+		Periodically: time.Minute,
+	})
+	q.Run()
+
+	<-done
+
+	time.Sleep(100 * time.Millisecond)
+
+	job := tester.FindLast(&Job{}).(*Job)
+	assert.Equal(t, "foo", job.Name)
+	assert.Equal(t, &data{}, decodeRaw(job.Data, &data{}))
+	assert.Equal(t, StatusCompleted, job.Status)
+	assert.NotZero(t, job.Created)
+	assert.NotZero(t, job.Available)
+	assert.NotZero(t, job.Started)
+	assert.NotZero(t, job.Ended)
+	assert.NotZero(t, job.Finished)
+	assert.Equal(t, 1, job.Attempts)
+	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
+	assert.Equal(t, "", job.Reason)
+
+	q.Close()
+}

@@ -84,6 +84,12 @@ type Task struct {
 	// data that is attached to the job.
 	Handler func(*Context) error
 
+	// Periodically may be set to let the system enqueue the task automatically
+	// every given interval.
+	//
+	// Default: 0.
+	Periodically time.Duration
+
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs in parallel.
 	//
@@ -163,6 +169,13 @@ func (t *Task) start(q *Queue) {
 			return t.worker(q)
 		})
 	}
+
+	// run periodic enqueuer if interval is given
+	if t.Periodically > 0 {
+		q.tomb.Go(func() error {
+			return t.enqueuer(q)
+		})
+	}
 }
 
 func (t *Task) worker(q *Queue) error {
@@ -196,6 +209,33 @@ func (t *Task) worker(q *Queue) error {
 	}
 }
 
+func (t *Task) enqueuer(q *Queue) error {
+	for {
+		// enqueue task
+		_, err := q.Enqueue(t.Name, nil, 0)
+		if err != nil && q.reporter != nil {
+			// report error
+			q.reporter(err)
+
+			// wait some time
+			select {
+			case <-time.After(time.Second):
+			case <-q.tomb.Dying():
+				return tomb.ErrDying
+			}
+
+			continue
+		}
+
+		// wait for next interval
+		select {
+		case <-time.After(t.Periodically):
+		case <-q.tomb.Dying():
+			return tomb.ErrDying
+		}
+	}
+}
+
 func (t *Task) execute(job *Job) error {
 	// dequeue job
 	job, err := Dequeue(t.Queue.store, job.ID(), t.Timeout)
@@ -208,13 +248,19 @@ func (t *Task) execute(job *Job) error {
 		return nil
 	}
 
-	// instantiate model
-	model := reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
+	// prepare model
+	var model Model
 
-	// unmarshal model
-	err = bson.Unmarshal(job.Data, model)
-	if err != nil {
-		return err
+	// check model
+	if t.Model != nil {
+		// instantiate model
+		model = reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
+
+		// unmarshal model
+		err = bson.Unmarshal(job.Data, model)
+		if err != nil {
+			return err
+		}
 	}
 
 	// create tracer
