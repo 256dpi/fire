@@ -21,13 +21,13 @@ const (
 	// StatusDequeued is set when a job has been successfully dequeued.
 	StatusDequeued Status = "dequeued"
 
-	// StatusCompleted is set when a jobs has been successfully executed.
+	// StatusCompleted is set when a job has been successfully executed.
 	StatusCompleted Status = "completed"
 
 	// StatusFailed is set when an execution of a job failed.
 	StatusFailed Status = "failed"
 
-	// StatusCancelled is set when a jobs has been cancelled.
+	// StatusCancelled is set when a job has been cancelled.
 	StatusCancelled Status = "cancelled"
 )
 
@@ -72,9 +72,6 @@ type Job struct {
 // AddJobIndexes will add job indexes to the specified indexer. If removeAfter
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
-//
-// Note: It is recommended to create custom indexes that support the exact
-// nature of data and access patterns.
 func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 	// add name index
 	indexer.Add(&Job{}, false, 0, "Name")

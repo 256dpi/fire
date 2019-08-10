@@ -7,7 +7,8 @@ import (
 
 const maxInt64 = float64(math.MaxInt64 - 512)
 
-func backoff(min, max time.Duration, factor float64, attempt int) time.Duration {
+// Backoff is the simple backoff algorithm to calculate the delay of job.
+func Backoff(min, max time.Duration, factor float64, attempt int) time.Duration {
 	// set default min
 	if min <= 0 {
 		min = 100 * time.Millisecond

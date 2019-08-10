@@ -243,7 +243,7 @@ func (t *Task) execute(job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(t.Queue.store, job.ID(), e.Reason, backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(t.Queue.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -265,7 +265,7 @@ func (t *Task) execute(job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(t.Queue.store, job.ID(), err.Error(), backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(t.Queue.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
