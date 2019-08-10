@@ -126,9 +126,18 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 	return job, nil
 }
 
-func dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
+// Dequeue will dequeue the job with the specified id. The provided timeout
+// will be set to allow the job to be dequeue if the process failed to set its
+// status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
+// state are dequeued.
+func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
 	// get time
 	now := time.Now()
+
+	// prepare options
+	opts := options.FindOneAndUpdate().
+		SetSort(coal.Sort("_id")).
+		SetReturnDocument(options.After)
 
 	// dequeue job
 	var job Job
@@ -149,7 +158,7 @@ func dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 		"$inc": bson.M{
 			coal.F(&Job{}, "Attempts"): 1,
 		},
-	}, options.FindOneAndUpdate().SetSort(coal.Sort("_id")).SetReturnDocument(options.After)).Decode(&job)
+	}, opts).Decode(&job)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	} else if err != nil {
@@ -159,7 +168,9 @@ func dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 	return &job, nil
 }
 
-func complete(store *coal.Store, id coal.ID, result bson.M) error {
+// Complete will complete the job with the specified id. Only jobs in the
+// "dequeued" state can be completed.
+func Complete(store *coal.Store, id coal.ID, result bson.M) error {
 	// get time
 	now := time.Now()
 
@@ -182,7 +193,9 @@ func complete(store *coal.Store, id coal.ID, result bson.M) error {
 	return nil
 }
 
-func fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
+// Fail will fail the job with the specified id and the specified reason. It may
+// delay the job if requested. Only jobs in the "dequeued" state can be failed.
+func Fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
 	// get time
 	now := time.Now()
 
@@ -205,7 +218,9 @@ func fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) err
 	return nil
 }
 
-func cancel(store *coal.Store, id coal.ID, reason string) error {
+// Cancel will cancel the job with the specified id and the specified reason.
+// Only jobs in the "dequeued" state can be cancelled.
+func Cancel(store *coal.Store, id coal.ID, reason string) error {
 	// get time
 	now := time.Now()
 
