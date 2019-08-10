@@ -404,13 +404,12 @@ func TestQueueTimeout(t *testing.T) {
 func TestQueueExisting(t *testing.T) {
 	tester.Clean()
 
-	q := NewQueue(tester.Store, panicReporter)
-
-	job, err := q.Enqueue("existing", nil, 0)
+	job, err := Enqueue(tester.Store, nil, "existing", nil, 0)
 	assert.NoError(t, err)
 
 	done := make(chan struct{})
 
+	q := NewQueue(tester.Store, panicReporter)
 	q.Add(&Task{
 		Name:  "existing",
 		Model: &data{},
