@@ -130,12 +130,9 @@ func createHandler(store *coal.Store) http.Handler {
 	watcher.Add(itemStream(store))
 
 	// create queue
-	queue := axe.NewQueue(store)
-
-	// create pool
-	pool := axe.NewPool(reporter)
-	pool.Add(incrementTask(queue))
-	pool.Run()
+	queue := axe.NewQueue(store, reporter)
+	queue.Add(incrementTask(queue))
+	queue.Run()
 
 	// create group
 	g := fire.NewGroup(reporter)
