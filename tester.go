@@ -43,12 +43,15 @@ func NewTester(store *coal.Store, models ...coal.Model) *Tester {
 // assign in to the Handler attribute of the tester. It will return the created
 // group.
 func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
-	group := NewGroup()
-	group.Add(controllers...)
-	group.Reporter = func(err error) {
+	// create group
+	group := NewGroup(func(err error) {
 		panic(err)
-	}
+	})
 
+	// add controllers
+	group.Add(controllers...)
+
+	// set handler
 	t.Handler = Compose(RootTracer(), group.Endpoint(prefix))
 
 	return group

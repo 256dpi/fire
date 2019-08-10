@@ -10,8 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func panicReporter(err error) {
+	panic(err)
+}
+
 func TestGroupEndpointMissingResource(t *testing.T) {
-	tester.Handler = NewGroup().Endpoint("api")
+	tester.Handler = NewGroup(panicReporter).Endpoint("api")
 
 	tester.Request("GET", "api/", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
@@ -25,12 +29,10 @@ func TestGroupEndpointMissingResource(t *testing.T) {
 func TestGroupStackAbort(t *testing.T) {
 	var lastErr error
 
-	group := NewGroup()
-
-	group.Reporter = func(err error) {
+	group := NewGroup(func(err error) {
 		assert.Equal(t, "foo", err.Error())
 		lastErr = err
-	}
+	})
 
 	group.Add(&Controller{
 		Model: &postModel{},
@@ -65,7 +67,7 @@ func TestGroupStackAbort(t *testing.T) {
 }
 
 func TestGroupAction(t *testing.T) {
-	group := NewGroup()
+	group := NewGroup(panicReporter)
 
 	group.Handle("foo", &GroupAction{
 		Authorizers: L{

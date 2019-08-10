@@ -24,16 +24,15 @@ type GroupAction struct {
 
 // A Group manages access to multiple controllers and their interconnections.
 type Group struct {
+	reporter    func(error)
 	controllers map[string]*Controller
 	actions     map[string]*GroupAction
-
-	// The function gets invoked by the controller with critical errors.
-	Reporter func(error)
 }
 
 // NewGroup creates and returns a new group.
-func NewGroup() *Group {
+func NewGroup(reporter func(error)) *Group {
 	return &Group{
+		reporter:    reporter,
 		controllers: make(map[string]*Controller),
 		actions:     make(map[string]*GroupAction),
 	}
@@ -107,8 +106,8 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			tracer.Log("stack", stack.Trace())
 
 			// report critical errors if possible
-			if g.Reporter != nil {
-				g.Reporter(err)
+			if g.reporter != nil {
+				g.reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors

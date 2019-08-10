@@ -3885,7 +3885,7 @@ func TestIdempotentCreate(t *testing.T) {
 		})
 	})
 
-	group := tester.Assign("", &Controller{
+	tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
@@ -3899,8 +3899,6 @@ func TestIdempotentCreate(t *testing.T) {
 		Model: &noteModel{},
 		Store: tester.Store,
 	})
-
-	group.Reporter = nil
 
 	// missing create token
 	tester.Request("POST", "selections", `{
@@ -4036,7 +4034,7 @@ func TestEnsureConsistency(t *testing.T) {
 		})
 	})
 
-	group := tester.Assign("", &Controller{
+	tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
@@ -4050,11 +4048,6 @@ func TestEnsureConsistency(t *testing.T) {
 		Model: &noteModel{},
 		Store: tester.Store,
 	})
-
-	group.Reporter = nil
-	group.Reporter = func(e error) {
-		println(e.Error())
-	}
 
 	var id string
 	var selection *selectionModel
@@ -4202,7 +4195,10 @@ func TestUseTransactions(t *testing.T) {
 		Store: tester.Store,
 	})
 
-	group.Reporter = nil
+	var errs []string
+	group.reporter = func(err error) {
+		errs = append(errs, err.Error())
+	}
 
 	var id string
 
@@ -4354,6 +4350,8 @@ func TestUseTransactions(t *testing.T) {
 
 	assert.Equal(t, 1, tester.Count(&postModel{}))
 	assert.Equal(t, "Post 1", tester.Fetch(&postModel{}, coal.MustFromHex(id)).MustGet("Title"))
+
+	assert.Equal(t, []string{"foo", "foo"}, errs)
 }
 
 func BenchmarkList(b *testing.B) {

@@ -140,8 +140,7 @@ func createHandler(store *coal.Store) http.Handler {
 	pool.Run()
 
 	// create group
-	g := fire.NewGroup()
-	g.Reporter = reporter
+	g := fire.NewGroup(reporter)
 	g.Add(itemController(store, queue))
 	g.Add(userController(store))
 	g.Handle("watch", &fire.GroupAction{
