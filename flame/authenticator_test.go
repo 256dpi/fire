@@ -15,6 +15,10 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
+func panicReporter(err error) {
+	panic(err)
+}
+
 func TestIntegration(t *testing.T) {
 	tester.Clean()
 
@@ -48,10 +52,9 @@ func TestIntegration(t *testing.T) {
 		return scope, nil
 	}
 
-	authenticator := NewAuthenticator(tester.Store, p)
-	authenticator.Reporter = func(err error) {
+	authenticator := NewAuthenticator(tester.Store, p, func(err error) {
 		t.Error(err)
-	}
+	})
 
 	app1 := tester.Save(&Application{
 		Name:        "Application 1",
@@ -149,7 +152,7 @@ func TestIntegration(t *testing.T) {
 func TestPublicAccess(t *testing.T) {
 	tester.Clean()
 
-	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""))
+	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
 	tester.Handler = newHandler(authenticator, false)
 
 	tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -160,7 +163,7 @@ func TestPublicAccess(t *testing.T) {
 func TestContextKeys(t *testing.T) {
 	tester.Clean()
 
-	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""))
+	authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
 	tester.Handler = newHandler(authenticator, false)
 
 	application := tester.Save(&Application{
@@ -200,7 +203,7 @@ func TestInvalidGrantType(t *testing.T) {
 
 	policy := DefaultPolicy("")
 
-	authenticator := NewAuthenticator(tester.Store, policy)
+	authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 	handler := newHandler(authenticator, false)
 
 	application := tester.Save(&Application{
@@ -234,7 +237,7 @@ func TestInvalidResponseType(t *testing.T) {
 
 	policy := DefaultPolicy("")
 
-	authenticator := NewAuthenticator(tester.Store, policy)
+	authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 	handler := newHandler(authenticator, false)
 
 	application := tester.Save(&Application{
@@ -271,7 +274,11 @@ func TestInvalidClientFilter(t *testing.T) {
 	policy := DefaultPolicy("")
 	policy.PasswordGrant = true
 
-	authenticator := NewAuthenticator(tester.Store, policy)
+	var errs []string
+
+	authenticator := NewAuthenticator(tester.Store, policy, func(err error) {
+		errs = append(errs, err.Error())
+	})
 	handler := newHandler(authenticator, false)
 
 	application := tester.Save(&Application{
@@ -324,6 +331,8 @@ func TestInvalidClientFilter(t *testing.T) {
 			}`)
 		},
 	})
+
+	assert.Equal(t, []string{"foo"}, errs)
 }
 
 func TestInvalidResourceOwnerFilter(t *testing.T) {
@@ -332,7 +341,11 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 	policy := DefaultPolicy("")
 	policy.PasswordGrant = true
 
-	authenticator := NewAuthenticator(tester.Store, policy)
+	var errs []string
+
+	authenticator := NewAuthenticator(tester.Store, policy, func(err error) {
+		errs = append(errs, err.Error())
+	})
 	handler := newHandler(authenticator, false)
 
 	application := tester.Save(&Application{
@@ -385,6 +398,8 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			}`)
 		},
 	})
+
+	assert.Equal(t, []string{"foo"}, errs)
 }
 
 func mustGenerateAccessToken(p *Policy, id coal.ID, expiresAt time.Time) string {

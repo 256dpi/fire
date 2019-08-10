@@ -44,15 +44,13 @@ type state struct {
 // currently supports the Resource Owner Credentials Grant, Client Credentials
 // Grant and Implicit Grant.
 type Authenticator struct {
-	store  *coal.Store
-	policy *Policy
-
-	// The function gets invoked by the authenticator with critical errors.
-	Reporter func(error)
+	store    *coal.Store
+	policy   *Policy
+	reporter func(error)
 }
 
 // NewAuthenticator constructs a new Authenticator from a store and policy.
-func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
+func NewAuthenticator(store *coal.Store, policy *Policy, reportr func(error)) *Authenticator {
 	// initialize token
 	coal.Init(policy.Token)
 
@@ -62,8 +60,9 @@ func NewAuthenticator(store *coal.Store, policy *Policy) *Authenticator {
 	}
 
 	return &Authenticator{
-		store:  store,
-		policy: policy,
+		store:    store,
+		policy:   policy,
+		reporter: reportr,
 	}
 }
 
@@ -89,8 +88,8 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			tracer.Log("stack", stack.Trace())
 
 			// otherwise report critical errors
-			if a.Reporter != nil {
-				a.Reporter(err)
+			if a.reporter != nil {
+				a.reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors
@@ -163,8 +162,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				tracer.Log("stack", stack.Trace())
 
 				// otherwise report critical errors
-				if a.Reporter != nil {
-					a.Reporter(err)
+				if a.reporter != nil {
+					a.reporter(err)
 				}
 
 				// ignore errors caused by writing critical errors

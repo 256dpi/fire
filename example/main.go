@@ -120,8 +120,7 @@ func createHandler(store *coal.Store) http.Handler {
 	policy.ClientCredentialsGrant = true
 
 	// create authenticator
-	a := flame.NewAuthenticator(store, policy)
-	a.Reporter = reporter
+	a := flame.NewAuthenticator(store, policy, reporter)
 
 	// register authenticator
 	mux.Handle("/auth/", a.Endpoint("/auth/"))
