@@ -1,9 +1,12 @@
 package axe
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
+
+	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
@@ -33,16 +36,32 @@ type Queue struct {
 	// Default: 2s.
 	DequeueInterval time.Duration
 
-	store  *coal.Store
-	tasks  []string
-	boards map[string]*board
+	store    *coal.Store
+	reporter func(error)
+	tasks    map[string]*Task
+	boards   map[string]*board
+
+	tomb tomb.Tomb
 }
 
 // NewQueue creates and returns a new queue.
-func NewQueue(store *coal.Store) *Queue {
+func NewQueue(store *coal.Store, reporter func(error)) *Queue {
 	return &Queue{
-		store: store,
+		store:    store,
+		reporter: reporter,
+		tasks:    make(map[string]*Task),
 	}
+}
+
+// Add will add the specified task to the queue.
+func (q *Queue) Add(task *Task) {
+	// check existence
+	if q.tasks[task.Name] != nil {
+		panic(fmt.Sprintf(`axe: task with name "%s" already exists`, task.Name))
+	}
+
+	// save task
+	q.tasks[task.Name] = task
 }
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
@@ -97,7 +116,8 @@ func (q *Queue) Callback(name string, delay time.Duration, matcher fire.Matcher,
 	})
 }
 
-func (q *Queue) start(p *Pool) {
+// Run will start fetching jobs from the queue and process them.
+func (q *Queue) Run() {
 	// set default max lag
 	if q.MaxLag == 0 {
 		q.MaxLag = 100 * time.Millisecond
@@ -113,28 +133,41 @@ func (q *Queue) start(p *Pool) {
 
 	// create boards
 	for _, task := range q.tasks {
-		q.boards[task] = &board{
+		q.boards[task.Name] = &board{
 			jobs: make(map[coal.ID]*Job),
 		}
 	}
 
+	// start tasks
+	for _, task := range q.tasks {
+		task.start(q)
+	}
+
 	// run watcher
-	go q.watcher(p)
+	q.tomb.Go(q.watcher)
 }
 
-func (q *Queue) watcher(p *Pool) {
+// Close will close the queue.
+func (q *Queue) Close() {
+	q.tomb.Kill(nil)
+	_ = q.tomb.Wait()
+}
+
+func (q *Queue) watcher() error {
 	// reconcile jobs
 	stream := coal.Reconcile(q.store, &Job{}, func(model coal.Model) {
 		q.update(model.(*Job))
 	}, func(model coal.Model) {
 		q.update(model.(*Job))
-	}, nil, p.reporter)
+	}, nil, q.reporter)
 
 	// await close
-	<-p.closed
+	<-q.tomb.Dying()
 
 	// close stream
 	stream.Close()
+
+	return tomb.ErrDying
 }
 
 func (q *Queue) update(job *Job) {

@@ -50,11 +50,6 @@ type Context struct {
 	// Usage: Read Only
 	Queue *Queue
 
-	// Pool is the pool that manages the queue and task.
-	//
-	// Usage: Read Only
-	Pool *Pool
-
 	// Store is the store used by the queue.
 	//
 	// Usage: Read Only
@@ -130,7 +125,7 @@ type Task struct {
 	Timeout time.Duration
 }
 
-func (t *Task) start(p *Pool) {
+func (t *Task) start(q *Queue) {
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 2
@@ -163,18 +158,16 @@ func (t *Task) start(p *Pool) {
 
 	// start workers
 	for i := 0; i < t.Workers; i++ {
-		go t.worker(p)
+		go t.worker(q)
 	}
 }
 
-func (t *Task) worker(p *Pool) {
+func (t *Task) worker(q *Queue) {
 	// run forever
 	for {
 		// return if closed
-		select {
-		case <-p.closed:
+		if !q.tomb.Alive() {
 			return
-		default:
 		}
 
 		// attempt to get job from queue
@@ -184,7 +177,7 @@ func (t *Task) worker(p *Pool) {
 			select {
 			case <-time.After(t.Interval):
 				// continue
-			case <-p.closed:
+			case <-q.tomb.Dying():
 				return
 			}
 
@@ -194,8 +187,8 @@ func (t *Task) worker(p *Pool) {
 		// execute job and report errors
 		err := t.execute(job)
 		if err != nil {
-			if p.reporter != nil {
-				p.reporter(err)
+			if q.reporter != nil {
+				q.reporter(err)
 			}
 		}
 	}

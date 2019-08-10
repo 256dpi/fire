@@ -16,15 +16,13 @@ type data struct {
 	Foo string `bson:"foo"`
 }
 
-func TestPool(t *testing.T) {
+func TestQueue(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "foo",
 		Model: &data{},
 		Queue: q,
@@ -34,7 +32,7 @@ func TestPool(t *testing.T) {
 			return nil
 		},
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -58,18 +56,16 @@ func TestPool(t *testing.T) {
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolDelayed(t *testing.T) {
+func TestQueueDelayed(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "delayed",
 		Model: &data{},
 		Queue: q,
@@ -79,7 +75,7 @@ func TestPoolDelayed(t *testing.T) {
 			return nil
 		},
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -103,20 +99,18 @@ func TestPoolDelayed(t *testing.T) {
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolFailed(t *testing.T) {
+func TestQueueFailed(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
 	i := 0
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "failed",
 		Model: &data{},
 		Queue: q,
@@ -132,7 +126,7 @@ func TestPoolFailed(t *testing.T) {
 		},
 		MinDelay: 10 * time.Millisecond,
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -156,23 +150,21 @@ func TestPoolFailed(t *testing.T) {
 	assert.Equal(t, bson.M{"foo": "bar"}, job.Result)
 	assert.Equal(t, "foo", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolCrashed(t *testing.T) {
+func TestQueueCrashed(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 	errs := make(chan error, 1)
 
 	i := 0
 
-	p := NewPool(func(err error) {
+	q := NewQueue(tester.Store, func(err error) {
 		errs <- err
 	})
-	p.Add(&Task{
+	q.Add(&Task{
 		Name:  "crashed",
 		Model: &data{},
 		Queue: q,
@@ -187,7 +179,7 @@ func TestPoolCrashed(t *testing.T) {
 		},
 		MinDelay: 10 * time.Millisecond,
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -212,18 +204,16 @@ func TestPoolCrashed(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "EOF", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolCancelNoRetry(t *testing.T) {
+func TestQueueCancelNoRetry(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
 		Queue: q,
@@ -232,7 +222,7 @@ func TestPoolCancelNoRetry(t *testing.T) {
 			return E("cancelled", false)
 		},
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -256,20 +246,18 @@ func TestPoolCancelNoRetry(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "cancelled", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolCancelRetry(t *testing.T) {
+func TestQueueCancelRetry(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
 	i := 0
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
 		Queue: q,
@@ -282,7 +270,7 @@ func TestPoolCancelRetry(t *testing.T) {
 		},
 		MinDelay: 10 * time.Millisecond,
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -306,23 +294,21 @@ func TestPoolCancelRetry(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "cancelled", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolCancelCrash(t *testing.T) {
+func TestQueueCancelCrash(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 	errs := make(chan error, 2)
 
 	i := 0
 
-	p := NewPool(func(err error) {
+	q := NewQueue(tester.Store, func(err error) {
 		errs <- err
 	})
-	p.Add(&Task{
+	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
 		Queue: q,
@@ -336,7 +322,7 @@ func TestPoolCancelCrash(t *testing.T) {
 		MinDelay:    10 * time.Millisecond,
 		MaxAttempts: 2,
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -361,20 +347,18 @@ func TestPoolCancelCrash(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "foo", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolTimeout(t *testing.T) {
+func TestQueueTimeout(t *testing.T) {
 	tester.Clean()
-
-	q := NewQueue(tester.Store)
 
 	done := make(chan struct{})
 
 	i := 0
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q := NewQueue(tester.Store, panicReporter)
+	q.Add(&Task{
 		Name:  "timeout",
 		Model: &data{},
 		Queue: q,
@@ -390,7 +374,7 @@ func TestPoolTimeout(t *testing.T) {
 		},
 		Timeout: 10 * time.Millisecond,
 	})
-	p.Run()
+	q.Run()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -414,21 +398,20 @@ func TestPoolTimeout(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	p.Close()
+	q.Close()
 }
 
-func TestPoolExisting(t *testing.T) {
+func TestQueueExisting(t *testing.T) {
 	tester.Clean()
 
-	q := NewQueue(tester.Store)
+	q := NewQueue(tester.Store, panicReporter)
 
 	job, err := q.Enqueue("existing", nil, 0)
 	assert.NoError(t, err)
 
 	done := make(chan struct{})
 
-	p := NewPool(panicReporter)
-	p.Add(&Task{
+	q.Add(&Task{
 		Name:  "existing",
 		Model: &data{},
 		Queue: q,
@@ -438,7 +421,7 @@ func TestPoolExisting(t *testing.T) {
 		},
 		Timeout: 10 * time.Millisecond,
 	})
-	p.Run()
+	q.Run()
 
 	<-done
 
@@ -457,5 +440,5 @@ func TestPoolExisting(t *testing.T) {
 	assert.Equal(t, bson.M(nil), job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	p.Close()
+	q.Close()
 }
