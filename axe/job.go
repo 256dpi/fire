@@ -165,7 +165,8 @@ func complete(store *coal.Store, id coal.ID, result bson.M) error {
 
 	// update job
 	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
-		"_id": id,
+		"_id":                    id,
+		coal.F(&Job{}, "Status"): StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):   StatusCompleted,
@@ -187,7 +188,8 @@ func fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) err
 
 	// update job
 	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
-		"_id": id,
+		coal.F(&Job{}, "Status"): StatusDequeued,
+		"_id":                    id,
 	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):    StatusFailed,
@@ -209,7 +211,8 @@ func cancel(store *coal.Store, id coal.ID, reason string) error {
 
 	// update job
 	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
-		"_id": id,
+		"_id":                    id,
+		coal.F(&Job{}, "Status"): StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
 			coal.F(&Job{}, "Status"):   StatusCancelled,
