@@ -75,9 +75,6 @@ type Task struct {
 	// Model is the model that holds task related data.
 	Model Model
 
-	// Queue is the queue that is used to manage the jobs.
-	Queue *Queue
-
 	// Handler is the callback called with jobs for processing. The handler
 	// should return errors formatted with E to properly indicate the status of
 	// the job. If a task execution is successful the handler may return some
@@ -192,7 +189,7 @@ func (t *Task) worker(q *Queue) error {
 		}
 
 		// attempt to get job from queue
-		job := t.Queue.get(t.Name)
+		job := q.get(t.Name)
 		if job == nil {
 			// wait some time before trying again
 			select {
@@ -205,7 +202,7 @@ func (t *Task) worker(q *Queue) error {
 		}
 
 		// execute job and report errors
-		err := t.execute(job)
+		err := t.execute(q, job)
 		if err != nil {
 			if q.reporter != nil {
 				q.reporter(err)
@@ -241,9 +238,9 @@ func (t *Task) enqueuer(q *Queue) error {
 	}
 }
 
-func (t *Task) execute(job *Job) error {
+func (t *Task) execute(q *Queue, job *Job) error {
 	// dequeue job
-	job, err := Dequeue(t.Queue.store, job.ID(), t.Timeout)
+	job, err := Dequeue(q.store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -276,8 +273,8 @@ func (t *Task) execute(job *Job) error {
 	ctx := &Context{
 		Model:  model,
 		Task:   t,
-		Queue:  t.Queue,
-		Store:  t.Queue.store,
+		Queue:  q,
+		Store:  q.store,
 		Tracer: tracer,
 	}
 
@@ -289,7 +286,7 @@ func (t *Task) execute(job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(t.Queue.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -298,7 +295,7 @@ func (t *Task) execute(job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(t.Queue.store, job.ID(), e.Reason)
+		err = Cancel(q.store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -311,19 +308,19 @@ func (t *Task) execute(job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(t.Queue.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(t.Queue.store, job.ID(), err.Error())
+		_ = Cancel(q.store, job.ID(), err.Error())
 
 		return err
 	}
 
 	// complete job
-	err = Complete(t.Queue.store, job.ID(), ctx.Result)
+	err = Complete(q.store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}

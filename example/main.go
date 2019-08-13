@@ -131,7 +131,7 @@ func createHandler(store *coal.Store) http.Handler {
 
 	// create queue
 	queue := axe.NewQueue(store, reporter)
-	queue.Add(incrementTask(queue))
+	queue.Add(incrementTask())
 	queue.Run()
 
 	// create group
@@ -212,10 +212,9 @@ func itemStream(store *coal.Store) *spark.Stream {
 	}
 }
 
-func incrementTask(queue *axe.Queue) *axe.Task {
+func incrementTask() *axe.Task {
 	return &axe.Task{
 		Name:  "increment",
-		Queue: queue,
 		Model: &count{},
 		Handler: func(ctx *axe.Context) error {
 			// get count

@@ -25,7 +25,6 @@ func TestQueue(t *testing.T) {
 	q.Add(&Task{
 		Name:  "foo",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			close(done)
 			ctx.Result = bson.M{"foo": "bar"}
@@ -68,7 +67,6 @@ func TestQueueDelayed(t *testing.T) {
 	q.Add(&Task{
 		Name:  "delayed",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			close(done)
 			ctx.Result = bson.M{"foo": "bar"}
@@ -113,7 +111,6 @@ func TestQueueFailed(t *testing.T) {
 	q.Add(&Task{
 		Name:  "failed",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
@@ -167,7 +164,6 @@ func TestQueueCrashed(t *testing.T) {
 	q.Add(&Task{
 		Name:  "crashed",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
@@ -216,7 +212,6 @@ func TestQueueCancelNoRetry(t *testing.T) {
 	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			close(done)
 			return E("cancelled", false)
@@ -260,7 +255,6 @@ func TestQueueCancelRetry(t *testing.T) {
 	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			i++
 			if i == 2 {
@@ -311,7 +305,6 @@ func TestQueueCancelCrash(t *testing.T) {
 	q.Add(&Task{
 		Name:  "cancel",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			i++
 			if i == 2 {
@@ -361,7 +354,6 @@ func TestQueueTimeout(t *testing.T) {
 	q.Add(&Task{
 		Name:  "timeout",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
@@ -413,7 +405,6 @@ func TestQueueExisting(t *testing.T) {
 	q.Add(&Task{
 		Name:  "existing",
 		Model: &data{},
-		Queue: q,
 		Handler: func(ctx *Context) error {
 			close(done)
 			return nil
@@ -449,8 +440,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 	q := NewQueue(tester.Store, panicReporter)
 	q.Add(&Task{
-		Name:  "foo",
-		Queue: q,
+		Name: "foo",
 		Handler: func(ctx *Context) error {
 			close(done)
 			ctx.Result = bson.M{"foo": "bar"}
