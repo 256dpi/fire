@@ -37,16 +37,16 @@ type Job struct {
 	coal.Base `json:"-" bson:",inline" coal:"jobs"`
 
 	// The name of the job.
-	Name string `json:"name" bson:"name"`
+	Name string `json:"name"`
 
 	// The custom label used to compute exclusiveness.
-	Label string `json:"label" bson:"label"`
+	Label string `json:"label"`
 
 	// The data that has been supplied on creation.
-	Data bson.Raw `json:"data" bson:"data"`
+	Data bson.Raw `json:"data"`
 
 	// The current status of the job.
-	Status Status `json:"status" bson:"status"`
+	Status Status `json:"status"`
 
 	// The time when the job was created.
 	Created time.Time `json:"created-at" bson:"created_at"`
@@ -64,16 +64,16 @@ type Job struct {
 	Finished *time.Time `json:"finished-at" bson:"finished_at"`
 
 	// Attempts is incremented with each execution attempt.
-	Attempts int `json:"attempts" bson:"attempts"`
+	Attempts int `json:"attempts"`
 
 	// The result submitted during completion.
-	Result bson.M `json:"result" bson:"result"`
+	Result bson.M `json:"result"`
 
 	// The last message submitted when the job was failed or cancelled.
-	Reason string `json:"reason" bson:"reason"`
+	Reason string `json:"reason"`
 }
 
-// AddJobIndexes will add job indexes to the specified indexer. If removeAfter
+// AddJobIndexes will add job indexes to the specified indexer. If a duration
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
 func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
@@ -87,10 +87,10 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 	indexer.Add(&Job{}, false, removeAfter, "Finished")
 }
 
-// Enqueue will enqueue a job using the specified name and data. If a delay
-// is specified the job will not be dequeued until the specified time has passed.
-// If exclusive is enabled the won't be queued if another job from this class
-// is still available.
+// Enqueue will enqueue a job using the specified name and data. If a label is
+// given, it will only enqueue the task if no other task is available with the
+// same name and label. If a delay is specified the job will not be dequeued
+// until the specified time has passed.
 func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string, model Model, delay time.Duration) (*Job, error) {
 	// check name
 	if name == "" {
