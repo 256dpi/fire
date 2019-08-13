@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -37,6 +38,9 @@ type Job struct {
 
 	// The name of the job.
 	Name string `json:"name" bson:"name"`
+
+	// The custom label used to compute exclusiveness.
+	Label string `json:"label" bson:"label"`
 
 	// The data that has been supplied on creation.
 	Data bson.Raw `json:"data" bson:"data"`
@@ -87,7 +91,12 @@ func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
 // is specified the job will not be dequeued until the specified time has passed.
 // If exclusive is enabled the won't be queued if another job from this class
 // is still available.
-func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model Model, delay time.Duration, exclusive bool) (*Job, error) {
+func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string, model Model, delay time.Duration) (*Job, error) {
+	// check name
+	if name == "" {
+		return nil, fmt.Errorf("missing name")
+	}
+
 	// set default model
 	if model == nil {
 		model = bson.M{}
@@ -99,6 +108,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 	// prepare job
 	job := coal.Init(&Job{
 		Name:      name,
+		Label:     label,
 		Status:    StatusEnqueued,
 		Created:   now,
 		Available: now.Add(delay),
@@ -117,7 +127,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 	}
 
 	// check exclusiveness
-	if !exclusive {
+	if label == "" {
 		// insert job
 		_, err = store.C(job).InsertOne(session, job)
 		if err != nil {
@@ -127,9 +137,11 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name string, model
 		return job, nil
 	}
 
-	// insert job if there is no other job in an available state
+	// insert job if there is no other job in an available state with the
+	// provided label
 	res, err := store.C(job).UpdateOne(session, bson.M{
-		coal.F(&Job{}, "Name"): name,
+		coal.F(&Job{}, "Name"):  name,
+		coal.F(&Job{}, "Label"): label,
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
 		},

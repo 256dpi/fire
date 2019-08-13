@@ -90,11 +90,10 @@ type Task struct {
 	// Default: 0.
 	Periodically time.Duration
 
-	// Exclusive may set to enforce that at only one periodic task is enqueued
-	// at all times.
+	// PeriodicLabel defines the label used for the periodically enqueued task.
 	//
-	// Default: false.
-	Exclusive bool
+	// Default: "".
+	PeriodicLabel string
 
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs in parallel.
@@ -218,7 +217,7 @@ func (t *Task) worker(q *Queue) error {
 func (t *Task) enqueuer(q *Queue) error {
 	for {
 		// enqueue task
-		_, err := q.Enqueue(t.Name, nil, 0, t.Exclusive)
+		_, err := q.Enqueue(t.Name, t.PeriodicLabel, nil, 0)
 		if err != nil && q.reporter != nil {
 			// report error
 			q.reporter(err)

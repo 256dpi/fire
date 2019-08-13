@@ -13,7 +13,7 @@ import (
 func TestJob(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", &bson.M{"foo": "bar"}, 0, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", &bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -64,7 +64,7 @@ func TestJob(t *testing.T) {
 func TestDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 100*time.Millisecond, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 100*time.Millisecond)
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), time.Hour)
@@ -85,7 +85,7 @@ func TestDelayed(t *testing.T) {
 func TestTimeout(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
@@ -106,7 +106,7 @@ func TestTimeout(t *testing.T) {
 func TestFailed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -130,7 +130,7 @@ func TestFailed(t *testing.T) {
 func TestFailedDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -160,7 +160,7 @@ func TestFailedDelayed(t *testing.T) {
 func TestCancelled(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", nil, 0, false)
+	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -180,7 +180,7 @@ func TestCancelled(t *testing.T) {
 func TestEnqueueExclusive(t *testing.T) {
 	tester.Clean()
 
-	job1, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "bar"}, 0, true)
+	job1, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 	assert.NotNil(t, job1)
 
@@ -198,7 +198,7 @@ func TestEnqueueExclusive(t *testing.T) {
 	assert.Equal(t, bson.M(nil), list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
-	job2, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "bar"}, 0, true)
+	job2, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
@@ -224,7 +224,7 @@ func TestEnqueueExclusive(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	job3, err := Enqueue(tester.Store, nil, "foo", bson.M{"foo": "baz"}, 0, true)
+	job3, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "baz"}, 0)
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 

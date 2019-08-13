@@ -66,9 +66,9 @@ func (q *Queue) Add(task *Task) {
 
 // Enqueue will enqueue a job using the specified name and data. If a delay
 // is specified the job will not dequeued until the specified time has passed.
-func (q *Queue) Enqueue(name string, model Model, delay time.Duration, exclusive bool) (*Job, error) {
+func (q *Queue) Enqueue(name, label string, model Model, delay time.Duration) (*Job, error) {
 	// enqueue job
-	job, err := Enqueue(q.store, nil, name, model, delay, exclusive)
+	job, err := Enqueue(q.store, nil, name, label, model, delay)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (q *Queue) Enqueue(name string, model Model, delay time.Duration, exclusive
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
 // during request processing.
-func (q *Queue) Callback(name string, delay time.Duration, exclusive bool, matcher fire.Matcher, cb func(ctx *fire.Context) Model) *fire.Callback {
+func (q *Queue) Callback(name, label string, delay time.Duration, matcher fire.Matcher, cb func(ctx *fire.Context) Model) *fire.Callback {
 	return fire.C("axe/Queue.Callback", matcher, func(ctx *fire.Context) error {
 		// set task tag
 		ctx.Tracer.Tag("task", name)
@@ -92,13 +92,13 @@ func (q *Queue) Callback(name string, delay time.Duration, exclusive bool, match
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, ctx.Session, name, model, delay, exclusive)
+			_, err := Enqueue(ctx.Store, ctx.Session, name, label, model, delay)
 			if err != nil {
 				return err
 			}
 		} else {
 			// enqueue job using queue store
-			_, err := q.Enqueue(name, model, delay, exclusive)
+			_, err := q.Enqueue(name, label, model, delay)
 			if err != nil {
 				return err
 			}
