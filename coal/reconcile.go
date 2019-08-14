@@ -20,16 +20,19 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 		// ensure cursor is closed
 		defer cursor.Close(nil)
 
-		// prepare model
-		model := model.Meta().Make()
-
 		// iterate over all documents
 		for cursor.Next(nil) {
+			// prepare model
+			model := model.Meta().Make()
+
 			// decode model
 			err = cursor.Decode(model)
 			if err != nil {
 				return err
 			}
+
+			// re-initialize
+			Init(model)
 
 			// call callback if available
 			if created != nil {
