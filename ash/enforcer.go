@@ -22,8 +22,9 @@ func E(name string, m fire.Matcher, h fire.Handler) *Enforcer {
 type Enforcer = fire.Callback
 
 // GrantAccess will enforce the authorization without any changes to the
-// context. It should be used if the presented candidate has full access to the
-// data (.e.g a superuser).
+// context. It should be used stand-alone if the presented candidate has full
+// access to the data (.e.g a superuser) or in an authorizer chain to delegate
+// authorization to the next authorizer.
 func GrantAccess() *Enforcer {
 	return E("ash/GrantAccess", fire.All(), func(_ *fire.Context) error {
 		return nil
