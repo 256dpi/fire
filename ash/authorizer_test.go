@@ -14,14 +14,6 @@ func TestA(t *testing.T) {
 	})
 }
 
-func TestRun(t *testing.T) {
-	tester.WithContext(nil, func(ctx *fire.Context) {
-		enforcers, err := Run(GrantAccess()).Handler(ctx)
-		assert.NoError(t, err)
-		assert.Len(t, enforcers, 1)
-	})
-}
-
 func TestAnd(t *testing.T) {
 	tester.WithContext(nil, func(ctx *fire.Context) {
 		enforcers, err := And(accessGranted(), accessGranted()).Handler(ctx)

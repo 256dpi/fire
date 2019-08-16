@@ -49,13 +49,6 @@ type Authorizer struct {
 	Handler Handler
 }
 
-// Run will authorize immediately and return the provided list of enforcers.
-func Run(enforcers ...*Enforcer) *Authorizer {
-	return A("ash/Run", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
-		return enforcers, nil
-	})
-}
-
 // And will match and run both authorizers and return immediately if one does not
 // return a set of enforcers. The two successfully returned enforcer sets are
 // merged into one and returned.

@@ -12,7 +12,7 @@ func TestWhitelist(t *testing.T) {
 	assert.Panics(t, func() {
 		Whitelist(Matrix{
 			Model:      &postModel{},
-			Candidates: L{Run(GrantAccess()), Run(GrantAccess())},
+			Candidates: L{accessGranted(), accessGranted()},
 			Access: map[string][]string{
 				"Foo": {"RW", "RW"}, // <- invalid field
 			},
@@ -22,7 +22,7 @@ func TestWhitelist(t *testing.T) {
 	assert.Panics(t, func() {
 		Whitelist(Matrix{
 			Model:      &postModel{},
-			Candidates: L{Run(GrantAccess()), Run(GrantAccess())},
+			Candidates: L{accessGranted(), accessGranted()},
 			Access: map[string][]string{
 				"Title": {"RWX", "RW"}, // <- invalid tag
 			},
