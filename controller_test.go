@@ -103,7 +103,10 @@ func TestBasicOperations(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid attribute"
+				"detail": "invalid attribute",
+				"source": {
+					"pointer": "/data/attributes/foo"
+				}
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -297,7 +300,10 @@ func TestBasicOperations(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid attribute"
+				"detail": "invalid attribute",
+				"source": {
+					"pointer": "/data/attributes/foo"
+				}
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -569,7 +575,10 @@ func TestHasOneRelationship(t *testing.T) {
 			"errors":[{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "invalid relationship"
+				"detail": "invalid relationship",
+				"source": {
+					"pointer": "/data/relationships/foo"
+				}
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -3064,7 +3073,10 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "attribute is not writable"
+				"detail": "attribute is not writable",
+				"source": {
+					"pointer": "/data/attributes/published"
+				}
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
@@ -3089,7 +3101,10 @@ func TestWritableFields(t *testing.T) {
 			"errors": [{
 				"status": "400",
 				"title": "Bad Request",
-				"detail": "relationship is not writable"
+				"detail": "relationship is not writable",
+				"source": {
+					"pointer": "/data/relationships/posts"
+				}
 			}]
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})

@@ -1459,7 +1459,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get field
 		field := c.Model.Meta().Attributes[name]
 		if field == nil {
-			stack.Abort(jsonapi.BadRequest("invalid attribute"))
+			pointer := fmt.Sprintf("/data/attributes/%s", name)
+			stack.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
 		}
 
 		// check whitelist
@@ -1469,7 +1470,9 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 				continue
 			}
 
-			stack.Abort(jsonapi.BadRequest("attribute is not writable"))
+			// raise error
+			pointer := fmt.Sprintf("/data/attributes/%s", name)
+			stack.Abort(jsonapi.BadRequestPointer("attribute is not writable", pointer))
 		}
 
 		// set attribute
@@ -1484,7 +1487,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get relationship
 		field := c.Model.Meta().Relationships[name]
 		if field == nil {
-			stack.Abort(jsonapi.BadRequest("invalid relationship"))
+			pointer := fmt.Sprintf("/data/relationships/%s", name)
+			stack.Abort(jsonapi.BadRequestPointer("invalid relationship", pointer))
 		}
 
 		// check whitelist
@@ -1494,7 +1498,9 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 				continue
 			}
 
-			stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+			// raise error
+			pointer := fmt.Sprintf("/data/relationships/%s", name)
+			stack.Abort(jsonapi.BadRequestPointer("relationship is not writable", pointer))
 		}
 
 		// assign relationship
