@@ -78,15 +78,17 @@ func (q *Queue) Enqueue(name, label string, model Model, delay time.Duration) (*
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
 // during request processing.
-func (q *Queue) Callback(name, label string, delay time.Duration, matcher fire.Matcher, cb func(ctx *fire.Context) Model) *fire.Callback {
+func (q *Queue) Callback(name string, matcher fire.Matcher, cb func(ctx *fire.Context) (string, time.Duration, Model)) *fire.Callback {
 	return fire.C("axe/Queue.Callback", matcher, func(ctx *fire.Context) error {
 		// set task tag
 		ctx.Tracer.Tag("task", name)
 
-		// get model
+		// get label, delay and model
 		var model Model
+		var delay time.Duration
+		var label string
 		if cb != nil {
-			model = cb(ctx)
+			label, delay, model = cb(ctx)
 		}
 
 		// check if controller uses same store

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/goware/cors"
 	"github.com/opentracing/opentracing-go"
@@ -164,8 +165,8 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 		ResourceActions: fire.M{
 			"add": &fire.Action{
 				Methods: []string{"POST"},
-				Callback: queue.Callback("increment", "", 0, fire.All(), func(ctx *fire.Context) axe.Model {
-					return &count{
+				Callback: queue.Callback("increment", fire.All(), func(ctx *fire.Context) (string, time.Duration, axe.Model) {
+					return "", 0, &count{
 						Item: ctx.Model.ID(),
 					}
 				}),
