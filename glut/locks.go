@@ -95,7 +95,7 @@ func Lock(store *coal.Store, component, name string, token coal.ID, timeout, ttl
 
 // SetLocked will update the specified value only if the value is locked by the
 // specified token.
-func SetLocked(store *coal.Store, component, name string, data []byte, token coal.ID) (bool, error) {
+func SetLocked(store *coal.Store, component, name string, data coal.Map, token coal.ID) (bool, error) {
 	// check token
 	if token.IsZero() {
 		return false, fmt.Errorf("invalid token")
@@ -123,7 +123,7 @@ func SetLocked(store *coal.Store, component, name string, data []byte, token coa
 
 // GetLocked will load the contents of the value with the specified name only
 // if the value is locked by the specified token.
-func GetLocked(store *coal.Store, component, name string, token coal.ID) ([]byte, bool, error) {
+func GetLocked(store *coal.Store, component, name string, token coal.ID) (coal.Map, bool, error) {
 	// find value
 	var value *Value
 	err := store.C(&Value{}).FindOne(nil, bson.M{

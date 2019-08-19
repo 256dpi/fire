@@ -12,7 +12,7 @@ import (
 
 // Get will load the contents of the value with the specified name. It will also
 // return whether the value exists at all.
-func Get(store *coal.Store, component, name string) ([]byte, bool, error) {
+func Get(store *coal.Store, component, name string) (coal.Map, bool, error) {
 	// find value
 	var value *Value
 	err := store.C(&Value{}).FindOne(nil, bson.M{
@@ -31,7 +31,7 @@ func Get(store *coal.Store, component, name string) ([]byte, bool, error) {
 // Set will write the specified value to the store and overwrite any existing
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
-func Set(store *coal.Store, component, name string, data []byte, ttl time.Duration) (bool, error) {
+func Set(store *coal.Store, component, name string, data coal.Map, ttl time.Duration) (bool, error) {
 	// prepare deadline
 	var deadline *time.Time
 	if ttl > 0 {

@@ -17,7 +17,7 @@ type Value struct {
 	Name string `json:"name"`
 
 	// The content of the value.
-	Data []byte `json:"data"`
+	Data coal.Map `json:"data"`
 
 	// The time after the value can be deleted.
 	Deadline *time.Time `json:"deadline"`

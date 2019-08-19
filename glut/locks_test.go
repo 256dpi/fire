@@ -75,27 +75,27 @@ func TestLock(t *testing.T) {
 
 	// set with token
 
-	modified, err := SetLocked(tester.Store, "test", "foo", []byte("bar"), token)
+	modified, err := SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "bar"}, token)
 	assert.NoError(t, err)
 	assert.True(t, modified)
 
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.True(t, value.Locked.After(time.Now()))
 	assert.Equal(t, &token, value.Token)
 
 	// set with different token
 
-	modified, err = SetLocked(tester.Store, "test", "foo", []byte("bar"), coal.New())
+	modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
 	assert.NoError(t, err)
 	assert.False(t, modified)
 
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.True(t, value.Locked.After(time.Now()))
 	assert.Equal(t, &token, value.Token)
 
@@ -103,19 +103,19 @@ func TestLock(t *testing.T) {
 
 	data, loaded, err = GetLocked(tester.Store, "test", "foo", token)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte("bar"), data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, data)
 	assert.True(t, loaded)
 
 	// set non existent
 
-	modified, err = SetLocked(tester.Store, "test", "bar", []byte("baz"), token)
+	modified, err = SetLocked(tester.Store, "test", "bar", coal.Map{"foo": "baz"}, token)
 	assert.NoError(t, err)
 	assert.False(t, modified)
 
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.True(t, value.Locked.After(time.Now()))
 	assert.Equal(t, &token, value.Token)
 
@@ -128,7 +128,7 @@ func TestLock(t *testing.T) {
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.True(t, value.Locked.After(time.Now()))
 	assert.Equal(t, &token, value.Token)
 
@@ -141,20 +141,20 @@ func TestLock(t *testing.T) {
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.Nil(t, value.Locked)
 	assert.Nil(t, value.Token)
 
 	// set unlocked
 
-	modified, err = SetLocked(tester.Store, "test", "foo", []byte("baz"), coal.New())
+	modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
 	assert.NoError(t, err)
 	assert.False(t, modified)
 
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.Nil(t, value.Locked)
 	assert.Nil(t, value.Token)
 
@@ -169,7 +169,7 @@ func TestLock(t *testing.T) {
 	value = tester.FindLast(&Value{}).(*Value)
 	assert.Equal(t, "test", value.Component)
 	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, []byte("bar"), value.Data)
+	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
 	assert.True(t, value.Locked.After(time.Now()))
 	assert.Equal(t, &token, value.Token)
 
