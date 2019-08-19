@@ -4,12 +4,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// Map represents a raw BSON object that can be used to marshal and unmarshal
-// concrete types.
+// Map represents a simple BSON map. In contrast to bson.M it provides methods
+// to marshal and unmarshal concrete types to and from the map.
 type Map map[string]interface{}
 
-// MustMap will encode the specified object as a map and panic if there was an
-// error.
+// MustMap will marshal the specified object to a map and panic on any error.
 func MustMap(from interface{}) Map {
 	var m Map
 	m.MustMarshal(from)
