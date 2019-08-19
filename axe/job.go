@@ -43,7 +43,7 @@ type Job struct {
 	Label string `json:"label"`
 
 	// The data that has been supplied on creation.
-	Data bson.Raw `json:"data"`
+	Data coal.Map `json:"data"`
 
 	// The current status of the job.
 	Status Status `json:"status"`
@@ -67,7 +67,7 @@ type Job struct {
 	Attempts int `json:"attempts"`
 
 	// The result submitted during completion.
-	Result bson.M `json:"result"`
+	Result coal.Map `json:"result"`
 
 	// The last message submitted when the job was failed or cancelled.
 	Reason string `json:"reason"`
@@ -114,14 +114,8 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string
 		Available: now.Add(delay),
 	}).(*Job)
 
-	// marshall model
-	raw, err := bson.Marshal(model)
-	if err != nil {
-		return nil, err
-	}
-
-	// marshall into job
-	err = bson.Unmarshal(raw, &job.Data)
+	// marshal model
+	err := job.Data.Marshal(model)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +195,7 @@ func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 
 // Complete will complete the job with the specified id. Only jobs in the
 // "dequeued" state can be completed.
-func Complete(store *coal.Store, id coal.ID, result bson.M) error {
+func Complete(store *coal.Store, id coal.ID, result coal.Map) error {
 	// get time
 	now := time.Now()
 

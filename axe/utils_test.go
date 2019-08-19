@@ -1,8 +1,6 @@
 package axe
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
@@ -12,11 +10,12 @@ var tester = fire.NewTester(
 	&Job{},
 )
 
-func decodeRaw(e bson.Raw, m interface{}) interface{} {
-	err := bson.Unmarshal(e, m)
-	if err != nil {
-		panic(err)
-	}
+type data struct {
+	Foo string `bson:"foo"`
+}
 
-	return m
+func unmarshal(m coal.Map) data {
+	var d data
+	m.MustUnmarshal(&d)
+	return d
 }

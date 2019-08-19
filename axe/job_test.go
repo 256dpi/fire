@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -13,13 +12,13 @@ import (
 func TestJob(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", &bson.M{"foo": "bar"}, 0)
+	job, err := Enqueue(tester.Store, nil, "foo", "", coal.Map{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
-	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
 	assert.NotZero(t, list[0].Created)
 	assert.NotZero(t, list[0].Available)
@@ -27,13 +26,13 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, list[0].Ended)
 	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, bson.M(nil), list[0].Result)
+	assert.Nil(t, list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", job.Name)
-	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "bar"}, job.Data)
 	assert.Equal(t, StatusDequeued, job.Status)
 	assert.NotZero(t, job.Created)
 	assert.NotZero(t, job.Available)
@@ -41,15 +40,15 @@ func TestJob(t *testing.T) {
 	assert.Zero(t, job.Ended)
 	assert.Zero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
-	assert.Equal(t, bson.M(nil), job.Result)
+	assert.Nil(t, job.Result)
 	assert.Equal(t, "", job.Reason)
 
-	err = Complete(tester.Store, job.ID(), bson.M{"bar": "baz"})
+	err = Complete(tester.Store, job.ID(), coal.Map{"bar": "baz"})
 	assert.NoError(t, err)
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, "foo", job.Name)
-	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(job.Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "bar"}, job.Data)
 	assert.Equal(t, StatusCompleted, job.Status)
 	assert.NotZero(t, job.Created)
 	assert.NotZero(t, job.Available)
@@ -57,7 +56,7 @@ func TestJob(t *testing.T) {
 	assert.NotZero(t, job.Ended)
 	assert.NotZero(t, job.Finished)
 	assert.Equal(t, 1, job.Attempts)
-	assert.Equal(t, bson.M{"bar": "baz"}, job.Result)
+	assert.Equal(t, coal.Map{"bar": "baz"}, job.Result)
 	assert.Equal(t, "", job.Reason)
 }
 
@@ -180,14 +179,14 @@ func TestCancelled(t *testing.T) {
 func TestEnqueueExclusive(t *testing.T) {
 	tester.Clean()
 
-	job1, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "bar"}, 0)
+	job1, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 	assert.NotNil(t, job1)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
-	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
 	assert.NotZero(t, list[0].Created)
 	assert.NotZero(t, list[0].Available)
@@ -195,17 +194,17 @@ func TestEnqueueExclusive(t *testing.T) {
 	assert.Zero(t, list[0].Ended)
 	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, bson.M(nil), list[0].Result)
+	assert.Equal(t, coal.Map(nil), list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
-	job2, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "bar"}, 0)
+	job2, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "bar"}, 0)
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
 	list = *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
-	assert.Equal(t, &bson.M{"foo": "bar"}, decodeRaw(list[0].Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
 	assert.NotZero(t, list[0].Created)
 	assert.NotZero(t, list[0].Available)
@@ -213,7 +212,7 @@ func TestEnqueueExclusive(t *testing.T) {
 	assert.Zero(t, list[0].Ended)
 	assert.Zero(t, list[0].Finished)
 	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, bson.M(nil), list[0].Result)
+	assert.Equal(t, coal.Map(nil), list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
 	_, err = Dequeue(tester.Store, job1.ID(), time.Second)
@@ -224,14 +223,14 @@ func TestEnqueueExclusive(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	job3, err := Enqueue(tester.Store, nil, "foo", "test", bson.M{"foo": "baz"}, 0)
+	job3, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "baz"}, 0)
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 
 	list = *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 2)
 	assert.Equal(t, "foo", list[1].Name)
-	assert.Equal(t, &bson.M{"foo": "baz"}, decodeRaw(list[1].Data, &bson.M{}))
+	assert.Equal(t, coal.Map{"foo": "baz"}, list[1].Data)
 	assert.Equal(t, StatusEnqueued, list[1].Status)
 	assert.NotZero(t, list[1].Created)
 	assert.NotZero(t, list[1].Available)
@@ -239,7 +238,7 @@ func TestEnqueueExclusive(t *testing.T) {
 	assert.Zero(t, list[1].Ended)
 	assert.Zero(t, list[1].Finished)
 	assert.Equal(t, 0, list[1].Attempts)
-	assert.Equal(t, bson.M(nil), list[1].Result)
+	assert.Equal(t, coal.Map(nil), list[1].Result)
 	assert.Equal(t, "", list[1].Reason)
 }
 

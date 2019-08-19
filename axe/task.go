@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/fire"
@@ -39,7 +38,7 @@ type Context struct {
 	Model Model
 
 	// Result can be set with a custom result.
-	Result bson.M
+	Result coal.Map
 
 	// Task is the task that processes this job.
 	//
@@ -259,7 +258,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		model = reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
 
 		// unmarshal model
-		err = bson.Unmarshal(job.Data, model)
+		err = job.Data.Unmarshal(model)
 		if err != nil {
 			return err
 		}
