@@ -15,15 +15,15 @@ import (
 
 const (
 	// max message size
-	maxMessageSize = 4048
+	maxMessageSize = 4096 // 4KB
 
 	// the time after which a write times out
 	writeTimeout = 10 * time.Second
 
-	// the timeout after which a ping is sent to keep the connection alive
+	// the interval at which a ping is sent to keep the connection alive
 	pingTimeout = 45 * time.Second
 
-	// the timeout after a connection is closed when there is no traffic
+	// the time after a connection is closed when there is ping reponse
 	receiveTimeout = 90 * time.Second
 )
 
