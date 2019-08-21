@@ -3,6 +3,7 @@ package spark
 import (
 	"encoding/base64"
 	"encoding/json"
+	"net"
 	"net/http"
 	"time"
 
@@ -190,9 +191,12 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				return
 			}
 
-			// read on the connection for ever
+			// read next message from connection
 			typ, bytes, err := conn.ReadMessage()
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				close(errs)
+				return
+			} else if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				close(errs)
 				return
 			} else if err != nil {
