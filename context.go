@@ -2,6 +2,7 @@ package fire
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/256dpi/jsonapi"
@@ -246,7 +247,9 @@ func (c *Context) Query() bson.M {
 func (c *Context) Parse(obj interface{}) error {
 	// unmarshal json
 	err := json.NewDecoder(c.HTTPRequest.Body).Decode(obj)
-	if err != nil {
+	if err == io.EOF {
+		return E("incomplete request body")
+	} else if err != nil {
 		return err
 	}
 
