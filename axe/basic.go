@@ -29,6 +29,10 @@ type Blueprint struct {
 	// The initial delay. If specified the job will not be dequeued until the
 	// specified time has passed.
 	Delay time.Duration
+
+	// The job interval. If given, and a label is present, the job will only
+	// enqueued if no job has been finished in the specified duration.
+	Interval time.Duration
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
@@ -70,15 +74,26 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Jo
 		return job, nil
 	}
 
-	// insert job if there is no other job in an available state with the
-	// provided label
-	res, err := store.C(job).UpdateOne(session, bson.M{
+	// prepare query
+	query := bson.M{
 		coal.F(&Job{}, "Name"):  bp.Name,
 		coal.F(&Job{}, "Label"): bp.Label,
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
-	}, bson.M{
+	}
+
+	// add interval
+	if bp.Interval > 0 {
+		delete(query, coal.F(&Job{}, "Status"))
+		query[coal.F(&Job{}, "Finished")] = bson.M{
+			"$gt": now.Add(-bp.Interval),
+		}
+	}
+
+	// insert job if there is no other job in an available state with the
+	// provided label
+	res, err := store.C(job).UpdateOne(session, query, bson.M{
 		"$setOnInsert": job,
 	}, options.Update().SetUpsert(true))
 	if err != nil {

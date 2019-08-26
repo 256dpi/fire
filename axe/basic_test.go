@@ -244,3 +244,72 @@ func TestEnqueueLabeled(t *testing.T) {
 	assert.Equal(t, "test", list[1].Label)
 	assert.Equal(t, StatusEnqueued, list[1].Status)
 }
+
+func TestEnqueueInterval(t *testing.T) {
+	tester.Clean()
+
+	job1, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Label: "test",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, job1)
+
+	list := *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "test", list[0].Label)
+	assert.Equal(t, StatusEnqueued, list[0].Status)
+
+	job2, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Label: "test",
+	})
+	assert.NoError(t, err)
+	assert.Nil(t, job2)
+
+	list = *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "test", list[0].Label)
+	assert.Equal(t, StatusEnqueued, list[0].Status)
+
+	_, err = Dequeue(tester.Store, job1.ID(), time.Second)
+	assert.NoError(t, err)
+
+	err = Complete(tester.Store, job1.ID(), nil)
+	assert.NoError(t, err)
+
+	job3, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:     "foo",
+		Label:    "test",
+		Interval: 100 * time.Millisecond,
+	})
+	assert.NoError(t, err)
+	assert.Nil(t, job3)
+
+	list = *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "test", list[0].Label)
+	assert.Equal(t, StatusCompleted, list[0].Status)
+
+	time.Sleep(150 * time.Millisecond)
+
+	job4, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:     "foo",
+		Label:    "test",
+		Interval: 100 * time.Millisecond,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, job4)
+
+	list = *tester.FindAll(&Job{}).(*[]*Job)
+	assert.Len(t, list, 2)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "test", list[0].Label)
+	assert.Equal(t, StatusCompleted, list[0].Status)
+	assert.Equal(t, "foo", list[1].Name)
+	assert.Equal(t, "test", list[1].Label)
+	assert.Equal(t, StatusEnqueued, list[1].Status)
+}
