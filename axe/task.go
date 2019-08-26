@@ -213,7 +213,10 @@ func (t *Task) worker(q *Queue) error {
 func (t *Task) enqueuer(q *Queue) error {
 	for {
 		// enqueue task
-		_, err := q.Enqueue(t.Name, t.PeriodicLabel, nil, 0)
+		_, err := q.Enqueue(Blueprint{
+			Name:  t.Name,
+			Label: t.PeriodicLabel,
+		})
 		if err != nil && q.reporter != nil {
 			// report error
 			q.reporter(err)

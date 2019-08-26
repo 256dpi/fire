@@ -32,7 +32,10 @@ func TestQueue(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("foo", "", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "foo",
+		Model: &data{Foo: "bar"},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -74,7 +77,11 @@ func TestQueueDelayed(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("delayed", "", &data{Foo: "bar"}, 100*time.Millisecond)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "delayed",
+		Model: &data{Foo: "bar"},
+		Delay: 100 * time.Millisecond,
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -124,7 +131,10 @@ func TestQueueFailed(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("failed", "", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "failed",
+		Model: &data{Foo: "bar"},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -176,7 +186,10 @@ func TestQueueCrashed(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("crashed", "", &data{}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "crashed",
+		Model: &data{},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -218,7 +231,10 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("cancel", "", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "cancel",
+		Model: &data{Foo: "bar"},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -265,7 +281,10 @@ func TestQueueCancelRetry(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("cancel", "", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "cancel",
+		Model: &data{Foo: "bar"},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -316,7 +335,10 @@ func TestQueueCancelCrash(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("cancel", "", &data{Foo: "bar"}, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name:  "cancel",
+		Model: &data{Foo: "bar"},
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -367,7 +389,9 @@ func TestQueueTimeout(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	job, err := q.Enqueue("timeout", "", nil, 0)
+	job, err := q.Enqueue(Blueprint{
+		Name: "timeout",
+	})
 	assert.NoError(t, err)
 
 	<-done
@@ -393,7 +417,9 @@ func TestQueueTimeout(t *testing.T) {
 func TestQueueExisting(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "existing", "", nil, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "existing",
+	})
 	assert.NoError(t, err)
 
 	done := make(chan struct{})

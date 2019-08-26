@@ -12,7 +12,10 @@ import (
 func TestEnqueue(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", coal.Map{"foo": "bar"}, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "foo",
+		Data: coal.Map{"foo": "bar"},
+	})
 	assert.NoError(t, err)
 
 	list := *tester.FindAll(&Job{}).(*[]*Job)
@@ -63,7 +66,10 @@ func TestEnqueue(t *testing.T) {
 func TestEnqueueDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 100*time.Millisecond)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Delay: 100 * time.Millisecond,
+	})
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), time.Hour)
@@ -84,7 +90,9 @@ func TestEnqueueDelayed(t *testing.T) {
 func TestDequeueTimeout(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "foo",
+	})
 	assert.NoError(t, err)
 
 	job2, err := Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
@@ -105,7 +113,9 @@ func TestDequeueTimeout(t *testing.T) {
 func TestFail(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "foo",
+	})
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -129,7 +139,9 @@ func TestFail(t *testing.T) {
 func TestFailDelayed(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "foo",
+	})
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -159,7 +171,9 @@ func TestFailDelayed(t *testing.T) {
 func TestCancel(t *testing.T) {
 	tester.Clean()
 
-	job, err := Enqueue(tester.Store, nil, "foo", "", nil, 0)
+	job, err := Enqueue(tester.Store, nil, Blueprint{
+		Name: "foo",
+	})
 	assert.NoError(t, err)
 
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
@@ -179,7 +193,11 @@ func TestCancel(t *testing.T) {
 func TestEnqueueExclusive(t *testing.T) {
 	tester.Clean()
 
-	job1, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "bar"}, 0)
+	job1, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Label: "test",
+		Data:  coal.Map{"foo": "bar"},
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, job1)
 
@@ -197,7 +215,11 @@ func TestEnqueueExclusive(t *testing.T) {
 	assert.Equal(t, coal.Map(nil), list[0].Result)
 	assert.Equal(t, "", list[0].Reason)
 
-	job2, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "bar"}, 0)
+	job2, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Label: "test",
+		Data:  coal.Map{"foo": "bar"},
+	})
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
@@ -223,7 +245,11 @@ func TestEnqueueExclusive(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	job3, err := Enqueue(tester.Store, nil, "foo", "test", coal.Map{"foo": "baz"}, 0)
+	job3, err := Enqueue(tester.Store, nil, Blueprint{
+		Name:  "foo",
+		Label: "test",
+		Data:  coal.Map{"foo": "baz"},
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 

@@ -11,19 +11,40 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Enqueue will enqueue a job using the specified name and data. If a label is
-// given, it will only enqueue the task if no other task is available with the
-// same name and label. If a delay is specified the job will not be dequeued
-// until the specified time has passed.
-func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string, model Model, delay time.Duration) (*Job, error) {
+// Blueprint describes a job to enqueued.
+type Blueprint struct {
+	// The task name.
+	Name string
+
+	// The exclusivity label. If given, the job will only be enqueued if no
+	// other job is available with the same name and label.
+	Label string
+
+	// The job model. If given, data is override with the marshaled model.
+	Model Model
+
+	// The job data.
+	Data coal.Map
+
+	// The initial delay. If specified the job will not be dequeued until the
+	// specified time has passed.
+	Delay time.Duration
+}
+
+// Enqueue will enqueue a job using the specified blueprint.
+func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Job, error) {
 	// check name
-	if name == "" {
+	if bp.Name == "" {
 		return nil, fmt.Errorf("missing name")
 	}
 
-	// set default model
-	if model == nil {
-		model = bson.M{}
+	// marshal model if given
+	if bp.Model != nil {
+		bp.Data = coal.Map{}
+		err := bp.Data.Marshal(bp.Model)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// get time
@@ -31,23 +52,17 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string
 
 	// prepare job
 	job := coal.Init(&Job{
-		Name:      name,
-		Label:     label,
+		Name:      bp.Name,
+		Label:     bp.Label,
+		Data:      bp.Data,
 		Status:    StatusEnqueued,
 		Created:   now,
-		Available: now.Add(delay),
+		Available: now.Add(bp.Delay),
 	}).(*Job)
 
-	// marshal model
-	err := job.Data.Marshal(model)
-	if err != nil {
-		return nil, err
-	}
-
-	// check exclusiveness
-	if label == "" {
-		// insert job
-		_, err = store.C(job).InsertOne(session, job)
+	// insert non exclusive jobs immediately
+	if bp.Label == "" {
+		_, err := store.C(job).InsertOne(session, job)
 		if err != nil {
 			return nil, err
 		}
@@ -58,8 +73,8 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, name, label string
 	// insert job if there is no other job in an available state with the
 	// provided label
 	res, err := store.C(job).UpdateOne(session, bson.M{
-		coal.F(&Job{}, "Name"):  name,
-		coal.F(&Job{}, "Label"): label,
+		coal.F(&Job{}, "Name"):  bp.Name,
+		coal.F(&Job{}, "Label"): bp.Label,
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
@@ -191,4 +206,3 @@ func Cancel(store *coal.Store, id coal.ID, reason string) error {
 
 	return nil
 }
-
