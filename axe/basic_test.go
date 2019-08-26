@@ -193,7 +193,7 @@ func TestCancel(t *testing.T) {
 	assert.Equal(t, "some reason", job.Reason)
 }
 
-func TestEnqueueExclusive(t *testing.T) {
+func TestEnqueueLabeled(t *testing.T) {
 	tester.Clean()
 
 	job1, err := Enqueue(tester.Store, nil, Blueprint{

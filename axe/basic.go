@@ -16,11 +16,11 @@ type Blueprint struct {
 	// The task name.
 	Name string
 
-	// The exclusivity label. If given, the job will only be enqueued if no
-	// other job is available with the same name and label.
+	// The job label. If given, the job will only be enqueued if no other job is
+	// available with the same name and label.
 	Label string
 
-	// The job model. If given, data is override with the marshaled model.
+	// The job model. If given, data is overridden with the marshaled model.
 	Model Model
 
 	// The job data.
@@ -60,7 +60,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Jo
 		Available: now.Add(bp.Delay),
 	}).(*Job)
 
-	// insert non exclusive jobs immediately
+	// insert unlabeled jobs immediately
 	if bp.Label == "" {
 		_, err := store.C(job).InsertOne(session, job)
 		if err != nil {

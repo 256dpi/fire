@@ -34,7 +34,7 @@ type Job struct {
 	// The name of the job.
 	Name string `json:"name"`
 
-	// The custom label used to compute exclusiveness.
+	// The custom job label.
 	Label string `json:"label"`
 
 	// The data that has been supplied on creation.
