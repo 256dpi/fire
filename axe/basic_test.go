@@ -21,6 +21,7 @@ func TestEnqueue(t *testing.T) {
 	list := *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "", list[0].Label)
 	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
 	assert.NotZero(t, list[0].Created)
@@ -35,6 +36,7 @@ func TestEnqueue(t *testing.T) {
 	job, err = Dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", job.Name)
+	assert.Equal(t, "", job.Label)
 	assert.Equal(t, coal.Map{"foo": "bar"}, job.Data)
 	assert.Equal(t, StatusDequeued, job.Status)
 	assert.NotZero(t, job.Created)
@@ -51,6 +53,7 @@ func TestEnqueue(t *testing.T) {
 
 	job = tester.Fetch(&Job{}, job.ID()).(*Job)
 	assert.Equal(t, "foo", job.Name)
+	assert.Equal(t, "", job.Label)
 	assert.Equal(t, coal.Map{"foo": "bar"}, job.Data)
 	assert.Equal(t, StatusCompleted, job.Status)
 	assert.NotZero(t, job.Created)
@@ -76,15 +79,15 @@ func TestEnqueueDelayed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
-	time.Sleep(120 * time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
 
 	job2, err = Dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 
-	job2, err = Dequeue(tester.Store, job.ID(), time.Hour)
+	job3, err := Dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
-	assert.Nil(t, job2)
+	assert.Nil(t, job3)
 }
 
 func TestDequeueTimeout(t *testing.T) {
@@ -105,9 +108,9 @@ func TestDequeueTimeout(t *testing.T) {
 
 	time.Sleep(150 * time.Millisecond)
 
-	job2, err = Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
+	job3, err := Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
 	assert.NoError(t, err)
-	assert.NotNil(t, job2)
+	assert.NotNil(t, job3)
 }
 
 func TestFail(t *testing.T) {
@@ -160,7 +163,7 @@ func TestFailDelayed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
 
-	time.Sleep(120 * time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
 
 	job3, err := Dequeue(tester.Store, job.ID(), time.Hour)
 	assert.NoError(t, err)
@@ -196,7 +199,6 @@ func TestEnqueueExclusive(t *testing.T) {
 	job1, err := Enqueue(tester.Store, nil, Blueprint{
 		Name:  "foo",
 		Label: "test",
-		Data:  coal.Map{"foo": "bar"},
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, job1)
@@ -204,21 +206,12 @@ func TestEnqueueExclusive(t *testing.T) {
 	list := *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
+	assert.Equal(t, "test", list[0].Label)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
-	assert.NotZero(t, list[0].Created)
-	assert.NotZero(t, list[0].Available)
-	assert.Zero(t, list[0].Started)
-	assert.Zero(t, list[0].Ended)
-	assert.Zero(t, list[0].Finished)
-	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, coal.Map(nil), list[0].Result)
-	assert.Equal(t, "", list[0].Reason)
 
 	job2, err := Enqueue(tester.Store, nil, Blueprint{
 		Name:  "foo",
 		Label: "test",
-		Data:  coal.Map{"foo": "bar"},
 	})
 	assert.NoError(t, err)
 	assert.Nil(t, job2)
@@ -226,16 +219,8 @@ func TestEnqueueExclusive(t *testing.T) {
 	list = *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "foo", list[0].Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, list[0].Data)
+	assert.Equal(t, "test", list[0].Label)
 	assert.Equal(t, StatusEnqueued, list[0].Status)
-	assert.NotZero(t, list[0].Created)
-	assert.NotZero(t, list[0].Available)
-	assert.Zero(t, list[0].Started)
-	assert.Zero(t, list[0].Ended)
-	assert.Zero(t, list[0].Finished)
-	assert.Equal(t, 0, list[0].Attempts)
-	assert.Equal(t, coal.Map(nil), list[0].Result)
-	assert.Equal(t, "", list[0].Reason)
 
 	_, err = Dequeue(tester.Store, job1.ID(), time.Second)
 	assert.NoError(t, err)
@@ -243,27 +228,19 @@ func TestEnqueueExclusive(t *testing.T) {
 	err = Complete(tester.Store, job1.ID(), nil)
 	assert.NoError(t, err)
 
-	time.Sleep(time.Second)
-
 	job3, err := Enqueue(tester.Store, nil, Blueprint{
 		Name:  "foo",
 		Label: "test",
-		Data:  coal.Map{"foo": "baz"},
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 
 	list = *tester.FindAll(&Job{}).(*[]*Job)
 	assert.Len(t, list, 2)
+	assert.Equal(t, "foo", list[0].Name)
+	assert.Equal(t, "test", list[0].Label)
+	assert.Equal(t, StatusCompleted, list[0].Status)
 	assert.Equal(t, "foo", list[1].Name)
-	assert.Equal(t, coal.Map{"foo": "baz"}, list[1].Data)
+	assert.Equal(t, "test", list[1].Label)
 	assert.Equal(t, StatusEnqueued, list[1].Status)
-	assert.NotZero(t, list[1].Created)
-	assert.NotZero(t, list[1].Available)
-	assert.Zero(t, list[1].Started)
-	assert.Zero(t, list[1].Ended)
-	assert.Zero(t, list[1].Finished)
-	assert.Equal(t, 0, list[1].Attempts)
-	assert.Equal(t, coal.Map(nil), list[1].Result)
-	assert.Equal(t, "", list[1].Reason)
 }
