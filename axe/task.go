@@ -80,17 +80,6 @@ type Task struct {
 	// data that is attached to the job.
 	Handler func(*Context) error
 
-	// Periodically may be set to let the system enqueue the task automatically
-	// every given interval.
-	//
-	// Default: 0.
-	Periodically time.Duration
-
-	// PeriodicLabel defines the label used for the periodically enqueued task.
-	//
-	// Default: "".
-	PeriodicLabel string
-
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs in parallel.
 	//
@@ -131,6 +120,17 @@ type Task struct {
 	//
 	// Default: 10m.
 	Timeout time.Duration
+
+	// Periodically may be set to let the system enqueue a job automatically
+	// every given interval.
+	//
+	// Default: 0.
+	Periodically time.Duration
+
+	// PeriodicJob is the blueprint of the job that is periodically enqueued.
+	//
+	// Default: Blueprint{Name: Task.Name}.
+	PeriodicJob Blueprint
 }
 
 func (t *Task) start(q *Queue) {
@@ -211,12 +211,15 @@ func (t *Task) worker(q *Queue) error {
 }
 
 func (t *Task) enqueuer(q *Queue) error {
+	// prepare blueprint
+	blueprint := t.PeriodicJob
+
+	// override task name
+	blueprint.Name = t.Name
+
 	for {
 		// enqueue task
-		_, err := q.Enqueue(Blueprint{
-			Name:  t.Name,
-			Label: t.PeriodicLabel,
-		})
+		_, err := q.Enqueue(blueprint)
 		if err != nil && q.reporter != nil {
 			// report error
 			q.reporter(err)
