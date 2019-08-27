@@ -7,6 +7,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 // MustCreateStore will connect to the passed database and return a new store.
@@ -35,6 +37,8 @@ func CreateStore(uri string) (*Store, error) {
 
 	// prepare options
 	opts := options.Client().ApplyURI(uri)
+	opts.SetReadConcern(readconcern.Majority())
+	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
 
 	// create client
 	client, err := mongo.Connect(nil, opts)

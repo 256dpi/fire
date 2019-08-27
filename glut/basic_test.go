@@ -65,7 +65,7 @@ func TestBasic(t *testing.T) {
 func TestDeadline(t *testing.T) {
 	tester.Clean()
 
-	created, err := Set(tester.Store, "test", "foo", coal.Map{"foo": "bar"}, 10*time.Millisecond)
+	created, err := Set(tester.Store, "test", "foo", coal.Map{"foo": "bar"}, 100*time.Millisecond)
 	assert.NoError(t, err)
 	assert.True(t, created)
 
