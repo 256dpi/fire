@@ -1537,20 +1537,16 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 			id = relID
 		}
 
-		// set non optional id
+		// set id properly
 		if !field.Optional {
 			ctx.Model.MustSet(field.Name, id)
-			return
+		} else {
+			if !id.IsZero() {
+				ctx.Model.MustSet(field.Name, &id)
+			} else {
+				ctx.Model.MustSet(field.Name, coal.N())
+			}
 		}
-
-		// set valid optional id
-		if !id.IsZero() {
-			ctx.Model.MustSet(field.Name, &id)
-			return
-		}
-
-		// set zero optional id
-		ctx.Model.MustSet(field.Name, coal.N())
 	}
 
 	// handle to-many relationship
