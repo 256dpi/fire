@@ -1494,6 +1494,20 @@ func TestToManyRelationship(t *testing.T) {
 		}`, r.Body.String(), tester.DebugRequest(rq, r))
 	})
 
+	// unset posts relationship
+	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
+		"data": null
+	}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+		assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		assert.JSONEq(t, `{
+			"data": [],
+			"links": {
+				"self": "/selections/`+selection+`/relationships/posts",
+				"related": "/selections/`+selection+`/posts"
+			}
+		}`, r.Body.String(), tester.DebugRequest(rq, r))
+	})
+
 	// replace posts relationship
 	tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 		"data": [

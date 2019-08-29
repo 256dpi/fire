@@ -1552,23 +1552,29 @@ func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.
 	// handle to-many relationship
 	if field.ToMany {
 		// prepare ids
-		ids := make([]coal.ID, len(rel.Data.Many))
+		var ids []coal.ID
 
-		// convert all ids
-		for i, r := range rel.Data.Many {
-			// check type
-			if r.Type != field.RelType {
-				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+		// check if data is available
+		if rel.Data != nil {
+			// prepare ids
+			ids = make([]coal.ID, len(rel.Data.Many))
+
+			// convert all ids
+			for i, r := range rel.Data.Many {
+				// check type
+				if r.Type != field.RelType {
+					stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+				}
+
+				// get id
+				relID, err := coal.FromHex(r.ID)
+				if err != nil {
+					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+				}
+
+				// set id
+				ids[i] = relID
 			}
-
-			// get id
-			relID, err := coal.FromHex(r.ID)
-			if err != nil {
-				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
-			}
-
-			// set id
-			ids[i] = relID
 		}
 
 		// set ids
