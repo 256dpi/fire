@@ -133,3 +133,37 @@ func Sort(fields ...string) bson.D {
 
 	return sort
 }
+
+// ToM converts a model to a bson.M including all database fields.
+func ToM(model Model) bson.M {
+	// prepare map
+	m := bson.M{}
+
+	// add all fields
+	for name, field := range Init(model).Meta().DatabaseFields {
+		m[name] = model.MustGet(field.Name)
+	}
+
+	return m
+}
+
+// ToD converts a model to a bson.D including all database fields.
+func ToD(model Model) bson.D {
+	// get fields
+	fields := Init(model).Meta().OrderedFields
+
+	// prepare document
+	d := make(bson.D, 0, len(fields))
+
+	// add all fields
+	for _, field := range fields {
+		if field.BSONField != "" {
+			d = append(d, bson.E{
+				Key:   field.BSONField,
+				Value: model.MustGet(field.Name),
+			})
+		}
+	}
+
+	return d
+}
