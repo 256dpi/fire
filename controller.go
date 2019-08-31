@@ -296,8 +296,8 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// set store
 	ctx.Store = c.Store
 
-	// run operation without transaction if not configured
-	if !c.UseTransactions {
+	// run operation without transaction if not write or not configured
+	if !ctx.Operation.Write() || !c.UseTransactions {
 		c.runOperation(ctx, doc)
 		ctx.Tracer.Pop()
 		return
