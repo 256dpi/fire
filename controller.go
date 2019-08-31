@@ -265,6 +265,28 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
+	// set operation
+	switch ctx.JSONAPIRequest.Intent {
+	case jsonapi.ListResources:
+		ctx.Operation = List
+	case jsonapi.FindResource:
+		ctx.Operation = Find
+	case jsonapi.CreateResource:
+		ctx.Operation = Create
+	case jsonapi.UpdateResource:
+		ctx.Operation = Update
+	case jsonapi.DeleteResource:
+		ctx.Operation = Delete
+	case jsonapi.GetRelatedResources, jsonapi.GetRelationship:
+		ctx.Operation = Find
+	case jsonapi.SetRelationship, jsonapi.AppendToRelationship, jsonapi.RemoveFromRelationship:
+		ctx.Operation = Update
+	case jsonapi.CollectionAction:
+		ctx.Operation = CollectionAction
+	case jsonapi.ResourceAction:
+		ctx.Operation = ResourceAction
+	}
+
 	// prepare context
 	ctx.Selector = bson.M{}
 	ctx.Filters = []bson.M{}
@@ -330,9 +352,6 @@ func (c *Controller) listResources(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.listResources")
 
-	// set operation
-	ctx.Operation = List
-
 	// load models
 	c.loadModels(ctx)
 
@@ -363,9 +382,6 @@ func (c *Controller) listResources(ctx *Context) {
 func (c *Controller) findResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.findResource")
-
-	// set operation
-	ctx.Operation = Find
 
 	// load model
 	c.loadModel(ctx)
@@ -399,9 +415,6 @@ func (c *Controller) findResource(ctx *Context) {
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.createResource")
-
-	// set operation
-	ctx.Operation = Create
 
 	// basic input data check
 	if doc.Data == nil || doc.Data.One == nil {
@@ -491,9 +504,6 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.updateResource")
-
-	// set operation
-	ctx.Operation = Update
 
 	// basic input data check
 	if doc.Data == nil || doc.Data.One == nil {
@@ -608,9 +618,6 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.deleteResource")
 
-	// set operation
-	ctx.Operation = Delete
-
 	// load model
 	c.loadModel(ctx)
 
@@ -658,9 +665,6 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	if rel == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
-
-	// set operation
-	ctx.Operation = Find
 
 	// load model
 	c.loadModel(ctx)
@@ -898,9 +902,6 @@ func (c *Controller) getRelationship(ctx *Context) {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
-	// set operation
-	ctx.Operation = Find
-
 	// load model
 	c.loadModel(ctx)
 
@@ -945,9 +946,6 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	if rel == nil || (!rel.ToOne && !rel.ToMany) {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
-
-	// set operation
-	ctx.Operation = Update
 
 	// load model
 	c.loadModel(ctx)
@@ -1005,9 +1003,6 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	if rel == nil || !rel.ToMany {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
-
-	// set operation
-	ctx.Operation = Update
 
 	// load model
 	c.loadModel(ctx)
@@ -1089,9 +1084,6 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
-	// set operation
-	ctx.Operation = Update
-
 	// load model
 	c.loadModel(ctx)
 
@@ -1168,9 +1160,6 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.handleCollectionAction")
 
-	// set operation
-	ctx.Operation = CollectionAction
-
 	// get callback
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
@@ -1193,9 +1182,6 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 func (c *Controller) handleResourceAction(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.handleResourceAction")
-
-	// set operation
-	ctx.Operation = ResourceAction
 
 	// get callback
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
