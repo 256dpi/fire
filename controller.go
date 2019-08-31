@@ -1267,7 +1267,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	model := c.Model.Meta().Make()
 
 	// query db
-	res := ctx.TC(c.Model).FindOne(nil, ctx.Query())
+	res := ctx.TC(c.Model).FindOne(ctx.Session, ctx.Query())
 	err := res.Decode(model)
 	if err == mongo.ErrNoDocuments {
 		stack.Abort(jsonapi.NotFound("resource not found"))
@@ -1407,7 +1407,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// query db
-	stack.AbortIf(ctx.TC(c.Model).FindAll(nil, slicePtr, ctx.Query(), opts))
+	stack.AbortIf(ctx.TC(c.Model).FindAll(ctx.Session, slicePtr, ctx.Query(), opts))
 
 	// set models
 	ctx.Models = coal.InitSlice(slicePtr)
@@ -1643,7 +1643,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.TC(rc.Model).FindAll(nil, &references, query, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.TC(rc.Model).FindAll(ctx.Session, &references, query, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
 		})))
@@ -1922,7 +1922,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		n, err := ctx.TC(c.Model).CountDocuments(nil, ctx.Query())
+		n, err := ctx.TC(c.Model).CountDocuments(ctx.Session, ctx.Query())
 		stack.AbortIf(err)
 
 		// calculate last page
