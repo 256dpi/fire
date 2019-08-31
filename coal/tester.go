@@ -49,13 +49,19 @@ func (t *Tester) Save(model Model) Model {
 }
 
 // FindAll will return all saved models.
-func (t *Tester) FindAll(model Model) interface{} {
+func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 	// initialize model
 	model = Init(model)
 
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
 	// find all documents
 	list := model.Meta().MakeSlice()
-	cursor, err := t.Store.C(model).Find(nil, bson.M{}, options.Find().SetSort(Sort("_id")))
+	cursor, err := t.Store.C(model).Find(nil, qry, options.Find().SetSort(Sort("_id")))
 	if err != nil {
 		panic(err)
 	}
@@ -79,9 +85,15 @@ func (t *Tester) FindAll(model Model) interface{} {
 }
 
 // FindLast will return the last saved model.
-func (t *Tester) FindLast(model Model) Model {
+func (t *Tester) FindLast(model Model, query ...bson.M) Model {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
 	// find last document
-	err := t.Store.C(model).FindOne(nil, bson.M{}, options.FindOne().SetSort(Sort("-_id"))).Decode(model)
+	err := t.Store.C(model).FindOne(nil, qry, options.FindOne().SetSort(Sort("-_id"))).Decode(model)
 	if err != nil {
 		panic(err)
 	}
@@ -93,9 +105,15 @@ func (t *Tester) FindLast(model Model) Model {
 }
 
 // Count will count all saved models.
-func (t *Tester) Count(model Model) int {
+func (t *Tester) Count(model Model, query ...bson.M) int {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
 	// count all documents
-	n, err := t.Store.C(model).CountDocuments(nil, bson.M{})
+	n, err := t.Store.C(model).CountDocuments(nil, qry)
 	if err != nil {
 		panic(err)
 	}
