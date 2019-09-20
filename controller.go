@@ -1966,13 +1966,8 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.runAction")
 
-	// check if callback can be run
-	if !a.Callback.Matcher(ctx) {
-		stack.Abort(fmt.Errorf("not supported"))
-	}
-
-	// call callback
-	err := a.Callback.Handler(ctx)
+	// call action
+	err := a.Handler(ctx)
 	if IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: errorStatus,

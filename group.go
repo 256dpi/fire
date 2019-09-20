@@ -153,35 +153,32 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		if ok {
 			// check if action is allowed
 			if Contains(action.Action.Methods, r.Method) {
-				// check if action matches the context
-				if action.Action.Callback.Matcher(ctx) {
-					// run authorizers and handle errors
-					for _, cb := range action.Authorizers {
-						// check if callback should be run
-						if !cb.Matcher(ctx) {
-							continue
-						}
-
-						// call callback
-						err := cb.Handler(ctx)
-						if IsSafe(err) {
-							stack.Abort(&jsonapi.Error{
-								Status: http.StatusUnauthorized,
-								Detail: err.Error(),
-							})
-						} else if err != nil {
-							stack.Abort(err)
-						}
+				// run authorizers and handle errors
+				for _, cb := range action.Authorizers {
+					// check if callback should be run
+					if !cb.Matcher(ctx) {
+						continue
 					}
 
-					// limit request body size
-					LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
-
-					// call action with context
-					stack.AbortIf(action.Action.Callback.Handler(ctx))
-
-					return
+					// call callback
+					err := cb.Handler(ctx)
+					if IsSafe(err) {
+						stack.Abort(&jsonapi.Error{
+							Status: http.StatusUnauthorized,
+							Detail: err.Error(),
+						})
+					} else if err != nil {
+						stack.Abort(err)
+					}
 				}
+
+				// limit request body size
+				LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
+
+				// call action with context
+				stack.AbortIf(action.Action.Handler(ctx))
+
+				return
 			}
 		}
 

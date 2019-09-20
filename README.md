@@ -317,13 +317,13 @@ postsController := &fire.Controller{
     // ...
     CollectionActions: fire.M{
     	// POST /posts/clear
-    	"clear": fire.A("Clear", []string{"POST"}, func(ctx *Context) error {
+    	"clear": fire.A("Clear", []string{"POST"}, 0, func(ctx *Context) error {
             // ...
         }),
     },
     ResourceActions: fire.M{
     	// GET /posts/#/avatar
-    	"avatar": fire.A("Avatar", []string{"GET"}, func(ctx *Context) error {
+    	"avatar": fire.A("Avatar", []string{"GET"}, 0, func(ctx *Context) error {
             // ...
         }),  
     },

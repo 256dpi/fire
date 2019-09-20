@@ -48,23 +48,46 @@ type Action struct {
 	// The allowed methods for this action.
 	Methods []string
 
-	// The callback for this action.
-	Callback *Callback
-
 	// BodyLimit defines the maximum allowed size of the request body. It
 	// defaults to 8M if set to zero. The DataSize helper can be used to set
 	// the value.
 	BodyLimit uint64
+
+	// The handler handler that gets executed with the context.
+	//
+	// If returned errors are marked with Safe() they will be included in the
+	// returned JSON-API error.
+	Handler Handler
 }
 
 // M is a short-hand type to create a map of actions.
 type M map[string]*Action
 
 // A is a short-hand function to construct an action.
-func A(name string, methods []string, h Handler) *Action {
+func A(name string, methods []string, bodyLimit uint64, h Handler) *Action {
+	// panic if methods or handler is not set
+	if len(methods) == 0 || h == nil {
+		panic("fire: missing methods or handler")
+	}
+
 	return &Action{
-		Methods:  methods,
-		Callback: C(name, All(), h),
+		Methods:   methods,
+		BodyLimit: bodyLimit,
+		Handler: func(ctx *Context) error {
+			// begin trace
+			ctx.Tracer.Push(name)
+
+			// call handler
+			err := h(ctx)
+			if err != nil {
+				return err
+			}
+
+			// finish trace
+			ctx.Tracer.Pop()
+
+			return nil
+		},
 	}
 }
 

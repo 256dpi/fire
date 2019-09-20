@@ -78,7 +78,7 @@ func TestGroupAction(t *testing.T) {
 				return nil
 			}),
 		},
-		Action: A("TestGroupAction", []string{"GET", "PUT", "DELETE"}, func(ctx *Context) error {
+		Action: A("TestGroupAction", []string{"GET", "PUT", "DELETE"}, 0, func(ctx *Context) error {
 			ctx.ResponseWriter.WriteHeader(http.StatusFound)
 			return nil
 		}),

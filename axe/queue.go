@@ -103,7 +103,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 
 // Action is a factory to create an action that can be used to enqueue jobs.
 func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *fire.Action {
-	return fire.A("axe/Queue.Callback", methods, func(ctx *fire.Context) error {
+	return fire.A("axe/Queue.Callback", methods, 0, func(ctx *fire.Context) error {
 		// get blueprint
 		bp := cb(ctx)
 

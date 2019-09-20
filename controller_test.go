@@ -3551,42 +3551,32 @@ func TestCollectionActions(t *testing.T) {
 		Model: &postModel{},
 		Store: tester.Store,
 		CollectionActions: M{
-			"bytes": {
-				Methods: []string{"POST"},
-				Callback: C("bytes", All(), func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.NoError(t, err)
-					assert.Equal(t, []byte("PAYLOAD"), bytes)
+			"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("PAYLOAD"), bytes)
 
-					_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
-					assert.NoError(t, err)
+				_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
+				assert.NoError(t, err)
 
-					return nil
-				}),
-			},
-			"empty": {
-				Methods: []string{"POST"},
-				Callback: C("empty", All(), func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.NoError(t, err)
-					assert.Empty(t, bytes)
+				return nil
+			}),
+			"empty": A("empty", []string{"POST"}, 0, func(ctx *Context) error {
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Empty(t, bytes)
 
-					return nil
-				}),
-			},
-			"error": {
-				Methods:   []string{"POST"},
-				BodyLimit: 3,
-				Callback: C("error", All(), func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.Error(t, err)
-					assert.Equal(t, []byte("PAY"), bytes)
+				return nil
+			}),
+			"error": A("error", []string{"POST"}, 3, func(ctx *Context) error {
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.Error(t, err)
+				assert.Equal(t, []byte("PAY"), bytes)
 
-					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
+				ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
-					return nil
-				}),
-			},
+				return nil
+			}),
 		},
 	}, &Controller{
 		Model: &commentModel{},
@@ -3632,46 +3622,38 @@ func TestResourceActions(t *testing.T) {
 		Model: &postModel{},
 		Store: tester.Store,
 		ResourceActions: M{
-			"bytes": {
-				Methods: []string{"POST"},
-				Callback: C("bytes", All(), func(ctx *Context) error {
-					assert.NotEmpty(t, ctx.Model)
+			"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
+				assert.NotEmpty(t, ctx.Model)
 
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.NoError(t, err)
-					assert.Equal(t, []byte("PAYLOAD"), bytes)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("PAYLOAD"), bytes)
 
-					_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
-					assert.NoError(t, err)
+				_, err = ctx.ResponseWriter.Write([]byte("RESPONSE"))
+				assert.NoError(t, err)
 
-					return nil
-				}),
-			},
-			"empty": {
-				Methods: []string{"POST"},
-				Callback: C("empty", All(), func(ctx *Context) error {
-					assert.NotEmpty(t, ctx.Model)
+				return nil
+			}),
+			"empty": A("empty", []string{"POST"}, 0, func(ctx *Context) error {
+				assert.NotEmpty(t, ctx.Model)
 
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.NoError(t, err)
-					assert.Empty(t, bytes)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.NoError(t, err)
+				assert.Empty(t, bytes)
 
-					return nil
-				}),
-			},
-			"error": {
-				Methods:   []string{"POST"},
-				BodyLimit: 3,
-				Callback: C("error", All(), func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
-					assert.Error(t, err)
-					assert.Equal(t, []byte("PAY"), bytes)
+				return nil
+			}),
+			"error": A("error", []string{"POST"}, 3, func(ctx *Context) error {
+				assert.NotEmpty(t, ctx.Model)
 
-					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
+				bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+				assert.Error(t, err)
+				assert.Equal(t, []byte("PAY"), bytes)
 
-					return nil
-				}),
-			},
+				ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
+
+				return nil
+			}),
 		},
 	}, &Controller{
 		Model: &commentModel{},
