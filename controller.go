@@ -17,26 +17,6 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// L is a short-hand type to create a list of callbacks.
-type L []*Callback
-
-// M is a short-hand type to create a map of actions.
-type M map[string]*Action
-
-// An Action defines a collection or resource action.
-type Action struct {
-	// The allowed methods for this action.
-	Methods []string
-
-	// The callback for this action.
-	Callback *Callback
-
-	// BodyLimit defines the maximum allowed size of the request body. It
-	// defaults to 8M if set to zero. The DataSize helper can be used to set
-	// the value.
-	BodyLimit uint64
-}
-
 // A Controller provides a JSON API based interface to a model.
 //
 // Note: A controller must not be modified after being added to a group.

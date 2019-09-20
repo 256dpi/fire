@@ -48,20 +48,17 @@ func (w *Watcher) Add(stream *Stream) {
 // Action returns an action that should be registered in the group under
 // the "watch" name.
 func (w *Watcher) Action() *fire.Action {
-	return &fire.Action{
-		Methods: []string{"GET"},
-		Callback: fire.C("spark/Watcher.Action", fire.All(), func(ctx *fire.Context) error {
-			// handle connection
-			err := w.manager.handle(ctx)
-			if err != nil {
-				if w.reporter != nil {
-					w.reporter(err)
-				}
+	return fire.A("spark/Watcher.Action", []string{"GET"}, func(ctx *fire.Context) error {
+		// handle connection
+		err := w.manager.handle(ctx)
+		if err != nil {
+			if w.reporter != nil {
+				w.reporter(err)
 			}
+		}
 
-			return nil
-		}),
-	}
+		return nil
+	})
 }
 
 // Close will close the watcher and all opened streams.

@@ -78,13 +78,10 @@ func TestGroupAction(t *testing.T) {
 				return nil
 			}),
 		},
-		Action: &Action{
-			Methods: []string{"GET", "PUT", "DELETE"},
-			Callback: C("TestGroupAction", All(), func(ctx *Context) error {
-				ctx.ResponseWriter.WriteHeader(http.StatusFound)
-				return nil
-			}),
-		},
+		Action: A("TestGroupAction", []string{"GET", "PUT", "DELETE"}, func(ctx *Context) error {
+			ctx.ResponseWriter.WriteHeader(http.StatusFound)
+			return nil
+		}),
 	})
 
 	assert.PanicsWithValue(t, `fire: invalid group action ""`, func() {

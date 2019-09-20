@@ -317,21 +317,15 @@ postsController := &fire.Controller{
     // ...
     CollectionActions: fire.M{
     	// POST /posts/clear
-    	"clear": &fire.Action{
-            Methods: []string{"POST"},
-            Callback: C("Clear", All(), func(ctx *Context) error {
-                // ...
-            }),
-        },
+    	"clear": fire.A("Clear", []string{"POST"}, func(ctx *Context) error {
+            // ...
+        }),
     },
     ResourceActions: fire.M{
     	// GET /posts/#/avatar
-    	"avatar": &fire.Action{
-    		Methods: []string{"GET"},
-            Callback: C("Avatar", All(), func(ctx *Context) error {
-                // ...
-            }),
-    	},
+    	"avatar": fire.A("Avatar", []string{"GET"}, func(ctx *Context) error {
+            // ...
+        }),  
     },
     // ...
 }

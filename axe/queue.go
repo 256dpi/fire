@@ -97,12 +97,35 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 			}
 		}
 
-		// respond with an empty object
-		if ctx.Operation.Action() {
-			err := ctx.Respond(fire.Map{})
+		return nil
+	})
+}
+
+// Action is a factory to create an action that can be used to enqueue jobs.
+func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *fire.Action {
+	return fire.A("axe/Queue.Callback", methods, func(ctx *fire.Context) error {
+		// get blueprint
+		bp := cb(ctx)
+
+		// check if controller uses same store
+		if q.store == ctx.Controller.Store {
+			// enqueue job using context store
+			_, err := Enqueue(ctx.Store, ctx.Session, bp)
 			if err != nil {
 				return err
 			}
+		} else {
+			// enqueue job using queue store
+			_, err := q.Enqueue(bp)
+			if err != nil {
+				return err
+			}
+		}
+
+		// respond with an empty object
+		err := ctx.Respond(fire.Map{})
+		if err != nil {
+			return err
 		}
 
 		return nil

@@ -162,17 +162,14 @@ func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
 		ResourceActions: fire.M{
-			"add": &fire.Action{
-				Methods: []string{"POST"},
-				Callback: queue.Callback(fire.All(), func(ctx *fire.Context) axe.Blueprint {
-					return axe.Blueprint{
-						Name: "increment",
-						Model: &count{
-							Item: ctx.Model.ID(),
-						},
-					}
-				}),
-			},
+			"add": queue.Action([]string{"POST"}, func(ctx *fire.Context) axe.Blueprint {
+				return axe.Blueprint{
+					Name: "increment",
+					Model: &count{
+						Item: ctx.Model.ID(),
+					},
+				}
+			}),
 		},
 		UseTransactions:    true,
 		TolerateViolations: true,
