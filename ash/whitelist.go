@@ -24,9 +24,9 @@ type Matrix struct {
 	Access map[string][]string
 }
 
-// Collect will return a list of fields for the specified column and tag in the
-// matrix.
-func (m *Matrix) Collect(i int, tag string) []string {
+// Collect will return a list of fields for the specified column in the matrix
+// which match at least one of the provided tags.
+func (m *Matrix) Collect(i int, tags ...string) []string {
 	// prepare fields
 	var fields []string
 
@@ -40,8 +40,16 @@ func (m *Matrix) Collect(i int, tag string) []string {
 			panic("ash: invalid tag")
 		}
 
+		// check if field as at least one tag
+		ok := false
+		for _, tag := range tags {
+			if strings.Contains(permission[i], tag) {
+				ok = true
+			}
+		}
+
 		// add field if present
-		if strings.Contains(permission[i], tag) {
+		if ok {
 			fields = append(fields, field)
 		}
 	}
