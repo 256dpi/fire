@@ -1141,7 +1141,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.handleCollectionAction")
 
-	// get callback
+	// get action
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
 		stack.Abort(fmt.Errorf("missing collection action callback"))
@@ -1164,7 +1164,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.handleResourceAction")
 
-	// get callback
+	// get action
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
 	if !ok {
 		stack.Abort(fmt.Errorf("missing resource action callback"))
