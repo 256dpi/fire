@@ -366,24 +366,28 @@ func TestQueueTimeout(t *testing.T) {
 	tester.Clean()
 
 	done := make(chan struct{})
+	errs := make(chan error, 1)
 
 	i := 0
 
-	q := NewQueue(tester.Store, panicReporter)
+	q := NewQueue(tester.Store, func(err error) {
+		errs <- err
+	})
 	q.Add(&Task{
 		Name:  "timeout",
 		Model: &data{},
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
-				time.Sleep(time.Second)
+				<-ctx.Context.Done()
 				return nil
 			}
 
 			close(done)
 			return nil
 		},
-		Timeout: 10 * time.Millisecond,
+		Timeout:  10 * time.Millisecond,
+		Lifetime: 5 * time.Millisecond,
 	})
 	q.Run()
 
@@ -411,6 +415,9 @@ func TestQueueTimeout(t *testing.T) {
 	assert.Nil(t, job.Result)
 	assert.Equal(t, "", job.Reason)
 
+	err = <-errs
+	assert.Equal(t, `task "timeout" ran longer than the specified lifetime`, err.Error())
+
 	q.Close()
 }
 
@@ -432,7 +439,8 @@ func TestQueueExisting(t *testing.T) {
 			close(done)
 			return nil
 		},
-		Timeout: 10 * time.Millisecond,
+		Timeout:  10 * time.Millisecond,
+		Lifetime: 5 * time.Millisecond,
 	})
 	q.Run()
 

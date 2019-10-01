@@ -1,6 +1,8 @@
 package axe
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -39,6 +41,12 @@ type Context struct {
 
 	// Result can be set with a custom result.
 	Result coal.Map
+
+	// Context is the standard context that is cancelled when the timeout has
+	// been exceeded.
+	//
+	// Usage: Read Only
+	Context context.Context
 
 	// Task is the task that processes this job.
 	//
@@ -121,6 +129,13 @@ type Task struct {
 	// Default: 10m.
 	Timeout time.Duration
 
+	// Lifetime is the time after which the context of a job is cancelled and
+	// the execution should be stopped. Should be several minutes less than
+	// timeout to prevent race conditions.
+	//
+	// Default: 5m.
+	Lifetime time.Duration
+
 	// Periodically may be set to let the system enqueue a job automatically
 	// every given interval.
 	//
@@ -162,6 +177,16 @@ func (t *Task) start(q *Queue) {
 	// set default timeout
 	if t.Timeout == 0 {
 		t.Timeout = 10 * time.Minute
+	}
+
+	// set default lifetime
+	if t.Lifetime == 0 {
+		t.Lifetime = 5 * time.Minute
+	}
+
+	// check timeout
+	if t.Lifetime > t.Timeout {
+		panic("axe: lifetime must be less than timeout")
 	}
 
 	// start workers for queue
@@ -255,6 +280,9 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		return nil
 	}
 
+	// get time
+	start := time.Now()
+
 	// prepare model
 	var model Model
 
@@ -274,17 +302,27 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	tracer := fire.NewTracerWithRoot(t.Name)
 	defer tracer.Finish(true)
 
+	// create context
+	c, cancel := context.WithTimeout(context.Background(), t.Lifetime)
+	defer cancel()
+
 	// prepare context
 	ctx := &Context{
-		Model:  model,
-		Task:   t,
-		Queue:  q,
-		Store:  q.store,
-		Tracer: tracer,
+		Model:   model,
+		Context: c,
+		Task:    t,
+		Queue:   q,
+		Store:   q.store,
+		Tracer:  tracer,
 	}
 
 	// run handler
 	err = t.Handler(ctx)
+
+	// return immediately if lifetime has been reached
+	if time.Since(start) > t.Lifetime {
+		return fmt.Errorf(`task "%s" ran longer than the specified lifetime`, t.Name)
+	}
 
 	// check error
 	if e, ok := err.(*Error); ok {
