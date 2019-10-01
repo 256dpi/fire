@@ -281,9 +281,9 @@ func TestEnqueueInterval(t *testing.T) {
 	assert.NoError(t, err)
 
 	job3, err := Enqueue(tester.Store, nil, Blueprint{
-		Name:     "foo",
-		Label:    "test",
-		Interval: 100 * time.Millisecond,
+		Name:   "foo",
+		Label:  "test",
+		Period: 100 * time.Millisecond,
 	})
 	assert.NoError(t, err)
 	assert.Nil(t, job3)
@@ -297,9 +297,9 @@ func TestEnqueueInterval(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 
 	job4, err := Enqueue(tester.Store, nil, Blueprint{
-		Name:     "foo",
-		Label:    "test",
-		Interval: 100 * time.Millisecond,
+		Name:   "foo",
+		Label:  "test",
+		Period: 100 * time.Millisecond,
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, job4)

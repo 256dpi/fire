@@ -30,9 +30,9 @@ type Blueprint struct {
 	// specified time has passed.
 	Delay time.Duration
 
-	// The job interval. If given, and a label is present, the job will only
+	// The job period. If given, and a label is present, the job will only
 	// enqueued if no job has been finished in the specified duration.
-	Interval time.Duration
+	Period time.Duration
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
@@ -84,10 +84,10 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Jo
 	}
 
 	// add interval
-	if bp.Interval > 0 {
+	if bp.Period > 0 {
 		delete(query, coal.F(&Job{}, "Status"))
 		query[coal.F(&Job{}, "Finished")] = bson.M{
-			"$gt": now.Add(-bp.Interval),
+			"$gt": now.Add(-bp.Period),
 		}
 	}
 
