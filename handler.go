@@ -48,9 +48,10 @@ type Action struct {
 	// The allowed methods for this action.
 	Methods []string
 
-	// BodyLimit defines the maximum allowed size of the request body. It
-	// defaults to 8M if set to zero. The DataSize helper can be used to set
-	// the value.
+	// BodyLimit defines the maximum allowed size of the request body. The
+	// DataSize helper can be used to set the value.
+	//
+	// Default: 8M.
 	BodyLimit uint64
 
 	// The handler handler that gets executed with the context.

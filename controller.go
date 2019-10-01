@@ -83,8 +83,9 @@ type Controller struct {
 	ListLimit uint64
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
-	// It defaults to 8M if set to zero. The DataSize helper can be used to
-	// set the value.
+	// The DataSize helper can be used to set the value.
+	//
+	// Default: 8M.
 	DocumentLimit uint64
 
 	// CollectionActions and ResourceActions are custom actions that are run
