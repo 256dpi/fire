@@ -123,7 +123,7 @@ type Task struct {
 	// Default: 2.
 	DelayFactor float64
 
-	// Timeout is the time after which a task can be dequeue again in case the
+	// Timeout is the time after which a task can be dequeued again in case the
 	// worker was not able to set its status.
 	//
 	// Default: 10m.
