@@ -155,7 +155,7 @@ func (t *Task) start(q *Queue) {
 	}
 
 	// set default delay factor
-	if t.DelayFactor <= 1 {
+	if t.DelayFactor < 1 {
 		t.DelayFactor = 2
 	}
 
