@@ -311,9 +311,9 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// run operation with transaction if enabled
-	stack.AbortIf(c.Store.TX(ctx.Context, func(sc mongo.SessionContext) error {
+	stack.AbortIf(c.Store.TX(ctx.Context, func(tc context.Context) error {
 		// replace context
-		ctx.Context = sc
+		ctx.Context = tc
 
 		// run operation
 		c.runOperation(ctx, doc)

@@ -1,11 +1,11 @@
 package coal
 
 import (
+	"context"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCreateStore(t *testing.T) {
@@ -27,11 +27,11 @@ func TestCreateStoreError(t *testing.T) {
 func TestStoreTX(t *testing.T) {
 	tester.Clean()
 
-	assert.NoError(t, tester.Store.TX(nil, func(sc mongo.SessionContext) error {
+	assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
 		return nil
 	}))
 
-	assert.Error(t, tester.Store.TX(nil, func(sc mongo.SessionContext) error {
+	assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
 		return io.EOF
 	}))
 
@@ -39,8 +39,8 @@ func TestStoreTX(t *testing.T) {
 
 	assert.Equal(t, 1, tester.Count(&postModel{}))
 
-	assert.NoError(t, tester.Store.TX(nil, func(sc mongo.SessionContext) error {
-		_, err := tester.Store.C(&postModel{}).InsertOne(sc, Init(&postModel{
+	assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
+		_, err := tester.Store.C(&postModel{}).InsertOne(tc, Init(&postModel{
 			Title: "foo",
 		}))
 		return err
@@ -48,8 +48,8 @@ func TestStoreTX(t *testing.T) {
 
 	assert.Equal(t, 2, tester.Count(&postModel{}))
 
-	assert.Error(t, tester.Store.TX(nil, func(sc mongo.SessionContext) error {
-		_, err := tester.Store.C(&postModel{}).InsertOne(sc, Init(&postModel{
+	assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
+		_, err := tester.Store.C(&postModel{}).InsertOne(tc, Init(&postModel{
 			Title: "bar",
 		}))
 		if err != nil {
