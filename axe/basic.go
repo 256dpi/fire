@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -36,7 +37,7 @@ type Blueprint struct {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Job, error) {
+func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error) {
 	// check name
 	if bp.Name == "" {
 		return nil, fmt.Errorf("missing name")
@@ -66,7 +67,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Jo
 
 	// insert unlabeled jobs immediately
 	if bp.Label == "" {
-		_, err := store.C(job).InsertOne(session, job)
+		_, err := store.C(job).InsertOne(ctx, job)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +94,7 @@ func Enqueue(store *coal.Store, session mongo.SessionContext, bp Blueprint) (*Jo
 
 	// insert job if there is no other job in an available state with the
 	// provided label
-	res, err := store.C(job).UpdateOne(session, query, bson.M{
+	res, err := store.C(job).UpdateOne(ctx, query, bson.M{
 		"$setOnInsert": job,
 	}, options.Update().SetUpsert(true))
 	if err != nil {

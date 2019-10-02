@@ -85,7 +85,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, ctx.Session, bp)
+			_, err := Enqueue(ctx.Store, ctx, bp)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, ctx.Session, bp)
+			_, err := Enqueue(ctx.Store, ctx, bp)
 			if err != nil {
 				return err
 			}

@@ -36,17 +36,15 @@ type Model interface{}
 
 // Context holds and stores contextual data.
 type Context struct {
+	// Context is the standard context that is cancelled when the timeout has
+	// been exceeded.
+	context.Context
+
 	// Model is the model carried by the job.
 	Model Model
 
 	// Result can be set with a custom result.
 	Result coal.Map
-
-	// Context is the standard context that is cancelled when the timeout has
-	// been exceeded.
-	//
-	// Usage: Read Only
-	Context context.Context
 
 	// Task is the task that processes this job.
 	//

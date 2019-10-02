@@ -221,7 +221,7 @@ func incrementTask() *axe.Task {
 			c := ctx.Model.(*count)
 
 			// update document
-			_, err := ctx.TC(&Item{}).UpdateOne(nil, bson.M{
+			_, err := ctx.TC(&Item{}).UpdateOne(ctx, bson.M{
 				"_id": c.Item,
 			}, bson.M{
 				"$inc": bson.M{

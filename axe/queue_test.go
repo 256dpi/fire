@@ -379,7 +379,7 @@ func TestQueueTimeout(t *testing.T) {
 		Handler: func(ctx *Context) error {
 			if i == 0 {
 				i++
-				<-ctx.Context.Done()
+				<-ctx.Done()
 				return nil
 			}
 
