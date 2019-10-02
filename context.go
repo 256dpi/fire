@@ -8,7 +8,6 @@ import (
 
 	"github.com/256dpi/jsonapi"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -179,13 +178,6 @@ type Context struct {
 	//
 	// Usage: Read Only
 	Store *coal.Store
-
-	// The session used by create, update and delete operations if transactions
-	// have been enabled.
-	//
-	// Usage: Read Only
-	// Operations: Create, Update, Delete
-	Session mongo.SessionContext
 
 	// The underlying JSON-API request.
 	//

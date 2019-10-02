@@ -312,8 +312,8 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 
 	// run operation with transaction if enabled
 	stack.AbortIf(c.Store.TX(ctx.Context, func(sc mongo.SessionContext) error {
-		// assign session
-		ctx.Session = sc
+		// replace context
+		ctx.Context = sc
 
 		// run operation
 		c.runOperation(ctx, doc)
@@ -489,7 +489,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		}
 
 		// insert model
-		res, err := ctx.TC(ctx.Model).UpdateOne(ctx.Session, bson.M{
+		res, err := ctx.TC(ctx.Model).UpdateOne(ctx, bson.M{
 			coal.F(ctx.Model, idempotentCreateField): idempotentCreateToken,
 		}, bson.M{
 			"$setOnInsert": ctx.Model,
@@ -502,7 +502,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		}
 	} else {
 		// insert model
-		_, err := ctx.TC(ctx.Model).InsertOne(ctx.Session, ctx.Model)
+		_, err := ctx.TC(ctx.Model).InsertOne(ctx, ctx.Model)
 		stack.AbortIf(err)
 	}
 
@@ -603,7 +603,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		ctx.Model.MustSet(consistentUpdateField, coal.New().Hex())
 
 		// update model
-		res, err := ctx.TC(ctx.Model).UpdateOne(ctx.Session, bson.M{
+		res, err := ctx.TC(ctx.Model).UpdateOne(ctx, bson.M{
 			"_id":                                    ctx.Model.ID(),
 			coal.F(ctx.Model, consistentUpdateField): consistentUpdateToken,
 		}, bson.M{
@@ -617,7 +617,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		}
 	} else {
 		// update model
-		_, err := ctx.TC(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+		_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 			"_id": ctx.Model.ID(),
 		}, ctx.Model)
 		stack.AbortIf(err)
@@ -672,7 +672,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		_, err := ctx.TC(c.Model).UpdateOne(ctx.Session, bson.M{
+		_, err := ctx.TC(c.Model).UpdateOne(ctx, bson.M{
 			"_id": ctx.Model.ID(),
 		}, bson.M{
 			"$set": bson.M{
@@ -682,7 +682,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		stack.AbortIf(err)
 	} else {
 		// remove model
-		_, err := ctx.TC(c.Model).DeleteOne(ctx.Session, bson.M{
+		_, err := ctx.TC(c.Model).DeleteOne(ctx, bson.M{
 			"_id": ctx.Model.ID(),
 		})
 		stack.AbortIf(err)
@@ -1026,7 +1026,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
@@ -1113,7 +1113,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
@@ -1207,7 +1207,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// update model
-	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx.Session, bson.M{
+	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
 	stack.AbortIf(err)
@@ -1359,7 +1359,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	model := c.Model.Meta().Make()
 
 	// query db
-	res := ctx.TC(c.Model).FindOne(ctx.Session, ctx.Query())
+	res := ctx.TC(c.Model).FindOne(ctx, ctx.Query())
 	err := res.Decode(model)
 	if err == mongo.ErrNoDocuments {
 		stack.Abort(jsonapi.NotFound("resource not found"))
@@ -1499,7 +1499,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// query db
-	stack.AbortIf(ctx.TC(c.Model).FindAll(ctx.Session, slicePtr, ctx.Query(), opts))
+	stack.AbortIf(ctx.TC(c.Model).FindAll(ctx, slicePtr, ctx.Query(), opts))
 
 	// set models
 	ctx.Models = coal.InitSlice(slicePtr)
@@ -1735,7 +1735,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.TC(rc.Model).FindAll(ctx.Session, &references, query, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.TC(rc.Model).FindAll(ctx, &references, query, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
 		})))
@@ -2014,7 +2014,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// get total amount of resources
-		n, err := ctx.TC(c.Model).CountDocuments(ctx.Session, ctx.Query())
+		n, err := ctx.TC(c.Model).CountDocuments(ctx, ctx.Query())
 		stack.AbortIf(err)
 
 		// calculate last page
