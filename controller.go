@@ -311,7 +311,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	}
 
 	// run operation with transaction if enabled
-	stack.AbortIf(c.Store.TX(ctx.HTTPRequest.Context(), func(sc mongo.SessionContext) error {
+	stack.AbortIf(c.Store.TX(ctx.Context, func(sc mongo.SessionContext) error {
 		// assign session
 		ctx.Session = sc
 
@@ -360,7 +360,7 @@ func (c *Controller) listResources(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.listResources")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
 	// assign context
@@ -398,7 +398,7 @@ func (c *Controller) findResource(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.findResource")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
 	// assign context
@@ -438,7 +438,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Push("fire/Controller.createResource")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -534,7 +534,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Push("fire/Controller.updateResource")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -654,7 +654,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.deleteResource")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -703,7 +703,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.getRelatedResources")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
 	// assign context
@@ -947,7 +947,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ctx.Tracer.Push("fire/Controller.getRelationship")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
 	// assign context
@@ -994,7 +994,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Push("fire/Controller.setRelationship")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -1058,7 +1058,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Push("fire/Controller.appendToRelationship")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -1145,7 +1145,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
 	// assign context
@@ -1248,7 +1248,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Timeout)
+	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)
 	defer cancel()
 
 	// assign context
@@ -1278,7 +1278,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
 	// create context
-	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Timeout)
+	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)
 	defer cancel()
 
 	// assign context

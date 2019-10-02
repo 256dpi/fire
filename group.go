@@ -137,6 +137,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		// prepare context
 		ctx := &Context{
 			Data:           Map{},
+			Context:        r.Context(),
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Group:          g,
@@ -183,7 +184,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
 
 				// create context
-				ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Action.Timeout)
+				ct, cancel := context.WithTimeout(ctx.Context, action.Action.Timeout)
 				defer cancel()
 
 				// assign context

@@ -27,7 +27,7 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		s := oauth2.Scope(scope)
 
 		// get access token
-		accessToken, _ := ctx.HTTPRequest.Context().Value(AccessTokenContextKey).(GenericToken)
+		accessToken, _ := ctx.Context.Value(AccessTokenContextKey).(GenericToken)
 
 		// check access token
 		if accessToken == nil {
@@ -46,10 +46,10 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		}
 
 		// get client
-		client := ctx.HTTPRequest.Context().Value(ClientContextKey).(Client)
+		client := ctx.Context.Value(ClientContextKey).(Client)
 
 		// get resource owner
-		resourceOwner, _ := ctx.HTTPRequest.Context().Value(ResourceOwnerContextKey).(ResourceOwner)
+		resourceOwner, _ := ctx.Context.Value(ResourceOwnerContextKey).(ResourceOwner)
 
 		// store auth info
 		ctx.Data[AuthInfoDataKey] = &AuthInfo{
