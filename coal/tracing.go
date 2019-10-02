@@ -46,6 +46,41 @@ func (c *TracedCollection) AggregateAll(ctx context.Context, slicePtr interface{
 	return nil
 }
 
+// AggregateIter wraps the native Aggregate collection method and calls the
+// provided callback with the decode method until an error is returned or the
+// cursor has been exhausted.
+func (c *TracedCollection) AggregateIter(ctx context.Context, pipeline interface{}, fn func(func(interface{}) error) error, opts ...*options.AggregateOptions) error {
+	// push span
+	c.tracer.Push("mongo/Collection.Aggregate")
+	c.tracer.Tag("pipeline", pipeline)
+	defer c.tracer.Pop()
+
+	// run query
+	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		return err
+	}
+
+	// ensure cursor is closed
+	defer csr.Close(ctx)
+
+	// iterate over all documents
+	for csr.Next(ctx) {
+		err = fn(csr.Decode)
+		if err != nil {
+			return err
+		}
+	}
+
+	// close cursor
+	err = csr.Close(nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // BulkWrite wraps the native BulkWrite collection method.
 func (c *TracedCollection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// push span
@@ -127,6 +162,41 @@ func (c *TracedCollection) FindAll(ctx context.Context, slicePtr interface{}, fi
 
 	// decode all documents
 	err = csr.All(ctx, slicePtr)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// FindIter wraps the native Find collection method and calls the provided
+// callback with the decode method until an error is returned or the cursor has
+// been exhausted.
+func (c *TracedCollection) FindIter(ctx context.Context, filter interface{}, fn func(func(interface{}) error) error, opts ...*options.FindOptions) error {
+	// push span
+	c.tracer.Push("mongo/Collection.Find")
+	c.tracer.Tag("filter", filter)
+	defer c.tracer.Pop()
+
+	// run query
+	csr, err := c.coll.Find(ctx, filter, opts...)
+	if err != nil {
+		return err
+	}
+
+	// ensure cursor is closed
+	defer csr.Close(ctx)
+
+	// iterate over all documents
+	for csr.Next(ctx) {
+		err = fn(csr.Decode)
+		if err != nil {
+			return err
+		}
+	}
+
+	// close cursor
+	err = csr.Close(nil)
 	if err != nil {
 		return err
 	}
