@@ -43,12 +43,6 @@ func (c *TracedCollection) AggregateAll(ctx context.Context, slicePtr interface{
 		return err
 	}
 
-	// close cursor
-	err = csr.Close(ctx)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -133,12 +127,6 @@ func (c *TracedCollection) FindAll(ctx context.Context, slicePtr interface{}, fi
 
 	// decode all documents
 	err = csr.All(ctx, slicePtr)
-	if err != nil {
-		return err
-	}
-
-	// close cursor
-	err = csr.Close(ctx)
 	if err != nil {
 		return err
 	}

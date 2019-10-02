@@ -72,12 +72,6 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 		panic(err)
 	}
 
-	// close cursor
-	err = cursor.Close(nil)
-	if err != nil {
-		panic(err)
-	}
-
 	// initialize list
 	InitSlice(list)
 

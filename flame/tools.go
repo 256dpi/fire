@@ -82,12 +82,6 @@ func EnsureApplication(store *coal.Store, name, key, secret string) (string, err
 		return "", err
 	}
 
-	// close cursor
-	err = cursor.Close(nil)
-	if err != nil {
-		return "", err
-	}
-
 	// check existence
 	if len(apps) > 1 {
 		return "", errors.New("to many applications with that name")
