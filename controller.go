@@ -363,7 +363,7 @@ func (c *Controller) listResources(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// load models
@@ -401,7 +401,7 @@ func (c *Controller) findResource(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// load model
@@ -441,7 +441,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// basic input data check
@@ -537,7 +537,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// basic input data check
@@ -657,7 +657,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// load model
@@ -706,7 +706,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// find relationship
@@ -950,7 +950,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// get relationship
@@ -997,7 +997,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// abort if consistent update is enabled
@@ -1061,7 +1061,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// abort if consistent update is enabled
@@ -1148,7 +1148,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// abort if consistent update is enabled
@@ -1251,7 +1251,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// run authorizers
@@ -1281,7 +1281,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)
 	defer cancel()
 
-	// assign context
+	// replace context
 	ctx.Context = ct
 
 	// load model

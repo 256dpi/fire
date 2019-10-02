@@ -103,6 +103,11 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 		ctx = &Context{}
 	}
 
+	// set context if missing
+	if ctx.Context == nil {
+		ctx.Context = t.Context
+	}
+
 	// set data if missing
 	if ctx.Data == nil {
 		ctx.Data = Map{}

@@ -96,6 +96,11 @@ func (o Operation) String() string {
 
 // A Context provides useful contextual information.
 type Context struct {
+	// Context is the standard context that is cancelled when the timeout has
+	// been exceeded or the underlying connection transport has been closed. It
+	// may also carry the database session if transactions have been enabled.
+	context.Context
+
 	// Data can be used to carry data between callbacks.
 	Data Map
 
@@ -169,12 +174,6 @@ type Context struct {
 	// Usage: Modify Only, Availability: Notifiers,
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
-
-	// Context is the standard context that is cancelled when the timeout has
-	// been exceeded or the underlying connection transport has been closed.
-	//
-	// Usage: Read Only
-	Context context.Context
 
 	// The store that is used to retrieve and persist the model.
 	//

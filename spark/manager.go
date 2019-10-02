@@ -483,7 +483,7 @@ func (m *manager) handleSSE(ctx *fire.Context) error {
 			// flush writer
 			flusher.Flush()
 		// handle close
-		case <-ctx.Context.Done():
+		case <-ctx.Done():
 			return nil
 		}
 	}
