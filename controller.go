@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -88,6 +89,13 @@ type Controller struct {
 	// Default: 8M.
 	DocumentLimit uint64
 
+	// ReadTimeout and WriteTimeout specify the timeouts for read and write
+	// operations.
+	//
+	// Default: 30s.
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+
 	// CollectionActions and ResourceActions are custom actions that are run
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
 	// "users/1/recover-password"). The request context is forwarded to
@@ -160,6 +168,11 @@ func (c *Controller) prepare() {
 			action.BodyLimit = DataSize("8M")
 		}
 
+		// set default timeout
+		if action.Timeout == 0 {
+			action.Timeout = 30 * time.Second
+		}
+
 		// add action to parser
 		c.parser.CollectionActions[name] = action.Methods
 	}
@@ -176,6 +189,11 @@ func (c *Controller) prepare() {
 			action.BodyLimit = DataSize("8M")
 		}
 
+		// set default timeout
+		if action.Timeout == 0 {
+			action.Timeout = 30 * time.Second
+		}
+
 		// add action to parser
 		c.parser.ResourceActions[name] = action.Methods
 	}
@@ -183,6 +201,14 @@ func (c *Controller) prepare() {
 	// set default document limit
 	if c.DocumentLimit == 0 {
 		c.DocumentLimit = DataSize("8M")
+	}
+
+	// set default timeouts
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = 30 * time.Second
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = 30 * time.Second
 	}
 
 	// check soft delete field
@@ -333,6 +359,13 @@ func (c *Controller) listResources(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.listResources")
 
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
+
 	// load models
 	c.loadModels(ctx)
 
@@ -363,6 +396,13 @@ func (c *Controller) listResources(ctx *Context) {
 func (c *Controller) findResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.findResource")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// load model
 	c.loadModel(ctx)
@@ -396,6 +436,13 @@ func (c *Controller) findResource(ctx *Context) {
 func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.createResource")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// basic input data check
 	if doc.Data == nil || doc.Data.One == nil {
@@ -485,6 +532,13 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.updateResource")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// basic input data check
 	if doc.Data == nil || doc.Data.One == nil {
@@ -599,6 +653,13 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.deleteResource")
 
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
+
 	// load model
 	c.loadModel(ctx)
 
@@ -641,6 +702,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.getRelatedResources")
 
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
+
 	// find relationship
 	rel := c.Model.Meta().Relationships[ctx.JSONAPIRequest.RelatedResource]
 	if rel == nil {
@@ -668,6 +736,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		Filters:        []bson.M{},
 		ReadableFields: rc.initialFields(rc.Model, ctx.JSONAPIRequest),
 		WritableFields: rc.initialFields(rc.Model, nil),
+		Context:        ctx.Context,
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
@@ -877,6 +946,13 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.getRelationship")
 
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.ReadTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
+
 	// get relationship
 	field := c.Model.Meta().Relationships[ctx.JSONAPIRequest.Relationship]
 	if field == nil {
@@ -916,6 +992,13 @@ func (c *Controller) getRelationship(ctx *Context) {
 func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.setRelationship")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
@@ -973,6 +1056,13 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.appendToRelationship")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
@@ -1053,6 +1143,13 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), c.WriteTimeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
@@ -1150,6 +1247,13 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// limit request body size
 	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
 
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Timeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
+
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
@@ -1172,6 +1276,13 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 
 	// limit request body size
 	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
+
+	// create context
+	ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Timeout)
+	defer cancel()
+
+	// assign context
+	ctx.Context = ct
 
 	// load model
 	c.loadModel(ctx)

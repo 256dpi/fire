@@ -3,9 +3,11 @@
 package fire
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/256dpi/jsonapi"
 	"github.com/256dpi/stack"
@@ -69,6 +71,11 @@ func (g *Group) Handle(name string, a *GroupAction) {
 	// set default body limit
 	if a.Action.BodyLimit == 0 {
 		a.Action.BodyLimit = DataSize("8M")
+	}
+
+	// set default timeout
+	if a.Action.Timeout == 0 {
+		a.Action.Timeout = 30 * time.Second
 	}
 
 	// check existence
@@ -174,6 +181,13 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 				// limit request body size
 				LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
+
+				// create context
+				ct, cancel := context.WithTimeout(ctx.HTTPRequest.Context(), action.Action.Timeout)
+				defer cancel()
+
+				// assign context
+				ctx.Context = ct
 
 				// call action with context
 				stack.AbortIf(action.Action.Handler(ctx))

@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -168,6 +169,12 @@ type Context struct {
 	// Usage: Modify Only, Availability: Notifiers,
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
+
+	// Context is the standard context that is cancelled when the timeout has
+	// been exceeded or the underlying connection transport has been closed.
+	//
+	// Usage: Read Only
+	Context context.Context
 
 	// The store that is used to retrieve and persist the model.
 	//

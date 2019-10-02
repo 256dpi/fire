@@ -1,5 +1,7 @@
 package fire
 
+import "time"
+
 // A Callback is called during the request processing flow of a controller.
 type Callback struct {
 	// The matcher that decides whether the callback should be run.
@@ -53,6 +55,12 @@ type Action struct {
 	//
 	// Default: 8M.
 	BodyLimit uint64
+
+	// Timeout defines the time after which the context is cancelled and
+	// processing of the action should be stopped.
+	//
+	// Default: 30s.
+	Timeout time.Duration
 
 	// The handler handler that gets executed with the context.
 	//
