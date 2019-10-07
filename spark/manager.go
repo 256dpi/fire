@@ -23,7 +23,7 @@ const (
 	// the interval at which a ping is sent to keep the connection alive
 	pingTimeout = 45 * time.Second
 
-	// the time after a connection is closed when there is ping reponse
+	// the time after a connection is closed when there is no ping response
 	receiveTimeout = 90 * time.Second
 )
 
