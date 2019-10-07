@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
 )
 
@@ -70,7 +71,7 @@ func (g *Group) Handle(name string, a *GroupAction) {
 
 	// set default body limit
 	if a.Action.BodyLimit == 0 {
-		a.Action.BodyLimit = DataSize("8M")
+		a.Action.BodyLimit = serve.DataSize("8M")
 	}
 
 	// set default timeout
@@ -181,7 +182,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				}
 
 				// limit request body size
-				LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.Action.BodyLimit))
+				serve.LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, action.Action.BodyLimit)
 
 				// create context
 				ct, cancel := context.WithTimeout(ctx.Context, action.Action.Timeout)

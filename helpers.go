@@ -2,11 +2,6 @@ package fire
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"runtime/debug"
-	"strconv"
-	"strings"
 )
 
 // Map is a general purpose type to represent a map.
@@ -37,67 +32,6 @@ func (err *safeError) Error() string {
 func IsSafe(err error) bool {
 	_, ok := err.(*safeError)
 	return ok
-}
-
-// Compose is a short-hand for chaining the specified middleware and handler
-// together.
-func Compose(chain ...interface{}) http.Handler {
-	// check length
-	if len(chain) < 2 {
-		panic("fire: expected chain to have at least two items")
-	}
-
-	// get handler
-	h, ok := chain[len(chain)-1].(http.Handler)
-	if !ok {
-		panic(`fire: expected last chain item to be a "http.Handler"`)
-	}
-
-	// chain all middleware
-	for i := len(chain) - 2; i >= 0; i-- {
-		// get middleware
-		m, ok := chain[i].(func(http.Handler) http.Handler)
-		if !ok {
-			panic(`fire: expected intermediary chain item to be a "func(http.handler) http.Handler"`)
-		}
-
-		// chain
-		h = m(h)
-	}
-
-	return h
-}
-
-// DataSize parses human readable data sizes (e.g. 4K, 20M or 5G) and returns
-// the amount of bytes they represent.
-func DataSize(str string) uint64 {
-	const msg = "fire: data size must be like 4K, 20M or 5G"
-
-	// check length
-	if len(str) < 2 {
-		panic(msg)
-	}
-
-	// get symbol
-	sym := string(str[len(str)-1])
-
-	// parse number
-	num, err := strconv.ParseUint(str[:len(str)-1], 10, 64)
-	if err != nil {
-		panic(msg)
-	}
-
-	// calculate size
-	switch sym {
-	case "K":
-		return num * 1000
-	case "M":
-		return num * 1000 * 1000
-	case "G":
-		return num * 1000 * 1000 * 1000
-	}
-
-	panic(msg)
 }
 
 // Contains returns true if a list of strings contains another string.
@@ -135,64 +69,4 @@ func Intersect(listA, listB []string) []string {
 	}
 
 	return list
-}
-
-type bodyLimiter struct {
-	io.ReadCloser
-	Original io.ReadCloser
-}
-
-// LimitBody will limit reading from the body of the supplied request to the
-// specified amount of bytes. Earlier calls to LimitBody will be overwritten
-// which essentially allows callers to increase the limit from a default limit.
-func LimitBody(w http.ResponseWriter, r *http.Request, n int64) {
-	// get original body from existing limiter
-	if bl, ok := r.Body.(*bodyLimiter); ok {
-		r.Body = bl.Original
-	}
-
-	// set new limiter
-	r.Body = &bodyLimiter{
-		Original:   r.Body,
-		ReadCloser: http.MaxBytesReader(w, r.Body, n),
-	}
-}
-
-// AssetServer constructs an asset server handler that serves an asset
-// directory on a specified path and serves the index file for not found paths
-// which is needed to run single page applications like Ember.
-func AssetServer(prefix, directory string) http.Handler {
-	// ensure prefix
-	prefix = "/" + strings.Trim(prefix, "/")
-
-	// create dir server
-	dir := http.Dir(directory)
-
-	// create file server
-	fs := http.FileServer(dir)
-
-	h := func(w http.ResponseWriter, r *http.Request) {
-		// pre-check if file does exist
-		f, err := dir.Open(r.URL.Path)
-		if err != nil {
-			r.URL.Path = "/"
-		} else if f != nil {
-			_ = f.Close()
-		}
-
-		// serve file
-		fs.ServeHTTP(w, r)
-	}
-
-	return http.StripPrefix(prefix, http.HandlerFunc(h))
-}
-
-// ErrorReporter returns a very basic reporter that writes errors and stack
-// traces to the specified writer.
-func ErrorReporter(out io.Writer) func(error) {
-	return func(err error) {
-		_, _ = fmt.Fprintf(out, "===> Begin Error: %s\n", err.Error())
-		_, _ = out.Write(debug.Stack())
-		_, _ = fmt.Fprintln(out, "<=== End Error")
-	}
 }

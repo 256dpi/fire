@@ -51,7 +51,7 @@ type Action struct {
 	Methods []string
 
 	// BodyLimit defines the maximum allowed size of the request body. The
-	// DataSize helper can be used to set the value.
+	// serve.DataSize helper can be used to set the value.
 	//
 	// Default: 8M.
 	BodyLimit uint64

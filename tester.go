@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/serve"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
@@ -52,7 +53,7 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 	group.Add(controllers...)
 
 	// set handler
-	t.Handler = Compose(RootTracer(), group.Endpoint(prefix))
+	t.Handler = serve.Compose(RootTracer(), group.Endpoint(prefix))
 
 	return group
 }

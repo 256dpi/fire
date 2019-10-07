@@ -343,10 +343,6 @@ The `fire` package offers the following advanced features:
 - [`IdempotentCreate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures idempotency of resource creations.
 - [`ConsistentUpdate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures consistency of parallel resource updates.
 - [`SoftDelete`](https://godoc.org/github.com/256dpi/fire#Controller.SoftDelete): soft deletes records using a timestamp field.
-- [`Compose`](https://godoc.org/github.com/256dpi/fire#Compose) creates compositions of HTTP middleware and handlers.
-- [`AssetServer`](https://godoc.org/github.com/256dpi/fire#AssetServer): serves a static website from a directory.
-- [`ErrorReporter`](https://godoc.org/github.com/256dpi/fire#ErrorReporter): prints stack-traces of request errors.
-- [`Tracer`](https://godoc.org/github.com/256dpi/fire#Tracer): enables tracing of requests.
 
 ## Authentication
 

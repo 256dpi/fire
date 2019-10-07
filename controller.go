@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -84,7 +85,7 @@ type Controller struct {
 	ListLimit uint64
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
-	// The DataSize helper can be used to set the value.
+	// The serve.DataSize helper can be used to set the value.
 	//
 	// Default: 8M.
 	DocumentLimit uint64
@@ -165,7 +166,7 @@ func (c *Controller) prepare() {
 
 		// set default body limit
 		if action.BodyLimit == 0 {
-			action.BodyLimit = DataSize("8M")
+			action.BodyLimit = serve.DataSize("8M")
 		}
 
 		// set default timeout
@@ -186,7 +187,7 @@ func (c *Controller) prepare() {
 
 		// set default body limit
 		if action.BodyLimit == 0 {
-			action.BodyLimit = DataSize("8M")
+			action.BodyLimit = serve.DataSize("8M")
 		}
 
 		// set default timeout
@@ -200,7 +201,7 @@ func (c *Controller) prepare() {
 
 	// set default document limit
 	if c.DocumentLimit == 0 {
-		c.DocumentLimit = DataSize("8M")
+		c.DocumentLimit = serve.DataSize("8M")
 	}
 
 	// set default timeouts
@@ -260,7 +261,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
 		// limit request body size
-		LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(c.DocumentLimit))
+		serve.LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, c.DocumentLimit)
 
 		// parse document and respect document limit
 		doc, err = jsonapi.ParseDocument(ctx.HTTPRequest.Body)
@@ -1245,7 +1246,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	}
 
 	// limit request body size
-	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
+	serve.LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, action.BodyLimit)
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)
@@ -1275,7 +1276,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	}
 
 	// limit request body size
-	LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, int64(action.BodyLimit))
+	serve.LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, action.BodyLimit)
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, action.Timeout)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/256dpi/serve"
 	"github.com/goware/cors"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -64,7 +65,7 @@ func main() {
 	}
 
 	// compose handler
-	handler := fire.Compose(
+	handler := serve.Compose(
 		flame.TokenMigrator(true),
 		fire.RootTracer(),
 		cors.New(corsOptions).Handler,
@@ -109,7 +110,9 @@ func prepareDatabase(store *coal.Store) error {
 
 func createHandler(store *coal.Store) http.Handler {
 	// create reporter
-	reporter := fire.ErrorReporter(os.Stderr)
+	reporter := func(err error) {
+		println(err.Error())
+	}
 
 	// create mux
 	mux := http.NewServeMux()
@@ -143,7 +146,7 @@ func createHandler(store *coal.Store) http.Handler {
 	})
 
 	// register group
-	mux.Handle("/api/", fire.Compose(
+	mux.Handle("/api/", serve.Compose(
 		a.Authorizer("", true, true, true),
 		g.Endpoint("/api/"),
 	))
