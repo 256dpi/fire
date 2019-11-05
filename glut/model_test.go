@@ -10,11 +10,11 @@ import (
 )
 
 func TestAddValueIndexes(t *testing.T) {
-	tester.Clean()
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		idx := coal.NewIndexer()
+		AddValueIndexes(idx, time.Hour)
 
-	idx := coal.NewIndexer()
-	AddValueIndexes(idx, time.Hour)
-
-	assert.NoError(t, idx.Ensure(tester.Store))
-	assert.NoError(t, idx.Ensure(tester.Store))
+		assert.NoError(t, idx.Ensure(tester.Store))
+		assert.NoError(t, idx.Ensure(tester.Store))
+	})
 }

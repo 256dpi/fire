@@ -10,182 +10,182 @@ import (
 )
 
 func TestLock(t *testing.T) {
-	tester.Clean()
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		// invalid token
 
-	// invalid token
+		locked, err := Lock(tester.Store, "test", "foo", coal.Z(), time.Minute, 0)
+		assert.Equal(t, "invalid token", err.Error())
+		assert.False(t, locked)
 
-	locked, err := Lock(tester.Store, "test", "foo", coal.Z(), time.Minute, 0)
-	assert.Equal(t, "invalid token", err.Error())
-	assert.False(t, locked)
+		// initial lock
 
-	// initial lock
+		token := coal.New()
 
-	token := coal.New()
+		locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
+		assert.NoError(t, err)
+		assert.True(t, locked)
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
-	assert.NoError(t, err)
-	assert.True(t, locked)
+		value := tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Nil(t, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value := tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Nil(t, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// additional lock (same token)
 
-	// additional lock (same token)
+		locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
+		assert.NoError(t, err)
+		assert.True(t, locked)
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
-	assert.NoError(t, err)
-	assert.True(t, locked)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Nil(t, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Nil(t, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// lock attempt (different token)
 
-	// lock attempt (different token)
+		locked, err = Lock(tester.Store, "test", "foo", coal.New(), time.Minute, 0)
+		assert.NoError(t, err)
+		assert.False(t, locked)
 
-	locked, err = Lock(tester.Store, "test", "foo", coal.New(), time.Minute, 0)
-	assert.NoError(t, err)
-	assert.False(t, locked)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Nil(t, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Nil(t, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// get with token
 
-	// get with token
+		data, loaded, err := GetLocked(tester.Store, "test", "foo", token)
+		assert.NoError(t, err)
+		assert.Nil(t, data)
+		assert.True(t, loaded)
 
-	data, loaded, err := GetLocked(tester.Store, "test", "foo", token)
-	assert.NoError(t, err)
-	assert.Nil(t, data)
-	assert.True(t, loaded)
+		// get with different token
 
-	// get with different token
+		data, loaded, err = GetLocked(tester.Store, "test", "foo", coal.New())
+		assert.NoError(t, err)
+		assert.Nil(t, data)
+		assert.False(t, loaded)
 
-	data, loaded, err = GetLocked(tester.Store, "test", "foo", coal.New())
-	assert.NoError(t, err)
-	assert.Nil(t, data)
-	assert.False(t, loaded)
+		// set with token
 
-	// set with token
+		modified, err := SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "bar"}, token)
+		assert.NoError(t, err)
+		assert.True(t, modified)
 
-	modified, err := SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "bar"}, token)
-	assert.NoError(t, err)
-	assert.True(t, modified)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// set with different token
 
-	// set with different token
+		modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
+		assert.NoError(t, err)
+		assert.False(t, modified)
 
-	modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
-	assert.NoError(t, err)
-	assert.False(t, modified)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// get with token
 
-	// get with token
+		data, loaded, err = GetLocked(tester.Store, "test", "foo", token)
+		assert.NoError(t, err)
+		assert.Equal(t, coal.Map{"foo": "bar"}, data)
+		assert.True(t, loaded)
 
-	data, loaded, err = GetLocked(tester.Store, "test", "foo", token)
-	assert.NoError(t, err)
-	assert.Equal(t, coal.Map{"foo": "bar"}, data)
-	assert.True(t, loaded)
+		// set non existent
 
-	// set non existent
+		modified, err = SetLocked(tester.Store, "test", "bar", coal.Map{"foo": "baz"}, token)
+		assert.NoError(t, err)
+		assert.False(t, modified)
 
-	modified, err = SetLocked(tester.Store, "test", "bar", coal.Map{"foo": "baz"}, token)
-	assert.NoError(t, err)
-	assert.False(t, modified)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// unlock with different token
 
-	// unlock with different token
+		unlocked, err := Unlock(tester.Store, "test", "foo", coal.New(), 0)
+		assert.NoError(t, err)
+		assert.False(t, unlocked)
 
-	unlocked, err := Unlock(tester.Store, "test", "foo", coal.New(), 0)
-	assert.NoError(t, err)
-	assert.False(t, unlocked)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// unlock with token
 
-	// unlock with token
+		unlocked, err = Unlock(tester.Store, "test", "foo", token, 0)
+		assert.NoError(t, err)
+		assert.True(t, unlocked)
 
-	unlocked, err = Unlock(tester.Store, "test", "foo", token, 0)
-	assert.NoError(t, err)
-	assert.True(t, unlocked)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.Nil(t, value.Locked)
+		assert.Nil(t, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.Nil(t, value.Locked)
-	assert.Nil(t, value.Token)
+		// set unlocked
 
-	// set unlocked
+		modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
+		assert.NoError(t, err)
+		assert.False(t, modified)
 
-	modified, err = SetLocked(tester.Store, "test", "foo", coal.Map{"foo": "baz"}, coal.New())
-	assert.NoError(t, err)
-	assert.False(t, modified)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.Nil(t, value.Locked)
+		assert.Nil(t, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.Nil(t, value.Locked)
-	assert.Nil(t, value.Token)
+		// lock again
 
-	// lock again
+		token = coal.New()
 
-	token = coal.New()
+		locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
+		assert.NoError(t, err)
+		assert.True(t, locked)
 
-	locked, err = Lock(tester.Store, "test", "foo", token, time.Minute, 0)
-	assert.NoError(t, err)
-	assert.True(t, locked)
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
 
-	value = tester.FindLast(&Value{}).(*Value)
-	assert.Equal(t, "test", value.Component)
-	assert.Equal(t, "foo", value.Name)
-	assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-	assert.True(t, value.Locked.After(time.Now()))
-	assert.Equal(t, &token, value.Token)
+		// del with different token
 
-	// del with different token
+		deleted, err := DelLocked(tester.Store, "test", "foo", coal.New())
+		assert.NoError(t, err)
+		assert.False(t, deleted)
 
-	deleted, err := DelLocked(tester.Store, "test", "foo", coal.New())
-	assert.NoError(t, err)
-	assert.False(t, deleted)
+		assert.Equal(t, 1, tester.Count(&Value{}))
 
-	assert.Equal(t, 1, tester.Count(&Value{}))
+		// del with token
 
-	// del with token
+		deleted, err = DelLocked(tester.Store, "test", "foo", token)
+		assert.NoError(t, err)
+		assert.True(t, deleted)
 
-	deleted, err = DelLocked(tester.Store, "test", "foo", token)
-	assert.NoError(t, err)
-	assert.True(t, deleted)
-
-	assert.Equal(t, 0, tester.Count(&Value{}))
+		assert.Equal(t, 0, tester.Count(&Value{}))
+	})
 }

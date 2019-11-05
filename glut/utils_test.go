@@ -1,7 +1,26 @@
 package glut
 
 import (
+	"testing"
+
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = coal.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-fire-glut"), &Value{})
+var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-glut")
+var lungoStore = coal.MustCreateStore("memory://test-fire-glut")
+
+var modelList = []coal.Model{&Value{}}
+
+func withTester(t *testing.T, fn func(*testing.T, *coal.Tester)) {
+	t.Run("Mongo", func(t *testing.T) {
+		tester := coal.NewTester(mongoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+
+	t.Run("Lungo", func(t *testing.T) {
+		tester := coal.NewTester(lungoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+}
