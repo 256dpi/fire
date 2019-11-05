@@ -1,17 +1,33 @@
 package axe
 
 import (
+	"testing"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(
-	coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire-axe"),
-	&Job{},
-)
-
 type data struct {
 	Foo string `bson:"foo"`
+}
+
+var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-axe")
+var lungoStore = coal.MustCreateStore("memory://test-fire-axe")
+
+var modelList = []coal.Model{&Job{}}
+
+func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
+	t.Run("Mongo", func(t *testing.T) {
+		tester := fire.NewTester(mongoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+
+	t.Run("Lungo", func(t *testing.T) {
+		tester := fire.NewTester(lungoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
 }
 
 func unmarshal(m coal.Map) data {
