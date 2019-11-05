@@ -13,7 +13,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0/test-fire-ash"))
+var tester = fire.NewTester(nil)
 
 type postModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"posts"`
