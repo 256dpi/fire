@@ -64,15 +64,18 @@ func conditional(key string) *Authorizer {
 
 func TestMain(m *testing.M) {
 	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
-	defer tr.Close()
 
 	tracer, closer := jaeger.NewTracer("test-ash",
 		jaeger.NewConstSampler(true),
 		jaeger.NewRemoteReporter(tr),
 	)
-	defer closer.Close()
 
 	opentracing.SetGlobalTracer(tracer)
 
-	os.Exit(m.Run())
+	ret := m.Run()
+
+	_ = closer.Close()
+	_ = tr.Close()
+
+	os.Exit(ret)
 }
