@@ -11,7 +11,6 @@ import (
 
 func TestStream(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		open := make(chan struct{})
@@ -83,7 +82,6 @@ func TestStream(t *testing.T) {
 
 func TestStreamAutoResumption(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		open := make(chan struct{})
@@ -202,7 +200,6 @@ func TestStreamAutoResumption(t *testing.T) {
 
 func TestStreamManualResumption(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		var resumeToken []byte
@@ -311,7 +308,6 @@ func TestStreamManualResumption(t *testing.T) {
 
 func TestStreamError(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		done := make(chan struct{})
@@ -362,7 +358,6 @@ func TestStreamError(t *testing.T) {
 
 func TestStreamInvalidation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		open := make(chan struct{})

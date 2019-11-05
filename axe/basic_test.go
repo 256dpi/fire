@@ -69,7 +69,6 @@ func TestEnqueue(t *testing.T) {
 
 func TestEnqueueDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name:  "foo",
 			Delay: 100 * time.Millisecond,
@@ -94,7 +93,6 @@ func TestEnqueueDelayed(t *testing.T) {
 
 func TestDequeueTimeout(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name: "foo",
 		})
@@ -118,7 +116,6 @@ func TestDequeueTimeout(t *testing.T) {
 
 func TestFail(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name: "foo",
 		})
@@ -145,7 +142,6 @@ func TestFail(t *testing.T) {
 
 func TestFailDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name: "foo",
 		})
@@ -178,7 +174,6 @@ func TestFailDelayed(t *testing.T) {
 
 func TestCancel(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name: "foo",
 		})
@@ -201,7 +196,6 @@ func TestCancel(t *testing.T) {
 
 func TestEnqueueLabeled(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job1, err := Enqueue(tester.Store, nil, Blueprint{
 			Name:  "foo",
 			Label: "test",
@@ -254,7 +248,6 @@ func TestEnqueueLabeled(t *testing.T) {
 
 func TestEnqueueInterval(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job1, err := Enqueue(tester.Store, nil, Blueprint{
 			Name:  "foo",
 			Label: "test",

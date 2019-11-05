@@ -16,7 +16,6 @@ func panicReporter(err error) { panic(err) }
 
 func TestQueue(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		q := NewQueue(tester.Store, panicReporter)
@@ -62,7 +61,6 @@ func TestQueue(t *testing.T) {
 
 func TestQueueDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		q := NewQueue(tester.Store, panicReporter)
@@ -109,7 +107,6 @@ func TestQueueDelayed(t *testing.T) {
 
 func TestQueueFailed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		i := 0
@@ -163,7 +160,6 @@ func TestQueueFailed(t *testing.T) {
 
 func TestQueueCrashed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
@@ -220,7 +216,6 @@ func TestQueueCrashed(t *testing.T) {
 
 func TestQueueCancelNoRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		q := NewQueue(tester.Store, panicReporter)
@@ -265,7 +260,6 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 func TestQueueCancelRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		i := 0
@@ -316,7 +310,6 @@ func TestQueueCancelRetry(t *testing.T) {
 
 func TestQueueCancelCrash(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 		errs := make(chan error, 2)
 
@@ -372,7 +365,6 @@ func TestQueueCancelCrash(t *testing.T) {
 
 func TestQueueTimeout(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
@@ -432,7 +424,6 @@ func TestQueueTimeout(t *testing.T) {
 
 func TestQueueExisting(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		job, err := Enqueue(tester.Store, nil, Blueprint{
 			Name: "existing",
 		})
@@ -476,7 +467,6 @@ func TestQueueExisting(t *testing.T) {
 
 func TestQueuePeriodically(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		done := make(chan struct{})
 
 		q := NewQueue(tester.Store, panicReporter)

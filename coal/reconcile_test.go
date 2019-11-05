@@ -9,7 +9,6 @@ import (
 
 func TestReconcile(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-
 		time.Sleep(100 * time.Millisecond)
 
 		post := Init(&postModel{

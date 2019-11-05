@@ -152,7 +152,6 @@ func TestIntegration(t *testing.T) {
 
 func TestPublicAccess(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
 		tester.Handler = newHandler(authenticator, false)
 
@@ -164,7 +163,6 @@ func TestPublicAccess(t *testing.T) {
 
 func TestContextKeys(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
 		tester.Handler = newHandler(authenticator, false)
 
@@ -203,7 +201,6 @@ func TestContextKeys(t *testing.T) {
 
 func TestInvalidGrantType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		policy := DefaultPolicy("")
 
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
@@ -238,7 +235,6 @@ func TestInvalidGrantType(t *testing.T) {
 
 func TestInvalidResponseType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		policy := DefaultPolicy("")
 
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
@@ -275,7 +271,6 @@ func TestInvalidResponseType(t *testing.T) {
 
 func TestInvalidClientFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		policy := DefaultPolicy("")
 		policy.PasswordGrant = true
 
@@ -343,7 +338,6 @@ func TestInvalidClientFilter(t *testing.T) {
 
 func TestInvalidResourceOwnerFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-
 		policy := DefaultPolicy("")
 		policy.PasswordGrant = true
 
