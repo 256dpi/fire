@@ -1,10 +1,7 @@
 package fire
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -71,10 +68,24 @@ type barModel struct {
 	Foo       coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
 }
 
-var tester = NewTester(
-	coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire"),
-	&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{},
-)
+var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire")
+var lungoStore = coal.MustCreateStore("memory://test-fire")
+
+var modelList = []coal.Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{}}
+
+func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
+	t.Run("Mongo", func(t *testing.T) {
+		tester := NewTester(mongoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+
+	t.Run("Lungo", func(t *testing.T) {
+		tester := NewTester(lungoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+}
 
 func TestMain(m *testing.M) {
 	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
@@ -92,21 +103,4 @@ func TestMain(m *testing.M) {
 	_ = tr.Close()
 
 	os.Exit(ret)
-}
-
-func testRequest(h http.Handler, method, path string, headers map[string]string, payload string, callback func(*httptest.ResponseRecorder, *http.Request)) {
-	r, err := http.NewRequest(method, path, strings.NewReader(payload))
-	if err != nil {
-		panic(err)
-	}
-
-	w := httptest.NewRecorder()
-
-	for k, v := range headers {
-		r.Header.Set(k, v)
-	}
-
-	h.ServeHTTP(w, r)
-
-	callback(w, r)
 }
