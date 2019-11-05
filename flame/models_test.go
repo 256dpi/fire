@@ -10,13 +10,15 @@ import (
 )
 
 func TestAddIndexes(t *testing.T) {
-	i := coal.NewIndexer()
-	AddTokenIndexes(i, true)
-	AddApplicationIndexes(i)
-	AddUserIndexes(i)
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		i := coal.NewIndexer()
+		AddTokenIndexes(i, true)
+		AddApplicationIndexes(i)
+		AddUserIndexes(i)
 
-	assert.NoError(t, i.Ensure(tester.Store))
-	assert.NoError(t, i.Ensure(tester.Store))
+		assert.NoError(t, i.Ensure(tester.Store))
+		assert.NoError(t, i.Ensure(tester.Store))
+	})
 }
 
 func TestTokenInterfaces(t *testing.T) {

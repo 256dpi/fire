@@ -14,7 +14,24 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire-flame"), &User{}, &Application{}, &Token{})
+var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-flame")
+var lungoStore = coal.MustCreateStore("memory://test-fire-flame")
+
+var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
+
+func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
+	t.Run("Mongo", func(t *testing.T) {
+		tester := fire.NewTester(mongoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+
+	t.Run("Lungo", func(t *testing.T) {
+		tester := fire.NewTester(lungoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+}
 
 func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()
