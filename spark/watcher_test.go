@@ -16,161 +16,150 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var tester = fire.NewTester(
-	coal.MustCreateStore("mongodb://0.0.0.0:27017/test-fire-spark"),
-	&itemModel{},
-)
-
-type itemModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"items"`
-	Foo       string
-	Bar       string
-}
-
 func panicReporter(err error) {
 	panic(err)
 }
 
 func TestWatcherWebSockets(t *testing.T) {
-	tester.Clean()
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		watcher := NewWatcher(panicReporter)
+		watcher.Add(&Stream{
+			Model: &itemModel{},
+			Store: tester.Store,
+		})
 
-	watcher := NewWatcher(panicReporter)
-	watcher.Add(&Stream{
-		Model: &itemModel{},
-		Store: tester.Store,
-	})
+		group := tester.Assign("", &fire.Controller{
+			Model: &itemModel{},
+			Store: tester.Store,
+		})
+		group.Handle("watch", &fire.GroupAction{
+			Action: watcher.Action(),
+		})
 
-	group := tester.Assign("", &fire.Controller{
-		Model: &itemModel{},
-		Store: tester.Store,
-	})
-	group.Handle("watch", &fire.GroupAction{
-		Action: watcher.Action(),
-	})
+		/* run server and create client */
 
-	/* run server and create client */
+		server := &http.Server{Addr: "0.0.0.0:1234", Handler: tester.Handler}
+		go func() { _ = server.ListenAndServe() }()
+		defer server.Close()
 
-	server := &http.Server{Addr: "0.0.0.0:1234", Handler: tester.Handler}
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close()
+		time.Sleep(10 * time.Millisecond)
 
-	time.Sleep(10 * time.Millisecond)
+		ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:1234/watch", nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, ws)
 
-	ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:1234/watch", nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, ws)
+		defer ws.Close()
 
-	defer ws.Close()
+		/* subscribe */
 
-	/* subscribe */
-
-	err = ws.WriteMessage(websocket.TextMessage, []byte(`{
+		err = ws.WriteMessage(websocket.TextMessage, []byte(`{
 		"subscribe": {
 			"items": {}
 		}
 	}`))
-	assert.NoError(t, err)
+		assert.NoError(t, err)
 
-	/* create model */
+		/* create model */
 
-	itm := coal.Init(&itemModel{
-		Bar: "bar",
-	}).(*itemModel)
+		itm := coal.Init(&itemModel{
+			Bar: "bar",
+		}).(*itemModel)
 
-	tester.Save(itm)
+		tester.Save(itm)
 
-	typ, bytes, err := ws.ReadMessage()
-	assert.NoError(t, err)
-	assert.Equal(t, websocket.TextMessage, typ)
-	assert.JSONEq(t, `{
+		typ, bytes, err := ws.ReadMessage()
+		assert.NoError(t, err)
+		assert.Equal(t, websocket.TextMessage, typ)
+		assert.JSONEq(t, `{
 		"items": {
 			"`+itm.ID().Hex()+`": "created"
 		}
 	}`, string(bytes))
 
-	/* update model */
+		/* update model */
 
-	itm.Foo = "bar"
+		itm.Foo = "bar"
 
-	tester.Update(itm)
+		tester.Update(itm)
 
-	typ, bytes, err = ws.ReadMessage()
-	assert.NoError(t, err)
-	assert.Equal(t, websocket.TextMessage, typ)
-	assert.JSONEq(t, `{
+		typ, bytes, err = ws.ReadMessage()
+		assert.NoError(t, err)
+		assert.Equal(t, websocket.TextMessage, typ)
+		assert.JSONEq(t, `{
 		"items": {
 			"`+itm.ID().Hex()+`": "updated"
 		}
 	}`, string(bytes))
 
-	/* delete model */
+		/* delete model */
 
-	tester.Delete(itm)
+		tester.Delete(itm)
 
-	typ, bytes, err = ws.ReadMessage()
-	assert.NoError(t, err)
-	assert.Equal(t, websocket.TextMessage, typ)
-	assert.JSONEq(t, `{
+		typ, bytes, err = ws.ReadMessage()
+		assert.NoError(t, err)
+		assert.Equal(t, websocket.TextMessage, typ)
+		assert.JSONEq(t, `{
 		"items": {
 			"`+itm.ID().Hex()+`": "deleted"
 		}
 	}`, string(bytes))
 
-	watcher.Close()
+		watcher.Close()
+	})
 }
 
 func TestWatcherSSE(t *testing.T) {
-	tester.Clean()
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		watcher := NewWatcher(panicReporter)
+		watcher.Add(&Stream{
+			Model: &itemModel{},
+			Store: tester.Store,
+		})
 
-	watcher := NewWatcher(panicReporter)
-	watcher.Add(&Stream{
-		Model: &itemModel{},
-		Store: tester.Store,
+		group := tester.Assign("", &fire.Controller{
+			Model: &itemModel{},
+			Store: tester.Store,
+		})
+		group.Handle("watch", &fire.GroupAction{
+			Action: watcher.Action(),
+		})
+
+		ctx, cancel := context.WithCancel(context.Background())
+
+		rec := httptest.NewRecorder()
+		data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
+		req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
+		req = req.WithContext(ctx)
+
+		itm := coal.Init(&itemModel{
+			Bar: "bar",
+		}).(*itemModel)
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+
+			tester.Save(itm)
+
+			itm.Foo = "bar"
+			tester.Update(itm)
+
+			tester.Delete(itm)
+
+			time.Sleep(100 * time.Millisecond)
+
+			cancel()
+		}()
+
+		group.Endpoint("").ServeHTTP(rec, req)
+
+		assert.Equal(t, 200, rec.Code)
+		assert.Equal(t, true, rec.Flushed)
+		assert.Equal(t, []string{
+			`data: {"items":{"` + itm.ID().Hex() + `":"created"}}`,
+			`data: {"items":{"` + itm.ID().Hex() + `":"updated"}}`,
+			`data: {"items":{"` + itm.ID().Hex() + `":"deleted"}}`,
+		}, strings.Split(strings.TrimSpace(rec.Body.String()), "\n\n"))
+
+		watcher.Close()
 	})
-
-	group := tester.Assign("", &fire.Controller{
-		Model: &itemModel{},
-		Store: tester.Store,
-	})
-	group.Handle("watch", &fire.GroupAction{
-		Action: watcher.Action(),
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	rec := httptest.NewRecorder()
-	data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
-	req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
-	req = req.WithContext(ctx)
-
-	itm := coal.Init(&itemModel{
-		Bar: "bar",
-	}).(*itemModel)
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-
-		tester.Save(itm)
-
-		itm.Foo = "bar"
-		tester.Update(itm)
-
-		tester.Delete(itm)
-
-		time.Sleep(100 * time.Millisecond)
-
-		cancel()
-	}()
-
-	group.Endpoint("").ServeHTTP(rec, req)
-
-	assert.Equal(t, 200, rec.Code)
-	assert.Equal(t, true, rec.Flushed)
-	assert.Equal(t, []string{
-		`data: {"items":{"` + itm.ID().Hex() + `":"created"}}`,
-		`data: {"items":{"` + itm.ID().Hex() + `":"updated"}}`,
-		`data: {"items":{"` + itm.ID().Hex() + `":"deleted"}}`,
-	}, strings.Split(strings.TrimSpace(rec.Body.String()), "\n\n"))
-
-	watcher.Close()
 }
