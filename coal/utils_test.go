@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"testing"
 	"time"
 )
 
@@ -35,6 +36,21 @@ type noteModel struct {
 	Post      ID        `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
-var tester = NewTester(MustCreateStore("mongodb://0.0.0.0/test-fire-coal"),
-	&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{},
-)
+var mongoStore = MustCreateStore("mongodb://0.0.0.0/test-fire-coal")
+var lungoStore = MustCreateStore("memory://test-fire-coal")
+
+var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}}
+
+func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
+	t.Run("Mongo", func(t *testing.T) {
+		tester := NewTester(mongoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+
+	t.Run("Lungo", func(t *testing.T) {
+		tester := NewTester(lungoStore, modelList...)
+		tester.Clean()
+		fn(t, tester)
+	})
+}

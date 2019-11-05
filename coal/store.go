@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
@@ -32,6 +32,21 @@ func CreateStore(uri string) (*Store, error) {
 		return nil, err
 	}
 
+	// handle memory
+	if parsedURL.Scheme == "memory" {
+		// create client
+		client, _, err := lungo.Open(nil, lungo.Options{
+			Store: lungo.NewMemoryStore(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: How to close engine?
+
+		return NewStore(client, parsedURL.Host), nil
+	}
+
 	// get default db
 	defaultDB := strings.Trim(parsedURL.Path, "/")
 
@@ -41,7 +56,7 @@ func CreateStore(uri string) (*Store, error) {
 	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
 
 	// create client
-	client, err := mongo.Connect(nil, opts)
+	client, err := lungo.Connect(nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +71,7 @@ func CreateStore(uri string) (*Store, error) {
 }
 
 // NewStore returns a Store that uses the passed client and its default database.
-func NewStore(client *mongo.Client, defaultDB string) *Store {
+func NewStore(client lungo.IClient, defaultDB string) *Store {
 	return &Store{
 		Client:    client,
 		DefaultDB: defaultDB,
@@ -66,19 +81,19 @@ func NewStore(client *mongo.Client, defaultDB string) *Store {
 // A Store manages the usage of a database client.
 type Store struct {
 	// The session used by the store.
-	Client *mongo.Client
+	Client lungo.IClient
 
 	// The default db used by the store.
 	DefaultDB string
 }
 
 // DB returns the database used by this store.
-func (s *Store) DB() *mongo.Database {
+func (s *Store) DB() lungo.IDatabase {
 	return s.Client.Database(s.DefaultDB)
 }
 
 // C will return the collection associated to the specified model.
-func (s *Store) C(model Model) *mongo.Collection {
+func (s *Store) C(model Model) lungo.ICollection {
 	return s.DB().Collection(C(model))
 }
 
@@ -99,7 +114,7 @@ func (s *Store) TX(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// start transaction
-	return s.Client.UseSession(ctx, func(sc mongo.SessionContext) error {
+	return s.Client.UseSession(ctx, func(sc lungo.ISessionContext) error {
 		// start transaction
 		err := sc.StartTransaction()
 		if err != nil {

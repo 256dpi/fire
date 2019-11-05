@@ -78,15 +78,15 @@ func TestGetMeta(t *testing.T) {
 		GetMeta(&m{})
 	})
 
-	//assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
-	//	type m struct {
-	//		Base  `json:"-" bson:",inline" coal:"ms"`
-	//		Text1 string `json:"text"`
-	//		Text2 string `json:"text"`
-	//	}
+	// assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
+	// 	type m struct {
+	// 		Base  `json:"-" bson:",inline" coal:"ms"`
+	// 		Text1 string `json:"text"`
+	// 		Text2 string `json:"text"`
+	// 	}
 	//
-	//	GetMeta(&m{})
-	//})
+	// 	GetMeta(&m{})
+	// })
 
 	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
 		type m struct {

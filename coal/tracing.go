@@ -3,6 +3,7 @@ package coal
 import (
 	"context"
 
+	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -19,7 +20,7 @@ type Tracer interface {
 // TracedCollection wraps a collection to automatically push tracing spans for
 // run queries.
 type TracedCollection struct {
-	coll   *mongo.Collection
+	coll   lungo.ICollection
 	tracer Tracer
 }
 
@@ -205,7 +206,7 @@ func (c *TracedCollection) FindIter(ctx context.Context, filter interface{}, fn 
 }
 
 // FindOne wraps the native FindOne collection method.
-func (c *TracedCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult {
+func (c *TracedCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
 	// push span
 	c.tracer.Push("mongo/Collection.FindOne")
 	c.tracer.Log("filter", filter)
@@ -216,7 +217,7 @@ func (c *TracedCollection) FindOne(ctx context.Context, filter interface{}, opts
 }
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
-func (c *TracedCollection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) *mongo.SingleResult {
+func (c *TracedCollection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
 	// push span
 	c.tracer.Push("mongo/Collection.FindOneAndDelete")
 	c.tracer.Log("filter", filter)
@@ -227,7 +228,7 @@ func (c *TracedCollection) FindOneAndDelete(ctx context.Context, filter interfac
 }
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
-func (c *TracedCollection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) *mongo.SingleResult {
+func (c *TracedCollection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
 	// push span
 	c.tracer.Push("mongo/Collection.FindOneAndReplace")
 	c.tracer.Log("filter", filter)
@@ -238,7 +239,7 @@ func (c *TracedCollection) FindOneAndReplace(ctx context.Context, filter interfa
 }
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
-func (c *TracedCollection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) *mongo.SingleResult {
+func (c *TracedCollection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
 	// push span
 	c.tracer.Push("mongo/Collection.FindOneAndUpdate")
 	c.tracer.Log("filter", filter)
