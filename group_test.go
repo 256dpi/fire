@@ -61,7 +61,7 @@ func TestGroupStackAbort(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "500",
-					"title": "Internal Server Error"
+					"title": "internal server error"
 				}]
 			}`, r.Body.String())
 		})

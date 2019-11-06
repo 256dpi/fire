@@ -348,7 +348,7 @@ func TestMetaSpecial(t *testing.T) {
 	assert.Equal(t, "foo", meta.Fields["Foo"].BSONField)
 }
 
-func BenchmarkGewMeta(b *testing.B) {
+func BenchmarkGetMeta(b *testing.B) {
 	typ := reflect.TypeOf(postModel{})
 
 	for i := 0; i < b.N; i++ {

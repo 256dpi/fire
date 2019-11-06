@@ -49,7 +49,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "missing document"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -65,7 +65,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -82,7 +82,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "unnecessary resource id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -101,7 +101,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid attribute",
 					"source": {
 						"pointer": "/data/attributes/foo"
@@ -215,7 +215,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "missing document"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -235,7 +235,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -255,7 +255,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource id mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -275,7 +275,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid resource id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -298,7 +298,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid attribute",
 					"source": {
 						"pointer": "/data/attributes/foo"
@@ -363,7 +363,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid resource id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -375,7 +375,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "404",
-					"title": "Not Found",
+					"title": "not found",
 					"detail": "resource not found"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -429,7 +429,7 @@ func TestBasicOperations(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid resource id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -523,7 +523,7 @@ func TestHasOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -535,7 +535,7 @@ func TestHasOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -573,7 +573,7 @@ func TestHasOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship",
 					"source": {
 						"pointer": "/data/relationships/foo"
@@ -603,7 +603,7 @@ func TestHasOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -807,7 +807,7 @@ func TestHasManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1096,7 +1096,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1113,7 +1113,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1130,7 +1130,7 @@ func TestToOneRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1468,7 +1468,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1487,7 +1487,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1561,7 +1561,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1580,7 +1580,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1599,7 +1599,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1695,7 +1695,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1714,7 +1714,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "resource type mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1733,7 +1733,7 @@ func TestToManyRelationship(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid relationship id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1860,7 +1860,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid filter \"foo\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1872,7 +1872,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid filter \"text-body\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -2160,7 +2160,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid filter \"post\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -2221,7 +2221,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship filter value is not an object id"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -2339,7 +2339,7 @@ func TestSorting(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid sorter \"foo\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -2351,7 +2351,7 @@ func TestSorting(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "unsupported sorter \"published\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -2903,7 +2903,7 @@ func TestSparseFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "invalid sparse field \"foo\""
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3022,7 +3022,7 @@ func TestReadableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not readable"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3034,7 +3034,7 @@ func TestReadableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not readable"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3085,7 +3085,7 @@ func TestWritableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "attribute is not writable",
 					"source": {
 						"pointer": "/data/attributes/published"
@@ -3113,7 +3113,7 @@ func TestWritableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not writable",
 					"source": {
 						"pointer": "/data/relationships/posts"
@@ -3141,7 +3141,7 @@ func TestWritableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not writable"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3160,7 +3160,7 @@ func TestWritableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not writable"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3179,7 +3179,7 @@ func TestWritableFields(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
-					"title": "Bad Request",
+					"title": "bad request",
 					"detail": "relationship is not writable"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3336,7 +3336,7 @@ func TestNoList(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "405",
-					"title": "Method Not Allowed",
+					"title": "method not allowed",
 					"detail": "listing is disabled for this resource"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3857,7 +3857,7 @@ func TestSoftDelete(t *testing.T) {
 				"errors": [
 					{
 						"status": "404",
-						"title": "Not Found",
+						"title": "not found",
 						"detail": "resource not found"
 					}
 				]
@@ -3924,7 +3924,7 @@ func TestIdempotentCreate(t *testing.T) {
 				"errors": [
 					{
 						"status": "400",
-						"title": "Bad Request",
+						"title": "bad request",
 						"detail": "missing idempotent create token"
 					}
 				]
@@ -3986,7 +3986,7 @@ func TestIdempotentCreate(t *testing.T) {
 				"errors": [
 					{
 						"status": "409",
-						"title": "Conflict",
+						"title": "conflict",
 						"detail": "existing document with same idempotent create token"
 					}
 				]
@@ -4008,7 +4008,7 @@ func TestIdempotentCreate(t *testing.T) {
 				"errors": [
 					{
 						"status": "400",
-						"title": "Bad Request",
+						"title": "bad request",
 						"detail": "idempotent create token cannot be changed"
 					}
 				]
@@ -4112,7 +4112,7 @@ func TestEnsureConsistency(t *testing.T) {
 				"errors": [
 					{
 						"status": "400",
-						"title": "Bad Request",
+						"title": "bad request",
 						"detail": "invalid consistent update token"
 					}
 				]
@@ -4134,7 +4134,7 @@ func TestEnsureConsistency(t *testing.T) {
 				"errors": [
 					{
 						"status": "400",
-						"title": "Bad Request",
+						"title": "bad request",
 						"detail": "invalid consistent update token"
 					}
 				]
@@ -4281,7 +4281,7 @@ func TestUseTransactions(t *testing.T) {
 				"errors": [
 					{
 						"status": "500",
-						"title": "Internal Server Error"
+						"title": "internal server error"
 					}
 				]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -4352,7 +4352,7 @@ func TestUseTransactions(t *testing.T) {
 				"errors": [
 					{
 						"status": "500",
-						"title": "Internal Server Error"
+						"title": "internal server error"
 					}
 				]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -4364,32 +4364,3 @@ func TestUseTransactions(t *testing.T) {
 		assert.Equal(t, []string{"foo", "foo"}, errs)
 	})
 }
-
-// func BenchmarkList(b *testing.B) {
-// 	tester.Clean()
-//
-// 	tester.Assign("", &Controller{
-// 		Model: &postModel{},
-// 		Store: tester.Store,
-// 	}, &Controller{
-// 		Model: &commentModel{},
-// 		Store: tester.Store,
-// 	}, &Controller{
-// 		Model: &selectionModel{},
-// 		Store: tester.Store,
-// 	}, &Controller{
-// 		Model: &noteModel{},
-// 		Store: tester.Store,
-// 	})
-//
-// 	for i := 0; i < 100; i++ {
-// 		tester.Save(&postModel{
-// 			Title: "Post 1",
-// 		})
-// 	}
-//
-// 	for i := 0; i < b.N; i++ {
-// 		// get list of posts
-// 		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {})
-// 	}
-// }

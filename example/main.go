@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/256dpi/serve"
-	"github.com/goware/cors"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	// prepare cors options
-	corsOptions := cors.Options{
+	corsOptions := serve.CORSPolicy{
 		AllowedOrigins: []string{"*"},
 		AllowedHeaders: []string{"Origin", "Accept", "Content-Type",
 			"Authorization", "Cache-Control", "X-Requested-With"},
@@ -66,7 +65,7 @@ func main() {
 	handler := serve.Compose(
 		flame.TokenMigrator(true),
 		fire.RootTracer(),
-		cors.New(corsOptions).Handler,
+		serve.CORS(corsOptions),
 		createHandler(store),
 	)
 
