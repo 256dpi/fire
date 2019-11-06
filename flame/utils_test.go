@@ -15,7 +15,7 @@ import (
 )
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame")
-var lungoStore = coal.MustConnect("memory://test-fire-flame")
+var lungoStore = coal.MustOpen("", "test-fire-flame", nil)
 
 var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
 

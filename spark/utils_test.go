@@ -14,7 +14,7 @@ type itemModel struct {
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark")
-var lungoStore = coal.MustConnect("memory://test-fire-spark")
+var lungoStore = coal.MustOpen("", "test-fire-spark", nil)
 
 var modelList = []coal.Model{&itemModel{}}
 

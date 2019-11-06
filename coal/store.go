@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -24,27 +25,11 @@ func MustConnect(uri string) *Store {
 }
 
 // Connect will connect to the specified database and return a new store.
-// It will return an error if the initial connection failed
 func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
-	}
-
-	// handle memory
-	if parsedURL.Scheme == "memory" {
-		// create client
-		client, _, err := lungo.Open(nil, lungo.Options{
-			Store: lungo.NewMemoryStore(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: How to close engine?
-
-		return NewStore(client, parsedURL.Host), nil
 	}
 
 	// get default db
@@ -67,7 +52,50 @@ func Connect(uri string) (*Store, error) {
 		return nil, err
 	}
 
-	return NewStore(client, defaultDB), nil
+	return &Store{
+		Client:    client,
+		DefaultDB: defaultDB,
+	}, nil
+}
+
+// MustOpen will open the database at the specified path or if missing a new in
+// memory database. It will panic if the operation failed.
+func MustOpen(path, defaultDB string, reporter func(error)) *Store {
+	// create store
+	store, err := Open(path, defaultDB, reporter)
+	if err != nil {
+		panic(err)
+	}
+
+	return store
+}
+
+// Open will open the database at the specified path or if missing a new in
+// memory database.
+func Open(path, defaultDB string, reporter func(error)) (*Store, error) {
+	// prepare store
+	var store lungo.Store
+	if path != "" {
+		store = lungo.NewFileStore(path, 0666)
+	} else {
+		store = lungo.NewMemoryStore()
+	}
+
+	// create client
+	client, engine, err := lungo.Open(nil, lungo.Options{
+		Store:          store,
+		ExpireInterval: time.Minute,
+		ExpireErrors:   reporter,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Store{
+		Client:    client,
+		DefaultDB: defaultDB,
+		engine:    engine,
+	}, nil
 }
 
 // NewStore returns a Store that uses the passed client and its default database.
@@ -85,6 +113,8 @@ type Store struct {
 
 	// The default db used by the store.
 	DefaultDB string
+
+	engine *lungo.Engine
 }
 
 // DB returns the database used by this store.
@@ -143,6 +173,11 @@ func (s *Store) Close() error {
 	err := s.Client.Disconnect(nil)
 	if err != nil {
 		return err
+	}
+
+	// close engine
+	if s.engine != nil {
+		s.engine.Close()
 	}
 
 	return nil

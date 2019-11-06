@@ -34,10 +34,8 @@ func main() {
 	}
 
 	// create store
-	store, err := coal.Connect(mongoURI)
-	if err != nil {
-		panic(err)
-	}
+	store := coal.MustConnect(mongoURI)
+	// store := coal.MustOpen("./db.bson", "example", nil)
 
 	// prepare database
 	err = prepareDatabase(store)

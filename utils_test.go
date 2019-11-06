@@ -69,7 +69,7 @@ type barModel struct {
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire")
-var lungoStore = coal.MustConnect("memory://test-fire")
+var lungoStore = coal.MustOpen("", "test-fire", nil)
 
 var modelList = []coal.Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{}}
 
