@@ -6,6 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -38,59 +39,64 @@ func Lock(store *coal.Store, component, name string, token coal.ID, timeout, ttl
 	// get locked
 	locked := time.Now().Add(timeout)
 
-	// prepare bulk
-	res, err := store.C(&Value{}).BulkWrite(nil, []mongo.WriteModel{
-		// init value
-		mongo.NewUpdateOneModel().SetFilter(bson.M{
-			coal.F(&Value{}, "Component"): component,
-			coal.F(&Value{}, "Name"):      name,
-		}).SetUpdate(bson.M{
-			"$setOnInsert": bson.M{
-				coal.F(&Value{}, "Locked"):   locked,
-				coal.F(&Value{}, "Token"):    token,
-				coal.F(&Value{}, "Deadline"): deadline,
-			},
-		}).SetUpsert(true),
+	// ensure value
+	res, err := store.C(&Value{}).UpdateOne(nil, bson.M{
+		coal.F(&Value{}, "Component"): component,
+		coal.F(&Value{}, "Name"):      name,
+	}, bson.M{
+		"$setOnInsert": bson.M{
+			coal.F(&Value{}, "Locked"):   locked,
+			coal.F(&Value{}, "Token"):    token,
+			coal.F(&Value{}, "Deadline"): deadline,
+		},
+	}, options.Update().SetUpsert(true))
+	if err != nil {
+		return false, err
+	}
 
-		// lock value
-		mongo.NewUpdateOneModel().SetFilter(bson.M{
-			"$and": []bson.M{
-				{
-					coal.F(&Value{}, "Component"): component,
-					coal.F(&Value{}, "Name"):      name,
-				},
-				{
-					"$or": []bson.M{
-						// unlocked
-						{
-							coal.F(&Value{}, "Token"): nil,
+	// check if locked by upsert
+	if res.UpsertedCount > 0 {
+		return true, nil
+	}
+
+	// lock value
+	res, err = store.C(&Value{}).UpdateOne(nil, bson.M{
+		"$and": []bson.M{
+			{
+				coal.F(&Value{}, "Component"): component,
+				coal.F(&Value{}, "Name"):      name,
+			},
+			{
+				"$or": []bson.M{
+					// unlocked
+					{
+						coal.F(&Value{}, "Token"): nil,
+					},
+					// lock timed out
+					{
+						coal.F(&Value{}, "Locked"): bson.M{
+							"$lt": time.Now(),
 						},
-						// lock timed out
-						{
-							coal.F(&Value{}, "Locked"): bson.M{
-								"$lt": time.Now(),
-							},
-						},
-						// we have the lock
-						{
-							coal.F(&Value{}, "Token"): token,
-						},
+					},
+					// we have the lock
+					{
+						coal.F(&Value{}, "Token"): token,
 					},
 				},
 			},
-		}).SetUpdate(bson.M{
-			"$set": bson.M{
-				coal.F(&Value{}, "Locked"):   locked,
-				coal.F(&Value{}, "Token"):    token,
-				coal.F(&Value{}, "Deadline"): deadline,
-			},
-		}),
+		},
+	}, bson.M{
+		"$set": bson.M{
+			coal.F(&Value{}, "Locked"):   locked,
+			coal.F(&Value{}, "Token"):    token,
+			coal.F(&Value{}, "Deadline"): deadline,
+		},
 	})
 	if err != nil {
 		return false, err
 	}
 
-	return res.UpsertedCount > 0 || res.ModifiedCount > 0, nil
+	return res.ModifiedCount > 0, nil
 }
 
 // SetLocked will update the specified value only if the value is locked by the
