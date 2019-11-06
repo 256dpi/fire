@@ -14,8 +14,8 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-flame")
-var lungoStore = coal.MustCreateStore("memory://test-fire-flame")
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame")
+var lungoStore = coal.MustConnect("memory://test-fire-flame")
 
 var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
 

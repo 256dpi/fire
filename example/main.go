@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// create store
-	store, err := coal.CreateStore(mongoURI)
+	store, err := coal.Connect(mongoURI)
 	if err != nil {
 		panic(err)
 	}

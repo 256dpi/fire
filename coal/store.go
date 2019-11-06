@@ -11,11 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-// MustCreateStore will connect to the passed database and return a new store.
+// MustConnect will connect to the passed database and return a new store.
 // It will panic if the initial connection failed.
-func MustCreateStore(uri string) *Store {
+func MustConnect(uri string) *Store {
 	// create store
-	store, err := CreateStore(uri)
+	store, err := Connect(uri)
 	if err != nil {
 		panic(err)
 	}
@@ -23,9 +23,9 @@ func MustCreateStore(uri string) *Store {
 	return store
 }
 
-// CreateStore will connect to the specified database and return a new store.
+// Connect will connect to the specified database and return a new store.
 // It will return an error if the initial connection failed
-func CreateStore(uri string) (*Store, error) {
+func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {

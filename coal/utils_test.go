@@ -36,8 +36,8 @@ type noteModel struct {
 	Post      ID        `json:"-" bson:"post_id" coal:"post:posts"`
 }
 
-var mongoStore = MustCreateStore("mongodb://0.0.0.0/test-fire-coal")
-var lungoStore = MustCreateStore("memory://test-fire-coal")
+var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")
+var lungoStore = MustConnect("memory://test-fire-coal")
 
 var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}}
 

@@ -8,24 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateStoreMongo(t *testing.T) {
-	store := MustCreateStore("mongodb://0.0.0.0/test-fire-coal")
+func TestConnect(t *testing.T) {
+	store := MustConnect("mongodb://0.0.0.0/test-fire-coal")
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Name())
 
 	err := store.Close()
 	assert.NoError(t, err)
-}
 
-func TestCreateStoreMongoError(t *testing.T) {
 	assert.Panics(t, func() {
-		MustCreateStore("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail")
+		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail")
 	})
 }
 
 func TestCreateStoreLungoMemory(t *testing.T) {
-	store := MustCreateStore("memory://test-fire-coal")
+	store := MustConnect("memory://test-fire-coal")
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Name())

@@ -68,8 +68,8 @@ type barModel struct {
 	Foo       coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
 }
 
-var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire")
-var lungoStore = coal.MustCreateStore("memory://test-fire")
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire")
+var lungoStore = coal.MustConnect("memory://test-fire")
 
 var modelList = []coal.Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{}}
 

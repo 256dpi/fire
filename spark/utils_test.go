@@ -13,8 +13,8 @@ type itemModel struct {
 	Bar       string
 }
 
-var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-spark")
-var lungoStore = coal.MustCreateStore("memory://test-fire-spark")
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark")
+var lungoStore = coal.MustConnect("memory://test-fire-spark")
 
 var modelList = []coal.Model{&itemModel{}}
 

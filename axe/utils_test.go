@@ -11,8 +11,8 @@ type data struct {
 	Foo string `bson:"foo"`
 }
 
-var mongoStore = coal.MustCreateStore("mongodb://0.0.0.0/test-fire-axe")
-var lungoStore = coal.MustCreateStore("memory://test-fire-axe")
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-axe")
+var lungoStore = coal.MustConnect("memory://test-fire-axe")
 
 var modelList = []coal.Model{&Job{}}
 
