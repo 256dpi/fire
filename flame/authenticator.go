@@ -50,7 +50,7 @@ type Authenticator struct {
 }
 
 // NewAuthenticator constructs a new Authenticator from a store and policy.
-func NewAuthenticator(store *coal.Store, policy *Policy, reportr func(error)) *Authenticator {
+func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *Authenticator {
 	// initialize token
 	coal.Init(policy.Token)
 
@@ -62,7 +62,7 @@ func NewAuthenticator(store *coal.Store, policy *Policy, reportr func(error)) *A
 	return &Authenticator{
 		store:    store,
 		policy:   policy,
-		reporter: reportr,
+		reporter: reporter,
 	}
 }
 
