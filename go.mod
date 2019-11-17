@@ -20,3 +20,5 @@ require (
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
+
+go 1.13
