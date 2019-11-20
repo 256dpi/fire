@@ -31,6 +31,7 @@ func TestIntegration(t *testing.T) {
 		p.PasswordGrant = true
 		p.ClientCredentialsGrant = true
 		p.ImplicitGrant = true
+		p.AuthorizationCodeGrant = true
 
 		p.ClientFilter = func(c Client, req *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
@@ -81,6 +82,7 @@ func TestIntegration(t *testing.T) {
 		config.PasswordGrantSupport = true
 		config.ClientCredentialsGrantSupport = true
 		config.ImplicitGrantSupport = true
+		config.AuthorizationCodeGrantSupport = true
 		config.RefreshTokenGrantSupport = true
 
 		config.PrimaryClientID = app1.Key
@@ -135,6 +137,10 @@ func TestIntegration(t *testing.T) {
 		config.UnknownRefreshToken = mustGenerateRefreshToken(p, coal.New(), time.Now())
 		config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
 		config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+
+		config.InvalidAuthorizationCode = "foo"
+		config.UnknownAuthorizationCode = mustGenerateAuthorizationCode(p, coal.New(), time.Now())
+		config.ExpiredAuthorizationCode = mustGenerateAuthorizationCode(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		config.InvalidAuthorizationParams = map[string]string{
 			"username": user.Email,
@@ -413,6 +419,15 @@ func mustGenerateAccessToken(p *Policy, id coal.ID, expiresAt time.Time) string 
 }
 
 func mustGenerateRefreshToken(p *Policy, id coal.ID, expiresAt time.Time) string {
+	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return str
+}
+
+func mustGenerateAuthorizationCode(p *Policy, id coal.ID, expiresAt time.Time) string {
 	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
 	if err != nil {
 		panic(err)

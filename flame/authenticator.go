@@ -206,7 +206,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get additional data
-			typ, scope, expiresAt, clientID, resourceOwnerID := accessToken.GetTokenData()
+			typ, scope, expiresAt, _, clientID, resourceOwnerID := accessToken.GetTokenData()
 
 			// validate token type
 			if typ != AccessToken {
@@ -299,9 +299,16 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 			stack.Abort(oauth2.UnsupportedResponseType(""))
 		}
 
+		// handle implicit grant
 		a.handleImplicitGrant(state, req, client)
 	case oauth2.CodeResponseType:
-		stack.Abort(oauth2.UnsupportedResponseType(""))
+		// check availability
+		if !a.policy.AuthorizationCodeGrant {
+			stack.Abort(oauth2.UnsupportedResponseType(""))
+		}
+
+		// Handle authorization code grant
+		a.handleAuthorizationCodeGrantAuthorization(state, req, client)
 	}
 
 	// finish trace
@@ -316,6 +323,9 @@ func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.Authorizat
 	if state.request.Method == "GET" {
 		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
 	}
+
+	// TODO: Optionally force redirect to frontend if no credentials have been provided.
+	//  => Maybe we als check the existence of a random request token?
 
 	// get credentials
 	username := state.request.PostForm.Get("username")
@@ -343,13 +353,64 @@ func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.Authorizat
 	}
 
 	// issue access token
-	res := a.issueTokens(state, false, scope, client, resourceOwner)
+	res := a.issueTokens(state, false, scope, req.RedirectURI, client, resourceOwner)
 
 	// redirect response
 	res.SetRedirect(req.RedirectURI, req.State, true)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
+}
+
+func (a *Authenticator) handleAuthorizationCodeGrantAuthorization(state *state, req *oauth2.AuthorizationRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrantAuthorization")
+
+	// check request method
+	if state.request.Method == "GET" {
+		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, false))
+	}
+
+	// TODO: Optionally force redirect to frontend if no credentials have been provided.
+	//  => Maybe we als check the existence of a random request token?
+
+	// get credentials
+	username := state.request.PostForm.Get("username")
+	password := state.request.PostForm.Get("password")
+
+	// get resource owner
+	resourceOwner := a.findFirstResourceOwner(state, client, username)
+	if resourceOwner == nil {
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
+	}
+
+	// validate password
+	if !resourceOwner.ValidPassword(password) {
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
+	}
+
+	// validate & grant scope
+	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
+	if err == ErrGrantRejected {
+		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
+	} else if err == ErrInvalidScope {
+		stack.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, false))
+	} else if err != nil {
+		stack.Abort(err)
+	}
+
+	// issue code
+	res := a.issueCode(state, scope, req.RedirectURI, client, resourceOwner)
+
+	// set state and redirect uri
+	res.State = req.State
+	res.RedirectURI = req.RedirectURI
+
+	// write response
+	stack.AbortIf(oauth2.WriteCodeResponse(state.writer, res))
 
 	// finish trace
 	state.tracer.Pop()
@@ -382,6 +443,7 @@ func (a *Authenticator) tokenEndpoint(state *state) {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
+		// handle resource owner password credentials grant
 		a.handleResourceOwnerPasswordCredentialsGrant(state, req, client)
 	case oauth2.ClientCredentialsGrantType:
 		// check availability
@@ -389,11 +451,19 @@ func (a *Authenticator) tokenEndpoint(state *state) {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
+		// handle client credentials grant
 		a.handleClientCredentialsGrant(state, req, client)
 	case oauth2.RefreshTokenGrantType:
+		// handle refresh token grant
 		a.handleRefreshTokenGrant(state, req, client)
 	case oauth2.AuthorizationCodeGrantType:
-		stack.Abort(oauth2.UnsupportedGrantType(""))
+		// check availability
+		if !a.policy.AuthorizationCodeGrant {
+			stack.Abort(oauth2.UnsupportedGrantType(""))
+		}
+
+		// handle authorization code grant
+		a.handleAuthorizationCodeGrant(state, req, client)
 	}
 
 	// finish trace
@@ -426,7 +496,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(state *state
 	}
 
 	// issue access token
-	res := a.issueTokens(state, true, scope, client, resourceOwner)
+	res := a.issueTokens(state, true, scope, "", client, resourceOwner)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -455,7 +525,7 @@ func (a *Authenticator) handleClientCredentialsGrant(state *state, req *oauth2.T
 	}
 
 	// issue access token
-	res := a.issueTokens(state, true, scope, client, nil)
+	res := a.issueTokens(state, true, scope, "", client, nil)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -489,7 +559,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// get data
-	typ, scope, expiresAt, clientID, resourceOwnerID := rt.GetTokenData()
+	typ, scope, expiresAt, redirectURI, clientID, resourceOwnerID := rt.GetTokenData()
 
 	// validate type
 	if typ != RefreshToken {
@@ -523,10 +593,86 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	}
 
 	// issue tokens
-	res := a.issueTokens(state, true, req.Scope, client, ro)
+	res := a.issueTokens(state, true, req.Scope, redirectURI, client, ro)
 
 	// delete refresh token
 	a.deleteToken(state, a.policy.Token, rt.ID())
+
+	// write response
+	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
+
+	// finish trace
+	state.tracer.Pop()
+}
+
+func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.TokenRequest, client Client) {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrant")
+
+	// parse authorization code
+	claims, expired, err := a.policy.ParseToken(req.Code)
+	if expired {
+		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
+	} else if err != nil {
+		stack.Abort(oauth2.InvalidRequest("malformed authorization code"))
+	}
+
+	// get id
+	id, err := coal.FromHex(claims.Id)
+	if err != nil {
+		stack.Abort(oauth2.InvalidRequest("invalid id"))
+	}
+
+	// get stored authorization code by signature
+	code := a.getToken(state, a.policy.Token, id)
+	if code == nil {
+		stack.Abort(oauth2.InvalidGrant("unknown authorization code"))
+	}
+
+	// get data
+	typ, scope, expiresAt, redirectURI, clientID, resourceOwnerID := code.GetTokenData()
+
+	// validate type
+	if typ != AuthorizationCode {
+		stack.Abort(oauth2.InvalidGrant("invalid type"))
+	}
+
+	// validate expiration
+	if expiresAt.Before(time.Now()) {
+		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
+	}
+
+	// validate ownership
+	if clientID != client.ID() {
+		stack.Abort(oauth2.InvalidGrant("invalid authorization code ownership"))
+	}
+
+	// validate redirect uri
+	if redirectURI != req.RedirectURI {
+		stack.Abort(oauth2.InvalidGrant("changed redirect uri"))
+	}
+
+	// inherit scope from stored authorization code
+	if req.Scope.Empty() {
+		req.Scope = scope
+	}
+
+	// validate scope - a missing scope is always included
+	if !oauth2.Scope(scope).Includes(req.Scope) {
+		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
+	}
+
+	// get resource owner
+	var ro ResourceOwner
+	if resourceOwnerID != nil {
+		ro = a.getFirstResourceOwner(state, client, *resourceOwnerID)
+	}
+
+	// issue tokens
+	res := a.issueTokens(state, false, req.Scope, redirectURI, client, ro)
+
+	// delete authorization code
+	a.deleteToken(state, a.policy.Token, code.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -573,7 +719,7 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 	state.tracer.Pop()
 }
 
-func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2.Scope, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
+func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.issueTokens")
 
@@ -582,7 +728,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
 
 	// save access token
-	at := a.saveToken(state, a.policy.Token, AccessToken, scope, atExpiry, client, resourceOwner)
+	at := a.saveToken(state, a.policy.Token, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
 	atSignature, err := a.policy.GenerateToken(at.ID(), time.Now(), atExpiry, client, resourceOwner, at)
@@ -597,7 +743,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	// issue a refresh token if requested
 	if refreshable {
 		// save refresh token
-		rt := a.saveToken(state, a.policy.Token, RefreshToken, scope, rtExpiry, client, resourceOwner)
+		rt := a.saveToken(state, a.policy.Token, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 
 		// generate new refresh token
 		rtSignature, err := a.policy.GenerateToken(rt.ID(), time.Now(), rtExpiry, client, resourceOwner, rt)
@@ -606,6 +752,29 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 		// set refresh token
 		res.RefreshToken = rtSignature
 	}
+
+	// finish trace
+	state.tracer.Pop()
+
+	return res
+}
+
+func (a *Authenticator) issueCode(state *state, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.CodeResponse {
+	// begin trace
+	state.tracer.Push("flame/Authenticator.issueCode")
+
+	// prepare expiration
+	expiry := time.Now().Add(a.policy.AuthorizationCodeLifespan)
+
+	// save authorization code
+	code := a.saveToken(state, a.policy.Token, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
+
+	// generate new access token
+	signature, err := a.policy.GenerateToken(code.ID(), time.Now(), expiry, client, resourceOwner, code)
+	stack.AbortIf(err)
+
+	// prepare response
+	res := oauth2.NewCodeResponse(signature, "", "")
 
 	// finish trace
 	state.tracer.Pop()
@@ -868,7 +1037,7 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id coal.ID) G
 	return accessToken
 }
 
-func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) GenericToken {
+func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.saveToken")
 
@@ -876,7 +1045,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	token := model.Meta().Make().(GenericToken)
 
 	// set access token data
-	token.SetTokenData(typ, scope, expiresAt, client, resourceOwner)
+	token.SetTokenData(typ, scope, expiresAt, redirectURI, client, resourceOwner)
 
 	// save access token
 	_, err := state.store.TC(state.tracer, token).InsertOne(nil, token)

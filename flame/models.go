@@ -19,6 +19,9 @@ const (
 
 	// RefreshToken defines a refresh token.
 	RefreshToken TokenType = "refresh"
+
+	// AuthorizationCode defines an authorization code.
+	AuthorizationCode TokenType = "code"
 )
 
 // GenericToken is the interface that must be implemented by the tokens.
@@ -26,18 +29,19 @@ type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, client coal.ID, resourceOwner *coal.ID)
+	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client coal.ID, resourceOwner *coal.ID)
 
 	// SetTokenData should set the specified token data.
-	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner)
+	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner)
 }
 
 // Token is the built-in model used to store access and refresh tokens.
 type Token struct {
 	coal.Base   `json:"-" bson:",inline" coal:"tokens:tokens"`
 	Type        TokenType `json:"type"`
-	ExpiresAt   time.Time `json:"expires-at" bson:"expires_at"`
 	Scope       []string  `json:"scope" bson:"scope"`
+	ExpiresAt   time.Time `json:"expires-at" bson:"expires_at"`
+	RedirectURI string    `json:"redirect-uri" bson:"redirect_uri"`
 	Application coal.ID   `json:"-" bson:"application_id" coal:"application:applications"`
 	User        *coal.ID  `json:"-" bson:"user_id" coal:"user:users"`
 }
@@ -54,15 +58,16 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.GenericToken interface.
-func (t *Token) GetTokenData() (TokenType, []string, time.Time, coal.ID, *coal.ID) {
-	return t.Type, t.Scope, t.ExpiresAt, t.Application, t.User
+func (t *Token) GetTokenData() (TokenType, []string, time.Time, string, coal.ID, *coal.ID) {
+	return t.Type, t.Scope, t.ExpiresAt, t.RedirectURI, t.Application, t.User
 }
 
 // SetTokenData implements the flame.GenericToken interface.
-func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time, client Client, resourceOwner ResourceOwner) {
+func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) {
 	t.Type = typ
 	t.Scope = scope
 	t.ExpiresAt = expiresAt
+	t.RedirectURI = redirectURI
 	t.Application = client.ID()
 	if resourceOwner != nil {
 		t.User = coal.P(resourceOwner.ID())

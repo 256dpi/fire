@@ -33,6 +33,7 @@ type Policy struct {
 	PasswordGrant          bool
 	ClientCredentialsGrant bool
 	ImplicitGrant          bool
+	AuthorizationCodeGrant bool
 
 	// The token model.
 	Token GenericToken
@@ -69,9 +70,10 @@ type Policy struct {
 	// tokens under the "dat" field.
 	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
 
-	// The token used lifespans.
-	AccessTokenLifespan  time.Duration
-	RefreshTokenLifespan time.Duration
+	// The token and code lifespans.
+	AccessTokenLifespan       time.Duration
+	RefreshTokenLifespan      time.Duration
+	AuthorizationCodeLifespan time.Duration
 }
 
 // DefaultGrantStrategy grants only empty scopes.
@@ -107,10 +109,11 @@ func DefaultPolicy(secret string) *Policy {
 		ResourceOwners: func(_ Client) []ResourceOwner {
 			return []ResourceOwner{&User{}}
 		},
-		GrantStrategy:        DefaultGrantStrategy,
-		TokenData:            DefaultTokenData,
-		AccessTokenLifespan:  time.Hour,
-		RefreshTokenLifespan: 7 * 24 * time.Hour,
+		GrantStrategy:             DefaultGrantStrategy,
+		TokenData:                 DefaultTokenData,
+		AccessTokenLifespan:       time.Hour,
+		RefreshTokenLifespan:      7 * 24 * time.Hour,
+		AuthorizationCodeLifespan: time.Minute,
 	}
 }
 
