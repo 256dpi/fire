@@ -669,7 +669,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 	}
 
 	// issue tokens
-	res := a.issueTokens(state, false, req.Scope, redirectURI, client, ro)
+	res := a.issueTokens(state, true, req.Scope, redirectURI, client, ro)
 
 	// delete authorization code
 	a.deleteToken(state, a.policy.Token, code.ID())
