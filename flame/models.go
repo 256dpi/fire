@@ -24,15 +24,40 @@ const (
 	AuthorizationCode TokenType = "code"
 )
 
+// TokenData describes attributes of a token.
+type TokenData struct {
+	// The token type.
+	Type TokenType
+
+	// The token scope.
+	Scope []string
+
+	// The token expiry.
+	ExpiresAt time.Time
+
+	// The stored redirect URI.
+	RedirectURI string
+
+	// The client and resource owner model.
+	//
+	// Mandatory for `SetTokenData` optional for `GetTokenData`.
+	Client        Client
+	ResourceOwner ResourceOwner
+
+	// The client and resource owner id.
+	ClientID        coal.ID
+	ResourceOwnerID *coal.ID
+}
+
 // GenericToken is the interface that must be implemented by the tokens.
 type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
-	GetTokenData() (typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client coal.ID, resourceOwner *coal.ID)
+	GetTokenData() TokenData
 
 	// SetTokenData should set the specified token data.
-	SetTokenData(typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner)
+	SetTokenData(TokenData)
 }
 
 // Token is the built-in model used to store access and refresh tokens.
@@ -58,19 +83,26 @@ func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
 }
 
 // GetTokenData implements the flame.GenericToken interface.
-func (t *Token) GetTokenData() (TokenType, []string, time.Time, string, coal.ID, *coal.ID) {
-	return t.Type, t.Scope, t.ExpiresAt, t.RedirectURI, t.Application, t.User
+func (t *Token) GetTokenData() TokenData {
+	return TokenData{
+		Type:            t.Type,
+		Scope:           t.Scope,
+		ExpiresAt:       t.ExpiresAt,
+		RedirectURI:     t.RedirectURI,
+		ClientID:        t.Application,
+		ResourceOwnerID: t.User,
+	}
 }
 
 // SetTokenData implements the flame.GenericToken interface.
-func (t *Token) SetTokenData(typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) {
-	t.Type = typ
-	t.Scope = scope
-	t.ExpiresAt = expiresAt
-	t.RedirectURI = redirectURI
-	t.Application = client.ID()
-	if resourceOwner != nil {
-		t.User = coal.P(resourceOwner.ID())
+func (t *Token) SetTokenData(data TokenData) {
+	t.Type = data.Type
+	t.Scope = data.Scope
+	t.ExpiresAt = data.ExpiresAt
+	t.RedirectURI = data.RedirectURI
+	t.Application = data.Client.ID()
+	if data.ResourceOwner != nil {
+		t.User = coal.P(data.ResourceOwner.ID())
 	}
 }
 

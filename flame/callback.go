@@ -40,8 +40,8 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		}
 
 		// validate scope
-		_, scope, _, _, _, _ := accessToken.GetTokenData()
-		if !oauth2.Scope(scope).Includes(s) {
+		data := accessToken.GetTokenData()
+		if !oauth2.Scope(data.Scope).Includes(s) {
 			return fire.ErrAccessDenied
 		}
 

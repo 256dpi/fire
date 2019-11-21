@@ -205,21 +205,21 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				stack.Abort(bearer.InvalidToken("unknown token"))
 			}
 
-			// get additional data
-			typ, scope, expiresAt, _, clientID, resourceOwnerID := accessToken.GetTokenData()
+			// get token data
+			data := accessToken.GetTokenData()
 
 			// validate token type
-			if typ != AccessToken {
+			if data.Type != AccessToken {
 				stack.Abort(bearer.InvalidToken("invalid type"))
 			}
 
 			// validate expiration
-			if expiresAt.Before(time.Now()) {
+			if data.ExpiresAt.Before(time.Now()) {
 				stack.Abort(bearer.InvalidToken("expired token"))
 			}
 
 			// validate scope
-			if !oauth2.Scope(scope).Includes(s) {
+			if !oauth2.Scope(data.Scope).Includes(s) {
 				stack.Abort(bearer.InsufficientScope(s.String()))
 			}
 
@@ -235,7 +235,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get client
-			client := a.getFirstClient(state, clientID)
+			client := a.getFirstClient(state, data.ClientID)
 			if client == nil {
 				stack.Abort(errors.New("missing client"))
 			}
@@ -245,7 +245,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// call next handler if resource owner does not exist or should not
 			// be loaded
-			if resourceOwnerID == nil || !loadResourceOwner {
+			if data.ResourceOwnerID == nil || !loadResourceOwner {
 				// call next handler
 				next.ServeHTTP(w, r.WithContext(ctx))
 
@@ -253,7 +253,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get resource owner
-			resourceOwner := a.getFirstResourceOwner(state, client, *resourceOwnerID)
+			resourceOwner := a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
 			if resourceOwner == nil {
 				stack.Abort(bearer.InvalidToken("missing resource owner"))
 			}
@@ -558,42 +558,42 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
 
-	// get data
-	typ, scope, expiresAt, redirectURI, clientID, resourceOwnerID := rt.GetTokenData()
+	// get token data
+	data := rt.GetTokenData()
 
 	// validate type
-	if typ != RefreshToken {
+	if data.Type != RefreshToken {
 		stack.Abort(oauth2.InvalidGrant("invalid type"))
 	}
 
 	// validate expiration
-	if expiresAt.Before(time.Now()) {
+	if data.ExpiresAt.Before(time.Now()) {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	}
 
 	// validate ownership
-	if clientID != client.ID() {
+	if data.ClientID != client.ID() {
 		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
 	// inherit scope from stored refresh token
 	if req.Scope.Empty() {
-		req.Scope = scope
+		req.Scope = data.Scope
 	}
 
 	// validate scope - a missing scope is always included
-	if !oauth2.Scope(scope).Includes(req.Scope) {
+	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
 		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
 	var ro ResourceOwner
-	if resourceOwnerID != nil {
-		ro = a.getFirstResourceOwner(state, client, *resourceOwnerID)
+	if data.ResourceOwnerID != nil {
+		ro = a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
 	}
 
 	// issue tokens
-	res := a.issueTokens(state, true, req.Scope, redirectURI, client, ro)
+	res := a.issueTokens(state, true, req.Scope, data.RedirectURI, client, ro)
 
 	// delete refresh token
 	a.deleteToken(state, a.policy.Token, rt.ID())
@@ -629,47 +629,47 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 		stack.Abort(oauth2.InvalidGrant("unknown authorization code"))
 	}
 
-	// get data
-	typ, scope, expiresAt, redirectURI, clientID, resourceOwnerID := code.GetTokenData()
+	// get token data
+	data := code.GetTokenData()
 
 	// validate type
-	if typ != AuthorizationCode {
+	if data.Type != AuthorizationCode {
 		stack.Abort(oauth2.InvalidGrant("invalid type"))
 	}
 
 	// validate expiration
-	if expiresAt.Before(time.Now()) {
+	if data.ExpiresAt.Before(time.Now()) {
 		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
 	}
 
 	// validate ownership
-	if clientID != client.ID() {
+	if data.ClientID != client.ID() {
 		stack.Abort(oauth2.InvalidGrant("invalid authorization code ownership"))
 	}
 
 	// validate redirect uri
-	if redirectURI != req.RedirectURI {
+	if data.RedirectURI != req.RedirectURI {
 		stack.Abort(oauth2.InvalidGrant("changed redirect uri"))
 	}
 
 	// inherit scope from stored authorization code
 	if req.Scope.Empty() {
-		req.Scope = scope
+		req.Scope = data.Scope
 	}
 
 	// validate scope - a missing scope is always included
-	if !oauth2.Scope(scope).Includes(req.Scope) {
+	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
 		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
 	var ro ResourceOwner
-	if resourceOwnerID != nil {
-		ro = a.getFirstResourceOwner(state, client, *resourceOwnerID)
+	if data.ResourceOwnerID != nil {
+		ro = a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
 	}
 
 	// issue tokens
-	res := a.issueTokens(state, true, req.Scope, redirectURI, client, ro)
+	res := a.issueTokens(state, true, req.Scope, data.RedirectURI, client, ro)
 
 	// delete authorization code
 	a.deleteToken(state, a.policy.Token, code.ID())
@@ -1044,8 +1044,23 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	// prepare access token
 	token := model.Meta().Make().(GenericToken)
 
+	// get resource owner id
+	var roID *coal.ID
+	if resourceOwner != nil {
+		roID = coal.P(resourceOwner.ID())
+	}
+
 	// set access token data
-	token.SetTokenData(typ, scope, expiresAt, redirectURI, client, resourceOwner)
+	token.SetTokenData(TokenData{
+		Type:            typ,
+		Scope:           scope,
+		ExpiresAt:       expiresAt,
+		RedirectURI:     redirectURI,
+		Client:          client,
+		ResourceOwner:   resourceOwner,
+		ClientID:        client.ID(),
+		ResourceOwnerID: roID,
+	})
 
 	// save access token
 	_, err := state.store.TC(state.tracer, token).InsertOne(nil, token)
