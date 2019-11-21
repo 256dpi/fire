@@ -58,17 +58,17 @@ func TestIntegration(t *testing.T) {
 		})
 
 		app1 := tester.Save(&Application{
-			Name:        "Application 1",
-			Key:         "app1",
-			SecretHash:  mustHash(testPassword),
-			RedirectURL: "http://example.com/callback1",
+			Name:         "Application 1",
+			Key:          "app1",
+			SecretHash:   mustHash(testPassword),
+			RedirectURLs: []string{"http://example.com/callback1"},
 		}).(*Application)
 
 		app2 := tester.Save(&Application{
-			Name:        "Application 2",
-			Key:         "app2",
-			SecretHash:  mustHash(testPassword),
-			RedirectURL: "http://example.com/callback2",
+			Name:         "Application 2",
+			Key:          "app2",
+			SecretHash:   mustHash(testPassword),
+			RedirectURLs: []string{"http://example.com/callback2"},
 		}).(*Application)
 
 		user := tester.Save(&User{
@@ -247,8 +247,8 @@ func TestInvalidResponseType(t *testing.T) {
 		handler := newHandler(authenticator, false)
 
 		application := tester.Save(&Application{
-			Key:         "application",
-			RedirectURL: "https://example.com/",
+			Key:          "application",
+			RedirectURLs: []string{"https://example.com/"},
 		}).(*Application)
 
 		for _, rt := range []string{"token", "code"} {

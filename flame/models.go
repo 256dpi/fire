@@ -108,12 +108,12 @@ type Client interface {
 
 // Application is the built-in model used to store clients.
 type Application struct {
-	coal.Base   `json:"-" bson:",inline" coal:"applications"`
-	Name        string `json:"name" bson:"name"`
-	Key         string `json:"key" bson:"key" coal:"flame-client-id"`
-	Secret      string `json:"secret,omitempty" bson:"-"`
-	SecretHash  []byte `json:"-" bson:"secret"`
-	RedirectURL string `json:"redirect-url" bson:"redirect_url"`
+	coal.Base    `json:"-" bson:",inline" coal:"applications"`
+	Name         string   `json:"name" bson:"name"`
+	Key          string   `json:"key" bson:"key" coal:"flame-client-id"`
+	Secret       string   `json:"secret,omitempty" bson:"-"`
+	SecretHash   []byte   `json:"-" bson:"secret"`
+	RedirectURLs []string `json:"redirect-urls" bson:"redirect_urls"`
 }
 
 // AddApplicationIndexes will add application indexes to the specified indexer.
@@ -123,7 +123,7 @@ func AddApplicationIndexes(i *coal.Indexer) {
 
 // ValidRedirectURL implements the flame.Client interface.
 func (a *Application) ValidRedirectURL(url string) bool {
-	return url == a.RedirectURL
+	return fire.Contains(a.RedirectURLs, url)
 }
 
 // ValidSecret implements the flame.Client interface.
@@ -160,8 +160,10 @@ func (a *Application) Validate() error {
 	}
 
 	// check redirect uri
-	if a.RedirectURL != "" && !govalidator.IsURL(a.RedirectURL) {
-		return fire.E("invalid redirect url")
+	for _, redirectURL := range a.RedirectURLs {
+		if redirectURL != "" && !govalidator.IsURL(redirectURL) {
+			return fire.E("invalid redirect url")
+		}
 	}
 
 	return nil
