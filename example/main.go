@@ -24,7 +24,7 @@ var port = getEnv("PORT", "8000")
 var mongoURI = getEnv("MONGODB_URI", "mongodb://0.0.0.0/fire-example")
 var secret = getEnv("SECRET", "abcd1234abcd1234")
 var mainKey = getEnv("MAIN_KEY", "main-key")
-var subKey =  getEnv("SUB_KEY", "sub-key")
+var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
 	// write visualization dot

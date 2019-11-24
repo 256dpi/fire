@@ -10,25 +10,30 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// JWTClaims extends the standard JWT claims to include the "dat" attribute.
-type JWTClaims struct {
+// JWT represents a parsed JSON web token.
+type JWT = jwt.Token
+
+// Claims extends the standard JWT claims to include the "dat" attribute.
+type Claims struct {
 	jwt.StandardClaims
 
 	// Data contains user defined key value pairs.
 	Data map[string]interface{} `json:"dat,omitempty"`
 }
 
-// GenerateJWT will generate a custom JWT token.
-func GenerateJWT(secret string, claims JWTClaims) (string, error) {
+// GenerateJWT will generate a JWT token.
+func GenerateJWT(secret string, claims Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
 
-// ParseJWT will parse a custom JWT token.
-func ParseJWT(secret, token string, claims *JWTClaims) (*jwt.Token, error) {
-	return jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
+// ParseJWT will parse a JWT token.
+func ParseJWT(secret, str string) (*JWT, *Claims, error) {
+	var claims Claims
+	token, err := jwt.ParseWithClaims(str, claims, func(*JWT) (interface{}, error) {
 		return []byte(secret), nil
 	})
+	return token, &claims, err
 }
 
 // TokenMigrator is a middleware that detects access tokens passed via query
@@ -66,7 +71,7 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 
 // EnsureApplication will ensure that an application with the provided name
 // exists and returns its key.
-func EnsureApplication(store *coal.Store, name, key, secret string, redirectURLs... string) (string, error) {
+func EnsureApplication(store *coal.Store, name, key, secret string, redirectURLs ...string) (string, error) {
 	// count main applications
 	var apps []Application
 	cursor, err := store.C(&Application{}).Find(nil, bson.M{
@@ -84,7 +89,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURLs
 
 	// check existence
 	if len(apps) > 1 {
-		return "", errors.New("to many applications with that name")
+		return "", errors.New("application name conflict")
 	} else if len(apps) == 1 {
 		return apps[0].Key, nil
 	}

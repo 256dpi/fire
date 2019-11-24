@@ -125,7 +125,7 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 	data := token.GetTokenData()
 
 	// prepare claims
-	claims := JWTClaims{}
+	claims := Claims{}
 	claims.Id = token.ID().Hex()
 	claims.IssuedAt = token.ID().Timestamp().Unix()
 	claims.ExpiresAt = data.ExpiresAt.Unix()
@@ -146,10 +146,9 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 
 // ParseJWT will parse the presented token and return its claims, if it is
 // expired and eventual errors.
-func (p *Policy) ParseJWT(str string) (*JWTClaims, bool, error) {
+func (p *Policy) ParseJWT(str string) (*Claims, bool, error) {
 	// parse token and check expired errors
-	var claims JWTClaims
-	_, err := ParseJWT(p.Secret, str, &claims)
+	_, claims, err := ParseJWT(p.Secret, str)
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
 		return nil, true, err
 	} else if err != nil {
@@ -162,5 +161,5 @@ func (p *Policy) ParseJWT(str string) (*JWTClaims, bool, error) {
 		return nil, false, errors.New("invalid id")
 	}
 
-	return &claims, false, nil
+	return claims, false, nil
 }

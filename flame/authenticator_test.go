@@ -419,7 +419,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 
 func mustGenerateToken(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
 	token := coal.Init(&Token{
-		Type: typ,
+		Type:      typ,
 		ExpiresAt: expiresAt,
 	}).(*Token)
 
