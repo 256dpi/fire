@@ -96,13 +96,13 @@ func prepareDatabase(store *coal.Store) error {
 	}
 
 	// ensure main application
-	mainKey, err = flame.EnsureApplication(store, "Main", mainKey, "1234abcd1234abcd")
+	mainKey, err = flame.EnsureApplication(store, "Main", mainKey, "")
 	if err != nil {
 		return err
 	}
 
 	// ensure sub application
-	subKey, err = flame.EnsureApplication(store, "Sub", subKey, "1234abcd1234abcd", "http://0.0.0.0:4200/return")
+	subKey, err = flame.EnsureApplication(store, "Sub", subKey, "", "http://0.0.0.0:4200/return")
 	if err != nil {
 		return err
 	}
