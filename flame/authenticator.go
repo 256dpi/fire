@@ -387,45 +387,20 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		a.handleImplicitGrant(state, req, client, scope, resourceOwner)
+		// issue access token
+		res := a.issueTokens(state, false, scope, req.RedirectURI, client, resourceOwner)
+		res.SetRedirect(req.RedirectURI, req.State)
+
+		// write response
+		stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
 	case oauth2.CodeResponseType:
-		a.handleAuthorizationCodeGrantAuthorization(state, req, client, scope, resourceOwner)
+		// issue authorization code
+		res := a.issueCode(state, scope, req.RedirectURI, client, resourceOwner)
+		res.State = req.State
+
+		// write response
+		stack.AbortIf(oauth2.WriteCodeResponse(state.writer, res))
 	}
-
-	// finish trace
-	state.tracer.Pop()
-}
-
-func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.AuthorizationRequest, client Client, scope oauth2.Scope, resourceOwner ResourceOwner) {
-	// begin trace
-	state.tracer.Push("flame/Authenticator.handleImplicitGrant")
-
-	// issue access token
-	res := a.issueTokens(state, false, scope, req.RedirectURI, client, resourceOwner)
-
-	// redirect response
-	res.SetRedirect(req.RedirectURI, req.State)
-
-	// write response
-	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
-
-	// finish trace
-	state.tracer.Pop()
-}
-
-func (a *Authenticator) handleAuthorizationCodeGrantAuthorization(state *state, req *oauth2.AuthorizationRequest, client Client, scope oauth2.Scope, resourceOwner ResourceOwner) {
-	// begin trace
-	state.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrantAuthorization")
-
-	// issue code
-	res := a.issueCode(state, scope, req.RedirectURI, client, resourceOwner)
-
-	// set state and redirect uri
-	res.State = req.State
-	res.RedirectURI = req.RedirectURI
-
-	// write response
-	stack.AbortIf(oauth2.WriteCodeResponse(state.writer, res))
 
 	// finish trace
 	state.tracer.Pop()
@@ -789,7 +764,7 @@ func (a *Authenticator) issueCode(state *state, scope oauth2.Scope, redirectURI 
 	stack.AbortIf(err)
 
 	// prepare response
-	res := oauth2.NewCodeResponse(signature, "", "")
+	res := oauth2.NewCodeResponse(signature, redirectURI, "")
 
 	// finish trace
 	state.tracer.Pop()
@@ -820,13 +795,11 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	// begin trace
 	state.tracer.Push("flame/Authenticator.findClient")
 
-	// prepare object
-	obj := model.Meta().Make()
-
-	// lookup id field
-	field := coal.F(model, coal.L(model, "flame-client-id", true))
+	// prepare client
+	client := model.Meta().Make().(Client)
 
 	// prepare filter
+	field := coal.F(model, coal.L(model, "flame-client-id", true))
 	filters := []bson.M{
 		{field: id},
 	}
@@ -852,15 +825,15 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 		"$and": filters,
 	}
 
-	// query db
-	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(obj)
+	// fetch client
+	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(client)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
 	stack.AbortIf(err)
 
-	// initialize model
-	client := coal.Init(obj).(Client)
+	// initialize client
+	coal.Init(client)
 
 	// finish trace
 	state.tracer.Pop()
@@ -891,20 +864,20 @@ func (a *Authenticator) getClient(state *state, model Client, id coal.ID) Client
 	// begin trace
 	state.tracer.Push("flame/Authenticator.getClient")
 
-	// prepare object
-	obj := model.Meta().Make()
+	// prepare client
+	client := model.Meta().Make().(Client)
 
-	// query db
+	// fetch client
 	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
-	}).Decode(obj)
+	}).Decode(client)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
 	stack.AbortIf(err)
 
-	// initialize model
-	client := coal.Init(obj).(Client)
+	// initialize client
+	coal.Init(client)
 
 	// finish trace
 	state.tracer.Pop()
@@ -935,13 +908,11 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	// begin trace
 	state.tracer.Push("flame/Authenticator.findResourceOwner")
 
-	// prepare object
-	obj := coal.Init(model).Meta().Make()
-
-	// lookup id field
-	field := coal.F(model, coal.L(model, "flame-resource-owner-id", true))
+	// prepare resource owner
+	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
 
 	// prepare filter
+	field := coal.F(model, coal.L(model, "flame-resource-owner-id", true))
 	filters := []bson.M{
 		{field: id},
 	}
@@ -967,15 +938,15 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 		"$and": filters,
 	}
 
-	// query db
-	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(obj)
+	// fetch resource owner
+	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(resourceOwner)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
 	stack.AbortIf(err)
 
-	// initialize model
-	resourceOwner := coal.Init(obj).(ResourceOwner)
+	// initialize resource owner
+	coal.Init(resourceOwner)
 
 	// finish trace
 	state.tracer.Pop()
@@ -1007,19 +978,19 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id c
 	state.tracer.Push("flame/Authenticator.getResourceOwner")
 
 	// prepare object
-	obj := coal.Init(model).Meta().Make()
+	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
 
-	// query db
+	// fetch resource owner
 	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
-	}).Decode(obj)
+	}).Decode(resourceOwner)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
 	stack.AbortIf(err)
 
-	// initialize model
-	resourceOwner := coal.Init(obj).(ResourceOwner)
+	// initialize resource owner
+	coal.Init(resourceOwner)
 
 	// finish trace
 	state.tracer.Pop()
@@ -1034,7 +1005,7 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id coal.ID) G
 	// prepare object
 	obj := model.Meta().Make()
 
-	// fetch access token
+	// fetch token
 	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
@@ -1043,20 +1014,20 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id coal.ID) G
 	}
 	stack.AbortIf(err)
 
-	// initialize access token
-	accessToken := coal.Init(obj).(GenericToken)
+	// initialize token
+	token := coal.Init(obj).(GenericToken)
 
 	// finish trace
 	state.tracer.Pop()
 
-	return accessToken
+	return token
 }
 
 func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.saveToken")
 
-	// prepare access token
+	// prepare token
 	token := model.Meta().Make().(GenericToken)
 
 	// get resource owner id
@@ -1065,7 +1036,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 		roID = coal.P(resourceOwner.ID())
 	}
 
-	// set access token data
+	// set token data
 	token.SetTokenData(TokenData{
 		Type:            typ,
 		Scope:           scope,
@@ -1077,7 +1048,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 		ResourceOwnerID: roID,
 	})
 
-	// save access token
+	// save token
 	_, err := state.store.TC(state.tracer, token).InsertOne(nil, token)
 	stack.AbortIf(err)
 
