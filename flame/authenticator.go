@@ -634,6 +634,8 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 		stack.Abort(oauth2.InvalidRequest("invalid authorization code id"))
 	}
 
+	// TODO: We should revoke all descending tokens if a code is reused.
+
 	// get stored authorization code by signature
 	code := a.getToken(env, a.policy.Token, id)
 	if code == nil {
