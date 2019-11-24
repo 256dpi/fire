@@ -24,6 +24,7 @@ var port = getEnv("PORT", "8000")
 var mongoURI = getEnv("MONGODB_URI", "mongodb://0.0.0.0/fire-example")
 var secret = getEnv("SECRET", "abcd1234abcd1234")
 var mainKey = getEnv("MAIN_KEY", "main-key")
+var subKey =  getEnv("SUB_KEY", "sub-key")
 
 func main() {
 	// write visualization dot
@@ -99,8 +100,15 @@ func prepareDatabase(store *coal.Store) error {
 		return err
 	}
 
-	// log key
+	// ensure sub application
+	subKey, err = flame.EnsureApplication(store, "Sub", subKey, "1234abcd1234abcd", "http://0.0.0.0:4200/return")
+	if err != nil {
+		return err
+	}
+
+	// log keys
 	fmt.Printf("Main Application Key: %s\n", mainKey)
+	fmt.Printf("Sub Application Key: %s\n", subKey)
 
 	return nil
 }
@@ -118,6 +126,9 @@ func createHandler(store *coal.Store) http.Handler {
 	policy := flame.DefaultPolicy(secret)
 	policy.PasswordGrant = true
 	policy.ClientCredentialsGrant = true
+	policy.ImplicitGrant = true
+	policy.AuthorizationCodeGrant = true
+	policy.ApprovalURL = "http://0.0.0.0:4200/authorize"
 
 	// create authenticator
 	a := flame.NewAuthenticator(store, policy, reporter)

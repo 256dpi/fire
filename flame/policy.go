@@ -35,6 +35,9 @@ type Policy struct {
 	ImplicitGrant          bool
 	AuthorizationCodeGrant bool
 
+	// The URL to the page that obtains the approval of the user.
+	ApprovalURL string
+
 	// The token model.
 	Token GenericToken
 

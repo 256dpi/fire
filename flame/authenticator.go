@@ -291,72 +291,120 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 		stack.Abort(oauth2.InvalidRequest("invalid redirect url"))
 	}
 
+	/* client is valid */
+
+	// validate response type
+	if req.ResponseType == oauth2.TokenResponseType && !a.policy.ImplicitGrant {
+		stack.Abort(oauth2.UnsupportedResponseType(""))
+	} else if req.ResponseType == oauth2.CodeResponseType && !a.policy.AuthorizationCodeGrant {
+		stack.Abort(oauth2.UnsupportedResponseType(""))
+	}
+
+	// prepare abort method
+	abort := func(err *oauth2.Error) {
+		stack.Abort(err.SetRedirect(req.RedirectURI, req.State, req.ResponseType == oauth2.TokenResponseType))
+	}
+
+	// check request method
+	if state.request.Method == "GET" {
+		// abort if approval url is not configured
+		if a.policy.ApprovalURL == "" {
+			abort(oauth2.InvalidRequest("unsupported request method"))
+		}
+
+		// prepare params
+		params := map[string]string{}
+		for name, values := range state.request.URL.Query() {
+			params[name] = values[0]
+		}
+
+		// perform redirect
+		stack.AbortIf(oauth2.WriteRedirect(state.writer, a.policy.ApprovalURL, params, false))
+
+		return
+	}
+
+	// parse bearer token
+	token, err := bearer.ParseToken(state.request)
+	if err != nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// parse token
+	claims, expired, err := a.policy.ParseJWT(token)
+	if expired {
+		abort(oauth2.AccessDenied(""))
+	} else if err != nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// get token id
+	tokenID, err := coal.FromHex(claims.Id)
+	if err != nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// get token
+	accessToken := a.getToken(state, a.policy.Token, tokenID)
+	if accessToken == nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// get token data
+	data := accessToken.GetTokenData()
+
+	// validate token type
+	if data.Type != AccessToken {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// validate expiration
+	if data.ExpiresAt.Before(time.Now()) {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// check resource owner
+	if data.ResourceOwnerID == nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// get resource owner
+	resourceOwner := a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
+	if resourceOwner == nil {
+		abort(oauth2.AccessDenied(""))
+	}
+
+	// validate & grant scope
+	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
+	if err == ErrGrantRejected {
+		abort(oauth2.AccessDenied(""))
+	} else if err == ErrInvalidScope {
+		abort(oauth2.InvalidScope(""))
+	} else if err != nil {
+		stack.Abort(err)
+	}
+
 	// triage based on response type
 	switch req.ResponseType {
 	case oauth2.TokenResponseType:
-		// check availability
-		if !a.policy.ImplicitGrant {
-			stack.Abort(oauth2.UnsupportedResponseType(""))
-		}
-
-		// handle implicit grant
-		a.handleImplicitGrant(state, req, client)
+		a.handleImplicitGrant(state, req, client, scope, resourceOwner)
 	case oauth2.CodeResponseType:
-		// check availability
-		if !a.policy.AuthorizationCodeGrant {
-			stack.Abort(oauth2.UnsupportedResponseType(""))
-		}
-
-		// Handle authorization code grant
-		a.handleAuthorizationCodeGrantAuthorization(state, req, client)
+		a.handleAuthorizationCodeGrantAuthorization(state, req, client, scope, resourceOwner)
 	}
 
 	// finish trace
 	state.tracer.Pop()
 }
 
-func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.AuthorizationRequest, client Client) {
+func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.AuthorizationRequest, client Client, scope oauth2.Scope, resourceOwner ResourceOwner) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.handleImplicitGrant")
-
-	// check request method
-	if state.request.Method == "GET" {
-		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, true))
-	}
-
-	// TODO: Optionally force redirect to frontend if no credentials have been provided.
-	//  => Maybe we als check the existence of a random request token?
-
-	// get credentials
-	username := state.request.PostForm.Get("username")
-	password := state.request.PostForm.Get("password")
-
-	// get resource owner
-	resourceOwner := a.findFirstResourceOwner(state, client, username)
-	if resourceOwner == nil {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
-	}
-
-	// validate password
-	if !resourceOwner.ValidPassword(password) {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
-	}
-
-	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
-	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, true))
-	} else if err == ErrInvalidScope {
-		stack.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, true))
-	} else if err != nil {
-		stack.Abort(err)
-	}
 
 	// issue access token
 	res := a.issueTokens(state, false, scope, req.RedirectURI, client, resourceOwner)
 
 	// redirect response
-	res.SetRedirect(req.RedirectURI, req.State, true)
+	res.SetRedirect(req.RedirectURI, req.State)
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(state.writer, res))
@@ -365,42 +413,9 @@ func (a *Authenticator) handleImplicitGrant(state *state, req *oauth2.Authorizat
 	state.tracer.Pop()
 }
 
-func (a *Authenticator) handleAuthorizationCodeGrantAuthorization(state *state, req *oauth2.AuthorizationRequest, client Client) {
+func (a *Authenticator) handleAuthorizationCodeGrantAuthorization(state *state, req *oauth2.AuthorizationRequest, client Client, scope oauth2.Scope, resourceOwner ResourceOwner) {
 	// begin trace
 	state.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrantAuthorization")
-
-	// check request method
-	if state.request.Method == "GET" {
-		stack.Abort(oauth2.InvalidRequest("unallowed request method").SetRedirect(req.RedirectURI, req.State, false))
-	}
-
-	// TODO: Optionally force redirect to frontend if no credentials have been provided.
-	//  => Maybe we als check the existence of a random request token?
-
-	// get credentials
-	username := state.request.PostForm.Get("username")
-	password := state.request.PostForm.Get("password")
-
-	// get resource owner
-	resourceOwner := a.findFirstResourceOwner(state, client, username)
-	if resourceOwner == nil {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
-	}
-
-	// validate password
-	if !resourceOwner.ValidPassword(password) {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
-	}
-
-	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
-	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied("").SetRedirect(req.RedirectURI, req.State, false))
-	} else if err == ErrInvalidScope {
-		stack.Abort(oauth2.InvalidScope("").SetRedirect(req.RedirectURI, req.State, false))
-	} else if err != nil {
-		stack.Abort(err)
-	}
 
 	// issue code
 	res := a.issueCode(state, scope, req.RedirectURI, client, resourceOwner)
