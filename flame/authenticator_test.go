@@ -79,7 +79,6 @@ func TestIntegration(t *testing.T) {
 		app2 := tester.Save(&Application{
 			Name:         "Application 2",
 			Key:          "app2",
-			SecretHash:   mustHash(testPassword),
 			RedirectURIs: []string{"http://example.com/callback2"},
 		}).(*Application)
 
@@ -97,10 +96,9 @@ func TestIntegration(t *testing.T) {
 		config.AuthorizationCodeGrantSupport = true
 		config.RefreshTokenGrantSupport = true
 
-		config.PrimaryClientID = app1.Key
-		config.PrimaryClientSecret = testPassword
-		config.SecondaryClientID = app2.Key
-		config.SecondaryClientSecret = testPassword
+		config.ConfidentialClientID = app1.Key
+		config.ConfidentialClientSecret = testPassword
+		config.PublicClientID = app2.Key
 
 		config.ResourceOwnerUsername = user.Email
 		config.ResourceOwnerPassword = testPassword

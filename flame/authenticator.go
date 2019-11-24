@@ -465,6 +465,11 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(env *environ
 	// begin trace
 	env.tracer.Push("flame/Authenticator.handleResourceOwnerPasswordCredentialsGrant")
 
+	// authenticate client if confidential
+	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
+
 	// get resource owner
 	resourceOwner := a.findFirstResourceOwner(env, client, req.Username)
 	if resourceOwner == nil {
@@ -500,6 +505,11 @@ func (a *Authenticator) handleClientCredentialsGrant(env *environment, req *oaut
 	// begin trace
 	env.tracer.Push("flame/Authenticator.handleClientCredentialsGrant")
 
+	// check confidentiality
+	if !client.IsConfidential() {
+		stack.Abort(oauth2.InvalidClient("non confidential client"))
+	}
+
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
@@ -528,6 +538,11 @@ func (a *Authenticator) handleClientCredentialsGrant(env *environment, req *oaut
 func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.TokenRequest, client Client) {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.handleRefreshTokenGrant")
+
+	// authenticate client if confidential
+	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
 
 	// parse token
 	claims, expired, err := a.policy.ParseJWT(req.RefreshToken)
@@ -599,6 +614,11 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oauth2.TokenRequest, client Client) {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrant")
+
+	// authenticate client if confidential
+	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
 
 	// parse authorization code
 	claims, expired, err := a.policy.ParseJWT(req.Code)

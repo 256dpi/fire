@@ -127,6 +127,11 @@ func (t *Token) Validate() error {
 type Client interface {
 	coal.Model
 
+	// IsConfidential returns whether the client should be treated as a
+	// confidential client that has been issue client credentials for
+	// authenticating itself.
+	IsConfidential() bool
+
 	// ValidRedirectURI should return whether the specified redirect URI can be
 	// used by this client.
 	//
@@ -152,6 +157,11 @@ type Application struct {
 // AddApplicationIndexes will add application indexes to the specified indexer.
 func AddApplicationIndexes(i *coal.Indexer) {
 	i.Add(&Application{}, true, 0, "Key")
+}
+
+// IsConfidential implements the flame.Client interface.
+func (a *Application) IsConfidential() bool {
+	return len(a.SecretHash) > 0
 }
 
 // ValidRedirectURI implements the flame.Client interface.
