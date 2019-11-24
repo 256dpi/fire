@@ -18,14 +18,14 @@ type JWTClaims struct {
 	Data map[string]interface{} `json:"dat,omitempty"`
 }
 
-// GenerateJWTToken will generate a custom JWT token.
-func GenerateJWTToken(secret string, claims JWTClaims) (string, error) {
+// GenerateJWT will generate a custom JWT token.
+func GenerateJWT(secret string, claims JWTClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
 
-// ParseJWTToken will parse a custom JWT token.
-func ParseJWTToken(secret, token string, claims *JWTClaims) (*jwt.Token, error) {
+// ParseJWT will parse a custom JWT token.
+func ParseJWT(secret, token string, claims *JWTClaims) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})

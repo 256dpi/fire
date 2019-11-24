@@ -131,7 +131,7 @@ func (p *Policy) GenerateToken(id coal.ID, issuedAt, expiresAt time.Time, client
 	}
 
 	// create token
-	str, err := GenerateJWTToken(p.Secret, claims)
+	str, err := GenerateJWT(p.Secret, claims)
 	if err != nil {
 		return "", nil
 	}
@@ -144,7 +144,7 @@ func (p *Policy) GenerateToken(id coal.ID, issuedAt, expiresAt time.Time, client
 func (p *Policy) ParseToken(str string) (*JWTClaims, bool, error) {
 	// parse token and check expired errors
 	var claims JWTClaims
-	_, err := ParseJWTToken(p.Secret, str, &claims)
+	_, err := ParseJWT(p.Secret, str, &claims)
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
 		return nil, true, err
 	} else if err != nil {
