@@ -324,10 +324,10 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 		return
 	}
 
-	// parse bearer token
-	token, err := bearer.ParseToken(state.request)
-	if err != nil {
-		abort(oauth2.AccessDenied(""))
+	// get access token
+	token := state.request.Form.Get("access_token")
+	if token == "" {
+		abort(oauth2.AccessDenied("missing access token"))
 	}
 
 	// parse token

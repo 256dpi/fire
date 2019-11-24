@@ -152,12 +152,12 @@ func TestIntegration(t *testing.T) {
 
 		validBearerToken, _ := p.GenerateJWT(validToken, app1, user)
 
-		config.InvalidAuthorizationHeaders = map[string]string{
-			"Authorization": "foo",
+		config.InvalidAuthorizationParams = map[string]string{
+			"access_token": "foo",
 		}
 
-		config.ValidAuthorizationHeaders = map[string]string{
-			"Authorization": "Bearer " + validBearerToken,
+		config.ValidAuthorizationParams = map[string]string{
+			"access_token": validBearerToken,
 		}
 
 		spec.Run(t, config)
