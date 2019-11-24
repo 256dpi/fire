@@ -23,13 +23,15 @@ import (
 type ctxKey string
 
 const (
-	// AccessTokenContextKey is the key used to save the access token in a context.
+	// AccessTokenContextKey is the key used to save the access token in a
+	// context.
 	AccessTokenContextKey = ctxKey("access-token")
 
 	// ClientContextKey is the key used to save the client in a context.
 	ClientContextKey = ctxKey("client")
 
-	// ResourceOwnerContextKey is the key used to save the resource owner in a context.
+	// ResourceOwnerContextKey is the key used to save the resource owner in a
+	// context.
 	ResourceOwnerContextKey = ctxKey("resource-owner")
 )
 
@@ -39,9 +41,11 @@ type environment struct {
 	tracer  *fire.Tracer
 }
 
-// An Authenticator provides OAuth2 based authentication. The implementation
-// currently supports the Resource Owner Credentials Grant, Client Credentials
-// Grant and Implicit Grant.
+// Authenticator provides OAuth2 based authentication and authorization. The
+// implementation supports the standard "Resource Owner Credentials Grant",
+// "Client Credentials Grant", "Implicit Grant" and "Authorization Code Grant".
+// Additionally, it supports the "Refresh Token Grant" and "Token Revocation"
+// flows.
 type Authenticator struct {
 	store    *coal.Store
 	policy   *Policy
