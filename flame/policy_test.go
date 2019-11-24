@@ -10,9 +10,6 @@ import (
 )
 
 func TestPolicyParseAndGenerateToken(t *testing.T) {
-	id := coal.New()
-	tt := time.Now()
-
 	p := DefaultPolicy("")
 	p.TokenData = func(c Client, ro ResourceOwner, t GenericToken) map[string]interface{} {
 		return map[string]interface{}{
@@ -20,14 +17,19 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 		}
 	}
 
-	sig, err := p.GenerateToken(id, tt, tt, nil, &User{Name: "Hello"}, nil)
+	expiry := time.Now().Add(time.Hour)
+
+	token := coal.Init(&Token{
+		ExpiresAt: expiry,
+	}).(*Token)
+	sig, err := p.GenerateJWT(token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
-	claims, _, err := p.ParseToken(sig)
+	claims, _, err := p.ParseJWT(sig)
 	assert.NoError(t, err)
-	assert.Equal(t, id.Hex(), claims.Id)
-	assert.Equal(t, tt.Unix(), claims.IssuedAt)
-	assert.Equal(t, tt.Unix(), claims.ExpiresAt)
+	assert.Equal(t, token.ID().Hex(), claims.Id)
+	assert.Equal(t, token.ID().Timestamp().Unix(), claims.IssuedAt)
+	assert.Equal(t, expiry.Unix(), claims.ExpiresAt)
 	assert.Equal(t, map[string]interface{}{
 		"name": "Hello",
 	}, claims.Data)

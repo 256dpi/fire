@@ -166,7 +166,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 					a.reporter(err)
 				}
 
-				// ignore errors caused by writing critical errors
+				// write generic server error
 				_ = bearer.WriteError(w, bearer.ServerError())
 			})
 
@@ -178,7 +178,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			stack.AbortIf(err)
 
 			// parse token
-			claims, expired, err := a.policy.ParseToken(tk)
+			claims, expired, err := a.policy.ParseJWT(tk)
 			if expired {
 				stack.Abort(bearer.InvalidToken("expired token"))
 			} else if err != nil {
@@ -539,7 +539,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	state.tracer.Push("flame/Authenticator.handleRefreshTokenGrant")
 
 	// parse token
-	claims, expired, err := a.policy.ParseToken(req.RefreshToken)
+	claims, expired, err := a.policy.ParseJWT(req.RefreshToken)
 	if expired {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
@@ -610,7 +610,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 	state.tracer.Push("flame/Authenticator.handleAuthorizationCodeGrant")
 
 	// parse authorization code
-	claims, expired, err := a.policy.ParseToken(req.Code)
+	claims, expired, err := a.policy.ParseJWT(req.Code)
 	if expired {
 		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
@@ -696,7 +696,7 @@ func (a *Authenticator) revocationEndpoint(state *state) {
 	}
 
 	// parse token
-	claims, _, err := a.policy.ParseToken(req.Token)
+	claims, _, err := a.policy.ParseJWT(req.Token)
 	if err != nil {
 		state.tracer.Pop()
 		return
@@ -731,7 +731,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 	at := a.saveToken(state, a.policy.Token, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	atSignature, err := a.policy.GenerateToken(at.ID(), time.Now(), atExpiry, client, resourceOwner, at)
+	atSignature, err := a.policy.GenerateJWT(at, client, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response
@@ -746,7 +746,7 @@ func (a *Authenticator) issueTokens(state *state, refreshable bool, scope oauth2
 		rt := a.saveToken(state, a.policy.Token, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 
 		// generate new refresh token
-		rtSignature, err := a.policy.GenerateToken(rt.ID(), time.Now(), rtExpiry, client, resourceOwner, rt)
+		rtSignature, err := a.policy.GenerateJWT(rt, client, resourceOwner)
 		stack.AbortIf(err)
 
 		// set refresh token
@@ -770,7 +770,7 @@ func (a *Authenticator) issueCode(state *state, scope oauth2.Scope, redirectURI 
 	code := a.saveToken(state, a.policy.Token, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	signature, err := a.policy.GenerateToken(code.ID(), time.Now(), expiry, client, resourceOwner, code)
+	signature, err := a.policy.GenerateJWT(code, client, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response

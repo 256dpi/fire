@@ -57,11 +57,10 @@ type Policy struct {
 	// to cancel the authentication request.
 	ResourceOwnerFilter func(ResourceOwner, *http.Request) (bson.M, error)
 
-	// GrantStrategy is invoked by the authenticator with the grant type, the
-	// requested scope, the client and the resource owner before issuing an
-	// access token. The callback should return no error and the scope that
-	// should be granted. It can return ErrGrantRejected or ErrInvalidScope to
-	// cancel the grant request.
+	// GrantStrategy is invoked by the authenticator with the requested scope,
+	// the client and the resource owner before issuing an access token. The
+	// callback should return no error and the scope that should be granted. It
+	// can return ErrGrantRejected or ErrInvalidScope to cancel the grant request.
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
 	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
@@ -117,13 +116,16 @@ func DefaultPolicy(secret string) *Policy {
 	}
 }
 
-// GenerateToken returns a new token for the provided information.
-func (p *Policy) GenerateToken(id coal.ID, issuedAt, expiresAt time.Time, client Client, resourceOwner ResourceOwner, token GenericToken) (string, error) {
+// GenerateJWT returns a new JWT token for the provided information.
+func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner ResourceOwner) (string, error) {
+	// get data
+	data := token.GetTokenData()
+
 	// prepare claims
 	claims := JWTClaims{}
-	claims.Id = id.Hex()
-	claims.IssuedAt = issuedAt.Unix()
-	claims.ExpiresAt = expiresAt.Unix()
+	claims.Id = token.ID().Hex()
+	claims.IssuedAt = token.ID().Timestamp().Unix()
+	claims.ExpiresAt = data.ExpiresAt.Unix()
 
 	// set user data
 	if p.TokenData != nil {
@@ -139,9 +141,9 @@ func (p *Policy) GenerateToken(id coal.ID, issuedAt, expiresAt time.Time, client
 	return str, nil
 }
 
-// ParseToken will parse the presented token and return its claims, if it is
+// ParseJWT will parse the presented token and return its claims, if it is
 // expired and eventual errors.
-func (p *Policy) ParseToken(str string) (*JWTClaims, bool, error) {
+func (p *Policy) ParseJWT(str string) (*JWTClaims, bool, error) {
 	// parse token and check expired errors
 	var claims JWTClaims
 	_, err := ParseJWT(p.Secret, str, &claims)

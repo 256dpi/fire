@@ -113,9 +113,9 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.UnknownToken = mustGenerateAccessToken(p, coal.New(), time.Now())
-		config.ExpiredToken = mustGenerateAccessToken(p, expiredToken.ID(), expiredToken.ExpiresAt)
-		config.InsufficientToken = mustGenerateAccessToken(p, insufficientToken.ID(), insufficientToken.ExpiresAt)
+		config.UnknownToken = mustGenerateToken(p, AccessToken, coal.New(), time.Now())
+		config.ExpiredToken = mustGenerateToken(p, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
+		config.InsufficientToken = mustGenerateToken(p, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
 		config.PrimaryRedirectURI = "http://example.com/callback1"
 		config.SecondaryRedirectURI = "http://example.com/callback2"
@@ -134,22 +134,30 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.UnknownRefreshToken = mustGenerateRefreshToken(p, coal.New(), time.Now())
-		config.ValidRefreshToken = mustGenerateRefreshToken(p, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
-		config.ExpiredRefreshToken = mustGenerateRefreshToken(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		config.UnknownRefreshToken = mustGenerateToken(p, RefreshToken, coal.New(), time.Now())
+		config.ValidRefreshToken = mustGenerateToken(p, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
+		config.ExpiredRefreshToken = mustGenerateToken(p, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		config.InvalidAuthorizationCode = "foo"
-		config.UnknownAuthorizationCode = mustGenerateAuthorizationCode(p, coal.New(), time.Now())
-		config.ExpiredAuthorizationCode = mustGenerateAuthorizationCode(p, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		config.UnknownAuthorizationCode = mustGenerateToken(p, AuthorizationCode, coal.New(), time.Now())
+		config.ExpiredAuthorizationCode = mustGenerateToken(p, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
-		config.InvalidAuthorizationParams = map[string]string{
-			"username": user.Email,
-			"password": "",
+		validToken := tester.Save(&Token{
+			Type:        AccessToken,
+			ExpiresAt:   time.Now().Add(authenticator.policy.RefreshTokenLifespan),
+			Scope:       []string{"foo", "bar"},
+			Application: app1.ID(),
+			User:        coal.P(user.ID()),
+		}).(*Token)
+
+		validBearerToken, _ := p.GenerateJWT(validToken, app1, user)
+
+		config.InvalidAuthorizationHeaders = map[string]string{
+			"Authorization": "foo",
 		}
 
-		config.ValidAuthorizationParams = map[string]string{
-			"username": user.Email,
-			"password": testPassword,
+		config.ValidAuthorizationHeaders = map[string]string{
+			"Authorization": "Bearer " + validBearerToken,
 		}
 
 		spec.Run(t, config)
@@ -188,7 +196,7 @@ func TestContextKeys(t *testing.T) {
 			User:        &user,
 		}).(*Token).ID()
 
-		token := mustGenerateAccessToken(authenticator.policy, accessToken, time.Now().Add(time.Hour))
+		token := mustGenerateToken(authenticator.policy, AccessToken, accessToken, time.Now().Add(time.Hour))
 
 		auth := authenticator.Authorizer("", true, true, true)
 
@@ -409,26 +417,15 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 	})
 }
 
-func mustGenerateAccessToken(p *Policy, id coal.ID, expiresAt time.Time) string {
-	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
-	if err != nil {
-		panic(err)
-	}
+func mustGenerateToken(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
+	token := coal.Init(&Token{
+		Type: typ,
+		ExpiresAt: expiresAt,
+	}).(*Token)
 
-	return str
-}
+	token.DocID = id
 
-func mustGenerateRefreshToken(p *Policy, id coal.ID, expiresAt time.Time) string {
-	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	return str
-}
-
-func mustGenerateAuthorizationCode(p *Policy, id coal.ID, expiresAt time.Time) string {
-	str, err := p.GenerateToken(id, time.Now(), expiresAt, nil, nil, nil)
+	str, err := p.GenerateJWT(token, nil, nil)
 	if err != nil {
 		panic(err)
 	}
