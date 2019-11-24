@@ -180,9 +180,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// parse token
 			claims, expired, err := a.policy.ParseJWT(tk)
 			if expired {
-				stack.Abort(bearer.InvalidToken("expired token"))
+				stack.Abort(bearer.InvalidToken("expired bearer token"))
 			} else if err != nil {
-				stack.Abort(bearer.InvalidToken("malformed token"))
+				stack.Abort(bearer.InvalidToken("malformed bearer token"))
 			}
 
 			// create state
@@ -196,13 +196,13 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get id
 			id, err := coal.FromHex(claims.Id)
 			if err != nil {
-				stack.Abort(bearer.InvalidToken("invalid id"))
+				stack.Abort(bearer.InvalidToken("invalid bearer token id"))
 			}
 
 			// get token
 			accessToken := a.getToken(state, a.policy.Token, id)
 			if accessToken == nil {
-				stack.Abort(bearer.InvalidToken("unknown token"))
+				stack.Abort(bearer.InvalidToken("unknown bearer token"))
 			}
 
 			// get token data
@@ -210,12 +210,12 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// validate token type
 			if data.Type != AccessToken {
-				stack.Abort(bearer.InvalidToken("invalid type"))
+				stack.Abort(bearer.InvalidToken("invalid bearer token type"))
 			}
 
 			// validate expiration
 			if data.ExpiresAt.Before(time.Now()) {
-				stack.Abort(bearer.InvalidToken("expired token"))
+				stack.Abort(bearer.InvalidToken("expired access token"))
 			}
 
 			// validate scope
@@ -333,21 +333,21 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 	// parse token
 	claims, expired, err := a.policy.ParseJWT(token)
 	if expired {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("expired access token"))
 	} else if err != nil {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("invalid access token"))
 	}
 
 	// get token id
 	tokenID, err := coal.FromHex(claims.Id)
 	if err != nil {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("missing access token id"))
 	}
 
 	// get token
 	accessToken := a.getToken(state, a.policy.Token, tokenID)
 	if accessToken == nil {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("unknown access token"))
 	}
 
 	// get token data
@@ -355,29 +355,29 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 
 	// validate token type
 	if data.Type != AccessToken {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("invalid access token type"))
 	}
 
 	// validate expiration
 	if data.ExpiresAt.Before(time.Now()) {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("expired access token"))
 	}
 
 	// check resource owner
 	if data.ResourceOwnerID == nil {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("missing resource owner"))
 	}
 
 	// get resource owner
 	resourceOwner := a.getFirstResourceOwner(state, client, *data.ResourceOwnerID)
 	if resourceOwner == nil {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("unknown resource owner"))
 	}
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
 	if err == ErrGrantRejected {
-		abort(oauth2.AccessDenied(""))
+		abort(oauth2.AccessDenied("grant rejected"))
 	} else if err == ErrInvalidScope {
 		abort(oauth2.InvalidScope(""))
 	} else if err != nil {
@@ -467,18 +467,18 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(state *state
 	// get resource owner
 	resourceOwner := a.findFirstResourceOwner(state, client, req.Username)
 	if resourceOwner == nil {
-		stack.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
 	}
 
 	// authenticate resource owner
 	if !resourceOwner.ValidPassword(req.Password) {
-		stack.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
 	}
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
 	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
 	} else if err == ErrInvalidScope {
 		stack.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
@@ -507,7 +507,7 @@ func (a *Authenticator) handleClientCredentialsGrant(state *state, req *oauth2.T
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(req.Scope, client, nil)
 	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied(""))
+		stack.Abort(oauth2.AccessDenied("grant rejected"))
 	} else if err == ErrInvalidScope {
 		stack.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
@@ -533,13 +533,13 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 	if expired {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
-		stack.Abort(oauth2.InvalidRequest("malformed token"))
+		stack.Abort(oauth2.InvalidRequest("malformed refresh token"))
 	}
 
 	// get id
 	id, err := coal.FromHex(claims.Id)
 	if err != nil {
-		stack.Abort(oauth2.InvalidRequest("invalid id"))
+		stack.Abort(oauth2.InvalidRequest("invalid refresh token id"))
 	}
 
 	// get stored refresh token by signature
@@ -553,7 +553,7 @@ func (a *Authenticator) handleRefreshTokenGrant(state *state, req *oauth2.TokenR
 
 	// validate type
 	if data.Type != RefreshToken {
-		stack.Abort(oauth2.InvalidGrant("invalid type"))
+		stack.Abort(oauth2.InvalidGrant("invalid refresh token type"))
 	}
 
 	// validate expiration
@@ -610,7 +610,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 	// get id
 	id, err := coal.FromHex(claims.Id)
 	if err != nil {
-		stack.Abort(oauth2.InvalidRequest("invalid id"))
+		stack.Abort(oauth2.InvalidRequest("invalid authorization code id"))
 	}
 
 	// get stored authorization code by signature
@@ -624,7 +624,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 
 	// validate type
 	if data.Type != AuthorizationCode {
-		stack.Abort(oauth2.InvalidGrant("invalid type"))
+		stack.Abort(oauth2.InvalidGrant("invalid authorization code type"))
 	}
 
 	// validate expiration
@@ -639,7 +639,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(state *state, req *oauth2.T
 
 	// validate redirect uri
 	if data.RedirectURI != req.RedirectURI {
-		stack.Abort(oauth2.InvalidGrant("changed redirect uri"))
+		stack.Abort(oauth2.InvalidGrant("redirect uri mismatch"))
 	}
 
 	// inherit scope from stored authorization code
