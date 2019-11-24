@@ -66,7 +66,7 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 
 // EnsureApplication will ensure that an application with the provided name
 // exists and returns its key.
-func EnsureApplication(store *coal.Store, name, key, secret string) (string, error) {
+func EnsureApplication(store *coal.Store, name, key, secret string, redirectURLs... string) (string, error) {
 	// count main applications
 	var apps []Application
 	cursor, err := store.C(&Application{}).Find(nil, bson.M{
@@ -96,6 +96,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string) (string, err
 	app.Key = key
 	app.Name = name
 	app.Secret = secret
+	app.RedirectURLs = redirectURLs
 
 	// validate model
 	err = app.Validate()
