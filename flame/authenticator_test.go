@@ -53,6 +53,18 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
+		p.ApproveStrategy = func(_ GenericToken, scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+			if !allowedScope.Includes(scope) {
+				return nil, ErrInvalidScope
+			}
+
+			if !scope.Includes(requiredScope) {
+				return nil, ErrInvalidScope
+			}
+
+			return scope, nil
+		}
+
 		authenticator := NewAuthenticator(tester.Store, p, func(err error) {
 			t.Error(err)
 		})

@@ -133,6 +133,9 @@ func createHandler(store *coal.Store) http.Handler {
 	policy.GrantStrategy = func(scope oauth2.Scope, client flame.Client, owner flame.ResourceOwner) (oauth2.Scope, error) {
 		return scope, nil
 	}
+	policy.ApproveStrategy = func(token flame.GenericToken, scope oauth2.Scope, client flame.Client, owner flame.ResourceOwner) (oauth2.Scope, error) {
+		return scope, nil
+	}
 
 	// create authenticator
 	a := flame.NewAuthenticator(store, policy, reporter)

@@ -20,6 +20,10 @@ var ErrInvalidFilter = errors.New("invalid filter")
 // of the grant based on the provided conditions.
 var ErrGrantRejected = errors.New("grant rejected")
 
+// ErrApprovalRejected should be returned by the ApproveStrategy to indicate a
+// rejection of the approval based on the provided conditions.
+var ErrApprovalRejected = errors.New("approval rejected")
+
 // ErrInvalidScope should be returned by the GrantStrategy to indicate that the
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = errors.New("invalid scope")
@@ -71,6 +75,16 @@ type Policy struct {
 	// Note: ResourceOwner is not set for a client credentials grant.
 	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
 
+	// ApproveStrategy is invoked by the authenticator to verify the
+	// authorization approval by an authenticated resource owner in the implicit
+	// grant and authorization code grant flows. The callback should return the
+	// scope that should be granted. It may return ErrApprovalRejected or
+	// ErrInvalidScope to cancel the approval request.
+	//
+	// Note: GenericToken represents the token that authorizes the resource
+	// owner to give the approval.
+	ApproveStrategy func(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
+
 	// TokenData may return a map of data that should be included in the
 	// generated JWT tokens as the "dat" field.
 	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
@@ -89,6 +103,11 @@ func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2
 	}
 
 	return scope, nil
+}
+
+// DefaultApproveStrategy rejects all approvals.
+func DefaultApproveStrategy(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error) {
+	return nil, ErrApprovalRejected
 }
 
 // DefaultTokenData adds the user's id to the token data claim.
@@ -113,6 +132,7 @@ func DefaultPolicy(secret string) *Policy {
 			return []ResourceOwner{&User{}}
 		},
 		GrantStrategy:             DefaultGrantStrategy,
+		ApproveStrategy:           DefaultApproveStrategy,
 		TokenData:                 DefaultTokenData,
 		AccessTokenLifespan:       time.Hour,
 		RefreshTokenLifespan:      7 * 24 * time.Hour,

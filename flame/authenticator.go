@@ -376,9 +376,9 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
-	if err == ErrGrantRejected {
-		abort(oauth2.AccessDenied("grant rejected"))
+	scope, err := a.policy.ApproveStrategy(accessToken, req.Scope, client, resourceOwner)
+	if err == ErrApprovalRejected {
+		abort(oauth2.AccessDenied("approval rejected"))
 	} else if err == ErrInvalidScope {
 		abort(oauth2.InvalidScope(""))
 	} else if err != nil {
