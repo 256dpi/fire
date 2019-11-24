@@ -30,7 +30,7 @@ func GenerateJWT(secret string, claims Claims) (string, error) {
 // ParseJWT will parse a JWT token.
 func ParseJWT(secret, str string) (*JWT, *Claims, error) {
 	var claims Claims
-	token, err := jwt.ParseWithClaims(str, claims, func(*JWT) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(str, &claims, func(*JWT) (interface{}, error) {
 		return []byte(secret), nil
 	})
 	return token, &claims, err

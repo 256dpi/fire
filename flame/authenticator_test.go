@@ -419,11 +419,10 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 
 func mustGenerateToken(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
 	token := coal.Init(&Token{
+		Base:      coal.Base{DocID: id},
 		Type:      typ,
 		ExpiresAt: expiresAt,
 	}).(*Token)
-
-	token.DocID = id
 
 	str, err := p.GenerateJWT(token, nil, nil)
 	if err != nil {
