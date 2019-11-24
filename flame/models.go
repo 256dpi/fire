@@ -197,11 +197,6 @@ func (a *Application) Validate() error {
 		return fire.E("missing key")
 	}
 
-	// check secret hash
-	if len(a.SecretHash) == 0 {
-		return fire.E("missing secret hash")
-	}
-
 	// check redirect uri
 	for _, redirectURI := range a.RedirectURIs {
 		if redirectURI != "" && !govalidator.IsURL(redirectURI) {
