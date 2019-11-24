@@ -24,18 +24,21 @@ var ErrGrantRejected = errors.New("grant rejected")
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = errors.New("invalid scope")
 
-// A Policy configures the provided authentication schemes.
+// Policy configures the provided authentication and authorization schemes used
+// by the authenticator.
 type Policy struct {
-	// The secret should be at least 16 characters long.
+	// The secret used to sign and verify all tokens. Should be at least 16
+	// characters long to ensure strong security.
 	Secret string
 
-	// The available grants.
+	// The available authentication and authorization grants.
 	PasswordGrant          bool
 	ClientCredentialsGrant bool
 	ImplicitGrant          bool
 	AuthorizationCodeGrant bool
 
-	// The URL to the page that obtains the approval of the user.
+	// The URL to the page that obtains the approval of the user in implicit and
+	// authorization code grants.
 	ApprovalURL string
 
 	// The token model.
@@ -44,7 +47,7 @@ type Policy struct {
 	// The client models.
 	Clients []Client
 
-	// ClientFilter should return a filter that should be applied when looking
+	// ClientFilter may return a filter that should be applied when looking
 	// up a client. This callback can be used to select clients based on other
 	// request parameters. It can return ErrInvalidFilter to cancel the
 	// authentication request.
@@ -54,7 +57,7 @@ type Policy struct {
 	// tried in order to resolve grant requests.
 	ResourceOwners func(Client) []ResourceOwner
 
-	// ResourceOwnerFilter should return a filter that should be applied when
+	// ResourceOwnerFilter may return a filter that should be applied when
 	// looking up a resource owner. This callback can be used to select resource
 	// owners based on other request parameters. It can return ErrInvalidFilter
 	// to cancel the authentication request.
@@ -62,14 +65,14 @@ type Policy struct {
 
 	// GrantStrategy is invoked by the authenticator with the requested scope,
 	// the client and the resource owner before issuing an access token. The
-	// callback should return no error and the scope that should be granted. It
-	// can return ErrGrantRejected or ErrInvalidScope to cancel the grant request.
+	// callback should return the scope that should be granted. It can return
+	// ErrGrantRejected or ErrInvalidScope to cancel the grant request.
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
 	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
 
-	// TokenData should return a map of data that should be included in the JWT
-	// tokens under the "dat" field.
+	// TokenData may return a map of data that should be included in the
+	// generated JWT tokens as the "dat" field.
 	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
 
 	// The token and code lifespans.
@@ -101,8 +104,6 @@ func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]int
 
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
-//
-// Note: The secret should be at least 16 characters long.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
 		Secret:  secret,

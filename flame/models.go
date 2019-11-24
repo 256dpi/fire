@@ -38,33 +38,34 @@ type TokenData struct {
 	// The stored redirect URI.
 	RedirectURI string
 
-	// The client and resource owner model.
+	// The client and resource owner models.
 	//
 	// Mandatory for `SetTokenData` optional for `GetTokenData`.
 	Client        Client
 	ResourceOwner ResourceOwner
 
-	// The client and resource owner id.
+	// The client and resource owner ids.
 	ClientID        coal.ID
 	ResourceOwnerID *coal.ID
 }
 
-// GenericToken is the interface that must be implemented by the tokens.
+// GenericToken is the interface that must be implemented by tokens.
 type GenericToken interface {
 	coal.Model
 
 	// GetTokenData should collect and return the tokens data.
 	GetTokenData() TokenData
 
-	// SetTokenData should set the specified token data.
+	// SetTokenData should apply the specified token data.
 	SetTokenData(TokenData)
 }
 
-// Token is the built-in model used to store access and refresh tokens.
+// Token is the built-in model used to store access, refresh tokens and
+// authorization codes.
 type Token struct {
 	coal.Base   `json:"-" bson:",inline" coal:"tokens:tokens"`
 	Type        TokenType `json:"type"`
-	Scope       []string  `json:"scope" bson:"scope"`
+	Scope       []string  `json:"scope"`
 	ExpiresAt   time.Time `json:"expires-at" bson:"expires_at"`
 	RedirectURI string    `json:"redirect-uri" bson:"redirect_uri"`
 	Application coal.ID   `json:"-" bson:"application_id" coal:"application:applications"`
@@ -115,7 +116,7 @@ func (t *Token) Validate() error {
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.E("expires at not set")
+		return fire.E("missing expiry")
 	}
 
 	return nil
@@ -129,7 +130,7 @@ type Client interface {
 	// ValidRedirectURI should return whether the specified redirect URI can be
 	// used by this client.
 	//
-	// Note: In order to increases security the callback should only allow
+	// Note: In order to increase security the callback should only allow
 	// pre-registered redirect URIs.
 	ValidRedirectURI(string) bool
 
@@ -141,8 +142,8 @@ type Client interface {
 // Application is the built-in model used to store clients.
 type Application struct {
 	coal.Base    `json:"-" bson:",inline" coal:"applications"`
-	Name         string   `json:"name" bson:"name"`
-	Key          string   `json:"key" bson:"key" coal:"flame-client-id"`
+	Name         string   `json:"name"`
+	Key          string   `json:"key" coal:"flame-client-id"`
 	Secret       string   `json:"secret,omitempty" bson:"-"`
 	SecretHash   []byte   `json:"-" bson:"secret"`
 	RedirectURIs []string `json:"redirect-uris" bson:"redirect_uris"`
@@ -163,7 +164,7 @@ func (a *Application) ValidSecret(secret string) bool {
 	return bcrypt.CompareHashAndPassword(a.SecretHash, []byte(secret)) == nil
 }
 
-// Validate implements the coal.ValidatableModel interface.
+// Validate implements the fire.ValidatableModel interface.
 func (a *Application) Validate() error {
 	// hash password if available
 	err := a.HashSecret()
@@ -178,17 +179,17 @@ func (a *Application) Validate() error {
 
 	// check name
 	if a.Name == "" {
-		return fire.E("name not set")
+		return fire.E("missing name")
 	}
 
 	// check key
 	if a.Key == "" {
-		return fire.E("key not set")
+		return fire.E("missing key")
 	}
 
 	// check secret hash
 	if len(a.SecretHash) == 0 {
-		return fire.E("secret hash not set")
+		return fire.E("missing secret hash")
 	}
 
 	// check redirect uri
@@ -223,8 +224,8 @@ func (a *Application) HashSecret() error {
 	return nil
 }
 
-// ResourceOwner is the interface that must be implemented resource owners. The
-// field used to uniquely identify the resource owner must be flagged with
+// ResourceOwner is the interface that must be implemented by resource owners.
+// The field used to uniquely identify the resource owner must be flagged with
 // "flame-resource-owner-id".
 type ResourceOwner interface {
 	coal.Model
@@ -237,8 +238,8 @@ type ResourceOwner interface {
 // User is the built-in model used to store resource owners.
 type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
-	Name         string `json:"name" bson:"name"`
-	Email        string `json:"email" bson:"email" coal:"flame-resource-owner-id"`
+	Name         string `json:"name"`
+	Email        string `json:"email" coal:"flame-resource-owner-id"`
 	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" bson:"password"`
 }
@@ -253,7 +254,7 @@ func (u *User) ValidPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
 }
 
-// Validate implements the coal.ValidatableModel interface.
+// Validate implements the fire.ValidatableModel interface.
 func (u *User) Validate() error {
 	// hash password if available
 	err := u.HashPassword()
@@ -268,7 +269,7 @@ func (u *User) Validate() error {
 
 	// check name
 	if u.Name == "" {
-		return fire.E("name not set")
+		return fire.E("missing name")
 	}
 
 	// check email
@@ -278,7 +279,7 @@ func (u *User) Validate() error {
 
 	// check password hash
 	if len(u.PasswordHash) == 0 {
-		return fire.E("password hash not set")
+		return fire.E("missing password hash")
 	}
 
 	return nil

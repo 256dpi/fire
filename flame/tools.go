@@ -37,7 +37,7 @@ func ParseJWT(secret, str string) (*JWT, *Claims, error) {
 }
 
 // TokenMigrator is a middleware that detects access tokens passed via query
-// parameters and migrates them to a Bearer Token header. Additionally it may
+// parameters and migrates them to a "Bearer" token header. Additionally it may
 // remove the migrated query parameter from the request.
 //
 // Note: The TokenMigrator should be added before any logger in the middleware
@@ -94,7 +94,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 		return apps[0].Key, nil
 	}
 
-	// application is missing
+	/* application is missing */
 
 	// create application
 	app := coal.Init(&Application{}).(*Application)
@@ -129,7 +129,7 @@ func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 		return nil
 	}
 
-	// user is missing
+	/* user is missing */
 
 	// create user
 	user := coal.Init(&User{}).(*User)
