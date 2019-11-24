@@ -36,7 +36,6 @@ const (
 type state struct {
 	request *http.Request
 	writer  http.ResponseWriter
-	store   *coal.Store
 	tracer  *fire.Tracer
 }
 
@@ -107,7 +106,6 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		state := &state{
 			request: r,
 			writer:  w,
-			store:   a.store,
 			tracer:  tracer,
 		}
 
@@ -189,7 +187,6 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			state := &state{
 				request: r,
 				writer:  w,
-				store:   a.store,
 				tracer:  tracer,
 			}
 
@@ -826,7 +823,7 @@ func (a *Authenticator) findClient(state *state, model Client, id string) Client
 	}
 
 	// fetch client
-	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(client)
+	err := a.store.TC(state.tracer, model).FindOne(nil, query).Decode(client)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
@@ -868,7 +865,7 @@ func (a *Authenticator) getClient(state *state, model Client, id coal.ID) Client
 	client := model.Meta().Make().(Client)
 
 	// fetch client
-	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
+	err := a.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(client)
 	if err == mongo.ErrNoDocuments {
@@ -939,7 +936,7 @@ func (a *Authenticator) findResourceOwner(state *state, model ResourceOwner, id 
 	}
 
 	// fetch resource owner
-	err := state.store.TC(state.tracer, model).FindOne(nil, query).Decode(resourceOwner)
+	err := a.store.TC(state.tracer, model).FindOne(nil, query).Decode(resourceOwner)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
@@ -981,7 +978,7 @@ func (a *Authenticator) getResourceOwner(state *state, model ResourceOwner, id c
 	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
 
 	// fetch resource owner
-	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
+	err := a.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(resourceOwner)
 	if err == mongo.ErrNoDocuments {
@@ -1006,7 +1003,7 @@ func (a *Authenticator) getToken(state *state, model GenericToken, id coal.ID) G
 	obj := model.Meta().Make()
 
 	// fetch token
-	err := state.store.TC(state.tracer, model).FindOne(nil, bson.M{
+	err := a.store.TC(state.tracer, model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
 	if err == mongo.ErrNoDocuments {
@@ -1049,7 +1046,7 @@ func (a *Authenticator) saveToken(state *state, model GenericToken, typ TokenTyp
 	})
 
 	// save token
-	_, err := state.store.TC(state.tracer, token).InsertOne(nil, token)
+	_, err := a.store.TC(state.tracer, token).InsertOne(nil, token)
 	stack.AbortIf(err)
 
 	// finish trace
@@ -1063,7 +1060,7 @@ func (a *Authenticator) deleteToken(state *state, model GenericToken, id coal.ID
 	state.tracer.Push("flame/Authenticator.deleteToken")
 
 	// delete token
-	_, err := state.store.TC(state.tracer, model).DeleteOne(nil, bson.M{
+	_, err := a.store.TC(state.tracer, model).DeleteOne(nil, bson.M{
 		"_id": id,
 	})
 	if err == mongo.ErrNoDocuments {
