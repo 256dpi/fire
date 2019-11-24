@@ -61,14 +61,14 @@ func TestIntegration(t *testing.T) {
 			Name:         "Application 1",
 			Key:          "app1",
 			SecretHash:   mustHash(testPassword),
-			RedirectURLs: []string{"http://example.com/callback1"},
+			RedirectURIs: []string{"http://example.com/callback1"},
 		}).(*Application)
 
 		app2 := tester.Save(&Application{
 			Name:         "Application 2",
 			Key:          "app2",
 			SecretHash:   mustHash(testPassword),
-			RedirectURLs: []string{"http://example.com/callback2"},
+			RedirectURIs: []string{"http://example.com/callback2"},
 		}).(*Application)
 
 		user := tester.Save(&User{
@@ -256,7 +256,7 @@ func TestInvalidResponseType(t *testing.T) {
 
 		application := tester.Save(&Application{
 			Key:          "application",
-			RedirectURLs: []string{"https://example.com/"},
+			RedirectURIs: []string{"https://example.com/"},
 		}).(*Application)
 
 		for _, rt := range []string{"token", "code"} {

@@ -286,9 +286,9 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
-	// validate redirect url
-	if !client.ValidRedirectURL(req.RedirectURI) {
-		stack.Abort(oauth2.InvalidRequest("invalid redirect url"))
+	// validate redirect URI
+	if !client.ValidRedirectURI(req.RedirectURI) {
+		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	}
 
 	/* client is valid */
@@ -307,7 +307,7 @@ func (a *Authenticator) authorizationEndpoint(state *state) {
 
 	// check request method
 	if state.request.Method == "GET" {
-		// abort if approval url is not configured
+		// abort if approval URL is not configured
 		if a.policy.ApprovalURL == "" {
 			abort(oauth2.InvalidRequest("unsupported request method"))
 		}
