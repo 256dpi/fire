@@ -308,8 +308,11 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 
 	// check request method
 	if env.request.Method == "GET" {
-		// abort if approval URL is not configured
-		if a.policy.ApprovalURL == "" {
+		// get approval url
+		url, err := a.policy.ApprovalURL(client)
+		if err != nil {
+			stack.Abort(err)
+		} else if url == "" {
 			abort(oauth2.InvalidRequest("unsupported request method"))
 		}
 
@@ -320,7 +323,7 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 		}
 
 		// perform redirect
-		stack.AbortIf(oauth2.WriteRedirect(env.writer, a.policy.ApprovalURL, params, false))
+		stack.AbortIf(oauth2.WriteRedirect(env.writer, url, params, false))
 
 		return
 	}

@@ -41,10 +41,6 @@ type Policy struct {
 	ImplicitGrant          bool
 	AuthorizationCodeGrant bool
 
-	// The URL to the page that obtains the approval of the user in implicit and
-	// authorization code grants.
-	ApprovalURL string
-
 	// The token model.
 	Token GenericToken
 
@@ -74,6 +70,10 @@ type Policy struct {
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
 	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
+
+	// The URL to the page that obtains the approval of the user in implicit and
+	// authorization code grants.
+	ApprovalURL func(Client) (string, error)
 
 	// ApproveStrategy is invoked by the authenticator to verify the
 	// authorization approval by an authenticated resource owner in the implicit
@@ -105,6 +105,13 @@ func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2
 	return scope, nil
 }
 
+// StaticApprovalURL returns a static approval URL.
+func StaticApprovalURL(url string) func(Client) (string, error) {
+	return func(Client) (string, error) {
+		return url, nil
+	}
+}
+
 // DefaultApproveStrategy rejects all approvals.
 func DefaultApproveStrategy(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error) {
 	return nil, ErrApprovalRejected
@@ -132,6 +139,7 @@ func DefaultPolicy(secret string) *Policy {
 			return []ResourceOwner{&User{}}
 		},
 		GrantStrategy:             DefaultGrantStrategy,
+		ApprovalURL:               StaticApprovalURL(""),
 		ApproveStrategy:           DefaultApproveStrategy,
 		TokenData:                 DefaultTokenData,
 		AccessTokenLifespan:       time.Hour,
