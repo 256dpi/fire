@@ -816,6 +816,12 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 			return
 		}
 
+		// get resource owner
+		var resourceOwner ResourceOwner
+		if data.ResourceOwnerID != nil {
+			resourceOwner = a.getFirstResourceOwner(env, client, *data.ResourceOwnerID)
+		}
+
 		// get validity
 		expired := data.ExpiresAt.Before(time.Now())
 
@@ -834,6 +840,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 			res.ExpiresAt = data.ExpiresAt.Unix()
 			res.IssuedAt = token.ID().Timestamp().Unix()
 			res.Identifier = token.ID().Hex()
+			res.Extra = a.policy.TokenData(client, resourceOwner, token)
 		}
 	}
 

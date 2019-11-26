@@ -86,7 +86,8 @@ type Policy struct {
 	ApproveStrategy func(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
 
 	// TokenData may return a map of data that should be included in the
-	// generated JWT tokens as the "dat" field.
+	// generated JWT tokens as the "dat" field as well as in the token
+	// introspection's response "extra" field.
 	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
 
 	// The token and code lifespans.
