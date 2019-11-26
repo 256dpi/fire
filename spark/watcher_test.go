@@ -53,10 +53,10 @@ func TestWatcherWebSockets(t *testing.T) {
 		/* subscribe */
 
 		err = ws.WriteMessage(websocket.TextMessage, []byte(`{
-		"subscribe": {
-			"items": {}
-		}
-	}`))
+			"subscribe": {
+				"items": {}
+			}
+		}`))
 		assert.NoError(t, err)
 
 		/* create model */
@@ -67,14 +67,15 @@ func TestWatcherWebSockets(t *testing.T) {
 
 		tester.Save(itm)
 
+		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err := ws.ReadMessage()
 		assert.NoError(t, err)
 		assert.Equal(t, websocket.TextMessage, typ)
 		assert.JSONEq(t, `{
-		"items": {
-			"`+itm.ID().Hex()+`": "created"
-		}
-	}`, string(bytes))
+			"items": {
+				"`+itm.ID().Hex()+`": "created"
+			}
+		}`, string(bytes))
 
 		/* update model */
 
@@ -82,27 +83,29 @@ func TestWatcherWebSockets(t *testing.T) {
 
 		tester.Update(itm)
 
+		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err = ws.ReadMessage()
 		assert.NoError(t, err)
 		assert.Equal(t, websocket.TextMessage, typ)
 		assert.JSONEq(t, `{
-		"items": {
-			"`+itm.ID().Hex()+`": "updated"
-		}
-	}`, string(bytes))
+			"items": {
+				"`+itm.ID().Hex()+`": "updated"
+			}
+		}`, string(bytes))
 
 		/* delete model */
 
 		tester.Delete(itm)
 
+		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err = ws.ReadMessage()
 		assert.NoError(t, err)
 		assert.Equal(t, websocket.TextMessage, typ)
 		assert.JSONEq(t, `{
-		"items": {
-			"`+itm.ID().Hex()+`": "deleted"
-		}
-	}`, string(bytes))
+			"items": {
+				"`+itm.ID().Hex()+`": "deleted"
+			}
+		}`, string(bytes))
 
 		watcher.Close()
 	})
