@@ -257,8 +257,8 @@ func TestInvalidGrantType(t *testing.T) {
 				Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 					assert.Equal(t, http.StatusBadRequest, r.Code)
 					assert.JSONEq(t, r.Body.String(), `{
-				"error": "unsupported_grant_type"
-			}`)
+						"error": "unsupported_grant_type"
+					}`)
 				},
 			})
 		}
@@ -293,8 +293,8 @@ func TestInvalidResponseType(t *testing.T) {
 				Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 					assert.Equal(t, http.StatusBadRequest, r.Code)
 					assert.JSONEq(t, r.Body.String(), `{
-				"error": "unsupported_response_type"
-			}`)
+						"error": "unsupported_response_type"
+					}`)
 				},
 			})
 		}
@@ -335,9 +335,9 @@ func TestInvalidClientFilter(t *testing.T) {
 			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 				assert.Equal(t, http.StatusBadRequest, r.Code)
 				assert.JSONEq(t, r.Body.String(), `{
-				"error": "invalid_request",
-				"error_description": "invalid filter"
-			}`)
+					"error": "invalid_request",
+					"error_description": "invalid filter"
+				}`)
 			},
 		})
 
@@ -359,8 +359,8 @@ func TestInvalidClientFilter(t *testing.T) {
 			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 				assert.Equal(t, http.StatusInternalServerError, r.Code)
 				assert.JSONEq(t, r.Body.String(), `{
-				"error": "server_error"
-			}`)
+					"error": "server_error"
+				}`)
 			},
 		})
 
@@ -402,9 +402,9 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 				assert.Equal(t, http.StatusBadRequest, r.Code)
 				assert.JSONEq(t, r.Body.String(), `{
-				"error": "invalid_request",
-				"error_description": "invalid filter"
-			}`)
+					"error": "invalid_request",
+					"error_description": "invalid filter"
+				}`)
 			},
 		})
 
@@ -426,8 +426,8 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			Callback: func(r *httptest.ResponseRecorder, rq *http.Request) {
 				assert.Equal(t, http.StatusInternalServerError, r.Code)
 				assert.JSONEq(t, r.Body.String(), `{
-				"error": "server_error"
-			}`)
+					"error": "server_error"
+				}`)
 			},
 		})
 
