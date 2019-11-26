@@ -3,6 +3,7 @@ package flame
 import (
 	"time"
 
+	"github.com/256dpi/oauth2"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
 
@@ -30,7 +31,7 @@ type TokenData struct {
 	Type TokenType
 
 	// The token scope.
-	Scope []string
+	Scope oauth2.Scope
 
 	// The token expiry.
 	ExpiresAt time.Time

@@ -11,6 +11,7 @@ import (
 
 	"github.com/256dpi/oauth2"
 	"github.com/256dpi/oauth2/bearer"
+	"github.com/256dpi/oauth2/introspection"
 	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
@@ -101,7 +102,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 		// trim and split path
 		s := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/"), "/")
-		if len(s) != 1 || (s[0] != "authorize" && s[0] != "token" && s[0] != "revoke") {
+		if len(s) != 1 {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -121,6 +122,10 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			a.tokenEndpoint(env)
 		case "revoke":
 			a.revocationEndpoint(env)
+		case "introspect":
+			a.introspectionEndpoint(env)
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
 	})
 }
@@ -173,7 +178,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			})
 
 			// parse scope
-			s := oauth2.ParseScope(scope)
+			requiredScope := oauth2.ParseScope(scope)
 
 			// parse bearer token
 			tk, err := bearer.ParseToken(r)
@@ -201,7 +206,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get token
-			accessToken := a.getToken(env, a.policy.Token, id)
+			accessToken := a.getToken(env, id)
 			if accessToken == nil {
 				stack.Abort(bearer.InvalidToken("unknown bearer token"))
 			}
@@ -220,8 +225,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// validate scope
-			if !oauth2.Scope(data.Scope).Includes(s) {
-				stack.Abort(bearer.InsufficientScope(s.String()))
+			if !data.Scope.Includes(requiredScope) {
+				stack.Abort(bearer.InsufficientScope(requiredScope.String()))
 			}
 
 			// create new context with access token
@@ -349,7 +354,7 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// get token
-	accessToken := a.getToken(env, a.policy.Token, tokenID)
+	accessToken := a.getToken(env, tokenID)
 	if accessToken == nil {
 		abort(oauth2.AccessDenied("unknown access token"))
 	}
@@ -562,7 +567,7 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 	}
 
 	// get stored refresh token by signature
-	rt := a.getToken(env, a.policy.Token, id)
+	rt := a.getToken(env, id)
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
@@ -591,7 +596,7 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 	}
 
 	// validate scope - a missing scope is always included
-	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
+	if !data.Scope.Includes(req.Scope) {
 		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
@@ -605,7 +610,7 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 	res := a.issueTokens(env, true, req.Scope, data.RedirectURI, client, ro)
 
 	// delete refresh token
-	a.deleteToken(env, a.policy.Token, rt.ID())
+	a.deleteToken(env, rt.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
@@ -640,7 +645,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 	// TODO: We should revoke all descending tokens if a code is reused.
 
 	// get stored authorization code by signature
-	code := a.getToken(env, a.policy.Token, id)
+	code := a.getToken(env, id)
 	if code == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown authorization code"))
 	}
@@ -674,7 +679,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 	}
 
 	// validate scope - a missing scope is always included
-	if !oauth2.Scope(data.Scope).Includes(req.Scope) {
+	if !data.Scope.Includes(req.Scope) {
 		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
@@ -688,7 +693,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 	res := a.issueTokens(env, true, req.Scope, data.RedirectURI, client, ro)
 
 	// delete authorization code
-	a.deleteToken(env, a.policy.Token, code.ID())
+	a.deleteToken(env, code.ID())
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
@@ -705,9 +710,19 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	req, err := revocation.ParseRequest(env.request)
 	stack.AbortIf(err)
 
+	// check token type hint
+	if req.TokenTypeHint != "" && !revocation.KnownTokenType(req.TokenTypeHint) {
+		stack.Abort(revocation.UnsupportedTokenType(""))
+	}
+
 	// get client
 	client := a.findFirstClient(env, req.ClientID)
 	if client == nil {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
+
+	// authenticate client if confidential
+	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
@@ -725,11 +740,105 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 		return
 	}
 
-	// delete token
-	a.deleteToken(env, a.policy.Token, id)
+	// get token
+	token := a.getToken(env, id)
+	if token != nil {
+		// get data
+		data := token.GetTokenData()
+
+		// check ownership
+		if data.ClientID != client.ID() {
+			stack.Abort(oauth2.InvalidClient("wrong client"))
+			return
+		}
+
+		// delete token
+		a.deleteToken(env, id)
+	}
 
 	// write header
 	env.writer.WriteHeader(http.StatusOK)
+
+	// finish trace
+	env.tracer.Pop()
+}
+
+func (a *Authenticator) introspectionEndpoint(env *environment) {
+	// begin trace
+	env.tracer.Push("flame/Authenticator.introspectionEndpoint")
+
+	// parse introspection request
+	req, err := introspection.ParseRequest(env.request)
+	stack.AbortIf(err)
+
+	// check token type hint
+	if req.TokenTypeHint != "" && !introspection.KnownTokenType(req.TokenTypeHint) {
+		stack.Abort(introspection.UnsupportedTokenType(""))
+	}
+
+	// get client
+	client := a.findFirstClient(env, req.ClientID)
+	if client == nil {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
+
+	// authenticate client if confidential
+	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
+		stack.Abort(oauth2.InvalidClient("unknown client"))
+	}
+
+	// parse token
+	claims, _, err := a.policy.ParseJWT(req.Token)
+	if err != nil {
+		env.tracer.Pop()
+		return
+	}
+
+	// parse id
+	id, err := coal.FromHex(claims.Id)
+	if err != nil {
+		env.tracer.Pop()
+		return
+	}
+
+	// prepare response
+	res := &introspection.Response{}
+
+	// get token
+	token := a.getToken(env, id)
+	if token != nil {
+		// get data
+		data := token.GetTokenData()
+
+		// check ownership
+		if data.ClientID != client.ID() {
+			stack.Abort(oauth2.InvalidClient("wrong client"))
+			return
+		}
+
+		// get validity
+		expired := data.ExpiresAt.Before(time.Now())
+
+		// set response if valid and can be introspected
+		if !expired && (data.Type == AccessToken || data.Type == RefreshToken) {
+			res.Active = true
+			res.Scope = data.Scope.String()
+			res.ClientID = data.ClientID.Hex()
+			if data.ResourceOwnerID != nil {
+				res.Username = data.ResourceOwnerID.Hex()
+			}
+			res.TokenType = introspection.AccessToken
+			if data.Type == RefreshToken {
+				res.TokenType = introspection.RefreshToken
+			}
+			res.ExpiresAt = data.ExpiresAt.Unix()
+			res.IssuedAt = token.ID().Timestamp().Unix()
+			res.Identifier = token.ID().Hex()
+		}
+	}
+
+	// write response
+	stack.AbortIf(introspection.WriteResponse(env.writer, res))
 
 	// finish trace
 	env.tracer.Pop()
@@ -744,7 +853,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 	rtExpiry := time.Now().Add(a.policy.RefreshTokenLifespan)
 
 	// save access token
-	at := a.saveToken(env, a.policy.Token, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
+	at := a.saveToken(env, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
 	atSignature, err := a.policy.GenerateJWT(at, client, resourceOwner)
@@ -759,7 +868,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 	// issue a refresh token if requested
 	if refreshable {
 		// save refresh token
-		rt := a.saveToken(env, a.policy.Token, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
+		rt := a.saveToken(env, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 
 		// generate new refresh token
 		rtSignature, err := a.policy.GenerateJWT(rt, client, resourceOwner)
@@ -783,7 +892,7 @@ func (a *Authenticator) issueCode(env *environment, scope oauth2.Scope, redirect
 	expiry := time.Now().Add(a.policy.AuthorizationCodeLifespan)
 
 	// save authorization code
-	code := a.saveToken(env, a.policy.Token, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
+	code := a.saveToken(env, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
 	signature, err := a.policy.GenerateJWT(code, client, resourceOwner)
@@ -1024,15 +1133,15 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	return resourceOwner
 }
 
-func (a *Authenticator) getToken(env *environment, model GenericToken, id coal.ID) GenericToken {
+func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.getToken")
 
 	// prepare object
-	obj := model.Meta().Make()
+	obj := a.policy.Token.Meta().Make()
 
 	// fetch token
-	err := a.store.TC(env.tracer, model).FindOne(nil, bson.M{
+	err := a.store.TC(env.tracer, obj).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(obj)
 	if err == mongo.ErrNoDocuments {
@@ -1049,12 +1158,12 @@ func (a *Authenticator) getToken(env *environment, model GenericToken, id coal.I
 	return token
 }
 
-func (a *Authenticator) saveToken(env *environment, model GenericToken, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
+func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.saveToken")
 
 	// prepare token
-	token := model.Meta().Make().(GenericToken)
+	token := a.policy.Token.Meta().Make().(GenericToken)
 
 	// get resource owner id
 	var roID *coal.ID
@@ -1084,12 +1193,12 @@ func (a *Authenticator) saveToken(env *environment, model GenericToken, typ Toke
 	return token
 }
 
-func (a *Authenticator) deleteToken(env *environment, model GenericToken, id coal.ID) {
+func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.deleteToken")
 
 	// delete token
-	_, err := a.store.TC(env.tracer, model).DeleteOne(nil, bson.M{
+	_, err := a.store.TC(env.tracer, a.policy.Token).DeleteOne(nil, bson.M{
 		"_id": id,
 	})
 	if err == mongo.ErrNoDocuments {

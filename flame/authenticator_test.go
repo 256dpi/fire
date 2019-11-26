@@ -109,6 +109,13 @@ func TestIntegration(t *testing.T) {
 
 		config.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
 
+		validToken := tester.Save(&Token{
+			Type:        AccessToken,
+			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
+			Scope:       []string{"foo"},
+			Application: app1.ID(),
+		}).(*Token)
+
 		expiredToken := tester.Save(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(-authenticator.policy.AccessTokenLifespan),
@@ -124,6 +131,7 @@ func TestIntegration(t *testing.T) {
 		}).(*Token)
 
 		config.UnknownToken = mustGenerateToken(p, AccessToken, coal.New(), time.Now())
+		config.ValidToken = mustGenerateToken(p, AccessToken, validToken.ID(), validToken.ExpiresAt)
 		config.ExpiredToken = mustGenerateToken(p, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
 		config.InsufficientToken = mustGenerateToken(p, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
@@ -152,9 +160,9 @@ func TestIntegration(t *testing.T) {
 		config.UnknownAuthorizationCode = mustGenerateToken(p, AuthorizationCode, coal.New(), time.Now())
 		config.ExpiredAuthorizationCode = mustGenerateToken(p, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
-		validToken := tester.Save(&Token{
+		validToken = tester.Save(&Token{
 			Type:        AccessToken,
-			ExpiresAt:   time.Now().Add(authenticator.policy.RefreshTokenLifespan),
+			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{"foo", "bar"},
 			Application: app1.ID(),
 			User:        coal.P(user.ID()),

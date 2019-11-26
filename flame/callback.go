@@ -24,7 +24,7 @@ type AuthInfo struct {
 func Callback(force bool, scope ...string) *fire.Callback {
 	return fire.C("flame/Callback", fire.All(), func(ctx *fire.Context) error {
 		// coerce scope
-		s := oauth2.Scope(scope)
+		requiredScope := oauth2.Scope(scope)
 
 		// get access token
 		accessToken, _ := ctx.Value(AccessTokenContextKey).(GenericToken)
@@ -41,7 +41,7 @@ func Callback(force bool, scope ...string) *fire.Callback {
 
 		// validate scope
 		data := accessToken.GetTokenData()
-		if !oauth2.Scope(data.Scope).Includes(s) {
+		if !data.Scope.Includes(requiredScope) {
 			return fire.ErrAccessDenied
 		}
 

@@ -3,7 +3,7 @@ module github.com/256dpi/fire
 require (
 	github.com/256dpi/jsonapi v1.3.0
 	github.com/256dpi/lungo v0.1.3
-	github.com/256dpi/oauth2 v1.2.0
+	github.com/256dpi/oauth2 v1.3.0
 	github.com/256dpi/serve v0.1.2
 	github.com/256dpi/stack v0.3.0
 	github.com/asaskevich/govalidator v0.0.0-20171111151018-521b25f4b05f
