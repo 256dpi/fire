@@ -42,7 +42,7 @@ func TestWatcherWebSockets(t *testing.T) {
 		go func() { _ = server.ListenAndServe() }()
 		defer server.Close()
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:1234/watch", nil)
 		assert.NoError(t, err)
@@ -59,13 +59,13 @@ func TestWatcherWebSockets(t *testing.T) {
 		}`))
 		assert.NoError(t, err)
 
+		time.Sleep(100 * time.Millisecond)
+
 		/* create model */
 
-		itm := coal.Init(&itemModel{
+		itm := tester.Save(coal.Init(&itemModel{
 			Bar: "bar",
-		}).(*itemModel)
-
-		tester.Save(itm)
+		})).(*itemModel)
 
 		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err := ws.ReadMessage()
@@ -80,7 +80,6 @@ func TestWatcherWebSockets(t *testing.T) {
 		/* update model */
 
 		itm.Foo = "bar"
-
 		tester.Update(itm)
 
 		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
