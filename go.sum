@@ -2,8 +2,8 @@ github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba h1:ZrWPG6s22qEsCB2M4h
 github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba/go.mod h1:HcRNieBy4k2gr4Q6iilWxJnA64GdbOds4o8Iz2/G1UY=
 github.com/256dpi/jsonapi v1.3.0 h1:D0VoODA1OVWl2nr0bUXIdV/3CteoRpaRuYCPKR8vDAw=
 github.com/256dpi/jsonapi v1.3.0/go.mod h1:Ko0ntY8Q7gz7L4tGM0adOU+xU1Qs3HmSbTyqKy2VY84=
-github.com/256dpi/lungo v0.1.3 h1:GtvAUB86MAahyaGi5V9yTlSD5V5BjDsN8hGBbUOLG7k=
-github.com/256dpi/lungo v0.1.3/go.mod h1:i373zZZjjuJ3QcSPyoBXxQ8YRn3JxIwmykhBFSxZQJ0=
+github.com/256dpi/lungo v0.1.5 h1:Cb/WPPuGrydyWbX9kGJ886E6KhzOVcq1e5vwNIWxwl0=
+github.com/256dpi/lungo v0.1.5/go.mod h1:i373zZZjjuJ3QcSPyoBXxQ8YRn3JxIwmykhBFSxZQJ0=
 github.com/256dpi/oauth2 v1.3.0 h1:7w71KHYnxc7foY1iMleXLom7dCULxhdXjJdTbxZxvV0=
 github.com/256dpi/oauth2 v1.3.0/go.mod h1:3gv0Juo4JalW4DQbmX4dTm7q04GGTmDwhm0CqRRHpVo=
 github.com/256dpi/serve v0.1.2 h1:SDv6HBxKnaWJ1a8MNm/eCK067EvPhs4ZKPt3igPwR6o=
