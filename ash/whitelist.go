@@ -79,13 +79,19 @@ func Whitelist(m Matrix) []*Authorizer {
 	// collect authorizers
 	var authorizers []*Authorizer
 	for i, a := range m.Candidates {
-		authorizers = append(authorizers, a.And(WhitelistFields(
-			m.Collect(i, "R"),
-			m.Collect(i, "W"),
-		)))
+		authorizers = append(authorizers, a.And(WhitelistFields(Fields{
+			Readable: m.Collect(i, "R"),
+			Writable: m.Collect(i, "W"),
+		})))
 	}
 
 	return authorizers
+}
+
+// Fields defines the readable and writable fields.
+type Fields struct {
+	Readable []string
+	Writable []string
 }
 
 // WhitelistFields is an authorizer that will whitelist the readable and writable
@@ -95,24 +101,24 @@ func Whitelist(m Matrix) []*Authorizer {
 // implement a custom candidate authorizer with which this authorizer can be
 // chained together:
 //
-//	User().And(WhitelistFields(
-//		[]string{"foo", "bar"},
-//		[]string{"foo"},
-//	))
+//	User().And(WhitelistFields(Fields{
+//		Readable: []string{"foo", "bar"},
+//		Writable: []string{"foo"},
+//	}))
 //
-func WhitelistFields(readable, writable []string) *Authorizer {
+func WhitelistFields(fields Fields) *Authorizer {
 	return A("ash/WhitelistFields", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
 		// prepare list
 		list := S{GrantAccess()}
 
 		// add readable fields enforcer if possible
 		if ctx.Operation != fire.Delete && ctx.Operation != fire.ResourceAction && ctx.Operation != fire.CollectionAction {
-			list = append(list, WhitelistReadableFields(readable...))
+			list = append(list, WhitelistReadableFields(fields.Readable...))
 		}
 
 		// add writable fields enforcer if possible
 		if ctx.Operation == fire.Create || ctx.Operation == fire.Update {
-			list = append(list, WhitelistWritableFields(writable...))
+			list = append(list, WhitelistWritableFields(fields.Writable...))
 		}
 
 		return list, nil

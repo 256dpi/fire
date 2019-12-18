@@ -75,7 +75,10 @@ func TestWhitelist(t *testing.T) {
 }
 
 func TestWhitelistFields(t *testing.T) {
-	authorizer := WhitelistFields([]string{"Foo", "Bar"}, []string{"Bar"})
+	authorizer := WhitelistFields(Fields{
+		Readable: []string{"Foo", "Bar"},
+		Writable: []string{"Bar"},
+	})
 	assert.NotNil(t, authorizer)
 
 	ctx := &fire.Context{
