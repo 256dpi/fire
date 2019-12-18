@@ -15,7 +15,7 @@ type Callback struct {
 }
 
 // L is a short-hand type to create a list of callbacks.
-type L []*Callback
+type L = []*Callback
 
 // C is a short-hand function to construct a callback. It will also add tracing
 // code around the execution of the callback.
@@ -70,7 +70,7 @@ type Action struct {
 }
 
 // M is a short-hand type to create a map of actions.
-type M map[string]*Action
+type M = map[string]*Action
 
 // A is a short-hand function to construct an action.
 func A(name string, methods []string, bodyLimit uint64, h Handler) *Action {
