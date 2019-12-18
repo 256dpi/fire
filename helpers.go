@@ -7,8 +7,9 @@ import (
 // Map is a general purpose type to represent a map.
 type Map map[string]interface{}
 
-type safeError struct {
-	err error
+// SafeError wraps an error to indicate presentation safety.
+type SafeError struct {
+	Err error
 }
 
 // E is a short-hand function to construct a safe error.
@@ -19,18 +20,19 @@ func E(format string, a ...interface{}) error {
 // Safe wraps an error and marks it as safe. Wrapped errors are safe to be
 // presented to the client if appropriate.
 func Safe(err error) error {
-	return &safeError{
-		err: err,
+	return &SafeError{
+		Err: err,
 	}
 }
 
-func (err *safeError) Error() string {
-	return err.err.Error()
+// Error implements the error interface.
+func (err *SafeError) Error() string {
+	return err.Err.Error()
 }
 
 // IsSafe can be used to check if an error has been wrapped using Safe.
 func IsSafe(err error) bool {
-	_, ok := err.(*safeError)
+	_, ok := err.(*SafeError)
 	return ok
 }
 
