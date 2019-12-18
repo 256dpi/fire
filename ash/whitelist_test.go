@@ -33,8 +33,8 @@ func TestWhitelist(t *testing.T) {
 		Model:      &postModel{},
 		Candidates: L{conditional("foo"), conditional("bar")},
 		Access: map[string][]string{
-			"Title":     {"RW", "RW"},
-			"Published": {"R", "RW"},
+			"Title":     {"RW", "RC"},
+			"Published": {"R", "RU"},
 		},
 	})
 	assert.Len(t, authorizers, 2)
@@ -70,7 +70,7 @@ func TestWhitelist(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
-		assert.Equal(t, []string{"Title", "Published"}, ctx.WritableFields)
+		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
 	})
 }
 
