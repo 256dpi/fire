@@ -34,6 +34,23 @@ func IsSafe(err error) bool {
 	return ok
 }
 
+// Unique is a helper to get a unique list of object ids.
+func Unique(list []string) []string {
+	// prepare map and list
+	m := make(map[string]bool)
+	l := make([]string, 0, len(list))
+
+	// add items not present in map
+	for _, id := range list {
+		if _, ok := m[id]; !ok {
+			m[id] = true
+			l = append(l, id)
+		}
+	}
+
+	return l
+}
+
 // Contains returns true if a list of strings contains another string.
 func Contains(list []string, str string) bool {
 	for _, item := range list {
@@ -54,6 +71,17 @@ func Includes(all, subset []string) bool {
 	}
 
 	return true
+}
+
+// Union will return a unique list with items from both lists.
+func Union(listA, listB []string) []string {
+	// prepare new list
+	list := make([]string, 0, len(listA)+len(listB))
+	list = append(list, listA...)
+	list = append(list, listB...)
+
+	// return unique list
+	return Unique(list)
 }
 
 // Intersect will return the intersection of both lists.
