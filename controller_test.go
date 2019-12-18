@@ -3313,15 +3313,15 @@ func TestSoftProtection(t *testing.T) {
 	})
 }
 
-func TestNoList(t *testing.T) {
+func TestDisabled(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
 		}, &Controller{
-			Model:  &commentModel{},
-			Store:  tester.Store,
-			NoList: true,
+			Model:    &commentModel{},
+			Store:    tester.Store,
+			Disabled: []Operation{List},
 		}, &Controller{
 			Model: &selectionModel{},
 			Store: tester.Store,
@@ -3337,7 +3337,7 @@ func TestNoList(t *testing.T) {
 				"errors":[{
 					"status": "405",
 					"title": "method not allowed",
-					"detail": "listing is disabled for this resource"
+					"detail": "unsupported operation"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})

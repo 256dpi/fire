@@ -72,10 +72,8 @@ type Controller struct {
 	// request with an InternalServerError status by default.
 	Notifiers []*Callback
 
-	// NoList can be set to true if the resource is only listed through
-	// relationships from other resources. This is useful for resources like
-	// comments that should never be listed alone.
-	NoList bool
+	// Disabled can be used to disable certain operations in general.
+	Disabled []Operation
 
 	// ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
@@ -249,14 +247,6 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	// set request
 	ctx.JSONAPIRequest = req
 
-	// handle no list setting
-	if req.Intent == jsonapi.ListResources && c.NoList {
-		stack.Abort(jsonapi.ErrorFromStatus(
-			http.StatusMethodNotAllowed,
-			"listing is disabled for this resource",
-		))
-	}
-
 	// parse document if expected
 	var doc *jsonapi.Document
 	if req.Intent.DocumentExpected() {
@@ -293,6 +283,16 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		ctx.Operation = CollectionAction
 	case jsonapi.ResourceAction:
 		ctx.Operation = ResourceAction
+	}
+
+	// check if disabled
+	for _, item := range c.Disabled {
+		if item == ctx.Operation {
+			stack.Abort(jsonapi.ErrorFromStatus(
+				http.StatusMethodNotAllowed,
+				"unsupported operation",
+			))
+		}
 	}
 
 	// prepare context
