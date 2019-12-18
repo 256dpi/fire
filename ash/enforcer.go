@@ -35,7 +35,7 @@ func GrantAccess() *Enforcer {
 // denied error. It should be used if the operation should not be authorized in
 // any case (.e.g a candidate accessing a resource he has clearly no access to).
 //
-// Note: Usually access is denied by returning no enforcer. This enforcer should
+// Note: Usually access is denied by returning no enforcers. This enforcer should
 // only be returned to immediately stop the authorization process and prevent
 // other enforcers from authorizing the operation.
 func DenyAccess() *Enforcer {

@@ -32,15 +32,16 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 }
 
 // S is a short-hand for a set of enforcers.
-type S []*Enforcer
+type S = []*Enforcer
 
-// Handler is a function that inspects an operation context and eventually
+// Handler is a function that inspects an operation context and potentially
 // returns a set of enforcers or an error.
 type Handler func(*fire.Context) ([]*Enforcer, error)
 
 // An Authorizer should inspect the specified context and assesses if it is able
 // to enforce authorization with the data that is available. If yes, the
-// authorizer should return a set of enforcers that will enforce the authorization.
+// authorizer should return a non zero set of enforcers that will enforce the
+// authorization.
 type Authorizer struct {
 	// The matcher that decides whether the authorizer can be run.
 	Matcher fire.Matcher
@@ -60,7 +61,7 @@ func And(a, b *Authorizer) *Authorizer {
 		enforcers1, err := a.Handler(ctx)
 		if err != nil {
 			return nil, err
-		} else if enforcers1 == nil {
+		} else if len(enforcers1) == 0 {
 			return nil, nil
 		}
 
@@ -68,12 +69,13 @@ func And(a, b *Authorizer) *Authorizer {
 		enforcers2, err := b.Handler(ctx)
 		if err != nil {
 			return nil, err
-		} else if enforcers2 == nil {
+		} else if len(enforcers2) == 0 {
 			return nil, nil
 		}
 
 		// merge both sets
-		enforcers := append(S{}, enforcers1...)
+		enforcers := make(S, 0, len(enforcers1)+len(enforcers2))
+		enforcers = append(enforcers, enforcers1...)
 		enforcers = append(enforcers, enforcers2...)
 
 		return enforcers, nil
@@ -87,7 +89,7 @@ func (a *Authorizer) And(b *Authorizer) *Authorizer {
 
 // Or will match and run the first authorizer and return its enforcers on success.
 // If no enforcers are returned it will match and run the second authorizer and
-// return its enforcers.
+// return its enforcers on success.
 func Or(a, b *Authorizer) *Authorizer {
 	return A("ash/Or", func(ctx *fire.Context) bool {
 		return a.Matcher(ctx) || b.Matcher(ctx)
@@ -101,7 +103,7 @@ func Or(a, b *Authorizer) *Authorizer {
 			}
 
 			// return on success
-			if enforcers != nil {
+			if len(enforcers) > 0 {
 				return enforcers, nil
 			}
 		}
@@ -115,7 +117,7 @@ func Or(a, b *Authorizer) *Authorizer {
 			}
 
 			// return on success
-			if enforcers != nil {
+			if len(enforcers) > 0 {
 				return enforcers, nil
 			}
 		}

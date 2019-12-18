@@ -5,10 +5,10 @@ package ash
 import "github.com/256dpi/fire"
 
 // L is a short-hand type to create a list of authorizers.
-type L []*Authorizer
+type L = []*Authorizer
 
 // M is a short-hand type to create a map of authorizers.
-type M map[string][]*Authorizer
+type M = map[string][]*Authorizer
 
 // C is a short-hand to define a strategy and return its callback.
 func C(s *Strategy) *fire.Callback {
@@ -16,32 +16,36 @@ func C(s *Strategy) *fire.Callback {
 }
 
 // Strategy contains lists of authorizers that are used to authorize operations.
+// The authorizes are run in order beginning with the most specific authorizer.
+// The first authorizer that returns no error and a non empty set of enforcers
+// has its enforcers applied to the request. If the enforcers do not return and
+// error the access is granted.
 type Strategy struct {
-	// Single operations.
+	// individual operations
 	List   []*Authorizer
 	Find   []*Authorizer
 	Create []*Authorizer
 	Update []*Authorizer
 	Delete []*Authorizer
 
-	// Single action operations.
+	// individual action operations
 	CollectionAction map[string][]*Authorizer
 	ResourceAction   map[string][]*Authorizer
 
-	// All action operations.
+	// all action operations
 	CollectionActions []*Authorizer
 	ResourceActions   []*Authorizer
 
-	// All List and Find operations.
+	// all List and Find operations
 	Read []*Authorizer
 
-	// All Create, Update and Delete operations.
+	// all Create, Update and Delete operations
 	Write []*Authorizer
 
-	// All CollectionAction and ResourceAction operations.
+	// all CollectionAction and ResourceAction operations
 	Actions []*Authorizer
 
-	// All operations.
+	// all operations
 	All []*Authorizer
 }
 
@@ -57,6 +61,7 @@ func (s *Strategy) Callback() *fire.Callback {
 
 	// construct and return callback
 	return fire.C("ash/Strategy.Callback", fire.All(), func(ctx *fire.Context) (err error) {
+		// select authorizers based on operation
 		switch ctx.Operation {
 		case fire.List:
 			err = s.call(ctx, s.List, s.Read, s.All)
@@ -101,10 +106,10 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 					if !enforcer.Matcher(ctx) {
 						// an authorizer should not return an enforcer that cannot
 						// enforce the authentication
-						panic("ash: not supported")
+						panic("ash: invalid enforcer")
 					}
 
-					// run callback and return error
+					// run enforcer
 					err = enforcer.Handler(ctx)
 					if err != nil {
 						return err
