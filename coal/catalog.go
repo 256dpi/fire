@@ -109,7 +109,8 @@ func (c *Catalog) All() []Model {
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
 func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
-	c.indexes[C(model)] = append(c.indexes[C(model)], Index{
+	name := Init(model).Meta().PluralName
+	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
 		Unique: unique,
@@ -119,7 +120,8 @@ func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, field
 
 // AddPartialIndex is similar to Add except that it adds a partial index.
 func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
-	c.indexes[C(model)] = append(c.indexes[C(model)], Index{
+	name := Init(model).Meta().PluralName
+	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
 		Unique: unique,
@@ -211,6 +213,27 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		// get model
 		model := c.models[name]
 
+		// prepare index info
+		indexedInfo := map[string]string{}
+		for _, field := range model.Meta().OrderedFields {
+			indexedInfo[field.Name] = ""
+		}
+
+		// analyse indexes
+		for _, index := range c.indexes[name] {
+			for i, field := range index.Fields {
+				if index.Filter != nil {
+					indexedInfo[field] += "◌"
+				} else {
+					if i == len(index.Fields)-1 {
+						indexedInfo[field] += "●"
+					} else {
+						indexedInfo[field] += "○"
+					}
+				}
+			}
+		}
+
 		// write begin of node
 		out.WriteString(fmt.Sprintf(`  "%s" [ style=filled, fillcolor=white, label=`, lookup[name]))
 
@@ -223,7 +246,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		// write attributes
 		for _, field := range model.Meta().OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
-			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, typ))
+			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, field.Name, field.Name, typ, indexedInfo[field.Name]))
 		}
 
 		// write end of tail table
