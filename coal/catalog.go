@@ -190,7 +190,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 	out.WriteString("  margin=\"0,0\";\n")
 	out.WriteString("  labelloc=\"t\";\n")
 	out.WriteString("  fontsize=\"13\";\n")
-	out.WriteString("  fontname=\"Arial BoldMT\";\n")
+	out.WriteString("  fontname=\"Arial\";\n")
 	out.WriteString("  splines=\"spline\";\n")
 	out.WriteString("  overlap=\"voronoi\";\n")
 	out.WriteString("  outputorder=\"edgesfirst\";\n")
@@ -215,7 +215,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		out.WriteString(fmt.Sprintf(`  "%s" [ style=filled, fillcolor=white, label=`, lookup[name]))
 
 		// write head table
-		out.WriteString(fmt.Sprintf(`<<table border="0" align="center" cellspacing="0.5" cellpadding="0" width="134"><tr><td align="center" valign="bottom" width="130"><font face="Arial BoldMT" point-size="11">%s</font></td></tr></table>|`, lookup[name]))
+		out.WriteString(fmt.Sprintf(`<<table border="0" align="center" cellspacing="0.5" cellpadding="0" width="134"><tr><td align="center" valign="bottom" width="130"><font face="Arial" point-size="11">%s</font></td></tr></table>|`, lookup[name]))
 
 		// write begin of tail table
 		out.WriteString(fmt.Sprintf(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`))
@@ -223,14 +223,14 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		// write attributes
 		for _, field := range model.Meta().OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
-			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial ItalicMT" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, typ))
+			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s</font></td></tr>`, field.Name, field.Name, typ))
 		}
 
 		// write end of tail table
 		out.WriteString(fmt.Sprintf(`</table>>`))
 
 		// write end of node
-		out.WriteString(`, shape=Mrecord, fontsize=10, fontname="ArialMT", margin="0.07,0.05", penwidth="1.0" ];` + "\n")
+		out.WriteString(`, shape=Mrecord, fontsize=10, fontname="Arial", margin="0.07,0.05", penwidth="1.0" ];` + "\n")
 	}
 
 	// define temporary struct
@@ -300,7 +300,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		}
 
 		// write edge
-		out.WriteString(fmt.Sprintf(`  "%s"--"%s"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, color="%s", arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, color, "normal", "none") + "\n")
+		out.WriteString(fmt.Sprintf(`  "%s"--"%s"[ fontname="Arial", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=%s, color="%s", arrowhead=%s, arrowtail=%s ];`, lookup[r.from], lookup[r.to], style, color, "normal", "none") + "\n")
 	}
 
 	// end graph
