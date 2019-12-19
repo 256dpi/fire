@@ -92,17 +92,25 @@ func (c *Catalog) Find(pluralName string) Model {
 	return c.models[pluralName]
 }
 
-// All returns a list of all registered models.
-func (c *Catalog) All() []Model {
-	// prepare models
-	models := make([]Model, 0, len(c.models))
+// FindIndexes will return the indexes for the specified plural name.
+func (c *Catalog) FindIndexes(pluralName string) []Index {
+	return c.indexes[pluralName]
+}
 
-	// add models
+// All returns a list of all registered models.
+func (c *Catalog) All() map[Model][]Index {
+	// prepare map
+	all := make(map[Model][]Index, len(c.models))
+
+	// add models and indexes
 	for _, model := range c.models {
-		models = append(models, model)
+		all[model] = make([]Index, 0)
+		for _, index := range c.indexes[model.Meta().PluralName] {
+			all[model] = append(all[model], index)
+		}
 	}
 
-	return models
+	return all
 }
 
 // AddIndex will add an index to the internal index list. Fields that are prefixed

@@ -20,7 +20,27 @@ func TestCatalog(t *testing.T) {
 		c.Add(&postModel{})
 	})
 
-	assert.Equal(t, []Model{m}, c.All())
+	assert.Equal(t, map[Model][]Index{
+		m: {},
+	}, c.All())
+
+	/* index */
+
+	assert.Nil(t, c.FindIndexes("posts"))
+
+	c.AddIndex(m, true, 0, "Title")
+
+	assert.NotNil(t, c.FindIndexes("posts"))
+
+	assert.Equal(t, map[Model][]Index{
+		m: {
+			{
+				Model:  m,
+				Unique: true,
+				Fields: []string{"Title"},
+			},
+		},
+	}, c.All())
 }
 
 func TestCatalogEnsureIndexes(t *testing.T) {
@@ -57,7 +77,7 @@ func TestCatalogVisualizePDF(t *testing.T) {
 
 func TestCatalogVisualizeDOT(t *testing.T) {
 	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	catalog.AddIndex(&postModel{}, false,  0, "Published", "Title")
+	catalog.AddIndex(&postModel{}, false, 0, "Published", "Title")
 	catalog.AddPartialIndex(&postModel{}, false, 0, []string{"TextBody"}, bson.M{})
 
 	assert.Equal(t, `graph G {
