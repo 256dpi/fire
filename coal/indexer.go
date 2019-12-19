@@ -9,74 +9,76 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Index is an index registered with an indexer.
+type Index struct {
+	Model  Model
+	Fields []string
+	Unique bool
+	Expiry time.Duration
+	Filter bson.M
+}
+
+// Compile will compile the index to a mongo.IndexModel.
+func (i *Index) Compile() mongo.IndexModel {
+	// construct key from fields
+	var key []string
+	for _, f := range i.Fields {
+		key = append(key, F(i.Model, f))
+	}
+
+	// prepare options
+	opts := options.Index().SetUnique(i.Unique).SetBackground(true)
+
+	// set partial filter expression if available
+	if i.Filter != nil {
+		opts.SetPartialFilterExpression(i.Filter)
+	}
+
+	// set expire if available
+	if i.Expiry > 0 {
+		opts.SetExpireAfterSeconds(int32(i.Expiry / time.Second))
+	}
+
+	// add index
+	return mongo.IndexModel{
+		Keys:    Sort(key...),
+		Options: opts,
+	}
+}
+
 // An Indexer can be used to manage indexes for models.
 type Indexer struct {
-	indexes map[string][]mongo.IndexModel
+	indexes map[string][]Index
 }
 
 // NewIndexer returns a new indexer.
 func NewIndexer() *Indexer {
 	return &Indexer{
-		indexes: map[string][]mongo.IndexModel{},
+		indexes: map[string][]Index{},
 	}
 }
 
 // Add will add an index to the internal index list. Fields that are prefixed
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
-func (i *Indexer) Add(model Model, unique bool, expireAfter time.Duration, fields ...string) {
-	// construct key from fields
-	var key []string
-	for _, f := range fields {
-		key = append(key, F(model, f))
-	}
-
-	// prepare options
-	opts := options.Index().
-		SetUnique(unique).
-		SetBackground(true)
-
-	// set expire if available
-	if expireAfter > 0 {
-		opts.SetExpireAfterSeconds(int32(expireAfter / time.Second))
-	}
-
-	// add index
-	i.AddRaw(C(model), mongo.IndexModel{
-		Keys:    Sort(key...),
-		Options: opts,
+func (i *Indexer) Add(model Model, unique bool, expiry time.Duration, fields ...string) {
+	i.indexes[C(model)] = append(i.indexes[C(model)], Index{
+		Model:  model,
+		Fields: fields,
+		Unique: unique,
+		Expiry: expiry,
 	})
 }
 
 // AddPartial is similar to Add except that it adds a partial index.
-func (i *Indexer) AddPartial(model Model, unique bool, expireAfter time.Duration, fields []string, filter bson.M) {
-	// construct key from fields
-	var key []string
-	for _, f := range fields {
-		key = append(key, F(model, f))
-	}
-
-	// prepare options
-	opts := options.Index().
-		SetPartialFilterExpression(filter).
-		SetUnique(unique).
-		SetBackground(true)
-
-	// set expire if available
-	if expireAfter > 0 {
-		opts.SetExpireAfterSeconds(int32(expireAfter / time.Second))
-	}
-
-	// add index
-	i.AddRaw(C(model), mongo.IndexModel{
-		Keys:    Sort(key...),
-		Options: opts,
+func (i *Indexer) AddPartial(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
+	i.indexes[C(model)] = append(i.indexes[C(model)], Index{
+		Model:  model,
+		Fields: fields,
+		Unique: unique,
+		Expiry: expiry,
+		Filter: filter,
 	})
-}
-
-// AddRaw will add a raw mongo.IndexModel to the internal index list.
-func (i *Indexer) AddRaw(coll string, index mongo.IndexModel) {
-	i.indexes[coll] = append(i.indexes[coll], index)
 }
 
 // Ensure will ensure that the required indexes exist. It may fail early if some
@@ -89,7 +91,7 @@ func (i *Indexer) Ensure(store *Store) error {
 	// ensure all indexes
 	for coll, list := range i.indexes {
 		for _, index := range list {
-			_, err := store.DB().Collection(coll).Indexes().CreateOne(ctx, index)
+			_, err := store.DB().Collection(coll).Indexes().CreateOne(ctx, index.Compile())
 			if err != nil {
 				return err
 			}

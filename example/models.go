@@ -10,7 +10,12 @@ import (
 	"github.com/256dpi/fire/flame"
 )
 
-var catalog = coal.NewCatalog(&Item{})
+var catalog = coal.NewCatalog(
+	&Item{},
+	&flame.Application{},
+	&flame.User{},
+	&flame.Token{},
+)
 
 var indexer = coal.NewIndexer()
 
