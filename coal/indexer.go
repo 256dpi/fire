@@ -9,19 +9,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type index struct {
-	coll  string
-	model mongo.IndexModel
-}
-
 // An Indexer can be used to manage indexes for models.
 type Indexer struct {
-	indexes []index
+	indexes map[string][]mongo.IndexModel
 }
 
 // NewIndexer returns a new indexer.
 func NewIndexer() *Indexer {
-	return &Indexer{}
+	return &Indexer{
+		indexes: map[string][]mongo.IndexModel{},
+	}
 }
 
 // Add will add an index to the internal index list. Fields that are prefixed
@@ -78,26 +75,24 @@ func (i *Indexer) AddPartial(model Model, unique bool, expireAfter time.Duration
 }
 
 // AddRaw will add a raw mongo.IndexModel to the internal index list.
-func (i *Indexer) AddRaw(coll string, model mongo.IndexModel) {
-	i.indexes = append(i.indexes, index{
-		coll:  coll,
-		model: model,
-	})
+func (i *Indexer) AddRaw(coll string, index mongo.IndexModel) {
+	i.indexes[coll] = append(i.indexes[coll], index)
 }
 
 // Ensure will ensure that the required indexes exist. It may fail early if some
 // of the indexes are already existing and do not match the supplied index.
 func (i *Indexer) Ensure(store *Store) error {
 	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// go through all raw indexes
-	for _, i := range i.indexes {
-		// ensure single index
-		_, err := store.DB().Collection(i.coll).Indexes().CreateOne(ctx, i.model)
-		if err != nil {
-			return err
+	// ensure all indexes
+	for coll, list := range i.indexes {
+		for _, index := range list {
+			_, err := store.DB().Collection(coll).Indexes().CreateOne(ctx, index)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
