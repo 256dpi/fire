@@ -73,14 +73,14 @@ type Token struct {
 	User        *coal.ID  `json:"-" bson:"user_id" coal:"user:users"`
 }
 
-// AddTokenIndexes will add access token indexes to the specified indexer.
-func AddTokenIndexes(i *coal.Indexer, autoExpire bool) {
-	i.Add(&Token{}, false, 0, "Type")
-	i.Add(&Token{}, false, 0, "Application")
-	i.Add(&Token{}, false, 0, "User")
+// AddTokenIndexes will add access token indexes to the specified catalog.
+func AddTokenIndexes(catalog *coal.Catalog, autoExpire bool) {
+	catalog.AddIndex(&Token{}, false, 0, "Type")
+	catalog.AddIndex(&Token{}, false, 0, "Application")
+	catalog.AddIndex(&Token{}, false, 0, "User")
 
 	if autoExpire {
-		i.Add(&Token{}, false, time.Minute, "ExpiresAt")
+		catalog.AddIndex(&Token{}, false, time.Minute, "ExpiresAt")
 	}
 }
 
@@ -155,9 +155,9 @@ type Application struct {
 	RedirectURIs []string `json:"redirect-uris" bson:"redirect_uris"`
 }
 
-// AddApplicationIndexes will add application indexes to the specified indexer.
-func AddApplicationIndexes(i *coal.Indexer) {
-	i.Add(&Application{}, true, 0, "Key")
+// AddApplicationIndexes will add application indexes to the specified catalog.
+func AddApplicationIndexes(catalog *coal.Catalog) {
+	catalog.AddIndex(&Application{}, true, 0, "Key")
 }
 
 // IsConfidential implements the flame.Client interface.
@@ -250,9 +250,9 @@ type User struct {
 	PasswordHash []byte `json:"-" bson:"password"`
 }
 
-// AddUserIndexes will add user indexes to the specified indexer.
-func AddUserIndexes(i *coal.Indexer) {
-	i.Add(&User{}, true, 0, "Email")
+// AddUserIndexes will add user indexes to the specified catalog.
+func AddUserIndexes(catalog *coal.Catalog) {
+	catalog.AddIndex(&User{}, true, 0, "Email")
 }
 
 // ValidPassword implements the flame.ResourceOwner interface.

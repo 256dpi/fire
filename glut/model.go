@@ -29,13 +29,13 @@ type Value struct {
 	Token *coal.ID `json:"token"`
 }
 
-// AddValueIndexes will add value indexes to the specified indexer. If
-// removeAfter is values are automatically removed when their TTK timestamp
+// AddValueIndexes will add value indexes to the specified catalog. If
+// removeAfter is values are automatically removed when their deadline timestamp
 // falls behind the specified duration.
-func AddValueIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
+func AddValueIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// index and require name to be unique among components
-	indexer.Add(&Value{}, true, 0, "Component", "Name")
+	catalog.AddIndex(&Value{}, true, 0, "Component", "Name")
 
 	// add ttl index
-	indexer.Add(&Value{}, false, removeAfter, "Deadline")
+	catalog.AddIndex(&Value{}, false, removeAfter, "Deadline")
 }

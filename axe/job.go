@@ -68,16 +68,16 @@ type Job struct {
 	Reason string `json:"reason"`
 }
 
-// AddJobIndexes will add job indexes to the specified indexer. If a duration
+// AddJobIndexes will add job indexes to the specified catalog. If a duration
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
-func AddJobIndexes(indexer *coal.Indexer, removeAfter time.Duration) {
+func AddJobIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// add name index
-	indexer.Add(&Job{}, false, 0, "Name")
+	catalog.AddIndex(&Job{}, false, 0, "Name")
 
 	// add status index
-	indexer.Add(&Job{}, false, 0, "Status")
+	catalog.AddIndex(&Job{}, false, 0, "Status")
 
 	// add finished index
-	indexer.Add(&Job{}, false, removeAfter, "Finished")
+	catalog.AddIndex(&Job{}, false, removeAfter, "Finished")
 }

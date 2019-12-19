@@ -203,8 +203,7 @@ The `coal` package offers the following advanced features:
 
 - [`Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of created, updated and deleted models.
 - [`Reconcile`](https://godoc.org/github.com/256dpi/fire/coal#Reconcile) uses streams to provide an simple API to synchronize a collection of models.
-- [`Indexer`](https://godoc.org/github.com/256dpi/fire/coal#Indexer) provides a simple API to declare and ensure indexes.
-- [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and allows the rendering of and ERD using `graphviz`.
+- [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and indexes and allows the rendering of and ERD using `graphviz`.
 - Various helpers to DRY up the code.
 
 ## Controllers
@@ -356,7 +355,7 @@ policy.PasswordGrant = true
 ```
 
 - The default policy uses the built-in [`Token`](https://godoc.org/github.com/256dpi/fire/flame#Token), [`User`](https://godoc.org/github.com/256dpi/fire/flame#User) and [`Application`](https://godoc.org/github.com/256dpi/fire/flame#Application) model and the [`DefaultGrantStrategy`](https://godoc.org/github.com/256dpi/fire/flame#DefaultGrantStrategy).
-- You might want to add the indexer for the built-on models using [`AddTokenIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddTokenIndexes), [`AddApplicationIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddApplicationIndexes) and [`AddUserIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddUserIndexes).
+- You might want to add the indexes for the built-on models using [`AddTokenIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddTokenIndexes), [`AddApplicationIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddApplicationIndexes) and [`AddUserIndexes`](https://godoc.org/github.com/256dpi/fire/flame#AddUserIndexes).
 
 An [`Authenticator`](https://godoc.org/github.com/256dpi/fire/flame#Authenticator) is created by specifying the policy and store:
 

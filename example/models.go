@@ -17,31 +17,25 @@ var catalog = coal.NewCatalog(
 	&flame.Token{},
 )
 
-var indexer = coal.NewIndexer()
-
 func init() {
 	// add flame indexes
-	flame.AddApplicationIndexes(indexer)
-	flame.AddUserIndexes(indexer)
-	flame.AddTokenIndexes(indexer, true)
+	flame.AddApplicationIndexes(catalog)
+	flame.AddUserIndexes(catalog)
+	flame.AddTokenIndexes(catalog, true)
 
 	// add axe indexes
-	axe.AddJobIndexes(indexer, time.Minute)
+	axe.AddJobIndexes(catalog, time.Minute)
 
-	// add item index
-	indexer.Add(&Item{}, false, 0, "Name")
-
-	// add background delete index
-	indexer.Add(&Item{}, false, time.Second, "Deleted")
-
-	// add unique create token index
-	indexer.Add(&Item{}, true, 0, "CreateToken")
+	// add item indexes
+	catalog.AddIndex(&Item{}, false, 0, "Name")
+	catalog.AddIndex(&Item{}, false, time.Second, "Deleted")
+	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
 }
 
 // EnsureIndexes will ensure that the required indexes exist.
 func EnsureIndexes(store *coal.Store) error {
 	// ensure model indexes
-	err := indexer.Ensure(store)
+	err := catalog.EnsureIndexes(store)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestCatalog(t *testing.T) {
@@ -20,6 +21,31 @@ func TestCatalog(t *testing.T) {
 	})
 
 	assert.Equal(t, []Model{m}, c.All())
+}
+
+func TestCatalogEnsureIndexes(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		catalog := NewCatalog()
+		catalog.AddIndex(&postModel{}, false, 0, "Title")
+		catalog.AddPartialIndex(&commentModel{}, false, 0, []string{"Post"}, bson.M{
+			F(&commentModel{}, "Message"): "test",
+		})
+
+		err := catalog.EnsureIndexes(tester.Store)
+		assert.NoError(t, err)
+	})
+}
+
+func TestCatalogEnsureIndexesError(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		catalog := NewCatalog()
+		catalog.AddIndex(&postModel{}, false, 0, "Published")
+		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
+
+		catalog = NewCatalog()
+		catalog.AddIndex(&postModel{}, true, 0, "Published")
+		assert.Error(t, catalog.EnsureIndexes(tester.Store))
+	})
 }
 
 func TestCatalogVisualizePDF(t *testing.T) {
