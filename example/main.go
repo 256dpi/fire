@@ -28,8 +28,14 @@ var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
+	// visualize as PDF
+	pdf, err := catalog.VisualizePDF("Example")
+	if err != nil {
+		panic(err)
+	}
+
 	// write visualization dot
-	err := ioutil.WriteFile("models.dot", []byte(catalog.Visualize("Example")), 0777)
+	err = ioutil.WriteFile("models.pdf", pdf, 0777)
 	if err != nil {
 		panic(err)
 	}

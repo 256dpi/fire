@@ -3,6 +3,7 @@ package coal
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"sort"
 	"strings"
 )
@@ -59,11 +60,35 @@ func (c *Catalog) All() []Model {
 	return models
 }
 
-// Visualize emits a string in dot format which when rendered with graphviz
+// VisualizePDF returns a PDF document that visualizes the models and their
+// relationships. The method expects the graphviz toolkit to be installed and
+// accessible by the calling program.
+func (c *Catalog) VisualizePDF(title string) ([]byte, error) {
+	// get dot
+	dot := c.VisualizeDOT(title)
+
+	// prepare buffer
+	var buf bytes.Buffer
+
+	// run through graphviz
+	cmd := exec.Command("fdp", "-Tpdf")
+	cmd.Stdin = strings.NewReader(dot)
+	cmd.Stdout = &buf
+
+	// run commands
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// VisualizeDOT emits a string in DOT format which when rendered with graphviz
 // visualizes the models and their relationships.
 //
 //	fdp -Tpdf models.dot > models.pdf
-func (c *Catalog) Visualize(title string) string {
+func (c *Catalog) VisualizeDOT(title string) string {
 	// prepare buffer
 	var out bytes.Buffer
 

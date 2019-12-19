@@ -22,7 +22,14 @@ func TestCatalog(t *testing.T) {
 	assert.Equal(t, []Model{m}, c.All())
 }
 
-func TestCatalogVisualize(t *testing.T) {
+func TestCatalogVisualizePDF(t *testing.T) {
+	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
+	pdf, err := catalog.VisualizePDF("Test")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, pdf)
+}
+
+func TestCatalogVisualizeDOT(t *testing.T) {
 	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 	assert.Equal(t, `graph G {
   rankdir="LR";
@@ -48,5 +55,5 @@ func TestCatalogVisualize(t *testing.T) {
   "coal.noteModel"--"coal.postModel"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=solid, color="black", arrowhead=normal, arrowtail=none ];
   "coal.selectionModel"--"coal.postModel"[ fontname="ArialMT", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=solid, color="black:white:black", arrowhead=normal, arrowtail=none ];
 }
-`, catalog.Visualize("Test"))
+`, catalog.VisualizeDOT("Test"))
 }
