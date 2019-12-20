@@ -22,7 +22,7 @@ import (
 )
 
 var port = getEnv("PORT", "8000")
-var mongoURI = getEnv("MONGODB_URI", "mongodb://0.0.0.0/fire-example")
+var mongoURI = getEnv("MONGODB_URI", "")
 var secret = getEnv("SECRET", "abcd1234abcd1234")
 var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
@@ -41,8 +41,14 @@ func main() {
 	}
 
 	// create store
-	store := coal.MustConnect(mongoURI)
-	// store := coal.MustOpen(nil, "example", nil)
+	var store *coal.Store
+	if mongoURI != "" {
+		store = coal.MustConnect(mongoURI)
+	} else {
+		store = coal.MustOpen(nil, "example", func(err error) {
+			panic(err)
+		})
+	}
 
 	// prepare database
 	err = prepareDatabase(store)
