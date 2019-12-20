@@ -3187,6 +3187,81 @@ func TestWritableFields(t *testing.T) {
 	})
 }
 
+func TestDatabaseErrors(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// missing resource
+		tester.Request("GET", "posts/"+coal.New().Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNotFound, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [
+					{
+						"status": "404",
+						"title": "not found",
+						"detail": "resource not found"
+					}
+				]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// add unique index
+		catalog := coal.NewCatalog(&postModel{})
+		catalog.AddIndex(&postModel{}, true, 0, "Title")
+		err := catalog.EnsureIndexes(tester.Store)
+		assert.NoError(t, err)
+
+		// first post
+		tester.Request("POST", "posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		})
+
+		// second post
+		tester.Request("POST", "posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusConflict, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [
+					{
+						"status": "409",
+						"title": "conflict",
+						"detail": "document is not unique"
+					}
+				]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// remove index
+		_, err = tester.Store.C(&postModel{}).Indexes().DropAll(nil)
+		assert.NoError(t, err)
+	})
+}
+
 func TestSoftProtection(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{

@@ -167,3 +167,24 @@ func ToD(model Model) bson.D {
 
 	return d
 }
+
+// IsDuplicateError returns true if the provided error is generated due to a
+// duplicate document failing a unique index constraint.
+func IsDuplicateError(err error) bool {
+	// check error
+	if err == nil {
+		return false
+	}
+
+	// ge string
+	str := err.Error()
+
+	// check if duplicate key error
+	if strings.Contains(str, "duplicate key error") {
+		return true
+	} else if strings.Contains(str, "duplicate document for index") {
+		return true
+	}
+
+	return false
+}
