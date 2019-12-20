@@ -15,7 +15,7 @@ import (
 // MustConnect will connect to the passed database and return a new store.
 // It will panic if the initial connection failed.
 func MustConnect(uri string) *Store {
-	// create store
+	// connect store
 	store, err := Connect(uri)
 	if err != nil {
 		panic(err)
@@ -58,26 +58,23 @@ func Connect(uri string) (*Store, error) {
 	}, nil
 }
 
-// MustOpen will open the database at the specified path or if missing a new in
-// memory database. It will panic if the operation failed.
-func MustOpen(path, defaultDB string, reporter func(error)) *Store {
-	// create store
-	store, err := Open(path, defaultDB, reporter)
+// MustOpen will open the database using the specified store or if missing a new
+// in memory database. It will panic if the operation failed.
+func MustOpen(store lungo.Store, defaultDB string, reporter func(error)) *Store {
+	// open store
+	s, err := Open(store, defaultDB, reporter)
 	if err != nil {
 		panic(err)
 	}
 
-	return store
+	return s
 }
 
 // Open will open the database at the specified path or if missing a new in
 // memory database.
-func Open(path, defaultDB string, reporter func(error)) (*Store, error) {
-	// prepare store
-	var store lungo.Store
-	if path != "" {
-		store = lungo.NewFileStore(path, 0666)
-	} else {
+func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, error) {
+	// set default memory store
+	if store == nil {
 		store = lungo.NewMemoryStore()
 	}
 

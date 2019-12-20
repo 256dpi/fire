@@ -22,18 +22,8 @@ func TestConnect(t *testing.T) {
 	})
 }
 
-func TestOpenMemory(t *testing.T) {
-	store := MustOpen("", "test-fire-coal", nil)
-	assert.NotNil(t, store.Client)
-
-	assert.Equal(t, "posts", store.C(&postModel{}).Name())
-
-	err := store.Close()
-	assert.NoError(t, err)
-}
-
-func TestOpenFile(t *testing.T) {
-	store := MustOpen("./lungo.bson", "test-fire-coal", nil)
+func TestOpen(t *testing.T) {
+	store := MustOpen(nil, "test-fire-coal", nil)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Name())

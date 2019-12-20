@@ -42,7 +42,7 @@ func main() {
 
 	// create store
 	store := coal.MustConnect(mongoURI)
-	// store := coal.MustOpen("./db.bson", "example", nil)
+	// store := coal.MustOpen(nil, "example", nil)
 
 	// prepare database
 	err = prepareDatabase(store)

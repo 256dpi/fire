@@ -37,7 +37,7 @@ type noteModel struct {
 }
 
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")
-var lungoStore = MustOpen("", "test-fire-coal", nil)
+var lungoStore = MustOpen(nil, "test-fire-coal", nil)
 
 var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}}
 

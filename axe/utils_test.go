@@ -12,7 +12,7 @@ type data struct {
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-axe")
-var lungoStore = coal.MustOpen("", "test-fire-axe", nil)
+var lungoStore = coal.MustOpen(nil, "test-fire-axe", nil)
 
 var modelList = []coal.Model{&Job{}}
 
