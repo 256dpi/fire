@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/lungo"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
@@ -495,7 +496,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 		}, bson.M{
 			"$setOnInsert": ctx.Model,
 		}, options.Update().SetUpsert(true))
-		if coal.IsDuplicateError(err) {
+		if lungo.IsUniquenessError(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
 		stack.AbortIf(err)
@@ -507,7 +508,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	} else {
 		// insert model
 		_, err := ctx.TC(ctx.Model).InsertOne(ctx, ctx.Model)
-		if coal.IsDuplicateError(err) {
+		if lungo.IsUniquenessError(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
 		stack.AbortIf(err)
@@ -616,7 +617,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		}, bson.M{
 			"$set": ctx.Model,
 		})
-		if coal.IsDuplicateError(err) {
+		if lungo.IsUniquenessError(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
 		stack.AbortIf(err)
@@ -630,7 +631,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 		_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 			"_id": ctx.Model.ID(),
 		}, ctx.Model)
-		if coal.IsDuplicateError(err) {
+		if lungo.IsUniquenessError(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
 		stack.AbortIf(err)
@@ -1042,7 +1043,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
-	if coal.IsDuplicateError(err) {
+	if lungo.IsUniquenessError(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
@@ -1132,7 +1133,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
-	if coal.IsDuplicateError(err) {
+	if lungo.IsUniquenessError(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
@@ -1229,7 +1230,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	_, err := ctx.TC(ctx.Model).ReplaceOne(ctx, bson.M{
 		"_id": ctx.Model.ID(),
 	}, ctx.Model)
-	if coal.IsDuplicateError(err) {
+	if lungo.IsUniquenessError(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
