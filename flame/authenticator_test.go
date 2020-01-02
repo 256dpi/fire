@@ -37,7 +37,7 @@ func TestIntegration(t *testing.T) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		policy.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+		policy.GrantStrategy = func(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}
@@ -49,7 +49,7 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
-		policy.ApproveStrategy = func(_ GenericToken, scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+		policy.ApproveStrategy = func(_ Client, _ ResourceOwner, _ GenericToken, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}

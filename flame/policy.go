@@ -74,7 +74,7 @@ type Policy struct {
 	// ErrGrantRejected or ErrInvalidScope to cancel the grant request.
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
-	GrantStrategy func(oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
+	GrantStrategy func(Client, ResourceOwner, oauth2.Scope) (oauth2.Scope, error)
 
 	// The URL to the page that obtains the approval of the user in implicit and
 	// authorization code grants.
@@ -88,7 +88,7 @@ type Policy struct {
 	//
 	// Note: GenericToken represents the token that authorizes the resource
 	// owner to give the approval.
-	ApproveStrategy func(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error)
+	ApproveStrategy func(Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error)
 
 	// TokenData may return a map of data that should be included in the
 	// generated JWT tokens as the "dat" field as well as in the token
@@ -114,7 +114,7 @@ func StaticGrants(password, clientCredentials, implicit, authorizationCode bool)
 }
 
 // DefaultGrantStrategy grants only empty scopes.
-func DefaultGrantStrategy(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+func DefaultGrantStrategy(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 	// check scope
 	if !scope.Empty() {
 		return nil, ErrInvalidScope
@@ -131,7 +131,7 @@ func StaticApprovalURL(url string) func(Client) (string, error) {
 }
 
 // DefaultApproveStrategy rejects all approvals.
-func DefaultApproveStrategy(GenericToken, oauth2.Scope, Client, ResourceOwner) (oauth2.Scope, error) {
+func DefaultApproveStrategy(Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error) {
 	return nil, ErrApprovalRejected
 }
 

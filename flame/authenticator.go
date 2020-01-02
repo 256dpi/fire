@@ -388,7 +388,7 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.ApproveStrategy(accessToken, req.Scope, client, resourceOwner)
+	scope, err := a.policy.ApproveStrategy(client, resourceOwner, accessToken, req.Scope)
 	if err == ErrApprovalRejected {
 		abort(oauth2.AccessDenied("approval rejected"))
 	} else if err == ErrInvalidScope {
@@ -498,7 +498,7 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(env *environ
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(req.Scope, client, resourceOwner)
+	scope, err := a.policy.GrantStrategy(client, resourceOwner, req.Scope)
 	if err == ErrGrantRejected {
 		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
 	} else if err == ErrInvalidScope {
@@ -532,7 +532,7 @@ func (a *Authenticator) handleClientCredentialsGrant(env *environment, req *oaut
 	}
 
 	// validate & grant scope
-	scope, err := a.policy.GrantStrategy(req.Scope, client, nil)
+	scope, err := a.policy.GrantStrategy(client, nil, req.Scope)
 	if err == ErrGrantRejected {
 		stack.Abort(oauth2.AccessDenied("grant rejected"))
 	} else if err == ErrInvalidScope {
