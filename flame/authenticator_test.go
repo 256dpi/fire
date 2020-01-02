@@ -29,11 +29,11 @@ func TestIntegration(t *testing.T) {
 		policy := DefaultPolicy("")
 		policy.Grants = StaticGrants(true, true, true, true)
 
-		policy.ClientFilter = func(c Client, req *http.Request) (bson.M, error) {
+		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		policy.ResourceOwnerFilter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
@@ -380,7 +380,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			Key: "application",
 		}).(*Application)
 
-		policy.ResourceOwnerFilter = func(ResourceOwner, *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
 			return nil, ErrInvalidFilter
 		}
 
@@ -404,7 +404,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			},
 		})
 
-		policy.ResourceOwnerFilter = func(ResourceOwner, *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
 			return nil, errors.New("foo")
 		}
 

@@ -66,7 +66,7 @@ type Policy struct {
 	// looking up a resource owner. This callback can be used to select resource
 	// owners based on other request parameters. It can return ErrInvalidFilter
 	// to cancel the authentication request.
-	ResourceOwnerFilter func(ResourceOwner, *http.Request) (bson.M, error)
+	ResourceOwnerFilter func(Client, ResourceOwner, *http.Request) (bson.M, error)
 
 	// GrantStrategy is invoked by the authenticator with the requested scope,
 	// the client and the resource owner before issuing an access token. The

@@ -1045,7 +1045,7 @@ func (a *Authenticator) findFirstResourceOwner(env *environment, client Client, 
 
 	// check all available models in order
 	for _, model := range resourceOwners {
-		ro := a.findResourceOwner(env, model, id)
+		ro := a.findResourceOwner(env, client, model, id)
 		if ro != nil {
 			env.tracer.Pop()
 			return ro
@@ -1058,7 +1058,7 @@ func (a *Authenticator) findFirstResourceOwner(env *environment, client Client, 
 	return nil
 }
 
-func (a *Authenticator) findResourceOwner(env *environment, model ResourceOwner, id string) ResourceOwner {
+func (a *Authenticator) findResourceOwner(env *environment, client Client, model ResourceOwner, id string) ResourceOwner {
 	// begin trace
 	env.tracer.Push("flame/Authenticator.findResourceOwner")
 
@@ -1074,7 +1074,7 @@ func (a *Authenticator) findResourceOwner(env *environment, model ResourceOwner,
 	// add additional filter if provided
 	if a.policy.ResourceOwnerFilter != nil {
 		// run filter function
-		filter, err := a.policy.ResourceOwnerFilter(model, env.request)
+		filter, err := a.policy.ResourceOwnerFilter(client, model, env.request)
 		if err == ErrInvalidFilter {
 			stack.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {
