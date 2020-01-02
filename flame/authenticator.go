@@ -297,12 +297,16 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	}
 
+	// get grants
+	grants, err := a.policy.Grants(client)
+	stack.AbortIf(err)
+
 	/* client is valid */
 
 	// validate response type
-	if req.ResponseType == oauth2.TokenResponseType && !a.policy.ImplicitGrant {
+	if req.ResponseType == oauth2.TokenResponseType && !grants.Implicit {
 		stack.Abort(oauth2.UnsupportedResponseType(""))
-	} else if req.ResponseType == oauth2.CodeResponseType && !a.policy.AuthorizationCodeGrant {
+	} else if req.ResponseType == oauth2.CodeResponseType && !grants.AuthorizationCode {
 		stack.Abort(oauth2.UnsupportedResponseType(""))
 	}
 
@@ -434,11 +438,15 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 		stack.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
+	// get grants
+	grants, err := a.policy.Grants(client)
+	stack.AbortIf(err)
+
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
 		// check availability
-		if !a.policy.PasswordGrant {
+		if !grants.Password {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
@@ -446,7 +454,7 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 		a.handleResourceOwnerPasswordCredentialsGrant(env, req, client)
 	case oauth2.ClientCredentialsGrantType:
 		// check availability
-		if !a.policy.ClientCredentialsGrant {
+		if !grants.ClientCredentials {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
@@ -457,7 +465,7 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 		a.handleRefreshTokenGrant(env, req, client)
 	case oauth2.AuthorizationCodeGrantType:
 		// check availability
-		if !a.policy.AuthorizationCodeGrant {
+		if !grants.AuthorizationCode {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
@@ -1031,8 +1039,12 @@ func (a *Authenticator) findFirstResourceOwner(env *environment, client Client, 
 	// begin trace
 	env.tracer.Push("flame/Authenticator.findFirstResourceOwner")
 
+	// get resource owners
+	resourceOwners, err := a.policy.ResourceOwners(client)
+	stack.AbortIf(err)
+
 	// check all available models in order
-	for _, model := range a.policy.ResourceOwners(client) {
+	for _, model := range resourceOwners {
 		ro := a.findResourceOwner(env, model, id)
 		if ro != nil {
 			env.tracer.Pop()
@@ -1100,8 +1112,12 @@ func (a *Authenticator) getFirstResourceOwner(env *environment, client Client, i
 	// begin trace
 	env.tracer.Push("flame/Authenticator.getFirstResourceOwner")
 
+	// get resource owners
+	resourceOwners, err := a.policy.ResourceOwners(client)
+	stack.AbortIf(err)
+
 	// check all available models in order
-	for _, model := range a.policy.ResourceOwners(client) {
+	for _, model := range resourceOwners {
 		ro := a.getResourceOwner(env, model, id)
 		if ro != nil {
 			env.tracer.Pop()

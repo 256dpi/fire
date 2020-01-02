@@ -26,22 +26,18 @@ func TestIntegration(t *testing.T) {
 		var allowedScope = oauth2.ParseScope("foo bar")
 		var requiredScope = oauth2.ParseScope("foo")
 
-		p := DefaultPolicy("")
+		policy := DefaultPolicy("")
+		policy.Grants = StaticGrants(true, true, true, true)
 
-		p.PasswordGrant = true
-		p.ClientCredentialsGrant = true
-		p.ImplicitGrant = true
-		p.AuthorizationCodeGrant = true
-
-		p.ClientFilter = func(c Client, req *http.Request) (bson.M, error) {
+		policy.ClientFilter = func(c Client, req *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		p.ResourceOwnerFilter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(ro ResourceOwner, req *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		p.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+		policy.GrantStrategy = func(scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}
@@ -53,7 +49,7 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
-		p.ApproveStrategy = func(_ GenericToken, scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
+		policy.ApproveStrategy = func(_ GenericToken, scope oauth2.Scope, _ Client, _ ResourceOwner) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}
@@ -65,7 +61,7 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
-		authenticator := NewAuthenticator(tester.Store, p, func(err error) {
+		authenticator := NewAuthenticator(tester.Store, policy, func(err error) {
 			t.Error(err)
 		})
 
@@ -130,10 +126,10 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.UnknownToken = mustGenerateToken(p, AccessToken, coal.New(), time.Now())
-		config.ValidToken = mustGenerateToken(p, AccessToken, validToken.ID(), validToken.ExpiresAt)
-		config.ExpiredToken = mustGenerateToken(p, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
-		config.InsufficientToken = mustGenerateToken(p, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
+		config.UnknownToken = mustGenerateToken(policy, AccessToken, coal.New(), time.Now())
+		config.ValidToken = mustGenerateToken(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
+		config.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
+		config.InsufficientToken = mustGenerateToken(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
 		config.PrimaryRedirectURI = "http://example.com/callback1"
 		config.SecondaryRedirectURI = "http://example.com/callback2"
@@ -152,13 +148,13 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.UnknownRefreshToken = mustGenerateToken(p, RefreshToken, coal.New(), time.Now())
-		config.ValidRefreshToken = mustGenerateToken(p, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
-		config.ExpiredRefreshToken = mustGenerateToken(p, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		config.UnknownRefreshToken = mustGenerateToken(policy, RefreshToken, coal.New(), time.Now())
+		config.ValidRefreshToken = mustGenerateToken(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
+		config.ExpiredRefreshToken = mustGenerateToken(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		config.InvalidAuthorizationCode = "foo"
-		config.UnknownAuthorizationCode = mustGenerateToken(p, AuthorizationCode, coal.New(), time.Now())
-		config.ExpiredAuthorizationCode = mustGenerateToken(p, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		config.UnknownAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, coal.New(), time.Now())
+		config.ExpiredAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		validToken = tester.Save(&Token{
 			Type:        AccessToken,
@@ -168,7 +164,7 @@ func TestIntegration(t *testing.T) {
 			User:        coal.P(user.ID()),
 		}).(*Token)
 
-		validBearerToken, _ := p.GenerateJWT(validToken, app1, user)
+		validBearerToken, _ := policy.GenerateJWT(validToken, app1, user)
 
 		config.InvalidAuthorizationParams = map[string]string{
 			"access_token": "foo",
@@ -304,7 +300,7 @@ func TestInvalidResponseType(t *testing.T) {
 func TestInvalidClientFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy("")
-		policy.PasswordGrant = true
+		policy.Grants = StaticGrants(true, false, false, false)
 
 		var errs []string
 
@@ -371,7 +367,7 @@ func TestInvalidClientFilter(t *testing.T) {
 func TestInvalidResourceOwnerFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy("")
-		policy.PasswordGrant = true
+		policy.Grants = StaticGrants(true, false, false, false)
 
 		var errs []string
 

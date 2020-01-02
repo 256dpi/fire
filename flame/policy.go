@@ -28,6 +28,14 @@ var ErrApprovalRejected = errors.New("approval rejected")
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = errors.New("invalid scope")
 
+// Grants defines the selected grants.
+type Grants struct {
+	Password          bool
+	ClientCredentials bool
+	Implicit          bool
+	AuthorizationCode bool
+}
+
 // Policy configures the provided authentication and authorization schemes used
 // by the authenticator.
 type Policy struct {
@@ -35,17 +43,14 @@ type Policy struct {
 	// characters long to ensure strong security.
 	Secret string
 
-	// The available authentication and authorization grants.
-	PasswordGrant          bool
-	ClientCredentialsGrant bool
-	ImplicitGrant          bool
-	AuthorizationCodeGrant bool
-
 	// The token model.
 	Token GenericToken
 
 	// The client models.
 	Clients []Client
+
+	// Grants should return the permitted grants for the provided client.
+	Grants func(Client) (Grants, error)
 
 	// ClientFilter may return a filter that should be applied when looking
 	// up a client. This callback can be used to select clients based on other
@@ -55,7 +60,7 @@ type Policy struct {
 
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
-	ResourceOwners func(Client) []ResourceOwner
+	ResourceOwners func(Client) ([]ResourceOwner, error)
 
 	// ResourceOwnerFilter may return a filter that should be applied when
 	// looking up a resource owner. This callback can be used to select resource
@@ -94,6 +99,18 @@ type Policy struct {
 	AccessTokenLifespan       time.Duration
 	RefreshTokenLifespan      time.Duration
 	AuthorizationCodeLifespan time.Duration
+}
+
+// StaticGrants always selects the specified grants.
+func StaticGrants(password, clientCredentials, implicit, authorizationCode bool) func(Client) (Grants, error) {
+	return func(Client) (Grants, error) {
+		return Grants{
+			Password:          password,
+			ClientCredentials: clientCredentials,
+			Implicit:          implicit,
+			AuthorizationCode: authorizationCode,
+		}, nil
+	}
 }
 
 // DefaultGrantStrategy grants only empty scopes.
@@ -136,8 +153,11 @@ func DefaultPolicy(secret string) *Policy {
 		Secret:  secret,
 		Token:   &Token{},
 		Clients: []Client{&Application{}},
-		ResourceOwners: func(_ Client) []ResourceOwner {
-			return []ResourceOwner{&User{}}
+		Grants: func(Client) (Grants, error) {
+			return Grants{}, nil
+		},
+		ResourceOwners: func(_ Client) ([]ResourceOwner, error) {
+			return []ResourceOwner{&User{}}, nil
 		},
 		GrantStrategy:             DefaultGrantStrategy,
 		ApprovalURL:               StaticApprovalURL(""),
