@@ -5,6 +5,7 @@ package flame
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -948,17 +949,19 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	// prepare client
 	client := model.Meta().Make().(Client)
 
-	// prepare filter
-	filters := []bson.M{
-		{"_id": id},
-	}
-
 	// use tagged field if present
+	var filters []bson.M
 	idField := coal.L(model, "flame-client-id", false)
 	if idField != "" {
 		filters = []bson.M{
 			{coal.F(model, idField): id},
 		}
+	} else if coal.IsHex(id) {
+		filters = []bson.M{
+			{"_id": coal.MustFromHex(id)},
+		}
+	} else {
+		stack.Abort(fmt.Errorf("unable to determine client id field"))
 	}
 
 	// add additional filter if provided
@@ -1072,17 +1075,19 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	// prepare resource owner
 	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
 
-	// prepare filter
-	filters := []bson.M{
-		{"_id": id},
-	}
-
 	// use tagged field if present
+	var filters []bson.M
 	idField := coal.L(model, "flame-resource-owner-id", false)
 	if idField != "" {
 		filters = []bson.M{
 			{coal.F(model, idField): id},
 		}
+	} else if coal.IsHex(id) {
+		filters = []bson.M{
+			{"_id": coal.MustFromHex(id)},
+		}
+	} else {
+		stack.Abort(fmt.Errorf("unable to determine resource owner id field"))
 	}
 
 	// add additional filter if provided
