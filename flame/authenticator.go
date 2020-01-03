@@ -949,9 +949,16 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	client := model.Meta().Make().(Client)
 
 	// prepare filter
-	field := coal.F(model, coal.L(model, "flame-client-id", true))
 	filters := []bson.M{
-		{field: id},
+		{"_id": id},
+	}
+
+	// use tagged field if present
+	idField := coal.L(model, "flame-client-id", false)
+	if idField != "" {
+		filters = []bson.M{
+			{coal.F(model, idField): id},
+		}
 	}
 
 	// add additional filter if provided
@@ -1066,9 +1073,16 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
 
 	// prepare filter
-	field := coal.F(model, coal.L(model, "flame-resource-owner-id", true))
 	filters := []bson.M{
-		{field: id},
+		{"_id": id},
+	}
+
+	// use tagged field if present
+	idField := coal.L(model, "flame-resource-owner-id", false)
+	if idField != "" {
+		filters = []bson.M{
+			{coal.F(model, idField): id},
+		}
 	}
 
 	// add additional filter if provided
