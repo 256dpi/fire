@@ -736,18 +736,18 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	}
 
 	// parse token
-	claims, _, err := a.policy.ParseJWT(req.Token)
-	if err != nil {
+	claims, expired, err := a.policy.ParseJWT(req.Token)
+	if expired {
+		env.writer.WriteHeader(http.StatusOK)
 		env.tracer.Pop()
 		return
+	} else if err != nil {
+		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
 	// parse id
 	id, err := coal.FromHex(claims.Id)
-	if err != nil {
-		env.tracer.Pop()
-		return
-	}
+	stack.AbortIf(err)
 
 	// get token
 	token := a.getToken(env, id)
@@ -797,18 +797,18 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	}
 
 	// parse token
-	claims, _, err := a.policy.ParseJWT(req.Token)
-	if err != nil {
+	claims, expired, err := a.policy.ParseJWT(req.Token)
+	if expired {
+		stack.AbortIf(introspection.WriteResponse(env.writer, &introspection.Response{}))
 		env.tracer.Pop()
 		return
+	} else if err != nil {
+		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
 	// parse id
 	id, err := coal.FromHex(claims.Id)
-	if err != nil {
-		env.tracer.Pop()
-		return
-	}
+	stack.AbortIf(err)
 
 	// prepare response
 	res := &introspection.Response{}

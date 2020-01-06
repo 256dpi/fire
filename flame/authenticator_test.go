@@ -126,6 +126,7 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
+		config.InvalidToken = "foo"
 		config.UnknownToken = mustGenerateToken(policy, AccessToken, coal.New(), time.Now())
 		config.ValidToken = mustGenerateToken(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
 		config.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)

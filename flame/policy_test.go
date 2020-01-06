@@ -25,7 +25,7 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 	sig, err := p.GenerateJWT(token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
-	claims, _, err := p.ParseJWT(sig)
+	claims, expired, err := p.ParseJWT(sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID().Hex(), claims.Id)
 	assert.Equal(t, token.ID().Timestamp().Unix(), claims.IssuedAt)
@@ -33,4 +33,5 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"name": "Hello",
 	}, claims.Data)
+	assert.False(t, expired)
 }
