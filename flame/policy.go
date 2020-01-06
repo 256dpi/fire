@@ -34,6 +34,7 @@ type Grants struct {
 	ClientCredentials bool
 	Implicit          bool
 	AuthorizationCode bool
+	RefreshToken      bool
 }
 
 // Policy configures the provided authentication and authorization schemes used
@@ -102,13 +103,14 @@ type Policy struct {
 }
 
 // StaticGrants always selects the specified grants.
-func StaticGrants(password, clientCredentials, implicit, authorizationCode bool) func(Client) (Grants, error) {
+func StaticGrants(password, clientCredentials, implicit, authorizationCode, refreshToken bool) func(Client) (Grants, error) {
 	return func(Client) (Grants, error) {
 		return Grants{
 			Password:          password,
 			ClientCredentials: clientCredentials,
 			Implicit:          implicit,
 			AuthorizationCode: authorizationCode,
+			RefreshToken:      refreshToken,
 		}, nil
 	}
 }

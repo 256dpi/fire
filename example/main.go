@@ -137,7 +137,7 @@ func createHandler(store *coal.Store) http.Handler {
 
 	// create policy
 	policy := flame.DefaultPolicy(secret)
-	policy.Grants = flame.StaticGrants(true, true, true, true)
+	policy.Grants = flame.StaticGrants(true, true, true, true, true)
 	policy.ApprovalURL = flame.StaticApprovalURL("http://0.0.0.0:4200/authorize")
 	policy.GrantStrategy = func(client flame.Client, owner flame.ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 		return scope, nil

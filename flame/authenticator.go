@@ -41,6 +41,7 @@ type environment struct {
 	request *http.Request
 	writer  http.ResponseWriter
 	tracer  *fire.Tracer
+	grants  Grants
 }
 
 // Authenticator provides OAuth2 based authentication and authorization. The
@@ -299,15 +300,15 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// get grants
-	grants, err := a.policy.Grants(client)
+	env.grants, err = a.policy.Grants(client)
 	stack.AbortIf(err)
 
 	/* client is valid */
 
 	// validate response type
-	if req.ResponseType == oauth2.TokenResponseType && !grants.Implicit {
+	if req.ResponseType == oauth2.TokenResponseType && !env.grants.Implicit {
 		stack.Abort(oauth2.UnsupportedResponseType(""))
-	} else if req.ResponseType == oauth2.CodeResponseType && !grants.AuthorizationCode {
+	} else if req.ResponseType == oauth2.CodeResponseType && !env.grants.AuthorizationCode {
 		stack.Abort(oauth2.UnsupportedResponseType(""))
 	}
 
@@ -440,14 +441,14 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 	}
 
 	// get grants
-	grants, err := a.policy.Grants(client)
+	env.grants, err = a.policy.Grants(client)
 	stack.AbortIf(err)
 
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
 		// check availability
-		if !grants.Password {
+		if !env.grants.Password {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
@@ -455,18 +456,23 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 		a.handleResourceOwnerPasswordCredentialsGrant(env, req, client)
 	case oauth2.ClientCredentialsGrantType:
 		// check availability
-		if !grants.ClientCredentials {
+		if !env.grants.ClientCredentials {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
 		// handle client credentials grant
 		a.handleClientCredentialsGrant(env, req, client)
 	case oauth2.RefreshTokenGrantType:
+		// check availability
+		if !env.grants.RefreshToken {
+			stack.Abort(oauth2.UnsupportedGrantType(""))
+		}
+
 		// handle refresh token grant
 		a.handleRefreshTokenGrant(env, req, client)
 	case oauth2.AuthorizationCodeGrantType:
 		// check availability
-		if !grants.AuthorizationCode {
+		if !env.grants.AuthorizationCode {
 			stack.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
@@ -882,7 +888,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 	res.Scope = scope
 
 	// issue a refresh token if requested
-	if refreshable {
+	if refreshable && env.grants.RefreshToken {
 		// save refresh token
 		rt := a.saveToken(env, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 

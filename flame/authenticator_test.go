@@ -27,7 +27,7 @@ func TestIntegration(t *testing.T) {
 		var requiredScope = oauth2.ParseScope("foo")
 
 		policy := DefaultPolicy("")
-		policy.Grants = StaticGrants(true, true, true, true)
+		policy.Grants = StaticGrants(true, true, true, true, true)
 
 		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
@@ -301,7 +301,7 @@ func TestInvalidResponseType(t *testing.T) {
 func TestInvalidClientFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy("")
-		policy.Grants = StaticGrants(true, false, false, false)
+		policy.Grants = StaticGrants(true, false, false, false, false)
 
 		var errs []string
 
@@ -368,7 +368,7 @@ func TestInvalidClientFilter(t *testing.T) {
 func TestInvalidResourceOwnerFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy("")
-		policy.Grants = StaticGrants(true, false, false, false)
+		policy.Grants = StaticGrants(true, false, false, false, false)
 
 		var errs []string
 
