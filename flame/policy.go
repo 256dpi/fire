@@ -16,6 +16,10 @@ import (
 // that the request includes invalid filter parameters.
 var ErrInvalidFilter = errors.New("invalid filter")
 
+// ErrInvalidRedirectURI should be returned by the RedirectURIValidator to
+// indicate that the redirect URI is invalid.
+var ErrInvalidRedirectURI = errors.New("invalid redirect uri")
+
 // ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
 // of the grant based on the provided conditions.
 var ErrGrantRejected = errors.New("grant rejected")
@@ -58,6 +62,11 @@ type Policy struct {
 	// request parameters. It can return ErrInvalidFilter to cancel the
 	// authentication request.
 	ClientFilter func(Client, *http.Request) (bson.M, error)
+
+	// RedirectURIValidator may validate a redirect URI and return a valid or
+	// or corrected redirect URI for further use. It can return
+	// ErrInvalidRedirectURI to to cancel the authorization request.
+	RedirectURIValidator func(Client, string) (string, error)
 
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
@@ -115,6 +124,17 @@ func StaticGrants(password, clientCredentials, implicit, authorizationCode, refr
 	}
 }
 
+// DefaultRedirectURIValidator will check the redirect URI against the client
+// model using the ValidRedirectURI method.
+func DefaultRedirectURIValidator(client Client, uri string) (string, error) {
+	// check model
+	if client.ValidRedirectURI(uri) {
+		return uri, nil
+	}
+
+	return "", ErrInvalidRedirectURI
+}
+
 // DefaultGrantStrategy grants only empty scopes.
 func DefaultGrantStrategy(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 	// check scope
@@ -158,6 +178,7 @@ func DefaultPolicy(secret string) *Policy {
 		Grants: func(Client) (Grants, error) {
 			return Grants{}, nil
 		},
+		RedirectURIValidator: DefaultRedirectURIValidator,
 		ResourceOwners: func(_ Client) ([]ResourceOwner, error) {
 			return []ResourceOwner{&User{}}, nil
 		},

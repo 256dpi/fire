@@ -295,8 +295,11 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// validate redirect URI
-	if !client.ValidRedirectURI(req.RedirectURI) {
+	req.RedirectURI, err = a.policy.RedirectURIValidator(client, req.RedirectURI)
+	if err == ErrInvalidRedirectURI {
 		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
+	} else if err != nil {
+		stack.Abort(err)
 	}
 
 	// get grants
