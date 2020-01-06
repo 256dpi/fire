@@ -124,7 +124,8 @@ func (t *Token) Validate() error {
 }
 
 // Client is the interface that must be implemented by clients. The field used
-// to uniquely identify the client must be flagged with "flame-client-id".
+// to uniquely identify the client may be flagged with "flame-client-id". If
+// missing the models id is used instead.
 type Client interface {
 	coal.Model
 
@@ -231,12 +232,12 @@ func (a *Application) HashSecret() error {
 }
 
 // ResourceOwner is the interface that must be implemented by resource owners.
-// The field used to uniquely identify the resource owner must be flagged with
-// "flame-resource-owner-id".
+// The field used to uniquely identify the resource owner may be flagged with
+// "flame-resource-owner-id". If missing the models id is used instead.
 type ResourceOwner interface {
 	coal.Model
 
-	// ValidSecret should determine whether the specified plain text password
+	// ValidPassword should determine whether the specified plain text password
 	// matches the stored hashed password.
 	ValidPassword(string) bool
 }
