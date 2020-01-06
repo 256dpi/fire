@@ -65,17 +65,19 @@ func TestIntegration(t *testing.T) {
 			t.Error(err)
 		})
 
+		redirectURIs := []string{"http://example.com/callback1", "http://example.com/callback2"}
+
 		app1 := tester.Save(&Application{
 			Name:         "Application 1",
 			Key:          "app1",
 			SecretHash:   mustHash(testPassword),
-			RedirectURIs: []string{"http://example.com/callback1"},
+			RedirectURIs: redirectURIs,
 		}).(*Application)
 
 		app2 := tester.Save(&Application{
 			Name:         "Application 2",
 			Key:          "app2",
-			RedirectURIs: []string{"http://example.com/callback2"},
+			RedirectURIs: redirectURIs,
 		}).(*Application)
 
 		user := tester.Save(&User{
@@ -132,8 +134,8 @@ func TestIntegration(t *testing.T) {
 		config.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
 		config.InsufficientToken = mustGenerateToken(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
-		config.PrimaryRedirectURI = "http://example.com/callback1"
-		config.SecondaryRedirectURI = "http://example.com/callback2"
+		config.PrimaryRedirectURI = redirectURIs[0]
+		config.SecondaryRedirectURI = redirectURIs[1]
 
 		validRefreshToken := tester.Save(&Token{
 			Type:        RefreshToken,

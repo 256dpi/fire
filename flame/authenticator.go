@@ -686,7 +686,15 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 		stack.Abort(oauth2.InvalidGrant("invalid authorization code ownership"))
 	}
 
-	// validate redirect uri
+	// validate redirect URI
+	req.RedirectURI, err = a.policy.RedirectURIValidator(client, req.RedirectURI)
+	if err == ErrInvalidRedirectURI {
+		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
+	} else if err != nil {
+		stack.Abort(err)
+	}
+
+	// compare redirect URIs
 	if data.RedirectURI != req.RedirectURI {
 		stack.Abort(oauth2.InvalidGrant("redirect uri mismatch"))
 	}

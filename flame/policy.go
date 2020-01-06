@@ -63,9 +63,11 @@ type Policy struct {
 	// authentication request.
 	ClientFilter func(Client, *http.Request) (bson.M, error)
 
-	// RedirectURIValidator may validate a redirect URI and return a valid or
-	// or corrected redirect URI for further use. It can return
-	// ErrInvalidRedirectURI to to cancel the authorization request.
+	// RedirectURIValidator should validate a redirect URI and return the valid
+	// or corrected redirect URI. It can return ErrInvalidRedirectURI to to
+	// cancel the authorization request. The validator is during the
+	// authorization and the token request. If the result differs, no token will
+	// be issue and the request aborted.
 	RedirectURIValidator func(Client, string) (string, error)
 
 	// ResourceOwners should return a list of resource owner models that are
