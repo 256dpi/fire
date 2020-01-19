@@ -42,6 +42,17 @@ func TestGenerateJWTAndParseJWT(t *testing.T) {
 	}, claims)
 }
 
+func TestParseJWTInvalidSigningMethod(t *testing.T) {
+	str, err := jwt.New(jwt.SigningMethodHS384).SignedString([]byte("foo"))
+	assert.NoError(t, err)
+	assert.NotEmpty(t, str)
+
+	token, claims, err := ParseJWT("foo", str)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Nil(t, token)
+}
+
 func TestTokenMigrator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		migrator := TokenMigrator(true)

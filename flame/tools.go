@@ -10,6 +10,10 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
+var jwtParser = &jwt.Parser{
+	ValidMethods: []string{jwt.SigningMethodHS256.Name},
+}
+
 // JWT represents a parsed JSON web token.
 type JWT = jwt.Token
 
@@ -29,10 +33,15 @@ func GenerateJWT(secret string, claims Claims) (string, error) {
 
 // ParseJWT will parse a JWT token.
 func ParseJWT(secret, str string) (*JWT, *Claims, error) {
+	// parse token
 	var claims Claims
-	token, err := jwt.ParseWithClaims(str, &claims, func(*JWT) (interface{}, error) {
+	token, err := jwtParser.ParseWithClaims(str, &claims, func(*JWT) (interface{}, error) {
 		return []byte(secret), nil
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return token, &claims, err
 }
 
