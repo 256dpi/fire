@@ -168,6 +168,12 @@ type Context struct {
 	// Operations: Update
 	Original coal.Model
 
+	// The document that has been received by the client.
+	//
+	// Usage: Read Only, Availability: Authorizers
+	// Operations: !List, !Find, !CollectionAction, !ResourceAction
+	Request *jsonapi.Document
+
 	// The document that will be written to the client.
 	//
 	// Usage: Modify Only, Availability: Notifiers

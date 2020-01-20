@@ -259,6 +259,9 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		stack.AbortIf(err)
 	}
 
+	// set document
+	ctx.Request = doc
+
 	// validate id if present
 	if req.ResourceID != "" && !coal.IsHex(req.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
@@ -751,6 +754,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		ReadableFields: rc.initialFields(rc.Model, ctx.JSONAPIRequest),
 		WritableFields: rc.initialFields(rc.Model, nil),
 		Context:        ctx.Context,
+		Request:        ctx.Request,
 		Store:          ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
