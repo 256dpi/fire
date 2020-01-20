@@ -221,7 +221,7 @@ type Context struct {
 }
 
 // TC is a shorthand to get a traced collection for the specified model.
-func (c *Context) TC(model coal.Model) *coal.TracedCollection {
+func (c *Context) TC(model coal.Model) *coal.Collection {
 	return c.Store.TC(c.Tracer, model)
 }
 

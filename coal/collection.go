@@ -17,18 +17,18 @@ type Tracer interface {
 	Pop()
 }
 
-// TracedCollection wraps a collection to automatically push tracing spans for
+// Collection wraps a collection to automatically push tracing spans for
 // run queries.
-type TracedCollection struct {
+type Collection struct {
 	coll   lungo.ICollection
 	tracer Tracer
 }
 
 // AggregateAll wraps the native Aggregate collection method and decodes all
 // documents to the provided slice.
-func (c *TracedCollection) AggregateAll(ctx context.Context, slicePtr interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
+func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
 	// push span
-	c.tracer.Push("mongo/Collection.Aggregate")
+	c.tracer.Push("coal/Collection.Aggregate")
 	c.tracer.Tag("pipeline", pipeline)
 	defer c.tracer.Pop()
 
@@ -50,9 +50,9 @@ func (c *TracedCollection) AggregateAll(ctx context.Context, slicePtr interface{
 // AggregateIter wraps the native Aggregate collection method and calls the
 // provided callback with the decode method until an error is returned or the
 // cursor has been exhausted.
-func (c *TracedCollection) AggregateIter(ctx context.Context, pipeline interface{}, fn func(func(interface{}) error) error, opts ...*options.AggregateOptions) error {
+func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn func(func(interface{}) error) error, opts ...*options.AggregateOptions) error {
 	// push span
-	c.tracer.Push("mongo/Collection.Aggregate")
+	c.tracer.Push("coal/Collection.Aggregate")
 	c.tracer.Tag("pipeline", pipeline)
 	defer c.tracer.Pop()
 
@@ -83,9 +83,9 @@ func (c *TracedCollection) AggregateIter(ctx context.Context, pipeline interface
 }
 
 // BulkWrite wraps the native BulkWrite collection method.
-func (c *TracedCollection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.BulkWrite")
+	c.tracer.Push("coal/Collection.BulkWrite")
 	defer c.tracer.Pop()
 
 	// run query
@@ -93,9 +93,9 @@ func (c *TracedCollection) BulkWrite(ctx context.Context, models []mongo.WriteMo
 }
 
 // CountDocuments wraps the native CountDocuments collection method.
-func (c *TracedCollection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
+func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.CountDocuments")
+	c.tracer.Push("coal/Collection.CountDocuments")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -104,9 +104,9 @@ func (c *TracedCollection) CountDocuments(ctx context.Context, filter interface{
 }
 
 // DeleteMany wraps the native DeleteMany collection method.
-func (c *TracedCollection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.DeleteMany")
+	c.tracer.Push("coal/Collection.DeleteMany")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -115,9 +115,9 @@ func (c *TracedCollection) DeleteMany(ctx context.Context, filter interface{}, o
 }
 
 // DeleteOne wraps the native DeleteOne collection method.
-func (c *TracedCollection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.DeleteOne")
+	c.tracer.Push("coal/Collection.DeleteOne")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -126,9 +126,9 @@ func (c *TracedCollection) DeleteOne(ctx context.Context, filter interface{}, op
 }
 
 // Distinct wraps the native Distinct collection method.
-func (c *TracedCollection) Distinct(ctx context.Context, fieldName string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
+func (c *Collection) Distinct(ctx context.Context, fieldName string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.Distinct")
+	c.tracer.Push("coal/Collection.Distinct")
 	c.tracer.Tag("fieldName", fieldName)
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
@@ -138,9 +138,9 @@ func (c *TracedCollection) Distinct(ctx context.Context, fieldName string, filte
 }
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
-func (c *TracedCollection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
+func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.EstimatedDocumentCount")
+	c.tracer.Push("coal/Collection.EstimatedDocumentCount")
 	defer c.tracer.Pop()
 
 	// run query
@@ -149,9 +149,9 @@ func (c *TracedCollection) EstimatedDocumentCount(ctx context.Context, opts ...*
 
 // FindAll wraps the native Find collection method and decodes all documents to
 // the provided slice.
-func (c *TracedCollection) FindAll(ctx context.Context, slicePtr interface{}, filter interface{}, opts ...*options.FindOptions) error {
+func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter interface{}, opts ...*options.FindOptions) error {
 	// push span
-	c.tracer.Push("mongo/Collection.Find")
+	c.tracer.Push("coal/Collection.Find")
 	c.tracer.Tag("filter", filter)
 	defer c.tracer.Pop()
 
@@ -173,9 +173,9 @@ func (c *TracedCollection) FindAll(ctx context.Context, slicePtr interface{}, fi
 // FindIter wraps the native Find collection method and calls the provided
 // callback with the decode method until an error is returned or the cursor has
 // been exhausted.
-func (c *TracedCollection) FindIter(ctx context.Context, filter interface{}, fn func(func(interface{}) error) error, opts ...*options.FindOptions) error {
+func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(func(interface{}) error) error, opts ...*options.FindOptions) error {
 	// push span
-	c.tracer.Push("mongo/Collection.Find")
+	c.tracer.Push("coal/Collection.Find")
 	c.tracer.Tag("filter", filter)
 	defer c.tracer.Pop()
 
@@ -206,9 +206,9 @@ func (c *TracedCollection) FindIter(ctx context.Context, filter interface{}, fn 
 }
 
 // FindOne wraps the native FindOne collection method.
-func (c *TracedCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
+func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
 	// push span
-	c.tracer.Push("mongo/Collection.FindOne")
+	c.tracer.Push("coal/Collection.FindOne")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -217,9 +217,9 @@ func (c *TracedCollection) FindOne(ctx context.Context, filter interface{}, opts
 }
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
-func (c *TracedCollection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
+func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
 	// push span
-	c.tracer.Push("mongo/Collection.FindOneAndDelete")
+	c.tracer.Push("coal/Collection.FindOneAndDelete")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -228,9 +228,9 @@ func (c *TracedCollection) FindOneAndDelete(ctx context.Context, filter interfac
 }
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
-func (c *TracedCollection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
+func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
 	// push span
-	c.tracer.Push("mongo/Collection.FindOneAndReplace")
+	c.tracer.Push("coal/Collection.FindOneAndReplace")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -239,9 +239,9 @@ func (c *TracedCollection) FindOneAndReplace(ctx context.Context, filter interfa
 }
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
-func (c *TracedCollection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
+func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
 	// push span
-	c.tracer.Push("mongo/Collection.FindOneAndUpdate")
+	c.tracer.Push("coal/Collection.FindOneAndUpdate")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -250,9 +250,9 @@ func (c *TracedCollection) FindOneAndUpdate(ctx context.Context, filter interfac
 }
 
 // InsertMany wraps the native InsertMany collection method.
-func (c *TracedCollection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.InsertMany")
+	c.tracer.Push("coal/Collection.InsertMany")
 	defer c.tracer.Pop()
 
 	// run query
@@ -260,9 +260,9 @@ func (c *TracedCollection) InsertMany(ctx context.Context, documents []interface
 }
 
 // InsertOne wraps the native InsertOne collection method.
-func (c *TracedCollection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
+func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.InsertOne")
+	c.tracer.Push("coal/Collection.InsertOne")
 	defer c.tracer.Pop()
 
 	// run query
@@ -270,9 +270,9 @@ func (c *TracedCollection) InsertOne(ctx context.Context, document interface{}, 
 }
 
 // ReplaceOne wraps the native ReplaceOne collection method.
-func (c *TracedCollection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.ReplaceOne")
+	c.tracer.Push("coal/Collection.ReplaceOne")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -281,9 +281,9 @@ func (c *TracedCollection) ReplaceOne(ctx context.Context, filter interface{}, r
 }
 
 // UpdateMany wraps the native UpdateMany collection method.
-func (c *TracedCollection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.UpdateMany")
+	c.tracer.Push("coal/Collection.UpdateMany")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 
@@ -292,9 +292,9 @@ func (c *TracedCollection) UpdateMany(ctx context.Context, filter interface{}, u
 }
 
 // UpdateOne wraps the native UpdateOne collection method.
-func (c *TracedCollection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// push span
-	c.tracer.Push("mongo/Collection.UpdateOne")
+	c.tracer.Push("coal/Collection.UpdateOne")
 	c.tracer.Log("filter", filter)
 	defer c.tracer.Pop()
 

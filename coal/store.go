@@ -125,8 +125,8 @@ func (s *Store) C(model Model) lungo.ICollection {
 }
 
 // TC will return a traced collection for the specified model.
-func (s *Store) TC(tracer Tracer, model Model) *TracedCollection {
-	return &TracedCollection{
+func (s *Store) TC(tracer Tracer, model Model) *Collection {
+	return &Collection{
 		coll:   s.C(model),
 		tracer: tracer,
 	}
