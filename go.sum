@@ -2,12 +2,12 @@ github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba h1:ZrWPG6s22qEsCB2M4h
 github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba/go.mod h1:HcRNieBy4k2gr4Q6iilWxJnA64GdbOds4o8Iz2/G1UY=
 github.com/256dpi/jsonapi v1.3.0 h1:D0VoODA1OVWl2nr0bUXIdV/3CteoRpaRuYCPKR8vDAw=
 github.com/256dpi/jsonapi v1.3.0/go.mod h1:Ko0ntY8Q7gz7L4tGM0adOU+xU1Qs3HmSbTyqKy2VY84=
-github.com/256dpi/lungo v0.1.7 h1:OL1lC+8bOJZgI+MAT3BntAz8EuHjuc5E1RDtNQDK7Rk=
-github.com/256dpi/lungo v0.1.7/go.mod h1:k7P2WdslV9e+vW1LHK6OTnYss1hSG/r7mEzJVO2+kpM=
+github.com/256dpi/lungo v0.1.9 h1:pgyVLSg//jrOC+tqyMeYAooY47ER+iy2gygyhWsNPT0=
+github.com/256dpi/lungo v0.1.9/go.mod h1:k7P2WdslV9e+vW1LHK6OTnYss1hSG/r7mEzJVO2+kpM=
 github.com/256dpi/oauth2 v1.4.0 h1:ve1jAa8UD3xTp2cMRufcDheqOu6MPuXnIDSoJt0icKc=
 github.com/256dpi/oauth2 v1.4.0/go.mod h1:9nvBZ+uTcgdbVUqxWm0gblyJWrWW2h0Yts/RiTE3loU=
-github.com/256dpi/serve v0.1.2 h1:SDv6HBxKnaWJ1a8MNm/eCK067EvPhs4ZKPt3igPwR6o=
-github.com/256dpi/serve v0.1.2/go.mod h1:Bm0srMdWdOl7+6q7lBfas6A0Gu3eqdwy6mDErWWc/eI=
+github.com/256dpi/serve v0.2.0 h1:JBJBm80R8vHDEB0ACPBCoemlPIRTvzyhU/W7GY21ml0=
+github.com/256dpi/serve v0.2.0/go.mod h1:lsKXdFQwTBjrcS+i5fwTB9XGXRp93N+QbcOlVnwEr18=
 github.com/256dpi/stack v0.3.0 h1:qvV9aSc4LCByIRZ1B0h72N5OuRmPieG3ry85Ya4G+R8=
 github.com/256dpi/stack v0.3.0/go.mod h1:JdiPRStn1sPpYNoiLIjzShUVWsekxRo9dqvUVQYmBbI=
 github.com/DataDog/zstd v1.4.4 h1:+IawcoXhCBylN7ccwdwf8LOH2jKq7NavGpEPanrlTzE=
