@@ -170,7 +170,7 @@ type Context struct {
 
 	// The document that will be written to the client.
 	//
-	// Usage: Modify Only, Availability: Notifiers,
+	// Usage: Modify Only, Availability: Notifiers
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
 
