@@ -160,7 +160,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 //
 // The callback supports models that use the soft delete mechanism.
 func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
-	return C("DependentResourcesValidator", Only(Delete), func(ctx *Context) error {
+	return C("fire/DependentResourcesValidator", Only(Delete), func(ctx *Context) error {
 		// check all relations
 		for model, field := range pairs {
 			// prepare query
@@ -312,7 +312,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	cb1 := DependentResourcesValidator(dependentResources)
 	cb2 := ReferencedResourcesValidator(references)
 
-	return C("RelationshipValidator", func(ctx *Context) bool {
+	return C("fire/RelationshipValidator", func(ctx *Context) bool {
 		return cb1.Matcher(ctx) || cb2.Matcher(ctx)
 	}, func(ctx *Context) error {
 		// run dependent resources validator
