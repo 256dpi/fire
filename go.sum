@@ -6,6 +6,8 @@ github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76 h1:g2CQAMjkTsdiic
 github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76/go.mod h1:jgMcBf9YpXIdCdoDmGlSiYXBXPnwDMcUQfijXD002s4=
 github.com/256dpi/oauth2 v1.4.0 h1:ve1jAa8UD3xTp2cMRufcDheqOu6MPuXnIDSoJt0icKc=
 github.com/256dpi/oauth2 v1.4.0/go.mod h1:9nvBZ+uTcgdbVUqxWm0gblyJWrWW2h0Yts/RiTE3loU=
+github.com/256dpi/oauth2 v1.4.1-0.20200119184108-f0eaaba07bc5 h1:urwEFiISj/JBh5MInsZlMGayXACeCGCYraazfTjeBn4=
+github.com/256dpi/oauth2 v1.4.1-0.20200119184108-f0eaaba07bc5/go.mod h1:9nvBZ+uTcgdbVUqxWm0gblyJWrWW2h0Yts/RiTE3loU=
 github.com/256dpi/serve v0.3.0 h1:731gdB09kx9zENm4PAk6YFbXPOMvjH3f/E4I2RPu1LE=
 github.com/256dpi/serve v0.3.0/go.mod h1:lsKXdFQwTBjrcS+i5fwTB9XGXRp93N+QbcOlVnwEr18=
 github.com/256dpi/stack v0.3.0 h1:qvV9aSc4LCByIRZ1B0h72N5OuRmPieG3ry85Ya4G+R8=

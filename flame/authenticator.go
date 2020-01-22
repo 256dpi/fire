@@ -11,9 +11,6 @@ import (
 	"time"
 
 	"github.com/256dpi/oauth2"
-	"github.com/256dpi/oauth2/bearer"
-	"github.com/256dpi/oauth2/introspection"
-	"github.com/256dpi/oauth2/revocation"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -160,8 +157,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// continue any previous aborts
 			defer stack.Resume(func(err error) {
 				// directly write bearer errors
-				if bearerError, ok := err.(*bearer.Error); ok {
-					_ = bearer.WriteError(w, bearerError)
+				if bearerError, ok := err.(*oauth2.Error); ok {
+					_ = oauth2.WriteBearerError(w, bearerError)
 					return
 				}
 
@@ -176,22 +173,22 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				}
 
 				// write generic server error
-				_ = bearer.WriteError(w, bearer.ServerError())
+				_ = oauth2.WriteBearerError(w, oauth2.ServerError(""))
 			})
 
 			// parse scope
 			requiredScope := oauth2.ParseScope(scope)
 
 			// parse bearer token
-			tk, err := bearer.ParseToken(r)
+			tk, err := oauth2.ParseBearerToken(r)
 			stack.AbortIf(err)
 
 			// parse token
 			claims, expired, err := a.policy.ParseJWT(tk)
 			if expired {
-				stack.Abort(bearer.InvalidToken("expired bearer token"))
+				stack.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
-				stack.Abort(bearer.InvalidToken("malformed bearer token"))
+				stack.Abort(oauth2.InvalidToken("malformed bearer token"))
 			}
 
 			// prepare env
@@ -204,13 +201,13 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get id
 			id, err := coal.FromHex(claims.Id)
 			if err != nil {
-				stack.Abort(bearer.InvalidToken("invalid bearer token id"))
+				stack.Abort(oauth2.InvalidToken("invalid bearer token id"))
 			}
 
 			// get token
 			accessToken := a.getToken(env, id)
 			if accessToken == nil {
-				stack.Abort(bearer.InvalidToken("unknown bearer token"))
+				stack.Abort(oauth2.InvalidToken("unknown bearer token"))
 			}
 
 			// get token data
@@ -218,17 +215,17 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// validate token type
 			if data.Type != AccessToken {
-				stack.Abort(bearer.InvalidToken("invalid bearer token type"))
+				stack.Abort(oauth2.InvalidToken("invalid bearer token type"))
 			}
 
 			// validate expiration
 			if data.ExpiresAt.Before(time.Now()) {
-				stack.Abort(bearer.InvalidToken("expired access token"))
+				stack.Abort(oauth2.InvalidToken("expired access token"))
 			}
 
 			// validate scope
 			if !data.Scope.Includes(requiredScope) {
-				stack.Abort(bearer.InsufficientScope(requiredScope.String()))
+				stack.Abort(oauth2.InsufficientScope(requiredScope.String()))
 			}
 
 			// create new context with access token
@@ -263,7 +260,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get resource owner
 			resourceOwner := a.getFirstResourceOwner(env, client, *data.ResourceOwnerID)
 			if resourceOwner == nil {
-				stack.Abort(bearer.InvalidToken("missing resource owner"))
+				stack.Abort(oauth2.InvalidToken("missing resource owner"))
 			}
 
 			// create new context with resource owner
@@ -733,12 +730,12 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	env.tracer.Push("flame/Authenticator.revocationEndpoint")
 
 	// parse authorization request
-	req, err := revocation.ParseRequest(env.request)
+	req, err := oauth2.ParseRevocationRequest(env.request)
 	stack.AbortIf(err)
 
 	// check token type hint
-	if req.TokenTypeHint != "" && !revocation.KnownTokenType(req.TokenTypeHint) {
-		stack.Abort(revocation.UnsupportedTokenType(""))
+	if req.TokenTypeHint != "" && !oauth2.KnownTokenType(req.TokenTypeHint) {
+		stack.Abort(oauth2.UnsupportedTokenType(""))
 	}
 
 	// get client
@@ -794,12 +791,12 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	env.tracer.Push("flame/Authenticator.introspectionEndpoint")
 
 	// parse introspection request
-	req, err := introspection.ParseRequest(env.request)
+	req, err := oauth2.ParseIntrospectionRequest(env.request)
 	stack.AbortIf(err)
 
 	// check token type hint
-	if req.TokenTypeHint != "" && !introspection.KnownTokenType(req.TokenTypeHint) {
-		stack.Abort(introspection.UnsupportedTokenType(""))
+	if req.TokenTypeHint != "" && !oauth2.KnownTokenType(req.TokenTypeHint) {
+		stack.Abort(oauth2.UnsupportedTokenType(""))
 	}
 
 	// get client
@@ -816,7 +813,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	// parse token
 	claims, expired, err := a.policy.ParseJWT(req.Token)
 	if expired {
-		stack.AbortIf(introspection.WriteResponse(env.writer, &introspection.Response{}))
+		stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, &oauth2.IntrospectionResponse{}))
 		env.tracer.Pop()
 		return
 	} else if err != nil {
@@ -828,7 +825,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	stack.AbortIf(err)
 
 	// prepare response
-	res := &introspection.Response{}
+	res := &oauth2.IntrospectionResponse{}
 
 	// get token
 	token := a.getToken(env, id)
@@ -859,9 +856,9 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 			if data.ResourceOwnerID != nil {
 				res.Username = data.ResourceOwnerID.Hex()
 			}
-			res.TokenType = introspection.AccessToken
+			res.TokenType = oauth2.AccessToken
 			if data.Type == RefreshToken {
-				res.TokenType = introspection.RefreshToken
+				res.TokenType = oauth2.RefreshToken
 			}
 			res.ExpiresAt = data.ExpiresAt.Unix()
 			res.IssuedAt = token.ID().Timestamp().Unix()
@@ -871,7 +868,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	}
 
 	// write response
-	stack.AbortIf(introspection.WriteResponse(env.writer, res))
+	stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, res))
 
 	// finish trace
 	env.tracer.Pop()
@@ -893,7 +890,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 	stack.AbortIf(err)
 
 	// prepare response
-	res := bearer.NewTokenResponse(atSignature, int(a.policy.AccessTokenLifespan/time.Second))
+	res := oauth2.NewBearerTokenResponse(atSignature, int(a.policy.AccessTokenLifespan/time.Second))
 
 	// set granted scope
 	res.Scope = scope
