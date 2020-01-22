@@ -2,6 +2,7 @@ package flame
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -223,11 +224,13 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 // expired and eventual errors.
 func (p *Policy) ParseJWT(str string) (*Claims, bool, error) {
 	// parse token and check expired errors
-	_, claims, err := ParseJWT(p.Secret, str)
+	token, claims, err := ParseJWT(p.Secret, str)
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
 		return nil, true, err
 	} else if err != nil {
 		return nil, false, err
+	} else if !token.Valid {
+		return nil, false, fmt.Errorf("invalid token")
 	}
 
 	// parse id
