@@ -51,10 +51,10 @@ type Action struct {
 	Methods []string
 
 	// BodyLimit defines the maximum allowed size of the request body. The
-	// serve.DataSize helper can be used to set the value.
+	// serve.ByteSize helper can be used to set the value.
 	//
 	// Default: 8M.
-	BodyLimit uint64
+	BodyLimit int64
 
 	// Timeout defines the time after which the context is cancelled and
 	// processing of the action should be stopped.
@@ -73,7 +73,7 @@ type Action struct {
 type M = map[string]*Action
 
 // A is a short-hand function to construct an action.
-func A(name string, methods []string, bodyLimit uint64, h Handler) *Action {
+func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 	// panic if methods or handler is not set
 	if len(methods) == 0 || h == nil {
 		panic("fire: missing methods or handler")

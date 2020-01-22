@@ -81,13 +81,13 @@ type Controller struct {
 	//
 	// Note: Fire uses the "page[number]" and "page[size]" query parameters for
 	// pagination.
-	ListLimit uint64
+	ListLimit int64
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
-	// The serve.DataSize helper can be used to set the value.
+	// The serve.ByteSize helper can be used to set the value.
 	//
 	// Default: 8M.
-	DocumentLimit uint64
+	DocumentLimit int64
 
 	// ReadTimeout and WriteTimeout specify the timeouts for read and write
 	// operations.
@@ -165,7 +165,7 @@ func (c *Controller) prepare() {
 
 		// set default body limit
 		if action.BodyLimit == 0 {
-			action.BodyLimit = serve.DataSize("8M")
+			action.BodyLimit = serve.MustByteSize("8M")
 		}
 
 		// set default timeout
@@ -186,7 +186,7 @@ func (c *Controller) prepare() {
 
 		// set default body limit
 		if action.BodyLimit == 0 {
-			action.BodyLimit = serve.DataSize("8M")
+			action.BodyLimit = serve.MustByteSize("8M")
 		}
 
 		// set default timeout
@@ -200,7 +200,7 @@ func (c *Controller) prepare() {
 
 	// set default document limit
 	if c.DocumentLimit == 0 {
-		c.DocumentLimit = serve.DataSize("8M")
+		c.DocumentLimit = serve.MustByteSize("8M")
 	}
 
 	// set default timeouts
@@ -1521,8 +1521,8 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// add pagination
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
-		opts = opts.SetLimit(int64(ctx.JSONAPIRequest.PageSize))
-		opts = opts.SetSkip(int64((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize))
+		opts = opts.SetLimit(ctx.JSONAPIRequest.PageSize)
+		opts = opts.SetSkip((ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize)
 	}
 
 	// query db
@@ -2045,7 +2045,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 		stack.AbortIf(err)
 
 		// calculate last page
-		lastPage := uint64(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
+		lastPage := int64(math.Ceil(float64(n) / float64(ctx.JSONAPIRequest.PageSize)))
 
 		// add basic pagination links
 		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber, ctx.JSONAPIRequest.PageSize)

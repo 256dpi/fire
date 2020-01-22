@@ -71,7 +71,7 @@ func (g *Group) Handle(name string, a *GroupAction) {
 
 	// set default body limit
 	if a.Action.BodyLimit == 0 {
-		a.Action.BodyLimit = serve.DataSize("8M")
+		a.Action.BodyLimit = serve.MustByteSize("8M")
 	}
 
 	// set default timeout
