@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/256dpi/serve"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 
@@ -3645,7 +3646,7 @@ func TestCollectionActions(t *testing.T) {
 				"error": A("error", []string{"POST"}, 3, func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
-					assert.Equal(t, []byte("PAY"), bytes)
+					assert.Equal(t, []byte{}, bytes)
 
 					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
@@ -3722,7 +3723,8 @@ func TestResourceActions(t *testing.T) {
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
-					assert.Equal(t, []byte("PAY"), bytes)
+					assert.Equal(t, []byte{}, bytes)
+					assert.Equal(t, serve.ErrBodyLimitExceeded, err)
 
 					ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 
