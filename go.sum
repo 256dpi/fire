@@ -1,7 +1,7 @@
 github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba h1:ZrWPG6s22qEsCB2M4hnhFlhgHo6tl8QGQp2ptjJ3tlM=
 github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba/go.mod h1:HcRNieBy4k2gr4Q6iilWxJnA64GdbOds4o8Iz2/G1UY=
-github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76 h1:g2CQAMjkTsdiicouiBJCWlly94ytaaozK+9rAPttMEo=
-github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76/go.mod h1:jgMcBf9YpXIdCdoDmGlSiYXBXPnwDMcUQfijXD002s4=
+github.com/256dpi/jsonapi/v2 v2.0.0 h1:0Eb6l+UDfCU21LKST2LQDuTxxUpnTGxLOP6GGX4rEoY=
+github.com/256dpi/jsonapi/v2 v2.0.0/go.mod h1:f0ZOq/bhmnZdIjyYnDnwb9eAIH7V1upZ5hMP48OcgBw=
 github.com/256dpi/lungo v0.1.10 h1:5VbVJqmHZ0NUapYrCgGzoXU0MEtiB0NxshYuz1bE7So=
 github.com/256dpi/lungo v0.1.10/go.mod h1:k7P2WdslV9e+vW1LHK6OTnYss1hSG/r7mEzJVO2+kpM=
 github.com/256dpi/oauth2/v2 v2.0.0 h1:Zr+4csXqy0j9uU0SVyDWmghF3qSv+jgQLsEphEg+uCM=

@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"go.mongodb.org/mongo-driver/bson"
 

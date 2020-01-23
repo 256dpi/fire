@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
 )

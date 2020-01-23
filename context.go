@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/jsonapi/v2"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"

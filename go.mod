@@ -1,7 +1,7 @@
 module github.com/256dpi/fire
 
 require (
-	github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76
+	github.com/256dpi/jsonapi/v2 v2.0.0
 	github.com/256dpi/lungo v0.1.10
 	github.com/256dpi/oauth2/v2 v2.0.0
 	github.com/256dpi/serve v0.3.0

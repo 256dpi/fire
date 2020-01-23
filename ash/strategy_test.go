@@ -3,7 +3,7 @@ package ash
 import (
 	"testing"
 
-	"github.com/256dpi/jsonapi"
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
