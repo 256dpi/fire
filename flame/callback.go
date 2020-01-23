@@ -1,7 +1,7 @@
 package flame
 
 import (
-	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/v2"
 
 	"github.com/256dpi/fire"
 )

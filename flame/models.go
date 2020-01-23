@@ -3,7 +3,7 @@ package flame
 import (
 	"time"
 
-	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/v2"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
 

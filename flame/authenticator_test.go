@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/oauth2"
-	"github.com/256dpi/oauth2/spec"
+	"github.com/256dpi/oauth2/v2"
+	"github.com/256dpi/oauth2/v2/oauth2test"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -86,26 +86,26 @@ func TestIntegration(t *testing.T) {
 			PasswordHash: mustHash(testPassword),
 		}).(*User)
 
-		config := spec.Default(newHandler(authenticator, true))
+		spec := oauth2test.Default(newHandler(authenticator, true))
 
-		config.PasswordGrantSupport = true
-		config.ClientCredentialsGrantSupport = true
-		config.ImplicitGrantSupport = true
-		config.AuthorizationCodeGrantSupport = true
-		config.RefreshTokenGrantSupport = true
+		spec.PasswordGrantSupport = true
+		spec.ClientCredentialsGrantSupport = true
+		spec.ImplicitGrantSupport = true
+		spec.AuthorizationCodeGrantSupport = true
+		spec.RefreshTokenGrantSupport = true
 
-		config.ConfidentialClientID = app1.Key
-		config.ConfidentialClientSecret = testPassword
-		config.PublicClientID = app2.Key
+		spec.ConfidentialClientID = app1.Key
+		spec.ConfidentialClientSecret = testPassword
+		spec.PublicClientID = app2.Key
 
-		config.ResourceOwnerUsername = user.Email
-		config.ResourceOwnerPassword = testPassword
+		spec.ResourceOwnerUsername = user.Email
+		spec.ResourceOwnerPassword = testPassword
 
-		config.InvalidScope = "baz"
-		config.ValidScope = "foo bar"
-		config.ExceedingScope = "foo bar baz"
+		spec.InvalidScope = "baz"
+		spec.ValidScope = "foo bar"
+		spec.ExceedingScope = "foo bar baz"
 
-		config.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
+		spec.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
 
 		validToken := tester.Save(&Token{
 			Type:        AccessToken,
@@ -128,14 +128,14 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.InvalidToken = "foo"
-		config.UnknownToken = mustGenerateToken(policy, AccessToken, coal.New(), time.Now())
-		config.ValidToken = mustGenerateToken(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
-		config.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
-		config.InsufficientToken = mustGenerateToken(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
+		spec.InvalidToken = "foo"
+		spec.UnknownToken = mustGenerateToken(policy, AccessToken, coal.New(), time.Now())
+		spec.ValidToken = mustGenerateToken(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
+		spec.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
+		spec.InsufficientToken = mustGenerateToken(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
-		config.PrimaryRedirectURI = redirectURIs[0]
-		config.SecondaryRedirectURI = redirectURIs[1]
+		spec.PrimaryRedirectURI = redirectURIs[0]
+		spec.SecondaryRedirectURI = redirectURIs[1]
 
 		validRefreshToken := tester.Save(&Token{
 			Type:        RefreshToken,
@@ -151,13 +151,13 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		config.UnknownRefreshToken = mustGenerateToken(policy, RefreshToken, coal.New(), time.Now())
-		config.ValidRefreshToken = mustGenerateToken(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
-		config.ExpiredRefreshToken = mustGenerateToken(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		spec.UnknownRefreshToken = mustGenerateToken(policy, RefreshToken, coal.New(), time.Now())
+		spec.ValidRefreshToken = mustGenerateToken(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
+		spec.ExpiredRefreshToken = mustGenerateToken(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
-		config.InvalidAuthorizationCode = "foo"
-		config.UnknownAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, coal.New(), time.Now())
-		config.ExpiredAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		spec.InvalidAuthorizationCode = "foo"
+		spec.UnknownAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, coal.New(), time.Now())
+		spec.ExpiredAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		validToken = tester.Save(&Token{
 			Type:        AccessToken,
@@ -169,15 +169,15 @@ func TestIntegration(t *testing.T) {
 
 		validBearerToken, _ := policy.GenerateJWT(validToken, app1, user)
 
-		config.InvalidAuthorizationParams = map[string]string{
+		spec.InvalidAuthorizationParams = map[string]string{
 			"access_token": "foo",
 		}
 
-		config.ValidAuthorizationParams = map[string]string{
+		spec.ValidAuthorizationParams = map[string]string{
 			"access_token": validBearerToken,
 		}
 
-		spec.Run(t, config)
+		oauth2test.Run(t, spec)
 	})
 }
 
@@ -242,7 +242,7 @@ func TestInvalidGrantType(t *testing.T) {
 		}).(*Application)
 
 		for _, gt := range []string{"password", "client_credentials", "authorization_code"} {
-			spec.Do(handler, &spec.Request{
+			oauth2test.Do(handler, &oauth2test.Request{
 				Method:   "POST",
 				Path:     "/oauth2/token",
 				Username: application.Key,
@@ -277,7 +277,7 @@ func TestInvalidResponseType(t *testing.T) {
 		}).(*Application)
 
 		for _, rt := range []string{"token", "code"} {
-			spec.Do(handler, &spec.Request{
+			oauth2test.Do(handler, &oauth2test.Request{
 				Method:   "POST",
 				Path:     "/oauth2/authorize",
 				Username: application.Key,
@@ -320,7 +320,7 @@ func TestInvalidClientFilter(t *testing.T) {
 			return nil, ErrInvalidFilter
 		}
 
-		spec.Do(handler, &spec.Request{
+		oauth2test.Do(handler, &oauth2test.Request{
 			Method:   "POST",
 			Path:     "/oauth2/token",
 			Username: application.Key,
@@ -344,7 +344,7 @@ func TestInvalidClientFilter(t *testing.T) {
 			return nil, errors.New("foo")
 		}
 
-		spec.Do(handler, &spec.Request{
+		oauth2test.Do(handler, &oauth2test.Request{
 			Method:   "POST",
 			Path:     "/oauth2/token",
 			Username: application.Key,
@@ -387,7 +387,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			return nil, ErrInvalidFilter
 		}
 
-		spec.Do(handler, &spec.Request{
+		oauth2test.Do(handler, &oauth2test.Request{
 			Method:   "POST",
 			Path:     "/oauth2/token",
 			Username: application.Key,
@@ -411,7 +411,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			return nil, errors.New("foo")
 		}
 
-		spec.Do(handler, &spec.Request{
+		oauth2test.Do(handler, &oauth2test.Request{
 			Method:   "POST",
 			Path:     "/oauth2/token",
 			Username: application.Key,

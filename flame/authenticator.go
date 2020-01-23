@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/stack"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

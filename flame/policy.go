@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/v2"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 

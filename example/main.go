@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/256dpi/oauth2"
+	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"

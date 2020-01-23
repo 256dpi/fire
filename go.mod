@@ -3,7 +3,7 @@ module github.com/256dpi/fire
 require (
 	github.com/256dpi/lungo v0.1.9
 	github.com/256dpi/jsonapi v1.3.1-0.20200121215405-ad8b14943d76
-	github.com/256dpi/oauth2 v1.4.1-0.20200119184108-f0eaaba07bc5
+	github.com/256dpi/oauth2/v2 v2.0.0-20200123161747-2dbe1190ec52
 	github.com/256dpi/serve v0.3.0
 	github.com/256dpi/stack v0.3.0
 	github.com/asaskevich/govalidator v0.0.0-20171111151018-521b25f4b05f
@@ -17,7 +17,7 @@ require (
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	github.com/uber/jaeger-lib v1.5.0 // indirect
 	go.mongodb.org/mongo-driver v1.2.0
-	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
+	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
 
