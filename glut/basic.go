@@ -69,3 +69,27 @@ func Del(store *coal.Store, component, name string) (bool, error) {
 
 	return res.DeletedCount > 0, nil
 }
+
+// Mut will load the specified value, run the callback and on success write the
+// value back. This method will ignore any locks held on the value.
+func Mut(store *coal.Store, component, name string, ttl time.Duration, fn func(bool, coal.Map) (coal.Map, error)) error {
+	// get value
+	data, ok, err := Get(store, component, name)
+	if err != nil {
+		return err
+	}
+
+	// run function
+	newData, err := fn(ok, data)
+	if err != nil {
+		return err
+	}
+
+	// put value
+	_, err = Set(store, component, name, newData, ttl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

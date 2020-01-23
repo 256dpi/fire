@@ -172,6 +172,22 @@ func TestLock(t *testing.T) {
 		assert.True(t, value.Locked.After(time.Now()))
 		assert.Equal(t, &token, value.Token)
 
+		// mutate locked
+
+		err = MutLocked(tester.Store, "test", "foo", token, func(ok bool, data coal.Map) (coal.Map, error) {
+			assert.True(t, ok)
+			assert.Equal(t, coal.Map{"foo": "bar"}, data)
+			data["foo"] = "baz"
+			return data, nil
+		})
+
+		value = tester.FindLast(&Value{}).(*Value)
+		assert.Equal(t, "test", value.Component)
+		assert.Equal(t, "foo", value.Name)
+		assert.Equal(t, coal.Map{"foo": "baz"}, value.Data)
+		assert.True(t, value.Locked.After(time.Now()))
+		assert.Equal(t, &token, value.Token)
+
 		// del with different token
 
 		deleted, err := DelLocked(tester.Store, "test", "foo", coal.New())

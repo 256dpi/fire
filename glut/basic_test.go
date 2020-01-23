@@ -50,6 +50,19 @@ func TestBasic(t *testing.T) {
 		assert.True(t, exists)
 		assert.Equal(t, coal.Map{"foo": "baz"}, data)
 
+		err = Mut(tester.Store, "test", "foo", 0, func(ok bool, data coal.Map) (coal.Map, error) {
+			assert.True(t, ok)
+			assert.Equal(t, coal.Map{"foo": "baz"}, data)
+			data["foo"] = "quz"
+			return data, nil
+		})
+		assert.NoError(t, err)
+
+		data, exists, err = Get(tester.Store, "test", "foo")
+		assert.NoError(t, err)
+		assert.True(t, exists)
+		assert.Equal(t, coal.Map{"foo": "quz"}, data)
+
 		deleted, err := Del(tester.Store, "test", "foo")
 		assert.NoError(t, err)
 		assert.True(t, deleted)

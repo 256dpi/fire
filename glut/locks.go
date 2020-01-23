@@ -173,6 +173,30 @@ func DelLocked(store *coal.Store, component, name string, token coal.ID) (bool, 
 	return res.DeletedCount > 0, nil
 }
 
+// MutLocked will load the specified value, run the callback and on success
+// write the value back.
+func MutLocked(store *coal.Store, component, name string, token coal.ID, fn func(bool, coal.Map) (coal.Map, error)) error {
+	// get value
+	data, ok, err := GetLocked(store, component, name, token)
+	if err != nil {
+		return err
+	}
+
+	// run function
+	newData, err := fn(ok, data)
+	if err != nil {
+		return err
+	}
+
+	// put value
+	_, err = SetLocked(store, component, name, newData, token)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Unlock will unlock the specified value if the provided token does match. It
 // will also update the deadline of the value if TTL is set.
 func Unlock(store *coal.Store, component, name string, token coal.ID, ttl time.Duration) (bool, error) {
