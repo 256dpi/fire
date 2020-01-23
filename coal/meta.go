@@ -142,17 +142,17 @@ func GetMeta(model Model) *Meta {
 
 			// check json tag
 			if field.Tag.Get("json") != "-" {
-				panic(`coal: expected to find a tag of the form 'json:"-"' on "coal.Base""`)
+				panic(`coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`)
 			}
 
 			// check bson tag
 			if field.Tag.Get("bson") != ",inline" {
-				panic(`coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base""`)
+				panic(`coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`)
 			}
 
 			// check tag
 			if len(baseTag) > 2 || baseTag[0] == "" {
-				panic(`coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base""`)
+				panic(`coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`)
 			}
 
 			// infer plural and collection names
