@@ -24,7 +24,7 @@ func NewNotary(name string, secret []byte) *Notary {
 	}
 
 	// check secret
-	if len(secret) < 16 {
+	if len(secret) < minSecretLen {
 		panic("heat: secret too small")
 	}
 

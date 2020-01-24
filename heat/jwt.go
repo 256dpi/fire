@@ -8,6 +8,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+const minSecretLen = 16
+
 var jwtSigningMethod = jwt.SigningMethodHS256
 
 var jwtParser = &jwt.Parser{
@@ -37,6 +39,16 @@ type RawKey struct {
 
 // Issue will sign a token from the specified raw key.
 func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
+	// check secret
+	if len(secret) < minSecretLen {
+		return "", fmt.Errorf("secret too small")
+	}
+
+	// check issuer
+	if issuer == "" {
+		return "", fmt.Errorf("missing issuer")
+	}
+
 	// check name
 	if name == "" {
 		return "", fmt.Errorf("missing name")
@@ -81,12 +93,12 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 // Verify will verify the specified token and return the decoded raw key.
 func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	// check secret
-	if len(secret) < 16 {
+	if len(secret) < minSecretLen {
 		return nil, fmt.Errorf("secret too small")
 	}
 
 	// check issuer
-	if name == "" {
+	if issuer == "" {
 		return nil, fmt.Errorf("missing issuer")
 	}
 
