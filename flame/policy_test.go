@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 func TestPolicyParseAndGenerateToken(t *testing.T) {
@@ -17,21 +18,17 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 		}
 	}
 
-	expiry := time.Now().Add(time.Hour)
+	expiry := time.Now().Add(time.Hour).Round(time.Second)
+	token := coal.Init(&Token{ExpiresAt: expiry}).(*Token)
 
-	token := coal.Init(&Token{
-		ExpiresAt: expiry,
-	}).(*Token)
 	sig, err := p.GenerateJWT(token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
-	claims, expired, err := p.ParseJWT(sig)
+	key, err := p.ParseJWT(sig)
 	assert.NoError(t, err)
-	assert.Equal(t, token.ID().Hex(), claims.Id)
-	assert.Equal(t, token.ID().Timestamp().Unix(), claims.IssuedAt)
-	assert.Equal(t, expiry.Unix(), claims.ExpiresAt)
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, token.ID().Hex(), key.ID)
+	assert.Equal(t, expiry, key.Expiry)
+	assert.Equal(t, heat.Data{
 		"name": "Hello",
-	}, claims.Data)
-	assert.False(t, expired)
+	}, key.Data)
 }

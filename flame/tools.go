@@ -4,46 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
 )
-
-var jwtParser = &jwt.Parser{
-	ValidMethods: []string{jwt.SigningMethodHS256.Name},
-}
-
-// JWT represents a parsed JSON web token.
-type JWT = jwt.Token
-
-// Claims extends the standard JWT claims to include the "dat" attribute.
-type Claims struct {
-	jwt.StandardClaims
-
-	// Data contains user defined key value pairs.
-	Data map[string]interface{} `json:"dat,omitempty"`
-}
-
-// GenerateJWT will generate a JWT token.
-func GenerateJWT(secret string, claims Claims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
-}
-
-// ParseJWT will parse a JWT token.
-func ParseJWT(secret, str string) (*JWT, *Claims, error) {
-	// parse token
-	var claims Claims
-	token, err := jwtParser.ParseWithClaims(str, &claims, func(*JWT) (interface{}, error) {
-		return []byte(secret), nil
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return token, &claims, err
-}
 
 // TokenMigrator is a middleware that detects access tokens passed via query
 // parameters and migrates them to a "Bearer" token header. Additionally it may

@@ -2,15 +2,14 @@ package flame
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/256dpi/oauth2/v2"
-	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
@@ -47,7 +46,7 @@ type Grants struct {
 type Policy struct {
 	// The secret used to sign and verify all tokens. Should be at least 16
 	// characters long to ensure strong security.
-	Secret string
+	Secret []byte
 
 	// The token model.
 	Token GenericToken
@@ -175,7 +174,7 @@ func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]int
 // strategies.
 func DefaultPolicy(secret string) *Policy {
 	return &Policy{
-		Secret:  secret,
+		Secret:  []byte(secret),
 		Token:   &Token{},
 		Clients: []Client{&Application{}},
 		Grants: func(Client) (Grants, error) {
@@ -200,19 +199,18 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 	// get data
 	data := token.GetTokenData()
 
-	// prepare claims
-	claims := Claims{}
-	claims.Id = token.ID().Hex()
-	claims.IssuedAt = token.ID().Timestamp().Unix()
-	claims.ExpiresAt = data.ExpiresAt.Unix()
-
 	// set user data
+	var userData heat.Data
 	if p.TokenData != nil {
-		claims.Data = p.TokenData(client, resourceOwner, token)
+		userData = p.TokenData(client, resourceOwner, token)
 	}
 
-	// create token
-	str, err := GenerateJWT(p.Secret, claims)
+	// issue key
+	str, err := heat.Issue(p.Secret, "flame", "token", heat.RawKey{
+		ID:     token.ID().Hex(),
+		Expiry: data.ExpiresAt,
+		Data:   userData,
+	})
 	if err != nil {
 		return "", nil
 	}
@@ -222,22 +220,18 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 
 // ParseJWT will parse the presented token and return its claims, if it is
 // expired and eventual errors.
-func (p *Policy) ParseJWT(str string) (*Claims, bool, error) {
+func (p *Policy) ParseJWT(str string) (*heat.RawKey, error) {
 	// parse token and check expired errors
-	token, claims, err := ParseJWT(p.Secret, str)
-	if valErr, ok := err.(*jwt.ValidationError); ok && valErr.Errors == jwt.ValidationErrorExpired {
-		return nil, true, err
-	} else if err != nil {
-		return nil, false, err
-	} else if !token.Valid {
-		return nil, false, fmt.Errorf("invalid token")
+	key, err := heat.Verify(p.Secret, "flame", "token", str)
+	if err != nil {
+		return nil, err
 	}
 
 	// parse id
-	_, err = coal.FromHex(claims.Id)
+	_, err = coal.FromHex(key.ID)
 	if err != nil {
-		return nil, false, errors.New("invalid id")
+		return nil, errors.New("invalid id")
 	}
 
-	return claims, false, nil
+	return key, nil
 }

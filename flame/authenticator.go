@@ -17,6 +17,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 type ctxKey string
@@ -184,8 +185,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			stack.AbortIf(err)
 
 			// parse token
-			claims, expired, err := a.policy.ParseJWT(tk)
-			if expired {
+			key, err := a.policy.ParseJWT(tk)
+			if err == heat.ErrExpiredToken {
 				stack.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
 				stack.Abort(oauth2.InvalidToken("malformed bearer token"))
@@ -199,7 +200,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// get id
-			id, err := coal.FromHex(claims.Id)
+			id, err := coal.FromHex(key.ID)
 			if err != nil {
 				stack.Abort(oauth2.InvalidToken("invalid bearer token id"))
 			}
@@ -346,15 +347,15 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// parse token
-	claims, expired, err := a.policy.ParseJWT(token)
-	if expired {
+	key, err := a.policy.ParseJWT(token)
+	if err == heat.ErrExpiredToken {
 		abort(oauth2.AccessDenied("expired access token"))
 	} else if err != nil {
 		abort(oauth2.AccessDenied("invalid access token"))
 	}
 
 	// get token id
-	tokenID, err := coal.FromHex(claims.Id)
+	tokenID, err := coal.FromHex(key.ID)
 	if err != nil {
 		abort(oauth2.AccessDenied("missing access token id"))
 	}
@@ -568,15 +569,15 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 	}
 
 	// parse token
-	claims, expired, err := a.policy.ParseJWT(req.RefreshToken)
-	if expired {
+	key, err := a.policy.ParseJWT(req.RefreshToken)
+	if err == heat.ErrExpiredToken {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
 		stack.Abort(oauth2.InvalidRequest("malformed refresh token"))
 	}
 
 	// get id
-	id, err := coal.FromHex(claims.Id)
+	id, err := coal.FromHex(key.ID)
 	if err != nil {
 		stack.Abort(oauth2.InvalidRequest("invalid refresh token id"))
 	}
@@ -644,15 +645,15 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 	}
 
 	// parse authorization code
-	claims, expired, err := a.policy.ParseJWT(req.Code)
-	if expired {
+	key, err := a.policy.ParseJWT(req.Code)
+	if err == heat.ErrExpiredToken {
 		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
 		stack.Abort(oauth2.InvalidRequest("malformed authorization code"))
 	}
 
 	// get id
-	id, err := coal.FromHex(claims.Id)
+	id, err := coal.FromHex(key.ID)
 	if err != nil {
 		stack.Abort(oauth2.InvalidRequest("invalid authorization code id"))
 	}
@@ -750,8 +751,8 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	}
 
 	// parse token
-	claims, expired, err := a.policy.ParseJWT(req.Token)
-	if expired {
+	key, err := a.policy.ParseJWT(req.Token)
+	if err == heat.ErrExpiredToken {
 		env.writer.WriteHeader(http.StatusOK)
 		env.tracer.Pop()
 		return
@@ -760,7 +761,7 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	}
 
 	// parse id
-	id, err := coal.FromHex(claims.Id)
+	id, err := coal.FromHex(key.ID)
 	stack.AbortIf(err)
 
 	// get token
@@ -811,8 +812,8 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	}
 
 	// parse token
-	claims, expired, err := a.policy.ParseJWT(req.Token)
-	if expired {
+	key, err := a.policy.ParseJWT(req.Token)
+	if err == heat.ErrExpiredToken {
 		stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, &oauth2.IntrospectionResponse{}))
 		env.tracer.Pop()
 		return
@@ -821,7 +822,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	}
 
 	// parse id
-	id, err := coal.FromHex(claims.Id)
+	id, err := coal.FromHex(key.ID)
 	stack.AbortIf(err)
 
 	// prepare response

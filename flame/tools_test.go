@@ -3,55 +3,12 @@ package flame
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
 )
-
-func TestGenerateJWTAndParseJWT(t *testing.T) {
-	id := coal.New().Hex()
-
-	str, err := GenerateJWT("foo", Claims{
-		StandardClaims: jwt.StandardClaims{Id: id},
-	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, str)
-
-	token, claims, err := ParseJWT("foo", str)
-	assert.NoError(t, err)
-	assert.Equal(t, &jwt.Token{
-		Raw:    str,
-		Method: jwt.SigningMethodHS256,
-		Header: map[string]interface{}{
-			"alg": "HS256",
-			"typ": "JWT",
-		},
-		Claims: &Claims{
-			StandardClaims: jwt.StandardClaims{Id: id},
-		},
-		Signature: strings.Split(str, ".")[2],
-		Valid:     true,
-	}, token)
-	assert.Equal(t, &Claims{
-		StandardClaims: jwt.StandardClaims{Id: id},
-	}, claims)
-}
-
-func TestParseJWTInvalidSigningMethod(t *testing.T) {
-	str, err := jwt.New(jwt.SigningMethodHS384).SignedString([]byte("foo"))
-	assert.NoError(t, err)
-	assert.NotEmpty(t, str)
-
-	token, claims, err := ParseJWT("foo", str)
-	assert.Error(t, err)
-	assert.Nil(t, claims)
-	assert.Nil(t, token)
-}
 
 func TestTokenMigrator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
