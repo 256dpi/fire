@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/256dpi/jsonapi/v2"
@@ -31,11 +32,31 @@ func (b *Base) base() *Base {
 
 var baseType = reflect.TypeOf(Base{})
 
+type meta struct {
+	name   string
+	expiry time.Duration
+}
+
+var metaCache = map[reflect.Type]meta{}
+var metaMutex sync.Mutex
+
 // Meta will parse the keys "heat" tag on the embedded heat.Base struct and
 // return the encoded name and default expiry.
 func Meta(key Key) (string, time.Duration) {
+	// acquire mutex
+	metaMutex.Lock()
+	defer metaMutex.Unlock()
+
+	// get typ
+	typ := reflect.TypeOf(key)
+
+	// check cache
+	if meta, ok := metaCache[typ]; ok {
+		return meta.name, meta.expiry
+	}
+
 	// get first field
-	field := reflect.TypeOf(key).Elem().Field(0)
+	field := typ.Elem().Field(0)
 
 	// check field type
 	if field.Type != baseType {
@@ -59,6 +80,12 @@ func Meta(key Key) (string, time.Duration) {
 	expiry, err := time.ParseDuration(tag[1])
 	if err != nil {
 		panic(err)
+	}
+
+	// cache meta
+	metaCache[typ] = meta{
+		name:   tag[0],
+		expiry: expiry,
 	}
 
 	return tag[0], expiry
