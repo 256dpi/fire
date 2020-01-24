@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetMeta(t *testing.T) {
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base""`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`, func() {
 		type m struct {
 			Base
 		}
@@ -16,7 +16,7 @@ func TestGetMeta(t *testing.T) {
 		GetMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base""`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`, func() {
 		type m struct {
 			Base `json:"-"`
 		}
@@ -24,7 +24,7 @@ func TestGetMeta(t *testing.T) {
 		GetMeta(&m{})
 	})
 
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base""`, func() {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`, func() {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:""`
 			Foo  string `json:"foo"`
