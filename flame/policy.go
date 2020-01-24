@@ -36,7 +36,7 @@ var ErrInvalidScope = errors.New("invalid scope")
 
 // Key is they key used to issue and verify tokens and codes.
 type Key struct {
-	heat.Base `heat:"fire/flame.key,1h"`
+	heat.Base `json:"-" heat:"fire/flame.key,1h"`
 
 	// The extra data included in the key.
 	Extra heat.Data `json:"extra,omitempty"`
