@@ -1,6 +1,7 @@
 package heat
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -8,8 +9,6 @@ import (
 
 	"github.com/256dpi/fire/coal"
 )
-
-// TODO: Ensure key names are only used once (exact type match).
 
 // Key is a structure used to encode a key.
 type Key interface {
@@ -38,6 +37,7 @@ type KeyMeta struct {
 }
 
 var metaCache = map[reflect.Type]KeyMeta{}
+var metaNames = map[string]reflect.Type{}
 var metaMutex sync.Mutex
 
 // Meta will parse the keys "heat" tag on the embedded heat.Base struct and
@@ -58,14 +58,14 @@ func Meta(key Key) KeyMeta {
 	// get first field
 	field := typ.Elem().Field(0)
 
-	// check field type
-	if field.Type != baseType {
-		panic(`heat: expected first struct field to be of type "heat.Base"`)
+	// check field type and name
+	if field.Type != baseType || !field.Anonymous || field.Name != "Base" {
+		panic(`heat: expected first struct field to be an embedded "heat.Base"`)
 	}
 
-	// check field name
-	if field.Name != "Base" {
-		panic(`heat: expected an embedded "heat.Base" as the first struct field`)
+	// check json tag
+	if field.Tag.Get("json") != "-" {
+		panic(`heat: expected to find a tag of the form 'json:"-"' on "heat.Base"`)
 	}
 
 	// split tag
@@ -76,20 +76,29 @@ func Meta(key Key) KeyMeta {
 		panic(`heat: expected to find a tag of the form 'heat:"name,expiry"' on "heat.Base"`)
 	}
 
+	// get name
+	name := tag[0]
+	if existing := metaNames[name]; existing != nil {
+		panic(fmt.Sprintf(`heat: key name %q has already been registered by type %q`, name, existing.String()))
+	}
+
 	// get expiry
 	expiry, err := time.ParseDuration(tag[1])
 	if err != nil {
-		panic(err)
+		panic(`heat: invalid duration as expiry on "heat.Base"`)
 	}
 
 	// prepare meta
 	meta := KeyMeta{
-		Name:   tag[0],
+		Name:   name,
 		Expiry: expiry,
 	}
 
 	// cache meta
 	metaCache[typ] = meta
+
+	// flag name
+	metaNames[name] = typ
 
 	return meta
 }
