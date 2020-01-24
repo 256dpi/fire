@@ -94,7 +94,7 @@ func (k *duplicateKey) Validate() error {
 	return nil
 }
 
-func TestMetaErrors(t *testing.T) {
+func TestMetaPanics(t *testing.T) {
 	assert.PanicsWithValue(t, `heat: expected first struct field to be an embedded "heat.Base"`, func() {
 		Meta(&invalidKey1{})
 	})

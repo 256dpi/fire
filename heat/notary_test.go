@@ -31,3 +31,17 @@ func TestNotary(t *testing.T) {
 	key2.Expiry = key2.Expiry.Local()
 	assert.Equal(t, key1, key2)
 }
+
+func TestNotaryPanics(t *testing.T) {
+	assert.PanicsWithValue(t, `heat: missing name`, func() {
+		NewNotary("", nil)
+	})
+
+	assert.PanicsWithValue(t, `heat: secret too small`, func() {
+		NewNotary("foo", nil)
+	})
+
+	assert.NotPanics(t, func() {
+		NewNotary("foo", MustRand(32))
+	})
+}

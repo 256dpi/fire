@@ -35,6 +35,49 @@ type RawKey struct {
 	Data   Data
 }
 
+// Issue will sign a token from the specified raw key.
+func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
+	// check name
+	if name == "" {
+		return "", fmt.Errorf("missing name")
+	}
+
+	// check id
+	if key.ID == "" {
+		return "", fmt.Errorf("missing id")
+	}
+
+	// check expiry
+	if key.Expiry.IsZero() {
+		return "", fmt.Errorf("missing expiry")
+	}
+
+	// get time
+	now := time.Now()
+
+	// create token
+	token := jwt.NewWithClaims(jwtSigningMethod, jwtClaims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:   issuer,
+			Audience: name,
+			Id:       key.ID,
+			// Subject:   "",
+			IssuedAt: now.Unix(),
+			// NotBefore: 0,
+			ExpiresAt: key.Expiry.Unix(),
+		},
+		Data: key.Data,
+	})
+
+	// compute signature
+	sig, err := token.SignedString(secret)
+	if err != nil {
+		return "", err
+	}
+
+	return sig, nil
+}
+
 // Verify will verify the specified token and return the decoded raw key.
 func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	// check secret
@@ -94,47 +137,4 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	}
 
 	return key, nil
-}
-
-// Issue will sign a token from the specified raw key.
-func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
-	// check name
-	if name == "" {
-		return "", fmt.Errorf("missing name")
-	}
-
-	// check id
-	if key.ID == "" {
-		return "", fmt.Errorf("missing id")
-	}
-
-	// check expiry
-	if key.Expiry.IsZero() {
-		return "", fmt.Errorf("missing expiry")
-	}
-
-	// get time
-	now := time.Now()
-
-	// create token
-	token := jwt.NewWithClaims(jwtSigningMethod, jwtClaims{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:   issuer,
-			Audience: name,
-			Id:       key.ID,
-			// Subject:   "",
-			IssuedAt: now.Unix(),
-			// NotBefore: 0,
-			ExpiresAt: key.Expiry.Unix(),
-		},
-		Data: key.Data,
-	})
-
-	// compute signature
-	sig, err := token.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
-
-	return sig, nil
 }

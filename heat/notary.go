@@ -23,14 +23,9 @@ func NewNotary(name string, secret []byte) *Notary {
 		panic("heat: missing name")
 	}
 
-	// set random secret if missing
-	if len(secret) == 0 {
-		panic("heat: missing secret")
-	}
-
 	// check secret
 	if len(secret) < 16 {
-		panic("heat: secret too short")
+		panic("heat: secret too small")
 	}
 
 	return &Notary{
