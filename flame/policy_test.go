@@ -11,7 +11,7 @@ import (
 )
 
 func TestPolicyIssueAndVerify(t *testing.T) {
-	p := DefaultPolicy("")
+	p := DefaultPolicy(testNotary)
 	p.TokenData = func(c Client, ro ResourceOwner, t GenericToken) map[string]interface{} {
 		return map[string]interface{}{
 			"name": ro.(*User).Name,
@@ -26,9 +26,9 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 
 	key, err := p.Verify(sig)
 	assert.NoError(t, err)
-	assert.Equal(t, token.ID().Hex(), key.ID)
+	assert.Equal(t, token.ID(), key.ID)
 	assert.Equal(t, expiry, key.Expiry)
 	assert.Equal(t, heat.Data{
 		"name": "Hello",
-	}, key.Data)
+	}, key.Extra)
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/256dpi/oauth2/v2"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
 
@@ -35,6 +34,19 @@ var ErrApprovalRejected = errors.New("approval rejected")
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = errors.New("invalid scope")
 
+// Key is they key used to issue and verify tokens and codes.
+type Key struct {
+	heat.Base `heat:"fire/flame.key,1h"`
+
+	// The extra data included in the key.
+	Extra heat.Data `json:"extra,omitempty"`
+}
+
+// Validate implements the heat.Key interface.
+func (k *Key) Validate() error {
+	return nil
+}
+
 // Grants defines the selected grants.
 type Grants struct {
 	Password          bool
@@ -47,9 +59,8 @@ type Grants struct {
 // Policy configures the provided authentication and authorization schemes used
 // by the authenticator.
 type Policy struct {
-	// The secret used to sign and verify all tokens. Should be at least 16
-	// characters long to ensure strong security.
-	Secret []byte
+	// The notary used to issue and verify tokens and codes.
+	Notary *heat.Notary
 
 	// The token model.
 	Token GenericToken
@@ -175,9 +186,9 @@ func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]int
 
 // DefaultPolicy returns a simple policy that uses all built-in models and
 // strategies.
-func DefaultPolicy(secret string) *Policy {
+func DefaultPolicy(notary *heat.Notary) *Policy {
 	return &Policy{
-		Secret:  []byte(secret),
+		Notary:  notary,
 		Token:   &Token{},
 		Clients: []Client{&Application{}},
 		Grants: func(Client) (Grants, error) {
@@ -202,18 +213,23 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	// get data
 	data := token.GetTokenData()
 
-	// set user data
-	var userData heat.Data
+	// get extra data
+	var extra heat.Data
 	if p.TokenData != nil {
-		userData = p.TokenData(client, resourceOwner, token)
+		extra = p.TokenData(client, resourceOwner, token)
+	}
+
+	// prepare key
+	key := Key{
+		Base: heat.Base{
+			ID:     token.ID(),
+			Expiry: data.ExpiresAt,
+		},
+		Extra: extra,
 	}
 
 	// issue key
-	str, err := heat.Issue(p.Secret, flameKeyIssuer, flameKeyName, heat.RawKey{
-		ID:     token.ID().Hex(),
-		Expiry: data.ExpiresAt,
-		Data:   userData,
-	})
+	str, err := p.Notary.Issue(&key)
 	if err != nil {
 		return "", nil
 	}
@@ -222,18 +238,13 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 }
 
 // Verify will verify the presented token and return the decoded raw key.
-func (p *Policy) Verify(str string) (*heat.RawKey, error) {
+func (p *Policy) Verify(str string) (*Key, error) {
 	// parse token and check expired errors
-	key, err := heat.Verify(p.Secret, flameKeyIssuer, flameKeyName, str)
+	var key Key
+	err := p.Notary.Verify(&key, str)
 	if err != nil {
 		return nil, err
 	}
 
-	// parse id
-	_, err = coal.FromHex(key.ID)
-	if err != nil {
-		return nil, errors.New("invalid id")
-	}
-
-	return key, nil
+	return &key, nil
 }

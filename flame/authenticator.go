@@ -199,14 +199,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				tracer:  tracer,
 			}
 
-			// get id
-			id, err := coal.FromHex(key.ID)
-			if err != nil {
-				stack.Abort(oauth2.InvalidToken("invalid bearer token id"))
-			}
-
 			// get token
-			accessToken := a.getToken(env, id)
+			accessToken := a.getToken(env, key.Base.ID)
 			if accessToken == nil {
 				stack.Abort(oauth2.InvalidToken("unknown bearer token"))
 			}
@@ -354,14 +348,8 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 		abort(oauth2.AccessDenied("invalid access token"))
 	}
 
-	// get token id
-	tokenID, err := coal.FromHex(key.ID)
-	if err != nil {
-		abort(oauth2.AccessDenied("missing access token id"))
-	}
-
 	// get token
-	accessToken := a.getToken(env, tokenID)
+	accessToken := a.getToken(env, key.Base.ID)
 	if accessToken == nil {
 		abort(oauth2.AccessDenied("unknown access token"))
 	}
@@ -576,14 +564,8 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 		stack.Abort(oauth2.InvalidRequest("malformed refresh token"))
 	}
 
-	// get id
-	id, err := coal.FromHex(key.ID)
-	if err != nil {
-		stack.Abort(oauth2.InvalidRequest("invalid refresh token id"))
-	}
-
 	// get stored refresh token by signature
-	rt := a.getToken(env, id)
+	rt := a.getToken(env, key.Base.ID)
 	if rt == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
@@ -652,16 +634,11 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 		stack.Abort(oauth2.InvalidRequest("malformed authorization code"))
 	}
 
-	// get id
-	id, err := coal.FromHex(key.ID)
-	if err != nil {
-		stack.Abort(oauth2.InvalidRequest("invalid authorization code id"))
-	}
-
 	// TODO: We should revoke all descending tokens if a code is reused.
 
 	// get stored authorization code by signature
-	code := a.getToken(env, id)
+	code := a.getToken(env, key.Base.ID)
+
 	if code == nil {
 		stack.Abort(oauth2.InvalidGrant("unknown authorization code"))
 	}
@@ -760,12 +737,8 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
-	// parse id
-	id, err := coal.FromHex(key.ID)
-	stack.AbortIf(err)
-
 	// get token
-	token := a.getToken(env, id)
+	token := a.getToken(env, key.Base.ID)
 	if token != nil {
 		// get data
 		data := token.GetTokenData()
@@ -777,7 +750,7 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 		}
 
 		// delete token
-		a.deleteToken(env, id)
+		a.deleteToken(env, key.Base.ID)
 	}
 
 	// write header
@@ -821,15 +794,11 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
-	// parse id
-	id, err := coal.FromHex(key.ID)
-	stack.AbortIf(err)
-
 	// prepare response
 	res := &oauth2.IntrospectionResponse{}
 
 	// get token
-	token := a.getToken(env, id)
+	token := a.getToken(env, key.Base.ID)
 	if token != nil {
 		// get data
 		data := token.GetTokenData()

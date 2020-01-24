@@ -27,7 +27,7 @@ func TestIntegration(t *testing.T) {
 		var allowedScope = oauth2.ParseScope("foo bar")
 		var requiredScope = oauth2.ParseScope("foo")
 
-		policy := DefaultPolicy("")
+		policy := DefaultPolicy(testNotary)
 		policy.Grants = StaticGrants(true, true, true, true, true)
 
 		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
@@ -184,7 +184,7 @@ func TestIntegration(t *testing.T) {
 
 func TestPublicAccess(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
+		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), panicReporter)
 		tester.Handler = newHandler(authenticator, false)
 
 		tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -195,7 +195,7 @@ func TestPublicAccess(t *testing.T) {
 
 func TestContextKeys(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(""), panicReporter)
+		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), panicReporter)
 		tester.Handler = newHandler(authenticator, false)
 
 		application := tester.Save(&Application{
@@ -233,7 +233,7 @@ func TestContextKeys(t *testing.T) {
 
 func TestInvalidGrantType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		policy := DefaultPolicy("")
+		policy := DefaultPolicy(testNotary)
 
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 		handler := newHandler(authenticator, false)
@@ -267,7 +267,7 @@ func TestInvalidGrantType(t *testing.T) {
 
 func TestInvalidResponseType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		policy := DefaultPolicy("")
+		policy := DefaultPolicy(testNotary)
 
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 		handler := newHandler(authenticator, false)
@@ -303,7 +303,7 @@ func TestInvalidResponseType(t *testing.T) {
 
 func TestInvalidClientFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		policy := DefaultPolicy("")
+		policy := DefaultPolicy(testNotary)
 		policy.Grants = StaticGrants(true, false, false, false, false)
 
 		var errs []string
@@ -370,7 +370,7 @@ func TestInvalidClientFilter(t *testing.T) {
 
 func TestInvalidResourceOwnerFilter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		policy := DefaultPolicy("")
+		policy := DefaultPolicy(testNotary)
 		policy.Grants = StaticGrants(true, false, false, false, false)
 
 		var errs []string

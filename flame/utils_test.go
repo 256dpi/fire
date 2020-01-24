@@ -11,12 +11,15 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame")
 var lungoStore = coal.MustOpen(nil, "test-fire-flame", nil)
 
 var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
+
+var testNotary = heat.NewNotary("test", heat.MustRand(32))
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
