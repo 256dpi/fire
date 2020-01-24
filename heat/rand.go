@@ -22,7 +22,7 @@ func MustRand(n int) []byte {
 	// generate bytes
 	bytes, err := Rand(n)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 
 	return bytes

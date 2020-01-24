@@ -37,9 +37,19 @@ type RawKey struct {
 
 // Verify will verify the specified token and return the decoded raw key.
 func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
+	// check secret
+	if len(secret) < 16 {
+		return nil, fmt.Errorf("secret too small")
+	}
+
+	// check issuer
+	if name == "" {
+		return nil, fmt.Errorf("missing issuer")
+	}
+
 	// check name
 	if name == "" {
-		panic("heat: missing name")
+		return nil, fmt.Errorf("missing name")
 	}
 
 	// parse token

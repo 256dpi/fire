@@ -25,7 +25,7 @@ func MustHash(str string) []byte {
 	// hash string
 	hash, err := Hash(str)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 
 	return hash
@@ -36,7 +36,7 @@ func MustHashBytes(bytes []byte) []byte {
 	// hash bytes
 	hash, err := HashBytes(bytes)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 
 	return hash
