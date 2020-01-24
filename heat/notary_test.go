@@ -50,5 +50,6 @@ func TestNotary(t *testing.T) {
 	var key2 testKey
 	err = notary.Verify(&key2, token)
 	assert.NoError(t, err)
+	key2.Expiry = key2.Expiry.Local()
 	assert.Equal(t, key1, key2)
 }
