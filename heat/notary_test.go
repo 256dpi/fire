@@ -10,7 +10,7 @@ import (
 )
 
 func TestNotary(t *testing.T) {
-	notary := NewNotary("test", MustRand(32))
+	notary := NewNotary("test", testSecret)
 
 	key1 := testKey{
 		Base: Base{
@@ -42,6 +42,6 @@ func TestNotaryPanics(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		NewNotary("foo", MustRand(32))
+		NewNotary("foo", testSecret)
 	})
 }

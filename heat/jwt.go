@@ -17,8 +17,65 @@ var jwtParser = &jwt.Parser{
 }
 
 type jwtClaims struct {
-	jwt.StandardClaims
-	Data Data `json:"dat,omitempty"`
+	Issuer    string `json:"iss,omitempty"`
+	Audience  string `json:"aud,omitempty"`
+	ID        string `json:"jti,omitempty"`
+	Subject   string `json:"sub,omitempty"`
+	Issued    int64  `json:"iat,omitempty"`
+	NotBefore int64  `json:"nbf,omitempty"`
+	Expires   int64  `json:"exp,omitempty"`
+	Data      Data   `json:"dat,omitempty"`
+}
+
+func (c jwtClaims) Valid() error {
+	// collect errors
+	err := &jwt.ValidationError{}
+
+	// check issuer
+	if c.Issuer == "" {
+		err.Errors |= jwt.ValidationErrorIssuer
+		err.Inner = fmt.Errorf("missing issuer")
+	}
+
+	// check audience
+	if c.Audience == "" {
+		err.Errors |= jwt.ValidationErrorAudience
+		err.Inner = fmt.Errorf("missing audience")
+	}
+
+	// check id
+	if c.ID == "" {
+		err.Errors |= jwt.ValidationErrorId
+		err.Inner = fmt.Errorf("missing id")
+	}
+
+	// skip subject
+
+	// get time
+	now := time.Now().Unix()
+
+	// check issued
+	if c.Issued > now {
+		err.Errors |= jwt.ValidationErrorNotValidYet
+		err.Inner = fmt.Errorf("used before issued")
+	}
+
+	// skip not before
+
+	// check expire
+	if c.Expires < now {
+		err.Errors |= jwt.ValidationErrorExpired
+		err.Inner = fmt.Errorf("expired")
+	}
+
+	// skip data
+
+	// check error
+	if err.Errors == 0 {
+		return nil
+	}
+
+	return err
 }
 
 // ErrInvalidToken is returned if a token is in some way invalid.
@@ -69,16 +126,14 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 
 	// create token
 	token := jwt.NewWithClaims(jwtSigningMethod, jwtClaims{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:   issuer,
-			Audience: name,
-			Id:       key.ID,
-			// Subject:   "",
-			IssuedAt: now.Unix(),
-			// NotBefore: 0,
-			ExpiresAt: key.Expiry.Unix(),
-		},
-		Data: key.Data,
+		Issuer:   issuer,
+		Audience: name,
+		ID:       key.ID,
+		// Subject:   "",
+		Issued: now.Unix(),
+		// NotBefore: 0,
+		Expires: key.Expiry.Unix(),
+		Data:    key.Data,
 	})
 
 	// compute signature
@@ -133,17 +188,12 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 		return nil, ErrInvalidToken
 	}
 
-	// check id
-	if claims.Id == "" {
-		return nil, ErrInvalidToken
-	}
-
 	// get expiry
-	expiry := time.Unix(claims.ExpiresAt, 0)
+	expiry := time.Unix(claims.Expires, 0)
 
 	// prepare key
 	key := &RawKey{
-		ID:     claims.Id,
+		ID:     claims.ID,
 		Expiry: expiry,
 		Data:   claims.Data,
 	}
