@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func TestNotary(t *testing.T) {
+func TestNotaryIssueAndVerify(t *testing.T) {
 	notary := NewNotary("test", testSecret)
 
 	key1 := testKey{
@@ -32,7 +32,64 @@ func TestNotary(t *testing.T) {
 	assert.Equal(t, key1, key2)
 }
 
-func TestNotaryPanics(t *testing.T) {
+func TestNotaryIssueDefaults(t *testing.T) {
+	notary := NewNotary("test", testSecret)
+
+	token, err := notary.Issue(&testKey{
+		User: "user",
+		Role: "role",
+	})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	var key testKey
+	err = notary.Verify(&key, token)
+	assert.NoError(t, err)
+	assert.False(t, key.ID.IsZero())
+	assert.True(t, key.Expiry.Sub(time.Now()) > time.Hour-time.Minute)
+	assert.Equal(t, "user", key.User)
+	assert.Equal(t, "role", key.Role)
+}
+
+func TestNotaryIssueValidation(t *testing.T) {
+	notary := NewNotary("test", testSecret)
+
+	token, err := notary.Issue(&testKey{
+		User: "user",
+	})
+	assert.Error(t, err)
+	assert.Empty(t, token)
+	assert.Equal(t, "missing role", err.Error())
+}
+
+func TestNotaryVerifyErrors(t *testing.T) {
+	notary := NewNotary("test", testSecret)
+
+	var key testKey
+	err := notary.Verify(&key, makeToken(jwtClaims{
+		Issuer:   "test",
+		Audience: "test",
+		ID:       "invalid",
+		Issued:   time.Now().Unix(),
+		Expires:  time.Now().Add(time.Hour).Unix(),
+		Data:     nil,
+	}))
+	assert.Error(t, err)
+	assert.Equal(t, "invalid token id", err.Error())
+
+	err = notary.Verify(&key, makeToken(jwtClaims{
+		Issuer:   "test",
+		Audience: "test",
+		ID:       coal.New().Hex(),
+		Issued:   time.Now().Unix(),
+		Expires:  time.Now().Add(time.Hour).Unix(),
+		Data:     nil,
+	}))
+	assert.Error(t, err)
+	assert.Equal(t, "missing user", err.Error())
+}
+
+func TestNewNotaryPanics(t *testing.T) {
 	assert.PanicsWithValue(t, `heat: missing name`, func() {
 		NewNotary("", nil)
 	})

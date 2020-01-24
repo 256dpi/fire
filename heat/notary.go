@@ -91,9 +91,7 @@ func (n *Notary) Verify(key Key, token string) error {
 	// check id
 	kid, err := coal.FromHex(rawKey.ID)
 	if err != nil {
-		return err
-	} else if kid.IsZero() {
-		return fmt.Errorf("zero key id")
+		return fmt.Errorf("invalid token id")
 	}
 
 	// set id and expiry
