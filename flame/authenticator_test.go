@@ -14,6 +14,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 func panicReporter(err error) {
@@ -70,7 +71,7 @@ func TestIntegration(t *testing.T) {
 		app1 := tester.Save(&Application{
 			Name:         "Application 1",
 			Key:          "app1",
-			SecretHash:   mustHash(testPassword),
+			SecretHash:   heat.MustHash(testPassword),
 			RedirectURIs: redirectURIs,
 		}).(*Application)
 
@@ -83,7 +84,7 @@ func TestIntegration(t *testing.T) {
 		user := tester.Save(&User{
 			Name:         "User",
 			Email:        "user@example.com",
-			PasswordHash: mustHash(testPassword),
+			PasswordHash: heat.MustHash(testPassword),
 		}).(*User)
 
 		spec := oauth2test.Default(newHandler(authenticator, true))

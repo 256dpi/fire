@@ -5,10 +5,10 @@ import (
 
 	"github.com/256dpi/oauth2/v2"
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 // TokenType defines the type of a token.
@@ -173,7 +173,7 @@ func (a *Application) ValidRedirectURI(uri string) bool {
 
 // ValidSecret implements the flame.Client interface.
 func (a *Application) ValidSecret(secret string) bool {
-	return bcrypt.CompareHashAndPassword(a.SecretHash, []byte(secret)) == nil
+	return heat.Compare(a.SecretHash, secret) == nil
 }
 
 // Validate implements the fire.ValidatableModel interface.
@@ -217,7 +217,7 @@ func (a *Application) HashSecret() error {
 	}
 
 	// generate hash from password
-	hash, err := bcrypt.GenerateFromPassword([]byte(a.Secret), bcrypt.DefaultCost)
+	hash, err := heat.Hash(a.Secret)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func AddUserIndexes(catalog *coal.Catalog) {
 
 // ValidPassword implements the flame.ResourceOwner interface.
 func (u *User) ValidPassword(password string) bool {
-	return bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil
+	return heat.Compare(u.PasswordHash, password) == nil
 }
 
 // Validate implements the fire.ValidatableModel interface.
@@ -300,7 +300,7 @@ func (u *User) HashPassword() error {
 	}
 
 	// generate hash from password
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	hash, err := heat.Hash(u.Password)
 	if err != nil {
 		return err
 	}

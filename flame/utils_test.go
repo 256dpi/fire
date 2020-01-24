@@ -8,7 +8,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
@@ -43,15 +42,6 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 	})))
 
 	return router
-}
-
-func mustHash(password string) []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-	if err != nil {
-		panic(err)
-	}
-
-	return hash
 }
 
 func TestMain(m *testing.M) {
