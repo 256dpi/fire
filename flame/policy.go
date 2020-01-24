@@ -12,6 +12,9 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
+const flameKeyIssuer = "fire/flame"
+const flameKeyName = "fire/flame.token"
+
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
 // that the request includes invalid filter parameters.
 var ErrInvalidFilter = errors.New("invalid filter")
@@ -194,8 +197,8 @@ func DefaultPolicy(secret string) *Policy {
 	}
 }
 
-// GenerateJWT returns a new JWT token for the provided information.
-func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner ResourceOwner) (string, error) {
+// Issue will issue a JWT token based on the provided information.
+func (p *Policy) Issue(token GenericToken, client Client, resourceOwner ResourceOwner) (string, error) {
 	// get data
 	data := token.GetTokenData()
 
@@ -206,7 +209,7 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 	}
 
 	// issue key
-	str, err := heat.Issue(p.Secret, "flame", "token", heat.RawKey{
+	str, err := heat.Issue(p.Secret, flameKeyIssuer, flameKeyName, heat.RawKey{
 		ID:     token.ID().Hex(),
 		Expiry: data.ExpiresAt,
 		Data:   userData,
@@ -218,11 +221,10 @@ func (p *Policy) GenerateJWT(token GenericToken, client Client, resourceOwner Re
 	return str, nil
 }
 
-// ParseJWT will parse the presented token and return its claims, if it is
-// expired and eventual errors.
-func (p *Policy) ParseJWT(str string) (*heat.RawKey, error) {
+// Verify will verify the presented token and return the decoded raw key.
+func (p *Policy) Verify(str string) (*heat.RawKey, error) {
 	// parse token and check expired errors
-	key, err := heat.Verify(p.Secret, "flame", "token", str)
+	key, err := heat.Verify(p.Secret, flameKeyIssuer, flameKeyName, str)
 	if err != nil {
 		return nil, err
 	}

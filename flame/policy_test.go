@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-func TestPolicyParseAndGenerateToken(t *testing.T) {
+func TestPolicyIssueAndVerify(t *testing.T) {
 	p := DefaultPolicy("")
 	p.TokenData = func(c Client, ro ResourceOwner, t GenericToken) map[string]interface{} {
 		return map[string]interface{}{
@@ -21,10 +21,10 @@ func TestPolicyParseAndGenerateToken(t *testing.T) {
 	expiry := time.Now().Add(time.Hour).Round(time.Second)
 	token := coal.Init(&Token{ExpiresAt: expiry}).(*Token)
 
-	sig, err := p.GenerateJWT(token, nil, &User{Name: "Hello"})
+	sig, err := p.Issue(token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
-	key, err := p.ParseJWT(sig)
+	key, err := p.Verify(sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID().Hex(), key.ID)
 	assert.Equal(t, expiry, key.Expiry)

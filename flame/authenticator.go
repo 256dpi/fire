@@ -185,7 +185,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			stack.AbortIf(err)
 
 			// parse token
-			key, err := a.policy.ParseJWT(tk)
+			key, err := a.policy.Verify(tk)
 			if err == heat.ErrExpiredToken {
 				stack.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
@@ -347,7 +347,7 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 	}
 
 	// parse token
-	key, err := a.policy.ParseJWT(token)
+	key, err := a.policy.Verify(token)
 	if err == heat.ErrExpiredToken {
 		abort(oauth2.AccessDenied("expired access token"))
 	} else if err != nil {
@@ -569,7 +569,7 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 	}
 
 	// parse token
-	key, err := a.policy.ParseJWT(req.RefreshToken)
+	key, err := a.policy.Verify(req.RefreshToken)
 	if err == heat.ErrExpiredToken {
 		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
@@ -645,7 +645,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 	}
 
 	// parse authorization code
-	key, err := a.policy.ParseJWT(req.Code)
+	key, err := a.policy.Verify(req.Code)
 	if err == heat.ErrExpiredToken {
 		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
@@ -751,7 +751,7 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	}
 
 	// parse token
-	key, err := a.policy.ParseJWT(req.Token)
+	key, err := a.policy.Verify(req.Token)
 	if err == heat.ErrExpiredToken {
 		env.writer.WriteHeader(http.StatusOK)
 		env.tracer.Pop()
@@ -812,7 +812,7 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	}
 
 	// parse token
-	key, err := a.policy.ParseJWT(req.Token)
+	key, err := a.policy.Verify(req.Token)
 	if err == heat.ErrExpiredToken {
 		stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, &oauth2.IntrospectionResponse{}))
 		env.tracer.Pop()
@@ -887,7 +887,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 	at := a.saveToken(env, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	atSignature, err := a.policy.GenerateJWT(at, client, resourceOwner)
+	atSignature, err := a.policy.Issue(at, client, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response
@@ -902,7 +902,7 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 		rt := a.saveToken(env, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 
 		// generate new refresh token
-		rtSignature, err := a.policy.GenerateJWT(rt, client, resourceOwner)
+		rtSignature, err := a.policy.Issue(rt, client, resourceOwner)
 		stack.AbortIf(err)
 
 		// set refresh token
@@ -926,7 +926,7 @@ func (a *Authenticator) issueCode(env *environment, scope oauth2.Scope, redirect
 	code := a.saveToken(env, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	signature, err := a.policy.GenerateJWT(code, client, resourceOwner)
+	signature, err := a.policy.Issue(code, client, resourceOwner)
 	stack.AbortIf(err)
 
 	// prepare response

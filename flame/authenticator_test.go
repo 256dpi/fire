@@ -130,10 +130,10 @@ func TestIntegration(t *testing.T) {
 		}).(*Token)
 
 		spec.InvalidToken = "foo"
-		spec.UnknownToken = mustGenerateToken(policy, AccessToken, coal.New(), time.Now())
-		spec.ValidToken = mustGenerateToken(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
-		spec.ExpiredToken = mustGenerateToken(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
-		spec.InsufficientToken = mustGenerateToken(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
+		spec.UnknownToken = mustIssue(policy, AccessToken, coal.New(), time.Now())
+		spec.ValidToken = mustIssue(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
+		spec.ExpiredToken = mustIssue(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
+		spec.InsufficientToken = mustIssue(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
 
 		spec.PrimaryRedirectURI = redirectURIs[0]
 		spec.SecondaryRedirectURI = redirectURIs[1]
@@ -152,13 +152,13 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		spec.UnknownRefreshToken = mustGenerateToken(policy, RefreshToken, coal.New(), time.Now())
-		spec.ValidRefreshToken = mustGenerateToken(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
-		spec.ExpiredRefreshToken = mustGenerateToken(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		spec.UnknownRefreshToken = mustIssue(policy, RefreshToken, coal.New(), time.Now())
+		spec.ValidRefreshToken = mustIssue(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
+		spec.ExpiredRefreshToken = mustIssue(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		spec.InvalidAuthorizationCode = "foo"
-		spec.UnknownAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, coal.New(), time.Now())
-		spec.ExpiredAuthorizationCode = mustGenerateToken(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
+		spec.UnknownAuthorizationCode = mustIssue(policy, AuthorizationCode, coal.New(), time.Now())
+		spec.ExpiredAuthorizationCode = mustIssue(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		validToken = tester.Save(&Token{
 			Type:        AccessToken,
@@ -168,7 +168,7 @@ func TestIntegration(t *testing.T) {
 			User:        coal.P(user.ID()),
 		}).(*Token)
 
-		validBearerToken, _ := policy.GenerateJWT(validToken, app1, user)
+		validBearerToken, _ := policy.Issue(validToken, app1, user)
 
 		spec.InvalidAuthorizationParams = map[string]string{
 			"access_token": "foo",
@@ -214,7 +214,7 @@ func TestContextKeys(t *testing.T) {
 			User:        &user,
 		}).(*Token).ID()
 
-		token := mustGenerateToken(authenticator.policy, AccessToken, accessToken, time.Now().Add(time.Hour))
+		token := mustIssue(authenticator.policy, AccessToken, accessToken, time.Now().Add(time.Hour))
 
 		auth := authenticator.Authorizer("", true, true, true)
 
@@ -435,14 +435,14 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 	})
 }
 
-func mustGenerateToken(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
+func mustIssue(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
 	token := coal.Init(&Token{
 		Base:      coal.Base{DocID: id},
 		Type:      typ,
 		ExpiresAt: expiresAt,
 	}).(*Token)
 
-	str, err := p.GenerateJWT(token, nil, nil)
+	str, err := p.Issue(token, nil, nil)
 	if err != nil {
 		panic(err)
 	}
