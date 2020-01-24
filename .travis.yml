@@ -21,12 +21,13 @@ script:
   - go get golang.org/x/tools/cmd/cover
   - env GO111MODULE=on go test -coverprofile=fire.coverprofile
   - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./ash
-  - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./axe
-  - env GO111MODULE=on go test -coverprofile=tools.coverprofile ./coal
-  - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./example
-  - env GO111MODULE=on go test -coverprofile=tools.coverprofile ./flame
-  - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./glut
-  - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./spark
+  - env GO111MODULE=on go test -coverprofile=axe.coverprofile ./axe
+  - env GO111MODULE=on go test -coverprofile=coal.coverprofile ./coal
+  - env GO111MODULE=on go test -coverprofile=example.coverprofile ./example
+  - env GO111MODULE=on go test -coverprofile=flame.coverprofile ./flame
+  - env GO111MODULE=on go test -coverprofile=glut.coverprofile ./glut
+  - env GO111MODULE=on go test -coverprofile=heat.coverprofile ./heat
+  - env GO111MODULE=on go test -coverprofile=spark.coverprofile ./spark
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 after_script:
