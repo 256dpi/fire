@@ -11,9 +11,6 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-const flameKeyIssuer = "fire/flame"
-const flameKeyName = "fire/flame.token"
-
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
 // that the request includes invalid filter parameters.
 var ErrInvalidFilter = errors.New("invalid filter")
