@@ -27,7 +27,7 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 	key, err := p.Verify(sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID(), key.ID)
-	assert.Equal(t, expiry, key.Expiry)
+	assert.Equal(t, expiry, key.Expiry.Local())
 	assert.Equal(t, heat.Data{
 		"name": "Hello",
 	}, key.Extra)

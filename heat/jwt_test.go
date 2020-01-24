@@ -24,6 +24,7 @@ func TestIssueAndVerify(t *testing.T) {
 	assert.NotEmpty(t, token)
 
 	key2, err := Verify(secret, "issuer", "name", token)
+	key2.Expiry = key2.Expiry.Local()
 	assert.NoError(t, err)
 	assert.Equal(t, key1, *key2)
 }
