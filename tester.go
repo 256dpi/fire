@@ -89,31 +89,45 @@ func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 	return t.RunHandler(ctx, cb.Handler)
 }
 
+// RunHandler builds a context and runs the passed handler with it.
+func (t *Tester) RunHandler(ctx *Context, h Handler) error {
+	var err error
+	t.WithContext(ctx, func(ctx *Context) {
+		err = h(ctx)
+	})
+	return err
+}
+
 // WithContext runs the given function with a prepared context.
 func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
-	// set context if missing
+	// ensure context
 	if ctx == nil {
 		ctx = &Context{}
 	}
 
-	// set context if missing
+	// ensure context
 	if ctx.Context == nil {
 		ctx.Context = t.Context
 	}
 
-	// set data if missing
+	// ensure data
 	if ctx.Data == nil {
 		ctx.Data = Map{}
 	}
 
-	// set operation if missing
+	// ensure operation
 	if ctx.Operation == 0 {
 		ctx.Operation = List
 	}
 
-	// set store if unset
-	if ctx.Store == nil {
-		ctx.Store = t.Store
+	// ensure selector
+	if ctx.Selector == nil {
+		ctx.Selector = bson.M{}
+	}
+
+	// ensure filters
+	if ctx.Filters == nil {
+		ctx.Filters = []bson.M{}
 	}
 
 	// init model if present
@@ -121,12 +135,9 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 		coal.Init(ctx.Model)
 	}
 
-	// init queries
-	if ctx.Selector == nil {
-		ctx.Selector = bson.M{}
-	}
-	if ctx.Filters == nil {
-		ctx.Filters = []bson.M{}
+	// set store if unset
+	if ctx.Store == nil {
+		ctx.Store = t.Store
 	}
 
 	// set request
@@ -157,20 +168,11 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 	}
 
 	// set tracers
-	ctx.Tracer = NewTracerWithRoot("fire/Tester.RunHandler")
+	ctx.Tracer = NewTracerWithRoot("fire/Tester.WithContext")
 	defer ctx.Tracer.Finish(true)
 
-	// run function
+	// yield context
 	fn(ctx)
-}
-
-// RunHandler builds a context and runs the passed handler with it.
-func (t *Tester) RunHandler(ctx *Context, h Handler) error {
-	var err error
-	t.WithContext(ctx, func(ctx *Context) {
-		err = h(ctx)
-	})
-	return err
 }
 
 // Request will run the specified request against the registered handler. This
