@@ -17,7 +17,7 @@ import (
 
 // TODO: Test claim keys.
 
-func TestUploadInvalidContentType(t *testing.T) {
+func TestStorageUploadInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -35,7 +35,7 @@ func TestUploadInvalidContentType(t *testing.T) {
 	})
 }
 
-func TestUploadRaw(t *testing.T) {
+func TestStorageUploadRaw(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -67,7 +67,7 @@ func TestUploadRaw(t *testing.T) {
 	})
 }
 
-func TestUploadRawLimit(t *testing.T) {
+func TestStorageUploadRawLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -85,7 +85,7 @@ func TestUploadRawLimit(t *testing.T) {
 	})
 }
 
-func TestUploadFormFiles(t *testing.T) {
+func TestStorageUploadFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -142,7 +142,7 @@ func TestUploadFormFiles(t *testing.T) {
 	})
 }
 
-func TestUploadFormFilesLimit(t *testing.T) {
+func TestStorageUploadFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -170,7 +170,7 @@ func TestUploadFormFilesLimit(t *testing.T) {
 	})
 }
 
-func TestUploadMultipart(t *testing.T) {
+func TestStorageUploadMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -220,7 +220,7 @@ func TestUploadMultipart(t *testing.T) {
 	})
 }
 
-func TestUploadMultipartLimit(t *testing.T) {
+func TestStorageUploadMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -250,7 +250,7 @@ func TestUploadMultipartLimit(t *testing.T) {
 	})
 }
 
-func TestValidator(t *testing.T) {
+func TestStorageValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -301,7 +301,7 @@ func TestValidator(t *testing.T) {
 	})
 }
 
-func TestDecorator(t *testing.T) {
+func TestStorageDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
