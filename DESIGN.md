@@ -97,7 +97,7 @@ package pkg
 
 type Controller struct {
 	Field string
-    Model Model
+	Model Model
 }
 
 func (c *Controller) execute() error {
@@ -111,15 +111,15 @@ type Manager struct{
 }
 
 func NewManager() *Manager {
-    return &Manager{}
+	return &Manager{}
 }
 
 func (m *Manager) Add(c *Controller) {
-    // add controller
+	// add controller
 }
 
 func (m *Manager) Run() error {
-    return nil
+	return nil
 }
 ```
 
@@ -129,14 +129,14 @@ func (m *Manager) Run() error {
 package app
 
 func Run() {
-    manager := pkg.NewManager()
+	manager := pkg.NewManager()
 
-    manager.Add(&pkg.Controller{
-        Field: "foo",
-        Model: &Entity{},
-    })
-    
-    manager.Run()
+	manager.Add(&pkg.Controller{
+		Field: "foo",
+		Model: &Entity{},
+	})
+
+	manager.Run()
 }
 ```
 
