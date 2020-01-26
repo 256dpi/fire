@@ -6,8 +6,10 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
+	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
+	"github.com/256dpi/fire/glut"
 )
 
 var catalog = coal.NewCatalog(
@@ -15,45 +17,39 @@ var catalog = coal.NewCatalog(
 	&flame.Application{},
 	&flame.User{},
 	&flame.Token{},
+	&axe.Job{},
+	&glut.Value{},
+	&blaze.File{},
 )
 
 func init() {
-	// add flame indexes
-	flame.AddApplicationIndexes(catalog)
-	flame.AddUserIndexes(catalog)
-	flame.AddTokenIndexes(catalog, true)
-
-	// add axe indexes
-	axe.AddJobIndexes(catalog, time.Minute)
-
 	// add item indexes
 	catalog.AddIndex(&Item{}, false, 0, "Name")
 	catalog.AddIndex(&Item{}, false, time.Second, "Deleted")
 	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
-}
 
-// EnsureIndexes will ensure that the required indexes exist.
-func EnsureIndexes(store *coal.Store) error {
-	// ensure model indexes
-	err := catalog.EnsureIndexes(store)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// add system indexes
+	flame.AddApplicationIndexes(catalog)
+	flame.AddUserIndexes(catalog)
+	flame.AddTokenIndexes(catalog, true)
+	axe.AddJobIndexes(catalog, time.Second)
+	glut.AddValueIndexes(catalog, time.Minute)
+	blaze.AddFileIndexes(catalog)
 }
 
 // Item represents a general item.
 type Item struct {
 	coal.Base   `json:"-" bson:",inline" coal:"items"`
-	Name        string     `json:"name"`
-	State       bool       `json:"state"`
-	Count       int        `json:"count"`
-	Created     time.Time  `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
-	Updated     time.Time  `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
-	Deleted     *time.Time `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
-	CreateToken string     `json:"create-token" bson:"create_token" coal:"fire-idempotent-create"`
-	UpdateToken string     `json:"update-token" bson:"update" coal:"fire-consistent-update"`
+	Name        string      `json:"name"`
+	State       bool        `json:"state"`
+	Count       int         `json:"count"`
+	Blob        blaze.Blob  `json:"blob"`
+	File        *blaze.Link `json:"file"`
+	Created     time.Time   `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
+	Updated     time.Time   `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
+	Deleted     *time.Time  `json:"deleted-at" bson:"deleted_at" coal:"fire-soft-delete"`
+	CreateToken string      `json:"create-token" bson:"create_token" coal:"fire-idempotent-create"`
+	UpdateToken string      `json:"update-token" bson:"update" coal:"fire-consistent-update"`
 }
 
 // Validate implements the fire.ValidatableModel interface.

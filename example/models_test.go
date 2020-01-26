@@ -10,9 +10,9 @@ import (
 )
 
 func TestEnsureIndexes(t *testing.T) {
-	store := coal.MustConnect("mongodb://0.0.0.0/test-fire-example")
-	assert.NoError(t, EnsureIndexes(store))
-	assert.NoError(t, EnsureIndexes(store))
+	store := coal.MustOpen(nil, "example", nil)
+	assert.NoError(t, catalog.EnsureIndexes(store))
+	assert.NoError(t, catalog.EnsureIndexes(store))
 }
 
 func TestItem(t *testing.T) {

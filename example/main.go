@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/transport"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
+	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/heat"
@@ -97,7 +98,7 @@ func main() {
 
 func prepareDatabase(store *coal.Store) error {
 	// ensure indexes
-	err := EnsureIndexes(store)
+	err := catalog.EnsureIndexes(store)
 	if err != nil {
 		return err
 	}
@@ -128,6 +129,13 @@ func prepareDatabase(store *coal.Store) error {
 }
 
 func createHandler(store *coal.Store) http.Handler {
+	// prepare master
+	master := heat.Secret(secret)
+
+	// derive secrets
+	authSecret := master.Derive("auth")
+	fileSecret := master.Derive("file")
+
 	// create reporter
 	reporter := func(err error) {
 		println(err.Error())
@@ -137,7 +145,7 @@ func createHandler(store *coal.Store) http.Handler {
 	mux := http.NewServeMux()
 
 	// create policy
-	policy := flame.DefaultPolicy(heat.NewNotary("example", heat.MustRand(32)))
+	policy := flame.DefaultPolicy(heat.NewNotary("example", authSecret))
 	policy.Grants = flame.StaticGrants(true, true, true, true, true)
 	policy.ApprovalURL = flame.StaticApprovalURL("http://0.0.0.0:4200/authorize")
 	policy.GrantStrategy = func(client flame.Client, owner flame.ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
@@ -156,113 +164,65 @@ func createHandler(store *coal.Store) http.Handler {
 	// create watcher
 	watcher := spark.NewWatcher(reporter)
 	watcher.Add(itemStream(store))
+	watcher.Add(jobStream(store))
+	watcher.Add(valueStream(store))
+	watcher.Add(fileStream(store))
+
+	// create storage
+	storage := &blaze.Storage{
+		Store:   store,
+		Notary:  heat.NewNotary("example", fileSecret),
+		Service: blaze.NewGridFSService(store, serve.MustByteSize("1M")),
+	}
 
 	// create queue
 	queue := axe.NewQueue(store, reporter)
 	queue.Add(incrementTask())
+	queue.Add(periodicTask())
+	queue.Add(storage.CleanupTask(time.Minute, time.Minute))
 	queue.Run()
 
 	// create group
 	g := fire.NewGroup(reporter)
-	g.Add(itemController(store, queue))
+
+	// add controllers
+	g.Add(itemController(store, queue, storage))
 	g.Add(userController(store))
+	g.Add(jobController(store))
+	g.Add(valueController(store))
+	g.Add(fileController(store))
+
+	// add watch action
 	g.Handle("watch", &fire.GroupAction{
+		Authorizers: fire.L{
+			flame.Callback(true),
+		},
 		Action: watcher.Action(),
+	})
+
+	// add upload action
+	g.Handle("upload", &fire.GroupAction{
+		Authorizers: fire.L{
+			flame.Callback(true),
+		},
+		Action: storage.Upload(serve.MustByteSize("16M")),
+	})
+
+	// add download action
+	g.Handle("download", &fire.GroupAction{
+		Authorizers: fire.L{
+			// public endpoint
+		},
+		Action: storage.Download(),
 	})
 
 	// register group
 	mux.Handle("/api/", serve.Compose(
-		a.Authorizer("", true, true, true),
+		a.Authorizer("", false, true, true),
 		g.Endpoint("/api/"),
 	))
 
 	return mux
-}
-
-func itemController(store *coal.Store, queue *axe.Queue) *fire.Controller {
-	return &fire.Controller{
-		Model: &Item{},
-		Store: store,
-		Validators: fire.L{
-			// add basic validators
-			fire.TimestampValidator(),
-			fire.ModelValidator(),
-			fire.RelationshipValidator(&Item{}, catalog),
-		},
-		ResourceActions: fire.M{
-			"add": queue.Action([]string{"POST"}, func(ctx *fire.Context) axe.Blueprint {
-				return axe.Blueprint{
-					Name: "increment",
-					Model: &count{
-						Item: ctx.Model.ID(),
-					},
-				}
-			}),
-		},
-		UseTransactions:    true,
-		TolerateViolations: true,
-		IdempotentCreate:   true,
-		ConsistentUpdate:   true,
-		SoftDelete:         true,
-	}
-}
-
-func userController(store *coal.Store) *fire.Controller {
-	return &fire.Controller{
-		Model: &flame.User{},
-		Store: store,
-		Validators: fire.L{
-			// basic model & relationship validations
-			fire.ModelValidator(),
-			fire.RelationshipValidator(&flame.User{}, catalog),
-		},
-		TolerateViolations: true,
-	}
-}
-
-func itemStream(store *coal.Store) *spark.Stream {
-	return &spark.Stream{
-		Model: &Item{},
-		Store: store,
-		Validator: func(sub *spark.Subscription) error {
-			// check state
-			if _, ok := sub.Data["state"].(bool); !ok {
-				return fire.E("invalid state")
-			}
-
-			return nil
-		},
-		Selector: func(event *spark.Event, sub *spark.Subscription) bool {
-			// check insert and update events
-			return event.Model.(*Item).State == sub.Data["state"].(bool)
-		},
-		SoftDelete: true,
-	}
-}
-
-func incrementTask() *axe.Task {
-	return &axe.Task{
-		Name:  "increment",
-		Model: &count{},
-		Handler: func(ctx *axe.Context) error {
-			// get count
-			c := ctx.Model.(*count)
-
-			// update document
-			_, err := ctx.TC(&Item{}).UpdateOne(ctx, bson.M{
-				"_id": c.Item,
-			}, bson.M{
-				"$inc": bson.M{
-					coal.F(&Item{}, "Count"): 1,
-				},
-			})
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
-	}
 }
 
 func configureJaeger() {
