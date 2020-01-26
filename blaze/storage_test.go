@@ -17,8 +17,6 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-// TODO: Test claim keys.
-
 func TestStorageUploadInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
