@@ -494,7 +494,8 @@ func (s *Storage) DownloadAction() *fire.Action {
 		// load file
 		var file File
 		err = s.store.C(&File{}).FindOne(ctx, bson.M{
-			"_id": key.File,
+			"_id":                    key.File,
+			coal.F(&File{}, "State"): Claimed,
 		}).Decode(&file)
 		if err != nil {
 			return err
@@ -580,8 +581,10 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 				"_id":                    file.ID(),
 				coal.F(&File{}, "State"): file.State,
 			}, bson.M{
-				coal.F(&File{}, "State"):   Deleting,
-				coal.F(&File{}, "Updated"): time.Now(),
+				"$set": bson.M{
+					coal.F(&File{}, "State"):   Deleting,
+					coal.F(&File{}, "Updated"): time.Now(),
+				},
 			})
 			if err != nil {
 				return err

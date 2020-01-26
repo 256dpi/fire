@@ -351,6 +351,9 @@ func TestStorageDownload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, file)
 
+		file.State = Claimed
+		tester.Update(file)
+
 		key, err := storage.notary.Issue(&ViewKey{
 			Base: heat.Base{},
 			File: file.ID(),
@@ -375,7 +378,17 @@ func TestStorageCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		err := storage.Cleanup(nil, time.Minute)
+		file, err := storage.upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
 		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		file.State = Released
+		tester.Update(file)
+
+		time.Sleep(10 * time.Millisecond)
+
+		err = storage.Cleanup(nil, 1)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, tester.Count(&File{}))
 	})
 }
