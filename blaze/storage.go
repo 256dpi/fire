@@ -54,14 +54,18 @@ type Service interface {
 
 // Storage provides file storage services.
 type Storage struct {
-	// The store used to manage the files.
-	Store *coal.Store
+	store   *coal.Store
+	notary  *heat.Notary
+	service Service
+}
 
-	// The notary used for handling keys.
-	Notary *heat.Notary
-
-	// The service used for storing and retrieving blobs.
-	Service Service
+// NewStorage creates a new storage.
+func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storage {
+	return &Storage{
+		store:   store,
+		notary:  notary,
+		service: service,
+	}
 }
 
 // UploadAction returns an action that provides and upload that service that
@@ -74,7 +78,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 
 	return fire.A("blaze/Storage.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != nil && ctx.Store != s.Store {
+		if ctx.Store != nil && ctx.Store != s.store {
 			return fmt.Errorf("stores must be identical")
 		}
 
@@ -129,7 +133,7 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 	}
 
 	// issue claim key
-	claimKey, err := s.Notary.Issue(&ClaimKey{
+	claimKey, err := s.notary.Issue(&ClaimKey{
 		File: file.ID(),
 	})
 	if err != nil {
@@ -173,7 +177,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		}
 
 		// issue claim key
-		claimKey, err := s.Notary.Issue(&ClaimKey{
+		claimKey, err := s.notary.Issue(&ClaimKey{
 			File: file.ID(),
 		})
 		if err != nil {
@@ -203,7 +207,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// create handle
-	handle, err := s.Service.Prepare()
+	handle, err := s.service.Prepare()
 	if err != nil {
 		return nil, err
 	}
@@ -217,19 +221,19 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}).(*File)
 
 	// create file
-	_, err = s.Store.C(file).InsertOne(ctx, file)
+	_, err = s.store.C(file).InsertOne(ctx, file)
 	if err != nil {
 		return nil, err
 	}
 
 	// upload file to service
-	length, err = s.Service.Upload(ctx, handle, contentType, stream)
+	length, err = s.service.Upload(ctx, handle, contentType, stream)
 	if err != nil {
 		return nil, err
 	}
 
 	// update file
-	_, err = s.Store.C(file).UpdateOne(ctx, bson.M{
+	_, err = s.store.C(file).UpdateOne(ctx, bson.M{
 		"_id": file.ID(),
 	}, bson.M{
 		"$set": bson.M{
@@ -249,7 +253,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 func (s *Storage) Validator(fields ...string) *fire.Callback {
 	return fire.C("blaze/Storage.Validator", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != s.Store {
+		if ctx.Store != s.store {
 			return fmt.Errorf("stores must be identical")
 		}
 
@@ -332,14 +336,14 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 
 		// verify claim key
 		var claimKey ClaimKey
-		err := s.Notary.Verify(&claimKey, newLink.ClaimKey)
+		err := s.notary.Verify(&claimKey, newLink.ClaimKey)
 		if err != nil {
 			return err
 		}
 
 		// get new file
 		var newFile File
-		err = s.Store.C(&newFile).FindOne(ctx, bson.M{
+		err = s.store.C(&newFile).FindOne(ctx, bson.M{
 			"_id": claimKey.File,
 		}).Decode(&newFile)
 		if err != nil {
@@ -352,7 +356,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 		}
 
 		// claim new file
-		res, err := s.Store.C(&File{}).UpdateOne(ctx, bson.M{
+		res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
 			"_id":                    newFile.ID(),
 			coal.F(&File{}, "State"): Uploaded,
 		}, bson.M{
@@ -375,7 +379,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 
 	// release old file
 	if updated || deleted {
-		res, err := s.Store.C(&File{}).UpdateOne(ctx, bson.M{
+		res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
 			"_id":                    oldLink.File,
 			coal.F(&File{}, "State"): Claimed,
 		}, bson.M{
@@ -458,7 +462,7 @@ func (s *Storage) decorateLink(link *Link) error {
 	}
 
 	// issue view key
-	viewKey, err := s.Notary.Issue(&ViewKey{
+	viewKey, err := s.notary.Issue(&ViewKey{
 		File: *link.File,
 	})
 	if err != nil {
@@ -476,20 +480,20 @@ func (s *Storage) decorateLink(link *Link) error {
 func (s *Storage) DownloadAction() *fire.Action {
 	return fire.A("blaze/Storage.DownloadAction", []string{"GET"}, 0, func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != nil && ctx.Store != s.Store {
+		if ctx.Store != nil && ctx.Store != s.store {
 			return fmt.Errorf("stores must be identical")
 		}
 
 		// verify key
 		var key ViewKey
-		err := s.Notary.Verify(&key, ctx.HTTPRequest.URL.Query().Get("key"))
+		err := s.notary.Verify(&key, ctx.HTTPRequest.URL.Query().Get("key"))
 		if err != nil {
 			return err
 		}
 
 		// load file
 		var file File
-		err = s.Store.C(&File{}).FindOne(ctx, bson.M{
+		err = s.store.C(&File{}).FindOne(ctx, bson.M{
 			"_id": key.File,
 		}).Decode(&file)
 		if err != nil {
@@ -501,7 +505,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Length, 10))
 
 		// download file
-		err = s.Service.Download(ctx, file.Handle, ctx.ResponseWriter)
+		err = s.service.Download(ctx, file.Handle, ctx.ResponseWriter)
 		if err != nil {
 			return err
 		}
@@ -539,7 +543,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	}
 
 	// get cursor for deletable files
-	csr, err := s.Store.C(&File{}).Find(ctx, bson.M{
+	csr, err := s.store.C(&File{}).Find(ctx, bson.M{
 		"$or": []bson.M{
 			{
 				coal.F(&File{}, "State"): bson.M{
@@ -572,7 +576,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 
 		// flag file as deleted if not already
 		if file.State != Deleting {
-			res, err := s.Store.C(&File{}).UpdateOne(ctx, bson.M{
+			res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
 				"_id":                    file.ID,
 				coal.F(&File{}, "State"): file.State,
 			}, bson.M{
@@ -590,14 +594,14 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		}
 
 		// delete blob
-		deleted, err := s.Service.Delete(ctx, file.Handle)
+		deleted, err := s.service.Delete(ctx, file.Handle)
 		if err != nil {
 			return err
 		}
 
 		// delete file if blob has been deleted
 		if deleted {
-			_, err = s.Store.C(&File{}).DeleteOne(ctx, bson.M{
+			_, err = s.store.C(&File{}).DeleteOne(ctx, bson.M{
 				"_id": file.ID(),
 			})
 			if err != nil {
@@ -610,7 +614,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	_ = csr.Close(ctx)
 
 	// cleanup service
-	err = s.Service.Cleanup(ctx)
+	err = s.service.Cleanup(ctx)
 	if err != nil {
 		return err
 	}

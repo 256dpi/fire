@@ -19,10 +19,7 @@ import (
 
 func TestUploadInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Store:   tester.Store,
-			Service: NewMemory(),
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		body := strings.NewReader("Hello World!")
 		req := httptest.NewRequest("POST", "/foo", body)
@@ -41,12 +38,7 @@ func TestUploadInvalidContentType(t *testing.T) {
 func TestUploadRaw(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: service,
-		}
+		storage := NewStorage(tester.Store, testNotary, service)
 
 		body := strings.NewReader("Hello World!")
 
@@ -77,11 +69,7 @@ func TestUploadRaw(t *testing.T) {
 
 func TestUploadRawLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: NewMemory(),
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		body := strings.NewReader("Hello World!")
 
@@ -100,12 +88,7 @@ func TestUploadRawLimit(t *testing.T) {
 func TestUploadFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: service,
-		}
+		storage := NewStorage(tester.Store, testNotary, service)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -161,11 +144,7 @@ func TestUploadFormFiles(t *testing.T) {
 
 func TestUploadFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: NewMemory(),
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -194,12 +173,7 @@ func TestUploadFormFilesLimit(t *testing.T) {
 func TestUploadMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: service,
-		}
+		storage := NewStorage(tester.Store, testNotary, service)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -248,11 +222,7 @@ func TestUploadMultipart(t *testing.T) {
 
 func TestUploadMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: NewMemory(),
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -282,11 +252,7 @@ func TestUploadMultipartLimit(t *testing.T) {
 
 func TestValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Store:   tester.Store,
-			Notary:  testNotary,
-			Service: NewMemory(),
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		validator := storage.Validator()
 
@@ -309,7 +275,7 @@ func TestValidator(t *testing.T) {
 			State: Uploaded,
 		}).(*File)
 
-		claimKey1, err := storage.Notary.Issue(&ClaimKey{
+		claimKey1, err := storage.notary.Issue(&ClaimKey{
 			File: file1.ID(),
 		})
 		assert.NoError(t, err)
@@ -337,9 +303,7 @@ func TestValidator(t *testing.T) {
 
 func TestDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := &Storage{
-			Notary: testNotary,
-		}
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
 		decorator := storage.Decorator()
 
@@ -366,12 +330,12 @@ func TestDecorator(t *testing.T) {
 		assert.NotEmpty(t, model.OptionalFile.ViewKey)
 
 		var viewKey1 ViewKey
-		err = storage.Notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
+		err = storage.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file1, viewKey1.File)
 
 		var viewKey2 ViewKey
-		err = storage.Notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
+		err = storage.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file2, viewKey2.File)
 	})

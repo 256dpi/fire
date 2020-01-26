@@ -169,11 +169,9 @@ func createHandler(store *coal.Store) http.Handler {
 	watcher.Add(fileStream(store))
 
 	// create storage
-	storage := &blaze.Storage{
-		Store:   store,
-		Notary:  heat.NewNotary("example", fileSecret),
-		Service: blaze.NewGridFS(store, serve.MustByteSize("1M")),
-	}
+	fileNotary := heat.NewNotary("example", fileSecret)
+	fileService := blaze.NewGridFS(store, serve.MustByteSize("1M"))
+	storage := blaze.NewStorage(store, fileNotary, fileService)
 
 	// create queue
 	queue := axe.NewQueue(store, reporter)
