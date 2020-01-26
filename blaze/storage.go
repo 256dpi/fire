@@ -577,7 +577,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		// flag file as deleted if not already
 		if file.State != Deleting {
 			res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
-				"_id":                    file.ID,
+				"_id":                    file.ID(),
 				coal.F(&File{}, "State"): file.State,
 			}, bson.M{
 				coal.F(&File{}, "State"):   Deleting,
