@@ -59,7 +59,7 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 }
 
 // Clean will remove the collections of models that have been registered and
-// reset the header map.
+// reset the header map as well as the context.
 func (t *Tester) Clean() {
 	// clean models
 	t.Tester.Clean()
@@ -91,14 +91,6 @@ func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 
 // WithContext runs the given function with a prepared context.
 func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
-	_ = t.RunHandler(ctx, func(ctx *Context) error {
-		fn(ctx)
-		return nil
-	})
-}
-
-// RunHandler builds a context and runs the passed handler with it.
-func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 	// set context if missing
 	if ctx == nil {
 		ctx = &Context{}
@@ -168,8 +160,17 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 	ctx.Tracer = NewTracerWithRoot("fire/Tester.RunHandler")
 	defer ctx.Tracer.Finish(true)
 
-	// call handler
-	return h(ctx)
+	// run function
+	fn(ctx)
+}
+
+// RunHandler builds a context and runs the passed handler with it.
+func (t *Tester) RunHandler(ctx *Context, h Handler) error {
+	var err error
+	t.WithContext(ctx, func(ctx *Context) {
+		err = h(ctx)
+	})
+	return err
 }
 
 // Request will run the specified request against the registered handler. This
