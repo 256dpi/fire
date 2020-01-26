@@ -8,11 +8,13 @@ import (
 	"net/textproto"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/heat"
 )
 
 // TODO: Test claim keys.
@@ -338,5 +340,42 @@ func TestStorageDecorator(t *testing.T) {
 		err = storage.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file2, viewKey2.File)
+	})
+}
+
+func TestStorageDownload(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
+
+		file, err := storage.upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		key, err := storage.notary.Issue(&ViewKey{
+			Base: heat.Base{},
+			File: file.ID(),
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		action := storage.DownloadAction()
+
+		req := httptest.NewRequest("GET", "/foo?key="+key, nil)
+		rec, err := tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
+		assert.Equal(t, "Hello World!", rec.Body.String())
+	})
+}
+
+func TestStorageCleanup(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
+
+		err := storage.Cleanup(nil, time.Minute)
+		assert.NoError(t, err)
 	})
 }
