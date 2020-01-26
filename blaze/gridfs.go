@@ -12,24 +12,27 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-type GridFSService struct {
+// GridFS stores blobs in a GridFs bucket.
+type GridFS struct {
 	store  *coal.Store
 	bucket *lungo.Bucket
 }
 
-func NewGridFSService(store *coal.Store, chunkSize int64) *GridFSService {
+// NewGridFS creates a new GridFS service.
+func NewGridFS(store *coal.Store, chunkSize int64) *GridFS {
 	// set default chunk size
 	if chunkSize == 0 {
 		chunkSize = serve.MustByteSize("2M")
 	}
 
-	return &GridFSService{
+	return &GridFS{
 		store:  store,
 		bucket: lungo.NewBucket(store.DB(), options.GridFSBucket().SetChunkSizeBytes(int32(chunkSize))),
 	}
 }
 
-func (g *GridFSService) Prepare() (Handle, error) {
+// Prepare implements the Service interface.
+func (g *GridFS) Prepare() (Handle, error) {
 	// create handle
 	handle := Handle{
 		"id": primitive.NewObjectID(),
@@ -38,7 +41,8 @@ func (g *GridFSService) Prepare() (Handle, error) {
 	return handle, nil
 }
 
-func (g *GridFSService) Upload(ctx context.Context, handle Handle, _ string, r io.Reader) (int64, error) {
+// Upload implements the Service interface.
+func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string, r io.Reader) (int64, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
@@ -69,7 +73,8 @@ func (g *GridFSService) Upload(ctx context.Context, handle Handle, _ string, r i
 	return n, nil
 }
 
-func (g *GridFSService) Download(ctx context.Context, handle Handle, w io.Writer) error {
+// Download implements the Service interface.
+func (g *GridFS) Download(ctx context.Context, handle Handle, w io.Writer) error {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
@@ -98,7 +103,8 @@ func (g *GridFSService) Download(ctx context.Context, handle Handle, w io.Writer
 	return nil
 }
 
-func (g *GridFSService) Delete(ctx context.Context, handle Handle) (bool, error) {
+// Delete implements the Service interface.
+func (g *GridFS) Delete(ctx context.Context, handle Handle) (bool, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
@@ -116,6 +122,7 @@ func (g *GridFSService) Delete(ctx context.Context, handle Handle) (bool, error)
 	return true, nil
 }
 
-func (g *GridFSService) Cleanup(_ context.Context) error {
+// Cleanup implements the Service interface.
+func (g *GridFS) Cleanup(_ context.Context) error {
 	return nil
 }

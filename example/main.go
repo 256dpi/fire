@@ -172,7 +172,7 @@ func createHandler(store *coal.Store) http.Handler {
 	storage := &blaze.Storage{
 		Store:   store,
 		Notary:  heat.NewNotary("example", fileSecret),
-		Service: blaze.NewGridFSService(store, serve.MustByteSize("1M")),
+		Service: blaze.NewGridFS(store, serve.MustByteSize("1M")),
 	}
 
 	// create queue
@@ -205,7 +205,7 @@ func createHandler(store *coal.Store) http.Handler {
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Action: storage.Upload(serve.MustByteSize("16M")),
+		Action: storage.UploadAction(serve.MustByteSize("16M")),
 	})
 
 	// add download action
@@ -213,7 +213,7 @@ func createHandler(store *coal.Store) http.Handler {
 		Authorizers: fire.L{
 			// public endpoint
 		},
-		Action: storage.Download(),
+		Action: storage.DownloadAction(),
 	})
 
 	// register group

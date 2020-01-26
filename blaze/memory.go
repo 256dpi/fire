@@ -7,8 +7,8 @@ import (
 	"strconv"
 )
 
-// MemoryService is a service for testing purposes that stores blobs in memory.
-type MemoryService struct {
+// Memory is a service for testing purposes that stores blobs in memory.
+type Memory struct {
 	// The stored blobs.
 	Blobs map[string]Blob
 
@@ -16,15 +16,15 @@ type MemoryService struct {
 	Next int
 }
 
-// NewMemoryService will create a new memory service.
-func NewMemoryService() *MemoryService {
-	return &MemoryService{
+// NewMemory will create a new memory service.
+func NewMemory() *Memory {
+	return &Memory{
 		Blobs: map[string]Blob{},
 	}
 }
 
 // Prepare implements the Service interface.
-func (s *MemoryService) Prepare() (Handle, error) {
+func (s *Memory) Prepare() (Handle, error) {
 	// increment id
 	s.Next++
 
@@ -37,7 +37,7 @@ func (s *MemoryService) Prepare() (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (s *MemoryService) Upload(_ context.Context, handle Handle, contentType string, r io.Reader) (int64, error) {
+func (s *Memory) Upload(_ context.Context, handle Handle, contentType string, r io.Reader) (int64, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -66,7 +66,7 @@ func (s *MemoryService) Upload(_ context.Context, handle Handle, contentType str
 }
 
 // Download implements the Service interface.
-func (s *MemoryService) Download(_ context.Context, handle Handle, w io.Writer) error {
+func (s *Memory) Download(_ context.Context, handle Handle, w io.Writer) error {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -89,7 +89,7 @@ func (s *MemoryService) Download(_ context.Context, handle Handle, w io.Writer) 
 }
 
 // Delete implements the Service interface.
-func (s *MemoryService) Delete(_ context.Context, handle Handle) (bool, error) {
+func (s *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -108,6 +108,6 @@ func (s *MemoryService) Delete(_ context.Context, handle Handle) (bool, error) {
 }
 
 // Cleanup implements the Service interface.
-func (s *MemoryService) Cleanup(_ context.Context) error {
+func (s *Memory) Cleanup(_ context.Context) error {
 	return nil
 }

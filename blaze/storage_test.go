@@ -21,7 +21,7 @@ func TestUploadInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := &Storage{
 			Store:   tester.Store,
-			Service: NewMemoryService(),
+			Service: NewMemory(),
 		}
 
 		body := strings.NewReader("Hello World!")
@@ -29,7 +29,7 @@ func TestUploadInvalidContentType(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(0))
+		}, storage.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -40,7 +40,7 @@ func TestUploadInvalidContentType(t *testing.T) {
 
 func TestUploadRaw(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		service := NewMemoryService()
+		service := NewMemory()
 
 		storage := &Storage{
 			Store:   tester.Store,
@@ -55,7 +55,7 @@ func TestUploadRaw(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(0))
+		}, storage.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -78,9 +78,9 @@ func TestUploadRaw(t *testing.T) {
 func TestUploadRawLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := &Storage{
-			Store:       tester.Store,
-			Notary:      testNotary,
-			Service:     NewMemoryService(),
+			Store:   tester.Store,
+			Notary:  testNotary,
+			Service: NewMemory(),
 		}
 
 		body := strings.NewReader("Hello World!")
@@ -90,7 +90,7 @@ func TestUploadRawLimit(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(1))
+		}, storage.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -99,7 +99,7 @@ func TestUploadRawLimit(t *testing.T) {
 
 func TestUploadFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		service := NewMemoryService()
+		service := NewMemory()
 
 		storage := &Storage{
 			Store:   tester.Store,
@@ -130,7 +130,7 @@ func TestUploadFormFiles(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(0))
+		}, storage.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -162,9 +162,9 @@ func TestUploadFormFiles(t *testing.T) {
 func TestUploadFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := &Storage{
-			Store:       tester.Store,
-			Notary:      testNotary,
-			Service:     NewMemoryService(),
+			Store:   tester.Store,
+			Notary:  testNotary,
+			Service: NewMemory(),
 		}
 
 		body := &bytes.Buffer{}
@@ -184,7 +184,7 @@ func TestUploadFormFilesLimit(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(1))
+		}, storage.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -193,7 +193,7 @@ func TestUploadFormFilesLimit(t *testing.T) {
 
 func TestUploadMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		service := NewMemoryService()
+		service := NewMemory()
 
 		storage := &Storage{
 			Store:   tester.Store,
@@ -228,7 +228,7 @@ func TestUploadMultipart(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(0))
+		}, storage.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -249,9 +249,9 @@ func TestUploadMultipart(t *testing.T) {
 func TestUploadMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := &Storage{
-			Store:       tester.Store,
-			Notary:      testNotary,
-			Service:     NewMemoryService(),
+			Store:   tester.Store,
+			Notary:  testNotary,
+			Service: NewMemory(),
 		}
 
 		body := &bytes.Buffer{}
@@ -273,7 +273,7 @@ func TestUploadMultipartLimit(t *testing.T) {
 
 		res, err := tester.RunAction(&fire.Context{
 			HTTPRequest: req,
-		}, storage.Upload(1))
+		}, storage.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -285,7 +285,7 @@ func TestValidator(t *testing.T) {
 		storage := &Storage{
 			Store:   tester.Store,
 			Notary:  testNotary,
-			Service: NewMemoryService(),
+			Service: NewMemory(),
 		}
 
 		validator := storage.Validator()

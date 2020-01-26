@@ -9,7 +9,7 @@ import (
 )
 
 func TestMemoryService(t *testing.T) {
-	service := NewMemoryService()
+	service := NewMemory()
 
 	handle, err := service.Prepare()
 	assert.NoError(t, err)

@@ -12,7 +12,7 @@ import (
 
 func TestGridFSService(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		service := NewGridFSService(tester.Store, 0)
+		service := NewGridFS(tester.Store, 0)
 
 		handle, err := service.Prepare()
 		assert.NoError(t, err)

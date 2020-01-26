@@ -52,6 +52,7 @@ type Service interface {
 	Cleanup(ctx context.Context) error
 }
 
+// Storage provides file storage services.
 type Storage struct {
 	// The store used to manage the files.
 	Store *coal.Store
@@ -63,13 +64,15 @@ type Storage struct {
 	Service Service
 }
 
-func (s *Storage) Upload(limit int64) *fire.Action {
+// UploadAction returns an action that provides and upload that service that
+// stores blobs and returns claim keys.
+func (s *Storage) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
 		limit = serve.MustByteSize("4M")
 	}
 
-	return fire.A("blaze/Upload", []string{"POST"}, limit, func(ctx *fire.Context) error {
+	return fire.A("blaze/Storage.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.Store {
 			return fmt.Errorf("stores must be identical")
@@ -112,7 +115,7 @@ func (s *Storage) Upload(limit int64) *fire.Action {
 
 func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength int64) ([]string, error) {
 	// begin trace
-	ctx.Tracer.Push("blaze/uploadRaw")
+	ctx.Tracer.Push("blaze/Storage.uploadRaw")
 
 	// set default content type
 	if contentType == "" {
@@ -120,7 +123,7 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 	}
 
 	// upload file to service
-	file, err := s.Persist(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
+	file, err := s.upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +144,7 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 
 func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
 	// begin trace
-	ctx.Tracer.Push("blaze/uploadMultipart")
+	ctx.Tracer.Push("blaze/Storage.uploadMultipart")
 
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
@@ -164,7 +167,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		}
 
 		// upload file to service
-		file, err := s.Persist(ctx, contentType, -1, part)
+		file, err := s.upload(ctx, contentType, -1, part)
 		if err != nil {
 			return nil, err
 		}
@@ -193,8 +196,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	return claimKeys, nil
 }
 
-// Persist will store a new file in the provided storage.
-func (s *Storage) Persist(ctx context.Context, contentType string, length int64, stream io.Reader) (*File, error) {
+func (s *Storage) upload(ctx context.Context, contentType string, length int64, stream io.Reader) (*File, error) {
 	// limit upload if length has been specified
 	if length != -1 {
 		stream = io.LimitReader(stream, length)
@@ -395,7 +397,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 // Decorator will generate view keys for all or just the specified link fields
 // on the returned model or models.
 func (s *Storage) Decorator(fields ...string) *fire.Callback {
-	return fire.C("blaze.Decorator", fire.All(), func(ctx *fire.Context) error {
+	return fire.C("blaze/Storage.Decorator", fire.All(), func(ctx *fire.Context) error {
 		// collect fields if empty
 		if len(fields) == 0 {
 			fields = collectFields(ctx.Controller.Model)
@@ -469,8 +471,10 @@ func (s *Storage) decorateLink(link *Link) error {
 	return nil
 }
 
-func (s *Storage) Download() *fire.Action {
-	return fire.A("blaze/Download", []string{"GET"}, 0, func(ctx *fire.Context) error {
+// DownloadAction returns an action that allows downloading files using view
+// keys.
+func (s *Storage) DownloadAction() *fire.Action {
+	return fire.A("blaze/Storage.DownloadAction", []string{"GET"}, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.Store {
 			return fmt.Errorf("stores must be identical")
@@ -506,13 +510,17 @@ func (s *Storage) Download() *fire.Action {
 	})
 }
 
-func (s *Storage) CleanupTask(periodicity, cleanAge time.Duration) *axe.Task {
+// CleanupTask will return a periodic task that can be run to periodically
+// cleanup obsolete files.
+func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 	return &axe.Task{
-		Name: "blaze.CleanupTask",
+		Name: "fire/blaze.cleanup",
 		Handler: func(ctx *axe.Context) error {
-			return s.Cleanup(ctx, cleanAge)
+			return s.Cleanup(ctx, retention)
 		},
 		Workers:      1,
+		MaxAttempts:  1,
+		Lifetime:     periodicity,
 		Periodically: periodicity,
 		PeriodicJob: axe.Blueprint{
 			Label: "periodic",
@@ -520,13 +528,17 @@ func (s *Storage) CleanupTask(periodicity, cleanAge time.Duration) *axe.Task {
 	}
 }
 
-func (s *Storage) Cleanup(ctx context.Context, cleanAge time.Duration) error {
-	// check clean age
-	if cleanAge == 0 {
-		cleanAge = time.Hour
+// Cleanup will remove obsolete files and remove their blobs. Files in the
+// states "uploading" or "uploaded" are removed after the specified retention
+// which defaults to 1 hour if zero. Files in the states "released" and
+// "deleting" are removed immediately. It will also allow the service to cleanup.
+func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
+	// set default retention
+	if retention == 0 {
+		retention = time.Hour
 	}
 
-	// get cursor for old and released files
+	// get cursor for deletable files
 	csr, err := s.Store.C(&File{}).Find(ctx, bson.M{
 		"$or": []bson.M{
 			{
@@ -534,7 +546,7 @@ func (s *Storage) Cleanup(ctx context.Context, cleanAge time.Duration) error {
 					"$in": bson.A{Uploading, Uploaded},
 				},
 				coal.F(&File{}, "Updated"): bson.M{
-					"$lt": time.Now().Add(-cleanAge),
+					"$lt": time.Now().Add(-retention),
 				},
 			},
 			{
@@ -571,19 +583,19 @@ func (s *Storage) Cleanup(ctx context.Context, cleanAge time.Duration) error {
 				return err
 			}
 
-			// continue if file has been claimed
+			// continue if file has changed its state
 			if res.ModifiedCount == 0 {
 				continue
 			}
 		}
 
-		// delete upload
+		// delete blob
 		deleted, err := s.Service.Delete(ctx, file.Handle)
 		if err != nil {
 			return err
 		}
 
-		// delete file if upload is deleted
+		// delete file if blob has been deleted
 		if deleted {
 			_, err = s.Store.C(&File{}).DeleteOne(ctx, bson.M{
 				"_id": file.ID(),
