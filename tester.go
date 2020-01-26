@@ -89,6 +89,33 @@ func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 	return t.RunHandler(ctx, cb.Handler)
 }
 
+// RunAction is a helper to test actions.
+func (t *Tester) RunAction(ctx *Context, action *Action) (*httptest.ResponseRecorder, error) {
+	// get context
+	var rec *httptest.ResponseRecorder
+	err := t.RunHandler(ctx, func(ctx *Context) error {
+		// get response recorder
+		rec = ctx.ResponseWriter.(*httptest.ResponseRecorder)
+
+		// check method
+		if !Contains(action.Methods, ctx.HTTPRequest.Method) {
+			rec.WriteHeader(http.StatusMethodNotAllowed)
+			return nil
+		}
+
+		// limit request
+		serve.LimitBody(rec, ctx.HTTPRequest, action.BodyLimit)
+
+		// run action
+		return action.Handler(ctx)
+	})
+	if err != nil {
+		rec.WriteHeader(http.StatusInternalServerError)
+	}
+
+	return rec, err
+}
+
 // RunHandler builds a context and runs the passed handler with it.
 func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 	var err error
