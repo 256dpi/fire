@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
 )
 
 // Watcher will watch multiple collections and serve watch requests by clients.
@@ -30,9 +29,6 @@ func NewWatcher(reporter func(error)) *Watcher {
 
 // Add will add a stream to the watcher.
 func (w *Watcher) Add(stream *Stream) {
-	// initialize model
-	coal.Init(stream.Model)
-
 	// check existence
 	if w.streams[stream.Name()] != nil {
 		panic(fmt.Sprintf(`spark: stream with name "%s" already exists`, stream.Name()))

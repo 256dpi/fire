@@ -12,7 +12,7 @@ func TestBaseID(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	post := Init(&postModel{}).(*postModel)
+	post := &postModel{}
 
 	value, ok := Get(post, "TextBody")
 	assert.Equal(t, "", value)
@@ -30,7 +30,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestMustGet(t *testing.T) {
-	post := Init(&postModel{}).(*postModel)
+	post := &postModel{}
 
 	assert.Equal(t, "", MustGet(post, "TextBody"))
 
@@ -44,7 +44,7 @@ func TestMustGet(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	post := Init(&postModel{}).(*postModel)
+	post := &postModel{}
 
 	ok := Set(post, "TextBody", "3")
 	assert.True(t, ok)
@@ -58,7 +58,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestMustSet(t *testing.T) {
-	post := Init(&postModel{}).(*postModel)
+	post := &postModel{}
 
 	MustSet(post, "TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)

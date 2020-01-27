@@ -263,7 +263,7 @@ func TestStorageValidator(t *testing.T) {
 			Operation: fire.Create,
 			Model:     model,
 			Controller: &fire.Controller{
-				Model: coal.Init(&testModel{}),
+				Model: &testModel{},
 			},
 		}, validator)
 		assert.Error(t, err)
@@ -290,7 +290,7 @@ func TestStorageValidator(t *testing.T) {
 			Operation: fire.Create,
 			Model:     model,
 			Controller: &fire.Controller{
-				Model: coal.Init(&testModel{}),
+				Model: &testModel{},
 			},
 		}, validator)
 		assert.NoError(t, err)
@@ -322,7 +322,7 @@ func TestStorageDecorator(t *testing.T) {
 			Operation: fire.Find,
 			Model:     model,
 			Controller: &fire.Controller{
-				Model: coal.Init(&testModel{}),
+				Model: &testModel{},
 			},
 		}, decorator)
 		assert.NoError(t, err)

@@ -27,7 +27,6 @@ func TestTokenInterfaces(t *testing.T) {
 }
 
 func TestApplicationInterfaces(t *testing.T) {
-	coal.Init(&Application{})
 	coal.Require(&Application{}, "flame-client-id")
 
 	var _ coal.Model = &Application{}
@@ -36,7 +35,6 @@ func TestApplicationInterfaces(t *testing.T) {
 }
 
 func TestUserInterfaces(t *testing.T) {
-	coal.Init(&User{})
 	coal.Require(&User{}, "flame-resource-owner-id")
 
 	var _ coal.Model = &User{}

@@ -55,14 +55,6 @@ type Authenticator struct {
 
 // NewAuthenticator constructs a new Authenticator from a store and policy.
 func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *Authenticator {
-	// initialize token
-	coal.Init(policy.Token)
-
-	// initialize clients
-	for _, model := range policy.Clients {
-		coal.Init(model)
-	}
-
 	return &Authenticator{
 		store:    store,
 		policy:   policy,
@@ -976,9 +968,6 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	}
 	stack.AbortIf(err)
 
-	// initialize client
-	coal.Init(client)
-
 	// finish trace
 	env.tracer.Pop()
 
@@ -1019,9 +1008,6 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 		return nil
 	}
 	stack.AbortIf(err)
-
-	// initialize client
-	coal.Init(client)
 
 	// finish trace
 	env.tracer.Pop()
@@ -1102,9 +1088,6 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	}
 	stack.AbortIf(err)
 
-	// initialize resource owner
-	coal.Init(resourceOwner)
-
 	// finish trace
 	env.tracer.Pop()
 
@@ -1150,9 +1133,6 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	}
 	stack.AbortIf(err)
 
-	// initialize resource owner
-	coal.Init(resourceOwner)
-
 	// finish trace
 	env.tracer.Pop()
 
@@ -1164,19 +1144,16 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	env.tracer.Push("flame/Authenticator.getToken")
 
 	// prepare object
-	obj := coal.GetMeta(a.policy.Token).Make()
+	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
 
 	// fetch token
-	err := a.store.TC(env.tracer, obj).FindOne(nil, bson.M{
+	err := a.store.TC(env.tracer, token).FindOne(nil, bson.M{
 		"_id": id,
-	}).Decode(obj)
+	}).Decode(token)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
 	stack.AbortIf(err)
-
-	// initialize token
-	token := coal.Init(obj).(GenericToken)
 
 	// finish trace
 	env.tracer.Pop()

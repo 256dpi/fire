@@ -37,7 +37,7 @@ func (t *Tester) Clean() {
 // Save will save the specified model.
 func (t *Tester) Save(model Model) Model {
 	// initialize model
-	model = Init(model)
+	Init(model)
 
 	// insert to collection
 	_, err := t.Store.C(model).InsertOne(nil, model)
@@ -50,9 +50,6 @@ func (t *Tester) Save(model Model) Model {
 
 // FindAll will return all saved models.
 func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
-	// initialize model
-	model = Init(model)
-
 	// prepare query
 	qry := bson.M{}
 	if len(query) > 0 {
@@ -89,9 +86,6 @@ func (t *Tester) FindLast(model Model, query ...bson.M) Model {
 		panic(err)
 	}
 
-	// initialize model
-	Init(model)
-
 	return model
 }
 
@@ -122,9 +116,6 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 		panic(err)
 	}
 
-	// initialize model
-	Init(model)
-
 	return model
 }
 
@@ -146,9 +137,6 @@ func (t *Tester) Update(model Model) Model {
 
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
-	// initialize model
-	model = Init(model)
-
 	// insert to collection
 	_, err := t.Store.C(model).DeleteOne(nil, bson.M{
 		"_id": model.ID(),

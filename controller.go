@@ -1391,14 +1391,14 @@ func (c *Controller) loadModel(ctx *Context) {
 	stack.AbortIf(err)
 
 	// initialize and set model
-	ctx.Model = coal.Init(model.(coal.Model))
+	ctx.Model = coal.Init(model)
 
 	// set original on update operations
 	if ctx.Operation == Update {
 		original := coal.GetMeta(c.Model).Make()
 		err = res.Decode(original)
 		stack.AbortIf(err)
-		ctx.Original = coal.Init(original.(coal.Model))
+		ctx.Original = coal.Init(original)
 	}
 
 	// finish trace

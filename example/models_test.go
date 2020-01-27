@@ -16,7 +16,6 @@ func TestEnsureIndexes(t *testing.T) {
 }
 
 func TestItem(t *testing.T) {
-	coal.Init(&Item{})
 	coal.Require(&Item{}, "fire-soft-delete")
 	coal.Require(&Item{}, "fire-created-timestamp", "fire-updated-timestamp")
 

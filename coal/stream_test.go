@@ -64,10 +64,9 @@ func TestStream(t *testing.T) {
 
 		<-open
 
-		post := Init(&postModel{
+		post := &postModel{
 			Title: "foo",
-		}).(*postModel)
-
+		}
 		tester.Save(post)
 
 		post.Title = "bar"
@@ -178,10 +177,9 @@ func TestStreamAutoResumption(t *testing.T) {
 
 		<-open
 
-		post := Init(&postModel{
+		post := &postModel{
 			Title: "foo",
-		}).(*postModel)
-
+		}
 		tester.Save(post)
 
 		post.Title = "bar"
@@ -246,10 +244,9 @@ func TestStreamManualResumption(t *testing.T) {
 
 		<-open1
 
-		post := Init(&postModel{
+		post := &postModel{
 			Title: "foo",
-		}).(*postModel)
-
+		}
 		tester.Save(post)
 
 		<-done1
@@ -405,10 +402,9 @@ func TestStreamInvalidation(t *testing.T) {
 
 		<-open
 
-		post := Init(&postModel{
+		post := &postModel{
 			Title: "foo",
-		}).(*postModel)
-
+		}
 		tester.Save(post)
 
 		err := tester.Store.C(&postModel{}).Drop(nil)
