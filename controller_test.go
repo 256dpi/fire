@@ -472,7 +472,7 @@ func TestHasOneRelationship(t *testing.T) {
 		})
 
 		// create new post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post 2",
 		}).ID().Hex()
 
@@ -721,16 +721,16 @@ func TestHasManyRelationship(t *testing.T) {
 		})
 
 		// create existing post & comment
-		existingPost := tester.Save(&postModel{
+		existingPost := tester.Insert(&postModel{
 			Title: "Post 1",
 		})
-		tester.Save(&commentModel{
+		tester.Insert(&commentModel{
 			Message: "Comment 1",
 			Post:    existingPost.ID(),
 		})
 
 		// create new post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post 2",
 		}).ID().Hex()
 
@@ -943,15 +943,15 @@ func TestToOneRelationship(t *testing.T) {
 		})
 
 		// create posts
-		post1 := tester.Save(&postModel{
+		post1 := tester.Insert(&postModel{
 			Title: "Post 1",
 		}).ID().Hex()
-		post2 := tester.Save(&postModel{
+		post2 := tester.Insert(&postModel{
 			Title: "Post 2",
 		}).ID().Hex()
 
 		// create comment
-		comment1 := tester.Save(&commentModel{
+		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
 			Post:    coal.MustFromHex(post1),
 		}).ID().Hex()
@@ -1279,13 +1279,13 @@ func TestToManyRelationship(t *testing.T) {
 		})
 
 		// create posts
-		post1 := tester.Save(&postModel{
+		post1 := tester.Insert(&postModel{
 			Title: "Post 1",
 		}).ID().Hex()
-		post2 := tester.Save(&postModel{
+		post2 := tester.Insert(&postModel{
 			Title: "Post 2",
 		}).ID().Hex()
-		post3 := tester.Save(&postModel{
+		post3 := tester.Insert(&postModel{
 			Title: "Post 3",
 		}).ID().Hex()
 
@@ -1819,21 +1819,21 @@ func TestFiltering(t *testing.T) {
 		})
 
 		// create posts
-		post1 := tester.Save(&postModel{
+		post1 := tester.Insert(&postModel{
 			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
-		post2 := tester.Save(&postModel{
+		post2 := tester.Insert(&postModel{
 			Title:     "post-2",
 			Published: false,
 		}).ID().Hex()
-		post3 := tester.Save(&postModel{
+		post3 := tester.Insert(&postModel{
 			Title:     "post-3",
 			Published: true,
 		}).ID().Hex()
 
 		// create selections
-		selection := tester.Save(&selectionModel{
+		selection := tester.Insert(&selectionModel{
 			Name: "selection-1",
 			Posts: []coal.ID{
 				coal.MustFromHex(post1),
@@ -1841,16 +1841,16 @@ func TestFiltering(t *testing.T) {
 				coal.MustFromHex(post3),
 			},
 		}).ID().Hex()
-		tester.Save(&selectionModel{
+		tester.Insert(&selectionModel{
 			Name: "selection-2",
 		})
 
 		// create notes
-		note := tester.Save(&noteModel{
+		note := tester.Insert(&noteModel{
 			Title: "note-1",
 			Post:  coal.MustFromHex(post1),
 		}).ID().Hex()
-		tester.Save(&noteModel{
+		tester.Insert(&noteModel{
 			Title: "note-2",
 			Post:  coal.New(),
 		})
@@ -2321,15 +2321,15 @@ func TestSorting(t *testing.T) {
 		})
 
 		// create posts in random order
-		post2 := tester.Save(&postModel{
+		post2 := tester.Insert(&postModel{
 			Title:    "post-2",
 			TextBody: "body-2",
 		}).ID().Hex()
-		post1 := tester.Save(&postModel{
+		post1 := tester.Insert(&postModel{
 			Title:    "post-1",
 			TextBody: "body-1",
 		}).ID().Hex()
-		post3 := tester.Save(&postModel{
+		post3 := tester.Insert(&postModel{
 			Title:    "post-3",
 			TextBody: "body-3",
 		}).ID().Hex()
@@ -2683,20 +2683,20 @@ func TestSorting(t *testing.T) {
 		})
 
 		// create post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post",
 		}).ID()
 
 		// create some comments
-		comment1 := tester.Save(&commentModel{
+		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
 			Post:    post,
 		}).ID().Hex()
-		comment2 := tester.Save(&commentModel{
+		comment2 := tester.Insert(&commentModel{
 			Message: "Comment 2",
 			Post:    post,
 		}).ID().Hex()
-		comment3 := tester.Save(&commentModel{
+		comment3 := tester.Insert(&commentModel{
 			Message: "Comment 3",
 			Post:    post,
 		}).ID().Hex()
@@ -2894,7 +2894,7 @@ func TestSparseFields(t *testing.T) {
 		})
 
 		// create post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post 1",
 		}).ID()
 
@@ -2937,7 +2937,7 @@ func TestSparseFields(t *testing.T) {
 		})
 
 		// create note
-		note := tester.Save(&noteModel{
+		note := tester.Insert(&noteModel{
 			Title: "Note 1",
 			Post:  post,
 		}).ID()
@@ -2993,7 +2993,7 @@ func TestReadableFields(t *testing.T) {
 		})
 
 		// create post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title:     "post-1",
 			Published: true,
 		}).ID()
@@ -3125,7 +3125,7 @@ func TestWritableFields(t *testing.T) {
 
 		post := coal.New()
 
-		selection := tester.Save(&selectionModel{
+		selection := tester.Insert(&selectionModel{
 			Posts: []coal.ID{post},
 		}).ID().Hex()
 
@@ -3441,7 +3441,7 @@ func TestPagination(t *testing.T) {
 
 		// create some posts
 		for i := 0; i < 10; i++ {
-			ids = append(ids, tester.Save(&postModel{
+			ids = append(ids, tester.Insert(&postModel{
 				Title: fmt.Sprintf("Post %d", i+1),
 			}).ID())
 		}
@@ -3479,7 +3479,7 @@ func TestPagination(t *testing.T) {
 		})
 
 		// create selection
-		selection := tester.Save(&selectionModel{
+		selection := tester.Insert(&selectionModel{
 			Posts: ids,
 		}).ID().Hex()
 
@@ -3516,13 +3516,13 @@ func TestPagination(t *testing.T) {
 		})
 
 		// create post
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post",
 		}).ID()
 
 		// create some comments
 		for i := 0; i < 10; i++ {
-			tester.Save(&commentModel{
+			tester.Insert(&commentModel{
 				Message: fmt.Sprintf("Comment %d", i+1),
 				Post:    post,
 			})
@@ -3581,7 +3581,7 @@ func TestForcedPagination(t *testing.T) {
 
 		// create some posts
 		for i := 0; i < 10; i++ {
-			tester.Save(&postModel{
+			tester.Insert(&postModel{
 				Title: fmt.Sprintf("Post %d", i+1),
 			})
 		}
@@ -3742,7 +3742,7 @@ func TestResourceActions(t *testing.T) {
 			Store: tester.Store,
 		})
 
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "Post",
 		}).(*postModel).ID()
 
@@ -3815,7 +3815,7 @@ func TestSoftDelete(t *testing.T) {
 			Store: tester.Store,
 		})
 
-		id := tester.Save(&postModel{
+		id := tester.Insert(&postModel{
 			Title: "Post 1",
 		}).ID().Hex()
 

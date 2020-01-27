@@ -63,7 +63,7 @@ func TestWatcherWebSockets(t *testing.T) {
 
 		/* create model */
 
-		itm := tester.Save(&itemModel{
+		itm := tester.Insert(&itemModel{
 			Bar: "bar",
 		}).(*itemModel)
 
@@ -80,7 +80,7 @@ func TestWatcherWebSockets(t *testing.T) {
 		/* update model */
 
 		itm.Foo = "bar"
-		tester.Update(itm)
+		tester.Replace(itm)
 
 		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err = ws.ReadMessage()
@@ -141,10 +141,10 @@ func TestWatcherSSE(t *testing.T) {
 		go func() {
 			time.Sleep(100 * time.Millisecond)
 
-			tester.Save(itm)
+			tester.Insert(itm)
 
 			itm.Foo = "bar"
-			tester.Update(itm)
+			tester.Replace(itm)
 
 			tester.Delete(itm)
 

@@ -42,7 +42,7 @@ func TestStoreTX(t *testing.T) {
 			return io.EOF
 		}))
 
-		tester.Save(&postModel{})
+		tester.Insert(&postModel{})
 
 		assert.Equal(t, 1, tester.Count(&postModel{}))
 

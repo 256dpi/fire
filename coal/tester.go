@@ -22,20 +22,8 @@ func NewTester(store *Store, models ...Model) *Tester {
 	}
 }
 
-// Clean will remove the collections of models that have been registered and
-// reset the header map.
-func (t *Tester) Clean() {
-	for _, model := range t.Models {
-		// remove all is faster than dropping the collection
-		_, err := t.Store.C(model).DeleteMany(nil, bson.M{})
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-// Save will save the specified model.
-func (t *Tester) Save(model Model) Model {
+// Insert will insert the specified model.
+func (t *Tester) Insert(model Model) Model {
 	// ensure id
 	if model.ID().IsZero() {
 		model.GetBase().DocID = New()
@@ -110,7 +98,7 @@ func (t *Tester) Count(model Model, query ...bson.M) int {
 
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id ID) Model {
-	// find specific document
+	// find model
 	err := t.Store.C(model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(model)
@@ -121,9 +109,9 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 	return model
 }
 
-// Update will update the specified model.
-func (t *Tester) Update(model Model) Model {
-	// replace
+// Replace will replace the specified model.
+func (t *Tester) Replace(model Model) Model {
+	// replace model
 	_, err := t.Store.C(model).ReplaceOne(nil, bson.M{
 		"_id": model.ID(),
 	}, model)
@@ -136,11 +124,23 @@ func (t *Tester) Update(model Model) Model {
 
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
-	// insert to collection
+	// delete model
 	_, err := t.Store.C(model).DeleteOne(nil, bson.M{
 		"_id": model.ID(),
 	})
 	if err != nil {
 		panic(err)
+	}
+}
+
+// Clean will remove the collections of models that have been registered and
+// reset the header map.
+func (t *Tester) Clean() {
+	for _, model := range t.Models {
+		// remove all is faster than dropping the collection
+		_, err := t.Store.C(model).DeleteMany(nil, bson.M{})
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -271,7 +271,7 @@ func TestStorageValidator(t *testing.T) {
 
 		/* required */
 
-		file1 := tester.Save(&File{
+		file1 := tester.Insert(&File{
 			State: Uploaded,
 		}).(*File)
 
@@ -350,7 +350,7 @@ func TestStorageDownload(t *testing.T) {
 		assert.NotNil(t, file)
 
 		file.State = Claimed
-		tester.Update(file)
+		tester.Replace(file)
 
 		key, err := storage.notary.Issue(&ViewKey{
 			Base: heat.Base{},
@@ -381,7 +381,7 @@ func TestStorageCleanup(t *testing.T) {
 		assert.NotNil(t, file)
 
 		file.State = Released
-		tester.Update(file)
+		tester.Replace(file)
 
 		time.Sleep(10 * time.Millisecond)
 

@@ -68,20 +68,20 @@ func TestIntegration(t *testing.T) {
 
 		redirectURIs := []string{"http://example.com/callback1", "http://example.com/callback2"}
 
-		app1 := tester.Save(&Application{
+		app1 := tester.Insert(&Application{
 			Name:         "Application 1",
 			Key:          "app1",
 			SecretHash:   heat.MustHash(testPassword),
 			RedirectURIs: redirectURIs,
 		}).(*Application)
 
-		app2 := tester.Save(&Application{
+		app2 := tester.Insert(&Application{
 			Name:         "Application 2",
 			Key:          "app2",
 			RedirectURIs: redirectURIs,
 		}).(*Application)
 
-		user := tester.Save(&User{
+		user := tester.Insert(&User{
 			Name:         "User",
 			Email:        "user@example.com",
 			PasswordHash: heat.MustHash(testPassword),
@@ -108,21 +108,21 @@ func TestIntegration(t *testing.T) {
 
 		spec.ExpectedExpiresIn = int(authenticator.policy.AccessTokenLifespan / time.Second)
 
-		validToken := tester.Save(&Token{
+		validToken := tester.Insert(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{"foo"},
 			Application: app1.ID(),
 		}).(*Token)
 
-		expiredToken := tester.Save(&Token{
+		expiredToken := tester.Insert(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(-authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{"foo"},
 			Application: app1.ID(),
 		}).(*Token)
 
-		insufficientToken := tester.Save(&Token{
+		insufficientToken := tester.Insert(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{},
@@ -138,14 +138,14 @@ func TestIntegration(t *testing.T) {
 		spec.PrimaryRedirectURI = redirectURIs[0]
 		spec.SecondaryRedirectURI = redirectURIs[1]
 
-		validRefreshToken := tester.Save(&Token{
+		validRefreshToken := tester.Insert(&Token{
 			Type:        RefreshToken,
 			ExpiresAt:   time.Now().Add(authenticator.policy.RefreshTokenLifespan),
 			Scope:       []string{"foo", "bar"},
 			Application: app1.ID(),
 		}).(*Token)
 
-		expiredRefreshToken := tester.Save(&Token{
+		expiredRefreshToken := tester.Insert(&Token{
 			Type:        RefreshToken,
 			ExpiresAt:   time.Now().Add(-authenticator.policy.RefreshTokenLifespan),
 			Scope:       []string{"foo", "bar"},
@@ -160,7 +160,7 @@ func TestIntegration(t *testing.T) {
 		spec.UnknownAuthorizationCode = mustIssue(policy, AuthorizationCode, coal.New(), time.Now())
 		spec.ExpiredAuthorizationCode = mustIssue(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
-		validToken = tester.Save(&Token{
+		validToken = tester.Insert(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{"foo", "bar"},
@@ -198,16 +198,16 @@ func TestContextKeys(t *testing.T) {
 		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), panicReporter)
 		tester.Handler = newHandler(authenticator, false)
 
-		application := tester.Save(&Application{
+		application := tester.Insert(&Application{
 			Key: "application",
 		}).(*Application).ID()
 
-		user := tester.Save(&User{
+		user := tester.Insert(&User{
 			Name:  "User",
 			Email: "email@example.com",
 		}).(*User).ID()
 
-		accessToken := tester.Save(&Token{
+		accessToken := tester.Insert(&Token{
 			Type:        AccessToken,
 			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Application: application,
@@ -238,7 +238,7 @@ func TestInvalidGrantType(t *testing.T) {
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 		handler := newHandler(authenticator, false)
 
-		application := tester.Save(&Application{
+		application := tester.Insert(&Application{
 			Key: "application",
 		}).(*Application)
 
@@ -272,7 +272,7 @@ func TestInvalidResponseType(t *testing.T) {
 		authenticator := NewAuthenticator(tester.Store, policy, panicReporter)
 		handler := newHandler(authenticator, false)
 
-		application := tester.Save(&Application{
+		application := tester.Insert(&Application{
 			Key:          "application",
 			RedirectURIs: []string{"https://example.com/"},
 		}).(*Application)
@@ -313,7 +313,7 @@ func TestInvalidClientFilter(t *testing.T) {
 		})
 		handler := newHandler(authenticator, false)
 
-		application := tester.Save(&Application{
+		application := tester.Insert(&Application{
 			Key: "application",
 		}).(*Application)
 
@@ -380,7 +380,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 		})
 		handler := newHandler(authenticator, false)
 
-		application := tester.Save(&Application{
+		application := tester.Insert(&Application{
 			Key: "application",
 		}).(*Application)
 

@@ -64,12 +64,12 @@ func TestStream(t *testing.T) {
 
 		<-open
 
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
 		post.Title = "bar"
-		tester.Update(post)
+		tester.Replace(post)
 		tester.Delete(post)
 
 		<-done
@@ -176,12 +176,12 @@ func TestStreamAutoResumption(t *testing.T) {
 
 		<-open
 
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
 		post.Title = "bar"
-		tester.Update(post)
+		tester.Replace(post)
 		tester.Delete(post)
 
 		<-kill
@@ -242,7 +242,7 @@ func TestStreamManualResumption(t *testing.T) {
 
 		<-open1
 
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
@@ -251,7 +251,7 @@ func TestStreamManualResumption(t *testing.T) {
 		stream1.Close()
 
 		post.Title = "bar"
-		tester.Update(post)
+		tester.Replace(post)
 		tester.Delete(post)
 
 		done2 := make(chan struct{})
@@ -399,7 +399,7 @@ func TestStreamInvalidation(t *testing.T) {
 
 		<-open
 
-		tester.Save(&postModel{
+		tester.Insert(&postModel{
 			Title: "foo",
 		})
 

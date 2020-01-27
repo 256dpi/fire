@@ -124,7 +124,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 			"Title": "Default Title",
 		})
 
-		savedPost := tester.Save(&postModel{
+		savedPost := tester.Insert(&postModel{
 			Title: "Another Title",
 		}).(*postModel)
 
@@ -153,7 +153,7 @@ func TestDependentResourcesValidatorHasOne(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&commentModel{
+		tester.Insert(&commentModel{
 			Post: post.ID(),
 		})
 
@@ -173,7 +173,7 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&selectionModel{
+		tester.Insert(&selectionModel{
 			Posts: []coal.ID{
 				coal.New(),
 				post.ID(),
@@ -197,7 +197,7 @@ func TestDependentResourcesValidatorSoftDelete(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&commentModel{
+		tester.Insert(&commentModel{
 			Post:    post.ID(),
 			Deleted: coal.T(time.Now()),
 		})
@@ -215,11 +215,11 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 			"Bars":   &barModel{},
 		})
 
-		existing := tester.Save(&barModel{
+		existing := tester.Insert(&barModel{
 			Foo: coal.New(),
 		})
 
-		err := tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err := tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    coal.New(), // <- missing
 			OptBar: coal.P(existing.ID()),
@@ -227,7 +227,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		})}, validator)
 		assert.Error(t, err)
 
-		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
 			OptBar: coal.P(coal.New()), // <- missing
@@ -235,7 +235,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		})}, validator)
 		assert.Error(t, err)
 
-		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
 			OptBar: coal.P(existing.ID()),
@@ -243,7 +243,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		})}, validator)
 		assert.Error(t, err)
 
-		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
 			OptBar: nil, // <- not set
@@ -251,7 +251,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		})}, validator)
 		assert.NoError(t, err)
 
-		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
 			OptBar: coal.P(existing.ID()),
@@ -259,7 +259,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		})}, validator)
 		assert.NoError(t, err)
 
-		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Save(&fooModel{
+		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
 			OptBar: coal.P(existing.ID()),
@@ -279,7 +279,7 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&commentModel{
+		tester.Insert(&commentModel{
 			Post: post.ID(),
 		})
 
@@ -293,15 +293,15 @@ func TestRelationshipValidatorReferencedResources(t *testing.T) {
 		catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 		validator := RelationshipValidator(&commentModel{}, catalog)
 
-		comment1 := tester.Save(&commentModel{
+		comment1 := tester.Insert(&commentModel{
 			Post: coal.New(),
 		})
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: comment1}, validator)
 		assert.Error(t, err)
 
-		post := tester.Save(&postModel{})
-		comment2 := tester.Save(&commentModel{
+		post := tester.Insert(&postModel{})
+		comment2 := tester.Insert(&commentModel{
 			Parent: coal.P(comment1.ID()),
 			Post:   post.ID(),
 		})
@@ -321,7 +321,7 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 
 		id := coal.New()
 
-		existing := tester.Save(&fooModel{
+		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
 			OptBar: coal.P(id),
@@ -365,7 +365,7 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 
 		id := coal.New()
 
-		existing := tester.Save(&fooModel{
+		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
 			OptBar: coal.P(id),
@@ -415,7 +415,7 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 
 		id := coal.New()
 
-		existing := tester.Save(&fooModel{
+		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
 			OptBar: coal.P(id),
@@ -461,14 +461,14 @@ func TestUniqueFieldValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		validator := UniqueFieldValidator("Title", "")
 
-		savedPost := tester.Save(&postModel{
+		savedPost := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
 		err := tester.RunCallback(&Context{Operation: Update, Model: savedPost, Original: savedPost}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&postModel{
+		tester.Insert(&postModel{
 			Title: "bar",
 		})
 
@@ -502,11 +502,11 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 		err = tester.RunCallback(&Context{Operation: Create, Model: comment2}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(comment2)
+		tester.Insert(comment2)
 
 		id2 := coal.P(coal.New())
 
-		tester.Save(&commentModel{
+		tester.Insert(&commentModel{
 			Post:   coal.New(),
 			Parent: id2,
 		})
@@ -528,14 +528,14 @@ func TestUniqueFieldValidatorSoftDelete(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		validator := UniqueFieldValidator("Title", "")
 
-		savedPost := tester.Save(&postModel{
+		savedPost := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
 		err := tester.RunCallback(&Context{Operation: Update, Model: savedPost, Original: savedPost}, validator)
 		assert.NoError(t, err)
 
-		tester.Save(&postModel{
+		tester.Insert(&postModel{
 			Title:   "bar",
 			Deleted: coal.T(time.Now()),
 		})

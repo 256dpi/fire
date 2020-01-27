@@ -11,7 +11,7 @@ func TestReconcile(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		time.Sleep(100 * time.Millisecond)
 
-		post := tester.Save(&postModel{
+		post := tester.Insert(&postModel{
 			Title: "foo",
 		}).(*postModel)
 
@@ -35,7 +35,7 @@ func TestReconcile(t *testing.T) {
 		<-open
 
 		post.Title = "bar"
-		tester.Update(post)
+		tester.Replace(post)
 		tester.Delete(post)
 
 		<-done
