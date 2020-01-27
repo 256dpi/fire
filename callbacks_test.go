@@ -129,7 +129,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 		}).(*postModel)
 
 		post := &postModel{
-			Base:  coal.Base{DocID: savedPost.ID()},
+			Base:  coal.B(savedPost.ID()),
 			Title: "Title",
 		}
 
@@ -473,7 +473,7 @@ func TestUniqueFieldValidator(t *testing.T) {
 		})
 
 		post := &postModel{
-			Base:  coal.Base{DocID: savedPost.ID()},
+			Base:  coal.B(savedPost.ID()),
 			Title: "bar",
 		}
 
@@ -512,7 +512,7 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 		})
 
 		newComment := &commentModel{
-			Base:   coal.Base{DocID: comment2.ID()},
+			Base:   coal.B(comment2.ID()),
 			Post:   comment2.Post,
 			Parent: id2,
 		}
@@ -541,7 +541,7 @@ func TestUniqueFieldValidatorSoftDelete(t *testing.T) {
 		})
 
 		newPost := &postModel{
-			Base:  coal.Base{DocID: savedPost.ID()},
+			Base:  coal.B(savedPost.ID()),
 			Title: "bar",
 		}
 

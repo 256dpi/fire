@@ -18,8 +18,10 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 		}
 	}
 
-	expiry := time.Now().Add(time.Hour).Round(time.Second)
-	token := coal.Init(&Token{ExpiresAt: expiry}).(*Token)
+	token := &Token{
+		Base:      coal.NB(),
+		ExpiresAt: time.Now().Add(time.Hour).Round(time.Second),
+	}
 
 	sig, err := p.Issue(token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
@@ -27,7 +29,7 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 	key, err := p.Verify(sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID(), key.ID)
-	assert.Equal(t, expiry, key.Expiry.Local())
+	assert.Equal(t, token.ExpiresAt, key.Expiry.Local())
 	assert.Equal(t, heat.Data{
 		"name": "Hello",
 	}, key.Extra)

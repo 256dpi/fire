@@ -56,14 +56,15 @@ func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error)
 	now := time.Now()
 
 	// prepare job
-	job := coal.Init(&Job{
+	job := &Job{
+		Base:      coal.NB(),
 		Name:      bp.Name,
 		Label:     bp.Label,
 		Data:      bp.Data,
 		Status:    StatusEnqueued,
 		Created:   now,
 		Available: now.Add(bp.Delay),
-	}).(*Job)
+	}
 
 	// insert unlabeled jobs immediately
 	if bp.Label == "" {

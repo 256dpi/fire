@@ -11,11 +11,9 @@ func TestReconcile(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		time.Sleep(100 * time.Millisecond)
 
-		post := Init(&postModel{
+		post := tester.Save(&postModel{
 			Title: "foo",
 		}).(*postModel)
-
-		tester.Save(post)
 
 		open := make(chan struct{})
 		done := make(chan struct{})

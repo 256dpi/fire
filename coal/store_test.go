@@ -47,18 +47,20 @@ func TestStoreTX(t *testing.T) {
 		assert.Equal(t, 1, tester.Count(&postModel{}))
 
 		assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
-			_, err := tester.Store.C(&postModel{}).InsertOne(tc, Init(&postModel{
+			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
+				Base:  NB(),
 				Title: "foo",
-			}))
+			})
 			return err
 		}))
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 
 		assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
-			_, err := tester.Store.C(&postModel{}).InsertOne(tc, Init(&postModel{
+			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
+				Base:  NB(),
 				Title: "bar",
-			}))
+			})
 			if err != nil {
 				panic(err)
 			}

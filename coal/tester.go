@@ -122,7 +122,7 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 // Update will update the specified model.
 func (t *Tester) Update(model Model) Model {
 	// initialize model
-	model = Init(model)
+	Init(model)
 
 	// insert to collection
 	_, err := t.Store.C(model).ReplaceOne(nil, bson.M{

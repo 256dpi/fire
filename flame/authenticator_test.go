@@ -436,11 +436,11 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 }
 
 func mustIssue(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
-	token := coal.Init(&Token{
-		Base:      coal.Base{DocID: id},
+	token := &Token{
+		Base:      coal.B(id),
 		Type:      typ,
 		ExpiresAt: expiresAt,
-	}).(*Token)
+	}
 
 	str, err := p.Issue(token, nil, nil)
 	if err != nil {

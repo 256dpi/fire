@@ -100,6 +100,20 @@ func Slice(ptr interface{}) []Model {
 	return models
 }
 
+// B is a short-hand to construct a base with the provided id.
+func B(id ID) Base {
+	return Base{
+		DocID: id,
+	}
+}
+
+// NB is a short-hand to construct a base with a generated id.
+func NB() Base {
+	return Base{
+		DocID: New(),
+	}
+}
+
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID `json:"-" bson:"_id"`

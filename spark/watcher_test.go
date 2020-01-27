@@ -63,9 +63,9 @@ func TestWatcherWebSockets(t *testing.T) {
 
 		/* create model */
 
-		itm := tester.Save(coal.Init(&itemModel{
+		itm := tester.Save(&itemModel{
 			Bar: "bar",
-		})).(*itemModel)
+		}).(*itemModel)
 
 		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
 		typ, bytes, err := ws.ReadMessage()
@@ -133,9 +133,10 @@ func TestWatcherSSE(t *testing.T) {
 		req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
 		req = req.WithContext(ctx)
 
-		itm := coal.Init(&itemModel{
-			Bar: "bar",
-		}).(*itemModel)
+		itm := &itemModel{
+			Base: coal.NB(),
+			Bar:  "bar",
+		}
 
 		go func() {
 			time.Sleep(100 * time.Millisecond)

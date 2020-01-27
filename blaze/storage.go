@@ -213,12 +213,13 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// prepare file
-	file := coal.Init(&File{
+	file := &File{
+		Base:    coal.NB(),
 		State:   Uploading,
 		Updated: time.Now(),
 		Type:    contentType,
 		Handle:  handle,
-	}).(*File)
+	}
 
 	// create file
 	_, err = s.store.C(file).InsertOne(ctx, file)

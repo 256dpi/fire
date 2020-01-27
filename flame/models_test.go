@@ -43,11 +43,12 @@ func TestUserInterfaces(t *testing.T) {
 }
 
 func TestApplicationValidate(t *testing.T) {
-	a := coal.Init(&Application{
+	a := &Application{
+		Base:   coal.NB(),
 		Name:   "foo",
 		Key:    "foo",
 		Secret: "foo",
-	}).(*Application)
+	}
 
 	err := a.Validate()
 	assert.NoError(t, err)
@@ -56,11 +57,12 @@ func TestApplicationValidate(t *testing.T) {
 }
 
 func TestUserValidate(t *testing.T) {
-	u := coal.Init(&User{
+	u := &User{
+		Base:     coal.NB(),
 		Name:     "foo",
 		Email:    "foo@example.com",
 		Password: "foo",
-	}).(*User)
+	}
 
 	err := u.Validate()
 	assert.NoError(t, err)
