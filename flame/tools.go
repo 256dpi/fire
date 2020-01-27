@@ -70,7 +70,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 	/* application is missing */
 
 	// create application
-	app := &Application{Base: coal.NB()}
+	app := &Application{Base: coal.B()}
 	app.Key = key
 	app.Name = name
 	app.Secret = secret
@@ -105,7 +105,7 @@ func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 	/* user is missing */
 
 	// create user
-	user := &User{Base: coal.NB()}
+	user := &User{Base: coal.B()}
 	user.Name = name
 	user.Email = email
 	user.Password = password

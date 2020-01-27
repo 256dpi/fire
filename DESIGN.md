@@ -28,8 +28,7 @@ package pkg
 // Model defines a classifiable set of structs.
 type Model interface {
 	Method() string
-
-	base() *Base
+	GetBase() *Base
 }
 
 // The Base struct is embedded in other structs as the first field to mark them
@@ -38,7 +37,8 @@ type Base struct {
 	Field string
 }
 
-func (b *Base) base() *Base {
+// GetBase implements the Model interface.
+func (b *Base) GetBase() *Base {
 	return b
 }
 

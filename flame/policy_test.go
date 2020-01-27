@@ -19,7 +19,7 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 	}
 
 	token := &Token{
-		Base:      coal.NB(),
+		Base:      coal.B(),
 		ExpiresAt: time.Now().Add(time.Hour).Round(time.Second),
 	}
 

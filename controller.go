@@ -464,8 +464,9 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
-	// create new model
-	ctx.Model = coal.Init(coal.GetMeta(c.Model).Make())
+	// create model with id
+	ctx.Model = coal.GetMeta(c.Model).Make()
+	ctx.Model.GetBase().DocID = coal.New()
 
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)

@@ -134,7 +134,7 @@ func TestWatcherSSE(t *testing.T) {
 		req = req.WithContext(ctx)
 
 		itm := &itemModel{
-			Base: coal.NB(),
+			Base: coal.B(),
 			Bar:  "bar",
 		}
 

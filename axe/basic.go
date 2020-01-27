@@ -57,7 +57,7 @@ func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error)
 
 	// prepare job
 	job := &Job{
-		Base:      coal.NB(),
+		Base:      coal.B(),
 		Name:      bp.Name,
 		Label:     bp.Label,
 		Data:      bp.Data,

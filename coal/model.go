@@ -9,8 +9,7 @@ import (
 // Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
 	ID() ID
-
-	base() *Base
+	GetBase() *Base
 }
 
 // Get will lookup the specified field on the model and return its value and
@@ -74,17 +73,6 @@ func MustSet(model Model, name string, value interface{}) {
 	}
 }
 
-// Init initializes the internals of a model and should be called before using
-// a newly created Model.
-func Init(model Model) Model {
-	// ensure id
-	if model.ID().IsZero() {
-		model.base().DocID = New()
-	}
-
-	return model
-}
-
 // Slice takes a slice of the form *[]*Post and returns a new slice that
 // contains all models.
 func Slice(ptr interface{}) []Model {
@@ -100,30 +88,37 @@ func Slice(ptr interface{}) []Model {
 	return models
 }
 
-// B is a short-hand to construct a base with the provided id.
-func B(id ID) Base {
-	return Base{
-		DocID: id,
-	}
-}
-
-// NB is a short-hand to construct a base with a generated id.
-func NB() Base {
-	return Base{
-		DocID: New(),
-	}
-}
-
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID `json:"-" bson:"_id"`
 }
 
-// ID returns the models id.
+// B is a short-hand to construct a base with the provided id or a generated
+// id if none specified.
+func B(id ...ID) Base {
+	// check list
+	if len(id) > 1 {
+		panic("coal: B accepts only one id")
+	}
+
+	// use provided id id available
+	if len(id) > 0 {
+		return Base{
+			DocID: id[0],
+		}
+	}
+
+	return Base{
+		DocID: New(),
+	}
+}
+
+// ID implements the Model interface.
 func (b *Base) ID() ID {
 	return b.DocID
 }
 
-func (b *Base) base() *Base {
+// GetBase implements the Model interface.
+func (b *Base) GetBase() *Base {
 	return b
 }

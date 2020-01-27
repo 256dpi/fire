@@ -44,7 +44,7 @@ func TestUserInterfaces(t *testing.T) {
 
 func TestApplicationValidate(t *testing.T) {
 	a := &Application{
-		Base:   coal.NB(),
+		Base:   coal.B(),
 		Name:   "foo",
 		Key:    "foo",
 		Secret: "foo",
@@ -58,7 +58,7 @@ func TestApplicationValidate(t *testing.T) {
 
 func TestUserValidate(t *testing.T) {
 	u := &User{
-		Base:     coal.NB(),
+		Base:     coal.B(),
 		Name:     "foo",
 		Email:    "foo@example.com",
 		Password: "foo",

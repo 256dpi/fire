@@ -48,7 +48,7 @@ func TestStoreTX(t *testing.T) {
 
 		assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
-				Base:  NB(),
+				Base:  B(),
 				Title: "foo",
 			})
 			return err
@@ -58,7 +58,7 @@ func TestStoreTX(t *testing.T) {
 
 		assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
-				Base:  NB(),
+				Base:  B(),
 				Title: "bar",
 			})
 			if err != nil {

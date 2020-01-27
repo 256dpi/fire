@@ -7,8 +7,11 @@ import (
 )
 
 func TestBaseID(t *testing.T) {
-	post := &postModel{Base: NB()}
-	assert.Equal(t, post.DocID, post.ID())
+	id := New()
+	post := &postModel{Base: B(id)}
+	assert.Equal(t, id, post.ID())
+	assert.Equal(t, id, post.DocID)
+	assert.Equal(t, id, post.Base.DocID)
 }
 
 func TestGet(t *testing.T) {

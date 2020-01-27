@@ -36,8 +36,10 @@ func (t *Tester) Clean() {
 
 // Save will save the specified model.
 func (t *Tester) Save(model Model) Model {
-	// initialize model
-	Init(model)
+	// ensure id
+	if model.ID().IsZero() {
+		model.GetBase().DocID = New()
+	}
 
 	// insert to collection
 	_, err := t.Store.C(model).InsertOne(nil, model)
@@ -121,10 +123,7 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 
 // Update will update the specified model.
 func (t *Tester) Update(model Model) Model {
-	// initialize model
-	Init(model)
-
-	// insert to collection
+	// replace
 	_, err := t.Store.C(model).ReplaceOne(nil, bson.M{
 		"_id": model.ID(),
 	}, model)

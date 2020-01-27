@@ -1165,8 +1165,9 @@ func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []strin
 	// begin trace
 	env.tracer.Push("flame/Authenticator.saveToken")
 
-	// prepare token
-	token := coal.Init(coal.GetMeta(a.policy.Token).Make()).(GenericToken)
+	// create token with id
+	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
+	token.GetBase().DocID = coal.New()
 
 	// get resource owner id
 	var roID *coal.ID

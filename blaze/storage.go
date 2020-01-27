@@ -214,7 +214,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 
 	// prepare file
 	file := &File{
-		Base:    coal.NB(),
+		Base:    coal.B(),
 		State:   Uploading,
 		Updated: time.Now(),
 		Type:    contentType,
