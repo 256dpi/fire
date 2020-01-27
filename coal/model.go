@@ -11,10 +11,68 @@ type Model interface {
 	ID() ID
 	Meta() *Meta
 
-	MustGet(string) interface{}
-	MustSet(string, interface{})
-
 	initialize(Model)
+}
+
+// Get will lookup the specified field on the model and return its value and
+// whether the field was found at all.
+func Get(model Model, name string) (interface{}, bool) {
+	// find field
+	field := GetMeta(model).Fields[name]
+	if field == nil {
+		return nil, false
+	}
+
+	// get value
+	value := reflect.ValueOf(model).Elem().Field(field.index).Interface()
+
+	return value, true
+}
+
+// Set will set the specified field on the model with the provided value and
+// return whether the field has been found and the value has been set.
+func Set(model Model, name string, value interface{}) bool {
+	// find field
+	field := GetMeta(model).Fields[name]
+	if field == nil {
+		return false
+	}
+
+	// get value
+	fieldValue := reflect.ValueOf(model).Elem().Field(field.index)
+
+	// get value value
+	valueValue := reflect.ValueOf(value)
+
+	// check type
+	if fieldValue.Type() != valueValue.Type() {
+		return false
+	}
+
+	// set value
+	fieldValue.Set(valueValue)
+
+	return true
+}
+
+// MustGet will call Get and panic if the operation failed.
+func MustGet(model Model, name string) interface{} {
+	// get value
+	value, ok := Get(model, name)
+	if !ok {
+		panic(fmt.Sprintf(`coal: could not get field "%s" on "%s"`, name, GetMeta(model).Name))
+	}
+
+	return value
+}
+
+// MustSet will call Set and panic if the operation failed.
+func MustSet(model Model, name string, value interface{}) {
+	// get value
+	ok := Set(model, name, value)
+	if !ok {
+		panic(fmt.Sprintf(`coal: could not set "%s" on "%s"`, name, GetMeta(model).Name))
+	}
 }
 
 // Init initializes the internals of a model and should be called before using
@@ -46,40 +104,13 @@ func InitSlice(ptr interface{}) []Model {
 type Base struct {
 	DocID ID `json:"-" bson:"_id"`
 
-	model interface{}
+	model Model
 	meta  *Meta
 }
 
 // ID returns the models id.
 func (b *Base) ID() ID {
 	return b.DocID
-}
-
-// MustGet returns the value of the given field. MustGet will panic if no field
-// has been found.
-func (b *Base) MustGet(name string) interface{} {
-	// find field
-	field := b.meta.Fields[name]
-	if field == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, name, b.meta.Name))
-	}
-
-	// read value from model struct
-	structField := reflect.ValueOf(b.model).Elem().Field(field.index)
-	return structField.Interface()
-}
-
-// MustSet will set the given field to the the passed valued. MustSet will panic
-// if no field has been found.
-func (b *Base) MustSet(name string, value interface{}) {
-	// find field
-	field := b.meta.Fields[name]
-	if field == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, name, b.meta.Name))
-	}
-
-	// set the value on model struct
-	reflect.ValueOf(b.model).Elem().Field(field.index).Set(reflect.ValueOf(value))
 }
 
 // Meta returns the models Meta structure.

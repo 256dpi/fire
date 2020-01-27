@@ -141,7 +141,7 @@ func ToM(model Model) bson.M {
 
 	// add all fields
 	for name, field := range Init(model).Meta().DatabaseFields {
-		m[name] = model.MustGet(field.Name)
+		m[name] = MustGet(model, field.Name)
 	}
 
 	return m
@@ -160,7 +160,7 @@ func ToD(model Model) bson.D {
 		if field.BSONField != "" {
 			d = append(d, bson.E{
 				Key:   field.BSONField,
-				Value: model.MustGet(field.Name),
+				Value: MustGet(model, field.Name),
 			})
 		}
 	}

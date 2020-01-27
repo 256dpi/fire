@@ -93,7 +93,7 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 			softDeleteField := coal.L(s.Model, "fire-soft-delete", true)
 
 			// get deleted time
-			t := model.MustGet(softDeleteField).(*time.Time)
+			t := coal.MustGet(model, softDeleteField).(*time.Time)
 
 			// change type if document has been soft deleted
 			if t != nil && !t.IsZero() {

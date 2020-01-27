@@ -21,29 +21,63 @@ func TestBaseID(t *testing.T) {
 	assert.Equal(t, post.DocID, post.ID())
 }
 
-func TestBaseGet(t *testing.T) {
-	post1 := Init(&postModel{})
-	assert.Equal(t, "", post1.MustGet("TextBody"))
+func TestGet(t *testing.T) {
+	post := Init(&postModel{}).(*postModel)
 
-	post2 := Init(&postModel{TextBody: "hello"})
-	assert.Equal(t, "hello", post2.MustGet("TextBody"))
+	value, ok := Get(post, "TextBody")
+	assert.Equal(t, "", value)
+	assert.True(t, ok)
 
-	assert.PanicsWithValue(t, `coal: field "missing" not found on "coal.postModel"`, func() {
-		post1.MustGet("missing")
+	post.TextBody = "hello"
+
+	value, ok = Get(post, "TextBody")
+	assert.Equal(t, "hello", value)
+	assert.True(t, ok)
+
+	value, ok = Get(post, "missing")
+	assert.Nil(t, value)
+	assert.False(t, ok)
+}
+
+func TestMustGet(t *testing.T) {
+	post := Init(&postModel{}).(*postModel)
+
+	assert.Equal(t, "", MustGet(post, "TextBody"))
+
+	post.TextBody = "hello"
+
+	assert.Equal(t, "hello", MustGet(post, "TextBody"))
+
+	assert.PanicsWithValue(t, `coal: could not get field "missing" on "coal.postModel"`, func() {
+		MustGet(post, "missing")
 	})
 }
 
-func TestBaseSet(t *testing.T) {
+func TestSet(t *testing.T) {
 	post := Init(&postModel{}).(*postModel)
 
-	post.MustSet("TextBody", "3")
+	ok := Set(post, "TextBody", "3")
+	assert.True(t, ok)
 	assert.Equal(t, "3", post.TextBody)
 
-	assert.PanicsWithValue(t, `coal: field "missing" not found on "coal.postModel"`, func() {
-		post.MustSet("missing", "-")
+	ok = Set(post, "missing", "-")
+	assert.False(t, ok)
+
+	ok = Set(post, "TextBody", 1)
+	assert.False(t, ok)
+}
+
+func TestMustSet(t *testing.T) {
+	post := Init(&postModel{}).(*postModel)
+
+	MustSet(post, "TextBody", "3")
+	assert.Equal(t, "3", post.TextBody)
+
+	assert.PanicsWithValue(t, `coal: could not set "missing" on "coal.postModel"`, func() {
+		MustSet(post, "missing", "-")
 	})
 
-	assert.PanicsWithValue(t, `reflect.Set: value of type int is not assignable to type string`, func() {
-		post.MustSet("TextBody", 1)
+	assert.PanicsWithValue(t, `coal: could not set "TextBody" on "coal.postModel"`, func() {
+		MustSet(post, "TextBody", 1)
 	})
 }

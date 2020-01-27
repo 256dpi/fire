@@ -4436,7 +4436,7 @@ func TestUseTransactions(t *testing.T) {
 		})
 
 		assert.Equal(t, 1, tester.Count(&postModel{}))
-		assert.Equal(t, "Post 1", tester.Fetch(&postModel{}, coal.MustFromHex(id)).MustGet("Title"))
+		assert.Equal(t, "Post 1", coal.MustGet(tester.Fetch(&postModel{}, coal.MustFromHex(id)), "Title"))
 
 		assert.Equal(t, []string{"foo", "foo"}, errs)
 	})
