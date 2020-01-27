@@ -465,7 +465,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// create new model
-	ctx.Model = coal.GetMeta(c.Model).Make()
+	ctx.Model = coal.Init(coal.GetMeta(c.Model).Make())
 
 	// assign attributes
 	c.assignData(ctx, doc.Data.One)
@@ -1390,15 +1390,15 @@ func (c *Controller) loadModel(ctx *Context) {
 	}
 	stack.AbortIf(err)
 
-	// initialize and set model
-	ctx.Model = coal.Init(model)
+	// set model
+	ctx.Model = model
 
 	// set original on update operations
 	if ctx.Operation == Update {
 		original := coal.GetMeta(c.Model).Make()
 		err = res.Decode(original)
 		stack.AbortIf(err)
-		ctx.Original = coal.Init(original)
+		ctx.Original = original
 	}
 
 	// finish trace

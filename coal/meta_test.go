@@ -326,13 +326,11 @@ func TestMeta(t *testing.T) {
 
 func TestMetaMake(t *testing.T) {
 	post := GetMeta(&postModel{}).Make()
-
 	assert.Equal(t, "<*coal.postModel Value>", reflect.ValueOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
 	posts := GetMeta(&postModel{}).MakeSlice()
-
 	assert.Equal(t, "<*[]*coal.postModel Value>", reflect.ValueOf(posts).String())
 }
 
