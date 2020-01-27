@@ -931,7 +931,7 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	env.tracer.Push("flame/Authenticator.findClient")
 
 	// prepare client
-	client := model.Meta().Make().(Client)
+	client := coal.GetMeta(model).Make().(Client)
 
 	// use tagged field if present
 	var filters []bson.M
@@ -1009,7 +1009,7 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 	env.tracer.Push("flame/Authenticator.getClient")
 
 	// prepare client
-	client := model.Meta().Make().(Client)
+	client := coal.GetMeta(model).Make().(Client)
 
 	// fetch client
 	err := a.store.TC(env.tracer, model).FindOne(nil, bson.M{
@@ -1057,7 +1057,7 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	env.tracer.Push("flame/Authenticator.findResourceOwner")
 
 	// prepare resource owner
-	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
+	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
 
 	// use tagged field if present
 	var filters []bson.M
@@ -1139,7 +1139,7 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	env.tracer.Push("flame/Authenticator.getResourceOwner")
 
 	// prepare object
-	resourceOwner := coal.Init(model).Meta().Make().(ResourceOwner)
+	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
 
 	// fetch resource owner
 	err := a.store.TC(env.tracer, model).FindOne(nil, bson.M{
@@ -1164,7 +1164,7 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	env.tracer.Push("flame/Authenticator.getToken")
 
 	// prepare object
-	obj := a.policy.Token.Meta().Make()
+	obj := coal.GetMeta(a.policy.Token).Make()
 
 	// fetch token
 	err := a.store.TC(env.tracer, obj).FindOne(nil, bson.M{
@@ -1189,7 +1189,7 @@ func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []strin
 	env.tracer.Push("flame/Authenticator.saveToken")
 
 	// prepare token
-	token := a.policy.Token.Meta().Make().(GenericToken)
+	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
 
 	// get resource owner id
 	var roID *coal.ID

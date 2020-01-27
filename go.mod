@@ -10,6 +10,7 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/websocket v1.4.0
+	github.com/kr/pretty v0.1.0
 	github.com/opentracing/opentracing-go v1.0.2
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.4.0

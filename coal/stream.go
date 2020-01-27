@@ -176,7 +176,7 @@ func (s *Stream) tail() error {
 		// unmarshal document for created and updated events
 		if typ != Deleted {
 			// unmarshal document
-			doc = s.model.Meta().Make()
+			doc = GetMeta(s.model).Make()
 			err = bson.Unmarshal(ch.FullDocument, doc)
 			if err != nil {
 				return err

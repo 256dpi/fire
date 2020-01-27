@@ -10,7 +10,7 @@ import (
 
 // C is a short-hand function to extract the collection of a model.
 func C(m Model) string {
-	return Init(m).Meta().Collection
+	return GetMeta(m).Collection
 }
 
 // F is a short-hand function to extract the database BSON field name of a model
@@ -27,9 +27,9 @@ func F(m Model, field string) string {
 	}
 
 	// find field
-	f := Init(m).Meta().Fields[field]
+	f := GetMeta(m).Fields[field]
 	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
 	}
 
 	// get field
@@ -48,9 +48,9 @@ func F(m Model, field string) string {
 // Note: A will panic if no field has been found.
 func A(m Model, field string) string {
 	// find field
-	f := Init(m).Meta().Fields[field]
+	f := GetMeta(m).Fields[field]
 	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
 	}
 
 	return f.JSONKey
@@ -61,9 +61,9 @@ func A(m Model, field string) string {
 // Note: R will panic if no field has been found.
 func R(m Model, field string) string {
 	// find field
-	f := Init(m).Meta().Fields[field]
+	f := GetMeta(m).Fields[field]
 	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, m.Meta().Name))
+		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
 	}
 
 	return f.RelName
@@ -75,9 +75,9 @@ func R(m Model, field string) string {
 // requested and no flagged field has been found.
 func L(m Model, flag string, force bool) string {
 	// lookup fields
-	fields, _ := Init(m).Meta().FlaggedFields[flag]
+	fields, _ := GetMeta(m).FlaggedFields[flag]
 	if len(fields) > 1 || (force && len(fields) == 0) {
-		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" on "%s"`, flag, m.Meta().Name))
+		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" on "%s"`, flag, GetMeta(m).Name))
 	}
 
 	// return name if found
@@ -140,7 +140,7 @@ func ToM(model Model) bson.M {
 	m := bson.M{}
 
 	// add all fields
-	for name, field := range Init(model).Meta().DatabaseFields {
+	for name, field := range GetMeta(model).DatabaseFields {
 		m[name] = MustGet(model, field.Name)
 	}
 
@@ -150,7 +150,7 @@ func ToM(model Model) bson.M {
 // ToD converts a model to a bson.D including all database fields.
 func ToD(model Model) bson.D {
 	// get fields
-	fields := Init(model).Meta().OrderedFields
+	fields := GetMeta(model).OrderedFields
 
 	// prepare document
 	d := make(bson.D, 0, len(fields))

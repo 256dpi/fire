@@ -6,16 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInit(t *testing.T) {
-	m := Init(&postModel{})
-	assert.NotNil(t, m.Meta())
-}
-
-func TestInitSlice(t *testing.T) {
-	m := InitSlice(&[]*postModel{{}})
-	assert.NotNil(t, m[0].Meta())
-}
-
 func TestBaseID(t *testing.T) {
 	post := Init(&postModel{}).(*postModel)
 	assert.Equal(t, post.DocID, post.ID())

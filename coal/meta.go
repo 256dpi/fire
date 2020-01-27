@@ -335,18 +335,12 @@ func GetMeta(model Model) *Meta {
 }
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.
-//
-// Note: Operations might replace the pointer content with a new structure,
-// therefore the model eventually needs to be initialized again using Init().
 func (m *Meta) Make() Model {
 	pointer := reflect.New(m.typ).Interface()
 	return Init(pointer.(Model))
 }
 
 // MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.
-//
-// Note: Don't forget to initialize the slice using InitSlice() after adding
-// elements.
 func (m *Meta) MakeSlice() interface{} {
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.PtrTo(m.typ)), 0, 0)
 	pointer := reflect.New(slice.Type())

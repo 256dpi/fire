@@ -23,7 +23,7 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 		// iterate over all documents
 		for cursor.Next(nil) {
 			// prepare model
-			model := model.Meta().Make()
+			model := GetMeta(model).Make()
 
 			// decode model
 			err = cursor.Decode(model)

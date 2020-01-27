@@ -157,11 +157,6 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 		ctx.Filters = []bson.M{}
 	}
 
-	// init model if present
-	if ctx.Model != nil {
-		coal.Init(ctx.Model)
-	}
-
 	// set store if unset
 	if ctx.Store == nil {
 		ctx.Store = t.Store

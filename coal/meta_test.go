@@ -110,7 +110,7 @@ func TestGetMeta(t *testing.T) {
 }
 
 func TestMeta(t *testing.T) {
-	post := Init(&postModel{}).Meta()
+	post := GetMeta(&postModel{})
 
 	assert.Equal(t, &Meta{
 		Name:       "coal.postModel",
@@ -216,7 +216,7 @@ func TestMeta(t *testing.T) {
 		typ: reflect.TypeOf(postModel{}),
 	}, post)
 
-	comment := Init(&commentModel{}).Meta()
+	comment := GetMeta(&commentModel{})
 	assert.Equal(t, &Meta{
 		Name:       "coal.commentModel",
 		Collection: "comments",
@@ -278,7 +278,7 @@ func TestMeta(t *testing.T) {
 		typ:           reflect.TypeOf(commentModel{}),
 	}, comment)
 
-	selection := Init(&selectionModel{}).Meta()
+	selection := GetMeta(&selectionModel{})
 	assert.Equal(t, &Meta{
 		Name:       "coal.selectionModel",
 		Collection: "selections",
@@ -325,13 +325,13 @@ func TestMeta(t *testing.T) {
 }
 
 func TestMetaMake(t *testing.T) {
-	post := Init(&postModel{}).Meta().Make()
+	post := GetMeta(&postModel{}).Make()
 
 	assert.Equal(t, "<*coal.postModel Value>", reflect.ValueOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
-	posts := Init(&postModel{}).Meta().MakeSlice()
+	posts := GetMeta(&postModel{}).MakeSlice()
 
 	assert.Equal(t, "<*[]*coal.postModel Value>", reflect.ValueOf(posts).String())
 }

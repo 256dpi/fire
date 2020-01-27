@@ -14,7 +14,7 @@ func collectFields(model coal.Model) []string {
 	var list []string
 
 	// collect fields
-	for name, field := range model.Meta().Fields {
+	for name, field := range coal.GetMeta(model).Fields {
 		if field.Type == linkType || field.Type == optionalLinkType {
 			list = append(list, name)
 		}

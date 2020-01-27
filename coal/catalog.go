@@ -75,7 +75,7 @@ func NewCatalog(models ...Model) *Catalog {
 func (c *Catalog) Add(models ...Model) {
 	for _, model := range models {
 		// get name
-		name := Init(model).Meta().PluralName
+		name := GetMeta(model).PluralName
 
 		// check existence
 		if c.models[name] != nil {
@@ -105,7 +105,7 @@ func (c *Catalog) All() map[Model][]Index {
 	// add models and indexes
 	for _, model := range c.models {
 		all[model] = make([]Index, 0)
-		for _, index := range c.indexes[model.Meta().PluralName] {
+		for _, index := range c.indexes[GetMeta(model).PluralName] {
 			all[model] = append(all[model], index)
 		}
 	}
@@ -117,7 +117,7 @@ func (c *Catalog) All() map[Model][]Index {
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
 func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
-	name := Init(model).Meta().PluralName
+	name := GetMeta(model).PluralName
 	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
@@ -128,7 +128,7 @@ func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, field
 
 // AddPartialIndex is similar to Add except that it adds a partial index.
 func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
-	name := Init(model).Meta().PluralName
+	name := GetMeta(model).PluralName
 	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
@@ -212,7 +212,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 	lookup := make(map[string]string)
 	for name, model := range c.models {
 		names = append(names, name)
-		lookup[name] = model.Meta().Name
+		lookup[name] = GetMeta(model).Name
 	}
 	sort.Strings(names)
 
@@ -223,7 +223,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 
 		// prepare index info
 		indexedInfo := map[string]string{}
-		for _, field := range model.Meta().OrderedFields {
+		for _, field := range GetMeta(model).OrderedFields {
 			indexedInfo[field.Name] = ""
 		}
 
@@ -252,7 +252,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		out.WriteString(fmt.Sprintf(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`))
 
 		// write attributes
-		for _, field := range model.Meta().OrderedFields {
+		for _, field := range GetMeta(model).OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
 			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, field.Name, field.Name, typ, indexedInfo[field.Name]))
 		}
@@ -282,7 +282,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		model := c.models[name]
 
 		// add all direct relationships
-		for _, field := range model.Meta().OrderedFields {
+		for _, field := range GetMeta(model).OrderedFields {
 			if field.RelName != "" && (field.ToOne || field.ToMany) {
 				list[name+"-"+field.RelName] = &rel{
 					from:    name,
@@ -301,7 +301,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		model := c.models[name]
 
 		// add all indirect relationships
-		for _, field := range model.Meta().OrderedFields {
+		for _, field := range GetMeta(model).OrderedFields {
 			if field.RelName != "" && (field.HasOne || field.HasMany) {
 				r := list[field.RelType+"-"+field.RelInverse]
 				r.dstMany = field.HasMany

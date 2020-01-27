@@ -274,7 +274,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 			}
 
 			// get path
-			path := ctx.Model.Meta().Fields[field].JSONKey
+			path := coal.GetMeta(ctx.Model).Fields[field].JSONKey
 
 			// inspect type
 			var err error

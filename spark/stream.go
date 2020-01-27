@@ -63,7 +63,7 @@ type Stream struct {
 
 // Name returns the name of the stream.
 func (s *Stream) Name() string {
-	return s.Model.Meta().PluralName
+	return coal.GetMeta(s.Model).PluralName
 }
 
 func (s *Stream) open(manager *manager, reporter func(error)) {

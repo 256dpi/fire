@@ -12,6 +12,8 @@ import (
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // GroupAction defines a group action.
@@ -48,7 +50,7 @@ func (g *Group) Add(controllers ...*Controller) {
 		controller.prepare()
 
 		// get name
-		name := controller.Model.Meta().PluralName
+		name := coal.GetMeta(controller.Model).PluralName
 
 		// check existence
 		if g.controllers[name] != nil {

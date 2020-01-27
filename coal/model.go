@@ -9,9 +9,8 @@ import (
 // Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
 	ID() ID
-	Meta() *Meta
 
-	initialize(Model)
+	base() *Base
 }
 
 // Get will lookup the specified field on the model and return its value and
@@ -78,23 +77,24 @@ func MustSet(model Model, name string, value interface{}) {
 // Init initializes the internals of a model and should be called before using
 // a newly created Model.
 func Init(model Model) Model {
-	model.initialize(model)
+	// ensure id
+	if model.ID().IsZero() {
+		model.base().DocID = New()
+	}
+
 	return model
 }
 
-// InitSlice initializes all models in a slice of the form *[]*Post and returns
-// a new slice that contains all initialized models.
-func InitSlice(ptr interface{}) []Model {
+// Slice takes a slice of the form *[]*Post and returns a new slice that
+// contains all models.
+func Slice(ptr interface{}) []Model {
 	// get slice
 	slice := reflect.ValueOf(ptr).Elem()
 
-	// make model slice
+	// collect models
 	models := make([]Model, slice.Len())
-
-	// iterate over entries
 	for i := 0; i < slice.Len(); i++ {
-		m := Init(slice.Index(i).Interface().(Model))
-		models[i] = m
+		models[i] = slice.Index(i).Interface().(Model)
 	}
 
 	return models
@@ -103,9 +103,6 @@ func InitSlice(ptr interface{}) []Model {
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID `json:"-" bson:"_id"`
-
-	model Model
-	meta  *Meta
 }
 
 // ID returns the models id.
@@ -113,19 +110,6 @@ func (b *Base) ID() ID {
 	return b.DocID
 }
 
-// Meta returns the models Meta structure.
-func (b *Base) Meta() *Meta {
-	return b.meta
-}
-
-func (b *Base) initialize(model Model) {
-	b.model = model
-
-	// set id if missing
-	if b.DocID.IsZero() {
-		b.DocID = New()
-	}
-
-	// assign meta
-	b.meta = GetMeta(model)
+func (b *Base) base() *Base {
+	return b
 }
