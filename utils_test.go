@@ -56,10 +56,10 @@ type noteModel struct {
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"foos"`
 	Foo       coal.ID   `json:"-" bson:"foo_id" coal:"foo:foos"`
-	OptFoo    *coal.ID  `json:"-" bson:"opt_foo_id" coal:"o-foo:foos"`
+	OptFoo    *coal.ID  `json:"-" bson:"opt_foo_id" coal:"opt-foo:foos"`
 	Foos      []coal.ID `json:"-" bson:"foo_ids" coal:"foos:foos"`
 	Bar       coal.ID   `json:"-" bson:"bar_id" coal:"bar:bars"`
-	OptBar    *coal.ID  `json:"-" bson:"opt_bar_id" coal:"o-bar:bars"`
+	OptBar    *coal.ID  `json:"-" bson:"opt_bar_id" coal:"opt-bar:bars"`
 	Bars      []coal.ID `json:"-" bson:"bar_ids" coal:"bars:bars"`
 }
 
