@@ -171,3 +171,46 @@ type Context struct{
     Controller Controller
 }
 ```
+
+## Function Handlers
+
+**The function handlers pattern promotes the use of function handlers instead
+of interface types to integrate custom logic. At best it is combined with 
+patterns like open controllers and rich contexts.**
+
+The framework may need to integrate custom logic that is run as part of a more
+complex abstracted logic. Instead of requiring an interface type the framework
+allows the configuration of handlers. The openness of the handlers allows them
+to be easily generated or curried (wrapped) with other functions. 
+
+### Framework Code
+
+```go
+package pkg
+
+type Context struct {}
+
+type Controller struct{
+	Handler1 func(*Context) error
+    Handler2 func(*Context) error
+    Handler3 func(*Context) error
+}
+```
+
+### Application Code
+
+```go
+package app
+
+func Example() *pkg.Controller {
+    return &pkg.Controller{
+        Handler1: func(ctx *pkg.Context) error {
+            return nil
+        },
+        Handler2: makeHandler(),
+        Handler3: wrapHandler(func(ctx *pkg.Context) error {
+            return nil
+        }),
+    }
+}
+``` 
