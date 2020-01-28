@@ -191,7 +191,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 // ReferencedResourcesValidator makes sure all references in the document are
 // existing by counting the referenced documents.
 //
-// References are defined by passing pairs of fields and models who might be
+// References are defined by passing pairs of fields and models which are
 // referenced by the current model:
 //
 //	fire.ReferencedResourcesValidator(map[string]coal.Model{
