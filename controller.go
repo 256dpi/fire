@@ -306,6 +306,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	ctx.Filters = []bson.M{}
 	ctx.ReadableFields = c.initialFields(c.Model, ctx.JSONAPIRequest)
 	ctx.WritableFields = c.initialFields(c.Model, nil)
+	ctx.RelationshipFilters = map[string][]bson.M{}
 
 	// set store
 	ctx.Store = c.Store
@@ -751,14 +752,15 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// copy context and request
 	newCtx := &Context{
-		Data:           Map{},
-		Selector:       bson.M{},
-		Filters:        []bson.M{},
-		ReadableFields: rc.initialFields(rc.Model, ctx.JSONAPIRequest),
-		WritableFields: rc.initialFields(rc.Model, nil),
-		Context:        ctx.Context,
-		Request:        ctx.Request,
-		Store:          ctx.Store,
+		Data:                Map{},
+		Selector:            bson.M{},
+		Filters:             []bson.M{},
+		ReadableFields:      rc.initialFields(rc.Model, ctx.JSONAPIRequest),
+		WritableFields:      rc.initialFields(rc.Model, nil),
+		RelationshipFilters: map[string][]bson.M{},
+		Context:             ctx.Context,
+		Request:             ctx.Request,
+		Store:               ctx.Store,
 		JSONAPIRequest: &jsonapi.Request{
 			Prefix:       ctx.JSONAPIRequest.Prefix,
 			ResourceType: rel.RelType,
