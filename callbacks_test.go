@@ -41,11 +41,13 @@ func TestBasicAuthorizer(t *testing.T) {
 
 		err = tester.RunCallback(nil, authorizer)
 		assert.Error(t, err)
+		assert.Equal(t, ErrAccessDenied, err)
 
 		tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
 		err = tester.RunCallback(nil, authorizer)
 		assert.Error(t, err)
+		assert.Equal(t, ErrAccessDenied, err)
 	})
 }
 
@@ -60,6 +62,7 @@ func TestModelValidator(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 		assert.Error(t, err)
 		assert.True(t, IsSafe(err))
+		assert.Equal(t, "validation error", err.Error())
 	})
 }
 
@@ -94,6 +97,7 @@ func TestProtectedAttributesValidatorOnCreate(t *testing.T) {
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "field Title is protected", err.Error())
 
 		post.Title = "Default Title"
 		err = tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
@@ -135,6 +139,7 @@ func TestProtectedAttributesValidatorOnUpdate(t *testing.T) {
 
 		err := tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "field Title is protected", err.Error())
 
 		post.Title = "Another Title"
 		err = tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
@@ -159,6 +164,7 @@ func TestDependentResourcesValidatorHasOne(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "resource has dependent resources", err.Error())
 	})
 }
 
@@ -183,6 +189,7 @@ func TestDependentResourcesValidatorHasMany(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "resource has dependent resources", err.Error())
 	})
 }
 
@@ -226,6 +233,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 			Bars:   []coal.ID{existing.ID()},
 		})}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "missing reference for field Bar", err.Error())
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
@@ -234,6 +242,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 			Bars:   []coal.ID{existing.ID()},
 		})}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "missing reference for field OptBar", err.Error())
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
@@ -242,6 +251,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 			Bars:   []coal.ID{coal.New()}, // <- missing
 		})}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "missing references for field Bars", err.Error())
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
@@ -285,6 +295,7 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "resource has dependent resources", err.Error())
 	})
 }
 
@@ -299,6 +310,7 @@ func TestRelationshipValidatorReferencedResources(t *testing.T) {
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: comment1}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "missing reference for field Post", err.Error())
 
 		post := tester.Insert(&postModel{})
 		comment2 := tester.Insert(&commentModel{
@@ -337,16 +349,19 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bar = id
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.OptBar = coal.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bars = []coal.ID{id}
 
@@ -387,16 +402,19 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bar = id
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.OptBar = coal.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bars = []coal.ID{id}
 
@@ -437,16 +455,19 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bar = id
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.OptBar = coal.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "references do not match", err.Error())
 
 		candidate.Bars = []coal.ID{id}
 
@@ -479,6 +500,7 @@ func TestUniqueFieldValidator(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Update, Model: post, Original: savedPost}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "attribute Title is not unique", err.Error())
 	})
 }
 
@@ -519,6 +541,7 @@ func TestUniqueFieldValidatorOptional(t *testing.T) {
 
 		err = tester.RunCallback(&Context{Operation: Update, Model: newComment, Original: comment2}, validator)
 		assert.Error(t, err)
+		assert.Equal(t, "attribute Parent is not unique", err.Error())
 	})
 }
 
