@@ -50,3 +50,13 @@ func TestWhitelistWritableFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{}, ctx.WritableFields)
 }
+
+func TestAddRelationshipFilter(t *testing.T) {
+	ctx := &fire.Context{}
+
+	err := tester.RunCallback(ctx, AddRelationshipFilter("foo", bson.M{
+		"foo": "bar",
+	}))
+	assert.NoError(t, err)
+	assert.Equal(t, map[string][]bson.M{"foo": {{"foo": "bar"}}}, ctx.RelationshipFilters)
+}

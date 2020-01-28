@@ -1763,9 +1763,19 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 			query[coal.F(rc.Model, softDeleteField)] = nil
 		}
 
+		// prepare filters
+		filters := []bson.M{query}
+
+		// add relationship filters
+		for _, filter := range ctx.RelationshipFilters[field.Name] {
+			filters = append(filters, filter)
+		}
+
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.TC(rc.Model).FindAll(ctx, &references, query, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.TC(rc.Model).FindAll(ctx, &references, bson.M{
+			"$and": filters,
+		}, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
 		})))

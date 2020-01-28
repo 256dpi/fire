@@ -148,6 +148,13 @@ type Context struct {
 	// Operations: Create, Update
 	WritableFields []string
 
+	// The filters that will be applied when loading has one and has many
+	// relationships.
+	//
+	// Usage: Append Only, Availability: Authorizers.
+	// Operations: !Create, !CollectionAction
+	RelationshipFilters map[string][]bson.M
+
 	// The Model that will be created, updated, deleted or is requested by a
 	// resource action.
 	//

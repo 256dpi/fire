@@ -85,3 +85,20 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 		return nil
 	})
 }
+
+// AddRelationshipFilter will enforce the authorization by adding the passed
+// relationship filter to the RelationshipFilter field of the context. It should
+// be used if the candidate is allowed to access the relationship in general, but
+// some documents should be filtered out.
+//
+// Note: This enforcer cannot be used to authorize Create and CollectionAction
+// operations.
+func AddRelationshipFilter(rel string, filter bson.M) *Enforcer {
+	return E("ash/AddRelationshipFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
+		// append filter
+		list, _ := ctx.RelationshipFilters[rel]
+		ctx.RelationshipFilters[rel] = append(list, filter)
+
+		return nil
+	})
+}

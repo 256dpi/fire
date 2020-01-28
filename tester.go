@@ -157,6 +157,11 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 		ctx.Filters = []bson.M{}
 	}
 
+	// ensure relationship filters
+	if ctx.RelationshipFilters == nil {
+		ctx.RelationshipFilters = map[string][]bson.M{}
+	}
+
 	// set store if unset
 	if ctx.Store == nil {
 		ctx.Store = t.Store

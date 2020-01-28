@@ -11,6 +11,7 @@ import (
 	"github.com/256dpi/serve"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -3185,6 +3186,236 @@ func TestWritableFields(t *testing.T) {
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
+	})
+}
+
+func TestRelationshipFilters(t *testing.T) {
+	// TODO: Support to one relationships?
+	// TODO: Support to many relationships?
+
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+					ctx.RelationshipFilters = map[string][]bson.M{
+						"Comments": {
+							{
+								coal.F(&commentModel{}, "Message"): "x",
+							},
+						},
+						"Selections": {
+							{
+								coal.F(&selectionModel{}, "Name"): "x",
+							},
+						},
+						"Note": {
+							{
+								coal.F(&noteModel{}, "Title"): "x",
+							},
+						},
+					}
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+					ctx.RelationshipFilters = map[string][]bson.M{
+						"Posts": {
+							{
+								coal.F(&postModel{}, "Title"): "x",
+							},
+						},
+					}
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+					ctx.RelationshipFilters = map[string][]bson.M{
+						"Post": {
+							{
+								coal.F(&postModel{}, "Title"): "x",
+							},
+						},
+					}
+					return nil
+				}),
+			},
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title: "post",
+		}).ID().Hex()
+
+		// create comment
+		comment := coal.New().Hex()
+		tester.Insert(&commentModel{
+			Base:    coal.B(coal.MustFromHex(comment)),
+			Message: "comment",
+			Parent:  coal.P(coal.MustFromHex(comment)),
+			Post:    coal.MustFromHex(post),
+		})
+
+		// create selection
+		_ = tester.Insert(&selectionModel{
+			Name: "selection",
+			Posts: []coal.ID{
+				coal.MustFromHex(post),
+			},
+		}).ID().Hex()
+
+		// create note
+		_ = tester.Insert(&noteModel{
+			Title: "note",
+			Post:  coal.MustFromHex(post),
+		}).ID().Hex()
+
+		// get posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post+`",
+						"attributes": {
+							"title": "post",
+							"published": false,
+							"text-body": ""
+						},
+						"relationships": {
+							"comments": {
+								"data": [],
+								"links": {
+									"self": "/posts/`+post+`/relationships/comments",
+									"related": "/posts/`+post+`/comments"
+								}
+							},
+							"selections": {
+								"data": [],
+								"links": {
+									"self": "/posts/`+post+`/relationships/selections",
+									"related": "/posts/`+post+`/selections"
+								}
+							},
+							"note": {
+								"data": null,
+								"links": {
+									"self": "/posts/`+post+`/relationships/note",
+									"related": "/posts/`+post+`/note"
+								}
+							}
+						}
+					}
+				],
+				"links": {
+					"self": "/posts"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// // get comments
+		// tester.Request("GET", "comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		// 	assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		// 	assert.JSONEq(t, `{
+		// 		"data": [
+		// 			{
+		// 				"type": "comments",
+		// 				"id": "`+comment+`",
+		// 				"attributes": {
+		// 					"message": "comment"
+		// 				},
+		// 				"relationships": {
+		// 					"parent": {
+		// 						"data": [],
+		// 						"links": {
+		// 							"self": "/comments/`+comment+`/relationships/parent",
+		// 							"related": "/comments/`+comment+`/parent"
+		// 						}
+		// 					},
+		// 					"post": {
+		// 						"data": null,
+		// 						"links": {
+		// 							"self": "/comments/`+comment+`/relationships/post",
+		// 							"related": "/comments/`+comment+`/post"
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		],
+		// 		"links": {
+		// 			"self": "/comments"
+		// 		}
+		// 	}`, r.Body.String(), tester.DebugRequest(rq, r))
+		// })
+
+		// // get selections
+		// tester.Request("GET", "selections", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		// 	assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		// 	assert.JSONEq(t, `{
+		// 		"data": [
+		// 			{
+		// 				"type": "selections",
+		// 				"id": "`+selection+`",
+		// 				"attributes": {
+		// 					"message": "comment"
+		// 				},
+		// 				"relationships": {
+		// 					"posts": {
+		// 						"data": [],
+		// 						"links": {
+		// 							"self": "/selections/`+selection+`/relationships/posts",
+		// 							"related": "/selections/`+selection+`/posts"
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		],
+		// 		"links": {
+		// 			"self": "/selections"
+		// 		}
+		// 	}`, r.Body.String(), tester.DebugRequest(rq, r))
+		// })
+
+		// // get notes
+		// tester.Request("GET", "notes", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		// 	assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		// 	assert.JSONEq(t, `{
+		// 		"data": [
+		// 			{
+		// 				"type": "notes",
+		// 				"id": "`+note+`",
+		// 				"attributes": {
+		// 					"message": "note"
+		// 				},
+		// 				"relationships": {
+		// 					"post": {
+		// 						"data": null,
+		// 						"links": {
+		// 							"self": "/notes/`+note+`/relationships/post",
+		// 							"related": "/notes/`+note+`/post"
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		],
+		// 		"links": {
+		// 			"self": "/notes"
+		// 		}
+		// 	}`, r.Body.String(), tester.DebugRequest(rq, r))
+		// })
 	})
 }
 
