@@ -30,6 +30,11 @@ type Controller struct {
 	// The store that is used to retrieve and persist the model.
 	Store *coal.Store
 
+	// Supported may be set to limit the supported operations of a controller.
+	// By default all operations are supported. If the operation is not supported
+	// the request will be aborted with an unsupported method error.
+	Supported Matcher
+
 	// Filters is a list of fields that are filterable. Only fields that are
 	// exposed and indexed should be made filterable.
 	Filters []string
@@ -72,9 +77,6 @@ type Controller struct {
 	// about the applied changes. Returned errors will cause the abortion of the
 	// request with an InternalServerError status by default.
 	Notifiers []*Callback
-
-	// Disabled can be used to disable certain operations in general.
-	Disabled []Operation
 
 	// ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
@@ -147,6 +149,11 @@ type Controller struct {
 }
 
 func (c *Controller) prepare() {
+	// check operations
+	if c.Supported == nil {
+		c.Supported = All()
+	}
+
 	// prepare parser
 	c.parser = jsonapi.Parser{
 		CollectionActions: make(map[string][]string),
@@ -286,14 +293,12 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		ctx.Operation = ResourceAction
 	}
 
-	// check if disabled
-	for _, item := range c.Disabled {
-		if item == ctx.Operation {
-			stack.Abort(jsonapi.ErrorFromStatus(
-				http.StatusMethodNotAllowed,
-				"unsupported operation",
-			))
-		}
+	// check if supported
+	if !c.Supported(ctx) {
+		stack.Abort(jsonapi.ErrorFromStatus(
+			http.StatusMethodNotAllowed,
+			"unsupported operation",
+		))
 	}
 
 	// prepare context

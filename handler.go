@@ -105,7 +105,7 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 type Handler func(*Context) error
 
 // Matcher is a function that makes an assessment of a context and decides whether
-// a modification should be applied in the future.
+// an operation should be allowed to be carried out.
 type Matcher func(*Context) bool
 
 // All will match all contexts.

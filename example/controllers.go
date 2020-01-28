@@ -60,33 +60,33 @@ func userController(store *coal.Store) *fire.Controller {
 
 func jobController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
-		Model: &axe.Job{},
-		Store: store,
+		Model:     &axe.Job{},
+		Store:     store,
+		Supported: fire.Only(fire.List, fire.Find),
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Disabled: []fire.Operation{fire.Create, fire.Update, fire.Delete},
 	}
 }
 
 func valueController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
-		Model: &glut.Value{},
-		Store: store,
+		Model:     &glut.Value{},
+		Store:     store,
+		Supported: fire.Only(fire.List, fire.Find),
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Disabled: []fire.Operation{fire.Create, fire.Update, fire.Delete},
 	}
 }
 
 func fileController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
-		Model: &blaze.File{},
-		Store: store,
+		Model:     &blaze.File{},
+		Store:     store,
+		Supported: fire.Only(fire.List, fire.Find),
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Disabled: []fire.Operation{fire.Create, fire.Update, fire.Delete},
 	}
 }

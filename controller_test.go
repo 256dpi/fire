@@ -3389,15 +3389,15 @@ func TestSoftProtection(t *testing.T) {
 	})
 }
 
-func TestDisabled(t *testing.T) {
+func TestOperations(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
 		}, &Controller{
-			Model:    &commentModel{},
-			Store:    tester.Store,
-			Disabled: []Operation{List},
+			Model:     &commentModel{},
+			Store:     tester.Store,
+			Supported: Except(List),
 		}, &Controller{
 			Model: &selectionModel{},
 			Store: tester.Store,
