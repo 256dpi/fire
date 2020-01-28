@@ -1041,7 +1041,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	}
 
 	// assign relationship
-	c.assignRelationship(ctx, ctx.JSONAPIRequest.Relationship, doc, rel)
+	c.assignRelationship(ctx, doc, rel)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -1612,14 +1612,14 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		}
 
 		// assign relationship
-		c.assignRelationship(ctx, name, rel, field)
+		c.assignRelationship(ctx, rel, field)
 	}
 
 	// finish trace
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) assignRelationship(ctx *Context, name string, rel *jsonapi.Document, field *coal.Field) {
+func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, field *coal.Field) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.assignRelationship")
 
