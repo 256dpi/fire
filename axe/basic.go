@@ -46,7 +46,7 @@ func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error)
 	// marshal model if given
 	if bp.Model != nil {
 		bp.Data = coal.Map{}
-		err := bp.Data.Marshal(bp.Model)
+		err := bp.Data.Marshal(bp.Model, coal.TransferBSON)
 		if err != nil {
 			return nil, err
 		}

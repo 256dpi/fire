@@ -10,7 +10,7 @@ import (
 
 func TestMap(t *testing.T) {
 	type child struct {
-		Body string `bson:"the-body"`
+		Body string `json:"the-body"`
 	}
 
 	type parent struct {
@@ -20,7 +20,7 @@ func TestMap(t *testing.T) {
 
 	input := &parent{
 		Title: "foo",
-		Data:  MustMap(child{Body: "body"}),
+		Data:  MustMap(child{Body: "body"}, TransferJSON),
 	}
 
 	bytes1, err := json.Marshal(input)
@@ -38,7 +38,7 @@ func TestMap(t *testing.T) {
 	}, output1)
 
 	var ch1 child
-	output1.Data.MustUnmarshal(&ch1)
+	output1.Data.MustUnmarshal(&ch1, TransferJSON)
 	assert.Equal(t, child{Body: "body"}, ch1)
 
 	bytes2, err := bson.Marshal(input)
@@ -55,6 +55,6 @@ func TestMap(t *testing.T) {
 	}, output2)
 
 	var ch2 child
-	output2.Data.MustUnmarshal(&ch2)
+	output2.Data.MustUnmarshal(&ch2, TransferJSON)
 	assert.Equal(t, child{Body: "body"}, ch2)
 }

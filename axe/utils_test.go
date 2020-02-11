@@ -32,6 +32,6 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 
 func unmarshal(m coal.Map) data {
 	var d data
-	m.MustUnmarshal(&d)
+	m.MustUnmarshal(&d, coal.TransferBSON)
 	return d
 }

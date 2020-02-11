@@ -290,7 +290,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		model = reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
 
 		// unmarshal model
-		err = job.Data.Unmarshal(model)
+		err = job.Data.Unmarshal(model, coal.TransferBSON)
 		if err != nil {
 			return err
 		}
