@@ -390,12 +390,13 @@ func (c *Controller) listResources(ctx *Context) {
 		},
 		Links: c.listLinks(ctx.JSONAPIRequest.Self(), ctx),
 	}
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -430,12 +431,13 @@ func (c *Controller) findResource(ctx *Context) {
 			Self: ctx.JSONAPIRequest.Self(),
 		},
 	}
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -533,12 +535,13 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 			Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
 		},
 	}
+	ctx.ResponseCode = http.StatusCreated
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusCreated, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -659,12 +662,13 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 			Self: ctx.JSONAPIRequest.Self(),
 		},
 	}
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -809,6 +813,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 				Self: ctx.JSONAPIRequest.Self(),
 			},
 		}
+		newCtx.ResponseCode = http.StatusOK
 
 		// load model if id is present
 		if id != "" {
@@ -829,7 +834,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
 	}
 
 	// finish to-many relationship
@@ -860,12 +865,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
+		newCtx.ResponseCode = http.StatusOK
 
 		// run notifiers
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
 	}
 
 	// finish has-one relationship
@@ -903,6 +909,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 				Self: ctx.JSONAPIRequest.Self(),
 			},
 		}
+		newCtx.ResponseCode = http.StatusOK
 
 		// add if model is found
 		if len(newCtx.Models) == 1 {
@@ -917,7 +924,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
 	}
 
 	// finish has-many relationship
@@ -953,12 +960,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			},
 			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
 		}
+		newCtx.ResponseCode = http.StatusOK
 
 		// run notifiers
 		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
 	}
 
 	// finish trace
@@ -1001,12 +1009,13 @@ func (c *Controller) getRelationship(ctx *Context) {
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1068,12 +1077,13 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1158,12 +1168,13 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1255,12 +1266,13 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 
 	// get relationship
 	ctx.Response = resource.Relationships[ctx.JSONAPIRequest.Relationship]
+	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, http.StatusOK, ctx.Response))
+	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()

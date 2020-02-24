@@ -187,6 +187,12 @@ type Context struct {
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
 
+	// The status code that will be written to the client.
+	//
+	// Usage: Modify Only, Availability: Notifiers
+	// Operations: !CollectionAction, !ResourceAction
+	ResponseCode int
+
 	// The store that is used to retrieve and persist the model.
 	//
 	// Usage: Read Only
