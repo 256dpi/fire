@@ -313,23 +313,21 @@ func (c *Controller) handle(prefix string, ctx *Context) {
 	// set store
 	ctx.Store = c.Store
 
-	// run operation without transaction if not write or not configured
-	if !ctx.Operation.Write() || !c.UseTransactions {
+	// run operation with transaction if possible
+	if ctx.Operation.Write() && c.UseTransactions {
+		stack.AbortIf(c.Store.TX(ctx.Context, func(tc context.Context) error {
+			ctx.Context = tc
+			c.runOperation(ctx)
+			return nil
+		}))
+	} else {
 		c.runOperation(ctx)
-		ctx.Tracer.Pop()
-		return
 	}
 
-	// run operation with transaction if enabled
-	stack.AbortIf(c.Store.TX(ctx.Context, func(tc context.Context) error {
-		// replace context
-		ctx.Context = tc
-
-		// run operation
-		c.runOperation(ctx)
-
-		return nil
-	}))
+	// write response if available
+	if ctx.Response != nil {
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
+	}
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -397,9 +395,6 @@ func (c *Controller) listResources(ctx *Context) {
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
-
 	// finish trace
 	ctx.Tracer.Pop()
 }
@@ -437,9 +432,6 @@ func (c *Controller) findResource(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -541,9 +533,6 @@ func (c *Controller) createResource(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -668,9 +657,6 @@ func (c *Controller) updateResource(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -836,8 +822,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run notifiers
 		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
-		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
+		// set response
+		ctx.Response = subCtx.Response
+		ctx.ResponseCode = subCtx.ResponseCode
 	}
 
 	// finish to-many relationship
@@ -873,8 +860,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run notifiers
 		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
-		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
+		// set response
+		ctx.Response = subCtx.Response
+		ctx.ResponseCode = subCtx.ResponseCode
 	}
 
 	// finish has-one relationship
@@ -926,8 +914,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run notifiers
 		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
-		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
+		// set response
+		ctx.Response = subCtx.Response
+		ctx.ResponseCode = subCtx.ResponseCode
 	}
 
 	// finish has-many relationship
@@ -968,8 +957,9 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// run notifiers
 		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
-		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
+		// set response
+		ctx.Response = subCtx.Response
+		ctx.ResponseCode = subCtx.ResponseCode
 	}
 
 	// finish trace
@@ -1016,9 +1006,6 @@ func (c *Controller) getRelationship(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1084,9 +1071,6 @@ func (c *Controller) setRelationship(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1175,9 +1159,6 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
@@ -1273,9 +1254,6 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 
 	// run notifiers
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
-
-	// write result
-	stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 
 	// finish trace
 	ctx.Tracer.Pop()
