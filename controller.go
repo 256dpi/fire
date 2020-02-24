@@ -248,26 +248,25 @@ func (c *Controller) handle(prefix string, ctx *Context) {
 	parser := c.parser
 	parser.Prefix = prefix
 
-	// parse incoming JSON-API request
-	req, err := parser.ParseRequest(ctx.HTTPRequest)
-	stack.AbortIf(err)
+	// parse incoming JSON-API request if not yet present
+	if ctx.JSONAPIRequest == nil {
+		req, err := parser.ParseRequest(ctx.HTTPRequest)
+		stack.AbortIf(err)
+		ctx.JSONAPIRequest = req
+	}
 
-	// set request
-	ctx.JSONAPIRequest = req
-
-	// parse document if expected
-	var doc *jsonapi.Document
-	if req.Intent.DocumentExpected() {
+	// parse document if not yet present and expected
+	if ctx.Request == nil && ctx.JSONAPIRequest.Intent.DocumentExpected() {
 		// limit request body size
 		serve.LimitBody(ctx.ResponseWriter, ctx.HTTPRequest, c.DocumentLimit)
 
 		// parse document and respect document limit
-		doc, err = jsonapi.ParseDocument(ctx.HTTPRequest.Body)
+		doc, err := jsonapi.ParseDocument(ctx.HTTPRequest.Body)
 		stack.AbortIf(err)
-	}
 
-	// set document
-	ctx.Request = doc
+		// set document
+		ctx.Request = doc
+	}
 
 	// validate id if present
 	if ctx.JSONAPIRequest.ResourceID != "" && !coal.IsHex(ctx.JSONAPIRequest.ResourceID) {
