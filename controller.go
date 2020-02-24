@@ -313,7 +313,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 
 	// run operation without transaction if not write or not configured
 	if !ctx.Operation.Write() || !c.UseTransactions {
-		c.runOperation(ctx, doc)
+		c.runOperation(ctx)
 		ctx.Tracer.Pop()
 		return
 	}
@@ -324,7 +324,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 		ctx.Context = tc
 
 		// run operation
-		c.runOperation(ctx, doc)
+		c.runOperation(ctx)
 
 		return nil
 	}))
@@ -333,7 +333,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) runOperation(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) runOperation(ctx *Context) {
 	// call specific handlers
 	switch ctx.JSONAPIRequest.Intent {
 	case jsonapi.ListResources:
@@ -341,9 +341,9 @@ func (c *Controller) runOperation(ctx *Context, doc *jsonapi.Document) {
 	case jsonapi.FindResource:
 		c.findResource(ctx)
 	case jsonapi.CreateResource:
-		c.createResource(ctx, doc)
+		c.createResource(ctx)
 	case jsonapi.UpdateResource:
-		c.updateResource(ctx, doc)
+		c.updateResource(ctx)
 	case jsonapi.DeleteResource:
 		c.deleteResource(ctx)
 	case jsonapi.GetRelatedResources:
@@ -351,11 +351,11 @@ func (c *Controller) runOperation(ctx *Context, doc *jsonapi.Document) {
 	case jsonapi.GetRelationship:
 		c.getRelationship(ctx)
 	case jsonapi.SetRelationship:
-		c.setRelationship(ctx, doc)
+		c.setRelationship(ctx)
 	case jsonapi.AppendToRelationship:
-		c.appendToRelationship(ctx, doc)
+		c.appendToRelationship(ctx)
 	case jsonapi.RemoveFromRelationship:
-		c.removeFromRelationship(ctx, doc)
+		c.removeFromRelationship(ctx)
 	case jsonapi.CollectionAction:
 		c.handleCollectionAction(ctx)
 	case jsonapi.ResourceAction:
@@ -443,7 +443,7 @@ func (c *Controller) findResource(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) createResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.createResource")
 
@@ -455,17 +455,17 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Context = ct
 
 	// basic input data check
-	if doc.Data == nil || doc.Data.One == nil {
+	if ctx.Request.Data == nil || ctx.Request.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
-	if doc.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
+	if ctx.Request.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
 		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
 	// check id
-	if doc.Data.One.ID != "" {
+	if ctx.Request.Data.One.ID != "" {
 		stack.Abort(jsonapi.BadRequest("unnecessary resource id"))
 	}
 
@@ -477,7 +477,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Model.GetBase().DocID = coal.New()
 
 	// assign attributes
-	c.assignData(ctx, doc.Data.One)
+	c.assignData(ctx, ctx.Request.Data.One)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -547,7 +547,7 @@ func (c *Controller) createResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) updateResource(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.updateResource")
 
@@ -559,17 +559,17 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	ctx.Context = ct
 
 	// basic input data check
-	if doc.Data == nil || doc.Data.One == nil {
+	if ctx.Request.Data == nil || ctx.Request.Data.One == nil {
 		stack.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
-	if doc.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
+	if ctx.Request.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
 		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
 	// check id
-	if doc.Data.One.ID != ctx.JSONAPIRequest.ResourceID {
+	if ctx.Request.Data.One.ID != ctx.JSONAPIRequest.ResourceID {
 		stack.Abort(jsonapi.BadRequest("resource id mismatch"))
 	}
 
@@ -592,7 +592,7 @@ func (c *Controller) updateResource(ctx *Context, doc *jsonapi.Document) {
 	}
 
 	// assign attributes
-	c.assignData(ctx, doc.Data.One)
+	c.assignData(ctx, ctx.Request.Data.One)
 
 	// check if idempotent create token has been changed
 	if c.IdempotentCreate {
@@ -754,9 +754,10 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		stack.Abort(fmt.Errorf("missing related controller for %s", rel.RelType))
 	}
 
-	// copy context and request
-	newCtx := &Context{
-		Data:                Map{},
+	// prepare sub context
+	subCtx := &Context{
+		Data: Map{},
+		// Operation:        Operation(0),
 		Selector:            bson.M{},
 		Filters:             []bson.M{},
 		ReadableFields:      rc.initialFields(rc.Model, ctx.JSONAPIRequest),
@@ -799,13 +800,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 			id = coal.MustGet(ctx.Model, rel.Name).(coal.ID).Hex()
 		}
 
-		// tweak context
-		newCtx.Operation = Find
-		newCtx.JSONAPIRequest.Intent = jsonapi.FindResource
-		newCtx.JSONAPIRequest.ResourceID = id
+		// tweak sub context
+		subCtx.Operation = Find
+		subCtx.JSONAPIRequest.Intent = jsonapi.FindResource
+		subCtx.JSONAPIRequest.ResourceID = id
 
 		// prepare response
-		newCtx.Response = &jsonapi.Document{
+		subCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
 				One: nil,
 			},
@@ -813,28 +814,28 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 				Self: ctx.JSONAPIRequest.Self(),
 			},
 		}
-		newCtx.ResponseCode = http.StatusOK
+		subCtx.ResponseCode = http.StatusOK
 
 		// load model if id is present
 		if id != "" {
 			// load model
-			rc.loadModel(newCtx)
+			rc.loadModel(subCtx)
 
 			// run decorators
-			c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+			c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
 
 			// preload relationships
-			relationships := c.preloadRelationships(newCtx, []coal.Model{newCtx.Model})
+			relationships := c.preloadRelationships(subCtx, []coal.Model{subCtx.Model})
 
 			// set model
-			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Model, relationships)
+			subCtx.Response.Data.One = rc.resourceForModel(subCtx, subCtx.Model, relationships)
 		}
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
 	}
 
 	// finish to-many relationship
@@ -843,35 +844,35 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		ids := coal.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// tweak context
-		newCtx.Operation = List
-		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
+		subCtx.Operation = List
+		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query
-		newCtx.Selector["_id"] = bson.M{"$in": ids}
+		subCtx.Selector["_id"] = bson.M{"$in": ids}
 
 		// load related models
-		rc.loadModels(newCtx)
+		rc.loadModels(subCtx)
 
 		// run decorators
-		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
 
 		// preload relationships
-		relationships := rc.preloadRelationships(newCtx, newCtx.Models)
+		relationships := rc.preloadRelationships(subCtx, subCtx.Models)
 
 		// compose response
-		newCtx.Response = &jsonapi.Document{
+		subCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, newCtx.Models, relationships),
+				Many: rc.resourcesForModels(subCtx, subCtx.Models, relationships),
 			},
-			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), subCtx),
 		}
-		newCtx.ResponseCode = http.StatusOK
+		subCtx.ResponseCode = http.StatusOK
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
 	}
 
 	// finish has-one relationship
@@ -883,48 +884,48 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// tweak context
-		newCtx.Operation = List
-		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
+		subCtx.Operation = List
+		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query
-		newCtx.Selector[relRel.BSONField] = ctx.Model.ID()
+		subCtx.Selector[relRel.BSONField] = ctx.Model.ID()
 
 		// load related models
-		rc.loadModels(newCtx)
+		rc.loadModels(subCtx)
 
 		// check models
-		if len(newCtx.Models) > 1 {
+		if len(subCtx.Models) > 1 {
 			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 		}
 
 		// run decorators if found
-		if len(newCtx.Models) == 1 {
-			c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+		if len(subCtx.Models) == 1 {
+			c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
 		}
 
 		// compose response
-		newCtx.Response = &jsonapi.Document{
+		subCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{},
 			Links: &jsonapi.DocumentLinks{
 				Self: ctx.JSONAPIRequest.Self(),
 			},
 		}
-		newCtx.ResponseCode = http.StatusOK
+		subCtx.ResponseCode = http.StatusOK
 
 		// add if model is found
-		if len(newCtx.Models) == 1 {
+		if len(subCtx.Models) == 1 {
 			// preload relationships
-			relationships := c.preloadRelationships(newCtx, []coal.Model{newCtx.Models[0]})
+			relationships := c.preloadRelationships(subCtx, []coal.Model{subCtx.Models[0]})
 
 			// set model
-			newCtx.Response.Data.One = rc.resourceForModel(newCtx, newCtx.Models[0], relationships)
+			subCtx.Response.Data.One = rc.resourceForModel(subCtx, subCtx.Models[0], relationships)
 		}
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
 	}
 
 	// finish has-many relationship
@@ -936,37 +937,37 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		}
 
 		// tweak context
-		newCtx.Operation = List
-		newCtx.JSONAPIRequest.Intent = jsonapi.ListResources
+		subCtx.Operation = List
+		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
 
 		// set selector query (supports to-one and to-many relationships)
-		newCtx.Selector[relRel.BSONField] = bson.M{
+		subCtx.Selector[relRel.BSONField] = bson.M{
 			"$in": []coal.ID{ctx.Model.ID()},
 		}
 
 		// load related models
-		rc.loadModels(newCtx)
+		rc.loadModels(subCtx)
 
 		// run decorators
-		c.runCallbacks(c.Decorators, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
 
 		// preload relationships
-		relationships := rc.preloadRelationships(newCtx, newCtx.Models)
+		relationships := rc.preloadRelationships(subCtx, subCtx.Models)
 
 		// compose response
-		newCtx.Response = &jsonapi.Document{
+		subCtx.Response = &jsonapi.Document{
 			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(newCtx, newCtx.Models, relationships),
+				Many: rc.resourcesForModels(subCtx, subCtx.Models, relationships),
 			},
-			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), newCtx),
+			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), subCtx),
 		}
-		newCtx.ResponseCode = http.StatusOK
+		subCtx.ResponseCode = http.StatusOK
 
 		// run notifiers
-		c.runCallbacks(c.Notifiers, newCtx, http.StatusInternalServerError)
+		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
 
 		// write result
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, newCtx.ResponseCode, newCtx.Response))
+		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, subCtx.ResponseCode, subCtx.Response))
 	}
 
 	// finish trace
@@ -1021,7 +1022,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) setRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.setRelationship")
 
@@ -1052,7 +1053,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	}
 
 	// assign relationship
-	c.assignRelationship(ctx, doc, rel)
+	c.assignRelationship(ctx, ctx.Request, rel)
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -1089,7 +1090,7 @@ func (c *Controller) setRelationship(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) appendToRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.appendToRelationship")
 
@@ -1120,7 +1121,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	}
 
 	// process all references
-	for _, ref := range doc.Data.Many {
+	for _, ref := range ctx.Request.Data.Many {
 		// check type
 		if ref.Type != rel.RelType {
 			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
@@ -1180,7 +1181,7 @@ func (c *Controller) appendToRelationship(ctx *Context, doc *jsonapi.Document) {
 	ctx.Tracer.Pop()
 }
 
-func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document) {
+func (c *Controller) removeFromRelationship(ctx *Context) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
 
@@ -1211,7 +1212,7 @@ func (c *Controller) removeFromRelationship(ctx *Context, doc *jsonapi.Document)
 	}
 
 	// process all references
-	for _, ref := range doc.Data.Many {
+	for _, ref := range ctx.Request.Data.Many {
 		// check type
 		if ref.Type != rel.RelType {
 			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
