@@ -267,7 +267,7 @@ func (c *Controller) generalHandler(prefix string, ctx *Context) {
 	ctx.Request = doc
 
 	// validate id if present
-	if req.ResourceID != "" && !coal.IsHex(req.ResourceID) {
+	if ctx.JSONAPIRequest.ResourceID != "" && !coal.IsHex(ctx.JSONAPIRequest.ResourceID) {
 		stack.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
