@@ -40,7 +40,7 @@ func (n *Notary) Issue(key Key) (string, error) {
 	meta := Meta(key)
 
 	// get base
-	base := key.base()
+	base := key.GetBase()
 
 	// ensure id
 	if base.ID.IsZero() {
@@ -95,8 +95,8 @@ func (n *Notary) Verify(key Key, token string) error {
 	}
 
 	// set id and expiry
-	key.base().ID = kid
-	key.base().Expiry = rawKey.Expiry
+	key.GetBase().ID = kid
+	key.GetBase().Expiry = rawKey.Expiry
 
 	// assign data
 	err = jsonapi.Map(rawKey.Data).Assign(key)

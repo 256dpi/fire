@@ -8,7 +8,10 @@ import (
 
 // Model is the main interface implemented by every coal model embedding Base.
 type Model interface {
+	// ID returns the models id.
 	ID() ID
+
+	// GetBase should be implemented by embedding Base.
 	GetBase() *Base
 }
 

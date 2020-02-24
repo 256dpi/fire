@@ -15,7 +15,8 @@ type Key interface {
 	// Validate should validate the token.
 	Validate() error
 
-	base() *Base
+	// GetBase should be implemented by embedding Base.
+	GetBase() *Base
 }
 
 // Base can be embedded in a struct to turn it into a key.
@@ -24,7 +25,8 @@ type Base struct {
 	Expiry time.Time
 }
 
-func (b *Base) base() *Base {
+// GetBase implements the Key interface.
+func (b *Base) GetBase() *Base {
 	return b
 }
 
