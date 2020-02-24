@@ -154,7 +154,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			ctx.Controller = controller
 
 			// handle request
-			controller.handle(prefix, ctx)
+			controller.handle(prefix, ctx, nil, true)
 
 			return
 		}

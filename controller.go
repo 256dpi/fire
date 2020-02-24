@@ -240,7 +240,7 @@ func (c *Controller) prepare() {
 	}
 }
 
-func (c *Controller) handle(prefix string, ctx *Context) {
+func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write bool) {
 	// begin trace
 	ctx.Tracer.Push("fire/Controller.handle")
 
@@ -303,8 +303,13 @@ func (c *Controller) handle(prefix string, ctx *Context) {
 		))
 	}
 
+	// check selector
+	if selector == nil {
+		selector = bson.M{}
+	}
+
 	// prepare context
-	ctx.Selector = bson.M{}
+	ctx.Selector = selector
 	ctx.Filters = []bson.M{}
 	ctx.ReadableFields = c.initialFields(c.Model, ctx.JSONAPIRequest)
 	ctx.WritableFields = c.initialFields(c.Model, nil)
@@ -325,7 +330,7 @@ func (c *Controller) handle(prefix string, ctx *Context) {
 	}
 
 	// write response if available
-	if ctx.Response != nil {
+	if write && ctx.Response != nil {
 		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 	}
 
@@ -744,87 +749,59 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// prepare sub context
 	subCtx := &Context{
-		Data: Map{},
-		// Operation:        Operation(0),
-		Selector:            bson.M{},
-		Filters:             []bson.M{},
-		ReadableFields:      rc.initialFields(rc.Model, ctx.JSONAPIRequest),
-		WritableFields:      rc.initialFields(rc.Model, nil),
-		RelationshipFilters: map[string][]bson.M{},
-		Context:             ctx.Context,
-		Request:             ctx.Request,
-		Store:               ctx.Store,
-		JSONAPIRequest: &jsonapi.Request{
-			Prefix:       ctx.JSONAPIRequest.Prefix,
-			ResourceType: rel.RelType,
-			Include:      ctx.JSONAPIRequest.Include,
-			PageNumber:   ctx.JSONAPIRequest.PageNumber,
-			PageSize:     ctx.JSONAPIRequest.PageSize,
-			PageOffset:   ctx.JSONAPIRequest.PageOffset,
-			PageLimit:    ctx.JSONAPIRequest.PageLimit,
-			Sorting:      ctx.JSONAPIRequest.Sorting,
-			Fields:       ctx.JSONAPIRequest.Fields,
-			Filters:      ctx.JSONAPIRequest.Filters,
-		},
+		Context:        ctx,
+		Data:           Map{},
 		HTTPRequest:    ctx.HTTPRequest,
-		ResponseWriter: ctx.ResponseWriter,
+		ResponseWriter: nil,
 		Controller:     rc,
 		Group:          ctx.Group,
 		Tracer:         ctx.Tracer,
 	}
 
+	// copy and prepare request
+	req := *ctx.JSONAPIRequest
+	req.Intent = jsonapi.ListResources
+	req.ResourceType = rel.RelType
+	req.ResourceID = ""
+	req.RelatedResource = ""
+	subCtx.JSONAPIRequest = &req
+
 	// finish to-one relationship
 	if rel.ToOne {
-		// prepare id
-		var id string
-
 		// lookup id of related resource
+		id := coal.New()
 		if rel.Optional {
 			oid := coal.MustGet(ctx.Model, rel.Name).(*coal.ID)
 			if oid != nil {
-				id = oid.Hex()
+				id = *oid
 			}
 		} else {
-			id = coal.MustGet(ctx.Model, rel.Name).(coal.ID).Hex()
+			id = coal.MustGet(ctx.Model, rel.Name).(coal.ID)
 		}
 
-		// tweak sub context
-		subCtx.Operation = Find
-		subCtx.JSONAPIRequest.Intent = jsonapi.FindResource
-		subCtx.JSONAPIRequest.ResourceID = id
-
-		// prepare response
-		subCtx.Response = &jsonapi.Document{
-			Data: &jsonapi.HybridResource{
-				One: nil,
-			},
-			Links: &jsonapi.DocumentLinks{
-				Self: ctx.JSONAPIRequest.Self(),
-			},
-		}
-		subCtx.ResponseCode = http.StatusOK
-
-		// load model if id is present
-		if id != "" {
-			// load model
-			rc.loadModel(subCtx)
-
-			// run decorators
-			c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
-
-			// preload relationships
-			relationships := c.preloadRelationships(subCtx, []coal.Model{subCtx.Model})
-
-			// set model
-			subCtx.Response.Data.One = rc.resourceForModel(subCtx, subCtx.Model, relationships)
+		// prepare selector
+		selector := bson.M{
+			"_id": id,
 		}
 
-		// run notifiers
-		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
+		// when run to request even if the relation is not present to capture
+		// a proper response with potential meta information
 
-		// set response
-		ctx.Response = subCtx.Response
-		ctx.ResponseCode = subCtx.ResponseCode
+		// handle virtual request
+		rc.handle("", subCtx, selector, false)
+
+		// check response
+		if len(subCtx.Response.Data.Many) > 1 {
+			stack.Abort(fmt.Errorf("to one relationship returned more than one result"))
+		}
+
+		// pull out resource
+		if len(subCtx.Response.Data.Many) == 1 {
+			subCtx.Response.Data.One = subCtx.Response.Data.Many[0]
+		}
+
+		// unset list
+		subCtx.Response.Data.Many = nil
 	}
 
 	// finish to-many relationship
@@ -832,135 +809,76 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// get ids from loaded model
 		ids := coal.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
-		// tweak context
-		subCtx.Operation = List
-		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
-
-		// set selector query
-		subCtx.Selector["_id"] = bson.M{"$in": ids}
-
-		// load related models
-		rc.loadModels(subCtx)
-
-		// run decorators
-		c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
-
-		// preload relationships
-		relationships := rc.preloadRelationships(subCtx, subCtx.Models)
-
-		// compose response
-		subCtx.Response = &jsonapi.Document{
-			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(subCtx, subCtx.Models, relationships),
-			},
-			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), subCtx),
+		// prepare selector
+		selector := bson.M{
+			"_id": bson.M{"$in": ids},
 		}
-		subCtx.ResponseCode = http.StatusOK
 
-		// run notifiers
-		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
-
-		// set response
-		ctx.Response = subCtx.Response
-		ctx.ResponseCode = subCtx.ResponseCode
+		// handle virtual request
+		rc.handle("", subCtx, selector, false)
 	}
 
 	// finish has-one relationship
 	if rel.HasOne {
-		// find relationship
-		relRel := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
-		if relRel == nil {
-			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relRel.RelInverse))
+		// find inverse relationship
+		inverse := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
+		if inverse == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
-		// tweak context
-		subCtx.Operation = List
-		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
+		// prepare selector
+		selector := bson.M{
+			inverse.BSONField: ctx.Model.ID(),
+		}
 
-		// set selector query
-		subCtx.Selector[relRel.BSONField] = ctx.Model.ID()
+		// handle virtual request
+		rc.handle("", subCtx, selector, false)
 
-		// load related models
-		rc.loadModels(subCtx)
-
-		// check models
-		if len(subCtx.Models) > 1 {
+		// check response
+		if len(subCtx.Response.Data.Many) > 1 {
 			stack.Abort(fmt.Errorf("has one relationship returned more than one result"))
 		}
 
-		// run decorators if found
-		if len(subCtx.Models) == 1 {
-			c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
+		// pull out resource
+		if len(subCtx.Response.Data.Many) == 1 {
+			subCtx.Response.Data.One = subCtx.Response.Data.Many[0]
 		}
 
-		// compose response
-		subCtx.Response = &jsonapi.Document{
-			Data: &jsonapi.HybridResource{},
-			Links: &jsonapi.DocumentLinks{
-				Self: ctx.JSONAPIRequest.Self(),
-			},
-		}
-		subCtx.ResponseCode = http.StatusOK
-
-		// add if model is found
-		if len(subCtx.Models) == 1 {
-			// preload relationships
-			relationships := c.preloadRelationships(subCtx, []coal.Model{subCtx.Models[0]})
-
-			// set model
-			subCtx.Response.Data.One = rc.resourceForModel(subCtx, subCtx.Models[0], relationships)
-		}
-
-		// run notifiers
-		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
-
-		// set response
-		ctx.Response = subCtx.Response
-		ctx.ResponseCode = subCtx.ResponseCode
+		// unset list
+		subCtx.Response.Data.Many = nil
 	}
 
 	// finish has-many relationship
 	if rel.HasMany {
-		// find relationship
-		relRel := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
-		if relRel == nil {
-			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", relRel.RelInverse))
+		// find inverse relationship
+		inverse := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
+		if inverse == nil {
+			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
-		// tweak context
-		subCtx.Operation = List
-		subCtx.JSONAPIRequest.Intent = jsonapi.ListResources
-
-		// set selector query (supports to-one and to-many relationships)
-		subCtx.Selector[relRel.BSONField] = bson.M{
-			"$in": []coal.ID{ctx.Model.ID()},
-		}
-
-		// load related models
-		rc.loadModels(subCtx)
-
-		// run decorators
-		c.runCallbacks(c.Decorators, subCtx, http.StatusInternalServerError)
-
-		// preload relationships
-		relationships := rc.preloadRelationships(subCtx, subCtx.Models)
-
-		// compose response
-		subCtx.Response = &jsonapi.Document{
-			Data: &jsonapi.HybridResource{
-				Many: rc.resourcesForModels(subCtx, subCtx.Models, relationships),
+		// prepare selector
+		selector := bson.M{
+			inverse.BSONField: bson.M{
+				"$in": []coal.ID{ctx.Model.ID()},
 			},
-			Links: rc.listLinks(ctx.JSONAPIRequest.Self(), subCtx),
 		}
-		subCtx.ResponseCode = http.StatusOK
 
-		// run notifiers
-		c.runCallbacks(c.Notifiers, subCtx, http.StatusInternalServerError)
-
-		// set response
-		ctx.Response = subCtx.Response
-		ctx.ResponseCode = subCtx.ResponseCode
+		// handle virtual request
+		rc.handle("", subCtx, selector, false)
 	}
+
+	// copy response
+	ctx.Response = subCtx.Response
+	ctx.ResponseCode = subCtx.ResponseCode
+
+	// rewrite links
+	from, to := subCtx.JSONAPIRequest.Self(), ctx.JSONAPIRequest.Self()
+	ctx.Response.Links.Self = strings.Replace(ctx.Response.Links.Self, from, to, 1)
+	ctx.Response.Links.Related = strings.Replace(ctx.Response.Links.Related, from, to, 1)
+	ctx.Response.Links.First = strings.Replace(ctx.Response.Links.First, from, to, 1)
+	ctx.Response.Links.Previous = strings.Replace(ctx.Response.Links.Previous, from, to, 1)
+	ctx.Response.Links.Next = strings.Replace(ctx.Response.Links.Next, from, to, 1)
+	ctx.Response.Links.Last = strings.Replace(ctx.Response.Links.Last, from, to, 1)
 
 	// finish trace
 	ctx.Tracer.Pop()
