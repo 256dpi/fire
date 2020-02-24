@@ -105,7 +105,8 @@ type Context struct {
 
 	// The current operation in process.
 	//
-	// Usage: Read Only, Availability: Authorizers
+	// Usage: Read Only
+	// Availability: Authorizers
 	Operation Operation
 
 	// The query that will be used during an List, Find, Update, Delete or
@@ -115,7 +116,8 @@ type Context struct {
 	// resource id, while on forwarded List operations the relationship filter
 	// is preset.
 	//
-	// Usage: Read Only, Availability: Authorizers
+	// Usage: Read Only
+	// Availability: Authorizers
 	// Operations: !Create, !CollectionAction
 	Selector bson.M
 
@@ -125,71 +127,82 @@ type Context struct {
 	//
 	// On List operations, attribute and relationship filters are preset.
 	//
-	// Usage: Append Only, Availability: Authorizers
+	// Usage: Append Only
+	// Availability: Authorizers
 	// Operations: !Create, !CollectionAction
 	Filters []bson.M
 
 	// The sorting that will be used during List.
 	//
-	// Usage: No Restriction, Availability: Authorizers
+	// Usage: No Restriction
+	// Availability: Authorizers
 	// Operations: List
 	Sorting []string
 
 	// Only the whitelisted readable fields are exposed to the client as
 	// attributes and relationships.
 	//
-	// Usage: Reduce Only, Availability: Authorizers
+	// Usage: Reduce Only
+	// Availability: Authorizers
 	// Operations: !Delete, !ResourceAction, !CollectionAction
 	ReadableFields []string
 
 	// Only the whitelisted writable fields can be altered by requests.
 	//
-	// Usage: Reduce Only, Availability: Authorizers
+	// Usage: Reduce Only
+	// Availability: Authorizers
 	// Operations: Create, Update
 	WritableFields []string
 
 	// The filters that will be applied when loading has one and has many
 	// relationships.
 	//
-	// Usage: Append Only, Availability: Authorizers.
+	// Usage: Append Only
+	// Availability: Authorizers.
 	// Operations: !Create, !CollectionAction
 	RelationshipFilters map[string][]bson.M
 
 	// The Model that will be created, updated, deleted or is requested by a
 	// resource action.
 	//
-	// Usage: Modify Only, Availability: Validators
+	// Usage: Modify Only
+	// Availability: Validators
 	// Operations: Create, Update, Delete, ResourceAction
 	Model coal.Model
 
 	// The models that will will be returned for a List operation.
 	//
-	// Usage: Modify Only, Availability: Decorators
+	// Usage: Modify Only
+	// Availability: Decorators
 	// Operations: List
 	Models []coal.Model
 
 	// The original model that is being updated. Can be used to lookup up
 	// original values of changed fields.
 	//
-	// Usage: Ready Only, Availability: Validators
+	// Usage: Ready Only
+	// Availability: Validators
 	// Operations: Update
 	Original coal.Model
 
 	// The document that has been received by the client.
 	//
-	// Usage: Read Only, Availability: Authorizers
+	// Usage: Read Only
+	// Availability: Authorizers
 	// Operations: !List, !Find, !CollectionAction, !ResourceAction
 	Request *jsonapi.Document
 
 	// The document that will be written to the client.
 	//
-	// Usage: Modify Only, Availability: Notifiers
+	// Usage: Modify Only
+	// Availability: Notifiers
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
 
 	// The status code that will be written to the client.
 	//
-	// Usage: Modify Only, Availability: Notifiers
+	// Usage: Modify Only
+	// Availability: Notifiers
 	// Operations: !CollectionAction, !ResourceAction
 	ResponseCode int
 
