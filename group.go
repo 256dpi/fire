@@ -153,8 +153,8 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			// set controller
 			ctx.Controller = controller
 
-			// call controller with context
-			controller.generalHandler(prefix, ctx)
+			// handle request
+			controller.handle(prefix, ctx)
 
 			return
 		}

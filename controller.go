@@ -240,9 +240,9 @@ func (c *Controller) prepare() {
 	}
 }
 
-func (c *Controller) generalHandler(prefix string, ctx *Context) {
+func (c *Controller) handle(prefix string, ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.generalHandler")
+	ctx.Tracer.Push("fire/Controller.handle")
 
 	// prepare parser
 	parser := c.parser
