@@ -13,6 +13,7 @@ import (
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -99,7 +100,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create tracer
-		tracer := NewTracerFromRequest(r, "fire/Group.Endpoint")
+		tracer := cinder.TraceRequest(r, "fire/Group.Endpoint")
 		defer tracer.Finish(true)
 
 		// continue any previous aborts

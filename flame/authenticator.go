@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -38,7 +38,7 @@ const (
 type environment struct {
 	request *http.Request
 	writer  http.ResponseWriter
-	tracer  *fire.Tracer
+	tracer  *cinder.Tracer
 	grants  Grants
 }
 
@@ -66,7 +66,7 @@ func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create tracer
-		tracer := fire.NewTracerFromRequest(r, "flame/Authenticator.Endpoint")
+		tracer := cinder.TraceRequest(r, "flame/Authenticator.Endpoint")
 		tracer.Tag("prefix", prefix)
 		defer tracer.Finish(true)
 
@@ -128,7 +128,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// create tracer
-			tracer := fire.NewTracerFromRequest(r, "flame/Authenticator.Authorizer")
+			tracer := cinder.TraceRequest(r, "flame/Authenticator.Authorizer")
 			tracer.Tag("scope", scope)
 			tracer.Tag("force", force)
 			tracer.Tag("loadClient", loadClient)

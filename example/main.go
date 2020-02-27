@@ -17,6 +17,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/heat"
@@ -80,7 +81,7 @@ func main() {
 	// compose handler
 	handler := serve.Compose(
 		flame.TokenMigrator(true),
-		fire.RootTracer(),
+		cinder.RootHandler(),
 		serve.CORS(corsOptions),
 		createHandler(store),
 	)

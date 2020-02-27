@@ -9,6 +9,7 @@ import (
 	"github.com/256dpi/jsonapi/v2"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -243,7 +244,7 @@ type Context struct {
 	// The Tracer used to trace code execution.
 	//
 	// Usage: Read Only
-	Tracer *Tracer
+	Tracer *cinder.Tracer
 }
 
 // TC is a shorthand to get a traced collection for the specified model.

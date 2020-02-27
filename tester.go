@@ -11,6 +11,7 @@ import (
 	"github.com/256dpi/serve"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -53,7 +54,7 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 	group.Add(controllers...)
 
 	// set handler
-	t.Handler = serve.Compose(RootTracer(), group.Endpoint(prefix))
+	t.Handler = serve.Compose(cinder.RootHandler(), group.Endpoint(prefix))
 
 	return group
 }
@@ -194,8 +195,8 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 		ctx.JSONAPIRequest = &jsonapi.Request{}
 	}
 
-	// set tracers
-	ctx.Tracer = NewTracerWithRoot("fire/Tester.WithContext")
+	// create tracer
+	ctx.Tracer = cinder.Trace("fire/Tester.WithContext")
 	defer ctx.Tracer.Finish(true)
 
 	// yield context

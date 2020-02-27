@@ -6,22 +6,15 @@ import (
 	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
 
-// Tracer is used by a traced collection to push tracing spans for database
-// queries.
-type Tracer interface {
-	Push(name string)
-	Tag(key string, value interface{})
-	Log(key string, value interface{})
-	Pop()
-}
+	"github.com/256dpi/fire/cinder"
+)
 
 // Collection wraps a collection to automatically push tracing spans for
 // run queries.
 type Collection struct {
 	coll   lungo.ICollection
-	tracer Tracer
+	tracer *cinder.Tracer
 }
 
 // AggregateAll wraps the native Aggregate collection method and decodes all

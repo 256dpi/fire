@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/tomb.v2"
 
-	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -64,7 +64,7 @@ type Context struct {
 	// The tracer used to trace code execution.
 	//
 	// Usage: Read Only
-	Tracer *fire.Tracer
+	Tracer *cinder.Tracer
 }
 
 // TC is a shorthand to get a traced collection for the specified model.
@@ -297,7 +297,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	}
 
 	// create tracer
-	tracer := fire.NewTracerWithRoot(t.Name)
+	tracer := cinder.Trace(t.Name)
 	defer tracer.Finish(true)
 
 	// create context

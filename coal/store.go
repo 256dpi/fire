@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
+	"github.com/256dpi/fire/cinder"
 )
 
 // MustConnect will connect to the passed database and return a new store.
@@ -125,7 +127,7 @@ func (s *Store) C(model Model) lungo.ICollection {
 }
 
 // TC will return a traced collection for the specified model.
-func (s *Store) TC(tracer Tracer, model Model) *Collection {
+func (s *Store) TC(tracer *cinder.Tracer, model Model) *Collection {
 	return &Collection{
 		coll:   s.C(model),
 		tracer: tracer,
