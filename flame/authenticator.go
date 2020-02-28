@@ -939,7 +939,7 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 
 	// fetch client
 	err := a.store.TC(model, env.trace).FindOne(nil, query).Decode(client)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil
 	}
 	stack.AbortIf(err)
@@ -975,7 +975,7 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 	err := a.store.TC(model, env.trace).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(client)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil
 	}
 	stack.AbortIf(err)
@@ -1049,7 +1049,7 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 
 	// fetch resource owner
 	err := a.store.TC(model, env.trace).FindOne(nil, query).Decode(resourceOwner)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil
 	}
 	stack.AbortIf(err)
@@ -1089,7 +1089,7 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	err := a.store.TC(model, env.trace).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(resourceOwner)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil
 	}
 	stack.AbortIf(err)
@@ -1109,7 +1109,7 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	err := a.store.TC(token, env.trace).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(token)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil
 	}
 	stack.AbortIf(err)
@@ -1160,7 +1160,7 @@ func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
 	_, err := a.store.TC(a.policy.Token, env.trace).DeleteOne(nil, bson.M{
 		"_id": id,
 	})
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		err = nil
 	}
 	stack.AbortIf(err)

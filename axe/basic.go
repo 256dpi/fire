@@ -140,7 +140,7 @@ func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 			coal.F(&Job{}, "Attempts"): 1,
 		},
 	}, opts).Decode(&job)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err

@@ -14,6 +14,16 @@ import (
 // ErrBreak can be returned to break out from an iterator.
 var ErrBreak = errors.New("break")
 
+// IsMissing returns whether the provided error describes a missing document.
+func IsMissing(err error) bool {
+	return err == lungo.ErrNoDocuments || errors.Is(err, lungo.ErrNoDocuments)
+}
+
+// IsDuplicate returns whether the provided error describes a duplicate document.
+func IsDuplicate(err error) bool {
+	return lungo.IsUniquenessError(err)
+}
+
 // Collection mimics a collection and adds tracing.
 type Collection struct {
 	coll  lungo.ICollection

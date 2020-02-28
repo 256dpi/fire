@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
@@ -140,7 +139,7 @@ func GetLocked(store *coal.Store, component, name string, token coal.ID) (coal.M
 			"$gt": time.Now(),
 		},
 	}).Decode(&value)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, err

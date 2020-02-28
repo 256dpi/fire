@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
@@ -19,7 +18,7 @@ func Get(store *coal.Store, component, name string) (coal.Map, bool, error) {
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 	}).Decode(&value)
-	if err == mongo.ErrNoDocuments {
+	if coal.IsMissing(err) {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, err

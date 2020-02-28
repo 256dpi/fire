@@ -64,7 +64,7 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string, r io.Reade
 
 	// close stream
 	err = stream.Close()
-	if lungo.IsUniquenessError(err) {
+	if coal.IsDuplicate(err) {
 		return 0, ErrUsedHandle
 	} else if err != nil {
 		return 0, err
