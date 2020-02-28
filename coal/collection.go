@@ -26,8 +26,13 @@ func IsDuplicate(err error) bool {
 
 // Collection mimics a collection and adds tracing.
 type Collection struct {
-	coll  lungo.ICollection
-	trace *cinder.Trace
+	native lungo.ICollection
+	trace  *cinder.Trace
+}
+
+// Native will return the underlying native collection.
+func (c *Collection) Native() lungo.ICollection {
+	return c.native
 }
 
 // Aggregate wraps the native Aggregate collection method and yields the
@@ -41,7 +46,7 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, fn fun
 	}
 
 	// run query
-	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
+	csr, err := c.native.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
 	}
@@ -73,7 +78,7 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 	}
 
 	// run query
-	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
+	csr, err := c.native.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
 	}
@@ -100,7 +105,7 @@ func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn
 	}
 
 	// run query
-	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
+	csr, err := c.native.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
 	}
@@ -133,7 +138,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		defer c.trace.Pop()
 	}
 
-	return c.coll.BulkWrite(ctx, models, opts...)
+	return c.native.BulkWrite(ctx, models, opts...)
 }
 
 // CountDocuments wraps the native CountDocuments collection method.
@@ -145,7 +150,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		defer c.trace.Pop()
 	}
 
-	return c.coll.CountDocuments(ctx, filter, opts...)
+	return c.native.CountDocuments(ctx, filter, opts...)
 }
 
 // DeleteMany wraps the native DeleteMany collection method.
@@ -158,7 +163,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		defer c.trace.Pop()
 	}
 
-	return c.coll.DeleteMany(ctx, filter, opts...)
+	return c.native.DeleteMany(ctx, filter, opts...)
 }
 
 // DeleteOne wraps the native DeleteOne collection method.
@@ -170,7 +175,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		defer c.trace.Pop()
 	}
 
-	return c.coll.DeleteOne(ctx, filter, opts...)
+	return c.native.DeleteOne(ctx, filter, opts...)
 }
 
 // Distinct wraps the native Distinct collection method.
@@ -183,7 +188,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 		defer c.trace.Pop()
 	}
 
-	return c.coll.Distinct(ctx, field, filter, opts...)
+	return c.native.Distinct(ctx, field, filter, opts...)
 }
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
@@ -194,7 +199,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 		defer c.trace.Pop()
 	}
 
-	return c.coll.EstimatedDocumentCount(ctx, opts...)
+	return c.native.EstimatedDocumentCount(ctx, opts...)
 }
 
 // FindAll wraps the native Find collection method and yields the returned cursor.
@@ -207,7 +212,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr l
 	}
 
 	// run query
-	csr, err := c.coll.Find(ctx, filter, opts...)
+	csr, err := c.native.Find(ctx, filter, opts...)
 	if err != nil {
 		return err
 	}
@@ -239,7 +244,7 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 	}
 
 	// run query
-	csr, err := c.coll.Find(ctx, filter, opts...)
+	csr, err := c.native.Find(ctx, filter, opts...)
 	if err != nil {
 		return err
 	}
@@ -266,7 +271,7 @@ func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(f
 	}
 
 	// run query
-	csr, err := c.coll.Find(ctx, filter, opts...)
+	csr, err := c.native.Find(ctx, filter, opts...)
 	if err != nil {
 		return err
 	}
@@ -300,7 +305,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		defer c.trace.Pop()
 	}
 
-	return c.coll.FindOne(ctx, filter, opts...)
+	return c.native.FindOne(ctx, filter, opts...)
 }
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
@@ -312,7 +317,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		defer c.trace.Pop()
 	}
 
-	return c.coll.FindOneAndDelete(ctx, filter, opts...)
+	return c.native.FindOneAndDelete(ctx, filter, opts...)
 }
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
@@ -324,7 +329,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 		defer c.trace.Pop()
 	}
 
-	return c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
+	return c.native.FindOneAndReplace(ctx, filter, replacement, opts...)
 }
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
@@ -336,7 +341,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 		defer c.trace.Pop()
 	}
 
-	return c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
+	return c.native.FindOneAndUpdate(ctx, filter, update, opts...)
 }
 
 // InsertMany wraps the native InsertMany collection method.
@@ -347,7 +352,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		defer c.trace.Pop()
 	}
 
-	return c.coll.InsertMany(ctx, documents, opts...)
+	return c.native.InsertMany(ctx, documents, opts...)
 }
 
 // InsertOne wraps the native InsertOne collection method.
@@ -358,7 +363,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		defer c.trace.Pop()
 	}
 
-	return c.coll.InsertOne(ctx, document, opts...)
+	return c.native.InsertOne(ctx, document, opts...)
 }
 
 // ReplaceOne wraps the native ReplaceOne collection method.
@@ -370,7 +375,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 		defer c.trace.Pop()
 	}
 
-	return c.coll.ReplaceOne(ctx, filter, replacement, opts...)
+	return c.native.ReplaceOne(ctx, filter, replacement, opts...)
 }
 
 // UpdateMany wraps the native UpdateMany collection method.
@@ -382,7 +387,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 		defer c.trace.Pop()
 	}
 
-	return c.coll.UpdateMany(ctx, filter, update, opts...)
+	return c.native.UpdateMany(ctx, filter, update, opts...)
 }
 
 // UpdateOne wraps the native UpdateOne collection method.
@@ -394,5 +399,5 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 		defer c.trace.Pop()
 	}
 
-	return c.coll.UpdateOne(ctx, filter, update, opts...)
+	return c.native.UpdateOne(ctx, filter, update, opts...)
 }
