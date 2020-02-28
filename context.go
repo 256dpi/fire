@@ -241,15 +241,15 @@ type Context struct {
 	// Usage: Read Only
 	Group *Group
 
-	// The Tracer used to trace code execution.
+	// The current trace.
 	//
 	// Usage: Read Only
-	Tracer *cinder.Tracer
+	Trace *cinder.Trace
 }
 
 // TC is a shorthand to get a traced collection for the specified model.
 func (c *Context) TC(model coal.Model) *coal.Collection {
-	return c.Store.TC(c.Tracer, model)
+	return c.Store.TC(c.Trace, model)
 }
 
 // Query returns the composite query of Selector and Filter.

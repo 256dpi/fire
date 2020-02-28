@@ -242,7 +242,7 @@ func (c *Controller) prepare() {
 
 func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write bool) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.handle")
+	ctx.Trace.Push("fire/Controller.handle")
 
 	// prepare parser
 	parser := c.parser
@@ -335,7 +335,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) runOperation(ctx *Context) {
@@ -370,7 +370,7 @@ func (c *Controller) runOperation(ctx *Context) {
 
 func (c *Controller) listResources(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.listResources")
+	ctx.Trace.Push("fire/Controller.listResources")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
@@ -401,12 +401,12 @@ func (c *Controller) listResources(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) findResource(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.findResource")
+	ctx.Trace.Push("fire/Controller.findResource")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
@@ -439,12 +439,12 @@ func (c *Controller) findResource(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) createResource(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.createResource")
+	ctx.Trace.Push("fire/Controller.createResource")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -540,12 +540,12 @@ func (c *Controller) createResource(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) updateResource(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.updateResource")
+	ctx.Trace.Push("fire/Controller.updateResource")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -664,12 +664,12 @@ func (c *Controller) updateResource(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) deleteResource(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.deleteResource")
+	ctx.Trace.Push("fire/Controller.deleteResource")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -713,12 +713,12 @@ func (c *Controller) deleteResource(ctx *Context) {
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) getRelatedResources(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.getRelatedResources")
+	ctx.Trace.Push("fire/Controller.getRelatedResources")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
@@ -755,7 +755,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		ResponseWriter: nil,
 		Controller:     rc,
 		Group:          ctx.Group,
-		Tracer:         ctx.Tracer,
+		Trace:          ctx.Trace,
 	}
 
 	// copy and prepare request
@@ -881,12 +881,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	ctx.Response.Links.Last = strings.Replace(ctx.Response.Links.Last, from, to, 1)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) getRelationship(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.getRelationship")
+	ctx.Trace.Push("fire/Controller.getRelationship")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.ReadTimeout)
@@ -926,12 +926,12 @@ func (c *Controller) getRelationship(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) setRelationship(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.setRelationship")
+	ctx.Trace.Push("fire/Controller.setRelationship")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -991,12 +991,12 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) appendToRelationship(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.appendToRelationship")
+	ctx.Trace.Push("fire/Controller.appendToRelationship")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -1079,12 +1079,12 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) removeFromRelationship(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.removeFromRelationship")
+	ctx.Trace.Push("fire/Controller.removeFromRelationship")
 
 	// create context
 	ct, cancel := context.WithTimeout(ctx.Context, c.WriteTimeout)
@@ -1174,12 +1174,12 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) handleCollectionAction(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.handleCollectionAction")
+	ctx.Trace.Push("fire/Controller.handleCollectionAction")
 
 	// get action
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
@@ -1204,12 +1204,12 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	c.runAction(action, ctx, http.StatusBadRequest)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) handleResourceAction(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.handleResourceAction")
+	ctx.Trace.Push("fire/Controller.handleResourceAction")
 
 	// get action
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
@@ -1234,7 +1234,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	c.runAction(action, ctx, http.StatusBadRequest)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) initialFields(model coal.Model, r *jsonapi.Request) []string {
@@ -1281,7 +1281,7 @@ func (c *Controller) initialFields(model coal.Model, r *jsonapi.Request) []strin
 
 func (c *Controller) loadModel(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.loadModel")
+	ctx.Trace.Push("fire/Controller.loadModel")
 
 	// set selector query (id has been validated earlier)
 	ctx.Selector["_id"] = coal.MustFromHex(ctx.JSONAPIRequest.ResourceID)
@@ -1321,12 +1321,12 @@ func (c *Controller) loadModel(ctx *Context) {
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) loadModels(ctx *Context) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.loadModels")
+	ctx.Trace.Push("fire/Controller.loadModels")
 
 	// filter out deleted documents if configured
 	if c.SoftDelete {
@@ -1448,12 +1448,12 @@ func (c *Controller) loadModels(ctx *Context) {
 	ctx.Models = coal.Slice(slicePtr)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.assignData")
+	ctx.Trace.Push("fire/Controller.assignData")
 
 	// prepare whitelist
 	var whitelist []string
@@ -1529,12 +1529,12 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, field *coal.Field) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.assignRelationship")
+	ctx.Trace.Push("fire/Controller.assignRelationship")
 
 	// handle to-one relationship
 	if field.ToOne {
@@ -1603,12 +1603,12 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map[string]map[coal.ID][]coal.ID {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.preloadRelationships")
+	ctx.Trace.Push("fire/Controller.preloadRelationships")
 
 	// prepare relationships
 	relationships := make(map[string]map[coal.ID][]coal.ID)
@@ -1731,28 +1731,28 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 
 	return relationships
 }
 
 func (c *Controller) resourceForModel(ctx *Context, model coal.Model, relationships map[string]map[coal.ID][]coal.ID) *jsonapi.Resource {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.resourceForModel")
+	ctx.Trace.Push("fire/Controller.resourceForModel")
 
 	// construct resource
 	resource := c.constructResource(ctx, model, relationships)
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 
 	return resource
 }
 
 func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relationships map[string]map[coal.ID][]coal.ID) []*jsonapi.Resource {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.resourceForModels")
-	ctx.Tracer.Tag("count", len(models))
+	ctx.Trace.Push("fire/Controller.resourceForModels")
+	ctx.Trace.Tag("count", len(models))
 
 	// prepare resources
 	resources := make([]*jsonapi.Resource, len(models))
@@ -1763,7 +1763,7 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 
 	return resources
 }
@@ -1957,7 +1957,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.listLinks")
+	ctx.Trace.Push("fire/Controller.listLinks")
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
@@ -1990,7 +1990,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 
 	return links
 }
@@ -2002,7 +2002,7 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 	}
 
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.runCallbacks")
+	ctx.Trace.Push("fire/Controller.runCallbacks")
 
 	// run callbacks and handle errors
 	for _, cb := range list {
@@ -2024,12 +2024,12 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }
 
 func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// begin trace
-	ctx.Tracer.Push("fire/Controller.runAction")
+	ctx.Trace.Push("fire/Controller.runAction")
 
 	// call action
 	err := a.Handler(ctx)
@@ -2043,5 +2043,5 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	}
 
 	// finish trace
-	ctx.Tracer.Pop()
+	ctx.Trace.Pop()
 }

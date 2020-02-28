@@ -195,9 +195,9 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 		ctx.JSONAPIRequest = &jsonapi.Request{}
 	}
 
-	// create tracer
-	ctx.Tracer = cinder.Trace("fire/Tester.WithContext")
-	defer ctx.Tracer.Finish(true)
+	// create trace
+	ctx.Trace = cinder.New(nil,"fire/Tester.WithContext")
+	defer ctx.Trace.Finish()
 
 	// yield context
 	fn(ctx)

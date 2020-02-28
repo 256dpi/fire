@@ -34,6 +34,7 @@ func RootHandler() func(http.Handler) http.Handler {
 			span.SetTag("http.proto", r.Proto)
 			span.SetTag("http.method", r.Method)
 			span.SetTag("http.host", r.Host)
+			span.SetTag("http.path", path)
 			span.LogKV("http.url", r.URL.String())
 			span.LogKV("http.length", r.ContentLength)
 			span.LogKV("http.header", r.Header)

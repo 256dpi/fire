@@ -29,7 +29,7 @@ func C(name string, m Matcher, h Handler) *Callback {
 		Matcher: m,
 		Handler: func(ctx *Context) error {
 			// begin trace
-			ctx.Tracer.Push(name)
+			ctx.Trace.Push(name)
 
 			// call handler
 			err := h(ctx)
@@ -38,7 +38,7 @@ func C(name string, m Matcher, h Handler) *Callback {
 			}
 
 			// finish trace
-			ctx.Tracer.Pop()
+			ctx.Trace.Pop()
 
 			return nil
 		},
@@ -84,7 +84,7 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 		BodyLimit: bodyLimit,
 		Handler: func(ctx *Context) error {
 			// begin trace
-			ctx.Tracer.Push(name)
+			ctx.Trace.Push(name)
 
 			// call handler
 			err := h(ctx)
@@ -93,7 +93,7 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 			}
 
 			// finish trace
-			ctx.Tracer.Pop()
+			ctx.Trace.Pop()
 
 			return nil
 		},

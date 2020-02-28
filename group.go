@@ -99,9 +99,9 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 	prefix = strings.Trim(prefix, "/")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// create tracer
-		tracer := cinder.TraceRequest(r, "fire/Group.Endpoint")
-		defer tracer.Finish(true)
+		// create trace
+		trace := cinder.New(r.Context(), "fire/Group.Endpoint")
+		defer trace.Finish()
 
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
@@ -112,9 +112,9 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			}
 
 			// set critical error on last span
-			tracer.Tag("error", true)
-			tracer.Log("error", err.Error())
-			tracer.Log("stack", stack.Trace())
+			trace.Tag("error", true)
+			trace.Log("error", err.Error())
+			trace.Log("stack", stack.Trace())
 
 			// report critical errors if possible
 			if g.reporter != nil {
@@ -145,7 +145,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Group:          g,
-			Tracer:         tracer,
+			Trace:          trace,
 		}
 
 		// get controller

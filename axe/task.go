@@ -61,15 +61,15 @@ type Context struct {
 	// Usage: Read Only
 	Store *coal.Store
 
-	// The tracer used to trace code execution.
+	// The current trace.
 	//
 	// Usage: Read Only
-	Tracer *cinder.Tracer
+	Trace *cinder.Trace
 }
 
 // TC is a shorthand to get a traced collection for the specified model.
 func (c *Context) TC(model coal.Model) *coal.Collection {
-	return c.Store.TC(c.Tracer, model)
+	return c.Store.TC(c.Trace, model)
 }
 
 // Task describes work that is managed using a job queue.
@@ -296,13 +296,14 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 	}
 
-	// create tracer
-	tracer := cinder.Trace(t.Name)
-	defer tracer.Finish(true)
-
 	// create context
 	c, cancel := context.WithTimeout(context.Background(), t.Lifetime)
 	defer cancel()
+
+	// create trace
+	trace := cinder.New(nil, t.Name)
+	defer trace.Finish()
+	c = trace.Wrap(c)
 
 	// prepare context
 	ctx := &Context{
@@ -311,7 +312,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		Task:    t,
 		Queue:   q,
 		Store:   q.store,
-		Tracer:  tracer,
+		Trace:   trace,
 	}
 
 	// run handler
