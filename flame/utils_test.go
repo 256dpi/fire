@@ -5,11 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/uber/jaeger-client-go"
-	"github.com/uber/jaeger-client-go/transport"
-
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -48,19 +45,8 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 }
 
 func TestMain(m *testing.M) {
-	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
-
-	tracer, closer := jaeger.NewTracer("test-flame",
-		jaeger.NewConstSampler(true),
-		jaeger.NewRemoteReporter(tr),
-	)
-
-	opentracing.SetGlobalTracer(tracer)
-
+	closer := cinder.SetupTesting("test-flame")
 	ret := m.Run()
-
-	_ = closer.Close()
-	_ = tr.Close()
-
+	closer()
 	os.Exit(ret)
 }

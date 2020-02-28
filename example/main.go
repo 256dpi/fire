@@ -10,9 +10,6 @@ import (
 
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
-	"github.com/opentracing/opentracing-go"
-	"github.com/uber/jaeger-client-go"
-	"github.com/uber/jaeger-client-go/transport"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
@@ -86,8 +83,8 @@ func main() {
 		createHandler(store),
 	)
 
-	// configure jaeger tracer
-	configureJaeger()
+	// configure local jaeger
+	cinder.SetupTesting("example")
 
 	// run http server
 	fmt.Printf("Running on http://0.0.0.0:%d\n", port)
@@ -222,20 +219,6 @@ func createHandler(store *coal.Store) http.Handler {
 	))
 
 	return mux
-}
-
-func configureJaeger() {
-	// create transport
-	tr := transport.NewHTTPTransport("http://0.0.0.0:14268/api/traces?format=jaeger.thrift")
-
-	// create tracer
-	tracer, _ := jaeger.NewTracer("example",
-		jaeger.NewConstSampler(true),
-		jaeger.NewRemoteReporter(tr),
-	)
-
-	// set global tracer
-	opentracing.SetGlobalTracer(tracer)
 }
 
 func getEnv(key, def string) string {
