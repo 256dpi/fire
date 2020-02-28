@@ -2,6 +2,7 @@ package coal
 
 import (
 	"context"
+	"errors"
 
 	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,11 +11,45 @@ import (
 	"github.com/256dpi/fire/cinder"
 )
 
-// Collection wraps a collection to automatically push tracing spans for
-// run queries.
+// ErrBreak can be returned to break out from an iterator.
+var ErrBreak = errors.New("break")
+
+// Collection mimics a collection and adds tracing.
 type Collection struct {
 	coll  lungo.ICollection
 	trace *cinder.Trace
+}
+
+// Aggregate wraps the native Aggregate collection method and yields the
+// returned cursor.
+func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, fn func(lungo.ICursor) error, opts ...*options.AggregateOptions) error {
+	// trace
+	if c.trace != nil {
+		c.trace.Push("coal/Collection.Aggregate")
+		c.trace.Tag("pipeline", pipeline)
+		defer c.trace.Pop()
+	}
+
+	// run query
+	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		return err
+	}
+
+	// yield cursor
+	err = fn(csr)
+	if err != nil {
+		_ = csr.Close(ctx)
+		return err
+	}
+
+	// close cursor
+	err = csr.Close(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AggregateAll wraps the native Aggregate collection method and decodes all
@@ -22,7 +57,7 @@ type Collection struct {
 func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
 	// trace
 	if c.trace != nil {
-		c.trace.Push("coal/Collection.Aggregate")
+		c.trace.Push("coal/Collection.AggregateAll")
 		c.trace.Tag("pipeline", pipeline)
 		defer c.trace.Pop()
 	}
@@ -36,6 +71,7 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 	// decode all documents
 	err = csr.All(ctx, slicePtr)
 	if err != nil {
+		_ = csr.Close(ctx)
 		return err
 	}
 
@@ -43,12 +79,12 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 }
 
 // AggregateIter wraps the native Aggregate collection method and calls the
-// provided callback with the decode method until an error is returned or the
-// cursor has been exhausted.
+// provided callback with the decode method until ErrBreak an error is returned
+// or the cursor has been exhausted.
 func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn func(func(interface{}) error) error, opts ...*options.AggregateOptions) error {
 	// trace
 	if c.trace != nil {
-		c.trace.Push("coal/Collection.Aggregate")
+		c.trace.Push("coal/Collection.AggregateIter")
 		c.trace.Tag("pipeline", pipeline)
 		defer c.trace.Pop()
 	}
@@ -59,19 +95,19 @@ func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn
 		return err
 	}
 
-	// ensure cursor is closed
-	defer csr.Close(ctx)
-
 	// iterate over all documents
 	for csr.Next(ctx) {
 		err = fn(csr.Decode)
-		if err != nil {
+		if err == ErrBreak {
+			break
+		} else if err != nil {
+			_ = csr.Close(ctx)
 			return err
 		}
 	}
 
 	// close cursor
-	err = csr.Close(nil)
+	err = csr.Close(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,12 +119,10 @@ func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn
 func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.BulkWrite")
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.BulkWrite(ctx, models, opts...)
 }
 
@@ -101,7 +135,6 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.CountDocuments(ctx, filter, opts...)
 }
 
@@ -115,7 +148,6 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.DeleteMany(ctx, filter, opts...)
 }
 
@@ -123,42 +155,67 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.DeleteOne")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.DeleteOne(ctx, filter, opts...)
 }
 
 // Distinct wraps the native Distinct collection method.
-func (c *Collection) Distinct(ctx context.Context, fieldName string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
+func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.Distinct")
-		c.trace.Tag("fieldName", fieldName)
+		c.trace.Tag("field", field)
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
-	return c.coll.Distinct(ctx, fieldName, filter, opts...)
+	return c.coll.Distinct(ctx, field, filter, opts...)
 }
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.EstimatedDocumentCount")
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.EstimatedDocumentCount(ctx, opts...)
+}
+
+// FindAll wraps the native Find collection method and yields the returned cursor.
+func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr lungo.ICursor) error, opts ...*options.FindOptions) error {
+	// trace
+	if c.trace != nil {
+		c.trace.Push("coal/Collection.Find")
+		c.trace.Tag("filter", filter)
+		defer c.trace.Pop()
+	}
+
+	// run query
+	csr, err := c.coll.Find(ctx, filter, opts...)
+	if err != nil {
+		return err
+	}
+
+	// yield cursor
+	err = fn(csr)
+	if err != nil {
+		_ = csr.Close(ctx)
+		return err
+	}
+
+	// close cursor
+	err = csr.Close(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FindAll wraps the native Find collection method and decodes all documents to
@@ -166,8 +223,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter interface{}, opts ...*options.FindOptions) error {
 	// trace
 	if c.trace != nil {
-		// push span
-		c.trace.Push("coal/Collection.Find")
+		c.trace.Push("coal/Collection.FindAll")
 		c.trace.Tag("filter", filter)
 		defer c.trace.Pop()
 	}
@@ -181,6 +237,7 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 	// decode all documents
 	err = csr.All(ctx, slicePtr)
 	if err != nil {
+		_ = csr.Close(ctx)
 		return err
 	}
 
@@ -188,13 +245,12 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 }
 
 // FindIter wraps the native Find collection method and calls the provided
-// callback with the decode method until an error is returned or the cursor has
-// been exhausted.
+// callback with the decode method until ErrBreak or an error is returned or the
+// cursor has been exhausted.
 func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(func(interface{}) error) error, opts ...*options.FindOptions) error {
 	// trace
 	if c.trace != nil {
-		// push span
-		c.trace.Push("coal/Collection.Find")
+		c.trace.Push("coal/Collection.FindIter")
 		c.trace.Tag("filter", filter)
 		defer c.trace.Pop()
 	}
@@ -205,19 +261,19 @@ func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(f
 		return err
 	}
 
-	// ensure cursor is closed
-	defer csr.Close(ctx)
-
 	// iterate over all documents
 	for csr.Next(ctx) {
 		err = fn(csr.Decode)
-		if err != nil {
+		if err == ErrBreak {
+			break
+		} else if err != nil {
+			_ = csr.Close(ctx)
 			return err
 		}
 	}
 
 	// close cursor
-	err = csr.Close(nil)
+	err = csr.Close(ctx)
 	if err != nil {
 		return err
 	}
@@ -229,13 +285,11 @@ func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(f
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.FindOne")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.FindOne(ctx, filter, opts...)
 }
 
@@ -243,13 +297,11 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.FindOneAndDelete")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.FindOneAndDelete(ctx, filter, opts...)
 }
 
@@ -257,13 +309,11 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.FindOneAndReplace")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
 }
 
@@ -271,13 +321,11 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.FindOneAndUpdate")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
 }
 
@@ -285,12 +333,10 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.InsertMany")
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.InsertMany(ctx, documents, opts...)
 }
 
@@ -298,12 +344,10 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.InsertOne")
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.InsertOne(ctx, document, opts...)
 }
 
@@ -311,13 +355,11 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.ReplaceOne")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.ReplaceOne(ctx, filter, replacement, opts...)
 }
 
@@ -325,13 +367,11 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.UpdateMany")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.UpdateMany(ctx, filter, update, opts...)
 }
 
@@ -339,12 +379,10 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// trace
 	if c.trace != nil {
-		// push span
 		c.trace.Push("coal/Collection.UpdateOne")
 		c.trace.Log("filter", filter)
 		defer c.trace.Pop()
 	}
 
-	// run query
 	return c.coll.UpdateOne(ctx, filter, update, opts...)
 }
