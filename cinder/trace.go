@@ -1,4 +1,4 @@
-// Package cinder provides instrumentation capabilities to fire applications and
+// Package cinder provides instrumentation capabilities to applications and
 // components.
 package cinder
 
