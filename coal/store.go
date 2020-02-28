@@ -55,8 +55,8 @@ func Connect(uri string) (*Store, error) {
 	}
 
 	return &Store{
-		Client:    client,
-		DefaultDB: defaultDB,
+		client: client,
+		defDB:  defaultDB,
 	}, nil
 }
 
@@ -91,34 +91,35 @@ func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, er
 	}
 
 	return &Store{
-		Client:    client,
-		DefaultDB: defaultDB,
-		engine:    engine,
+		client: client,
+		defDB:  defaultDB,
+		engine: engine,
 	}, nil
 }
 
 // NewStore returns a Store that uses the passed client and its default database.
 func NewStore(client lungo.IClient, defaultDB string) *Store {
 	return &Store{
-		Client:    client,
-		DefaultDB: defaultDB,
+		client: client,
+		defDB:  defaultDB,
 	}
 }
 
 // A Store manages the usage of a database client.
 type Store struct {
-	// The session used by the store.
-	Client lungo.IClient
-
-	// The default db used by the store.
-	DefaultDB string
-
+	client lungo.IClient
+	defDB  string
 	engine *lungo.Engine
+}
+
+// Client returns the client used by this store.
+func (s *Store) Client() lungo.IClient {
+	return s.client
 }
 
 // DB returns the database used by this store.
 func (s *Store) DB() lungo.IDatabase {
-	return s.Client.Database(s.DefaultDB)
+	return s.client.Database(s.defDB)
 }
 
 // C will return the collection associated to the specified model.
@@ -143,7 +144,7 @@ func (s *Store) TX(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// start transaction
-	return s.Client.UseSession(ctx, func(sc lungo.ISessionContext) error {
+	return s.client.UseSession(ctx, func(sc lungo.ISessionContext) error {
 		// start transaction
 		err := sc.StartTransaction()
 		if err != nil {
@@ -169,7 +170,7 @@ func (s *Store) TX(ctx context.Context, fn func(context.Context) error) error {
 // Close will close the store and its associated client.
 func (s *Store) Close() error {
 	// disconnect client
-	err := s.Client.Disconnect(nil)
+	err := s.client.Disconnect(nil)
 	if err != nil {
 		return err
 	}
