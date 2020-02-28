@@ -3489,7 +3489,7 @@ func TestDatabaseErrors(t *testing.T) {
 		})
 
 		// remove index
-		_, err = tester.Store.C(&postModel{}).Indexes().DropAll(nil)
+		_, err = tester.Store.C(&postModel{}).Native().Indexes().DropAll(nil)
 		assert.NoError(t, err)
 	})
 }

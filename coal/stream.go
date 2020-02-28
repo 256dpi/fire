@@ -120,7 +120,7 @@ func (s *Stream) tail() error {
 	}
 
 	// open change stream
-	cs, err := s.store.C(s.model).Watch(ctx, []bson.M{}, opts)
+	cs, err := s.store.C(s.model).Native().Watch(ctx, []bson.M{}, opts)
 	if err != nil {
 		return err
 	}

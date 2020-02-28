@@ -47,15 +47,9 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs ...string) (string, error) {
 	// count main applications
 	var apps []Application
-	cursor, err := store.C(&Application{}).Find(nil, bson.M{
+	err := store.C(&Application{}).FindAll(nil, &apps, bson.M{
 		coal.F(&Application{}, "Name"): name,
 	})
-	if err != nil {
-		return "", err
-	}
-
-	// decode results
-	err = cursor.All(nil, &apps)
 	if err != nil {
 		return "", err
 	}

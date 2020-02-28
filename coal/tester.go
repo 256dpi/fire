@@ -48,13 +48,7 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 
 	// find all documents
 	list := GetMeta(model).MakeSlice()
-	cursor, err := t.Store.C(model).Find(nil, qry, options.Find().SetSort(Sort("_id")))
-	if err != nil {
-		panic(err)
-	}
-
-	// get all results
-	err = cursor.All(nil, list)
+	err := t.Store.C(model).FindAll(nil, list, qry, options.Find().SetSort(Sort("_id")))
 	if err != nil {
 		panic(err)
 	}

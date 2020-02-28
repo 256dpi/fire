@@ -123,14 +123,14 @@ func (s *Store) DB() lungo.IDatabase {
 }
 
 // C will return the collection associated to the specified model.
-func (s *Store) C(model Model) lungo.ICollection {
-	return s.DB().Collection(C(model))
+func (s *Store) C(model Model) *Collection {
+	return s.TC(model, nil)
 }
 
 // TC will return a traced collection for the specified model.
 func (s *Store) TC(model Model, trace *cinder.Trace) *Collection {
 	return &Collection{
-		native: s.C(model),
+		native: s.DB().Collection(C(model)),
 		trace:  trace,
 	}
 }

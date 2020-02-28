@@ -541,7 +541,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	}
 
 	// get cursor for deletable files
-	csr, err := s.store.C(&File{}).Find(ctx, bson.M{
+	err := s.store.C(&File{}).FindIter(ctx, bson.M{
 		"$or": []bson.M{
 			{
 				coal.F(&File{}, "State"): bson.M{
@@ -557,17 +557,10 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 				},
 			},
 		},
-	})
-	if err != nil {
-		return err
-	}
-	defer csr.Close(ctx)
-
-	// iterate over cursor
-	for csr.Next(ctx) {
+	}, func(decode func(interface{}) error) error {
 		// decode file
 		var file File
-		err = csr.Decode(&file)
+		err := decode(&file)
 		if err != nil {
 			return err
 		}
@@ -589,7 +582,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 
 			// continue if file has changed its state
 			if res.ModifiedCount == 0 {
-				continue
+				return nil
 			}
 		}
 
@@ -608,10 +601,12 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 				return err
 			}
 		}
-	}
 
-	// closer cursor
-	_ = csr.Close(ctx)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 
 	// cleanup service
 	err = s.service.Cleanup(ctx)

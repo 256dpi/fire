@@ -12,21 +12,12 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 	// prepare load
 	load := func() error {
 		// get cursor
-		cursor, err := store.C(model).Find(nil, bson.M{})
-		if err != nil {
-			return err
-		}
-
-		// ensure cursor is closed
-		defer cursor.Close(nil)
-
-		// iterate over all documents
-		for cursor.Next(nil) {
+		err := store.C(model).FindIter(nil, bson.M{}, func(decode func(interface{}) error) error {
 			// make model
 			model := GetMeta(model).Make()
 
 			// decode model
-			err = cursor.Decode(model)
+			err := decode(model)
 			if err != nil {
 				return err
 			}
@@ -35,10 +26,9 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 			if created != nil {
 				created(model)
 			}
-		}
 
-		// close cursor
-		err = cursor.Close(nil)
+			return nil
+		})
 		if err != nil {
 			return err
 		}

@@ -12,7 +12,7 @@ func TestConnect(t *testing.T) {
 	store := MustConnect("mongodb://0.0.0.0/test-fire-coal")
 	assert.NotNil(t, store.Client)
 
-	assert.Equal(t, "posts", store.C(&postModel{}).Name())
+	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
 
 	err := store.Close()
 	assert.NoError(t, err)
@@ -26,7 +26,7 @@ func TestOpen(t *testing.T) {
 	store := MustOpen(nil, "test-fire-coal", nil)
 	assert.NotNil(t, store.Client)
 
-	assert.Equal(t, "posts", store.C(&postModel{}).Name())
+	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
 
 	err := store.Close()
 	assert.NoError(t, err)

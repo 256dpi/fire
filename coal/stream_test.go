@@ -403,7 +403,7 @@ func TestStreamInvalidation(t *testing.T) {
 			Title: "foo",
 		})
 
-		err := tester.Store.C(&postModel{}).Drop(nil)
+		err := tester.Store.C(&postModel{}).Native().Drop(nil)
 		if err != nil {
 			panic(err)
 		}
