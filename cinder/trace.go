@@ -1,3 +1,5 @@
+// Package cinder provides instrumentation capabilities to fire applications and
+// components.
 package cinder
 
 import (
