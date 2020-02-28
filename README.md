@@ -18,8 +18,6 @@
 - [Controllers](#controllers)
 - [Authentication](#authentication)
 - [Authorization](#authorization)
-- [Event Sourcing](#event-sourcing)
-- [Job Processing](#job-processing)
 
 <!-- BEGIN DOCS -->
 
@@ -446,14 +444,6 @@ postsController := &fire.Controller{
     // ...
 }
 ```
-
-## Event Sourcing
-
-The [`spark`](https://godoc.org/github.com/256dpi/fire/spark) package implements ...
-
-## Job Processing
-
-The [`axe`](https://godoc.org/github.com/256dpi/fire/axe) package implements ...
 
 ## License
 
