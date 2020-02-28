@@ -59,10 +59,8 @@ func (t *Trace) Log(key string, value interface{}) {
 	t.Tail().LogKV(key, value)
 }
 
-// Pop finishes and removes the last pushed span. In function calls that return
-// errors the Pop can simply be deferred after Push. In functions that use panic
-// and recover, Pop should be called before all returns without defer to allow
-// the panic handler to add the error to the proper span.
+// Pop finishes and removes the last pushed span. This call is usually deferred
+// right after a push.
 func (t *Trace) Pop() {
 	// check list
 	if len(t.stack) == 0 {

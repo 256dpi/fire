@@ -260,8 +260,9 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 }
 
 func (a *Authenticator) authorizationEndpoint(env *environment) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.authorizationEndpoint")
+	defer env.trace.Pop()
 
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(env.request)
@@ -397,14 +398,12 @@ func (a *Authenticator) authorizationEndpoint(env *environment) {
 		// write response
 		stack.AbortIf(oauth2.WriteCodeResponse(env.writer, res))
 	}
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) tokenEndpoint(env *environment) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.tokenEndpoint")
+	defer env.trace.Pop()
 
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(env.request)
@@ -460,14 +459,12 @@ func (a *Authenticator) tokenEndpoint(env *environment) {
 		// handle authorization code grant
 		a.handleAuthorizationCodeGrant(env, req, client)
 	}
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(env *environment, req *oauth2.TokenRequest, client Client) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.handleResourceOwnerPasswordCredentialsGrant")
+	defer env.trace.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -500,14 +497,12 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(env *environ
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) handleClientCredentialsGrant(env *environment, req *oauth2.TokenRequest, client Client) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.handleClientCredentialsGrant")
+	defer env.trace.Pop()
 
 	// check confidentiality
 	if !client.IsConfidential() {
@@ -534,14 +529,12 @@ func (a *Authenticator) handleClientCredentialsGrant(env *environment, req *oaut
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.TokenRequest, client Client) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.handleRefreshTokenGrant")
+	defer env.trace.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -604,14 +597,12 @@ func (a *Authenticator) handleRefreshTokenGrant(env *environment, req *oauth2.To
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oauth2.TokenRequest, client Client) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.handleAuthorizationCodeGrant")
+	defer env.trace.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -690,14 +681,12 @@ func (a *Authenticator) handleAuthorizationCodeGrant(env *environment, req *oaut
 
 	// write response
 	stack.AbortIf(oauth2.WriteTokenResponse(env.writer, res))
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) revocationEndpoint(env *environment) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.revocationEndpoint")
+	defer env.trace.Pop()
 
 	// parse authorization request
 	req, err := oauth2.ParseRevocationRequest(env.request)
@@ -723,7 +712,6 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 	key, err := a.policy.Verify(req.Token)
 	if err == heat.ErrExpiredToken {
 		env.writer.WriteHeader(http.StatusOK)
-		env.trace.Pop()
 		return
 	} else if err != nil {
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
@@ -747,14 +735,12 @@ func (a *Authenticator) revocationEndpoint(env *environment) {
 
 	// write header
 	env.writer.WriteHeader(http.StatusOK)
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) introspectionEndpoint(env *environment) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.introspectionEndpoint")
+	defer env.trace.Pop()
 
 	// parse introspection request
 	req, err := oauth2.ParseIntrospectionRequest(env.request)
@@ -780,7 +766,6 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 	key, err := a.policy.Verify(req.Token)
 	if err == heat.ErrExpiredToken {
 		stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, &oauth2.IntrospectionResponse{}))
-		env.trace.Pop()
 		return
 	} else if err != nil {
 		stack.Abort(oauth2.InvalidRequest("malformed token"))
@@ -831,14 +816,12 @@ func (a *Authenticator) introspectionEndpoint(env *environment) {
 
 	// write response
 	stack.AbortIf(oauth2.WriteIntrospectionResponse(env.writer, res))
-
-	// finish trace
-	env.trace.Pop()
 }
 
 func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.issueTokens")
+	defer env.trace.Pop()
 
 	// prepare expiration
 	atExpiry := time.Now().Add(a.policy.AccessTokenLifespan)
@@ -870,15 +853,13 @@ func (a *Authenticator) issueTokens(env *environment, refreshable bool, scope oa
 		res.RefreshToken = rtSignature
 	}
 
-	// finish trace
-	env.trace.Pop()
-
 	return res
 }
 
 func (a *Authenticator) issueCode(env *environment, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.CodeResponse {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.issueCode")
+	defer env.trace.Pop()
 
 	// prepare expiration
 	expiry := time.Now().Add(a.policy.AuthorizationCodeLifespan)
@@ -893,34 +874,29 @@ func (a *Authenticator) issueCode(env *environment, scope oauth2.Scope, redirect
 	// prepare response
 	res := oauth2.NewCodeResponse(signature, redirectURI, "")
 
-	// finish trace
-	env.trace.Pop()
-
 	return res
 }
 
 func (a *Authenticator) findFirstClient(env *environment, id string) Client {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.findFirstClient")
+	defer env.trace.Pop()
 
 	// check all available models in order
 	for _, model := range a.policy.Clients {
 		c := a.findClient(env, model, id)
 		if c != nil {
-			env.trace.Pop()
 			return c
 		}
 	}
-
-	// finish trace
-	env.trace.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) findClient(env *environment, model Client, id string) Client {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.findClient")
+	defer env.trace.Pop()
 
 	// prepare client
 	client := coal.GetMeta(model).Make().(Client)
@@ -968,34 +944,29 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	}
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return client
 }
 
 func (a *Authenticator) getFirstClient(env *environment, id coal.ID) Client {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.getFirstClient")
+	defer env.trace.Pop()
 
 	// check all available models in order
 	for _, model := range a.policy.Clients {
 		c := a.getClient(env, model, id)
 		if c != nil {
-			env.trace.Pop()
 			return c
 		}
 	}
-
-	// finish trace
-	env.trace.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Client {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.getClient")
+	defer env.trace.Pop()
 
 	// prepare client
 	client := coal.GetMeta(model).Make().(Client)
@@ -1009,15 +980,13 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 	}
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return client
 }
 
 func (a *Authenticator) findFirstResourceOwner(env *environment, client Client, id string) ResourceOwner {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.findFirstResourceOwner")
+	defer env.trace.Pop()
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(client)
@@ -1027,20 +996,17 @@ func (a *Authenticator) findFirstResourceOwner(env *environment, client Client, 
 	for _, model := range resourceOwners {
 		ro := a.findResourceOwner(env, client, model, id)
 		if ro != nil {
-			env.trace.Pop()
 			return ro
 		}
 	}
-
-	// finish trace
-	env.trace.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) findResourceOwner(env *environment, client Client, model ResourceOwner, id string) ResourceOwner {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.findResourceOwner")
+	defer env.trace.Pop()
 
 	// prepare resource owner
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
@@ -1088,15 +1054,13 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	}
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return resourceOwner
 }
 
 func (a *Authenticator) getFirstResourceOwner(env *environment, client Client, id coal.ID) ResourceOwner {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.getFirstResourceOwner")
+	defer env.trace.Pop()
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(client)
@@ -1106,20 +1070,17 @@ func (a *Authenticator) getFirstResourceOwner(env *environment, client Client, i
 	for _, model := range resourceOwners {
 		ro := a.getResourceOwner(env, model, id)
 		if ro != nil {
-			env.trace.Pop()
 			return ro
 		}
 	}
-
-	// finish trace
-	env.trace.Pop()
 
 	return nil
 }
 
 func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, id coal.ID) ResourceOwner {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.getResourceOwner")
+	defer env.trace.Pop()
 
 	// prepare object
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
@@ -1133,15 +1094,13 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	}
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return resourceOwner
 }
 
 func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.getToken")
+	defer env.trace.Pop()
 
 	// prepare object
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
@@ -1155,15 +1114,13 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	}
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return token
 }
 
 func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.saveToken")
+	defer env.trace.Pop()
 
 	// create token with id
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
@@ -1191,15 +1148,13 @@ func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []strin
 	_, err := a.store.TC(env.trace, token).InsertOne(nil, token)
 	stack.AbortIf(err)
 
-	// finish trace
-	env.trace.Pop()
-
 	return token
 }
 
 func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
-	// begin trace
+	// trace
 	env.trace.Push("flame/Authenticator.deleteToken")
+	defer env.trace.Pop()
 
 	// delete token
 	_, err := a.store.TC(env.trace, a.policy.Token).DeleteOne(nil, bson.M{
@@ -1209,7 +1164,4 @@ func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
 		err = nil
 	}
 	stack.AbortIf(err)
-
-	// finish trace
-	env.trace.Pop()
 }

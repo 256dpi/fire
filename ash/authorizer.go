@@ -14,17 +14,15 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 	return &Authorizer{
 		Matcher: m,
 		Handler: func(ctx *fire.Context) ([]*Enforcer, error) {
-			// begin trace
+			// trace
 			ctx.Trace.Push(name)
+			defer ctx.Trace.Pop()
 
 			// call handler
 			enforcers, err := h(ctx)
 			if err != nil {
 				return nil, err
 			}
-
-			// finish trace
-			ctx.Trace.Pop()
 
 			return enforcers, nil
 		},

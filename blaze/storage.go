@@ -118,8 +118,9 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 }
 
 func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength int64) ([]string, error) {
-	// begin trace
+	// trace
 	ctx.Trace.Push("blaze/Storage.uploadRaw")
+	defer ctx.Trace.Pop()
 
 	// set default content type
 	if contentType == "" {
@@ -140,15 +141,13 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 		return nil, err
 	}
 
-	// finish trace
-	ctx.Trace.Pop()
-
 	return []string{claimKey}, nil
 }
 
 func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
-	// begin trace
+	// trace
 	ctx.Trace.Push("blaze/Storage.uploadMultipart")
+	defer ctx.Trace.Pop()
 
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
@@ -193,9 +192,6 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 			return nil, err
 		}
 	}
-
-	// finish trace
-	ctx.Trace.Pop()
 
 	return claimKeys, nil
 }
