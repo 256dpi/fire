@@ -13,12 +13,13 @@ possible at the same time.**
 Usually a framework expects a certain class of structs that for example
 represent database models. To define this class of structs the framework should
 define a `Model` interface that can be implemented by simply embedding a `Base`
-type in a struct. This is achieved by the private `base` method that just returns
+type in a struct. This is achieved by the public `GetBase` method that just returns
 the base type. Additional methods may added to the interface to require more
 functionality. The `Classify` function can then be used by the framework itself
 or the user to classify a type and get its `Meta` object that contains all
 information that can be deducted from the type using reflection. Usually tags on
-the embedded `Base` type describe the type itself, like its name.
+the embedded `Base` type describe the type itself, like its name. A custom tag
+should be named after the package name.
 
 ### Framework Code
 
@@ -83,7 +84,7 @@ open surface to configure its execution.**
 The `Controller` type is a type that is instantiated by the user to configure a
 single unit of logic abstraction. The constructor less design allows the adding
 of more knobs and switches in the future without generating churn. The controller
-instances are then provided to the `Manager` that provides no configuration and
+instances are then provided to the `Manager` that provides little configuration and
 is created using an constructor. While the `Controller` has no public methods
 the `Manager` provides public methods to control the execution of the logic.
 
@@ -148,9 +149,7 @@ which tries to add more type safety instead of `interface{}` juggling.**
 The framework provides a custom `Context` type that embeds a `context.Context`
 for compatibility but only uses it to carry the externally provided context.
 All framework related fields are openly accessible on the context. Ths context
-is the passed to all called user handlers. The optional `Global` type and field
-is a container that holds global state that can be inject at the beginning of
-the processing chain.
+is the passed to all called user handlers.
 
 ### Framework Code
 
@@ -159,14 +158,9 @@ package pkg
 
 import "context"
 
-type Global struct{
-    Field string
-}
-
 type Context struct{
     context.Context
-    
-    Global     *Global
+
     Model      Model
     Controller Controller
 }
