@@ -96,12 +96,12 @@ func (o Operation) String() string {
 
 // A Context provides useful contextual information.
 type Context struct {
-	// Context is the standard context that is cancelled when the timeout has
-	// been exceeded or the underlying connection transport has been closed. It
-	// may also carry the database session if transactions have been enabled.
+	// The context that is cancelled when the timeout has been exceeded or the
+	// underlying connection transport has been closed. It may also carry the
+	// database session if transactions have been enabled.
 	context.Context
 
-	// Data can be used to carry data between callbacks.
+	// The custom data map.
 	Data Map
 
 	// The current operation in process.
@@ -163,7 +163,7 @@ type Context struct {
 	// Operations: !Create, !CollectionAction
 	RelationshipFilters map[string][]bson.M
 
-	// The Model that will be created, updated, deleted or is requested by a
+	// The model that will be created, updated, deleted or is requested by a
 	// resource action.
 	//
 	// Usage: Modify Only
@@ -231,12 +231,12 @@ type Context struct {
 	// Usage: Read Only
 	ResponseWriter http.ResponseWriter
 
-	// The Controller that is managing the request.
+	// The controller that is managing the request.
 	//
 	// Usage: Read Only
 	Controller *Controller
 
-	// The Group that received the request.
+	// The group that received the request.
 	//
 	// Usage: Read Only
 	Group *Group

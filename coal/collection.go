@@ -202,7 +202,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	return c.coll.EstimatedDocumentCount(ctx, opts...)
 }
 
-// FindAll wraps the native Find collection method and yields the returned cursor.
+// Find wraps the native Find collection method and yields the returned cursor.
 func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr lungo.ICursor) error, opts ...*options.FindOptions) error {
 	// trace
 	if c.trace != nil {
