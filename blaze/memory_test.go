@@ -11,7 +11,7 @@ import (
 func TestMemoryService(t *testing.T) {
 	service := NewMemory()
 
-	handle, err := service.Prepare()
+	handle, err := service.Prepare(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, Handle{"id": "1"}, handle)
 

@@ -14,7 +14,7 @@ func TestGridFSService(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewGridFS(tester.Store, 0)
 
-		handle, err := service.Prepare()
+		handle, err := service.Prepare(nil)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, handle["id"])
 

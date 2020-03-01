@@ -32,7 +32,7 @@ func NewGridFS(store *coal.Store, chunkSize int64) *GridFS {
 }
 
 // Prepare implements the Service interface.
-func (g *GridFS) Prepare() (Handle, error) {
+func (g *GridFS) Prepare(_ context.Context) (Handle, error) {
 	// create handle
 	handle := Handle{
 		"id": primitive.NewObjectID(),

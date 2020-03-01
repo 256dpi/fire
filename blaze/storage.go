@@ -36,7 +36,7 @@ type Handle map[string]interface{}
 // Service is responsible for managing blobs.
 type Service interface {
 	// Prepare should return a new handle for uploading a blob.
-	Prepare() (Handle, error)
+	Prepare(ctx context.Context) (Handle, error)
 
 	// Upload should persist a blob with data read from the provided reader.
 	Upload(ctx context.Context, handle Handle, contentType string, r io.Reader) (int64, error)
@@ -203,7 +203,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// create handle
-	handle, err := s.service.Prepare()
+	handle, err := s.service.Prepare(ctx)
 	if err != nil {
 		return nil, err
 	}

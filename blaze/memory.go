@@ -24,7 +24,7 @@ func NewMemory() *Memory {
 }
 
 // Prepare implements the Service interface.
-func (s *Memory) Prepare() (Handle, error) {
+func (s *Memory) Prepare(_ context.Context) (Handle, error) {
 	// increment id
 	s.Next++
 
