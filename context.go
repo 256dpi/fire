@@ -99,6 +99,8 @@ type Context struct {
 	// The context that is cancelled when the timeout has been exceeded or the
 	// underlying connection transport has been closed. It may also carry the
 	// database session if transactions have been enabled.
+	//
+	// Values: lungo.ISessionContext?, opentracing.Span
 	context.Context
 
 	// The custom data map.

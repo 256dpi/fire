@@ -37,6 +37,8 @@ type Model interface{}
 // Context holds and stores contextual data.
 type Context struct {
 	// The context that is cancelled when the task timeout has been reached.
+	//
+	// Values: opentracing.Span
 	context.Context
 
 	// The model carried by the job.
@@ -302,6 +304,8 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	// create trace
 	trace := cinder.New(nil, t.Name)
 	defer trace.Finish()
+
+	// wrap context
 	c = trace.Wrap(c)
 
 	// prepare context
