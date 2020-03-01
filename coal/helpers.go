@@ -119,7 +119,7 @@ func Sort(fields ...string) bson.D {
 		}
 
 		// prepare value
-		value := 1
+		var value int32 = 1
 		if prefixed {
 			value = -1
 		}
