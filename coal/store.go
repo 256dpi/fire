@@ -130,8 +130,8 @@ func (s *Store) C(model Model) *Collection {
 // TC will return a traced collection for the specified model.
 func (s *Store) TC(model Model, trace *cinder.Trace) *Collection {
 	return &Collection{
-		native: s.DB().Collection(C(model)),
-		trace:  trace,
+		coll:  s.DB().Collection(C(model)),
+		trace: trace,
 	}
 }
 
