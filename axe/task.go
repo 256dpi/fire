@@ -57,20 +57,10 @@ type Context struct {
 	// Usage: Read Only
 	Queue *Queue
 
-	// The store used by the queue.
-	//
-	// Usage: Read Only
-	Store *coal.Store
-
 	// The current trace.
 	//
 	// Usage: Read Only
 	Trace *cinder.Trace
-}
-
-// C is a shorthand to get a traced collection for the specified model.
-func (c *Context) C(model coal.Model) *coal.Collection {
-	return c.Store.C(model)
 }
 
 // Task describes work that is managed using a job queue.
@@ -311,7 +301,6 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		Model:   model,
 		Task:    t,
 		Queue:   q,
-		Store:   q.store,
 		Trace:   trace,
 	}
 

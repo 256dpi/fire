@@ -10,13 +10,13 @@ import (
 	"github.com/256dpi/fire/glut"
 )
 
-func incrementTask() *axe.Task {
+func incrementTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
 		Name:  "increment",
 		Model: &count{},
 		Handler: func(ctx *axe.Context) error {
 			// increment count
-			_, err := ctx.C(&Item{}).UpdateOne(ctx, bson.M{
+			_, err := store.C(&Item{}).UpdateOne(ctx, bson.M{
 				"_id": ctx.Model.(*count).Item,
 			}, bson.M{
 				"$inc": bson.M{
@@ -32,13 +32,13 @@ func incrementTask() *axe.Task {
 	}
 }
 
-func periodicTask() *axe.Task {
+func periodicTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
 		Name:  "periodic",
 		Model: nil,
 		Handler: func(ctx *axe.Context) error {
 			// increment value
-			err := glut.Mut(ctx.Store, "periodic", "counter", 0, func(ok bool, data coal.Map) (coal.Map, error) {
+			err := glut.Mut(store, "periodic", "counter", 0, func(ok bool, data coal.Map) (coal.Map, error) {
 				if !ok {
 					data = coal.Map{"n": int64(1)}
 				}
