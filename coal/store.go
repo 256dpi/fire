@@ -13,8 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-// MustConnect will connect to the passed database and return a new store.
-// It will panic if the initial connection failed.
+// MustConnect will all Connect and panic on errors.
 func MustConnect(uri string) *Store {
 	// connect store
 	store, err := Connect(uri)
@@ -25,7 +24,15 @@ func MustConnect(uri string) *Store {
 	return store
 }
 
-// Connect will connect to the specified database and return a new store.
+// Connect will connect to the specified database and return a new store. The
+// read and write concern is set to majority by default. This setup ist very
+// safe but slower than other less durable configurations.
+//
+// In summary, queries may return data that has bas been committed but may not
+// be the most recent committed data. Also, long running cursors may return
+// duplicate or missing documents. For operations involving multiple documents,
+// a session or transaction should be used for atomicity, consistency and
+// isolation guarantees.
 func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
@@ -56,8 +63,7 @@ func Connect(uri string) (*Store, error) {
 	return newStore(client, defaultDB, nil), nil
 }
 
-// MustOpen will open the database using the specified store or if missing a new
-// in memory database. It will panic if the operation failed.
+// MustOpen will call Open and panic on errors.
 func MustOpen(store lungo.Store, defaultDB string, reporter func(error)) *Store {
 	// open store
 	s, err := Open(store, defaultDB, reporter)
@@ -148,16 +154,56 @@ func (s *Store) C(model Model) *Collection {
 	return coll
 }
 
+// S will create a session around the specified callback.
+//
+// A casually consistent session is created for the operations run withing the
+// callback. The session guarantees that reads and writes reflect previous reads
+// and writes by the session. However, since the operations are non-transactional,
+// concurrent writes may interleave and will not cause errors and read documents
+// will immediately become stale.
+func (s *Store) S(ctx context.Context, fn func(context.Context) error) error {
+	// set context background
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// prepare options
+	opts := options.Session().SetCausalConsistency(true)
+
+	// use session
+	return s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
+		return fn(sc)
+	})
+}
+
 // T will create a transaction around the specified callback. If the callback
-// returns no error the transaction will be committed.
+// returns no error the transaction will be committed. If T itself does not
+// return an error the transaction has been committed. The created context must
+// be used with all operations that should be included in the transaction.
+//
+// A transaction has the effect that the read concern is upgraded to "snapshot"
+// which results in isolated and linearizable reads and writes of the data that
+// has been committed prior to the start of the transaction:
+//
+// - Writes that conflict with other transactional writes will return an error.
+//   Non-transactional writes will wait until the transaction has completed.
+// - Reads are not guaranteed to be stable, another transaction may delete or
+//   modify the document an also commit concurrently. Therefore, documents that
+//   must "survive" the transaction and cause concurrent writes to abort, must
+//   be locked by incrementing or changing a field to a unique value.
 func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	// set context background
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
+	// prepare options
+	opts := options.Session().
+		SetCausalConsistency(true).
+		SetDefaultReadConcern(readconcern.Snapshot())
+
 	// start transaction
-	return s.client.UseSession(ctx, func(sc lungo.ISessionContext) error {
+	return s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
 		// start transaction
 		err := sc.StartTransaction()
 		if err != nil {
