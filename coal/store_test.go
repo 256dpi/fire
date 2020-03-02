@@ -34,11 +34,11 @@ func TestOpen(t *testing.T) {
 
 func TestStoreTX(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
+		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
 			return nil
 		}))
 
-		assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
+		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
 			return io.EOF
 		}))
 
@@ -46,7 +46,7 @@ func TestStoreTX(t *testing.T) {
 
 		assert.Equal(t, 1, tester.Count(&postModel{}))
 
-		assert.NoError(t, tester.Store.TX(nil, func(tc context.Context) error {
+		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
 				Title: "foo",
@@ -56,7 +56,7 @@ func TestStoreTX(t *testing.T) {
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 
-		assert.Error(t, tester.Store.TX(nil, func(tc context.Context) error {
+		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
 				Title: "bar",

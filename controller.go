@@ -319,7 +319,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 	// run operation with transaction if possible
 	if ctx.Operation.Write() && c.UseTransactions {
-		stack.AbortIf(c.Store.TX(ctx.Context, func(tc context.Context) error {
+		stack.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
 			ctx.Context = tc
 			c.runOperation(ctx)
 			return nil

@@ -148,9 +148,9 @@ func (s *Store) C(model Model) *Collection {
 	return coll
 }
 
-// TX will create a transaction around the specified callback. If the callback
+// T will create a transaction around the specified callback. If the callback
 // returns no error the transaction will be committed.
-func (s *Store) TX(ctx context.Context, fn func(context.Context) error) error {
+func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	// set context background
 	if ctx == nil {
 		ctx = context.Background()
