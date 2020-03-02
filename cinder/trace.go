@@ -8,45 +8,65 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
-// Trace provides a simple wrapper around opentracing to instrument and trace
-// code execution.
+type traceContextKey struct{}
+
+var traceKey = traceContextKey{}
+
+// Trace implements a span stack that can be used with fat contexts. Rather than
+// branching of the context for every function call, a span is pushed onto the
+// stack to track execution.
 type Trace struct {
 	root  opentracing.Span
 	stack []opentracing.Span
 }
 
-// New returns a new trace that will use the span found in the provided context
-// as its base or start a new one.
-func New(ctx context.Context, name string) *Trace {
+// CreateTrace returns a new trace that will use the span found in the provided
+// context as its root or start a new one. The returned context is the provided
+// context wrapped with the new span and trace.
+func CreateTrace(ctx context.Context, name string) (*Trace, context.Context) {
 	// check context
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	// get span
-	span, _ := opentracing.StartSpanFromContext(ctx, name)
+	span, ctx := opentracing.StartSpanFromContext(ctx, name)
 
-	return &Trace{
+	// create trace
+	trace := &Trace{
 		root:  span,
 		stack: make([]opentracing.Span, 0, 32),
 	}
+
+	// add trace
+	ctx = context.WithValue(ctx, traceKey, trace)
+
+	return trace, ctx
 }
 
-// Push will add a new span to the stack.
-func (t *Trace) Push(name string) {
-	// get context
-	var ctx opentracing.SpanContext
-	if len(t.stack) > 0 {
-		ctx = t.Tail().Context()
-	} else {
-		ctx = t.root.Context()
+// GetTrace will return the trace from the context or nil if absent.
+func GetTrace(ctx context.Context) *Trace {
+	// check context
+	if ctx == nil {
+		return nil
 	}
 
-	// create new span
-	span := opentracing.StartSpan(name, opentracing.ChildOf(ctx))
+	// get trace
+	trace, _ := ctx.Value(traceKey).(*Trace)
 
-	// push span
-	t.stack = append(t.stack, span)
+	return trace
+}
+
+// Push will add a new span to the trace.
+func (t *Trace) Push(name string) {
+	// get parent
+	parent := t.Tail().Context()
+
+	// create child
+	child := opentracing.StartSpan(name, opentracing.ChildOf(parent))
+
+	// push child
+	t.stack = append(t.stack, child)
 }
 
 // Tag adds a tag to the last pushed span.
@@ -74,9 +94,9 @@ func (t *Trace) Pop() {
 	t.stack = t.stack[:len(t.stack)-1]
 }
 
-// Finish will finish all leftover spans and the root span if requested.
+// Finish will finish the root and all stacked spans.
 func (t *Trace) Finish() {
-	// finish all stacked spans
+	// finish stacked spans
 	for _, span := range t.stack {
 		span.Finish()
 	}
@@ -85,7 +105,7 @@ func (t *Trace) Finish() {
 	t.root.Finish()
 }
 
-// Tail returns the last pushed span or the root span.
+// Tail returns the tail or root of the span stack.
 func (t *Trace) Tail() opentracing.Span {
 	// return last span if available
 	if len(t.stack) > 0 {
@@ -95,8 +115,7 @@ func (t *Trace) Tail() opentracing.Span {
 	return t.root
 }
 
-// Wrap will wrap the provided context with the current tail span to allow
-// interoperability with other libraries.
-func (t *Trace) Wrap(ctx context.Context) context.Context {
-	return opentracing.ContextWithSpan(ctx, t.Tail())
+// Root will return the root of the span stack.
+func (t *Trace) Root() opentracing.Span {
+	return t.root
 }

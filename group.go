@@ -100,8 +100,9 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create trace
-		trace := cinder.New(r.Context(), "fire/Group.Endpoint")
+		trace, tc := cinder.CreateTrace(r.Context(), "fire/Group.Endpoint")
 		defer trace.Finish()
+		r = r.WithContext(tc)
 
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {

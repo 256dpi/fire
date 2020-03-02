@@ -1961,9 +1961,6 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 	ctx.Trace.Push("fire/Controller.runCallbacks")
 	defer ctx.Trace.Pop()
 
-	// wrap context
-	ctx.Context = ctx.Trace.Wrap(ctx.Context)
-
 	// run callbacks and handle errors
 	for _, cb := range list {
 		// check if callback should be run
@@ -1988,9 +1985,6 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// trace
 	ctx.Trace.Push("fire/Controller.runAction")
 	defer ctx.Trace.Pop()
-
-	// wrap context
-	ctx.Context = ctx.Trace.Wrap(ctx.Context)
 
 	// call action
 	err := a.Handler(ctx)

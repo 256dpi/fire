@@ -100,7 +100,7 @@ type Context struct {
 	// underlying connection transport has been closed. It may also carry the
 	// database session if transactions have been enabled.
 	//
-	// Values: lungo.ISessionContext?, opentracing.Span
+	// Values: lungo.ISessionContext?, opentracing.Span, *cinder.Trace
 	context.Context
 
 	// The custom data map.

@@ -196,7 +196,7 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 	}
 
 	// create trace
-	ctx.Trace = cinder.New(nil, "fire/Tester.WithContext")
+	ctx.Trace, ctx.Context = cinder.CreateTrace(ctx.Context, "fire/Tester.WithContext")
 	defer ctx.Trace.Finish()
 
 	// yield context

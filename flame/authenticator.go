@@ -65,9 +65,10 @@ func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create trace
-		trace := cinder.New(r.Context(), "flame/Authenticator.Endpoint")
+		trace, tc := cinder.CreateTrace(r.Context(), "flame/Authenticator.Endpoint")
 		trace.Tag("prefix", prefix)
 		defer trace.Finish()
+		r = r.WithContext(tc)
 
 		// continue any previous aborts
 		defer stack.Resume(func(err error) {
@@ -127,15 +128,13 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// create trace
-			trace := cinder.New(r.Context(), "flame/Authenticator.Authorizer")
+			trace, tc := cinder.CreateTrace(r.Context(), "flame/Authenticator.Authorizer")
 			trace.Tag("scope", scope)
 			trace.Tag("force", force)
 			trace.Tag("loadClient", loadClient)
 			trace.Tag("loadResourceOwner", loadResourceOwner)
 			defer trace.Finish()
-
-			// add span to context
-			r = r.WithContext(trace.Wrap(r.Context()))
+			r = r.WithContext(tc)
 
 			// immediately pass on request if force is not set and there is
 			// no authentication information provided

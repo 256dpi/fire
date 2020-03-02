@@ -9,8 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// RootHandler is a middleware that can be used to create the root trace span
-// for an incoming HTTP request.
+// RootHandler is the middleware used to create the root trace span for
+// incoming HTTP requests.
 func RootHandler() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
