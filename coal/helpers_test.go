@@ -72,10 +72,10 @@ func TestRequire(t *testing.T) {
 func TestSort(t *testing.T) {
 	sort := Sort("foo", "-bar", "baz", "-_id")
 	assert.Equal(t, bson.D{
-		bson.E{Key: "foo", Value: 1},
-		bson.E{Key: "bar", Value: -1},
-		bson.E{Key: "baz", Value: 1},
-		bson.E{Key: "_id", Value: -1},
+		bson.E{Key: "foo", Value: int32(1)},
+		bson.E{Key: "bar", Value: int32(-1)},
+		bson.E{Key: "baz", Value: int32(1)},
+		bson.E{Key: "_id", Value: int32(-1)},
 	}, sort)
 }
 
