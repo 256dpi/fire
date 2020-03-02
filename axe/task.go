@@ -269,7 +269,7 @@ func (t *Task) enqueuer(q *Queue) error {
 
 func (t *Task) execute(q *Queue, job *Job) error {
 	// dequeue job
-	job, err := Dequeue(q.store, job.ID(), t.Timeout)
+	job, err := Dequeue(nil, q.store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -328,7 +328,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(nil, q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -337,7 +337,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(q.store, job.ID(), e.Reason)
+		err = Cancel(nil, q.store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -350,19 +350,19 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(nil, q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(q.store, job.ID(), err.Error())
+		_ = Cancel(nil, q.store, job.ID(), err.Error())
 
 		return err
 	}
 
 	// complete job
-	err = Complete(q.store, job.ID(), ctx.Result)
+	err = Complete(nil, q.store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}

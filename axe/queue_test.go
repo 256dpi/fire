@@ -424,7 +424,7 @@ func TestQueueTimeout(t *testing.T) {
 
 func TestQueueExisting(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job, err := Enqueue(tester.Store, nil, Blueprint{
+		job, err := Enqueue(nil, tester.Store, Blueprint{
 			Name: "existing",
 		})
 		assert.NoError(t, err)

@@ -67,7 +67,7 @@ func (q *Queue) Add(task *Task) {
 // Enqueue will enqueue a job using the specified blueprint.
 func (q *Queue) Enqueue(bp Blueprint) (*Job, error) {
 	// enqueue job
-	job, err := Enqueue(q.store, nil, bp)
+	job, err := Enqueue(nil, q.store, bp)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, ctx, bp)
+			_, err := Enqueue(ctx, ctx.Store, bp)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// check if controller uses same store
 		if q.store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx.Store, ctx, bp)
+			_, err := Enqueue(ctx, ctx.Store, bp)
 			if err != nil {
 				return err
 			}

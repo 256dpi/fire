@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -36,7 +37,15 @@ type Blueprint struct {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error) {
+func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Enqueue")
+	span.Log("name", bp.Name)
+	span.Log("label", bp.Label)
+	span.Log("delay", bp.Delay.String())
+	span.Log("period", bp.Period.String())
+	defer span.Finish()
+
 	// check name
 	if bp.Name == "" {
 		return nil, fmt.Errorf("missing name")
@@ -110,7 +119,13 @@ func Enqueue(store *coal.Store, ctx context.Context, bp Blueprint) (*Job, error)
 // will be set to allow the job to be dequeue if the process failed to set its
 // status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
 // state are dequeued.
-func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
+func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Dequeue")
+	span.Log("id", id.Hex())
+	span.Log("timeout", timeout.String())
+	defer span.Finish()
+
 	// get time
 	now := time.Now()
 
@@ -121,7 +136,7 @@ func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 
 	// dequeue job
 	var job Job
-	err := store.C(&Job{}).FindOneAndUpdate(nil, bson.M{
+	err := store.C(&Job{}).FindOneAndUpdate(ctx, bson.M{
 		"_id": id,
 		coal.F(&Job{}, "Status"): bson.M{
 			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
@@ -150,12 +165,17 @@ func Dequeue(store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error)
 
 // Complete will complete the job with the specified id. Only jobs in the
 // "dequeued" state can be completed.
-func Complete(store *coal.Store, id coal.ID, result coal.Map) error {
+func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Map) error {
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Complete")
+	span.Log("id", id.Hex())
+	defer span.Finish()
+
 	// get time
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
 		"_id":                    id,
 		coal.F(&Job{}, "Status"): StatusDequeued,
 	}, bson.M{
@@ -175,12 +195,19 @@ func Complete(store *coal.Store, id coal.ID, result coal.Map) error {
 
 // Fail will fail the job with the specified id and the specified reason. It may
 // delay the job if requested. Only jobs in the "dequeued" state can be failed.
-func Fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
+func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Fail")
+	span.Log("id", id.Hex())
+	span.Log("reason", reason)
+	span.Log("delay", delay.String())
+	defer span.Finish()
+
 	// get time
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
 		coal.F(&Job{}, "Status"): StatusDequeued,
 		"_id":                    id,
 	}, bson.M{
@@ -200,12 +227,18 @@ func Fail(store *coal.Store, id coal.ID, reason string, delay time.Duration) err
 
 // Cancel will cancel the job with the specified id and the specified reason.
 // Only jobs in the "dequeued" state can be cancelled.
-func Cancel(store *coal.Store, id coal.ID, reason string) error {
+func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) error {
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Cancel")
+	span.Log("id", id.Hex())
+	span.Log("reason", reason)
+	defer span.Finish()
+
 	// get time
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(nil, bson.M{
+	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
 		"_id":                    id,
 		coal.F(&Job{}, "Status"): StatusDequeued,
 	}, bson.M{
