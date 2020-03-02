@@ -129,7 +129,13 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 	ctx, span := cinder.Track(ctx, "coal/Collection.BulkWrite")
 	defer span.Finish()
 
-	return c.coll.BulkWrite(ctx, models, opts...)
+	// bulk write
+	res, err := c.coll.BulkWrite(ctx, models, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // CountDocuments wraps the native CountDocuments collection method.
@@ -139,7 +145,13 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.CountDocuments(ctx, filter, opts...)
+	// count documents
+	n, err := c.coll.CountDocuments(ctx, filter, opts...)
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
 }
 
 // DeleteMany wraps the native DeleteMany collection method.
@@ -149,7 +161,13 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.DeleteMany(ctx, filter, opts...)
+	// delete many
+	res, err := c.coll.DeleteMany(ctx, filter, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // DeleteOne wraps the native DeleteOne collection method.
@@ -159,7 +177,13 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.DeleteOne(ctx, filter, opts...)
+	// delete one
+	res, err := c.coll.DeleteOne(ctx, filter, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // Distinct wraps the native Distinct collection method.
@@ -170,7 +194,13 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.Distinct(ctx, field, filter, opts...)
+	// distinct
+	res, err := c.coll.Distinct(ctx, field, filter, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
@@ -179,7 +209,13 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	ctx, span := cinder.Track(ctx, "coal/Collection.EstimatedDocumentCount")
 	defer span.Finish()
 
-	return c.coll.EstimatedDocumentCount(ctx, opts...)
+	// estimate count
+	n, err := c.coll.EstimatedDocumentCount(ctx, opts...)
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
 }
 
 // Find wraps the native Find collection method and yields the returned cursor.
@@ -277,7 +313,10 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.FindOne(ctx, filter, opts...)
+	// find one
+	res := c.coll.FindOne(ctx, filter, opts...)
+
+	return res
 }
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
@@ -287,7 +326,10 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.FindOneAndDelete(ctx, filter, opts...)
+	// find one and delete
+	res := c.coll.FindOneAndDelete(ctx, filter, opts...)
+
+	return res
 }
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
@@ -297,7 +339,10 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
+	// find and replace one
+	res := c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
+
+	return res
 }
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
@@ -307,7 +352,10 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
+	// find one and update
+	res := c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
+
+	return res
 }
 
 // InsertMany wraps the native InsertMany collection method.
@@ -317,7 +365,13 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	span.Log("count", len(documents))
 	defer span.Finish()
 
-	return c.coll.InsertMany(ctx, documents, opts...)
+	// insert many
+	res, err := c.coll.InsertMany(ctx, documents, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // InsertOne wraps the native InsertOne collection method.
@@ -326,7 +380,13 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	ctx, span := cinder.Track(ctx, "coal/Collection.InsertOne")
 	defer span.Finish()
 
-	return c.coll.InsertOne(ctx, document, opts...)
+	// insert one
+	res, err := c.coll.InsertOne(ctx, document, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // ReplaceOne wraps the native ReplaceOne collection method.
@@ -336,7 +396,13 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.ReplaceOne(ctx, filter, replacement, opts...)
+	// replace one
+	res, err := c.coll.ReplaceOne(ctx, filter, replacement, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // UpdateMany wraps the native UpdateMany collection method.
@@ -346,7 +412,13 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.UpdateMany(ctx, filter, update, opts...)
+	// update many
+	res, err := c.coll.UpdateMany(ctx, filter, update, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // UpdateOne wraps the native UpdateOne collection method.
@@ -356,5 +428,11 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 	span.Log("filter", filter)
 	defer span.Finish()
 
-	return c.coll.UpdateOne(ctx, filter, update, opts...)
+	// update one
+	res, err := c.coll.UpdateOne(ctx, filter, update, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
