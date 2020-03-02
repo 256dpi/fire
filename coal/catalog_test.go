@@ -48,7 +48,7 @@ func TestCatalogEnsureIndexes(t *testing.T) {
 		catalog := NewCatalog()
 		catalog.AddIndex(&postModel{}, false, 0, "Title")
 		catalog.AddPartialIndex(&commentModel{}, false, 0, []string{"Post"}, bson.D{
-			{ Key: F(&commentModel{}, "Message"), Value: "test" },
+			{Key: F(&commentModel{}, "Message"), Value: "test"},
 		})
 
 		err := catalog.EnsureIndexes(tester.Store)
