@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-// MustConnect will all Connect and panic on errors.
+// MustConnect will call Connect and panic on errors.
 func MustConnect(uri string) *Store {
 	// connect store
 	store, err := Connect(uri)
@@ -25,14 +25,13 @@ func MustConnect(uri string) *Store {
 }
 
 // Connect will connect to the specified database and return a new store. The
-// read and write concern is set to majority by default. This setup ist very
-// safe but slower than other less durable configurations.
+// read and write concern is set to majority by default.
 //
 // In summary, queries may return data that has bas been committed but may not
-// be the most recent committed data. Also, long running cursors may return
-// duplicate or missing documents. For operations involving multiple documents,
-// a session or transaction should be used for atomicity, consistency and
-// isolation guarantees.
+// be the most recent committed data. Also, long running cursors on indexed
+// fields may return duplicate or missing documents due to the documents moving
+// within the index. For operations involving multiple documents a session or
+// transaction should be used to ensure atomicity, consistency and isolation.
 func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
@@ -60,7 +59,7 @@ func Connect(uri string) (*Store, error) {
 		return nil, err
 	}
 
-	return newStore(client, defaultDB, nil), nil
+	return NewStore(client, defaultDB, nil), nil
 }
 
 // MustOpen will call Open and panic on errors.
@@ -74,8 +73,8 @@ func MustOpen(store lungo.Store, defaultDB string, reporter func(error)) *Store 
 	return s
 }
 
-// Open will open the database at the specified path or if missing a new in
-// memory database.
+// Open will open the database using the provided lungo store. If the store is
+// missing an in-memory store will be created.
 func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, error) {
 	// set default memory store
 	if store == nil {
@@ -92,15 +91,12 @@ func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, er
 		return nil, err
 	}
 
-	return newStore(client, defaultDB, engine), nil
+	return NewStore(client, defaultDB, engine), nil
 }
 
-// NewStore returns a Store that uses the passed client and its default database.
-func NewStore(client lungo.IClient, defaultDB string) *Store {
-	return newStore(client, defaultDB, nil)
-}
-
-func newStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Store {
+// NewStore creates a store that uses the specified client, default database and
+// engine. The engine may be nil if no lungo database is used.
+func NewStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Store {
 	return &Store{
 		client: client,
 		defDB:  defaultDB,
