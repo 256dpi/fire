@@ -20,7 +20,7 @@ type Index struct {
 	Fields []string
 	Unique bool
 	Expiry time.Duration
-	Filter bson.M
+	Filter bson.D
 }
 
 // Compile will compile the index to a mongo.IndexModel.
@@ -127,7 +127,7 @@ func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, field
 }
 
 // AddPartialIndex is similar to Add except that it adds a partial index.
-func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
+func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.D) {
 	name := GetMeta(model).PluralName
 	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,

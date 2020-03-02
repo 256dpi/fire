@@ -47,8 +47,8 @@ func TestCatalogEnsureIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		catalog := NewCatalog()
 		catalog.AddIndex(&postModel{}, false, 0, "Title")
-		catalog.AddPartialIndex(&commentModel{}, false, 0, []string{"Post"}, bson.M{
-			F(&commentModel{}, "Message"): "test",
+		catalog.AddPartialIndex(&commentModel{}, false, 0, []string{"Post"}, bson.D{
+			{ Key: F(&commentModel{}, "Message"), Value: "test" },
 		})
 
 		err := catalog.EnsureIndexes(tester.Store)
@@ -78,7 +78,7 @@ func TestCatalogVisualizePDF(t *testing.T) {
 func TestCatalogVisualizeDOT(t *testing.T) {
 	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 	catalog.AddIndex(&postModel{}, false, 0, "Published", "Title")
-	catalog.AddPartialIndex(&postModel{}, false, 0, []string{"TextBody"}, bson.M{})
+	catalog.AddPartialIndex(&postModel{}, false, 0, []string{"TextBody"}, bson.D{})
 
 	assert.Equal(t, `graph G {
   rankdir="LR";
