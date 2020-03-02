@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/256dpi/lungo"
@@ -52,10 +53,7 @@ func Connect(uri string) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{
-		client: client,
-		defDB:  defaultDB,
-	}, nil
+	return newStore(client, defaultDB, nil), nil
 }
 
 // MustOpen will open the database using the specified store or if missing a new
@@ -88,18 +86,20 @@ func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, er
 		return nil, err
 	}
 
-	return &Store{
-		client: client,
-		defDB:  defaultDB,
-		engine: engine,
-	}, nil
+	return newStore(client, defaultDB, engine), nil
 }
 
 // NewStore returns a Store that uses the passed client and its default database.
 func NewStore(client lungo.IClient, defaultDB string) *Store {
+	return newStore(client, defaultDB, nil)
+}
+
+func newStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Store {
 	return &Store{
 		client: client,
 		defDB:  defaultDB,
+		engine: engine,
+		cache:  map[string]*Collection{},
 	}
 }
 
@@ -108,6 +108,8 @@ type Store struct {
 	client lungo.IClient
 	defDB  string
 	engine *lungo.Engine
+	cache  map[string]*Collection
+	mutex  sync.Mutex
 }
 
 // Client returns the client used by this store.
@@ -122,9 +124,28 @@ func (s *Store) DB() lungo.IDatabase {
 
 // C will return a traced collection for the specified model.
 func (s *Store) C(model Model) *Collection {
-	return &Collection{
-		coll: s.DB().Collection(C(model)),
+	// acquire mutex
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// get name
+	name := C(model)
+
+	// check cache
+	coll := s.cache[name]
+	if coll != nil {
+		return coll
 	}
+
+	// create collection
+	coll = &Collection{
+		coll: s.DB().Collection(name),
+	}
+
+	// cache collection
+	s.cache[name] = coll
+
+	return coll
 }
 
 // TX will create a transaction around the specified callback. If the callback
