@@ -15,6 +15,11 @@ var traceKey = traceContextKey{}
 // Trace implements a span stack that can be used with fat contexts. Rather than
 // branching of the context for every function call, a span is pushed onto the
 // stack to track execution.
+//
+// Code that uses Track will automatically discover the stack and branch of its
+// tail if no previous branch has been detected. Other opentracing compatible
+// code would not be able to find the stack and would use the root span instead.
+// This can be prevented by ensuring a branch using the Branch function.
 type Trace struct {
 	root  opentracing.Span
 	stack []opentracing.Span
