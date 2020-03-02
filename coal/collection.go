@@ -3,6 +3,8 @@ package coal
 import (
 	"context"
 	"errors"
+	"reflect"
+	"sync/atomic"
 
 	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -48,8 +50,11 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, fn fun
 		return err
 	}
 
+	// prepare counting cursor
+	cc := &countingCursor{ICursor: csr}
+
 	// yield cursor
-	err = fn(csr)
+	err = fn(cc)
 	if err != nil {
 		_ = csr.Close(ctx)
 		return err
@@ -60,6 +65,9 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, fn fun
 	if err != nil {
 		return err
 	}
+
+	// log result
+	span.Log("loaded", cc.i)
 
 	return nil
 }
@@ -85,6 +93,9 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 		return err
 	}
 
+	// log result
+	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
+
 	return nil
 }
 
@@ -104,7 +115,9 @@ func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn
 	}
 
 	// iterate over all documents
+	i := 0
 	for csr.Next(ctx) {
+		i++
 		err = fn(csr.Decode)
 		if err == ErrBreak {
 			break
@@ -119,6 +132,9 @@ func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn
 	if err != nil {
 		return err
 	}
+
+	// log result
+	span.Log("loaded", i)
 
 	return nil
 }
@@ -135,6 +151,13 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		return nil, err
 	}
 
+	// log result
+	span.Log("inserted", res.InsertedCount)
+	span.Log("matched", res.MatchedCount)
+	span.Log("modified", res.ModifiedCount)
+	span.Log("deleted", res.DeletedCount)
+	span.Log("upserted", res.UpsertedCount)
+
 	return res, nil
 }
 
@@ -146,12 +169,15 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	defer span.Finish()
 
 	// count documents
-	n, err := c.coll.CountDocuments(ctx, filter, opts...)
+	count, err := c.coll.CountDocuments(ctx, filter, opts...)
 	if err != nil {
 		return 0, err
 	}
 
-	return n, nil
+	// log result
+	span.Log("count", count)
+
+	return count, nil
 }
 
 // DeleteMany wraps the native DeleteMany collection method.
@@ -166,6 +192,9 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	if err != nil {
 		return nil, err
 	}
+
+	// log result
+	span.Log("deleted", res.DeletedCount)
 
 	return res, nil
 }
@@ -183,6 +212,9 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
+	// log result
+	span.Log("deleted", res.DeletedCount == 1)
+
 	return res, nil
 }
 
@@ -195,12 +227,15 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	defer span.Finish()
 
 	// distinct
-	res, err := c.coll.Distinct(ctx, field, filter, opts...)
+	list, err := c.coll.Distinct(ctx, field, filter, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	// log result
+	span.Log("length", len(list))
+
+	return list, nil
 }
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
@@ -210,12 +245,15 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	defer span.Finish()
 
 	// estimate count
-	n, err := c.coll.EstimatedDocumentCount(ctx, opts...)
+	count, err := c.coll.EstimatedDocumentCount(ctx, opts...)
 	if err != nil {
 		return 0, err
 	}
 
-	return n, nil
+	// log result
+	span.Log("count", count)
+
+	return count, nil
 }
 
 // Find wraps the native Find collection method and yields the returned cursor.
@@ -231,8 +269,11 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr l
 		return err
 	}
 
+	// prepare counting cursor
+	cc := &countingCursor{ICursor: csr}
+
 	// yield cursor
-	err = fn(csr)
+	err = fn(cc)
 	if err != nil {
 		_ = csr.Close(ctx)
 		return err
@@ -243,6 +284,9 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr l
 	if err != nil {
 		return err
 	}
+
+	// log result
+	span.Log("loaded", cc.i)
 
 	return nil
 }
@@ -268,6 +312,9 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 		return err
 	}
 
+	// log result
+	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
+
 	return nil
 }
 
@@ -287,7 +334,9 @@ func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(d
 	}
 
 	// iterate over all documents
+	i := 0
 	for csr.Next(ctx) {
+		i++
 		err = fn(csr.Decode)
 		if err == ErrBreak {
 			break
@@ -302,6 +351,9 @@ func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(d
 	if err != nil {
 		return err
 	}
+
+	// log result
+	span.Log("loaded", i)
 
 	return nil
 }
@@ -418,6 +470,11 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 		return nil, err
 	}
 
+	// log result
+	span.Log("matched", res.MatchedCount)
+	span.Log("modified", res.ModifiedCount)
+	span.Log("upserted", res.UpsertedCount)
+
 	return res, nil
 }
 
@@ -434,5 +491,31 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 		return nil, err
 	}
 
+	// log result
+	span.Log("matched", res.MatchedCount == 1)
+	span.Log("modified", res.ModifiedCount == 1)
+	span.Log("upserted", res.UpsertedCount == 1)
+
 	return res, nil
+}
+
+type countingCursor struct {
+	lungo.ICursor
+	i int64
+}
+
+func (c *countingCursor) Next(ctx context.Context) bool {
+	if c.ICursor.Next(ctx) {
+		atomic.AddInt64(&c.i, 1)
+		return true
+	}
+	return false
+}
+
+func (c *countingCursor) TryNext(ctx context.Context) bool {
+	if c.ICursor.TryNext(ctx) {
+		atomic.AddInt64(&c.i, 1)
+		return true
+	}
+	return false
 }
