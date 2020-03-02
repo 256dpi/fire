@@ -268,8 +268,12 @@ func (t *Task) enqueuer(q *Queue) error {
 }
 
 func (t *Task) execute(q *Queue, job *Job) error {
+	// create trace
+	trace, outerContext := cinder.CreateTrace(context.Background(), t.Name)
+	defer trace.Finish()
+
 	// dequeue job
-	job, err := Dequeue(nil, q.store, job.ID(), t.Timeout)
+	job, err := Dequeue(outerContext, q.store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -297,18 +301,14 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 	}
 
-	// create context
-	c, cancel := context.WithTimeout(context.Background(), t.Lifetime)
+	// add timeout
+	innerContext, cancel := context.WithTimeout(outerContext, t.Lifetime)
 	defer cancel()
-
-	// create trace
-	trace, c := cinder.CreateTrace(c, t.Name)
-	defer trace.Finish()
 
 	// prepare context
 	ctx := &Context{
+		Context: innerContext,
 		Model:   model,
-		Context: c,
 		Task:    t,
 		Queue:   q,
 		Store:   q.store,
@@ -328,7 +328,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(nil, q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(outerContext, q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -337,7 +337,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(nil, q.store, job.ID(), e.Reason)
+		err = Cancel(outerContext, q.store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -350,19 +350,19 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(nil, q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(outerContext, q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(nil, q.store, job.ID(), err.Error())
+		_ = Cancel(outerContext, q.store, job.ID(), err.Error())
 
 		return err
 	}
 
 	// complete job
-	err = Complete(nil, q.store, job.ID(), ctx.Result)
+	err = Complete(outerContext, q.store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}
