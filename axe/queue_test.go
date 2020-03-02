@@ -30,7 +30,7 @@ func TestQueue(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "foo",
@@ -40,7 +40,7 @@ func TestQueue(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "foo", job.Name)
@@ -75,7 +75,7 @@ func TestQueueDelayed(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "delayed",
@@ -86,7 +86,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "delayed", job.Name)
@@ -129,7 +129,7 @@ func TestQueueFailed(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "failed",
@@ -139,7 +139,7 @@ func TestQueueFailed(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "failed", job.Name)
@@ -184,7 +184,7 @@ func TestQueueCrashed(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "crashed",
@@ -195,7 +195,7 @@ func TestQueueCrashed(t *testing.T) {
 		<-done
 		assert.Equal(t, io.EOF, <-errs)
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "crashed", job.Name)
@@ -229,7 +229,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -239,7 +239,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -279,7 +279,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -289,7 +289,7 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -333,7 +333,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -344,7 +344,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		<-done
 		assert.Equal(t, "foo", (<-errs).Error())
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -391,7 +391,7 @@ func TestQueueTimeout(t *testing.T) {
 		})
 		q.Run()
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job, err := q.Enqueue(Blueprint{
 			Name: "timeout",
@@ -400,7 +400,7 @@ func TestQueueTimeout(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "timeout", job.Name)
@@ -446,7 +446,7 @@ func TestQueueExisting(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "existing", job.Name)
@@ -483,7 +483,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 		<-done
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job := tester.FindLast(&Job{}).(*Job)
 		assert.Equal(t, "foo", job.Name)

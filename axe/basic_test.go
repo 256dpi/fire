@@ -79,7 +79,7 @@ func TestEnqueueDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job2)
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job2, err = Dequeue(tester.Store, job.ID(), time.Hour)
 		assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestDequeueTimeout(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job2)
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job3, err := Dequeue(tester.Store, job.ID(), 100*time.Millisecond)
 		assert.NoError(t, err)
@@ -163,7 +163,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job2)
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job3, err := Dequeue(tester.Store, job.ID(), time.Hour)
 		assert.NoError(t, err)
@@ -294,7 +294,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, StatusCompleted, list[0].Status)
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 		job4, err := Enqueue(tester.Store, nil, Blueprint{
 			Name:   "foo",
