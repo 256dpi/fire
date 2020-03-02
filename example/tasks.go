@@ -38,7 +38,7 @@ func periodicTask(store *coal.Store) *axe.Task {
 		Model: nil,
 		Handler: func(ctx *axe.Context) error {
 			// increment value
-			err := glut.Mut(store, "periodic", "counter", 0, func(ok bool, data coal.Map) (coal.Map, error) {
+			err := glut.Mut(ctx, store, "periodic", "counter", 0, func(ok bool, data coal.Map) (coal.Map, error) {
 				if !ok {
 					data = coal.Map{"n": int64(1)}
 				}

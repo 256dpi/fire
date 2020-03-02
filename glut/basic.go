@@ -1,20 +1,28 @@
 package glut
 
 import (
+	"context"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 )
 
 // Get will load the contents of the value with the specified name. It will also
 // return whether the value exists at all.
-func Get(store *coal.Store, component, name string) (coal.Map, bool, error) {
+func Get(ctx context.Context, store *coal.Store, component, name string) (coal.Map, bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Get")
+	span.Tag("component", component)
+	span.Log("name", name)
+	defer span.Finish()
+
 	// find value
 	var value *Value
-	err := store.C(&Value{}).FindOne(nil, bson.M{
+	err := store.C(&Value{}).FindOne(ctx, bson.M{
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 	}).Decode(&value)
@@ -30,7 +38,14 @@ func Get(store *coal.Store, component, name string) (coal.Map, bool, error) {
 // Set will write the specified value to the store and overwrite any existing
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
-func Set(store *coal.Store, component, name string, data coal.Map, ttl time.Duration) (bool, error) {
+func Set(ctx context.Context, store *coal.Store, component, name string, data coal.Map, ttl time.Duration) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Set")
+	span.Tag("component", component)
+	span.Log("name", name)
+	span.Log("ttl", ttl.String())
+	defer span.Finish()
+
 	// prepare deadline
 	var deadline *time.Time
 	if ttl > 0 {
@@ -38,7 +53,7 @@ func Set(store *coal.Store, component, name string, data coal.Map, ttl time.Dura
 	}
 
 	// update value
-	res, err := store.C(&Value{}).UpdateOne(nil, bson.M{
+	res, err := store.C(&Value{}).UpdateOne(ctx, bson.M{
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 	}, bson.M{
@@ -56,9 +71,15 @@ func Set(store *coal.Store, component, name string, data coal.Map, ttl time.Dura
 
 // Del will remove the specified value from the store. This method will ignore
 // any locks held on the value.
-func Del(store *coal.Store, component, name string) (bool, error) {
+func Del(ctx context.Context, store *coal.Store, component, name string) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Del")
+	span.Tag("component", component)
+	span.Log("name", name)
+	defer span.Finish()
+
 	// delete value
-	res, err := store.C(&Value{}).DeleteOne(nil, bson.M{
+	res, err := store.C(&Value{}).DeleteOne(ctx, bson.M{
 		coal.F(&Value{}, "Component"): component,
 		coal.F(&Value{}, "Name"):      name,
 	})
@@ -71,9 +92,16 @@ func Del(store *coal.Store, component, name string) (bool, error) {
 
 // Mut will load the specified value, run the callback and on success write the
 // value back. This method will ignore any locks held on the value.
-func Mut(store *coal.Store, component, name string, ttl time.Duration, fn func(bool, coal.Map) (coal.Map, error)) error {
+func Mut(ctx context.Context, store *coal.Store, component, name string, ttl time.Duration, fn func(bool, coal.Map) (coal.Map, error)) error {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Mut")
+	span.Tag("component", component)
+	span.Log("name", name)
+	span.Log("ttl", ttl.String())
+	defer span.Finish()
+
 	// get value
-	data, ok, err := Get(store, component, name)
+	data, ok, err := Get(ctx, store, component, name)
 	if err != nil {
 		return err
 	}
@@ -85,7 +113,7 @@ func Mut(store *coal.Store, component, name string, ttl time.Duration, fn func(b
 	}
 
 	// put value
-	_, err = Set(store, component, name, newData, ttl)
+	_, err = Set(ctx, store, component, name, newData, ttl)
 	if err != nil {
 		return err
 	}
