@@ -16,7 +16,7 @@ func incrementTask() *axe.Task {
 		Model: &count{},
 		Handler: func(ctx *axe.Context) error {
 			// increment count
-			_, err := ctx.TC(&Item{}).UpdateOne(ctx, bson.M{
+			_, err := ctx.C(&Item{}).UpdateOne(ctx, bson.M{
 				"_id": ctx.Model.(*count).Item,
 			}, bson.M{
 				"$inc": bson.M{

@@ -249,9 +249,9 @@ type Context struct {
 	Trace *cinder.Trace
 }
 
-// TC is a shorthand to get a traced collection for the specified model.
-func (c *Context) TC(model coal.Model) *coal.Collection {
-	return c.Store.TC(model, c.Trace)
+// C is a shorthand to get a traced collection for the specified model.
+func (c *Context) C(model coal.Model) *coal.Collection {
+	return c.Store.C(model)
 }
 
 // Query returns the composite query of Selector and Filter.

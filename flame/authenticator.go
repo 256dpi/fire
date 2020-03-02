@@ -936,7 +936,7 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	}
 
 	// fetch client
-	err := a.store.TC(model, env.trace).FindOne(nil, query).Decode(client)
+	err := a.store.C(model).FindOne(nil, query).Decode(client)
 	if coal.IsMissing(err) {
 		return nil
 	}
@@ -970,7 +970,7 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 	client := coal.GetMeta(model).Make().(Client)
 
 	// fetch client
-	err := a.store.TC(model, env.trace).FindOne(nil, bson.M{
+	err := a.store.C(model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(client)
 	if coal.IsMissing(err) {
@@ -1046,7 +1046,7 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	}
 
 	// fetch resource owner
-	err := a.store.TC(model, env.trace).FindOne(nil, query).Decode(resourceOwner)
+	err := a.store.C(model).FindOne(nil, query).Decode(resourceOwner)
 	if coal.IsMissing(err) {
 		return nil
 	}
@@ -1084,7 +1084,7 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
 
 	// fetch resource owner
-	err := a.store.TC(model, env.trace).FindOne(nil, bson.M{
+	err := a.store.C(model).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(resourceOwner)
 	if coal.IsMissing(err) {
@@ -1104,7 +1104,7 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
 
 	// fetch token
-	err := a.store.TC(token, env.trace).FindOne(nil, bson.M{
+	err := a.store.C(token).FindOne(nil, bson.M{
 		"_id": id,
 	}).Decode(token)
 	if coal.IsMissing(err) {
@@ -1143,7 +1143,7 @@ func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []strin
 	})
 
 	// save token
-	_, err := a.store.TC(token, env.trace).InsertOne(nil, token)
+	_, err := a.store.C(token).InsertOne(nil, token)
 	stack.AbortIf(err)
 
 	return token
@@ -1155,7 +1155,7 @@ func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
 	defer env.trace.Pop()
 
 	// delete token
-	_, err := a.store.TC(a.policy.Token, env.trace).DeleteOne(nil, bson.M{
+	_, err := a.store.C(a.policy.Token).DeleteOne(nil, bson.M{
 		"_id": id,
 	})
 	if coal.IsMissing(err) {
