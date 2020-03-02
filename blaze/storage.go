@@ -17,6 +17,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -197,6 +198,12 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 }
 
 func (s *Storage) upload(ctx context.Context, contentType string, length int64, stream io.Reader) (*File, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.upload")
+	span.Log("contentType", contentType)
+	span.Log("length", length)
+	defer span.Finish()
+
 	// limit upload if length has been specified
 	if length != -1 {
 		stream = io.LimitReader(stream, length)
@@ -314,6 +321,10 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 }
 
 func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path string) error {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.validateLink")
+	defer span.Finish()
+
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -535,6 +546,11 @@ func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 // which defaults to 1 hour if zero. Files in the states "released" and
 // "deleting" are removed immediately. It will also allow the service to cleanup.
 func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Cleanup")
+	span.Log("retention", retention.String())
+	defer span.Finish()
+
 	// set default retention
 	if retention == 0 {
 		retention = time.Hour
