@@ -557,7 +557,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	}
 
 	// get iterator for deletable files
-	iter := s.store.C(&File{}).Find(ctx, bson.M{
+	iter, err := s.store.C(&File{}).Find(ctx, bson.M{
 		"$or": []bson.M{
 			{
 				coal.F(&File{}, "State"): bson.M{
@@ -574,9 +574,12 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 			},
 		},
 	})
-	defer iter.Close()
+	if err != nil {
+		return err
+	}
 
 	// iterate over files
+	defer iter.Close()
 	for iter.Next() {
 		// decode file
 		var file File
@@ -624,7 +627,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	}
 
 	// check error
-	err := iter.Error()
+	err = iter.Error()
 	if err != nil {
 		return err
 	}

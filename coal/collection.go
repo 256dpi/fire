@@ -34,23 +34,22 @@ func (c *Collection) Native() lungo.ICollection {
 
 // Aggregate wraps the native Aggregate collection method and yields the
 // returned cursor.
-func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) *Iterator {
+func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Aggregate")
 	span.Log("pipeline", pipeline)
 
 	// aggregate
 	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
-
-	// prepare iterator
-	iterator := &Iterator{
-		span:    span,
-		context: ctx,
-		cursor:  csr,
-		error:   err,
+	if err != nil {
+		span.Finish()
+		return nil, err
 	}
 
-	return iterator
+	// create iterator
+	iterator := newIterator(ctx, csr, span)
+
+	return iterator, nil
 }
 
 // AggregateAll wraps the native Aggregate collection method and decodes all
@@ -198,23 +197,22 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 }
 
 // Find wraps the native Find collection method and yields the returned cursor.
-func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) *Iterator {
+func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Find")
 	span.Log("filter", filter)
 
 	// find
 	csr, err := c.coll.Find(ctx, filter, opts...)
-
-	// prepare iterator
-	iterator := &Iterator{
-		span:    span,
-		context: ctx,
-		cursor:  csr,
-		error:   err,
+	if err != nil {
+		span.Finish()
+		return nil, err
 	}
 
-	return iterator
+	// create iterator
+	iterator := newIterator(ctx, csr, span)
+
+	return iterator, nil
 }
 
 // FindAll wraps the native Find collection method and decodes all documents to
@@ -387,11 +385,19 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 
 // Iterator manages the iteration over a cursor.
 type Iterator struct {
-	context context.Context
+	ctx     context.Context
 	cursor  lungo.ICursor
 	span    *cinder.Span
 	counter int64
 	error   error
+}
+
+func newIterator(ctx context.Context, cursor lungo.ICursor, span *cinder.Span) *Iterator {
+	return &Iterator{
+		ctx:    ctx,
+		cursor: cursor,
+		span:   span,
+	}
 }
 
 // Next will load the next document from the cursor and if available return true.
@@ -404,7 +410,7 @@ func (i *Iterator) Next() bool {
 	}
 
 	// await next
-	if !i.cursor.Next(i.context) {
+	if !i.cursor.Next(i.ctx) {
 		i.error = i.cursor.Err()
 		i.Close()
 		return false
@@ -433,7 +439,7 @@ func (i *Iterator) Error() error {
 func (i *Iterator) Close() {
 	// close cursor if available
 	if i.cursor != nil {
-		_ = i.cursor.Close(i.context)
+		_ = i.cursor.Close(i.ctx)
 	}
 
 	// finish span

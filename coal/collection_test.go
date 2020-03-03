@@ -24,10 +24,11 @@ func TestCollectionFind(t *testing.T) {
 		}).(*postModel)
 
 		opts := options.Find().SetSort(Sort(F(&postModel{}, "Title")))
-		iter := tester.Store.C(&postModel{}).Find(nil, bson.M{}, opts)
-		defer iter.Close()
+		iter, err := tester.Store.C(&postModel{}).Find(nil, bson.M{}, opts)
+		assert.NoError(t, err)
 
 		var list []postModel
+		defer iter.Close()
 		for iter.Next() {
 			var post postModel
 			err := iter.Decode(&post)
@@ -36,7 +37,7 @@ func TestCollectionFind(t *testing.T) {
 		}
 		assert.Equal(t, []postModel{post1, post2, post3}, list)
 
-		err := iter.Error()
+		err = iter.Error()
 		assert.NoError(t, err)
 	})
 }

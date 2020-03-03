@@ -12,10 +12,13 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 	// prepare load
 	load := func() error {
 		// get cursor
-		iter := store.C(model).Find(nil, bson.M{})
-		defer iter.Close()
+		iter, err := store.C(model).Find(nil, bson.M{})
+		if err != nil {
+			return err
+		}
 
 		// iterate over all models
+		defer iter.Close()
 		for iter.Next() {
 			// decode model
 			model := GetMeta(model).Make()
@@ -31,7 +34,7 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 		}
 
 		// check error
-		err := iter.Error()
+		err = iter.Error()
 		if err != nil {
 			return err
 		}
