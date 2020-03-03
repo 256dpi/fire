@@ -15,12 +15,13 @@ func incrementTask(store *coal.Store) *axe.Task {
 		Name:  "increment",
 		Model: &count{},
 		Handler: func(ctx *axe.Context) error {
+			// get id
+			id := ctx.Model.(*count).Item
+
 			// increment count
-			_, err := store.C(&Item{}).UpdateOne(ctx, bson.M{
-				"_id": ctx.Model.(*count).Item,
-			}, bson.M{
+			_, err := store.M(&Item{}).Update(ctx, id, bson.M{
 				"$inc": bson.M{
-					coal.F(&Item{}, "Count"): 1,
+					"Count": 1,
 				},
 			})
 			if err != nil {
