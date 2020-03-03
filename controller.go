@@ -104,10 +104,10 @@ type Controller struct {
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
-	// UseTransactions can be set to true to enable transactions for create,
-	// update and delete operations. If enabled, a transaction will be created
-	// and used for all database requests. The created session can be accessed
-	// through the context to use it in callbacks.
+	// UseTransactions can be set to true to enable transactions for list, find,
+	// create, update and delete operations. If enabled, a transaction will b
+	// created and used for all database requests. The created session can be
+	// accessed through the context to use it in callbacks.
 	UseTransactions bool
 
 	// TolerateViolations will not raise an error if a non-writable field is
@@ -318,7 +318,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	ctx.Store = c.Store
 
 	// run operation with transaction if possible
-	if ctx.Operation.Write() && c.UseTransactions {
+	if !ctx.Operation.Action() && c.UseTransactions {
 		stack.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
 			ctx.Context = tc
 			c.runOperation(ctx)
