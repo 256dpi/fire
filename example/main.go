@@ -119,9 +119,10 @@ func prepareDatabase(store *coal.Store) error {
 		return err
 	}
 
-	// log keys
-	fmt.Printf("Main Application Key: %s\n", mainKey)
-	fmt.Printf("Sub Application Key: %s\n", subKey)
+	// log info
+	fmt.Printf("==> Password for user@example.org: user1234\n")
+	fmt.Printf("==> Main application key: %s\n", mainKey)
+	fmt.Printf("==> Sub application key: %s\n", subKey)
 
 	return nil
 }
