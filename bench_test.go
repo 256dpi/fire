@@ -33,7 +33,6 @@ func BenchmarkList(b *testing.B) {
 		listBenchmark(b, store, true, 20, 10)
 	})
 
-	// connection pool under pressure
 	b.Run("50X-TX", func(b *testing.B) {
 		listBenchmark(b, store, true, 20, 50)
 	})
@@ -58,7 +57,6 @@ func BenchmarkFind(b *testing.B) {
 		findBenchmark(b, store, true, 10)
 	})
 
-	// connection pool under pressure
 	b.Run("50X-TX", func(b *testing.B) {
 		findBenchmark(b, store, true, 50)
 	})
