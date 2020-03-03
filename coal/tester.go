@@ -116,6 +116,19 @@ func (t *Tester) Replace(model Model) Model {
 	return model
 }
 
+// Update will update the specified model.
+func (t *Tester) Update(model Model, update bson.M) Model {
+	// replace model
+	_, err := t.Store.C(model).UpdateOne(nil, bson.M{
+		"_id": model.ID(),
+	}, update)
+	if err != nil {
+		panic(err)
+	}
+
+	return model
+}
+
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
 	// delete model
