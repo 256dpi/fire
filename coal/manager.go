@@ -312,6 +312,29 @@ func (m *Manager) Replace(ctx context.Context, model Model) error {
 	return nil
 }
 
+// ReplaceFirst will replace the first document that matches the specified query.
+// It will return whether a document has been found and replaced.
+func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "coal/Manager.ReplaceFirst")
+	span.Log("query", query)
+	defer span.Finish()
+
+	// translate query
+	queryDoc, err := m.trans.Document(query)
+	if err != nil {
+		return false, err
+	}
+
+	// replace document
+	res, err := m.coll.ReplaceOne(ctx, queryDoc, model)
+	if err != nil {
+		return false, err
+	}
+
+	return res.ModifiedCount == 1, nil
+}
+
 // Update will update the document with the specified id. It will return whether
 // a document has been found and updated.
 func (m *Manager) Update(ctx context.Context, id ID, update bson.M) (bool, error) {
