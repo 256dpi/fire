@@ -101,7 +101,6 @@ func NewStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Sto
 		client: client,
 		defDB:  defaultDB,
 		engine: engine,
-		cache:  map[string]*Collection{},
 	}
 }
 
@@ -110,8 +109,7 @@ type Store struct {
 	client lungo.IClient
 	defDB  string
 	engine *lungo.Engine
-	cache  map[string]*Collection
-	mutex  sync.Mutex
+	colls  sync.Map
 }
 
 // Client returns the client used by this store.
@@ -126,26 +124,22 @@ func (s *Store) DB() lungo.IDatabase {
 
 // C will return a traced collection for the specified model.
 func (s *Store) C(model Model) *Collection {
-	// acquire mutex
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	// get name
 	name := C(model)
 
 	// check cache
-	coll := s.cache[name]
-	if coll != nil {
-		return coll
+	val, ok := s.colls.Load(name)
+	if ok {
+		return val.(*Collection)
 	}
 
 	// create collection
-	coll = &Collection{
+	coll := &Collection{
 		coll: s.DB().Collection(name),
 	}
 
 	// cache collection
-	s.cache[name] = coll
+	s.colls.Store(name, coll)
 
 	return coll
 }
