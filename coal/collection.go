@@ -37,6 +37,7 @@ func (c *Collection) Native() lungo.ICollection {
 func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Aggregate")
+	span.Tag("collection", c.coll.Name())
 	span.Log("pipeline", pipeline)
 
 	// aggregate
@@ -57,6 +58,7 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.AggregateAll")
+	span.Tag("collection", c.coll.Name())
 	span.Log("pipeline", pipeline)
 	defer span.Finish()
 
@@ -83,6 +85,7 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.BulkWrite")
+	span.Tag("collection", c.coll.Name())
 	defer span.Finish()
 
 	// bulk write
@@ -105,6 +108,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.CountDocuments")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -124,6 +128,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.DeleteMany")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -143,6 +148,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.DeleteOne")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -162,6 +168,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Distinct")
+	span.Tag("collection", c.coll.Name())
 	span.Log("field", field)
 	span.Log("filter", filter)
 	defer span.Finish()
@@ -182,6 +189,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.EstimatedDocumentCount")
+	span.Tag("collection", c.coll.Name())
 	defer span.Finish()
 
 	// estimate count
@@ -200,6 +208,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Find")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 
 	// find
@@ -220,6 +229,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter interface{}, opts ...*options.FindOptions) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindAll")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -246,6 +256,7 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindOne")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -259,6 +270,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindOneAndDelete")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -272,6 +284,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindOneAndReplace")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -285,6 +298,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindOneAndUpdate")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -298,6 +312,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.InsertMany")
+	span.Tag("collection", c.coll.Name())
 	span.Log("count", len(documents))
 	defer span.Finish()
 
@@ -314,6 +329,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.InsertOne")
+	span.Tag("collection", c.coll.Name())
 	defer span.Finish()
 
 	// insert one
@@ -329,6 +345,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.ReplaceOne")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -345,6 +362,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.UpdateMany")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
@@ -366,6 +384,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.UpdateOne")
+	span.Tag("collection", c.coll.Name())
 	span.Log("filter", filter)
 	defer span.Finish()
 
