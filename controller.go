@@ -144,6 +144,7 @@ type Controller struct {
 	SoftDelete bool
 
 	parser jsonapi.Parser
+	meta   *coal.Meta
 }
 
 func (c *Controller) prepare() {
@@ -157,6 +158,9 @@ func (c *Controller) prepare() {
 		CollectionActions: make(map[string][]string),
 		ResourceActions:   make(map[string][]string),
 	}
+
+	// cache meta
+	c.meta = coal.GetMeta(c.Model)
 
 	// add collection actions
 	for name, action := range c.CollectionActions {
@@ -182,7 +186,7 @@ func (c *Controller) prepare() {
 	// add resource actions
 	for name, action := range c.ResourceActions {
 		// check collision
-		if name == "" || name == "relationships" || coal.GetMeta(c.Model).Relationships[name] != nil {
+		if name == "" || name == "relationships" || c.meta.Relationships[name] != nil {
 			panic(fmt.Sprintf(`fire: invalid resource action "%s"`, name))
 		}
 
@@ -216,24 +220,24 @@ func (c *Controller) prepare() {
 	// check soft delete field
 	if c.SoftDelete {
 		fieldName := coal.L(c.Model, "fire-soft-delete", true)
-		if coal.GetMeta(c.Model).Fields[fieldName].Type.String() != "*time.Time" {
-			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, fieldName, coal.GetMeta(c.Model).Name))
+		if c.meta.Fields[fieldName].Type.String() != "*time.Time" {
+			panic(fmt.Sprintf(`fire: soft delete field "%s" for model "%s" is not of type "*time.Time"`, fieldName, c.meta.Name))
 		}
 	}
 
 	// check idempotent create field
 	if c.IdempotentCreate {
 		fieldName := coal.L(c.Model, "fire-idempotent-create", true)
-		if coal.GetMeta(c.Model).Fields[fieldName].Type.String() != "string" {
-			panic(fmt.Sprintf(`fire: idempotent create field "%s" for model "%s" is not of type "string"`, fieldName, coal.GetMeta(c.Model).Name))
+		if c.meta.Fields[fieldName].Type.String() != "string" {
+			panic(fmt.Sprintf(`fire: idempotent create field "%s" for model "%s" is not of type "string"`, fieldName, c.meta.Name))
 		}
 	}
 
 	// check consistent update field
 	if c.ConsistentUpdate {
 		fieldName := coal.L(c.Model, "fire-consistent-update", true)
-		if coal.GetMeta(c.Model).Fields[fieldName].Type.String() != "string" {
-			panic(fmt.Sprintf(`fire: consistent update field "%s" for model "%s" is not of type "string"`, fieldName, coal.GetMeta(c.Model).Name))
+		if c.meta.Fields[fieldName].Type.String() != "string" {
+			panic(fmt.Sprintf(`fire: consistent update field "%s" for model "%s" is not of type "string"`, fieldName, c.meta.Name))
 		}
 	}
 }
@@ -310,8 +314,8 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// prepare context
 	ctx.Selector = selector
 	ctx.Filters = []bson.M{}
-	ctx.ReadableFields = c.initialFields(c.Model, ctx.JSONAPIRequest)
-	ctx.WritableFields = c.initialFields(c.Model, nil)
+	ctx.ReadableFields = c.initialFields(ctx.JSONAPIRequest)
+	ctx.WritableFields = c.initialFields(nil)
 	ctx.RelationshipFilters = map[string][]bson.M{}
 
 	// set store
@@ -465,7 +469,7 @@ func (c *Controller) createResource(ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// create model with id
-	ctx.Model = coal.GetMeta(c.Model).Make()
+	ctx.Model = c.meta.Make()
 	ctx.Model.GetBase().DocID = coal.New()
 
 	// assign attributes
@@ -715,7 +719,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	ctx.Context = ct
 
 	// find relationship
-	rel := coal.GetMeta(c.Model).Relationships[ctx.JSONAPIRequest.RelatedResource]
+	rel := c.meta.Relationships[ctx.JSONAPIRequest.RelatedResource]
 	if rel == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -808,7 +812,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// finish has-one relationship
 	if rel.HasOne {
 		// find inverse relationship
-		inverse := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
+		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
 			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
@@ -838,7 +842,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// finish has-many relationship
 	if rel.HasMany {
 		// find inverse relationship
-		inverse := coal.GetMeta(rc.Model).Relationships[rel.RelInverse]
+		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
 			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
@@ -881,7 +885,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ctx.Context = ct
 
 	// get relationship
-	field := coal.GetMeta(c.Model).Relationships[ctx.JSONAPIRequest.Relationship]
+	field := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if field == nil {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -929,7 +933,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	}
 
 	// get relationship
-	rel := coal.GetMeta(c.Model).Relationships[ctx.JSONAPIRequest.Relationship]
+	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || (!rel.ToOne && !rel.ToMany) {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -992,7 +996,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	}
 
 	// get relationship
-	rel := coal.GetMeta(c.Model).Relationships[ctx.JSONAPIRequest.Relationship]
+	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || !rel.ToMany {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -1078,7 +1082,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	}
 
 	// get relationship
-	rel := coal.GetMeta(c.Model).Relationships[ctx.JSONAPIRequest.Relationship]
+	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || !rel.ToMany {
 		stack.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
@@ -1209,33 +1213,33 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	c.runAction(action, ctx, http.StatusBadRequest)
 }
 
-func (c *Controller) initialFields(model coal.Model, r *jsonapi.Request) []string {
+func (c *Controller) initialFields(r *jsonapi.Request) []string {
 	// prepare list
-	list := make([]string, 0, len(coal.GetMeta(model).Attributes)+len(coal.GetMeta(model).Relationships))
+	list := make([]string, 0, len(c.meta.Attributes)+len(c.meta.Relationships))
 
 	// add attributes
-	for _, f := range coal.GetMeta(model).Attributes {
+	for _, f := range c.meta.Attributes {
 		list = append(list, f.Name)
 	}
 
 	// add relationships
-	for _, f := range coal.GetMeta(model).Relationships {
+	for _, f := range c.meta.Relationships {
 		list = append(list, f.Name)
 	}
 
 	// check if a field whitelist has been provided
-	if r != nil && len(r.Fields[coal.GetMeta(model).PluralName]) > 0 {
+	if r != nil && len(r.Fields[c.meta.PluralName]) > 0 {
 		// convert requested fields list
 		var requested []string
-		for _, field := range r.Fields[coal.GetMeta(model).PluralName] {
+		for _, field := range r.Fields[c.meta.PluralName] {
 			// add attribute
-			if f := coal.GetMeta(model).Attributes[field]; f != nil {
+			if f := c.meta.Attributes[field]; f != nil {
 				requested = append(requested, f.Name)
 				continue
 			}
 
 			// add relationship
-			if f := coal.GetMeta(model).Relationships[field]; f != nil {
+			if f := c.meta.Relationships[field]; f != nil {
 				requested = append(requested, f.Name)
 				continue
 			}
@@ -1272,7 +1276,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// prepare object
-	model := coal.GetMeta(c.Model).Make()
+	model := c.meta.Make()
 
 	// query db
 	res := ctx.C(c.Model).FindOne(ctx, ctx.Query())
@@ -1287,7 +1291,7 @@ func (c *Controller) loadModel(ctx *Context) {
 
 	// set original on update operations
 	if ctx.Operation == Update {
-		original := coal.GetMeta(c.Model).Make()
+		original := c.meta.Make()
 		err = res.Decode(original)
 		stack.AbortIf(err)
 		ctx.Original = original
@@ -1311,7 +1315,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	// add filters
 	for name, values := range ctx.JSONAPIRequest.Filters {
 		// handle attributes filter
-		if field := coal.GetMeta(c.Model).Attributes[name]; field != nil {
+		if field := c.meta.Attributes[name]; field != nil {
 			// check whitelist
 			if !Contains(c.Filters, field.Name) {
 				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
@@ -1329,7 +1333,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 
 		// handle relationship filters
-		if field := coal.GetMeta(c.Model).Relationships[name]; field != nil {
+		if field := c.meta.Relationships[name]; field != nil {
 			// check whitelist
 			if !field.ToOne && !field.ToMany || !Contains(c.Filters, field.Name) {
 				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
@@ -1363,7 +1367,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		normalizedSorter := strings.TrimPrefix(sorter, "-")
 
 		// find field
-		field := coal.GetMeta(c.Model).Attributes[normalizedSorter]
+		field := c.meta.Attributes[normalizedSorter]
 		if field == nil {
 			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
 		}
@@ -1396,7 +1400,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
 	// prepare slice
-	slicePtr := coal.GetMeta(c.Model).MakeSlice()
+	slicePtr := c.meta.MakeSlice()
 
 	// prepare options
 	opts := options.Find()
@@ -1430,7 +1434,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// covert field names to attributes and relationships
 	for _, field := range ctx.WritableFields {
 		// get field
-		f := coal.GetMeta(ctx.Model).Fields[field]
+		f := c.meta.Fields[field]
 		if f == nil {
 			stack.Abort(fmt.Errorf("unknown writable field %s", field))
 		}
@@ -1447,7 +1451,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
 		// get field
-		field := coal.GetMeta(c.Model).Attributes[name]
+		field := c.meta.Attributes[name]
 		if field == nil {
 			pointer := fmt.Sprintf("/data/attributes/%s", name)
 			stack.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
@@ -1475,7 +1479,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// iterate relationships
 	for name, rel := range res.Relationships {
 		// get relationship
-		field := coal.GetMeta(c.Model).Relationships[name]
+		field := c.meta.Relationships[name]
 		if field == nil {
 			pointer := fmt.Sprintf("/data/relationships/%s", name)
 			stack.Abort(jsonapi.BadRequestPointer("invalid relationship", pointer))
@@ -1584,7 +1588,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	// covert field names to relationships
 	for _, field := range ctx.ReadableFields {
 		// get field
-		f := coal.GetMeta(ctx.Controller.Model).Fields[field]
+		f := c.meta.Fields[field]
 		if f == nil {
 			stack.Abort(fmt.Errorf("unknown readable field %s", field))
 		}
@@ -1596,7 +1600,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	}
 
 	// go through all relationships
-	for _, field := range coal.GetMeta(ctx.Controller.Model).Relationships {
+	for _, field := range c.meta.Relationships {
 		// skip to one and to many relationships
 		if field.ToOne || field.ToMany {
 			continue
@@ -1614,7 +1618,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		}
 
 		// find relationship
-		rel := coal.GetMeta(rc.Model).Relationships[field.RelInverse]
+		rel := rc.meta.Relationships[field.RelInverse]
 		if rel == nil {
 			stack.Abort(fmt.Errorf("no relationship matching the inverse name %s", field.RelInverse))
 		}
@@ -1735,7 +1739,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 	// covert field names to attributes and relationships
 	for _, field := range ctx.ReadableFields {
 		// get field
-		f := coal.GetMeta(model).Fields[field]
+		f := c.meta.Fields[field]
 		if f == nil {
 			stack.Abort(fmt.Errorf("unknown readable field %s", field))
 		}
@@ -1754,20 +1758,20 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 	// prepare resource
 	resource := &jsonapi.Resource{
-		Type:          coal.GetMeta(model).PluralName,
+		Type:          c.meta.PluralName,
 		ID:            model.ID().Hex(),
 		Attributes:    m,
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
 	// generate base link
-	base := "/" + coal.GetMeta(model).PluralName + "/" + model.ID().Hex()
+	base := "/" + c.meta.PluralName + "/" + model.ID().Hex()
 	if ctx.JSONAPIRequest.Prefix != "" {
 		base = "/" + ctx.JSONAPIRequest.Prefix + base
 	}
 
 	// go through all relationships
-	for _, field := range coal.GetMeta(model).Relationships {
+	for _, field := range c.meta.Relationships {
 		// check if whitelisted
 		if !Contains(whitelist, field.RelName) {
 			continue
