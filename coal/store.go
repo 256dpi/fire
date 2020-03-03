@@ -30,8 +30,8 @@ func MustConnect(uri string) *Store {
 // In summary, queries may return data that has bas been committed but may not
 // be the most recent committed data. Also, long running cursors on indexed
 // fields may return duplicate or missing documents due to the documents moving
-// within the index. For operations involving multiple documents a session or
-// transaction should be used to ensure atomicity, consistency and isolation.
+// within the index. For operations involving multiple documents a transaction
+// must be used to ensure atomicity, consistency and isolation.
 func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
@@ -150,13 +150,13 @@ func (s *Store) C(model Model) *Collection {
 	return coll
 }
 
-// S will create a session around the specified callback.
+// S will create a casually consistent session around the specified callback.
 //
-// A casually consistent session is created for the operations run withing the
-// callback. The session guarantees that reads and writes reflect previous reads
-// and writes by the session. However, since the operations are non-transactional,
-// concurrent writes may interleave and will not cause errors and read documents
-// will immediately become stale.
+// The session guarantees that reads and writes reflect previous reads and
+// writes by the session. However, since the operations are non-transactional,
+// concurrent writes may interleave and will not cause errors. Read documents
+// will immediately become stale and cursors may still return missing or
+// duplicate documents.
 func (s *Store) S(ctx context.Context, fn func(context.Context) error) error {
 	// set context background
 	if ctx == nil {
@@ -185,8 +185,8 @@ func (s *Store) S(ctx context.Context, fn func(context.Context) error) error {
 //   Non-transactional writes will wait until the transaction has completed.
 // - Reads are not guaranteed to be stable, another transaction may delete or
 //   modify the document an also commit concurrently. Therefore, documents that
-//   must "survive" the transaction and cause concurrent writes to abort, must
-//   be locked by incrementing or changing a field to a unique value.
+//   must "survive" the transaction and cause transactional writes to abort,
+//   must be locked by incrementing or changing a field to a new value.
 func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	// set context background
 	if ctx == nil {
