@@ -339,7 +339,7 @@ The `fire` package offers the following advanced features:
 - [`TolerateViolations`](https://godoc.org/github.com/256dpi/fire#Controller.TolerateViolations): tolerates writes to inaccessible fields.
 - [`IdempotentCreate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures idempotency of resource creations.
 - [`ConsistentUpdate`](https://godoc.org/github.com/256dpi/fire#Controller.IdempotentCreate): ensures consistency of parallel resource updates.
-- [`SoftDelete`](https://godoc.org/github.com/256dpi/fire#Controller.SoftDelete): soft deletes records using a timestamp field.
+- [`SoftDelete`](https://godoc.org/github.com/256dpi/fire#Controller.SoftDelete): soft deletes documents using a timestamp field.
 
 ## Authentication
 

@@ -11,7 +11,7 @@ tagging system and formalizes a usage that is as open and as type-safe as
 possible at the same time.**
 
 Usually a framework expects a certain class of structs that for example
-represent database models. To define this class of structs the framework should
+represent database records. To define this class of structs the framework should
 define a `Model` interface that can be implemented by simply embedding a `Base`
 type in a struct. This is achieved by the public `GetBase` method that just returns
 the base type. Additional methods may added to the interface to require more

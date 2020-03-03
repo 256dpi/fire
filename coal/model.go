@@ -6,12 +6,13 @@ import (
 	"reflect"
 )
 
-// Model is the main interface implemented by every coal model embedding Base.
+// Model defines the shape of a document stored in a collection. Custom types
+// must implement the interface by embedding the Base type.
 type Model interface {
-	// ID returns the models id.
+	// ID returns the primary id.
 	ID() ID
 
-	// GetBase should be implemented by embedding Base.
+	// GetBase returns the models base.
 	GetBase() *Base
 }
 

@@ -118,19 +118,19 @@ type Controller struct {
 
 	// IdempotentCreate can be set to true to enable the idempotent create
 	// mechanism. When creating resources, clients have to generate and submit a
-	// unique "create token". The controller will then first check if a record
+	// unique "create token". The controller will then first check if a document
 	// with the supplied token has already been created. The controller will
 	// determine the token field from the provided model using the
 	// "fire-idempotent-create" flag. It is recommended to add a unique index on
 	// the token field and also enable the soft delete mechanism to prevent
-	// duplicates if a short-lived record has already been deleted.
+	// duplicates if a short-lived document has already been deleted.
 	IdempotentCreate bool
 
 	// ConsistentUpdate can be set to true to enable the consistent update
 	// mechanism. When updating a resource, the client has to first load the most
 	// recent resource and retain the server generated "update token" and send
 	// it with the update in the defined update token field. The controller will
-	// then check if the stored record still has the same token. The controller
+	// then check if the stored document still has the same token. The controller
 	// will determine the token field from the provided model using the
 	// "fire-consistent-update" flag.
 	ConsistentUpdate bool
