@@ -406,7 +406,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 type Iterator struct {
 	ctx     context.Context
 	cursor  lungo.ICursor
-	span    *cinder.Span
+	spans   []*cinder.Span
 	counter int64
 	error   error
 }
@@ -415,7 +415,7 @@ func newIterator(ctx context.Context, cursor lungo.ICursor, span *cinder.Span) *
 	return &Iterator{
 		ctx:    ctx,
 		cursor: cursor,
-		span:   span,
+		spans:  []*cinder.Span{span},
 	}
 }
 
@@ -461,7 +461,12 @@ func (i *Iterator) Close() {
 		_ = i.cursor.Close(i.ctx)
 	}
 
-	// finish span
-	i.span.Log("loaded", i.counter)
-	i.span.Finish()
+	// finish spans
+	for _, span := range i.spans {
+		span.Log("loaded", i.counter)
+		span.Finish()
+	}
+
+	// unset spans
+	i.spans = nil
 }

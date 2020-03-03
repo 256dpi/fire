@@ -106,10 +106,11 @@ func NewStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Sto
 
 // A Store manages the usage of a database client.
 type Store struct {
-	client lungo.IClient
-	defDB  string
-	engine *lungo.Engine
-	colls  sync.Map
+	client   lungo.IClient
+	defDB    string
+	engine   *lungo.Engine
+	colls    sync.Map
+	managers sync.Map
 }
 
 // Client returns the client used by this store.
@@ -142,6 +143,30 @@ func (s *Store) C(model Model) *Collection {
 	s.colls.Store(name, coll)
 
 	return coll
+}
+
+// M will return a manager for the specified model.
+func (s *Store) M(model Model) *Manager {
+	// get name
+	name := C(model)
+
+	// check cache
+	val, ok := s.managers.Load(name)
+	if ok {
+		return val.(*Manager)
+	}
+
+	// create manager
+	manager := &Manager{
+		meta:  GetMeta(model),
+		coll:  s.C(model),
+		trans: Translate(model),
+	}
+
+	// cache collection
+	s.managers.Store(name, manager)
+
+	return manager
 }
 
 // S will create a casually consistent session around the specified callback.
