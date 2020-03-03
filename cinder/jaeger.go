@@ -1,7 +1,8 @@
 package cinder
 
 import (
-	"flag"
+	"os"
+	"strings"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -12,7 +13,6 @@ import (
 func SetupTesting(name string) func() {
 	// skip if benchmark
 	if isBenchmark() {
-		println("benchmark detected")
 		return func() {}
 	}
 
@@ -36,9 +36,10 @@ func SetupTesting(name string) func() {
 
 func isBenchmark() bool {
 	// check bench flag
-	f := flag.Lookup("test.bench")
-	if f != nil && f.Value.String() != "" {
-		return true
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test.bench") {
+			return true
+		}
 	}
 
 	return false
