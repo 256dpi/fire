@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"sync/atomic"
 
 	"github.com/256dpi/lungo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,9 +11,6 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 )
-
-// ErrBreak can be returned to break out from an iterator.
-var ErrBreak = errors.New("break")
 
 // IsMissing returns whether the provided error describes a missing document.
 func IsMissing(err error) bool {
@@ -38,38 +34,23 @@ func (c *Collection) Native() lungo.ICollection {
 
 // Aggregate wraps the native Aggregate collection method and yields the
 // returned cursor.
-func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, fn func(lungo.ICursor) error, opts ...*options.AggregateOptions) error {
+func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) *Iterator {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Aggregate")
 	span.Log("pipeline", pipeline)
-	defer span.Finish()
 
 	// aggregate
 	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
-	if err != nil {
-		return err
+
+	// prepare iterator
+	iterator := &Iterator{
+		span:    span,
+		context: ctx,
+		cursor:  csr,
+		error:   err,
 	}
 
-	// prepare counting cursor
-	cc := &countingCursor{ICursor: csr}
-
-	// yield cursor
-	err = fn(cc)
-	if err != nil {
-		_ = csr.Close(ctx)
-		return err
-	}
-
-	// close cursor
-	err = csr.Close(ctx)
-	if err != nil {
-		return err
-	}
-
-	// log result
-	span.Log("loaded", cc.i)
-
-	return nil
+	return iterator
 }
 
 // AggregateAll wraps the native Aggregate collection method and decodes all
@@ -95,46 +76,6 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 
 	// log result
 	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
-
-	return nil
-}
-
-// AggregateIter wraps the native Aggregate collection method and calls the
-// provided callback with the decode method until ErrBreak is returned or the
-// cursor has been exhausted.
-func (c *Collection) AggregateIter(ctx context.Context, pipeline interface{}, fn func(decode func(interface{}) error) error, opts ...*options.AggregateOptions) error {
-	// track
-	ctx, span := cinder.Track(ctx, "coal/Collection.AggregateIter")
-	span.Log("pipeline", pipeline)
-	defer span.Finish()
-
-	// aggregate
-	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
-	if err != nil {
-		return err
-	}
-
-	// iterate over all documents
-	i := 0
-	for csr.Next(ctx) {
-		i++
-		err = fn(csr.Decode)
-		if err == ErrBreak {
-			break
-		} else if err != nil {
-			_ = csr.Close(ctx)
-			return err
-		}
-	}
-
-	// close cursor
-	err = csr.Close(ctx)
-	if err != nil {
-		return err
-	}
-
-	// log result
-	span.Log("loaded", i)
 
 	return nil
 }
@@ -257,38 +198,23 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 }
 
 // Find wraps the native Find collection method and yields the returned cursor.
-func (c *Collection) Find(ctx context.Context, filter interface{}, fn func(csr lungo.ICursor) error, opts ...*options.FindOptions) error {
+func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) *Iterator {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.Find")
 	span.Log("filter", filter)
-	defer span.Finish()
 
 	// find
 	csr, err := c.coll.Find(ctx, filter, opts...)
-	if err != nil {
-		return err
+
+	// prepare iterator
+	iterator := &Iterator{
+		span:    span,
+		context: ctx,
+		cursor:  csr,
+		error:   err,
 	}
 
-	// prepare counting cursor
-	cc := &countingCursor{ICursor: csr}
-
-	// yield cursor
-	err = fn(cc)
-	if err != nil {
-		_ = csr.Close(ctx)
-		return err
-	}
-
-	// close cursor
-	err = csr.Close(ctx)
-	if err != nil {
-		return err
-	}
-
-	// log result
-	span.Log("loaded", cc.i)
-
-	return nil
+	return iterator
 }
 
 // FindAll wraps the native Find collection method and decodes all documents to
@@ -314,46 +240,6 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 
 	// log result
 	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
-
-	return nil
-}
-
-// FindIter wraps the native Find collection method and calls the provided
-// callback with the decode method until ErrBreak or an error is returned or the
-// cursor has been exhausted.
-func (c *Collection) FindIter(ctx context.Context, filter interface{}, fn func(decode func(interface{}) error) error, opts ...*options.FindOptions) error {
-	// track
-	ctx, span := cinder.Track(ctx, "coal/Collection.FindIter")
-	span.Log("filter", filter)
-	defer span.Finish()
-
-	// find
-	csr, err := c.coll.Find(ctx, filter, opts...)
-	if err != nil {
-		return err
-	}
-
-	// iterate over all documents
-	i := 0
-	for csr.Next(ctx) {
-		i++
-		err = fn(csr.Decode)
-		if err == ErrBreak {
-			break
-		} else if err != nil {
-			_ = csr.Close(ctx)
-			return err
-		}
-	}
-
-	// close cursor
-	err = csr.Close(ctx)
-	if err != nil {
-		return err
-	}
-
-	// log result
-	span.Log("loaded", i)
 
 	return nil
 }
@@ -499,23 +385,58 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 	return res, nil
 }
 
-type countingCursor struct {
-	lungo.ICursor
-	i int64
+// Iterator manages the iteration over a cursor.
+type Iterator struct {
+	context context.Context
+	cursor  lungo.ICursor
+	span    *cinder.Span
+	counter int64
+	error   error
 }
 
-func (c *countingCursor) Next(ctx context.Context) bool {
-	if c.ICursor.Next(ctx) {
-		atomic.AddInt64(&c.i, 1)
-		return true
+// Next will load the next document from the cursor and if available return true.
+// If it returns false the iteration must be stopped due to the cursor being
+// exhausted or an error.
+func (i *Iterator) Next() bool {
+	// check error
+	if i.error != nil {
+		return false
 	}
-	return false
+
+	// await next
+	if !i.cursor.Next(i.context) {
+		i.error = i.cursor.Err()
+		i.Close()
+		return false
+	}
+
+	// increment
+	i.counter++
+
+	return true
 }
 
-func (c *countingCursor) TryNext(ctx context.Context) bool {
-	if c.ICursor.TryNext(ctx) {
-		atomic.AddInt64(&c.i, 1)
-		return true
+// Decode will decode the loaded document to the specified value.
+func (i *Iterator) Decode(v interface{}) error {
+	return i.cursor.Decode(v)
+}
+
+// Error return the first error encountered during iteration. It should always
+// be checked after an iteration has finished to ensure there where no errors.
+func (i *Iterator) Error() error {
+	return i.error
+}
+
+// Close will close the underlying cursor. A call to it should be deferred right
+// after obtaining an iterator. Close should be called also if the iterator is
+// still valid but no longer used by the application.
+func (i *Iterator) Close() {
+	// close cursor if available
+	if i.cursor != nil {
+		_ = i.cursor.Close(i.context)
 	}
-	return false
+
+	// finish span
+	i.span.Log("loaded", i.counter)
+	i.span.Finish()
 }
