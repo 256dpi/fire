@@ -105,9 +105,11 @@ func (t *Translator) value(value interface{}) error {
 		return nil
 	case bson.D:
 		for _, item := range value {
-			err := t.value(item.Value)
-			if err != nil {
-				return err
+			if strings.HasPrefix(item.Key, "$") {
+				err := t.value(item.Value)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

@@ -11,8 +11,6 @@ import (
 func TestTranslatorDocument(t *testing.T) {
 	trans := NewTranslator(&postModel{})
 
-	// TODO: Nested doc equality?
-
 	// unknown
 	doc, err := trans.Document(bson.M{
 		"foo": "bar",
@@ -73,11 +71,25 @@ func TestTranslatorDocument(t *testing.T) {
 	doc, err = trans.Document(bson.M{
 		"$or": bson.A{
 			bson.M{
+				// simple quality
 				"Title": "Hello World!",
+
+				// document equality
+				"TextBody": bson.M{
+					"foo": "bar",
+				},
 			},
 			bson.M{
+				// complex equality
 				"Published": bson.M{
 					"$eq": true,
+				},
+
+				// array equality
+				"TextBody": bson.A{
+					bson.M{
+						"foo": "bar",
+					},
 				},
 			},
 		},
@@ -87,11 +99,19 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Equal(t, bson.D{
 		{Key: "$or", Value: bson.A{
 			bson.D{
+				{Key: "text_body", Value: bson.D{
+					{Key: "foo", Value: "bar"},
+				}},
 				{Key: "title", Value: "Hello World!"},
 			},
 			bson.D{
 				{Key: "published", Value: bson.D{
 					{Key: "$eq", Value: true},
+				}},
+				{Key: "text_body", Value: bson.A{
+					bson.D{
+						{Key: "foo", Value: "bar"},
+					},
 				}},
 			},
 		}},
@@ -101,19 +121,41 @@ func TestTranslatorDocument(t *testing.T) {
 	// complex update
 	doc, err = trans.Document(bson.M{
 		"$set": bson.M{
+			// value
 			"Title": "Hello World!",
+
+			// document
+			"TextBody": bson.M{
+				"foo": "bar",
+			},
 		},
 		"$setOnInsert": bson.M{
+			// value
 			"Published": false,
+
+			// array
+			"TextBody": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+			},
 		},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "$set", Value: bson.D{
+			{Key: "text_body", Value: bson.D{
+				{Key: "foo", Value: "bar"},
+			}},
 			{Key: "title", Value: "Hello World!"},
 		}},
 		{Key: "$setOnInsert", Value: bson.D{
 			{Key: "published", Value: false},
+			{Key: "text_body", Value: bson.A{
+				bson.D{
+					{Key: "foo", Value: "bar"},
+				},
+			}},
 		}},
 	}, doc)
 
@@ -127,7 +169,7 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Nil(t, doc)
 	assert.Equal(t, `unsafe operator "$rename"`, err.Error())
 
-	// complex type
+	// special type
 	doc, err = trans.Document(bson.M{
 		"Title": []byte("foo"),
 	})
@@ -135,6 +177,14 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Equal(t, bson.D{
 		{Key: "title", Value: primitive.Binary{Data: []byte("foo")}},
 	}, doc)
+
+	// dotted fields
+	doc, err = trans.Document(bson.M{
+		"Title.foo": "bar",
+	})
+	assert.Error(t, err)
+	assert.Nil(t, doc)
+	assert.Equal(t, `unknown field "Title.foo"`, err.Error())
 }
 
 func TestTranslatorSort(t *testing.T) {
