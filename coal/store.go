@@ -226,7 +226,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		}
 
 		// call function
-		err = fn(sc)
+		err = fn(withCond(sc, condTransaction))
 		if err != nil {
 			return err
 		}
@@ -255,4 +255,35 @@ func (s *Store) Close() error {
 	}
 
 	return nil
+}
+
+type condContextKey struct{}
+
+var condKey = condContextKey{}
+
+type cond uint8
+
+const (
+	condTransaction = 1 << iota
+)
+
+func (c cond) has(cnd cond) bool {
+	return c&cnd != 0
+}
+
+func withCond(ctx context.Context, cnd cond) context.Context {
+	return context.WithValue(ctx, condKey, cnd)
+}
+
+func getCond(ctx context.Context) cond {
+	var c cond
+	if ctx != nil {
+		c, _ = ctx.Value(condKey).(cond)
+	}
+
+	return c
+}
+
+func hasCond(ctx context.Context, cnd cond) bool {
+	return getCond(ctx).has(cnd)
 }
