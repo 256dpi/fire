@@ -169,6 +169,16 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Nil(t, doc)
 	assert.Equal(t, `unsafe operator "$rename"`, err.Error())
 
+	// unsafe nested operator
+	doc, err = trans.Document(bson.M{
+		"Title": bson.M{
+			"$where": "...",
+		},
+	})
+	assert.Error(t, err)
+	assert.Nil(t, doc)
+	assert.Equal(t, `unsafe operator "$where"`, err.Error())
+
 	// special type
 	doc, err = trans.Document(bson.M{
 		"Title": []byte("foo"),

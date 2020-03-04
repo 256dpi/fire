@@ -50,7 +50,7 @@ func (t *Translator) Document(queryOrUpdate bson.M) (bson.D, error) {
 	}
 
 	// translate
-	err = t.value(doc)
+	err = t.value(doc, false)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (t *Translator) Sort(fields []string) (bson.D, error) {
 	doc := Sort(fields...)
 
 	// translate
-	err := t.value(doc)
+	err := t.value(doc, false)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (t *Translator) Sort(fields []string) (bson.D, error) {
 	return doc, nil
 }
 
-func (t *Translator) value(value interface{}) error {
+func (t *Translator) value(value interface{}, skipTranslation bool) error {
 	// translate document
 	if doc, ok := value.(bson.D); ok {
 		for i, pair := range doc {
@@ -83,7 +83,7 @@ func (t *Translator) value(value interface{}) error {
 				if unsafeOperators[pair.Key] {
 					return fmt.Errorf("unsafe operator %q", pair.Key)
 				}
-			} else {
+			} else if !skipTranslation {
 				// translate field
 				err := t.field(&doc[i].Key)
 				if err != nil {
@@ -97,7 +97,7 @@ func (t *Translator) value(value interface{}) error {
 	switch value := value.(type) {
 	case bson.A:
 		for _, item := range value {
-			err := t.value(item)
+			err := t.value(item, skipTranslation)
 			if err != nil {
 				return err
 			}
@@ -105,11 +105,9 @@ func (t *Translator) value(value interface{}) error {
 		return nil
 	case bson.D:
 		for _, item := range value {
-			if strings.HasPrefix(item.Key, "$") {
-				err := t.value(item.Value)
-				if err != nil {
-					return err
-				}
+			err := t.value(item.Value, skipTranslation || !strings.HasPrefix(item.Key, "$"))
+			if err != nil {
+				return err
 			}
 		}
 		return nil
