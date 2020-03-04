@@ -8,7 +8,6 @@ import (
 
 	"github.com/256dpi/jsonapi/v2"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -167,18 +166,18 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 			query := bson.M{coal.F(model, field): ctx.Model.ID()}
 
 			// exclude soft deleted documents if supported
-			if sdm := coal.L(model, "fire-soft-delete", false); sdm != "" {
-				query[coal.F(model, sdm)] = nil
+			if sdf := coal.L(model, "fire-soft-delete", false); sdf != "" {
+				query[sdf] = nil
 			}
 
 			// count referencing documents
-			n, err := ctx.C(model).CountDocuments(ctx, query, options.Count().SetLimit(1))
+			count, err := ctx.M(model).Count(ctx, query, 0, 1, false)
 			if err != nil {
 				return err
 			}
 
 			// return err of documents are found
-			if n != 0 {
+			if count != 0 {
 				return E("resource has dependent resources")
 			}
 		}
@@ -220,16 +219,20 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 			// handle to-many relationships
 			if ids, ok := ref.([]coal.ID); ok {
 				// prepare query
-				query := bson.M{"_id": bson.M{"$in": ids}}
+				query := bson.M{
+					"_id": bson.M{
+						"$in": ids,
+					},
+				}
 
 				// count entities in database
-				n, err := ctx.C(collection).CountDocuments(ctx, query)
+				count, err := ctx.M(collection).Count(ctx, query, 0, 0, false)
 				if err != nil {
 					return err
 				}
 
 				// check for existence
-				if int(n) != len(ids) {
+				if int(count) != len(ids) {
 					return E("missing references for field " + field)
 				}
 
@@ -239,15 +242,15 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 			// handle to-one relationships
 
 			// count entities in database
-			n, err := ctx.C(collection).CountDocuments(ctx, bson.M{
+			count, err := ctx.M(collection).Count(ctx, bson.M{
 				"_id": ref,
-			}, options.Count().SetLimit(1))
+			}, 0, 1, false)
 			if err != nil {
 				return err
 			}
 
 			// check for existence
-			if n != 1 {
+			if count != 1 {
 				return E("missing reference for field " + field)
 			}
 		}
@@ -395,17 +398,17 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 
 		// add matchers
 		for sourceField, targetField := range matcher {
-			query[coal.F(target, targetField)] = coal.MustGet(ctx.Model, sourceField)
+			query[targetField] = coal.MustGet(ctx.Model, sourceField)
 		}
 
 		// find matching documents
-		n, err := ctx.C(target).CountDocuments(ctx, query)
+		count, err := ctx.M(target).Count(ctx, query, 0, 0, false)
 		if err != nil {
 			return err
 		}
 
 		// return error if a document is missing (does not match)
-		if int(n) != len(ids) {
+		if int(count) != len(ids) {
 			return E("references do not match")
 		}
 
@@ -444,24 +447,24 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 
 		// prepare query
 		query := bson.M{
-			coal.F(ctx.Model, field): value,
+			field: value,
 		}
 
 		// add filters
 		for _, field := range filters {
-			query[coal.F(ctx.Model, field)] = coal.MustGet(ctx.Model, field)
+			query[field] = coal.MustGet(ctx.Model, field)
 		}
 
 		// exclude soft deleted documents if supported
-		if sdm := coal.L(ctx.Model, "fire-soft-delete", false); sdm != "" {
-			query[coal.F(ctx.Model, sdm)] = nil
+		if sdf := coal.L(ctx.Model, "fire-soft-delete", false); sdf != "" {
+			query[sdf] = nil
 		}
 
 		// count
-		n, err := ctx.C(ctx.Model).CountDocuments(ctx, query, options.Count().SetLimit(1))
+		count, err := ctx.M(ctx.Model).Count(ctx, query, 0, 1, false)
 		if err != nil {
 			return err
-		} else if n != 0 {
+		} else if count != 0 {
 			return E("attribute %s is not unique", field)
 		}
 

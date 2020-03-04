@@ -608,7 +608,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		coal.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
 
 		// update model
-		updated, err := ctx.M(c.Model).ReplaceFirst(ctx, bson.M{
+		found, err := ctx.M(c.Model).ReplaceFirst(ctx, bson.M{
 			"_id":                 ctx.Model.ID(),
 			consistentUpdateField: consistentUpdateToken,
 		}, ctx.Model, false)
@@ -617,8 +617,8 @@ func (c *Controller) updateResource(ctx *Context) {
 		}
 		stack.AbortIf(err)
 
-		// fail if not updated
-		if !updated {
+		// fail if not found
+		if !found {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with different consistent update token"))
 		}
 	} else {
