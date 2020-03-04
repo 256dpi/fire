@@ -28,11 +28,11 @@ func TestManagerFind(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, found)
 
-		// unexpected lock
+		// no tx
 		found, err = m.Find(nil, &post2, post1.ID(), true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.Equal(t, ErrUnexpectedLock, err)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -70,13 +70,13 @@ func TestManagerFindFirst(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, found)
 
-		// unexpected lock
+		// no tx
 		found, err = m.FindFirst(nil, &post2, bson.M{
 			"Title": "Hello World!",
 		}, nil, 0, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.Equal(t, ErrUnexpectedLock, err)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -89,6 +89,631 @@ func TestManagerFindFirst(t *testing.T) {
 			assert.Equal(t, post1, post2)
 			return nil
 		})
+	})
+}
+
+func TestManagerFindAll(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// no tx
+		var list []postModel
+		err := m.FindAll(nil, &list, nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// all
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			var list []postModel
+			err := m.FindAll(ctx, &list, nil, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2}, list)
+			return nil
+		})
+
+		// filter
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			var list []postModel
+			err := m.FindAll(ctx, &list, bson.M{
+				"Title": "Hello World!",
+			}, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1}, list)
+			return nil
+		})
+
+		// sort
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			var list []postModel
+			err := m.FindAll(ctx, &list, nil, []string{"Title"}, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post2, post1}, list)
+			return nil
+		})
+
+		// skip
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			var list []postModel
+			err := m.FindAll(ctx, &list, nil, nil, 1, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post2}, list)
+			return nil
+		})
+
+		// limit
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			var list []postModel
+			err := m.FindAll(ctx, &list, nil, nil, 0, 1, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1}, list)
+			return nil
+		})
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post1.Lock++
+			post2.Lock++
+			var list []postModel
+			err := m.FindAll(ctx, &list, nil, nil, 0, 0, true)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2}, list)
+			return nil
+		})
+	})
+}
+
+func TestManagerFindEach(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// no tx
+		iter, err := m.FindEach(nil, nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Nil(t, iter)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// all
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			iter, err = m.FindEach(ctx, nil, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
+			return nil
+		})
+
+		// filter
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			iter, err = m.FindEach(ctx, bson.M{
+				"Title": "Hello World!",
+			}, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1}, readPosts(t, iter))
+			return nil
+		})
+
+		// sort
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			iter, err = m.FindEach(ctx, nil, []string{"Title"}, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post2, post1}, readPosts(t, iter))
+			return nil
+		})
+
+		// skip
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			iter, err = m.FindEach(ctx, nil, nil, 1, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post2}, readPosts(t, iter))
+			return nil
+		})
+
+		// limit
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			iter, err = m.FindEach(ctx, nil, nil, 0, 1, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1}, readPosts(t, iter))
+			return nil
+		})
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post1.Lock++
+			post2.Lock++
+			iter, err = m.FindEach(ctx, nil, nil, 0, 0, true)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
+			return nil
+		})
+	})
+}
+
+func TestManagerCount(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// no tx
+		count, err := m.Count(nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// all
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			count, err = m.Count(ctx, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(2), count)
+			return nil
+		})
+
+		// filter
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			count, err = m.Count(ctx, bson.M{
+				"Title": "Hello World!",
+			}, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(1), count)
+			return nil
+		})
+
+		// skip
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			count, err = m.Count(ctx, nil, 1, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(1), count)
+			return nil
+		})
+
+		// limit
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			count, err = m.Count(ctx, nil, 0, 1, false)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(1), count)
+			return nil
+		})
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post1.Lock++
+			post2.Lock++
+
+			count, err = m.Count(ctx, nil, 0, 0, true)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(2), count)
+
+			var list []postModel
+			err = m.FindAll(ctx, &list, nil, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2}, list)
+			return nil
+		})
+	})
+}
+
+func TestManagerInsert(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		m := tester.Store.M(&postModel{})
+
+		err := m.Insert(nil, &postModel{
+			Title: "Hello World!",
+		})
+		assert.NoError(t, err)
+	})
+}
+
+func TestManagerInsertIfMissing(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		m := tester.Store.M(&postModel{})
+
+		// no tx
+		_, err := m.InsertIfMissing(nil, bson.M{
+			"Title": "Hello World!",
+		}, &postModel{
+			Title: "Hello World!",
+		})
+		assert.Error(t, err)
+
+		// insert if missing
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			inserted, err := m.InsertIfMissing(ctx, bson.M{
+				"Title": "Hello World!",
+			}, &postModel{
+				Title: "Hello World!",
+			})
+			assert.NoError(t, err)
+			assert.True(t, inserted)
+
+			inserted, err = m.InsertIfMissing(ctx, bson.M{
+				"Title": "Hello World!",
+			}, &postModel{
+				Title: "Hello World!",
+			})
+			assert.NoError(t, err)
+			assert.False(t, inserted)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerReplace(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post := tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.Replace(nil, &postModel{
+			Base: B(),
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		post.Title = "Hello Space!"
+		found, err = m.Replace(nil, post, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// no tx
+		found, err = m.Replace(nil, post, true)
+		assert.Error(t, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post.Title = "Hello Space!"
+			found, err = m.Replace(ctx, post, true)
+			assert.NoError(t, err)
+			assert.True(t, found)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerReplaceFirst(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post := tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.ReplaceFirst(nil, bson.M{
+			"Title": "Hello Space!",
+		}, &postModel{
+			Base: B(),
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		post.Title = "Hello Space!"
+		found, err = m.ReplaceFirst(nil, bson.M{
+			"Title": "Hello World!",
+		}, post, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// no tx
+		found, err = m.ReplaceFirst(nil, bson.M{
+			"Title": "Hello World!",
+		}, post, true)
+		assert.Error(t, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post.Title = "Hello World!"
+			found, err = m.ReplaceFirst(ctx, bson.M{
+				"Title": "Hello Space!",
+			}, post, true)
+			assert.NoError(t, err)
+			assert.True(t, found)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerUpdate(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post := tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.Update(nil, New(), bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		found, err = m.Update(nil, post.ID(), bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// no tx
+		found, err = m.Update(nil, post.ID(), bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, true)
+		assert.Error(t, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			found, err = m.Update(ctx, post.ID(), bson.M{
+				"$set": bson.M{
+					"Title": "Hello World!",
+				},
+			}, true)
+			assert.NoError(t, err)
+			assert.True(t, found)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerUpdateFirst(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.UpdateFirst(nil, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		found, err = m.UpdateFirst(nil, bson.M{
+			"Title": "Hello World!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// no tx
+		found, err = m.UpdateFirst(nil, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, true)
+		assert.Error(t, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			found, err = m.UpdateFirst(ctx, bson.M{
+				"Title": "Hello Space!",
+			}, bson.M{
+				"$set": bson.M{
+					"Title": "Hello World!",
+				},
+			}, true)
+			assert.NoError(t, err)
+			assert.True(t, found)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerUpdateAll(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		updated, err := m.UpdateAll(nil, bson.M{
+			"Title": "foo",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), updated)
+
+		// existing
+		updated, err = m.UpdateAll(nil, bson.M{
+			"Title": "Hello World!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), updated)
+
+		// no tx
+		updated, err = m.UpdateAll(nil, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, true)
+		assert.Error(t, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			updated, err = m.UpdateAll(ctx, bson.M{
+				"Title": "Hello Space!",
+			}, bson.M{
+				"$set": bson.M{
+					"Title": "Hello World!",
+				},
+			}, true)
+			assert.NoError(t, err)
+			assert.Equal(t, int64(2), updated)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerUpsert(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		m := tester.Store.M(&postModel{})
+
+		// no tx
+		_, err := m.Upsert(nil, bson.M{
+			"Title": "Hello World!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space",
+			},
+		})
+		assert.Error(t, err)
+
+		// upsert
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			inserted, err := m.Upsert(ctx, bson.M{
+				"Title": "Hello World!",
+			}, bson.M{
+				"$set": bson.M{
+					"Published": true,
+				},
+			})
+			assert.NoError(t, err)
+			assert.True(t, inserted)
+
+			inserted, err = m.Upsert(ctx, bson.M{
+				"Title": "Hello World!",
+			}, bson.M{
+				"$set": bson.M{
+					"Published": true,
+				},
+			})
+			assert.NoError(t, err)
+			assert.False(t, inserted)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerDelete(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post := tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.Delete(nil, New())
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		found, err = m.Delete(nil, post.ID())
+		assert.NoError(t, err)
+		assert.True(t, found)
+	})
+}
+
+func TestManagerDeleteAll(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		deleted, err := m.DeleteAll(nil, bson.M{
+			"Title": "foo",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), deleted)
+
+		// existing
+		deleted, err = m.DeleteAll(nil, bson.M{
+			"Title": "Hello World!",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), deleted)
+	})
+}
+
+func TestManagerDeleteFirst(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Insert(&postModel{
+			Title: "Hello World!",
+		})
+
+		m := tester.Store.M(&postModel{})
+
+		// missing
+		found, err := m.DeleteFirst(nil, bson.M{
+			"Title": "foo",
+		})
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		found, err = m.DeleteFirst(nil, bson.M{
+			"Title": "Hello World!",
+		})
+		assert.NoError(t, err)
+		assert.True(t, found)
 	})
 }
 
@@ -121,4 +746,16 @@ func BenchmarkManagerFind(b *testing.B) {
 			panic("missing")
 		}
 	}
+}
+
+func readPosts(t *testing.T, iter *Iterator) []postModel {
+	defer iter.Close()
+	var list []postModel
+	for iter.Next() {
+		var post postModel
+		err := iter.Decode(&post)
+		assert.NoError(t, err)
+		list = append(list, post)
+	}
+	return list
 }

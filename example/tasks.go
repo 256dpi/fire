@@ -23,7 +23,7 @@ func incrementTask(store *coal.Store) *axe.Task {
 				"$inc": bson.M{
 					"Count": 1,
 				},
-			})
+			}, false)
 			if err != nil {
 				return err
 			}

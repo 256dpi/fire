@@ -611,7 +611,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		updated, err := ctx.M(c.Model).ReplaceFirst(ctx, bson.M{
 			"_id":                 ctx.Model.ID(),
 			consistentUpdateField: consistentUpdateToken,
-		}, ctx.Model)
+		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
@@ -623,11 +623,16 @@ func (c *Controller) updateResource(ctx *Context) {
 		}
 	} else {
 		// replace model
-		err := ctx.M(c.Model).Replace(ctx, ctx.Model)
+		found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
 		if coal.IsDuplicate(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}
 		stack.AbortIf(err)
+
+		// check if missing
+		if !found {
+			stack.Abort(jsonapi.NotFound("resource not found"))
+		}
 	}
 
 	// run decorators
@@ -675,16 +680,26 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		_, err := ctx.M(c.Model).Update(ctx, ctx.Model.ID(), bson.M{
+		found, err := ctx.M(c.Model).Update(ctx, ctx.Model.ID(), bson.M{
 			"$set": bson.M{
 				softDeleteField: time.Now(),
 			},
-		})
+		}, false)
 		stack.AbortIf(err)
+
+		// check if missing
+		if !found {
+			stack.Abort(jsonapi.NotFound("resource not found"))
+		}
 	} else {
 		// delete model
-		_, err := ctx.M(c.Model).Delete(ctx, ctx.Model.ID())
+		found, err := ctx.M(c.Model).Delete(ctx, ctx.Model.ID())
 		stack.AbortIf(err)
+
+		// check if missing
+		if !found {
+			stack.Abort(jsonapi.NotFound("resource not found"))
+		}
 	}
 
 	// run notifiers
@@ -941,11 +956,16 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	err := ctx.M(c.Model).Replace(ctx, ctx.Model)
+	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
+
+	// check if missing
+	if !found {
+		stack.Abort(jsonapi.NotFound("resource not found"))
+	}
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1025,11 +1045,16 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	err := ctx.M(c.Model).Replace(ctx, ctx.Model)
+	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
+
+	// check if missing
+	if !found {
+		stack.Abort(jsonapi.NotFound("resource not found"))
+	}
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1116,11 +1141,16 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	err := ctx.M(c.Model).Replace(ctx, ctx.Model)
+	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 	}
 	stack.AbortIf(err)
+
+	// check if missing
+	if !found {
+		stack.Abort(jsonapi.NotFound("resource not found"))
+	}
 
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
@@ -1389,9 +1419,9 @@ func (c *Controller) loadModels(ctx *Context) {
 		skip = (ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize
 	}
 
-	// load models
+	// load documents
 	models := coal.GetMeta(c.Model).MakeSlice()
-	err := ctx.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit)
+	err := ctx.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false)
 	stack.AbortIf(err)
 
 	// set models
@@ -1905,7 +1935,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// count resources
-		count, err := ctx.M(c.Model).Count(ctx, ctx.Query(), 0, 0)
+		count, err := ctx.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
 		stack.AbortIf(err)
 
 		// calculate last page
