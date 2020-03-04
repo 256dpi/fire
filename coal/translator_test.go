@@ -5,15 +5,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestTranslatorDocument(t *testing.T) {
-	pt := Translate(&postModel{})
+	trans := NewTranslator(&postModel{})
 
 	// TODO: Nested doc equality?
 
 	// unknown
-	doc, err := pt.Document(bson.M{
+	doc, err := trans.Document(bson.M{
 		"foo": "bar",
 	})
 	assert.Error(t, err)
@@ -21,7 +22,7 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Equal(t, `unknown field "foo"`, err.Error())
 
 	// known
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"title": "Hello World!",
 	})
 	assert.NoError(t, err)
@@ -30,7 +31,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// resolved
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"Title": "Hello World!",
 	})
 	assert.NoError(t, err)
@@ -39,7 +40,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// mixed
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"Title":     "Hello World!",
 		"text_body": "This is awesome.",
 	})
@@ -50,7 +51,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// virtual
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"Title":    "Hello World!",
 		"Comments": bson.A{},
 	})
@@ -60,7 +61,7 @@ func TestTranslatorDocument(t *testing.T) {
 
 	// id
 	id := New()
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"_id": id,
 	})
 	assert.NoError(t, err)
@@ -69,7 +70,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// complex query
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"$or": bson.A{
 			bson.M{
 				"Title": "Hello World!",
@@ -98,7 +99,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// complex update
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"$set": bson.M{
 			"Title": "Hello World!",
 		},
@@ -117,7 +118,7 @@ func TestTranslatorDocument(t *testing.T) {
 	}, doc)
 
 	// unsafe operator
-	doc, err = pt.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"$rename": bson.M{
 			"Title": "Foo",
 		},
@@ -126,26 +127,27 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Nil(t, doc)
 	assert.Equal(t, `unsafe operator "$rename"`, err.Error())
 
-	// unsupported type
-	doc, err = pt.Document(bson.M{
+	// complex type
+	doc, err = trans.Document(bson.M{
 		"Title": []byte("foo"),
 	})
-	assert.Error(t, err)
-	assert.Nil(t, doc)
-	assert.Equal(t, `unsupported type []uint8`, err.Error())
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "title", Value: primitive.Binary{Data: []byte("foo")}},
+	}, doc)
 }
 
 func TestTranslatorSort(t *testing.T) {
-	pt := Translate(&postModel{})
+	trans := NewTranslator(&postModel{})
 
 	// unknown
-	doc, err := pt.Sort([]string{"foo", "-bar"})
+	doc, err := trans.Sort([]string{"foo", "-bar"})
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 	assert.Equal(t, `unknown field "foo"`, err.Error())
 
 	// known
-	doc, err = pt.Sort([]string{"title", "-text_body"})
+	doc, err = trans.Sort([]string{"title", "-text_body"})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "title", Value: int32(1)},
@@ -153,7 +155,7 @@ func TestTranslatorSort(t *testing.T) {
 	}, doc)
 
 	// resolved
-	doc, err = pt.Sort([]string{"Title", "-TextBody"})
+	doc, err = trans.Sort([]string{"Title", "-TextBody"})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "title", Value: int32(1)},
@@ -161,7 +163,7 @@ func TestTranslatorSort(t *testing.T) {
 	}, doc)
 
 	// mixed
-	doc, err = pt.Sort([]string{"Title", "-text_body"})
+	doc, err = trans.Sort([]string{"Title", "-text_body"})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "title", Value: int32(1)},
@@ -169,15 +171,63 @@ func TestTranslatorSort(t *testing.T) {
 	}, doc)
 
 	// virtual
-	doc, err = pt.Sort([]string{"Title", "Comments"})
+	doc, err = trans.Sort([]string{"Title", "Comments"})
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 	assert.Equal(t, `virtual field "Comments"`, err.Error())
 
 	// id
-	doc, err = pt.Sort([]string{"_id"})
+	doc, err = trans.Sort([]string{"_id"})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "_id", Value: int32(1)},
 	}, doc)
+}
+
+func BenchmarkTranslatorDocumentSimple(b *testing.B) {
+	trans := NewTranslator(&postModel{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := trans.Document(bson.M{
+			"Title":    "Hello World!",
+			"TextBody": "This is awesome.",
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func BenchmarkTranslatorDocumentComplex(b *testing.B) {
+	trans := NewTranslator(&postModel{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := trans.Document(bson.M{
+			"Title":    "Hello World!",
+			"TextBody": []byte("cool"),
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func BenchmarkTranslatorSort(b *testing.B) {
+	trans := NewTranslator(&postModel{})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := trans.Sort([]string{"Title", "-Text_body"})
+		if err != nil {
+			panic(err)
+		}
+	}
 }

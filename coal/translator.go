@@ -32,8 +32,8 @@ type Translator struct {
 	meta *Meta
 }
 
-// Translate will return a translator for the specified model.
-func Translate(model Model) *Translator {
+// NewTranslator will return a translator for the specified model.
+func NewTranslator(model Model) *Translator {
 	return &Translator{
 		meta: GetMeta(model),
 	}
@@ -145,16 +145,30 @@ func (t *Translator) field(field *string) error {
 	return nil
 }
 
-func (t *Translator) convert(in bson.M) (out bson.D, err error) {
+func (t *Translator) convert(in bson.M) (bson.D, error) {
+	// attempt fast conversion
+	ret, err := t.convertFast(in)
+	if err == nil {
+		return ret, nil
+	}
+
+	// otherwise convert safely
+	doc, err := bsonkit.Transform(in)
+	if err != nil {
+		return nil, err
+	}
+
+	return *doc, nil
+}
+
+func (t *Translator) convertFast(in bson.M) (out bson.D, err error) {
 	// catch panic due to unsupported type
 	defer func() {
-		str := recover()
-		if str != nil {
-			err = errors.New(str.(string)[9:])
+		fail := recover()
+		if fail != nil {
+			err = errors.New(fail.(string)[9:])
 		}
 	}()
-
-	// TODO: Use bsonkit.Transform?
 
 	// convert
 	out = *bsonkit.Convert(in)

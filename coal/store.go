@@ -165,7 +165,7 @@ func (s *Store) M(model Model) *Manager {
 	manager := &Manager{
 		meta:  GetMeta(model),
 		coll:  s.C(model),
-		trans: Translate(model),
+		trans: NewTranslator(model),
 	}
 
 	// cache collection
