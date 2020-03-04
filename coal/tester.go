@@ -17,7 +17,7 @@ type Tester struct {
 // NewTester returns a new tester.
 func NewTester(store *Store, models ...Model) *Tester {
 	// create tester
-	tester :=  &Tester{
+	tester := &Tester{
 		Store:  store,
 		Models: models,
 	}
