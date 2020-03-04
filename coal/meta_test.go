@@ -2,6 +2,7 @@ package coal
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -347,10 +348,14 @@ func TestMetaSpecial(t *testing.T) {
 }
 
 func BenchmarkGetMeta(b *testing.B) {
-	typ := reflect.TypeOf(postModel{})
-
 	for i := 0; i < b.N; i++ {
 		GetMeta(&postModel{})
-		delete(metaCache, typ)
+		metaCache = sync.Map{}
+	}
+}
+
+func BenchmarkGetMetaAccess(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetMeta(&postModel{})
 	}
 }

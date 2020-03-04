@@ -7,8 +7,7 @@ import (
 	"sync"
 )
 
-var metaCache = make(map[reflect.Type]*Meta)
-var metaCacheMutex sync.Mutex
+var metaCache sync.Map
 
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(New())
@@ -98,21 +97,17 @@ type Meta struct {
 //
 // Note: This method panics if the passed Model has invalid fields and tags.
 func GetMeta(model Model) *Meta {
-	// acquire mutex
-	metaCacheMutex.Lock()
-	defer metaCacheMutex.Unlock()
-
 	// get type and name
 	modelType := reflect.TypeOf(model).Elem()
 
 	// check if meta has already been cached
-	meta, ok := metaCache[modelType]
+	value, ok := metaCache.Load(modelType)
 	if ok {
-		return meta
+		return value.(*Meta)
 	}
 
 	// create new meta
-	meta = &Meta{
+	meta := &Meta{
 		typ:            modelType,
 		Name:           modelType.String(),
 		Fields:         make(map[string]*Field),
@@ -329,7 +324,7 @@ func GetMeta(model Model) *Meta {
 	}
 
 	// cache meta
-	metaCache[modelType] = meta
+	metaCache.Store(modelType, meta)
 
 	return meta
 }
