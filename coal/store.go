@@ -123,7 +123,10 @@ func (s *Store) DB() lungo.IDatabase {
 	return s.client.Database(s.defDB)
 }
 
-// C will return a traced collection for the specified model.
+// C will return the collection for the specified model. The collection is just
+// a thin wrapper around the driver collection API to integrate tracing. Since
+// it does not perform any checks, it is recommended to use the manager to
+// perform safe CRUD operations.
 func (s *Store) C(model Model) *Collection {
 	// get name
 	name := C(model)
@@ -145,7 +148,9 @@ func (s *Store) C(model Model) *Collection {
 	return coll
 }
 
-// M will return a manager for the specified model.
+// M will return the manager for the specified model. The manager will translate
+// query and update documents as well as perform extensive checks before running
+// operations to ensure they are as safe as possible.
 func (s *Store) M(model Model) *Manager {
 	// get name
 	name := C(model)
