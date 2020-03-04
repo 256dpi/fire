@@ -174,28 +174,6 @@ func (s *Store) M(model Model) *Manager {
 	return manager
 }
 
-// S will create a casually consistent session around the specified callback.
-//
-// The session guarantees that reads and writes reflect previous reads and
-// writes by the session. However, since the operations are non-transactional,
-// concurrent writes may interleave and will not cause errors. Read documents
-// will immediately become stale and cursors may still return missing or
-// duplicate documents.
-func (s *Store) S(ctx context.Context, fn func(context.Context) error) error {
-	// set context background
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	// prepare options
-	opts := options.Session().SetCausalConsistency(true)
-
-	// use session
-	return s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
-		return fn(sc)
-	})
-}
-
 // T will create a transaction around the specified callback. If the callback
 // returns no error the transaction will be committed. If T itself does not
 // return an error the transaction has been committed. The created context must
