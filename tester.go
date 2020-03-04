@@ -200,7 +200,7 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 	defer ctx.Trace.Finish()
 
 	// yield context
-	if !ctx.Operation.Action() {
+	if !ctx.Operation.Action() && ctx.Store != nil {
 		_ = ctx.Store.T(ctx.Context, func(tc context.Context) error {
 			ctx.Context = tc
 			fn(ctx)
