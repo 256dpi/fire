@@ -28,7 +28,7 @@ func TestManagerFind(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, found)
 
-		// no tx
+		// error
 		found, err = m.Find(nil, &post2, post1.ID(), true)
 		assert.Error(t, err)
 		assert.False(t, found)
@@ -65,12 +65,12 @@ func TestManagerFindFirst(t *testing.T) {
 
 		// missing
 		found, err = m.FindFirst(nil, &post2, bson.M{
-			"Title": "Foo",
+			"Title": "Hello Space!",
 		}, nil, 0, false)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
-		// no tx
+		// error
 		found, err = m.FindFirst(nil, &post2, bson.M{
 			"Title": "Hello World!",
 		}, nil, 0, true)
@@ -104,7 +104,7 @@ func TestManagerFindAll(t *testing.T) {
 
 		m := tester.Store.M(&postModel{})
 
-		// no tx
+		// error
 		var list []postModel
 		err := m.FindAll(nil, &list, nil, nil, 0, 0, false)
 		assert.Error(t, err)
@@ -182,7 +182,7 @@ func TestManagerFindEach(t *testing.T) {
 
 		m := tester.Store.M(&postModel{})
 
-		// no tx
+		// error
 		iter, err := m.FindEach(nil, nil, nil, 0, 0, false)
 		assert.Error(t, err)
 		assert.Nil(t, iter)
@@ -254,9 +254,10 @@ func TestManagerCount(t *testing.T) {
 
 		m := tester.Store.M(&postModel{})
 
-		// no tx
+		// error
 		count, err := m.Count(nil, nil, 0, 0, false)
 		assert.Error(t, err)
+		assert.Equal(t, int64(0), count)
 		assert.Equal(t, ErrTransactionRequired, err)
 
 		// all
@@ -319,6 +320,7 @@ func TestManagerInsert(t *testing.T) {
 			Title: "Hello World!",
 		})
 		assert.NoError(t, err)
+		assert.Equal(t, 1, tester.Count(&postModel{}))
 	})
 }
 
@@ -326,13 +328,15 @@ func TestManagerInsertIfMissing(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		m := tester.Store.M(&postModel{})
 
-		// no tx
-		_, err := m.InsertIfMissing(nil, bson.M{
+		// error
+		inserted, err := m.InsertIfMissing(nil, bson.M{
 			"Title": "Hello World!",
 		}, &postModel{
 			Title: "Hello World!",
 		})
 		assert.Error(t, err)
+		assert.False(t, inserted)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// insert if missing
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -378,9 +382,11 @@ func TestManagerReplace(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 
-		// no tx
+		// error
 		found, err = m.Replace(nil, post, true)
 		assert.Error(t, err)
+		assert.False(t, found)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -419,11 +425,13 @@ func TestManagerReplaceFirst(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 
-		// no tx
+		// error
 		found, err = m.ReplaceFirst(nil, bson.M{
 			"Title": "Hello World!",
 		}, post, true)
 		assert.Error(t, err)
+		assert.False(t, found)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -465,13 +473,15 @@ func TestManagerUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 
-		// no tx
+		// error
 		found, err = m.Update(nil, post.ID(), bson.M{
 			"$set": bson.M{
 				"Title": "Hello Space!",
 			},
 		}, true)
 		assert.Error(t, err)
+		assert.False(t, found)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -518,7 +528,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 
-		// no tx
+		// error
 		found, err = m.UpdateFirst(nil, bson.M{
 			"Title": "Hello Space!",
 		}, bson.M{
@@ -527,6 +537,8 @@ func TestManagerUpdateFirst(t *testing.T) {
 			},
 		}, true)
 		assert.Error(t, err)
+		assert.False(t, found)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -557,7 +569,7 @@ func TestManagerUpdateAll(t *testing.T) {
 		m := tester.Store.M(&postModel{})
 
 		// missing
-		updated, err := m.UpdateAll(nil, bson.M{
+		matched, err := m.UpdateAll(nil, bson.M{
 			"Title": "foo",
 		}, bson.M{
 			"$set": bson.M{
@@ -565,10 +577,10 @@ func TestManagerUpdateAll(t *testing.T) {
 			},
 		}, false)
 		assert.NoError(t, err)
-		assert.Equal(t, int64(0), updated)
+		assert.Equal(t, int64(0), matched)
 
 		// existing
-		updated, err = m.UpdateAll(nil, bson.M{
+		matched, err = m.UpdateAll(nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
@@ -576,10 +588,10 @@ func TestManagerUpdateAll(t *testing.T) {
 			},
 		}, false)
 		assert.NoError(t, err)
-		assert.Equal(t, int64(2), updated)
+		assert.Equal(t, int64(2), matched)
 
-		// no tx
-		updated, err = m.UpdateAll(nil, bson.M{
+		// error
+		matched, err = m.UpdateAll(nil, bson.M{
 			"Title": "Hello Space!",
 		}, bson.M{
 			"$set": bson.M{
@@ -587,10 +599,12 @@ func TestManagerUpdateAll(t *testing.T) {
 			},
 		}, true)
 		assert.Error(t, err)
+		assert.Equal(t, int64(0), matched)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
-			updated, err = m.UpdateAll(ctx, bson.M{
+			matched, err = m.UpdateAll(ctx, bson.M{
 				"Title": "Hello Space!",
 			}, bson.M{
 				"$set": bson.M{
@@ -598,7 +612,7 @@ func TestManagerUpdateAll(t *testing.T) {
 				},
 			}, true)
 			assert.NoError(t, err)
-			assert.Equal(t, int64(2), updated)
+			assert.Equal(t, int64(2), matched)
 
 			return nil
 		})
@@ -609,8 +623,8 @@ func TestManagerUpsert(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		m := tester.Store.M(&postModel{})
 
-		// no tx
-		_, err := m.Upsert(nil, bson.M{
+		// error
+		inserted, err := m.Upsert(nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
@@ -618,6 +632,8 @@ func TestManagerUpsert(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
+		assert.False(t, inserted)
+		assert.Equal(t, ErrTransactionRequired, err)
 
 		// upsert
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -702,18 +718,18 @@ func TestManagerDeleteFirst(t *testing.T) {
 		m := tester.Store.M(&postModel{})
 
 		// missing
-		found, err := m.DeleteFirst(nil, bson.M{
+		deleted, err := m.DeleteFirst(nil, bson.M{
 			"Title": "foo",
 		})
 		assert.NoError(t, err)
-		assert.False(t, found)
+		assert.False(t, deleted)
 
 		// existing
-		found, err = m.DeleteFirst(nil, bson.M{
+		deleted, err = m.DeleteFirst(nil, bson.M{
 			"Title": "Hello World!",
 		})
 		assert.NoError(t, err)
-		assert.True(t, found)
+		assert.True(t, deleted)
 	})
 }
 

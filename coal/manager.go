@@ -12,8 +12,8 @@ import (
 	"github.com/256dpi/fire/cinder"
 )
 
-// ErrTransactionRequired if an operation would be unsafe to perform without a
-// transaction.
+// ErrTransactionRequired is returned if an operation would be unsafe to perform
+// without a transaction.
 var ErrTransactionRequired = errors.New("operation requires a transaction")
 
 var incrementLock = bson.M{
@@ -24,7 +24,8 @@ var incrementLock = bson.M{
 
 var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-// Manager manages a collection of documents.
+// Manager manages operations on collection of documents. It will validate
+// operations and ensure that they are safe under the MongoDB guarantees.
 type Manager struct {
 	meta  *Meta
 	coll  *Collection
@@ -33,7 +34,7 @@ type Manager struct {
 
 // Find will find the document with the specified id. It will return whether
 // a document has been found. Lock can be set to true to force a write lock on
-// the document and prevent a stale read in a transaction.
+// the document and prevent a stale read during a transaction.
 //
 // A transaction is required for locking.
 func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool, error) {
@@ -70,11 +71,12 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 
 // FindFirst will find the first document that matches the specified query. It
 // will return whether a document has been found. Lock can be set to true to
-// force a write lock on the document and prevent a stale read in a transaction.
+// force a write lock on the document and prevent a stale read during a
+// transaction.
 //
 // A transaction is required for locking. If the operation depends on
 // interleaving writes to not include or exclude documents from the query it
-// should should be run in a transaction.
+// should be run during a transaction.
 func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort []string, skip int64, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindFirst")
@@ -128,10 +130,10 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 }
 
 // FindAll will find all documents that match the specified query. Lock can be
-// set to true to force a write lock on the document and prevent a stale read in
-// a transaction.
+// set to true to force a write lock on the documents and prevent a stale read
+// during a transaction.
 //
-// A transaction is required to ensure isolation.
+// A transaction is always required to ensure isolation.
 func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.M, sort []string, skip, limit int64, lock bool) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindAll")
@@ -198,10 +200,10 @@ func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.
 }
 
 // FindEach will find all documents that match the specified query. Lock can be
-// set to true to force a write lock on the document and prevent a stale read in
-// a transaction.
+// set to true to force a write lock on the documents and prevent a stale read
+// during a transaction.
 //
-// A transaction is required to ensure isolation.
+// A transaction is always required to ensure isolation.
 func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, skip, limit int64, lock bool) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindEach")
@@ -273,10 +275,10 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 }
 
 // Count will count the documents that match the specified query. Lock can be
-// set to true to force a write lock on the document and prevent a stale read in
-// a transaction.
+// set to true to force a write lock on the documents and prevent a stale read
+// during a transaction.
 //
-// A transaction is required to ensure isolation.
+// A transaction is always required to ensure isolation.
 func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lock bool) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Count")
@@ -337,7 +339,8 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 // id will be generated and assigned. It will return whether a document has been
 // inserted.
 //
-// The operation is always atomic.
+// The operation is always atomic. Use a unique index to prevent unwanted
+// duplicates when inserting in parallel.
 func (m *Manager) Insert(ctx context.Context, model Model) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Insert")
@@ -362,7 +365,8 @@ func (m *Manager) Insert(ctx context.Context, model Model) error {
 // assigned. It will return whether a document has been inserted. The underlying
 // upsert operation will merge the query with the model fields.
 //
-// A transaction is required to ensure atomicity.
+// A transaction is always required to ensure atomicity. Use a unique index to
+// prevent unwanted duplicates when inserting in parallel.
 func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.InsertIfMissing")
@@ -401,8 +405,8 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 
 // Replace will replace the existing document with the provided one. It will
 // return whether a document has been found. Lock can be set to true to force a
-// write lock on the document and prevent a stale read in a transaction if the
-// replace did not cause an update.
+// write lock on the document and prevent a stale read during a transaction in
+// case the replace did not change the document.
 //
 // A transaction is required for locking, but the operation is always atomic.
 func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, error) {
@@ -438,12 +442,12 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 
 // ReplaceFirst will replace the first document that matches the specified query.
 // It will return whether a document has been found. Lock can be set to true to
-// force a write lock on the document and prevent a stale read in a transaction
-// if the replace did not cause an update.
+// force a write lock on the document and prevent a stale read during a
+// transaction if the replace did not cause an update.
 //
 // A transaction is required for locking. If the operation depends on
 // interleaving writes to not include or exclude documents from the query it
-// should should be run in a transaction.
+// should be run as part of a transaction.
 func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.ReplaceFirst")
@@ -476,9 +480,9 @@ func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, l
 }
 
 // Update will update the document with the specified id. It will return whether
-// a document has been found and updated. Lock can be set to true to force a
-// write lock on the document and prevent a stale read in a transaction if the
-// operation did not cause an update.
+// a document has been found. Lock can be set to true to force a write lock on
+// the document and prevent a stale read during a transaction in case the
+// update did not chang the document.
 //
 // A transaction is required for locking, but the operation is always atomic.
 func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (bool, error) {
@@ -520,12 +524,12 @@ func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (
 
 // UpdateFirst will update the first document that matches the specified query.
 // It will return whether a document has been found. Lock can be set to true to
-// force a write lock on the document and prevent a stale read in a transaction
-// if the operation did not cause an update.
+// force a write lock on the document and prevent a stale read during a
+// transaction in case the update did not change the document.
 //
 // A transaction is required for locking. If the operation depends on
 // interleaving writes to not include or exclude documents from the query it
-// should should be run in a transaction.
+// should be run as part of a transaction.
 func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
@@ -568,13 +572,13 @@ func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bo
 }
 
 // UpdateAll will update the documents that match the specified query. It will
-// return the number of found documents. Lock can be set to true to force a write
-// lock on the documents and prevent a stale read in a transaction if the
-// operation did not cause an update.
+// return the number of matched documents. Lock can be set to true to force a
+// write lock on the documents and prevent a stale read during a transaction in
+// case the operation did not change all documents.
 //
 // A transaction is required for locking. If the operation depends on
 // interleaving writes to not include or exclude documents from the query it
-// should should be run in a transaction.
+// should be run as part of a transaction.
 func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateAll")
@@ -620,7 +624,7 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 // no document has been found, the update document is applied to the query and
 // inserted. It will return whether a document has been inserted.
 //
-// A transaction is required to ensure atomicity.
+// A transaction is always required to ensure atomicity.
 func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
@@ -659,6 +663,8 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error
 
 // Delete will remove the document with the specified id. It will return
 // whether a document has been found and deleted.
+//
+// The operation is always atomic.
 func (m *Manager) Delete(ctx context.Context, id ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Delete")
@@ -680,7 +686,7 @@ func (m *Manager) Delete(ctx context.Context, id ID) (bool, error) {
 // return the number of deleted documents.
 //
 // If the operation depends on interleaving writes to not include or exclude
-// documents from the query it should should be run in a transaction.
+// documents from the query it should be run as part of a transaction.
 func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteAll")
@@ -706,7 +712,7 @@ func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 // It will return whether a document has been deleted.
 //
 // If the operation depends on interleaving writes to not include or exclude
-// documents from the query it should should be run in a transaction.
+// documents from the query it should be run as part of a transaction.
 func (m *Manager) DeleteFirst(ctx context.Context, query bson.M) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
