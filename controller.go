@@ -1259,9 +1259,12 @@ func (c *Controller) loadModel(ctx *Context) {
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
+	// lock document if using transactions and write will follow
+	lock := c.UseTransactions && ctx.Operation.Write()
+
 	// find model
 	model := coal.GetMeta(c.Model).Make()
-	found, err := ctx.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0)
+	found, err := ctx.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0, lock)
 	stack.AbortIf(err)
 
 	// check if missing

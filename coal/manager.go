@@ -2,6 +2,7 @@ package coal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -9,6 +10,18 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 )
+
+// ErrUnexpectedLock is returned if a lock is requested but no transaction has
+// been found.
+var ErrUnexpectedLock = errors.New("unexpected lock outside of transaction")
+
+var incrementLock = bson.M{
+	"$inc": bson.M{
+		"_lk": 1,
+	},
+}
+
+var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.After)
 
 // Manager manages a collection of documents.
 type Manager struct {
@@ -18,17 +31,31 @@ type Manager struct {
 }
 
 // Find will find the document with the specified id. It will return whether
-// a document has been found.
-func (m *Manager) Find(ctx context.Context, model Model, id ID) (bool, error) {
+// a document has been found. Lock can be set to true to force a write lock on
+// the document and prevent a stale read in a transaction.
+func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Find")
 	span.Log("id", id.Hex())
 	defer span.Finish()
 
-	// load model
-	err := m.coll.FindOne(ctx, bson.M{
+	// check lock
+	if lock && !hasCond(ctx, condTransaction) {
+		return false, ErrUnexpectedLock
+	}
+
+	// prepare query
+	query := bson.M{
 		"_id": id,
-	}).Decode(model)
+	}
+
+	// find document
+	var err error
+	if lock {
+		err = m.coll.FindOneAndUpdate(ctx, query, incrementLock, returnAfterUpdate).Decode(model)
+	} else {
+		err = m.coll.FindOne(ctx, query).Decode(model)
+	}
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {
@@ -39,14 +66,20 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID) (bool, error) {
 }
 
 // FindFirst will find the first document that matches the specified query. It
-// will return whether a document has been found.
-func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort []string, skip int64) (bool, error) {
+// will return whether a document has been found. Lock can be set to true to
+// force a write lock on the document and prevent a stale read in a transaction.
+func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort []string, skip int64, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindFirst")
 	span.Log("query", query)
 	span.Log("sort", sort)
 	span.Log("skip", skip)
 	defer span.Finish()
+
+	// check lock
+	if lock && !hasCond(ctx, condTransaction) {
+		return false, ErrUnexpectedLock
+	}
 
 	// translate query
 	queryDoc, err := m.trans.Document(query)
@@ -72,8 +105,12 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 		opts.SetSkip(skip)
 	}
 
-	// load model
-	err = m.coll.FindOne(ctx, queryDoc, opts).Decode(model)
+	// find document
+	if lock {
+		err = m.coll.FindOneAndUpdate(ctx, queryDoc, incrementLock, returnAfterUpdate).Decode(model)
+	} else {
+		err = m.coll.FindOne(ctx, queryDoc).Decode(model)
+	}
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {
