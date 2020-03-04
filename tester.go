@@ -200,7 +200,15 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 	defer ctx.Trace.Finish()
 
 	// yield context
-	fn(ctx)
+	if !ctx.Operation.Action() {
+		_ = ctx.Store.T(ctx.Context, func(tc context.Context) error {
+			ctx.Context = tc
+			fn(ctx)
+			return nil
+		})
+	} else {
+		fn(ctx)
+	}
 }
 
 // Request will run the specified request against the registered handler. This
