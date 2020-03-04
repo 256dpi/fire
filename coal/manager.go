@@ -27,7 +27,6 @@ var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.Aft
 // Manager manages operations on collection of documents. It will validate
 // operations and ensure that they are safe under the MongoDB guarantees.
 type Manager struct {
-	meta  *Meta
 	coll  *Collection
 	trans *Translator
 }

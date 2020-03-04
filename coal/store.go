@@ -163,7 +163,6 @@ func (s *Store) M(model Model) *Manager {
 
 	// create manager
 	manager := &Manager{
-		meta:  GetMeta(model),
 		coll:  s.C(model),
 		trans: NewTranslator(model),
 	}
