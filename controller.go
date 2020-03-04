@@ -1291,7 +1291,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	lock := ctx.Operation.Write()
 
 	// find model
-	model := coal.GetMeta(c.Model).Make()
+	model := c.meta.Make()
 	found, err := ctx.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0, lock)
 	stack.AbortIf(err)
 
@@ -1305,7 +1305,7 @@ func (c *Controller) loadModel(ctx *Context) {
 
 	// set original on update operations
 	if ctx.Operation == Update {
-		original := coal.GetMeta(c.Model).Make()
+		original := c.meta.Make()
 		stack.AbortIf(coal.TransferBSON(model, original))
 		ctx.Original = original
 	}
@@ -1420,7 +1420,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// load documents
-	models := coal.GetMeta(c.Model).MakeSlice()
+	models := c.meta.MakeSlice()
 	err := ctx.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false)
 	stack.AbortIf(err)
 
