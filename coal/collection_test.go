@@ -48,16 +48,16 @@ func TestCollectionFindIterator(t *testing.T) {
 func TestCollectionCursorIsolation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		if _, ok := tester.Store.DB().(*lungo.Database); ok {
-			abstractDuplicateDocumentsTest(t, tester, false, true)
+			collectionCursorIsolationTest(t, tester, false, true)
 			// transaction will cause a deadlock
 		} else {
-			abstractDuplicateDocumentsTest(t, tester, false, false)
-			abstractDuplicateDocumentsTest(t, tester, true, true)
+			collectionCursorIsolationTest(t, tester, false, false)
+			collectionCursorIsolationTest(t, tester, true, true)
 		}
 	})
 }
 
-func abstractDuplicateDocumentsTest(t *testing.T, tester *Tester, useTransaction, expectIsolation bool) {
+func collectionCursorIsolationTest(t *testing.T, tester *Tester, useTransaction, expectIsolation bool) {
 	tester.Clean()
 
 	// document duplication requires index
