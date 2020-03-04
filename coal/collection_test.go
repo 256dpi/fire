@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestCollectionFind(t *testing.T) {
+func TestCollectionFindIterator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		post1 := *tester.Insert(&postModel{
 			Title:     "A",

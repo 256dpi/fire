@@ -23,6 +23,7 @@ var unsafeOperators = map[string]bool{
 
 var systemFields = map[string]bool{
 	"_id": true,
+	"_lk": true,
 }
 
 // Translator is capable of translating query, update and sort documents from
