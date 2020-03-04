@@ -195,6 +195,11 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		ctx = context.Background()
 	}
 
+	// check if transaction already exists
+	if getCond(ctx).has(condTransaction) {
+		return fn(ctx)
+	}
+
 	// prepare options
 	opts := options.Session().
 		SetCausalConsistency(true).
