@@ -20,6 +20,10 @@ import (
 
 // A Controller provides a JSON API based interface to a model.
 //
+// Database transactions are automatically used for list, find, create, update
+// and delete operations. The created session can be accessed through the context
+// to use it in callbacks.
+//
 // Note: A controller must not be modified after being added to a group.
 type Controller struct {
 	// The model that this controller should provide (e.g. &Foo{}).
@@ -103,12 +107,6 @@ type Controller struct {
 	// notifiers and decorators are run for the request.
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
-
-	// UseTransactions can be set to true to enable transactions for list, find,
-	// create, update and delete operations. If enabled, a transaction will b
-	// created and used for all database requests. The created session can be
-	// accessed through the context to use it in callbacks.
-	UseTransactions bool
 
 	// TolerateViolations will not raise an error if a non-writable field is
 	// set during a Create or Update operation. Frameworks like Ember.js just
@@ -321,8 +319,8 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// set store
 	ctx.Store = c.Store
 
-	// run operation with transaction if possible
-	if !ctx.Operation.Action() && c.UseTransactions {
+	// run operation with transaction if not an action
+	if !ctx.Operation.Action() {
 		stack.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
 			ctx.Context = tc
 			c.runOperation(ctx)
@@ -1259,8 +1257,8 @@ func (c *Controller) loadModel(ctx *Context) {
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
-	// lock document if using transactions and write will follow
-	lock := c.UseTransactions && ctx.Operation.Write()
+	// lock document if a write is expected
+	lock := ctx.Operation.Write()
 
 	// find model
 	model := coal.GetMeta(c.Model).Make()

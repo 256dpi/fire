@@ -35,7 +35,6 @@ func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage)
 				}
 			}),
 		},
-		UseTransactions:    true,
 		TolerateViolations: true,
 		IdempotentCreate:   true,
 		ConsistentUpdate:   true,

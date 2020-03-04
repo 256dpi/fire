@@ -17,59 +17,50 @@ var textBody = strings.Repeat("X", 100)
 func BenchmarkList(b *testing.B) {
 	store := mongoStore
 
-	b.Run("1X", func(b *testing.B) {
-		listBenchmark(b, store, false, 20, 0)
+	b.Run("00X", func(b *testing.B) {
+		listBenchmark(b, store, 20, 0)
+	})
+
+	b.Run("01X", func(b *testing.B) {
+		listBenchmark(b, store, 20, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		listBenchmark(b, store, false, 20, 10)
+		listBenchmark(b, store, 20, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		listBenchmark(b, store, false, 20, 50)
-	})
-
-	b.Run("10X-TX", func(b *testing.B) {
-		listBenchmark(b, store, true, 20, 10)
-	})
-
-	b.Run("50X-TX", func(b *testing.B) {
-		listBenchmark(b, store, true, 20, 50)
+		listBenchmark(b, store, 20, 50)
 	})
 }
 
 func BenchmarkFind(b *testing.B) {
 	store := mongoStore
 
-	b.Run("1X", func(b *testing.B) {
-		findBenchmark(b, store, false, 0)
+	b.Run("00X", func(b *testing.B) {
+		findBenchmark(b, store, 0)
+	})
+
+	b.Run("01X", func(b *testing.B) {
+		findBenchmark(b, store, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		findBenchmark(b, store, false, 10)
+		findBenchmark(b, store, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		findBenchmark(b, store, false, 50)
-	})
-
-	b.Run("10X-TX", func(b *testing.B) {
-		findBenchmark(b, store, true, 10)
-	})
-
-	b.Run("50X-TX", func(b *testing.B) {
-		findBenchmark(b, store, true, 50)
+		findBenchmark(b, store, 50)
 	})
 }
 
-func listBenchmark(b *testing.B, store *coal.Store, transactions bool, items, parallelism int) {
+func listBenchmark(b *testing.B, store *coal.Store, items, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
 	tester.Assign("", &Controller{
-		Model:           &postModel{},
-		Store:           tester.Store,
-		UseTransactions: transactions,
+		Model: &postModel{},
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,
@@ -89,6 +80,7 @@ func listBenchmark(b *testing.B, store *coal.Store, transactions bool, items, pa
 			TextBody: textBody,
 		})
 	}
+
 	parallelBenchmark(b, parallelism, func() {
 		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			if r.Code != http.StatusOK {
@@ -98,14 +90,13 @@ func listBenchmark(b *testing.B, store *coal.Store, transactions bool, items, pa
 	})
 }
 
-func findBenchmark(b *testing.B, store *coal.Store, transactions bool, parallelism int) {
+func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
 	tester.Assign("", &Controller{
-		Model:           &postModel{},
-		Store:           tester.Store,
-		UseTransactions: transactions,
+		Model: &postModel{},
+		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
 		Store: tester.Store,
@@ -134,7 +125,7 @@ func findBenchmark(b *testing.B, store *coal.Store, transactions bool, paralleli
 }
 
 func parallelBenchmark(b *testing.B, parallelism int, fn func()) {
-	if parallelism > 0 {
+	if parallelism != 0 {
 		b.SetParallelism(parallelism)
 	}
 
@@ -143,7 +134,7 @@ func parallelBenchmark(b *testing.B, parallelism int, fn func()) {
 
 	now := time.Now()
 
-	if parallelism > 0 {
+	if parallelism != 0 {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				fn()

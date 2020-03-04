@@ -4488,12 +4488,11 @@ func TestEnsureConsistency(t *testing.T) {
 	})
 }
 
-func TestUseTransactions(t *testing.T) {
+func TestTransactions(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		group := tester.Assign("", &Controller{
-			Model:           &postModel{},
-			Store:           tester.Store,
-			UseTransactions: true,
+			Model: &postModel{},
+			Store: tester.Store,
 			Notifiers: L{
 				C("foo", All(), func(ctx *Context) error {
 					if ctx.Model.(*postModel).Title == "FAIL" {
