@@ -16,10 +16,21 @@ type Tester struct {
 
 // NewTester returns a new tester.
 func NewTester(store *Store, models ...Model) *Tester {
-	return &Tester{
+	// create tester
+	tester :=  &Tester{
 		Store:  store,
 		Models: models,
 	}
+
+	// ensure collections
+	for _, model := range models {
+		tester.Insert(GetMeta(model).Make())
+	}
+
+	// clean
+	tester.Clean()
+
+	return tester
 }
 
 // Insert will insert the specified model.
