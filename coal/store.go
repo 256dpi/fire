@@ -196,7 +196,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// check if transaction already exists
-	if getCond(ctx).has(condTransaction) {
+	if getKey(ctx, hasTransaction) {
 		return fn(ctx)
 	}
 
@@ -214,7 +214,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		}
 
 		// call function
-		err = fn(withCond(sc, condTransaction))
+		err = fn(withKey(sc, hasTransaction))
 		if err != nil {
 			return err
 		}
@@ -245,33 +245,19 @@ func (s *Store) Close() error {
 	return nil
 }
 
-type condContextKey struct{}
+type contextKey struct{}
 
-var condKey = condContextKey{}
+var hasTransaction = contextKey{}
 
-type cond uint8
-
-const (
-	condTransaction = 1 << iota
-)
-
-func (c cond) has(cnd cond) bool {
-	return c&cnd != 0
+func withKey(ctx context.Context, key interface{}) context.Context {
+	return context.WithValue(ctx, key, true)
 }
 
-func withCond(ctx context.Context, cnd cond) context.Context {
-	return context.WithValue(ctx, condKey, cnd)
-}
-
-func getCond(ctx context.Context) cond {
-	var c cond
+func getKey(ctx context.Context, key interface{}) bool {
 	if ctx != nil {
-		c, _ = ctx.Value(condKey).(cond)
+		ok, _ := ctx.Value(key).(bool)
+		return ok
 	}
 
-	return c
-}
-
-func hasCond(ctx context.Context, cnd cond) bool {
-	return getCond(ctx).has(cnd)
+	return false
 }

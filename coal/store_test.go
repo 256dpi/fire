@@ -32,7 +32,7 @@ func TestOpen(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestStoreTX(t *testing.T) {
+func TestStoreT(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
 			return nil
@@ -70,4 +70,12 @@ func TestStoreTX(t *testing.T) {
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 	})
+}
+
+func TestKeys(t *testing.T) {
+	ctx := context.Background()
+	assert.False(t, getKey(ctx, hasTransaction))
+
+	ctx = withKey(ctx, hasTransaction)
+	assert.True(t, getKey(ctx, hasTransaction))
 }

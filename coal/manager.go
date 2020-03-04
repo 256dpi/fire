@@ -44,7 +44,7 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 	defer span.Finish()
 
 	// check lock
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -86,7 +86,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 	defer span.Finish()
 
 	// check lock
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -144,7 +144,7 @@ func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.
 	defer span.Finish()
 
 	// require transaction
-	if !hasCond(ctx, condTransaction) {
+	if !getKey(ctx, hasTransaction) {
 		return ErrTransactionRequired
 	}
 
@@ -213,7 +213,7 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	span.Log("limit", limit)
 
 	// require transaction
-	if !hasCond(ctx, condTransaction) {
+	if !getKey(ctx, hasTransaction) {
 		return nil, ErrTransactionRequired
 	}
 
@@ -288,7 +288,7 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 	defer span.Finish()
 
 	// require transaction
-	if !hasCond(ctx, condTransaction) {
+	if !getKey(ctx, hasTransaction) {
 		return 0, ErrTransactionRequired
 	}
 
@@ -374,7 +374,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 	defer span.Finish()
 
 	// require transaction
-	if !hasCond(ctx, condTransaction) {
+	if !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -420,7 +420,7 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 	}
 
 	// require transaction
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -455,7 +455,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, l
 	defer span.Finish()
 
 	// require transaction
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -493,7 +493,7 @@ func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (
 	defer span.Finish()
 
 	// require transaction
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -538,7 +538,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bo
 	defer span.Finish()
 
 	// require transaction
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
@@ -587,7 +587,7 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 	defer span.Finish()
 
 	// require transaction
-	if lock && !hasCond(ctx, condTransaction) {
+	if lock && !getKey(ctx, hasTransaction) {
 		return 0, ErrTransactionRequired
 	}
 
@@ -633,7 +633,7 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error
 	defer span.Finish()
 
 	// require transaction
-	if !hasCond(ctx, condTransaction) {
+	if !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
 	}
 
