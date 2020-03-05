@@ -3202,17 +3202,17 @@ func TestRelationshipFilters(t *testing.T) {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Comments": {
 							{
-								coal.F(&commentModel{}, "Message"): "x",
+								"Message": "bar",
 							},
 						},
 						"Selections": {
 							{
-								coal.F(&selectionModel{}, "Name"): "x",
+								"Name": "bar",
 							},
 						},
 						"Note": {
 							{
-								coal.F(&noteModel{}, "Title"): "x",
+								"Title": "bar",
 							},
 						},
 					}
@@ -3230,7 +3230,7 @@ func TestRelationshipFilters(t *testing.T) {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Posts": {
 							{
-								coal.F(&postModel{}, "Title"): "x",
+								"Title": "bar",
 							},
 						},
 					}
@@ -3245,7 +3245,7 @@ func TestRelationshipFilters(t *testing.T) {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Post": {
 							{
-								coal.F(&postModel{}, "Title"): "x",
+								"Title": "x",
 							},
 						},
 					}
@@ -3260,25 +3260,42 @@ func TestRelationshipFilters(t *testing.T) {
 		}).ID().Hex()
 
 		// create comment
-		comment := coal.New().Hex()
+		comment1 := coal.New().Hex()
 		tester.Insert(&commentModel{
-			Base:    coal.B(coal.MustFromHex(comment)),
-			Message: "comment",
-			Parent:  coal.P(coal.MustFromHex(comment)),
+			Base:    coal.B(coal.MustFromHex(comment1)),
+			Message: "foo",
+			Parent:  coal.P(coal.MustFromHex(comment1)),
+			Post:    coal.MustFromHex(post),
+		})
+		comment2 := coal.New().Hex()
+		tester.Insert(&commentModel{
+			Base:    coal.B(coal.MustFromHex(comment2)),
+			Message: "bar",
+			Parent:  coal.P(coal.MustFromHex(comment2)),
 			Post:    coal.MustFromHex(post),
 		})
 
 		// create selection
-		_ = tester.Insert(&selectionModel{
-			Name: "selection",
+		tester.Insert(&selectionModel{
+			Name: "foo",
+			Posts: []coal.ID{
+				coal.MustFromHex(post),
+			},
+		})
+		selection2 := tester.Insert(&selectionModel{
+			Name: "bar",
 			Posts: []coal.ID{
 				coal.MustFromHex(post),
 			},
 		}).ID().Hex()
 
-		// create note
-		_ = tester.Insert(&noteModel{
-			Title: "note",
+		// create notes
+		tester.Insert(&noteModel{
+			Title: "foo",
+			Post:  coal.MustFromHex(post),
+		})
+		note2 := tester.Insert(&noteModel{
+			Title: "bar",
 			Post:  coal.MustFromHex(post),
 		}).ID().Hex()
 
@@ -3297,21 +3314,34 @@ func TestRelationshipFilters(t *testing.T) {
 						},
 						"relationships": {
 							"comments": {
-								"data": [],
+								"data": [
+									{
+										"id": "`+comment2+`",
+										"type": "comments"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post+`/relationships/comments",
 									"related": "/posts/`+post+`/comments"
 								}
 							},
 							"selections": {
-								"data": [],
+								"data": [
+									{
+										"id": "`+selection2+`",
+										"type": "selections"
+									}
+								],
 								"links": {
 									"self": "/posts/`+post+`/relationships/selections",
 									"related": "/posts/`+post+`/selections"
 								}
 							},
 							"note": {
-								"data": null,
+								"data": {
+									"id": "`+note2+`",
+									"type": "notes"
+								},
 								"links": {
 									"self": "/posts/`+post+`/relationships/note",
 									"related": "/posts/`+post+`/note"
