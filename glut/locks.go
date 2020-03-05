@@ -188,7 +188,7 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 	}
 
 	// delete value
-	deleted, err := store.M(&Value{}).DeleteFirst(ctx, bson.M{
+	deleted, err := store.M(&Value{}).DeleteFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 		"Token":     token,

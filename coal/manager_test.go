@@ -699,21 +699,23 @@ func TestManagerUpsert(t *testing.T) {
 
 func TestManagerDelete(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		post := tester.Insert(&postModel{
+		post := *tester.Insert(&postModel{
 			Title: "Hello World!",
 		}).(*postModel)
 
 		m := tester.Store.M(&postModel{})
 
 		// missing
-		found, err := m.Delete(nil, New())
+		found, err := m.Delete(nil, nil, New())
 		assert.NoError(t, err)
 		assert.False(t, found)
 
 		// existing
-		found, err = m.Delete(nil, post.ID())
+		var deleted postModel
+		found, err = m.Delete(nil, &deleted, post.ID())
 		assert.NoError(t, err)
 		assert.True(t, found)
+		assert.Equal(t, post, deleted)
 	})
 }
 
@@ -746,25 +748,27 @@ func TestManagerDeleteAll(t *testing.T) {
 
 func TestManagerDeleteFirst(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		tester.Insert(&postModel{
+		post := *tester.Insert(&postModel{
 			Title: "Hello World!",
-		})
+		}).(*postModel)
 
 		m := tester.Store.M(&postModel{})
 
 		// missing
-		deleted, err := m.DeleteFirst(nil, bson.M{
+		found, err := m.DeleteFirst(nil, nil, bson.M{
 			"Title": "foo",
 		})
 		assert.NoError(t, err)
-		assert.False(t, deleted)
+		assert.False(t, found)
 
 		// existing
-		deleted, err = m.DeleteFirst(nil, bson.M{
+		var deleted postModel
+		found, err = m.DeleteFirst(nil, &deleted, bson.M{
 			"Title": "Hello World!",
 		})
 		assert.NoError(t, err)
-		assert.True(t, deleted)
+		assert.True(t, found)
+		assert.Equal(t, post, deleted)
 	})
 }
 

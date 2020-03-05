@@ -78,7 +78,7 @@ func Del(ctx context.Context, store *coal.Store, component, name string) (bool, 
 	defer span.Finish()
 
 	// delete value
-	deleted, err := store.M(&Value{}).DeleteFirst(ctx, bson.M{
+	deleted, err := store.M(&Value{}).DeleteFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 	})

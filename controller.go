@@ -693,7 +693,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		}
 	} else {
 		// delete model
-		found, err := ctx.M(c.Model).Delete(ctx, ctx.Model.ID())
+		found, err := ctx.M(c.Model).Delete(ctx, nil, ctx.Model.ID())
 		stack.AbortIf(err)
 
 		// check if missing

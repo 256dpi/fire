@@ -728,21 +728,35 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M, lock bool) (
 
 // Delete will remove the document with the specified id. It will return
 // whether a document has been found and deleted.
-func (m *Manager) Delete(ctx context.Context, id ID) (bool, error) {
+func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Delete")
 	span.Log("id", id.Hex())
 	defer span.Finish()
 
 	// delete document
-	res, err := m.coll.DeleteOne(ctx, bson.M{
+	if model == nil {
+		res, err := m.coll.DeleteOne(ctx, bson.M{
+			"_id": id,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		return res.DeletedCount == 1, nil
+	}
+
+	// find and delete document
+	err := m.coll.FindOneAndDelete(ctx, bson.M{
 		"_id": id,
-	})
-	if err != nil {
+	}).Decode(model)
+	if IsMissing(err) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return res.DeletedCount == 1, nil
+	return true, nil
 }
 
 // DeleteAll will delete the documents that match the specified query. It will
@@ -772,11 +786,11 @@ func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 }
 
 // DeleteFirst will delete the first document that matches the specified query.
-// It will return whether a document has been deleted.
+// It will return whether a document has been found and deleted.
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) DeleteFirst(ctx context.Context, query bson.M) (bool, error) {
+func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
 	span.Log("query", query)
@@ -788,11 +802,23 @@ func (m *Manager) DeleteFirst(ctx context.Context, query bson.M) (bool, error) {
 		return false, err
 	}
 
-	// update document
-	res, err := m.coll.DeleteOne(ctx, queryDoc)
-	if err != nil {
+	// delete document
+	if model == nil {
+		res, err := m.coll.DeleteOne(ctx, queryDoc)
+		if err != nil {
+			return false, err
+		}
+
+		return res.DeletedCount == 1, nil
+	}
+
+	// find and delete document
+	err = m.coll.FindOneAndDelete(ctx, queryDoc).Decode(model)
+	if IsMissing(err) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return res.DeletedCount == 1, nil
+	return true, nil
 }
