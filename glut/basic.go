@@ -60,7 +60,7 @@ func Set(ctx context.Context, store *coal.Store, component, name string, data co
 			"Data":     data,
 			"Deadline": deadline,
 		},
-	})
+	}, false)
 	if err != nil {
 		return false, err
 	}

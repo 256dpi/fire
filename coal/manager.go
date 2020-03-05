@@ -362,15 +362,24 @@ func (m *Manager) Insert(ctx context.Context, model Model) error {
 // InsertIfMissing will insert the provided document if no document matched the
 // provided query. If the document has a zero id a new id will be generated and
 // assigned. It will return whether a document has been inserted. The underlying
-// upsert operation will merge the query with the model fields.
+// upsert operation will merge the query with the model fields. Lock can be set
+// to true to force a write lock on the existing document and prevent a stale
+// read during a transaction.
 //
-// Even with transactions there is a risk for duplicate inserts when the query
-// is not covered by a unique index.
-func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model) (bool, error) {
+// A transaction is required for locking.
+//
+// Warning: Even with transactions there is a risk for duplicate inserts when
+// the query is not covered by a unique index.
+func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.InsertIfMissing")
 	span.Log("query", query)
 	defer span.Finish()
+
+	// require transaction
+	if lock && !getKey(ctx, hasTransaction) {
+		return false, ErrTransactionRequired
+	}
 
 	// translate query
 	queryDoc, err := m.trans.Document(query)
@@ -386,10 +395,20 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 	// prepare options
 	opts := options.Update().SetUpsert(true)
 
-	// upsert document
-	res, err := m.coll.UpdateOne(ctx, queryDoc, bson.M{
+	// prepare update
+	update := bson.M{
 		"$setOnInsert": model,
-	}, opts)
+	}
+
+	// increment lock
+	if lock {
+		update["$inc"] = bson.M{
+			"_lk": 1,
+		}
+	}
+
+	// upsert document
+	res, err := m.coll.UpdateOne(ctx, queryDoc, update, opts)
 	if err != nil {
 		return false, err
 	}
@@ -616,16 +635,25 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 
 // Upsert will update the first document that matches the specified query. If
 // no document has been found, the update document is applied to the query and
-// inserted. It will return whether a document has been inserted.
+// inserted. It will return whether a document has been inserted. Lock can be set
+// to true to force a write lock on the existing document and prevent a stale
+// read during a transaction.
 //
-// Even with transactions there is a risk for duplicate inserts when the query
-// is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error) {
+// A transaction is required for locking.
+//
+// Warning: Even with transactions there is a risk for duplicate inserts when
+// the query is not covered by a unique index.
+func (m *Manager) Upsert(ctx context.Context, query, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
 	span.Log("query", query)
 	span.Log("update", update)
 	defer span.Finish()
+
+	// require transaction
+	if lock && !getKey(ctx, hasTransaction) {
+		return false, ErrTransactionRequired
+	}
 
 	// translate query
 	queryDoc, err := m.trans.Document(query)
@@ -637,6 +665,14 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error
 	updateDoc, err := m.trans.Document(update)
 	if err != nil {
 		return false, err
+	}
+
+	// increment lock
+	if lock {
+		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
+		if err != nil {
+			return false, fmt.Errorf("unable to add lock: %w", err)
+		}
 	}
 
 	// prepare options

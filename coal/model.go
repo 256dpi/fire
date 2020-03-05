@@ -95,7 +95,7 @@ func Slice(ptr interface{}) []Model {
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID    `json:"-" bson:"_id"`
-	Lock  int64 `json:"-" bson:"_lk"`
+	Lock  int64 `json:"-" bson:"_lk,omitempty"`
 }
 
 // B is a short-hand to construct a base with the provided id or a generated

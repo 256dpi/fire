@@ -496,7 +496,7 @@ func (c *Controller) createResource(ctx *Context) {
 		// insert model
 		inserted, err := ctx.M(c.Model).InsertIfMissing(ctx, bson.M{
 			idempotentCreateField: idempotentCreateToken,
-		}, ctx.Model)
+		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "document is not unique"))
 		}

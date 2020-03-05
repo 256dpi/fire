@@ -58,7 +58,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 			"Token":    token,
 			"Deadline": deadline,
 		},
-	})
+	}, false)
 	if err != nil {
 		return false, err
 	}

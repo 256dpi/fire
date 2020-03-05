@@ -333,7 +333,7 @@ func TestManagerInsertIfMissing(t *testing.T) {
 			"Title": "Hello World!",
 		}, &postModel{
 			Title: "Hello World!",
-		})
+		}, false)
 		assert.NoError(t, err)
 		assert.True(t, inserted)
 
@@ -342,9 +342,31 @@ func TestManagerInsertIfMissing(t *testing.T) {
 			"Title": "Hello World!",
 		}, &postModel{
 			Title: "Hello World!",
-		})
+		}, false)
 		assert.NoError(t, err)
 		assert.False(t, inserted)
+
+		// error
+		inserted, err = m.InsertIfMissing(nil, bson.M{
+			"Title": "Hello World!",
+		}, &postModel{
+			Title: "Hello World!",
+		}, true)
+		assert.Error(t, err)
+		assert.False(t, inserted)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			inserted, err = m.InsertIfMissing(ctx, bson.M{
+				"Title": "Hello World!",
+			}, &postModel{
+				Title: "Hello World!",
+			}, true)
+			assert.NoError(t, err)
+			assert.False(t, inserted)
+			return nil
+		})
 	})
 }
 
@@ -617,7 +639,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		})
+		}, false)
 		assert.NoError(t, err)
 		assert.True(t, inserted)
 
@@ -628,9 +650,35 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		})
+		}, false)
 		assert.NoError(t, err)
 		assert.False(t, inserted)
+
+		// error
+		inserted, err = m.Upsert(nil, bson.M{
+			"Title": "Hello World!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, true)
+		assert.Error(t, err)
+		assert.False(t, inserted)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			inserted, err = m.Upsert(ctx, bson.M{
+				"Title": "Hello World!",
+			}, bson.M{
+				"$set": bson.M{
+					"Title": "Hello World!",
+				},
+			}, true)
+			assert.NoError(t, err)
+			assert.False(t, inserted)
+			return nil
+		})
 	})
 }
 
