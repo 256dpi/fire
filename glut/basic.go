@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
@@ -21,15 +20,15 @@ func Get(ctx context.Context, store *coal.Store, component, name string) (coal.M
 	defer span.Finish()
 
 	// find value
-	var value *Value
-	err := store.C(&Value{}).FindOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
-	}).Decode(&value)
-	if coal.IsMissing(err) {
-		return nil, false, nil
-	} else if err != nil {
+	var value Value
+	found, err := store.M(&Value{}).FindFirst(ctx, &value, bson.M{
+		"Component": component,
+		"Name":      name,
+	}, nil, 0, false)
+	if err != nil {
 		return nil, false, err
+	} else if !found {
+		return nil, false, nil
 	}
 
 	return value.Data, true, nil
@@ -52,21 +51,21 @@ func Set(ctx context.Context, store *coal.Store, component, name string, data co
 		deadline = coal.T(time.Now().Add(ttl))
 	}
 
-	// update value
-	res, err := store.C(&Value{}).UpdateOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
+	// upsert value
+	inserted, err := store.M(&Value{}).Upsert(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Value{}, "Data"):     data,
-			coal.F(&Value{}, "Deadline"): deadline,
+			"Data":     data,
+			"Deadline": deadline,
 		},
-	}, options.Update().SetUpsert(true))
+	})
 	if err != nil {
 		return false, err
 	}
 
-	return res.UpsertedCount > 0, nil
+	return inserted, nil
 }
 
 // Del will remove the specified value from the store. This method will ignore
@@ -79,15 +78,15 @@ func Del(ctx context.Context, store *coal.Store, component, name string) (bool, 
 	defer span.Finish()
 
 	// delete value
-	res, err := store.C(&Value{}).DeleteOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
+	deleted, err := store.M(&Value{}).DeleteFirst(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
 	})
 	if err != nil {
 		return false, err
 	}
 
-	return res.DeletedCount > 0, nil
+	return deleted, nil
 }
 
 // Mut will load the specified value, run the callback and on success write the

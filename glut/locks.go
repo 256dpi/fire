@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
@@ -50,63 +49,63 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 	locked := time.Now().Add(timeout)
 
 	// ensure value
-	res, err := store.C(&Value{}).UpdateOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
+	inserted, err := store.M(&Value{}).Upsert(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
 	}, bson.M{
 		"$setOnInsert": bson.M{
-			coal.F(&Value{}, "Locked"):   locked,
-			coal.F(&Value{}, "Token"):    token,
-			coal.F(&Value{}, "Deadline"): deadline,
-		},
-	}, options.Update().SetUpsert(true))
-	if err != nil {
-		return false, err
-	}
-
-	// check if locked by upsert
-	if res.UpsertedCount > 0 {
-		return true, nil
-	}
-
-	// lock value
-	res, err = store.C(&Value{}).UpdateOne(ctx, bson.M{
-		"$and": []bson.M{
-			{
-				coal.F(&Value{}, "Component"): component,
-				coal.F(&Value{}, "Name"):      name,
-			},
-			{
-				"$or": []bson.M{
-					// unlocked
-					{
-						coal.F(&Value{}, "Token"): nil,
-					},
-					// lock timed out
-					{
-						coal.F(&Value{}, "Locked"): bson.M{
-							"$lt": time.Now(),
-						},
-					},
-					// we have the lock
-					{
-						coal.F(&Value{}, "Token"): token,
-					},
-				},
-			},
-		},
-	}, bson.M{
-		"$set": bson.M{
-			coal.F(&Value{}, "Locked"):   locked,
-			coal.F(&Value{}, "Token"):    token,
-			coal.F(&Value{}, "Deadline"): deadline,
+			"Locked":   locked,
+			"Token":    token,
+			"Deadline": deadline,
 		},
 	})
 	if err != nil {
 		return false, err
 	}
 
-	return res.ModifiedCount > 0, nil
+	// check if locked by upsert
+	if inserted {
+		return true, nil
+	}
+
+	// lock value
+	found, err := store.M(&Value{}).UpdateFirst(ctx, bson.M{
+		"$and": []bson.M{
+			{
+				"Component": component,
+				"Name":      name,
+			},
+			{
+				"$or": []bson.M{
+					// unlocked
+					{
+						"Token": nil,
+					},
+					// lock timed out
+					{
+						"Locked": bson.M{
+							"$lt": time.Now(),
+						},
+					},
+					// we have the lock
+					{
+						"Token": token,
+					},
+				},
+			},
+		},
+	}, bson.M{
+		"$set": bson.M{
+			"Locked":   locked,
+			"Token":    token,
+			"Deadline": deadline,
+		},
+	}, false)
+	if err != nil {
+		return false, err
+	}
+
+	return found, nil
 }
 
 // SetLocked will update the specified value only if the value is locked by the
@@ -125,23 +124,23 @@ func SetLocked(ctx context.Context, store *coal.Store, component, name string, d
 	}
 
 	// update value
-	res, err := store.C(&Value{}).UpdateOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
-		coal.F(&Value{}, "Token"):     token,
-		coal.F(&Value{}, "Locked"): bson.M{
+	found, err := store.M(&Value{}).UpdateFirst(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
+		"Token":     token,
+		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Value{}, "Data"): data,
+			"Data": data,
 		},
-	})
+	}, false)
 	if err != nil {
 		return false, err
 	}
 
-	return res.ModifiedCount > 0, nil
+	return found, nil
 }
 
 // GetLocked will load the contents of the value with the specified name only
@@ -155,19 +154,19 @@ func GetLocked(ctx context.Context, store *coal.Store, component, name string, t
 	defer span.Finish()
 
 	// find value
-	var value *Value
-	err := store.C(&Value{}).FindOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
-		coal.F(&Value{}, "Token"):     token,
-		coal.F(&Value{}, "Locked"): bson.M{
+	var value Value
+	found, err := store.M(&Value{}).FindFirst(ctx, &value, bson.M{
+		"Component": component,
+		"Name":      name,
+		"Token":     token,
+		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
-	}).Decode(&value)
-	if coal.IsMissing(err) {
-		return nil, false, nil
-	} else if err != nil {
+	}, nil, 0, false)
+	if err != nil {
 		return nil, false, err
+	} else if !found {
+		return nil, false, nil
 	}
 
 	return value.Data, true, nil
@@ -189,11 +188,11 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 	}
 
 	// delete value
-	res, err := store.C(&Value{}).DeleteOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
-		coal.F(&Value{}, "Token"):     token,
-		coal.F(&Value{}, "Locked"): bson.M{
+	deleted, err := store.M(&Value{}).DeleteFirst(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
+		"Token":     token,
+		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
 	})
@@ -201,7 +200,7 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 		return false, err
 	}
 
-	return res.DeletedCount > 0, nil
+	return deleted, nil
 }
 
 // MutLocked will load the specified value, run the callback and on success
@@ -250,23 +249,23 @@ func Unlock(ctx context.Context, store *coal.Store, component, name string, toke
 	}
 
 	// replace value
-	res, err := store.C(&Value{}).UpdateOne(ctx, bson.M{
-		coal.F(&Value{}, "Component"): component,
-		coal.F(&Value{}, "Name"):      name,
-		coal.F(&Value{}, "Token"):     token,
-		coal.F(&Value{}, "Locked"): bson.M{
+	found, err := store.M(&Value{}).UpdateFirst(ctx, bson.M{
+		"Component": component,
+		"Name":      name,
+		"Token":     token,
+		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Value{}, "Locked"):   nil,
-			coal.F(&Value{}, "Token"):    nil,
-			coal.F(&Value{}, "Deadline"): deadline,
+			"Locked":   nil,
+			"Token":    nil,
+			"Deadline": deadline,
 		},
-	})
+	}, false)
 	if err != nil {
 		return false, err
 	}
 
-	return res.ModifiedCount > 0, nil
+	return found, nil
 }
