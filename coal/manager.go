@@ -60,6 +60,16 @@ type Manager struct {
 	trans *Translator
 }
 
+// C is a short-hand to access the mangers collection.
+func (m *Manager) C() *Collection {
+	return m.coll
+}
+
+// T is a short-hand to access the managers translator.
+func (m *Manager) T() *Translator {
+	return m.trans
+}
+
 // Find will find the document with the specified id. It will return whether
 // a document has been found. Lock can be set to true to force a write lock on
 // the document and prevent a stale read during a transaction.
