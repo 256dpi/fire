@@ -1654,15 +1654,17 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		filters := []bson.M{query}
 
 		// add relationship filters
-		for _, filter := range ctx.RelationshipFilters[field.Name] {
-			filters = append(filters, filter)
-		}
+		filters = append(filters, ctx.RelationshipFilters[field.Name]...)
+
+		// translate filters
+		queryDoc, err := ctx.M(rc.Model).T().Document(bson.M{
+			"$and": filters,
+		})
+		stack.AbortIf(err)
 
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.C(rc.Model).FindAll(ctx, &references, bson.M{
-			"$and": filters,
-		}, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
 			"_id":         1,
 			rel.BSONField: 1,
 		})))
