@@ -73,9 +73,10 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 // force a write lock on the document and prevent a stale read during a
 // transaction.
 //
-// A transaction is required for locking. If the operation depends on
-// interleaving writes to not include or exclude documents from the query it
-// should be run during a transaction.
+// A transaction is required for locking.
+//
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run during a transaction.
 func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort []string, skip int64, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindFirst")
@@ -337,9 +338,6 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 // Insert will insert the provided document. If the document has a zero id a new
 // id will be generated and assigned. It will return whether a document has been
 // inserted.
-//
-// The operation is always atomic. Use a unique index to prevent unwanted
-// duplicates when inserting in parallel.
 func (m *Manager) Insert(ctx context.Context, model Model) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Insert")
@@ -421,7 +419,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 // write lock on the document and prevent a stale read during a transaction in
 // case the replace did not change the document.
 //
-// A transaction is required for locking, but the operation is always atomic.
+// A transaction is required for locking.
 func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Replace")
@@ -458,9 +456,10 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 // force a write lock on the document and prevent a stale read during a
 // transaction if the replace did not cause an update.
 //
-// A transaction is required for locking. If the operation depends on
-// interleaving writes to not include or exclude documents from the query it
-// should be run as part of a transaction.
+// A transaction is required for locking.
+//
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run as part of a transaction.
 func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.ReplaceFirst")
@@ -497,7 +496,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, l
 // the document and prevent a stale read during a transaction in case the
 // update did not chang the document.
 //
-// A transaction is required for locking, but the operation is always atomic.
+// A transaction is required for locking.
 func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Update")
@@ -540,9 +539,10 @@ func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (
 // force a write lock on the document and prevent a stale read during a
 // transaction in case the update did not change the document.
 //
-// A transaction is required for locking. If the operation depends on
-// interleaving writes to not include or exclude documents from the query it
-// should be run as part of a transaction.
+// A transaction is required for locking.
+//
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run as part of a transaction.
 func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
@@ -589,9 +589,10 @@ func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bo
 // write lock on the documents and prevent a stale read during a transaction in
 // case the operation did not change all documents.
 //
-// A transaction is required for locking. If the operation depends on
-// interleaving writes to not include or exclude documents from the query it
-// should be run as part of a transaction.
+// A transaction is required for locking.
+//
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run as part of a transaction.
 func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateAll")
@@ -689,8 +690,6 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M, lock bool) (
 
 // Delete will remove the document with the specified id. It will return
 // whether a document has been found and deleted.
-//
-// The operation is always atomic.
 func (m *Manager) Delete(ctx context.Context, id ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Delete")
@@ -711,8 +710,8 @@ func (m *Manager) Delete(ctx context.Context, id ID) (bool, error) {
 // DeleteAll will delete the documents that match the specified query. It will
 // return the number of deleted documents.
 //
-// If the operation depends on interleaving writes to not include or exclude
-// documents from the query it should be run as part of a transaction.
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run as part of a transaction.
 func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteAll")
@@ -737,8 +736,8 @@ func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 // DeleteFirst will delete the first document that matches the specified query.
 // It will return whether a document has been deleted.
 //
-// If the operation depends on interleaving writes to not include or exclude
-// documents from the query it should be run as part of a transaction.
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the query it should be run as part of a transaction.
 func (m *Manager) DeleteFirst(ctx context.Context, query bson.M) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
