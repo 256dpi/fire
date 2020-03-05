@@ -1281,7 +1281,7 @@ func (c *Controller) loadModel(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// set filter
-		ctx.Selector[coal.F(c.Model, softDeleteField)] = nil
+		ctx.Selector[softDeleteField] = nil
 	}
 
 	// run authorizers
@@ -1322,7 +1322,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// set filter
-		ctx.Selector[coal.F(c.Model, softDeleteField)] = nil
+		ctx.Selector[softDeleteField] = nil
 	}
 
 	// add filters
@@ -1647,7 +1647,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 			softDeleteField := coal.L(rc.Model, "fire-soft-delete", true)
 
 			// set filter
-			query[coal.F(rc.Model, softDeleteField)] = nil
+			query[softDeleteField] = nil
 		}
 
 		// prepare filters

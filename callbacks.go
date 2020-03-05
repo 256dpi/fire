@@ -163,7 +163,9 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 		// check all relations
 		for model, field := range pairs {
 			// prepare query
-			query := bson.M{coal.F(model, field): ctx.Model.ID()}
+			query := bson.M{
+				field: ctx.Model.ID(),
+			}
 
 			// exclude soft deleted documents if supported
 			if sdf := coal.L(model, "fire-soft-delete", false); sdf != "" {

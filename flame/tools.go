@@ -48,7 +48,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 	// count main applications
 	var apps []Application
 	err := store.M(&Application{}).FindAll(nil, &apps, bson.M{
-		coal.F(&Application{}, "Name"): name,
+		"Name": name,
 	}, nil, 0, 0, false, coal.Unsafe)
 	if err != nil {
 		return "", err
