@@ -581,7 +581,7 @@ func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bool) (bool, error) {
+func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
 	span.Log("query", query)
@@ -614,12 +614,25 @@ func (m *Manager) UpdateFirst(ctx context.Context, query, update bson.M, lock bo
 	}
 
 	// update document
-	res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc)
-	if err != nil {
+	if model == nil {
+		res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc)
+		if err != nil {
+			return false, err
+		}
+
+		return res.MatchedCount == 1, nil
+	}
+
+	// find and update document
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
+	if IsMissing(err) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return res.MatchedCount == 1, nil
+	return true, nil
 }
 
 // UpdateAll will update the documents that match the specified query. It will
@@ -682,7 +695,7 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the query is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, query, update bson.M, lock bool) (bool, error) {
+func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
 	span.Log("query", query)
@@ -714,16 +727,34 @@ func (m *Manager) Upsert(ctx context.Context, query, update bson.M, lock bool) (
 		}
 	}
 
-	// prepare options
-	opts := options.Update().SetUpsert(true)
-
 	// update document
-	res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc, opts)
+	if model == nil {
+		opts := options.Update().SetUpsert(true)
+		res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc, opts)
+		if err != nil {
+			return false, err
+		}
+
+		return res.UpsertedCount == 1, nil
+	}
+
+	// set token
+	token := New()
+	_, err = bsonkit.Put(&updateDoc, "$setOnInsert._tk", token, false)
 	if err != nil {
+		return false, fmt.Errorf("unable to set token: %w", err)
+	}
+
+	// find and update document
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
+	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
+	if IsMissing(err) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return res.UpsertedCount == 1, nil
+	return model.GetBase().Token == token, nil
 }
 
 // Delete will remove the document with the specified id. It will return

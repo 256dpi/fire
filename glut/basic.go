@@ -52,7 +52,7 @@ func Set(ctx context.Context, store *coal.Store, component, name string, data co
 	}
 
 	// upsert value
-	inserted, err := store.M(&Value{}).Upsert(ctx, bson.M{
+	inserted, err := store.M(&Value{}).Upsert(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 	}, bson.M{

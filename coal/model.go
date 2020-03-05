@@ -96,6 +96,7 @@ func Slice(ptr interface{}) []Model {
 type Base struct {
 	DocID ID    `json:"-" bson:"_id"`
 	Lock  int64 `json:"-" bson:"_lk,omitempty"`
+	Token ID    `json:"-" bson:"_tk,omitempty"`
 }
 
 // B is a short-hand to construct a base with the provided id or a generated

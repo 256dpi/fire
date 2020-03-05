@@ -524,14 +524,26 @@ func TestManagerUpdate(t *testing.T) {
 
 func TestManagerUpdateFirst(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		tester.Insert(&postModel{
+		post := *tester.Insert(&postModel{
 			Title: "Hello World!",
-		})
+		}).(*postModel)
 
 		m := tester.Store.M(&postModel{})
 
 		// missing
-		found, err := m.UpdateFirst(nil, bson.M{
+		found, err := m.UpdateFirst(nil, nil, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// missing
+		var updated postModel
+		found, err = m.UpdateFirst(nil, &updated, bson.M{
 			"Title": "Hello Space!",
 		}, bson.M{
 			"$set": bson.M{
@@ -542,7 +554,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 		assert.False(t, found)
 
 		// existing
-		found, err = m.UpdateFirst(nil, bson.M{
+		found, err = m.UpdateFirst(nil, nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
@@ -552,8 +564,23 @@ func TestManagerUpdateFirst(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 
+		// existing
+		found, err = m.UpdateFirst(nil, &updated, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello World!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+		assert.Equal(t, postModel{
+			Base:  post.Base,
+			Title: "Hello World!",
+		}, updated)
+
 		// error
-		found, err = m.UpdateFirst(nil, bson.M{
+		found, err = m.UpdateFirst(nil, nil, bson.M{
 			"Title": "Hello Space!",
 		}, bson.M{
 			"$set": bson.M{
@@ -566,15 +593,20 @@ func TestManagerUpdateFirst(t *testing.T) {
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
-			found, err = m.UpdateFirst(ctx, bson.M{
-				"Title": "Hello Space!",
+			post.Lock++
+			found, err = m.UpdateFirst(ctx, &updated, bson.M{
+				"Title": "Hello World!",
 			}, bson.M{
 				"$set": bson.M{
-					"Title": "Hello World!",
+					"Title": "Hello Space!",
 				},
 			}, true)
 			assert.NoError(t, err)
 			assert.True(t, found)
+			assert.Equal(t, postModel{
+				Base:  post.Base,
+				Title: "Hello Space!",
+			}, updated)
 
 			return nil
 		})
@@ -647,30 +679,62 @@ func TestManagerUpsert(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		m := tester.Store.M(&postModel{})
 
-		// upsert
-		inserted, err := m.Upsert(nil, bson.M{
+		// upsert (insert missing)
+		inserted, err := m.Upsert(nil, nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
-				"Title": "Hello World!",
+				"Title": "Hello World!!!",
 			},
 		}, false)
 		assert.NoError(t, err)
 		assert.True(t, inserted)
 
-		// upsert again
-		inserted, err = m.Upsert(nil, bson.M{
-			"Title": "Hello World!",
+		// upsert again (update existing)
+		inserted, err = m.Upsert(nil, nil, bson.M{
+			"Title": "Hello World!!!",
 		}, bson.M{
 			"$set": bson.M{
-				"Title": "Hello World!",
+				"Published": true,
 			},
 		}, false)
 		assert.NoError(t, err)
 		assert.False(t, inserted)
 
+		// upsert (insert missing)
+		var post postModel
+		inserted, err = m.Upsert(nil, &post, bson.M{
+			"Title": "Hello Space!",
+		}, bson.M{
+			"$set": bson.M{
+				"Title": "Hello Space!!!",
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.True(t, inserted)
+		assert.Equal(t, postModel{
+			Base:  post.Base,
+			Title: "Hello Space!!!",
+		}, post)
+
+		// upsert again (update existing)
+		inserted, err = m.Upsert(nil, &post, bson.M{
+			"Title": "Hello Space!!!",
+		}, bson.M{
+			"$set": bson.M{
+				"Published": true,
+			},
+		}, false)
+		assert.NoError(t, err)
+		assert.False(t, inserted)
+		assert.Equal(t, postModel{
+			Base:      post.Base,
+			Title:     "Hello Space!!!",
+			Published: true,
+		}, post)
+
 		// error
-		inserted, err = m.Upsert(nil, bson.M{
+		inserted, err = m.Upsert(nil, nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
@@ -683,15 +747,19 @@ func TestManagerUpsert(t *testing.T) {
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
-			inserted, err = m.Upsert(ctx, bson.M{
-				"Title": "Hello World!",
+			post.Lock++
+			post.Published = false
+			var lockedPost postModel
+			inserted, err = m.Upsert(ctx, &lockedPost, bson.M{
+				"Title": "Hello Space!!!",
 			}, bson.M{
 				"$set": bson.M{
-					"Title": "Hello World!",
+					"Published": false,
 				},
 			}, true)
 			assert.NoError(t, err)
 			assert.False(t, inserted)
+			assert.Equal(t, post, lockedPost)
 			return nil
 		})
 	})
@@ -748,8 +816,12 @@ func TestManagerDeleteAll(t *testing.T) {
 
 func TestManagerDeleteFirst(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		post := *tester.Insert(&postModel{
+		tester.Insert(&postModel{
 			Title: "Hello World!",
+		})
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
 		}).(*postModel)
 
 		m := tester.Store.M(&postModel{})
@@ -761,14 +833,28 @@ func TestManagerDeleteFirst(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, found)
 
-		// existing
+		// missing
 		var deleted postModel
 		found, err = m.DeleteFirst(nil, &deleted, bson.M{
+			"Title": "foo",
+		})
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		// existing
+		found, err = m.DeleteFirst(nil, nil, bson.M{
 			"Title": "Hello World!",
 		})
 		assert.NoError(t, err)
 		assert.True(t, found)
-		assert.Equal(t, post, deleted)
+
+		// existing
+		found, err = m.DeleteFirst(nil, &deleted, bson.M{
+			"Title": "Hello Space!",
+		})
+		assert.NoError(t, err)
+		assert.True(t, found)
+		assert.Equal(t, post2, deleted)
 	})
 }
 

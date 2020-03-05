@@ -364,7 +364,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 		}
 
 		// claim new file
-		found, err = s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+		found, err = s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 			"_id":   newFile.ID(),
 			"State": Uploaded,
 		}, bson.M{
@@ -387,7 +387,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 
 	// release old file
 	if updated || deleted {
-		found, err := s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+		found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 			"_id":   oldLink.File,
 			"State": Claimed,
 		}, bson.M{
@@ -592,7 +592,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 
 		// flag file as deleting if not already
 		if file.State != Deleting {
-			found, err := s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+			found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 				"_id":   file.ID(),
 				"State": file.State,
 			}, bson.M{
