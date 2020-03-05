@@ -76,6 +76,11 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 		return false, ErrTransactionRequired
 	}
 
+	// check model
+	if model == nil {
+		model = &empty{}
+	}
+
 	// prepare query
 	query := bson.M{
 		"_id": id,
@@ -117,6 +122,11 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 	// check lock
 	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
+	}
+
+	// check model
+	if model == nil {
+		model = &empty{}
 	}
 
 	// translate query

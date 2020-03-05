@@ -128,3 +128,7 @@ func (b *Base) ID() ID {
 func (b *Base) GetBase() *Base {
 	return b
 }
+
+type empty struct {
+	Base
+}

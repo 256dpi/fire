@@ -17,8 +17,13 @@ func TestManagerFind(t *testing.T) {
 		m := tester.Store.M(&postModel{})
 
 		// existing
+		found, err := m.Find(nil, nil, post1.ID(), false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// fetch
 		var post2 postModel
-		found, err := m.Find(nil, &post2, post1.ID(), false)
+		found, err = m.Find(nil, &post2, post1.ID(), false)
 		assert.NoError(t, err)
 		assert.True(t, found)
 		assert.Equal(t, post1, post2)
@@ -55,8 +60,15 @@ func TestManagerFindFirst(t *testing.T) {
 		m := tester.Store.M(&postModel{})
 
 		// existing
+		found, err := m.FindFirst(nil, nil, bson.M{
+			"Title": "Hello World!",
+		}, nil, 0, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+
+		// fetch
 		var post2 postModel
-		found, err := m.FindFirst(nil, &post2, bson.M{
+		found, err = m.FindFirst(nil, &post2, bson.M{
 			"Title": "Hello World!",
 		}, nil, 0, false)
 		assert.NoError(t, err)
