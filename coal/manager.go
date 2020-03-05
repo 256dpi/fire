@@ -364,18 +364,13 @@ func (m *Manager) Insert(ctx context.Context, model Model) error {
 // assigned. It will return whether a document has been inserted. The underlying
 // upsert operation will merge the query with the model fields.
 //
-// A transaction is always required to ensure atomicity. Use a unique index to
-// prevent unwanted duplicates when inserting in parallel.
+// Even with transactions there is a risk for duplicate inserts when the query
+// is not covered by a unique index.
 func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.InsertIfMissing")
 	span.Log("query", query)
 	defer span.Finish()
-
-	// require transaction
-	if !getKey(ctx, hasTransaction) {
-		return false, ErrTransactionRequired
-	}
 
 	// translate query
 	queryDoc, err := m.trans.Document(query)
@@ -623,18 +618,14 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 // no document has been found, the update document is applied to the query and
 // inserted. It will return whether a document has been inserted.
 //
-// A transaction is always required to ensure atomicity.
+// Even with transactions there is a risk for duplicate inserts when the query
+// is not covered by a unique index.
 func (m *Manager) Upsert(ctx context.Context, query, update bson.M) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
 	span.Log("query", query)
 	span.Log("update", update)
 	defer span.Finish()
-
-	// require transaction
-	if !getKey(ctx, hasTransaction) {
-		return false, ErrTransactionRequired
-	}
 
 	// translate query
 	queryDoc, err := m.trans.Document(query)

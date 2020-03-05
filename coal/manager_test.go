@@ -328,36 +328,23 @@ func TestManagerInsertIfMissing(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		m := tester.Store.M(&postModel{})
 
-		// error
+		// insert if missing
 		inserted, err := m.InsertIfMissing(nil, bson.M{
 			"Title": "Hello World!",
 		}, &postModel{
 			Title: "Hello World!",
 		})
-		assert.Error(t, err)
-		assert.False(t, inserted)
-		assert.Equal(t, ErrTransactionRequired, err)
+		assert.NoError(t, err)
+		assert.True(t, inserted)
 
-		// insert if missing
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
-			inserted, err := m.InsertIfMissing(ctx, bson.M{
-				"Title": "Hello World!",
-			}, &postModel{
-				Title: "Hello World!",
-			})
-			assert.NoError(t, err)
-			assert.True(t, inserted)
-
-			inserted, err = m.InsertIfMissing(ctx, bson.M{
-				"Title": "Hello World!",
-			}, &postModel{
-				Title: "Hello World!",
-			})
-			assert.NoError(t, err)
-			assert.False(t, inserted)
-
-			return nil
+		// insert if missing again
+		inserted, err = m.InsertIfMissing(nil, bson.M{
+			"Title": "Hello World!",
+		}, &postModel{
+			Title: "Hello World!",
 		})
+		assert.NoError(t, err)
+		assert.False(t, inserted)
 	})
 }
 
@@ -623,42 +610,27 @@ func TestManagerUpsert(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		m := tester.Store.M(&postModel{})
 
-		// error
+		// upsert
 		inserted, err := m.Upsert(nil, bson.M{
 			"Title": "Hello World!",
 		}, bson.M{
 			"$set": bson.M{
-				"Title": "Hello Space",
+				"Title": "Hello World!",
 			},
 		})
-		assert.Error(t, err)
-		assert.False(t, inserted)
-		assert.Equal(t, ErrTransactionRequired, err)
+		assert.NoError(t, err)
+		assert.True(t, inserted)
 
-		// upsert
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
-			inserted, err := m.Upsert(ctx, bson.M{
+		// upsert again
+		inserted, err = m.Upsert(nil, bson.M{
+			"Title": "Hello World!",
+		}, bson.M{
+			"$set": bson.M{
 				"Title": "Hello World!",
-			}, bson.M{
-				"$set": bson.M{
-					"Published": true,
-				},
-			})
-			assert.NoError(t, err)
-			assert.True(t, inserted)
-
-			inserted, err = m.Upsert(ctx, bson.M{
-				"Title": "Hello World!",
-			}, bson.M{
-				"$set": bson.M{
-					"Published": true,
-				},
-			})
-			assert.NoError(t, err)
-			assert.False(t, inserted)
-
-			return nil
+			},
 		})
+		assert.NoError(t, err)
+		assert.False(t, inserted)
 	})
 }
 
