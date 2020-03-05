@@ -48,7 +48,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 	// get locked
 	locked := time.Now().Add(timeout)
 
-	// ensure value
+	// upsert value
 	inserted, err := store.M(&Value{}).Upsert(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
@@ -58,7 +58,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 			"Token":    token,
 			"Deadline": deadline,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return false, err
 	}
@@ -100,7 +100,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 			"Token":    token,
 			"Deadline": deadline,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return false, err
 	}
@@ -135,7 +135,7 @@ func SetLocked(ctx context.Context, store *coal.Store, component, name string, d
 		"$set": bson.M{
 			"Data": data,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return false, err
 	}
@@ -195,7 +195,7 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
-	})
+	}, nil)
 	if err != nil {
 		return false, err
 	}
@@ -262,7 +262,7 @@ func Unlock(ctx context.Context, store *coal.Store, component, name string, toke
 			"Token":    nil,
 			"Deadline": deadline,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return false, err
 	}

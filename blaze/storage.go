@@ -357,7 +357,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 				"State":   Claimed,
 				"Updated": time.Now(),
 			},
-		}, false)
+		}, nil, false)
 		if err != nil {
 			return err
 		} else if !found {
@@ -380,7 +380,7 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 				"State":   Released,
 				"Updated": time.Now(),
 			},
-		}, false)
+		}, nil, false)
 		if err != nil {
 			return err
 		} else if !found {
@@ -585,7 +585,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 					"State":   Deleting,
 					"Updated": time.Now(),
 				},
-			}, false)
+			}, nil, false)
 			if err != nil {
 				return err
 			} else if !found {

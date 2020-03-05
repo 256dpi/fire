@@ -176,7 +176,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 //
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
-func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
+func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindAll")
 	span.Log("query", query)
@@ -233,7 +233,7 @@ func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.
 	}
 
 	// find documents
-	err = m.coll.FindAll(ctx, slicePtr, queryDoc, opts)
+	err = m.coll.FindAll(ctx, list, queryDoc, opts)
 	if err != nil {
 		return err
 	}
@@ -611,7 +611,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bson.M, lock bool) (bool, error) {
+func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
 	span.Log("query", query)
@@ -621,6 +621,11 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 	// require transaction
 	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
+	}
+
+	// check model
+	if model == nil {
+		model = &empty{}
 	}
 
 	// translate query
@@ -635,6 +640,19 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 		return false, err
 	}
 
+	// prepare options
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	// set sort
+	if len(sort) > 0 {
+		sortDoc, err := m.trans.Sort(sort)
+		if err != nil {
+			return false, err
+		}
+
+		opts.SetSort(sortDoc)
+	}
+
 	// increment lock
 	if lock {
 		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
@@ -643,18 +661,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 		}
 	}
 
-	// update document
-	if model == nil {
-		res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc)
-		if err != nil {
-			return false, err
-		}
-
-		return res.MatchedCount == 1, nil
-	}
-
 	// find and update document
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
@@ -725,7 +732,7 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the query is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M, lock bool) (bool, error) {
+func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
 	span.Log("query", query)
@@ -735,6 +742,11 @@ func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M,
 	// require transaction
 	if lock && !getKey(ctx, hasTransaction) {
 		return false, ErrTransactionRequired
+	}
+
+	// check model
+	if model == nil {
+		model = &empty{}
 	}
 
 	// translate query
@@ -757,15 +769,17 @@ func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M,
 		}
 	}
 
-	// update document
-	if model == nil {
-		opts := options.Update().SetUpsert(true)
-		res, err := m.coll.UpdateOne(ctx, queryDoc, updateDoc, opts)
+	// prepare options
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
+
+	// set sort
+	if len(sort) > 0 {
+		sortDoc, err := m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
 
-		return res.UpsertedCount == 1, nil
+		opts.SetSort(sortDoc)
 	}
 
 	// set token
@@ -776,7 +790,6 @@ func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M,
 	}
 
 	// find and update document
-	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
@@ -851,7 +864,7 @@ func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M) (bool, error) {
+func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M, sort []string) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
 	span.Log("query", query)
@@ -863,18 +876,26 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M) (b
 		return false, err
 	}
 
-	// delete document
+	// check model
 	if model == nil {
-		res, err := m.coll.DeleteOne(ctx, queryDoc)
+		model = &empty{}
+	}
+
+	// prepare options
+	opts := options.FindOneAndDelete()
+
+	// set sort
+	if len(sort) > 0 {
+		sortDoc, err := m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
 
-		return res.DeletedCount == 1, nil
+		opts.SetSort(sortDoc)
 	}
 
 	// find and delete document
-	err = m.coll.FindOneAndDelete(ctx, queryDoc).Decode(model)
+	err = m.coll.FindOneAndDelete(ctx, queryDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {

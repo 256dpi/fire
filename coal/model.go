@@ -130,5 +130,5 @@ func (b *Base) GetBase() *Base {
 }
 
 type empty struct {
-	Base
+	Base `bson:",inline"`
 }

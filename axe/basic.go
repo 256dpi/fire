@@ -145,7 +145,7 @@ func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Du
 		"$inc": bson.M{
 			"Attempts": 1,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return nil, err
 	} else if !found {
@@ -177,7 +177,7 @@ func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Ma
 			"Ended":    now,
 			"Finished": now,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return err
 	} else if !found {
@@ -211,7 +211,7 @@ func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, del
 			"Ended":     now,
 			"Available": now.Add(delay),
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return err
 	} else if !found {
@@ -244,7 +244,7 @@ func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) e
 			"Ended":    now,
 			"Finished": now,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return err
 	} else if !found {

@@ -60,7 +60,7 @@ func Set(ctx context.Context, store *coal.Store, component, name string, data co
 			"Data":     data,
 			"Deadline": deadline,
 		},
-	}, false)
+	}, nil, false)
 	if err != nil {
 		return false, err
 	}
@@ -81,7 +81,7 @@ func Del(ctx context.Context, store *coal.Store, component, name string) (bool, 
 	deleted, err := store.M(&Value{}).DeleteFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
-	})
+	}, nil)
 	if err != nil {
 		return false, err
 	}

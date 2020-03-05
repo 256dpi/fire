@@ -577,7 +577,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
@@ -589,7 +589,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
@@ -600,7 +600,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello Space!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.True(t, found)
 
@@ -611,7 +611,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.True(t, found)
 		assert.Equal(t, postModel{
@@ -626,7 +626,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		}, true)
+		}, nil, true)
 		assert.Error(t, err)
 		assert.False(t, found)
 		assert.Equal(t, ErrTransactionRequired, err)
@@ -640,7 +640,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 				"$set": bson.M{
 					"Title": "Hello Space!",
 				},
-			}, true)
+			}, nil, true)
 			assert.NoError(t, err)
 			assert.True(t, found)
 			assert.Equal(t, postModel{
@@ -726,7 +726,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!!!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.True(t, inserted)
 
@@ -737,7 +737,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Published": true,
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.False(t, inserted)
 
@@ -749,7 +749,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello Space!!!",
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.True(t, inserted)
 		assert.Equal(t, postModel{
@@ -764,7 +764,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Published": true,
 			},
-		}, false)
+		}, nil, false)
 		assert.NoError(t, err)
 		assert.False(t, inserted)
 		assert.Equal(t, postModel{
@@ -780,7 +780,7 @@ func TestManagerUpsert(t *testing.T) {
 			"$set": bson.M{
 				"Title": "Hello World!",
 			},
-		}, true)
+		}, nil, true)
 		assert.Error(t, err)
 		assert.False(t, inserted)
 		assert.Equal(t, ErrTransactionRequired, err)
@@ -796,7 +796,7 @@ func TestManagerUpsert(t *testing.T) {
 				"$set": bson.M{
 					"Published": false,
 				},
-			}, true)
+			}, nil, true)
 			assert.NoError(t, err)
 			assert.False(t, inserted)
 			assert.Equal(t, post, lockedPost)
@@ -869,7 +869,7 @@ func TestManagerDeleteFirst(t *testing.T) {
 		// missing
 		found, err := m.DeleteFirst(nil, nil, bson.M{
 			"Title": "foo",
-		})
+		}, nil)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
@@ -877,21 +877,21 @@ func TestManagerDeleteFirst(t *testing.T) {
 		var deleted postModel
 		found, err = m.DeleteFirst(nil, &deleted, bson.M{
 			"Title": "foo",
-		})
+		}, nil)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
 		// existing
 		found, err = m.DeleteFirst(nil, nil, bson.M{
 			"Title": "Hello World!",
-		})
+		}, nil)
 		assert.NoError(t, err)
 		assert.True(t, found)
 
 		// existing
 		found, err = m.DeleteFirst(nil, &deleted, bson.M{
 			"Title": "Hello Space!",
-		})
+		}, nil)
 		assert.NoError(t, err)
 		assert.True(t, found)
 		assert.Equal(t, post2, deleted)
