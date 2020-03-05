@@ -19,7 +19,7 @@ func incrementTask(store *coal.Store) *axe.Task {
 			id := ctx.Model.(*count).Item
 
 			// increment count
-			_, err := store.M(&Item{}).Update(ctx, id, bson.M{
+			_, err := store.M(&Item{}).Update(ctx, nil, id, bson.M{
 				"$inc": bson.M{
 					"Count": 1,
 				},

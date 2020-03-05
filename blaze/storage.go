@@ -237,7 +237,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// update file
-	_, err = s.store.M(file).Update(ctx, file.ID(), bson.M{
+	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
 		"$set": bson.M{
 			"State":   Uploaded,
 			"Updated": time.Now(),

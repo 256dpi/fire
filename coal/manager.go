@@ -535,7 +535,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, l
 // update did not chang the document.
 //
 // A transaction is required for locking.
-func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (bool, error) {
+func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Update")
 	span.Log("id", id.Hex())
@@ -562,14 +562,29 @@ func (m *Manager) Update(ctx context.Context, id ID, update bson.M, lock bool) (
 	}
 
 	// update document
-	res, err := m.coll.UpdateOne(ctx, bson.M{
+	if model == nil {
+		res, err := m.coll.UpdateOne(ctx, bson.M{
+			"_id": id,
+		}, updateDoc)
+		if err != nil {
+			return false, err
+		}
+
+		return res.MatchedCount == 1, nil
+	}
+
+	// find and update document
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	err = m.coll.FindOneAndUpdate(ctx, bson.M{
 		"_id": id,
-	}, updateDoc)
-	if err != nil {
+	}, updateDoc, opts).Decode(model)
+	if IsMissing(err) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return res.MatchedCount == 1, nil
+	return true, nil
 }
 
 // UpdateFirst will update the first document that matches the specified query.

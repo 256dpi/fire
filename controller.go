@@ -680,7 +680,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		found, err := ctx.M(c.Model).Update(ctx, ctx.Model.ID(), bson.M{
+		found, err := ctx.M(c.Model).Update(ctx, nil, ctx.Model.ID(), bson.M{
 			"$set": bson.M{
 				softDeleteField: time.Now(),
 			},
