@@ -225,7 +225,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// create file
-	_, err = s.store.C(file).InsertOne(ctx, file)
+	err = s.store.M(file).Insert(ctx, file)
 	if err != nil {
 		return nil, err
 	}
@@ -237,15 +237,13 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// update file
-	_, err = s.store.C(file).UpdateOne(ctx, bson.M{
-		"_id": file.ID(),
-	}, bson.M{
+	_, err = s.store.M(file).Update(ctx, file.ID(), bson.M{
 		"$set": bson.M{
-			coal.F(file, "State"):   Uploaded,
-			coal.F(file, "Updated"): time.Now(),
-			coal.F(file, "Length"):  length,
+			"State":   Uploaded,
+			"Updated": time.Now(),
+			"Length":  length,
 		},
-	})
+	}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -349,13 +347,15 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 			return err
 		}
 
+		// TODO: Optimize with a find and update operation.
+
 		// get new file
 		var newFile File
-		err = s.store.C(&newFile).FindOne(ctx, bson.M{
-			"_id": claimKey.File,
-		}).Decode(&newFile)
+		found, err := s.store.M(&newFile).Find(ctx, &newFile, claimKey.File, true)
 		if err != nil {
 			return err
+		} else if !found {
+			return fmt.Errorf("to be claimed file is missing")
 		}
 
 		// check new file state
@@ -364,18 +364,18 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 		}
 
 		// claim new file
-		res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
-			"_id":                    newFile.ID(),
-			coal.F(&File{}, "State"): Uploaded,
+		found, err = s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+			"_id":   newFile.ID(),
+			"State": Uploaded,
 		}, bson.M{
 			"$set": bson.M{
-				coal.F(&File{}, "State"):   Claimed,
-				coal.F(&File{}, "Updated"): time.Now(),
+				"State":   Claimed,
+				"Updated": time.Now(),
 			},
-		})
+		}, false)
 		if err != nil {
 			return err
-		} else if res.ModifiedCount != 1 {
+		} else if !found {
 			return fmt.Errorf("%s: unable to claim file", path)
 		}
 
@@ -387,18 +387,18 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 
 	// release old file
 	if updated || deleted {
-		res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
-			"_id":                    oldLink.File,
-			coal.F(&File{}, "State"): Claimed,
+		found, err := s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+			"_id":   oldLink.File,
+			"State": Claimed,
 		}, bson.M{
 			"$set": bson.M{
-				coal.F(&File{}, "State"):   Released,
-				coal.F(&File{}, "Updated"): time.Now(),
+				"State":   Released,
+				"Updated": time.Now(),
 			},
-		})
+		}, false)
 		if err != nil {
 			return err
-		} else if res.ModifiedCount != 1 {
+		} else if !found {
 			return fmt.Errorf("%s: unable to release file", path)
 		}
 	}
@@ -501,12 +501,14 @@ func (s *Storage) DownloadAction() *fire.Action {
 
 		// load file
 		var file File
-		err = s.store.C(&File{}).FindOne(ctx, bson.M{
-			"_id":                    key.File,
-			coal.F(&File{}, "State"): Claimed,
-		}).Decode(&file)
+		found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
+			"_id":   key.File,
+			"State": Claimed,
+		}, nil, 0, false)
 		if err != nil {
 			return err
+		} else if !found {
+			return fmt.Errorf("missing file")
 		}
 
 		// set content type and length
@@ -556,87 +558,84 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		retention = time.Hour
 	}
 
-	// get iterator for deletable files
-	iter, err := s.store.C(&File{}).Find(ctx, bson.M{
-		"$or": []bson.M{
-			{
-				coal.F(&File{}, "State"): bson.M{
-					"$in": bson.A{Uploading, Uploaded},
+	return s.store.T(ctx, func(ctx context.Context) error {
+		// get iterator for deletable files
+		iter, err := s.store.M(&File{}).FindEach(ctx, bson.M{
+			"$or": []bson.M{
+				{
+					"State": bson.M{
+						"$in": bson.A{Uploading, Uploaded},
+					},
+					"Updated": bson.M{
+						"$lt": time.Now().Add(-retention),
+					},
 				},
-				coal.F(&File{}, "Updated"): bson.M{
-					"$lt": time.Now().Add(-retention),
+				{
+					"State": bson.M{
+						"$in": bson.A{Released, Deleting},
+					},
 				},
 			},
-			{
-				coal.F(&File{}, "State"): bson.M{
-					"$in": bson.A{Released, Deleting},
-				},
-			},
-		},
+		}, nil, 0, 0, false)
+		if err != nil {
+			return err
+		}
+
+		// iterate over files
+		defer iter.Close()
+		for iter.Next() {
+			// decode file
+			var file File
+			err := iter.Decode(&file)
+			if err != nil {
+				return err
+			}
+
+			// flag file as deleting if not already
+			if file.State != Deleting {
+				found, err := s.store.M(&File{}).UpdateFirst(ctx, bson.M{
+					"_id":   file.ID(),
+					"State": file.State,
+				}, bson.M{
+					"$set": bson.M{
+						"State":   Deleting,
+						"Updated": time.Now(),
+					},
+				}, false)
+				if err != nil {
+					return err
+				} else if !found {
+					return nil
+				}
+			}
+
+			// delete blob
+			deleted, err := s.service.Delete(ctx, file.Handle)
+			if err != nil {
+				return err
+			}
+
+			// delete file if blob has been deleted
+			if deleted {
+				_, err = s.store.M(&File{}).Delete(ctx, file.ID())
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// check error
+		err = iter.Error()
+		if err != nil {
+			return err
+		}
+
+		// cleanup service
+		err = s.service.Cleanup(ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	// iterate over files
-	defer iter.Close()
-	for iter.Next() {
-		// decode file
-		var file File
-		err := iter.Decode(&file)
-		if err != nil {
-			return err
-		}
-
-		// flag file as deleted if not already
-		if file.State != Deleting {
-			res, err := s.store.C(&File{}).UpdateOne(ctx, bson.M{
-				"_id":                    file.ID(),
-				coal.F(&File{}, "State"): file.State,
-			}, bson.M{
-				"$set": bson.M{
-					coal.F(&File{}, "State"):   Deleting,
-					coal.F(&File{}, "Updated"): time.Now(),
-				},
-			})
-			if err != nil {
-				return err
-			}
-
-			// continue if file has changed its state
-			if res.ModifiedCount == 0 {
-				return nil
-			}
-		}
-
-		// delete blob
-		deleted, err := s.service.Delete(ctx, file.Handle)
-		if err != nil {
-			return err
-		}
-
-		// delete file if blob has been deleted
-		if deleted {
-			_, err = s.store.C(&File{}).DeleteOne(ctx, bson.M{
-				"_id": file.ID(),
-			})
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// check error
-	err = iter.Error()
-	if err != nil {
-		return err
-	}
-
-	// cleanup service
-	err = s.service.Cleanup(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
