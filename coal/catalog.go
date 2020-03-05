@@ -117,7 +117,10 @@ func (c *Catalog) All() map[Model][]Index {
 // with a dash will result in an descending index. See the MongoDB documentation
 // for more details.
 func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
+	// get name
 	name := GetMeta(model).PluralName
+
+	// add index
 	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
@@ -128,7 +131,19 @@ func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, field
 
 // AddPartialIndex is similar to Add except that it adds a partial index.
 func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.D) {
+	// get name
 	name := GetMeta(model).PluralName
+
+	// translate filter
+	if len(filter) > 0 {
+		trans := NewTranslator(model)
+		err := trans.value(filter, false)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// add index
 	c.indexes[name] = append(c.indexes[name], Index{
 		Model:  model,
 		Fields: fields,
