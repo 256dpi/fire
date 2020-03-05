@@ -347,25 +347,10 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 			return err
 		}
 
-		// TODO: Optimize with a find and update operation.
-
-		// get new file
-		var newFile File
-		found, err := s.store.M(&newFile).Find(ctx, &newFile, claimKey.File, true)
-		if err != nil {
-			return err
-		} else if !found {
-			return fmt.Errorf("to be claimed file is missing")
-		}
-
-		// check new file state
-		if newFile.State != Uploaded {
-			return fmt.Errorf("%s: invalid file state", path)
-		}
-
 		// claim new file
-		found, err = s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
-			"_id":   newFile.ID(),
+		var newFile File
+		found, err := s.store.M(&File{}).UpdateFirst(ctx, &newFile, bson.M{
+			"_id":   claimKey.File,
 			"State": Uploaded,
 		}, bson.M{
 			"$set": bson.M{
