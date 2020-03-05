@@ -907,7 +907,7 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	idField := coal.L(model, "flame-client-id", false)
 	if idField != "" {
 		filters = []bson.M{
-			{coal.F(model, idField): id},
+			{idField: id},
 		}
 	} else if coal.IsHex(id) {
 		filters = []bson.M{
@@ -939,11 +939,11 @@ func (a *Authenticator) findClient(env *environment, model Client, id string) Cl
 	}
 
 	// fetch client
-	err := a.store.C(model).FindOne(env, query).Decode(client)
-	if coal.IsMissing(err) {
+	found, err := a.store.M(model).FindFirst(env, client, query, nil, 0, false)
+	stack.AbortIf(err)
+	if !found {
 		return nil
 	}
-	stack.AbortIf(err)
 
 	return client
 }
@@ -973,13 +973,11 @@ func (a *Authenticator) getClient(env *environment, model Client, id coal.ID) Cl
 	client := coal.GetMeta(model).Make().(Client)
 
 	// fetch client
-	err := a.store.C(model).FindOne(env, bson.M{
-		"_id": id,
-	}).Decode(client)
-	if coal.IsMissing(err) {
+	found, err := a.store.M(model).Find(env, client, id, false)
+	stack.AbortIf(err)
+	if !found {
 		return nil
 	}
-	stack.AbortIf(err)
 
 	return client
 }
@@ -1017,7 +1015,7 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	idField := coal.L(model, "flame-resource-owner-id", false)
 	if idField != "" {
 		filters = []bson.M{
-			{coal.F(model, idField): id},
+			{idField: id},
 		}
 	} else if coal.IsHex(id) {
 		filters = []bson.M{
@@ -1049,11 +1047,11 @@ func (a *Authenticator) findResourceOwner(env *environment, client Client, model
 	}
 
 	// fetch resource owner
-	err := a.store.C(model).FindOne(env, query).Decode(resourceOwner)
-	if coal.IsMissing(err) {
+	found, err := a.store.M(model).FindFirst(env, resourceOwner, query, nil, 0, false)
+	stack.AbortIf(err)
+	if !found {
 		return nil
 	}
-	stack.AbortIf(err)
 
 	return resourceOwner
 }
@@ -1087,13 +1085,11 @@ func (a *Authenticator) getResourceOwner(env *environment, model ResourceOwner, 
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
 
 	// fetch resource owner
-	err := a.store.C(model).FindOne(env, bson.M{
-		"_id": id,
-	}).Decode(resourceOwner)
-	if coal.IsMissing(err) {
+	found, err := a.store.M(model).Find(env, resourceOwner, id, false)
+	stack.AbortIf(err)
+	if !found {
 		return nil
 	}
-	stack.AbortIf(err)
 
 	return resourceOwner
 }
@@ -1107,13 +1103,11 @@ func (a *Authenticator) getToken(env *environment, id coal.ID) GenericToken {
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
 
 	// fetch token
-	err := a.store.C(token).FindOne(env, bson.M{
-		"_id": id,
-	}).Decode(token)
-	if coal.IsMissing(err) {
+	found, err := a.store.M(token).Find(env, token, id, false)
+	stack.AbortIf(err)
+	if !found {
 		return nil
 	}
-	stack.AbortIf(err)
 
 	return token
 }
@@ -1146,7 +1140,7 @@ func (a *Authenticator) saveToken(env *environment, typ TokenType, scope []strin
 	})
 
 	// save token
-	_, err := a.store.C(token).InsertOne(env, token)
+	err := a.store.M(token).Insert(env, token)
 	stack.AbortIf(err)
 
 	return token
@@ -1158,11 +1152,6 @@ func (a *Authenticator) deleteToken(env *environment, id coal.ID) {
 	defer env.trace.Pop()
 
 	// delete token
-	_, err := a.store.C(a.policy.Token).DeleteOne(env, bson.M{
-		"_id": id,
-	})
-	if coal.IsMissing(err) {
-		err = nil
-	}
+	_, err := a.store.M(a.policy.Token).Delete(env, nil, id)
 	stack.AbortIf(err)
 }

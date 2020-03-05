@@ -184,11 +184,6 @@ func (a *Application) Validate() error {
 		return err
 	}
 
-	// check id
-	if a.ID().IsZero() {
-		return fire.E("invalid id")
-	}
-
 	// check name
 	if a.Name == "" {
 		return fire.E("missing name")
@@ -267,11 +262,6 @@ func (u *User) Validate() error {
 	err := u.HashPassword()
 	if err != nil {
 		return err
-	}
-
-	// check id
-	if u.ID().IsZero() {
-		return fire.E("invalid id")
 	}
 
 	// check name

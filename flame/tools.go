@@ -47,9 +47,9 @@ func TokenMigrator(remove bool) func(http.Handler) http.Handler {
 func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs ...string) (string, error) {
 	// count main applications
 	var apps []Application
-	err := store.C(&Application{}).FindAll(nil, &apps, bson.M{
+	err := store.M(&Application{}).FindAll(nil, &apps, bson.M{
 		coal.F(&Application{}, "Name"): name,
-	})
+	}, nil, 0, 0, false, coal.Unsafe)
 	if err != nil {
 		return "", err
 	}
@@ -64,11 +64,12 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 	/* application is missing */
 
 	// create application
-	app := &Application{Base: coal.B()}
-	app.Key = key
-	app.Name = name
-	app.Secret = secret
-	app.RedirectURIs = redirectURIs
+	app := &Application{
+		Key:          key,
+		Name:         name,
+		Secret:       secret,
+		RedirectURIs: redirectURIs,
+	}
 
 	// validate model
 	err = app.Validate()
@@ -77,7 +78,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 	}
 
 	// save application
-	_, err = store.C(app).InsertOne(nil, app)
+	err = store.M(app).Insert(nil, app)
 	if err != nil {
 		return "", err
 	}
@@ -89,20 +90,21 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 // created.
 func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 	// check existence
-	n, err := store.C(&User{}).CountDocuments(nil, bson.M{})
+	count, err := store.M(&User{}).Count(nil, bson.M{}, 0, 0, false, coal.Unsafe)
 	if err != nil {
 		return err
-	} else if n > 0 {
+	} else if count > 0 {
 		return nil
 	}
 
 	/* user is missing */
 
 	// create user
-	user := &User{Base: coal.B()}
-	user.Name = name
-	user.Email = email
-	user.Password = password
+	user := &User{
+		Name:     name,
+		Email:    email,
+		Password: password,
+	}
 
 	// set key and secret
 	err = user.Validate()
@@ -111,7 +113,7 @@ func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 	}
 
 	// save user
-	_, err = store.C(user).InsertOne(nil, user)
+	err = store.M(user).Insert(nil, user)
 	if err != nil {
 		return err
 	}
