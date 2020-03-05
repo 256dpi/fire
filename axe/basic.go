@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
@@ -76,7 +75,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 
 	// insert unlabeled jobs immediately
 	if bp.Label == "" {
-		_, err := store.C(job).InsertOne(ctx, job)
+		err := store.M(&Job{}).Insert(ctx, job)
 		if err != nil {
 			return nil, err
 		}
@@ -86,29 +85,27 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 
 	// prepare query
 	query := bson.M{
-		coal.F(&Job{}, "Name"):  bp.Name,
-		coal.F(&Job{}, "Label"): bp.Label,
-		coal.F(&Job{}, "Status"): bson.M{
-			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
+		"Name":  bp.Name,
+		"Label": bp.Label,
+		"Status": bson.M{
+			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
 	}
 
 	// add interval
 	if bp.Period > 0 {
-		delete(query, coal.F(&Job{}, "Status"))
-		query[coal.F(&Job{}, "Finished")] = bson.M{
+		delete(query, "Status")
+		query["Finished"] = bson.M{
 			"$gt": now.Add(-bp.Period),
 		}
 	}
 
 	// insert job if there is no other job in an available state with the
 	// provided label
-	res, err := store.C(job).UpdateOne(ctx, query, bson.M{
-		"$setOnInsert": job,
-	}, options.Update().SetUpsert(true))
+	inserted, err := store.M(&Job{}).InsertIfMissing(ctx, query, job, false)
 	if err != nil {
 		return nil, err
-	} else if res.UpsertedCount == 0 {
+	} else if !inserted {
 		return nil, nil
 	}
 
@@ -116,7 +113,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 }
 
 // Dequeue will dequeue the job with the specified id. The provided timeout
-// will be set to allow the job to be dequeue if the process failed to set its
+// will be set to allow the job to be dequeued if the process failed to set its
 // status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
 // state are dequeued.
 func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
@@ -129,35 +126,30 @@ func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Du
 	// get time
 	now := time.Now()
 
-	// prepare options
-	opts := options.FindOneAndUpdate().
-		SetSort(coal.Sort("_id")).
-		SetReturnDocument(options.After)
-
 	// dequeue job
 	var job Job
-	err := store.C(&Job{}).FindOneAndUpdate(ctx, bson.M{
+	found, err := store.M(&Job{}).UpdateFirst(ctx, &job, bson.M{
 		"_id": id,
-		coal.F(&Job{}, "Status"): bson.M{
-			"$in": []Status{StatusEnqueued, StatusDequeued, StatusFailed},
+		"Status": bson.M{
+			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
-		coal.F(&Job{}, "Available"): bson.M{
+		"Available": bson.M{
 			"$lte": now,
 		},
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"):    StatusDequeued,
-			coal.F(&Job{}, "Started"):   now,
-			coal.F(&Job{}, "Available"): now.Add(timeout),
+			"Status":    StatusDequeued,
+			"Started":   now,
+			"Available": now.Add(timeout),
 		},
 		"$inc": bson.M{
-			coal.F(&Job{}, "Attempts"): 1,
+			"Attempts": 1,
 		},
-	}, opts).Decode(&job)
-	if coal.IsMissing(err) {
-		return nil, nil
-	} else if err != nil {
+	}, false)
+	if err != nil {
 		return nil, err
+	} else if !found {
+		return nil, nil
 	}
 
 	return &job, nil
@@ -175,19 +167,21 @@ func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Ma
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
-		"_id":                    id,
-		coal.F(&Job{}, "Status"): StatusDequeued,
+	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":    id,
+		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"):   StatusCompleted,
-			coal.F(&Job{}, "Result"):   result,
-			coal.F(&Job{}, "Ended"):    now,
-			coal.F(&Job{}, "Finished"): now,
+			"Status":   StatusCompleted,
+			"Result":   result,
+			"Ended":    now,
+			"Finished": now,
 		},
-	})
+	}, false)
 	if err != nil {
 		return err
+	} else if !found {
+		return fmt.Errorf("missing job")
 	}
 
 	return nil
@@ -207,19 +201,21 @@ func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, del
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
-		coal.F(&Job{}, "Status"): StatusDequeued,
-		"_id":                    id,
+	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":    id,
+		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"):    StatusFailed,
-			coal.F(&Job{}, "Reason"):    reason,
-			coal.F(&Job{}, "Ended"):     now,
-			coal.F(&Job{}, "Available"): now.Add(delay),
+			"Status":    StatusFailed,
+			"Reason":    reason,
+			"Ended":     now,
+			"Available": now.Add(delay),
 		},
-	})
+	}, false)
 	if err != nil {
 		return err
+	} else if !found {
+		return fmt.Errorf("missing job")
 	}
 
 	return nil
@@ -238,19 +234,21 @@ func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) e
 	now := time.Now()
 
 	// update job
-	_, err := store.C(&Job{}).UpdateOne(ctx, bson.M{
-		"_id":                    id,
-		coal.F(&Job{}, "Status"): StatusDequeued,
+	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":    id,
+		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
-			coal.F(&Job{}, "Status"):   StatusCancelled,
-			coal.F(&Job{}, "Reason"):   reason,
-			coal.F(&Job{}, "Ended"):    now,
-			coal.F(&Job{}, "Finished"): now,
+			"Status":   StatusCancelled,
+			"Reason":   reason,
+			"Ended":    now,
+			"Finished": now,
 		},
-	})
+	}, false)
 	if err != nil {
 		return err
+	} else if !found {
+		return fmt.Errorf("missing job")
 	}
 
 	return nil
