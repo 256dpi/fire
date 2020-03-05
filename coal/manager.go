@@ -12,6 +12,35 @@ import (
 	"github.com/256dpi/fire/cinder"
 )
 
+// Level describes the safety level under which an operation should be executed.
+type Level int
+
+const (
+	// Unsafe will allow running operations without a transaction that by
+	// default require a transaction.
+	Unsafe Level = -1
+
+	// Default is the default level.
+	Default Level = 0
+)
+
+func max(levels []Level) Level {
+	// use default if none specified
+	if len(levels) == 0 {
+		return Default
+	}
+
+	// get highest level
+	level := levels[0]
+	for i := 1; i < len(levels); i++ {
+		if levels[i] > level {
+			level = levels[i]
+		}
+	}
+
+	return level
+}
+
 // ErrTransactionRequired is returned if an operation would be unsafe to perform
 // without a transaction.
 var ErrTransactionRequired = errors.New("operation requires a transaction")
@@ -133,8 +162,11 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
-// A transaction is always required to ensure isolation.
-func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.M, sort []string, skip, limit int64, lock bool) error {
+// A transaction is required to ensure isolation.
+//
+// Unsafe: The result may miss documents or include them multiple times if
+// interleaving operations move the documents in the used index.
+func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindAll")
 	span.Log("query", query)
@@ -143,8 +175,8 @@ func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.
 	span.Log("limit", limit)
 	defer span.Finish()
 
-	// require transaction
-	if !getKey(ctx, hasTransaction) {
+	// require transaction if locked or not unsafe
+	if (lock || max(level) > Unsafe) && !getKey(ctx, hasTransaction) {
 		return ErrTransactionRequired
 	}
 
@@ -204,7 +236,10 @@ func (m *Manager) FindAll(ctx context.Context, slicePtr interface{}, query bson.
 // during a transaction.
 //
 // A transaction is always required to ensure isolation.
-func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, skip, limit int64, lock bool) (*Iterator, error) {
+//
+// Unsafe: The result may miss documents or include them multiple times if
+// interleaving operations move the documents in the used index.
+func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindEach")
 	span.Log("query", query)
@@ -212,8 +247,8 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	span.Log("skip", skip)
 	span.Log("limit", limit)
 
-	// require transaction
-	if !getKey(ctx, hasTransaction) {
+	// require transaction if locked or not unsafe
+	if (lock || max(level) > Unsafe) && !getKey(ctx, hasTransaction) {
 		return nil, ErrTransactionRequired
 	}
 
@@ -279,7 +314,10 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 // during a transaction.
 //
 // A transaction is always required to ensure isolation.
-func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lock bool) (int64, error) {
+//
+// Unsafe: The count may miss documents or include them multiple times if
+// interleaving operations move the documents in the used index.
+func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Count")
 	span.Log("query", query)
@@ -287,8 +325,8 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 	span.Log("limit", limit)
 	defer span.Finish()
 
-	// require transaction
-	if !getKey(ctx, hasTransaction) {
+	// require transaction if locked or not unsafe
+	if (lock || max(level) > Unsafe) && !getKey(ctx, hasTransaction) {
 		return 0, ErrTransactionRequired
 	}
 

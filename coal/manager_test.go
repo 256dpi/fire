@@ -110,6 +110,11 @@ func TestManagerFindAll(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, ErrTransactionRequired, err)
 
+		// unsafe
+		err = m.FindAll(nil, &list, nil, nil, 0, 0, false, Unsafe)
+		assert.NoError(t, err)
+		assert.Equal(t, []postModel{post1, post2}, list)
+
 		// all
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			var list []postModel
@@ -188,6 +193,11 @@ func TestManagerFindEach(t *testing.T) {
 		assert.Nil(t, iter)
 		assert.Equal(t, ErrTransactionRequired, err)
 
+		// unsafe
+		iter, err = m.FindEach(nil, nil, nil, 0, 0, false, Unsafe)
+		assert.NoError(t, err)
+		assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
+
 		// all
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, nil, nil, 0, 0, false)
@@ -259,6 +269,11 @@ func TestManagerCount(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), count)
 		assert.Equal(t, ErrTransactionRequired, err)
+
+		// unsafe
+		count, err = m.Count(nil, nil, 0, 0, false, Unsafe)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), count)
 
 		// all
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
