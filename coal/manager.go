@@ -257,6 +257,14 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	span.Log("skip", skip)
 	span.Log("limit", limit)
 
+	// finish span on error
+	var iter *Iterator
+	defer func() {
+		if iter == nil {
+			span.Finish()
+		}
+	}()
+
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !getKey(ctx, hasTransaction) {
 		return nil, ErrTransactionRequired
@@ -270,7 +278,6 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	// translate query
 	queryDoc, err := m.trans.Document(query)
 	if err != nil {
-		span.Finish()
 		return nil, err
 	}
 
@@ -281,7 +288,6 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	if len(sort) > 0 {
 		sortDoc, err := m.trans.Sort(sort)
 		if err != nil {
-			span.Finish()
 			return nil, err
 		}
 
@@ -307,9 +313,8 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	}
 
 	// find documents
-	iter, err := m.coll.Find(ctx, queryDoc, opts)
+	iter, err = m.coll.Find(ctx, queryDoc, opts)
 	if err != nil {
-		span.Finish()
 		return nil, err
 	}
 
