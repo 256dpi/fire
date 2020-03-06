@@ -221,6 +221,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		// call function
 		err = fn(withKey(sc, hasTransaction))
 		if err != nil {
+			_ = sc.AbortTransaction(sc)
 			return err
 		}
 
