@@ -24,7 +24,7 @@ func NewTester(store *Store, models ...Model) *Tester {
 
 	// ensure collections
 	for _, model := range models {
-		tester.Insert(GetMeta(model).Make())
+		_, _ = store.C(model).InsertOne(nil, GetMeta(model).Make())
 	}
 
 	// clean
