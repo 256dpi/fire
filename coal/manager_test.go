@@ -59,6 +59,10 @@ func TestManagerFindFirst(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello World!!!",
+		}).(*postModel)
+
 		m := tester.Store.M(&postModel{})
 
 		// existing
@@ -69,23 +73,31 @@ func TestManagerFindFirst(t *testing.T) {
 		assert.True(t, found)
 
 		// fetch
-		var post2 postModel
-		found, err = m.FindFirst(nil, &post2, bson.M{
+		var post postModel
+		found, err = m.FindFirst(nil, &post, bson.M{
 			"Title": "Hello World!",
 		}, nil, 0, false)
 		assert.NoError(t, err)
 		assert.True(t, found)
-		assert.Equal(t, post1, post2)
+		assert.Equal(t, post1, post)
+
+		// sort
+		found, err = m.FindFirst(nil, &post, bson.M{
+			"Title": "Hello World!!!",
+		}, []string{"-Title"}, 0, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+		assert.Equal(t, post2, post)
 
 		// missing
-		found, err = m.FindFirst(nil, &post2, bson.M{
+		found, err = m.FindFirst(nil, &post, bson.M{
 			"Title": "Hello Space!",
 		}, nil, 0, false)
 		assert.NoError(t, err)
 		assert.False(t, found)
 
 		// error
-		found, err = m.FindFirst(nil, &post2, bson.M{
+		found, err = m.FindFirst(nil, &post, bson.M{
 			"Title": "Hello World!",
 		}, nil, 0, true)
 		assert.Error(t, err)
@@ -96,12 +108,13 @@ func TestManagerFindFirst(t *testing.T) {
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post1.Lock++
 
-			found, err = m.FindFirst(ctx, &post2, bson.M{
+			var post postModel
+			found, err = m.FindFirst(ctx, &post, bson.M{
 				"Title": "Hello World!",
 			}, nil, 0, true)
 			assert.NoError(t, err)
 			assert.True(t, found)
-			assert.Equal(t, post1, post2)
+			assert.Equal(t, post1, post)
 
 			return nil
 		})
