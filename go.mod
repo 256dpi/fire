@@ -4,7 +4,7 @@ require (
 	github.com/256dpi/jsonapi/v2 v2.0.0
 	github.com/256dpi/lungo v0.2.1
 	github.com/256dpi/oauth2/v2 v2.0.0
-	github.com/256dpi/serve v0.3.2
+	github.com/256dpi/serve v0.3.3
 	github.com/256dpi/stack v0.3.0
 	github.com/asaskevich/govalidator v0.0.0-20171111151018-521b25f4b05f
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect

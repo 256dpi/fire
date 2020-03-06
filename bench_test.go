@@ -72,7 +72,10 @@ func listBenchmark(b *testing.B, store *coal.Store, items, parallelism int) {
 		Store: tester.Store,
 	})
 
-	tester.Handler = serve.Compose(Throttle(100), tester.Handler)
+	tester.Handler = serve.Compose(
+		serve.Throttle(100),
+		tester.Handler,
+	)
 
 	for i := 0; i < items; i++ {
 		tester.Insert(&postModel{
@@ -108,7 +111,10 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 		Store: tester.Store,
 	})
 
-	tester.Handler = serve.Compose(Throttle(100), tester.Handler)
+	tester.Handler = serve.Compose(
+		serve.Throttle(100),
+		tester.Handler,
+	)
 
 	id := tester.Insert(&postModel{
 		Title:    "Hello World!",
