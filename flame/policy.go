@@ -1,6 +1,7 @@
 package flame
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/256dpi/oauth2/v2"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/heat"
 )
 
@@ -53,6 +55,28 @@ type Grants struct {
 	RefreshToken      bool
 }
 
+// A Context provides useful contextual information.
+type Context struct {
+	// The context that is cancelled when the underlying connection transport
+	// has been closed.
+	//
+	// Values: opentracing.Span, *cinder.Trace
+	context.Context
+
+	// The underlying HTTP request.
+	//
+	// Usage: Read Only
+	Request *http.Request
+
+	// The current trace.
+	//
+	// Usage: Read Only
+	Trace *cinder.Trace
+
+	writer http.ResponseWriter
+	grants Grants
+}
+
 // Policy configures the provided authentication and authorization schemes used
 // by the authenticator.
 type Policy struct {
@@ -66,30 +90,30 @@ type Policy struct {
 	Clients []Client
 
 	// Grants should return the permitted grants for the provided client.
-	Grants func(Client) (Grants, error)
+	Grants func(*Context, Client) (Grants, error)
 
 	// ClientFilter may return a filter that should be applied when looking
 	// up a client. This callback can be used to select clients based on other
 	// request parameters. It can return ErrInvalidFilter to cancel the
 	// authentication request.
-	ClientFilter func(Client, *http.Request) (bson.M, error)
+	ClientFilter func(*Context, Client) (bson.M, error)
 
 	// RedirectURIValidator should validate a redirect URI and return the valid
 	// or corrected redirect URI. It can return ErrInvalidRedirectURI to to
 	// cancel the authorization request. The validator is during the
 	// authorization and the token request. If the result differs, no token will
 	// be issue and the request aborted.
-	RedirectURIValidator func(Client, string) (string, error)
+	RedirectURIValidator func(*Context, Client, string) (string, error)
 
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
-	ResourceOwners func(Client) ([]ResourceOwner, error)
+	ResourceOwners func(*Context, Client) ([]ResourceOwner, error)
 
 	// ResourceOwnerFilter may return a filter that should be applied when
 	// looking up a resource owner. This callback can be used to select resource
 	// owners based on other request parameters. It can return ErrInvalidFilter
 	// to cancel the authentication request.
-	ResourceOwnerFilter func(Client, ResourceOwner, *http.Request) (bson.M, error)
+	ResourceOwnerFilter func(*Context, Client, ResourceOwner) (bson.M, error)
 
 	// GrantStrategy is invoked by the authenticator with the requested scope,
 	// the client and the resource owner before issuing an access token. The
@@ -97,11 +121,11 @@ type Policy struct {
 	// ErrGrantRejected or ErrInvalidScope to cancel the grant request.
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
-	GrantStrategy func(Client, ResourceOwner, oauth2.Scope) (oauth2.Scope, error)
+	GrantStrategy func(*Context, Client, ResourceOwner, oauth2.Scope) (oauth2.Scope, error)
 
 	// The URL to the page that obtains the approval of the user in implicit and
 	// authorization code grants.
-	ApprovalURL func(Client) (string, error)
+	ApprovalURL func(*Context, Client) (string, error)
 
 	// ApproveStrategy is invoked by the authenticator to verify the
 	// authorization approval by an authenticated resource owner in the implicit
@@ -111,7 +135,7 @@ type Policy struct {
 	//
 	// Note: GenericToken represents the token that authorizes the resource
 	// owner to give the approval.
-	ApproveStrategy func(Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error)
+	ApproveStrategy func(*Context, Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error)
 
 	// TokenData may return a map of data that should be included in the
 	// generated JWT tokens as the "dat" field as well as in the token
@@ -125,8 +149,8 @@ type Policy struct {
 }
 
 // StaticGrants always selects the specified grants.
-func StaticGrants(password, clientCredentials, implicit, authorizationCode, refreshToken bool) func(Client) (Grants, error) {
-	return func(Client) (Grants, error) {
+func StaticGrants(password, clientCredentials, implicit, authorizationCode, refreshToken bool) func(*Context, Client) (Grants, error) {
+	return func(*Context, Client) (Grants, error) {
 		return Grants{
 			Password:          password,
 			ClientCredentials: clientCredentials,
@@ -139,7 +163,7 @@ func StaticGrants(password, clientCredentials, implicit, authorizationCode, refr
 
 // DefaultRedirectURIValidator will check the redirect URI against the client
 // model using the ValidRedirectURI method.
-func DefaultRedirectURIValidator(client Client, uri string) (string, error) {
+func DefaultRedirectURIValidator(_ *Context, client Client, uri string) (string, error) {
 	// check model
 	if client.ValidRedirectURI(uri) {
 		return uri, nil
@@ -149,7 +173,7 @@ func DefaultRedirectURIValidator(client Client, uri string) (string, error) {
 }
 
 // DefaultGrantStrategy grants only empty scopes.
-func DefaultGrantStrategy(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
+func DefaultGrantStrategy(_ *Context, _ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 	// check scope
 	if !scope.Empty() {
 		return nil, ErrInvalidScope
@@ -159,14 +183,14 @@ func DefaultGrantStrategy(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2
 }
 
 // StaticApprovalURL returns a static approval URL.
-func StaticApprovalURL(url string) func(Client) (string, error) {
-	return func(Client) (string, error) {
+func StaticApprovalURL(url string) func(*Context, Client) (string, error) {
+	return func(*Context, Client) (string, error) {
 		return url, nil
 	}
 }
 
 // DefaultApproveStrategy rejects all approvals.
-func DefaultApproveStrategy(Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error) {
+func DefaultApproveStrategy(*Context, Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error) {
 	return nil, ErrApprovalRejected
 }
 
@@ -188,11 +212,11 @@ func DefaultPolicy(notary *heat.Notary) *Policy {
 		Notary:  notary,
 		Token:   &Token{},
 		Clients: []Client{&Application{}},
-		Grants: func(Client) (Grants, error) {
+		Grants: func(*Context, Client) (Grants, error) {
 			return Grants{}, nil
 		},
 		RedirectURIValidator: DefaultRedirectURIValidator,
-		ResourceOwners: func(_ Client) ([]ResourceOwner, error) {
+		ResourceOwners: func(_ *Context, _ Client) ([]ResourceOwner, error) {
 			return []ResourceOwner{&User{}}, nil
 		},
 		GrantStrategy:             DefaultGrantStrategy,

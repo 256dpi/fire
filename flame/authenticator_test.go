@@ -30,15 +30,15 @@ func TestIntegration(t *testing.T) {
 		policy := DefaultPolicy(testNotary)
 		policy.Grants = StaticGrants(true, true, true, true, true)
 
-		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
+		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
 			return bson.M{"_id": bson.M{"$exists": true}}, nil
 		}
 
-		policy.GrantStrategy = func(_ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
+		policy.GrantStrategy = func(_ *Context, _ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}
@@ -50,7 +50,7 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
-		policy.ApproveStrategy = func(_ Client, _ ResourceOwner, _ GenericToken, scope oauth2.Scope) (oauth2.Scope, error) {
+		policy.ApproveStrategy = func(_ *Context, _ Client, _ ResourceOwner, _ GenericToken, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
 				return nil, ErrInvalidScope
 			}
@@ -317,7 +317,7 @@ func TestInvalidClientFilter(t *testing.T) {
 			Key: "application",
 		}).(*Application)
 
-		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
+		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
 			return nil, ErrInvalidFilter
 		}
 
@@ -341,7 +341,7 @@ func TestInvalidClientFilter(t *testing.T) {
 			},
 		})
 
-		policy.ClientFilter = func(Client, *http.Request) (bson.M, error) {
+		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
 			return nil, errors.New("foo")
 		}
 
@@ -384,7 +384,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			Key: "application",
 		}).(*Application)
 
-		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
 			return nil, ErrInvalidFilter
 		}
 
@@ -408,7 +408,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 			},
 		})
 
-		policy.ResourceOwnerFilter = func(Client, ResourceOwner, *http.Request) (bson.M, error) {
+		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
 			return nil, errors.New("foo")
 		}
 
