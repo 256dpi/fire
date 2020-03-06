@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
+	"github.com/256dpi/fire/cinder"
 )
 
 // MustConnect will call Connect and panic on errors.
@@ -198,6 +200,10 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	if getKey(ctx, hasTransaction) {
 		return fn(ctx)
 	}
+
+	// trace
+	ctx, span := cinder.Track(ctx, "coal/Store.T")
+	defer span.Finish()
 
 	// prepare options
 	opts := options.Session().
