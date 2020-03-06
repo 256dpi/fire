@@ -39,6 +39,16 @@ func NewTranslator(model Model) *Translator {
 	}
 }
 
+// Field will translate the specified field.
+func (t *Translator) Field(field string) (string, error) {
+	err := t.field(&field)
+	if err != nil {
+		return "", err
+	}
+
+	return field, nil
+}
+
 // Document will convert the provided query or update document and translate
 // all field names to refer to known database fields. It will also validate the
 // query or update and return an error if an unsafe operator is used.

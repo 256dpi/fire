@@ -42,10 +42,12 @@ func TestManagerFind(t *testing.T) {
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post1.Lock++
+
 			found, err = m.Find(ctx, &post2, post1.ID(), true)
 			assert.NoError(t, err)
 			assert.True(t, found)
 			assert.Equal(t, post1, post2)
+
 			return nil
 		})
 	})
@@ -93,12 +95,14 @@ func TestManagerFindFirst(t *testing.T) {
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post1.Lock++
+
 			found, err = m.FindFirst(ctx, &post2, bson.M{
 				"Title": "Hello World!",
 			}, nil, 0, true)
 			assert.NoError(t, err)
 			assert.True(t, found)
 			assert.Equal(t, post1, post2)
+
 			return nil
 		})
 	})
@@ -178,10 +182,12 @@ func TestManagerFindAll(t *testing.T) {
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
+
 			var list []postModel
 			err := m.FindAll(ctx, &list, nil, nil, 0, 0, true)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post1, post2}, list)
+
 			return nil
 		})
 	})
@@ -256,9 +262,11 @@ func TestManagerFindEach(t *testing.T) {
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
+
 			iter, err = m.FindEach(ctx, nil, nil, 0, 0, true)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
+
 			return nil
 		})
 	})
@@ -334,6 +342,71 @@ func TestManagerCount(t *testing.T) {
 			err = m.FindAll(ctx, &list, nil, nil, 0, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post1, post2}, list)
+
+			return nil
+		})
+	})
+}
+
+func TestManagerDistinct(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		post3 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// error
+		titles, err := m.Distinct(nil, "Title", nil, false)
+		assert.Error(t, err)
+		assert.Equal(t, ErrTransactionRequired, err)
+
+		// unsafe
+		titles, err = m.Distinct(nil, "Title", nil, false, Unsafe)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
+
+		// all
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			titles, err = m.Distinct(ctx, "Title", nil, false)
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
+			return nil
+		})
+
+		// filter
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			titles, err = m.Distinct(ctx, "Title", bson.M{
+				"Title": "Hello World!",
+			}, false)
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, []interface{}{post1.Title}, titles)
+			return nil
+		})
+
+		// lock
+		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			post1.Lock++
+			post2.Lock++
+			post3.Lock++
+
+			titles, err := m.Distinct(ctx, "Title", nil, true)
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
+
+			var list []postModel
+			err = m.FindAll(ctx, &list, nil, nil, 0, 0, false)
+			assert.NoError(t, err)
+			assert.Equal(t, []postModel{post1, post2, post3}, list)
+
 			return nil
 		})
 	})
@@ -392,6 +465,7 @@ func TestManagerInsertIfMissing(t *testing.T) {
 			}, true)
 			assert.NoError(t, err)
 			assert.False(t, inserted)
+
 			return nil
 		})
 	})
@@ -545,6 +619,7 @@ func TestManagerUpdate(t *testing.T) {
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post.Lock++
+
 			found, err = m.Update(ctx, &updated, post.ID(), bson.M{
 				"$set": bson.M{
 					"Title": "Hello Space!!!",
@@ -634,6 +709,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post.Lock++
+
 			found, err = m.UpdateFirst(ctx, &updated, bson.M{
 				"Title": "Hello World!",
 			}, bson.M{
@@ -788,6 +864,7 @@ func TestManagerUpsert(t *testing.T) {
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
 			post.Lock++
+
 			post.Published = false
 			var lockedPost postModel
 			inserted, err = m.Upsert(ctx, &lockedPost, bson.M{
@@ -800,6 +877,7 @@ func TestManagerUpsert(t *testing.T) {
 			assert.NoError(t, err)
 			assert.False(t, inserted)
 			assert.Equal(t, post, lockedPost)
+
 			return nil
 		})
 	})

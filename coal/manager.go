@@ -398,6 +398,53 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 	return count, nil
 }
 
+// Distinct will find all documents that match the specified query and collect
+// the specified field. Lock can be set to true to force a write lock on the
+// documents and prevent a stale read during a transaction.
+//
+// A transaction is required to ensure isolation.
+//
+// Unsafe: The result may miss documents or include them multiple times if
+// interleaving operations move the documents in the used index.
+func (m *Manager) Distinct(ctx context.Context, field string, query bson.M, lock bool, level ...Level) ([]interface{}, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "coal/Manager.Distinct")
+	defer span.Finish()
+
+	// require transaction if locked or not unsafe
+	if (lock || max(level) > Unsafe) && !getKey(ctx, hasTransaction) {
+		return nil, ErrTransactionRequired
+	}
+
+	// translate field
+	field, err := m.trans.Field(field)
+	if err != nil {
+		return nil, err
+	}
+
+	// translate query
+	queryDoc, err := m.trans.Document(query)
+	if err != nil {
+		return nil, err
+	}
+
+	// lock documents
+	if lock {
+		_, err = m.coll.UpdateMany(ctx, queryDoc, incrementLock)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// distinct
+	result, err := m.coll.Distinct(ctx, field, queryDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // Insert will insert the provided document. If the document has a zero id a new
 // id will be generated and assigned. It will return whether a document has been
 // inserted.
