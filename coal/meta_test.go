@@ -2,7 +2,6 @@ package coal
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -347,10 +346,16 @@ func TestMetaSpecial(t *testing.T) {
 	assert.Equal(t, "foo", meta.Fields["Foo"].BSONField)
 }
 
+func TestMetaIdentity(t *testing.T) {
+	meta1 := GetMeta(&postModel{})
+	meta2 := GetMeta(&postModel{})
+	assert.True(t, meta1 == meta2)
+}
+
 func BenchmarkGetMeta(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetMeta(&postModel{})
-		metaCache = sync.Map{}
+		metaCache = map[reflect.Type]*Meta{}
 	}
 }
 
