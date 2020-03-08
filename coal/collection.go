@@ -55,7 +55,7 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 
 // AggregateAll wraps the native Aggregate collection method and decodes all
 // documents to the provided slice.
-func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
+func (c *Collection) AggregateAll(ctx context.Context, list interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.AggregateAll")
 	span.Tag("collection", c.coll.Name())
@@ -69,14 +69,14 @@ func (c *Collection) AggregateAll(ctx context.Context, slicePtr interface{}, pip
 	}
 
 	// decode all documents
-	err = csr.All(ctx, slicePtr)
+	err = csr.All(ctx, list)
 	if err != nil {
 		_ = csr.Close(ctx)
 		return err
 	}
 
 	// log result
-	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
+	span.Log("loaded", reflect.ValueOf(list).Elem().Len())
 
 	return nil
 }
@@ -226,7 +226,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 // FindAll wraps the native Find collection method and decodes all documents to
 // the provided slice.
-func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter interface{}, opts ...*options.FindOptions) error {
+func (c *Collection) FindAll(ctx context.Context, list interface{}, filter interface{}, opts ...*options.FindOptions) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Collection.FindAll")
 	span.Tag("collection", c.coll.Name())
@@ -240,14 +240,14 @@ func (c *Collection) FindAll(ctx context.Context, slicePtr interface{}, filter i
 	}
 
 	// decode all documents
-	err = csr.All(ctx, slicePtr)
+	err = csr.All(ctx, list)
 	if err != nil {
 		_ = csr.Close(ctx)
 		return err
 	}
 
 	// log result
-	span.Log("loaded", reflect.ValueOf(slicePtr).Elem().Len())
+	span.Log("loaded", reflect.ValueOf(list).Elem().Len())
 
 	return nil
 }
