@@ -91,17 +91,17 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 		model = &empty{}
 	}
 
-	// prepare query
-	query := bson.M{
+	// prepare filter
+	filter := bson.M{
 		"_id": id,
 	}
 
 	// find document
 	var err error
 	if lock {
-		err = m.coll.FindOneAndUpdate(ctx, query, incrementLock, returnAfterUpdate).Decode(model)
+		err = m.coll.FindOneAndUpdate(ctx, filter, incrementLock, returnAfterUpdate).Decode(model)
 	} else {
-		err = m.coll.FindOne(ctx, query).Decode(model)
+		err = m.coll.FindOne(ctx, filter).Decode(model)
 	}
 	if IsMissing(err) {
 		return false, nil
@@ -112,7 +112,7 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 	return true, nil
 }
 
-// FindFirst will find the first document that matches the specified query. It
+// FindFirst will find the first document that matches the specified filter. It
 // will return whether a document has been found. Lock can be set to true to
 // force a write lock on the document and prevent a stale read during a
 // transaction.
@@ -120,11 +120,11 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 // A transaction is required for locking.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run during a transaction.
-func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort []string, skip int64, lock bool) (bool, error) {
+// exclude documents from the filter it should be run during a transaction.
+func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindFirst")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("sort", sort)
 	span.Log("skip", skip)
 	defer span.Finish()
@@ -139,8 +139,8 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 		model = &empty{}
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
@@ -165,9 +165,9 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 
 	// find document
 	if lock {
-		err = m.coll.FindOneAndUpdate(ctx, queryDoc, incrementLock, returnAfterUpdate).Decode(model)
+		err = m.coll.FindOneAndUpdate(ctx, filterDoc, incrementLock, returnAfterUpdate).Decode(model)
 	} else {
-		err = m.coll.FindOne(ctx, queryDoc).Decode(model)
+		err = m.coll.FindOne(ctx, filterDoc).Decode(model)
 	}
 	if IsMissing(err) {
 		return false, nil
@@ -178,7 +178,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 	return true, nil
 }
 
-// FindAll will find all documents that match the specified query. Lock can be
+// FindAll will find all documents that match the specified filter. Lock can be
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
@@ -186,10 +186,10 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, query bson.M, sort
 //
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
-func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
+func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindAll")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("sort", sort)
 	span.Log("skip", skip)
 	span.Log("limit", limit)
@@ -205,8 +205,8 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, s
 		return fmt.Errorf("cannot lock with skip and limit")
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return err
 	}
@@ -236,14 +236,14 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, s
 
 	// lock documents
 	if lock {
-		_, err = m.coll.UpdateMany(ctx, queryDoc, incrementLock)
+		_, err = m.coll.UpdateMany(ctx, filterDoc, incrementLock)
 		if err != nil {
 			return err
 		}
 	}
 
 	// find documents
-	err = m.coll.FindAll(ctx, list, queryDoc, opts)
+	err = m.coll.FindAll(ctx, list, filterDoc, opts)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, s
 	return nil
 }
 
-// FindEach will find all documents that match the specified query. Lock can be
+// FindEach will find all documents that match the specified filter. Lock can be
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
@@ -259,10 +259,10 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, query bson.M, s
 //
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
-func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
+func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.FindEach")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("sort", sort)
 	span.Log("skip", skip)
 	span.Log("limit", limit)
@@ -285,8 +285,8 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 		return nil, fmt.Errorf("cannot lock with skip and limit")
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return nil, err
 	}
@@ -316,14 +316,14 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 
 	// lock documents
 	if lock {
-		_, err = m.coll.UpdateMany(ctx, queryDoc, incrementLock)
+		_, err = m.coll.UpdateMany(ctx, filterDoc, incrementLock)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// find documents
-	iter, err = m.coll.Find(ctx, queryDoc, opts)
+	iter, err = m.coll.Find(ctx, filterDoc, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 	return iter, nil
 }
 
-// Count will count the documents that match the specified query. Lock can be
+// Count will count the documents that match the specified filter. Lock can be
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
@@ -342,10 +342,10 @@ func (m *Manager) FindEach(ctx context.Context, query bson.M, sort []string, ski
 //
 // Unsafe: The count may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
-func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
+func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Count")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("skip", skip)
 	span.Log("limit", limit)
 	defer span.Finish()
@@ -360,8 +360,8 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 		return 0, fmt.Errorf("cannot lock with skip and limit")
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return 0, err
 	}
@@ -381,7 +381,7 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 
 	// update if locked
 	if lock {
-		res, err := m.coll.UpdateMany(ctx, queryDoc, incrementLock)
+		res, err := m.coll.UpdateMany(ctx, filterDoc, incrementLock)
 		if err != nil {
 			return 0, err
 		}
@@ -390,7 +390,7 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 	}
 
 	// count documents
-	count, err := m.coll.CountDocuments(ctx, queryDoc, opts)
+	count, err := m.coll.CountDocuments(ctx, filterDoc, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -398,7 +398,7 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 	return count, nil
 }
 
-// Distinct will find all documents that match the specified query and collect
+// Distinct will find all documents that match the specified filter and collect
 // the specified field. Lock can be set to true to force a write lock on the
 // documents and prevent a stale read during a transaction.
 //
@@ -406,7 +406,7 @@ func (m *Manager) Count(ctx context.Context, query bson.M, skip, limit int64, lo
 //
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
-func (m *Manager) Distinct(ctx context.Context, field string, query bson.M, lock bool, level ...Level) ([]interface{}, error) {
+func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, level ...Level) ([]interface{}, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Distinct")
 	defer span.Finish()
@@ -422,22 +422,22 @@ func (m *Manager) Distinct(ctx context.Context, field string, query bson.M, lock
 		return nil, err
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// lock documents
 	if lock {
-		_, err = m.coll.UpdateMany(ctx, queryDoc, incrementLock)
+		_, err = m.coll.UpdateMany(ctx, filterDoc, incrementLock)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// distinct
-	result, err := m.coll.Distinct(ctx, field, queryDoc)
+	result, err := m.coll.Distinct(ctx, field, filterDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -468,20 +468,20 @@ func (m *Manager) Insert(ctx context.Context, model Model) error {
 }
 
 // InsertIfMissing will insert the provided document if no document matched the
-// provided query. If the document has a zero id a new id will be generated and
+// provided filter. If the document has a zero id a new id will be generated and
 // assigned. It will return whether a document has been inserted. The underlying
-// upsert operation will merge the query with the model fields. Lock can be set
+// upsert operation will merge the filter with the model fields. Lock can be set
 // to true to force a write lock on the existing document and prevent a stale
 // read during a transaction.
 //
 // A transaction is required for locking.
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
-// the query is not covered by a unique index.
-func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model, lock bool) (bool, error) {
+// the filter is not covered by a unique index.
+func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.InsertIfMissing")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	defer span.Finish()
 
 	// require transaction
@@ -489,8 +489,8 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 		return false, ErrTransactionRequired
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
@@ -516,7 +516,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, query bson.M, model Model
 	}
 
 	// upsert document
-	res, err := m.coll.UpdateOne(ctx, queryDoc, update, opts)
+	res, err := m.coll.UpdateOne(ctx, filterDoc, update, opts)
 	if err != nil {
 		return false, err
 	}
@@ -561,7 +561,7 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 	return res.MatchedCount == 1, nil
 }
 
-// ReplaceFirst will replace the first document that matches the specified query.
+// ReplaceFirst will replace the first document that matches the specified filter.
 // It will return whether a document has been found. Lock can be set to true to
 // force a write lock on the document and prevent a stale read during a
 // transaction if the replace did not cause an update.
@@ -569,11 +569,11 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 // A transaction is required for locking.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, lock bool) (bool, error) {
+// exclude documents from the filter it should be run as part of a transaction.
+func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.ReplaceFirst")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	defer span.Finish()
 
 	// require transaction
@@ -586,14 +586,14 @@ func (m *Manager) ReplaceFirst(ctx context.Context, query bson.M, model Model, l
 		model.GetBase().Lock += 1000
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
 
 	// replace document
-	res, err := m.coll.ReplaceOne(ctx, queryDoc, model)
+	res, err := m.coll.ReplaceOne(ctx, filterDoc, model)
 	if err != nil {
 		return false, err
 	}
@@ -659,7 +659,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 	return true, nil
 }
 
-// UpdateFirst will update the first document that matches the specified query.
+// UpdateFirst will update the first document that matches the specified filter.
 // It will return whether a document has been found. Lock can be set to true to
 // force a write lock on the document and prevent a stale read during a
 // transaction in case the update did not change the document.
@@ -667,11 +667,11 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 // A transaction is required for locking.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bson.M, sort []string, lock bool) (bool, error) {
+// exclude documents from the filter it should be run as part of a transaction.
+func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("update", update)
 	defer span.Finish()
 
@@ -685,8 +685,8 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 		model = &empty{}
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
@@ -719,7 +719,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 	}
 
 	// find and update document
-	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
+	err = m.coll.FindOneAndUpdate(ctx, filterDoc, updateDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {
@@ -729,7 +729,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 	return true, nil
 }
 
-// UpdateAll will update the documents that match the specified query. It will
+// UpdateAll will update the documents that match the specified filter. It will
 // return the number of matched documents. Lock can be set to true to force a
 // write lock on the documents and prevent a stale read during a transaction in
 // case the operation did not change all documents.
@@ -737,11 +737,11 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, query, update bs
 // A transaction is required for locking.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool) (int64, error) {
+// exclude documents from the filter it should be run as part of a transaction.
+func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateAll")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("update", update)
 	defer span.Finish()
 
@@ -750,8 +750,8 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 		return 0, ErrTransactionRequired
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return 0, err
 	}
@@ -771,7 +771,7 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 	}
 
 	// update documents
-	res, err := m.coll.UpdateMany(ctx, queryDoc, updateDoc)
+	res, err := m.coll.UpdateMany(ctx, filterDoc, updateDoc)
 	if err != nil {
 		return 0, err
 	}
@@ -779,8 +779,8 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 	return res.MatchedCount, nil
 }
 
-// Upsert will update the first document that matches the specified query. If
-// no document has been found, the update document is applied to the query and
+// Upsert will update the first document that matches the specified filter. If
+// no document has been found, the update document is applied to the filter and
 // inserted. It will return whether a document has been inserted. Lock can be set
 // to true to force a write lock on the existing document and prevent a stale
 // read during a transaction.
@@ -788,11 +788,11 @@ func (m *Manager) UpdateAll(ctx context.Context, query, update bson.M, lock bool
 // A transaction is required for locking.
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
-// the query is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M, sort []string, lock bool) (bool, error) {
+// the filter is not covered by a unique index.
+func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	span.Log("update", update)
 	defer span.Finish()
 
@@ -806,8 +806,8 @@ func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M,
 		model = &empty{}
 	}
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
@@ -847,7 +847,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, query, update bson.M,
 	}
 
 	// find and update document
-	err = m.coll.FindOneAndUpdate(ctx, queryDoc, updateDoc, opts).Decode(model)
+	err = m.coll.FindOneAndUpdate(ctx, filterDoc, updateDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {
@@ -890,25 +890,25 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 	return true, nil
 }
 
-// DeleteAll will delete the documents that match the specified query. It will
+// DeleteAll will delete the documents that match the specified filter. It will
 // return the number of deleted documents.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
+// exclude documents from the filter it should be run as part of a transaction.
+func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteAll")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	defer span.Finish()
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return 0, err
 	}
 
 	// update documents
-	res, err := m.coll.DeleteMany(ctx, queryDoc)
+	res, err := m.coll.DeleteMany(ctx, filterDoc)
 	if err != nil {
 		return 0, err
 	}
@@ -916,19 +916,19 @@ func (m *Manager) DeleteAll(ctx context.Context, query bson.M) (int64, error) {
 	return res.DeletedCount, nil
 }
 
-// DeleteFirst will delete the first document that matches the specified query.
+// DeleteFirst will delete the first document that matches the specified filter.
 // It will return whether a document has been found and deleted.
 //
 // Warning: If the operation depends on interleaving writes to not include or
-// exclude documents from the query it should be run as part of a transaction.
-func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M, sort []string) (bool, error) {
+// exclude documents from the filter it should be run as part of a transaction.
+func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, sort []string) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
-	span.Log("query", query)
+	span.Log("filter", filter)
 	defer span.Finish()
 
-	// translate query
-	queryDoc, err := m.trans.Document(query)
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
 	}
@@ -952,7 +952,7 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, query bson.M, so
 	}
 
 	// find and delete document
-	err = m.coll.FindOneAndDelete(ctx, queryDoc, opts).Decode(model)
+	err = m.coll.FindOneAndDelete(ctx, filterDoc, opts).Decode(model)
 	if IsMissing(err) {
 		return false, nil
 	} else if err != nil {
