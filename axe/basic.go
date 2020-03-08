@@ -83,8 +83,8 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 		return job, nil
 	}
 
-	// prepare query
-	query := bson.M{
+	// prepare filter
+	filter := bson.M{
 		"Name":  bp.Name,
 		"Label": bp.Label,
 		"Status": bson.M{
@@ -94,15 +94,15 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 
 	// add interval
 	if bp.Period > 0 {
-		delete(query, "Status")
-		query["Finished"] = bson.M{
+		delete(filter, "Status")
+		filter["Finished"] = bson.M{
 			"$gt": now.Add(-bp.Period),
 		}
 	}
 
 	// insert job if there is no other job in an available state with the
 	// provided label
-	inserted, err := store.M(&Job{}).InsertIfMissing(ctx, query, job, false)
+	inserted, err := store.M(&Job{}).InsertIfMissing(ctx, filter, job, false)
 	if err != nil {
 		return nil, err
 	} else if !inserted {

@@ -925,13 +925,10 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 		}
 	}
 
-	// prepare query
-	query := bson.M{
-		"$and": filters,
-	}
-
 	// fetch client
-	found, err := a.store.M(model).FindFirst(ctx, client, query, nil, 0, false)
+	found, err := a.store.M(model).FindFirst(ctx, client, bson.M{
+		"$and": filters,
+	}, nil, 0, false)
 	stack.AbortIf(err)
 	if !found {
 		return nil
@@ -1033,13 +1030,10 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 		}
 	}
 
-	// prepare query
-	query := bson.M{
-		"$and": filters,
-	}
-
 	// fetch resource owner
-	found, err := a.store.M(model).FindFirst(ctx, resourceOwner, query, nil, 0, false)
+	found, err := a.store.M(model).FindFirst(ctx, resourceOwner, bson.M{
+		"$and": filters,
+	}, nil, 0, false)
 	stack.AbortIf(err)
 	if !found {
 		return nil
