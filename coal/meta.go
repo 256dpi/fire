@@ -63,6 +63,9 @@ type Field struct {
 
 // Meta stores extracted meta data from a model.
 type Meta struct {
+	// The struct type.
+	Type reflect.Type
+
 	// The struct type name e.g. "models.CarWheel".
 	Name string
 
@@ -89,8 +92,6 @@ type Meta struct {
 
 	// The flagged fields.
 	FlaggedFields map[string][]*Field
-
-	typ reflect.Type
 }
 
 // GetMeta returns the Meta structure for the passed Model.
@@ -108,7 +109,7 @@ func GetMeta(model Model) *Meta {
 
 	// create new meta
 	meta := &Meta{
-		typ:            modelType,
+		Type:           modelType,
 		Name:           modelType.String(),
 		Fields:         make(map[string]*Field),
 		DatabaseFields: make(map[string]*Field),
@@ -331,12 +332,12 @@ func GetMeta(model Model) *Meta {
 
 // Make returns a pointer to a new zero initialized model e.g. *Post.
 func (m *Meta) Make() Model {
-	return reflect.New(m.typ).Interface().(Model)
+	return reflect.New(m.Type).Interface().(Model)
 }
 
 // MakeSlice returns a pointer to a zero length slice of the model e.g. *[]*Post.
 func (m *Meta) MakeSlice() interface{} {
-	slice := reflect.MakeSlice(reflect.SliceOf(reflect.PtrTo(m.typ)), 0, 0)
+	slice := reflect.MakeSlice(reflect.SliceOf(reflect.PtrTo(m.Type)), 0, 0)
 	pointer := reflect.New(slice.Type())
 	pointer.Elem().Set(slice)
 	return pointer.Interface()

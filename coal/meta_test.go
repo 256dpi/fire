@@ -114,6 +114,7 @@ func TestMeta(t *testing.T) {
 	post := GetMeta(&postModel{})
 
 	assert.Equal(t, &Meta{
+		Type:       reflect.TypeOf(postModel{}),
 		Name:       "coal.postModel",
 		Collection: "posts",
 		PluralName: "posts",
@@ -214,11 +215,11 @@ func TestMeta(t *testing.T) {
 				post.Fields["TextBody"],
 			},
 		},
-		typ: reflect.TypeOf(postModel{}),
 	}, post)
 
 	comment := GetMeta(&commentModel{})
 	assert.Equal(t, &Meta{
+		Type:       reflect.TypeOf(commentModel{}),
 		Name:       "coal.commentModel",
 		Collection: "comments",
 		PluralName: "comments",
@@ -276,11 +277,11 @@ func TestMeta(t *testing.T) {
 			"post":   comment.Fields["Post"],
 		},
 		FlaggedFields: map[string][]*Field{},
-		typ:           reflect.TypeOf(commentModel{}),
 	}, comment)
 
 	selection := GetMeta(&selectionModel{})
 	assert.Equal(t, &Meta{
+		Type:       reflect.TypeOf(selectionModel{}),
 		Name:       "coal.selectionModel",
 		Collection: "selections",
 		PluralName: "selections",
@@ -321,7 +322,6 @@ func TestMeta(t *testing.T) {
 			"posts": selection.Fields["Posts"],
 		},
 		FlaggedFields: map[string][]*Field{},
-		typ:           reflect.TypeOf(selectionModel{}),
 	}, selection)
 }
 
