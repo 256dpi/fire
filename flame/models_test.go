@@ -2,7 +2,6 @@ package flame
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -10,15 +9,15 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func TestAddIndexes(t *testing.T) {
+func TestIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		i := coal.NewCatalog()
-		AddTokenIndexes(i, time.Minute)
-		AddApplicationIndexes(i)
-		AddUserIndexes(i)
-
-		assert.NoError(t, i.EnsureIndexes(tester.Store))
-		assert.NoError(t, i.EnsureIndexes(tester.Store))
+		tester.Drop(&Token{}, &Application{}, &User{})
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &Token{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &Token{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &Application{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &Application{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &User{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &User{}))
 	})
 }
 

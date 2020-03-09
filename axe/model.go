@@ -41,6 +41,13 @@ type Event struct {
 	Reason string `json:"reason"`
 }
 
+func init() {
+	// add indexes
+	coal.AddIndex(&Model{}, false, 0, "Name")
+	coal.AddIndex(&Model{}, false, 0, "State")
+	coal.AddIndex(&Model{}, false, time.Minute, "Finished")
+}
+
 // Model stores an executable job.
 type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"jobs"`
@@ -96,18 +103,4 @@ func (m *Model) Validate() error {
 		v.Value("Ended", true, stick.IsNotZero)
 		v.Value("Finished", true, stick.IsNotZero)
 	})
-}
-
-// AddModelIndexes will add job indexes to the specified catalog. If a duration
-// is specified, completed and cancelled jobs are automatically removed when
-// their finished timestamp falls behind the specified duration.
-func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
-	// index name
-	catalog.AddIndex(&Model{}, false, 0, "Name")
-
-	// index state
-	catalog.AddIndex(&Model{}, false, 0, "State")
-
-	// remove finished jobs after some time
-	catalog.AddIndex(&Model{}, false, removeAfter, "Finished")
 }

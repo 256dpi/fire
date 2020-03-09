@@ -25,9 +25,9 @@ var registry = blaze.NewRegistry()
 
 func init() {
 	// add item indexes
-	catalog.AddIndex(&Item{}, false, 0, "Name")
-	catalog.AddIndex(&Item{}, false, time.Second, "Deleted")
-	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
+	coal.AddIndex(&Item{}, false, 0, "Name")
+	coal.AddIndex(&Item{}, false, time.Second, "Deleted")
+	coal.AddIndex(&Item{}, true, 0, "CreateToken")
 
 	// add item file binding
 	registry.Add(&blaze.Binding{
@@ -38,14 +38,6 @@ func init() {
 		Types:    []string{"image/png"},
 		FileName: "image.png",
 	})
-
-	// add system indexes
-	flame.AddApplicationIndexes(catalog)
-	flame.AddUserIndexes(catalog)
-	flame.AddTokenIndexes(catalog, time.Minute)
-	axe.AddModelIndexes(catalog, time.Second)
-	glut.AddModelIndexes(catalog, time.Minute)
-	blaze.AddFileIndexes(catalog)
 }
 
 // Item represents a general item.

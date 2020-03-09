@@ -1,6 +1,8 @@
 package coal
 
 import (
+	"context"
+
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -196,6 +198,17 @@ func (t *Tester) DeleteAll(model Model, query ...bson.M) {
 	_, err := t.Store.M(model).DeleteAll(nil, qry)
 	if err != nil {
 		panic(err)
+	}
+}
+
+// Drop will drop the model collections.
+func (t *Tester) Drop(models ...Model) {
+	// drop collection
+	for _, model := range models {
+		err := t.Store.C(model).Native().Drop(context.Background())
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

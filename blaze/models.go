@@ -168,6 +168,11 @@ func (s State) Valid() bool {
 	}
 }
 
+func init() {
+	// index indexes
+	coal.AddIndex(&File{}, false, 0, "State", "Updated")
+}
+
 // File tracks uploaded files and their state.
 type File struct {
 	coal.Base `json:"-" bson:",inline" coal:"files"`
@@ -227,12 +232,6 @@ func (f *File) Validate() error {
 			v.Value("Owner", false, stick.IsZero)
 		}
 	})
-}
-
-// AddFileIndexes will add files indexes to the specified catalog.
-func AddFileIndexes(catalog *coal.Catalog) {
-	// index state for fast lookups
-	catalog.AddIndex(&File{}, false, 0, "State", "Updated")
 }
 
 // ValidateType will validate a media type.

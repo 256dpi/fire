@@ -106,6 +106,9 @@ type Meta struct {
 
 	// The accessor.
 	Accessor *stick.Accessor
+
+	// The registered indexes.
+	Indexes []Index
 }
 
 // GetMeta returns the meta structure for the specified model. It will always

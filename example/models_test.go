@@ -11,6 +11,9 @@ import (
 
 func TestEnsureIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		for _, model := range catalog.All() {
+			tester.Drop(model)
+		}
 		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
 		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
 	})

@@ -15,6 +15,7 @@ import (
 	"github.com/tidwall/gjson"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -5682,9 +5683,12 @@ func TestDatabaseErrors(t *testing.T) {
 		})
 
 		// add unique index
-		catalog := coal.NewCatalog(&postModel{})
-		catalog.AddIndex(&postModel{}, true, 0, "Title")
-		err := catalog.EnsureIndexes(tester.Store)
+		index, err := tester.Store.C(&postModel{}).Native().Indexes().CreateOne(tester.Context, mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "title", Value: int32(1)},
+			},
+			Options: options.Index().SetUnique(true),
+		})
 		assert.NoError(t, err)
 
 		// first post
@@ -5721,7 +5725,7 @@ func TestDatabaseErrors(t *testing.T) {
 		})
 
 		// remove index
-		_, err = tester.Store.C(&postModel{}).Native().Indexes().DropAll(nil)
+		_, err = tester.Store.C(&postModel{}).Native().Indexes().DropOne(tester.Context, index)
 		assert.NoError(t, err)
 	})
 }

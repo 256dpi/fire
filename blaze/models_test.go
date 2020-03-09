@@ -12,12 +12,11 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-func TestAddFileIndexes(t *testing.T) {
+func TestFileIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		catalog := coal.NewCatalog()
-		AddFileIndexes(catalog)
-		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
-		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
+		tester.Drop(&File{})
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &File{}))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, &File{}))
 	})
 }
 

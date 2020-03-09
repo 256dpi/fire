@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestCatalog(t *testing.T) {
@@ -19,55 +18,6 @@ func TestCatalog(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: model with name "posts" already exists in catalog`, func() {
 		c.Add(&postModel{})
 	})
-
-	assert.Equal(t, []Model{m}, c.Models())
-	assert.Equal(t, map[Model][]Index{
-		m: nil,
-	}, c.All())
-
-	/* index */
-
-	assert.Nil(t, c.FindIndexes("posts"))
-
-	c.AddIndex(m, true, 0, "Title")
-
-	assert.NotNil(t, c.FindIndexes("posts"))
-
-	assert.Equal(t, []Model{m}, c.Models())
-	assert.Equal(t, map[Model][]Index{
-		m: {
-			{
-				Model:  m,
-				Unique: true,
-				Fields: []string{"Title"},
-			},
-		},
-	}, c.All())
-}
-
-func TestCatalogEnsureIndexes(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *Tester) {
-		catalog := NewCatalog()
-		catalog.AddIndex(&postModel{}, false, 0, "Title")
-		catalog.AddPartialIndex(&commentModel{}, false, 0, []string{"Post"}, bson.D{
-			{Key: "Message", Value: "test"},
-		})
-
-		err := catalog.EnsureIndexes(tester.Store)
-		assert.NoError(t, err)
-	})
-}
-
-func TestCatalogEnsureIndexesError(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *Tester) {
-		catalog := NewCatalog()
-		catalog.AddIndex(&postModel{}, false, 0, "Published")
-		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
-
-		catalog = NewCatalog()
-		catalog.AddIndex(&postModel{}, true, 0, "Published")
-		assert.Error(t, catalog.EnsureIndexes(tester.Store))
-	})
 }
 
 func TestCatalogVisualizePDF(t *testing.T) {
@@ -79,8 +29,6 @@ func TestCatalogVisualizePDF(t *testing.T) {
 
 func TestCatalogVisualizeDOT(t *testing.T) {
 	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	catalog.AddIndex(&postModel{}, false, 0, "Published", "Title")
-	catalog.AddPartialIndex(&postModel{}, false, 0, []string{"TextBody"}, bson.D{})
 
 	assert.Equal(t, `graph G {
   rankdir="LR";

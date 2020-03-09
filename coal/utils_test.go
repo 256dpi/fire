@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/256dpi/xo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type postModel struct {
@@ -52,6 +53,13 @@ type noteModel struct {
 
 func (m *noteModel) Validate() error {
 	return nil
+}
+
+func init() {
+	AddIndex(&postModel{}, false, 0, "Published", "Title")
+	AddPartialIndex(&postModel{}, false, 0, []string{"-TextBody"}, bson.D{
+		{Key: "Title", Value: "Hello World!"},
+	})
 }
 
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/stick"
 )
@@ -147,6 +148,24 @@ func TestGetMeta(t *testing.T) {
 				"Note": {
 					Index: 6,
 					Type:  hasOneType,
+				},
+			},
+		},
+		Indexes: []Index{
+			{
+				Fields: []string{"Published", "Title"},
+				Keys: bson.D{
+					{Key: "published", Value: int32(1)},
+					{Key: "title", Value: int32(1)},
+				},
+			},
+			{
+				Fields: []string{"TextBody"},
+				Keys: bson.D{
+					{Key: "text_body", Value: int32(-1)},
+				},
+				Filter: bson.D{
+					{Key: "title", Value: "Hello World!"},
 				},
 			},
 		},

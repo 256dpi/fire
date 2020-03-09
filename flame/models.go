@@ -60,6 +60,14 @@ type GenericToken interface {
 	SetTokenData(TokenData)
 }
 
+func init() {
+	// add indexes
+	coal.AddIndex(&Token{}, false, 0, "Type")
+	coal.AddIndex(&Token{}, false, 0, "Application")
+	coal.AddIndex(&Token{}, false, 0, "User")
+	coal.AddIndex(&Token{}, false, time.Minute, "ExpiresAt")
+}
+
 // Token is the built-in model used to store access, refresh tokens and
 // authorization codes.
 type Token struct {
@@ -70,17 +78,6 @@ type Token struct {
 	RedirectURI string    `json:"redirect-uri" bson:"redirect_uri"`
 	Application coal.ID   `json:"-" bson:"application_id" coal:"application:applications"`
 	User        *coal.ID  `json:"-" bson:"user_id" coal:"user:users"`
-}
-
-// AddTokenIndexes will add access token indexes to the specified catalog.
-func AddTokenIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
-	catalog.AddIndex(&Token{}, false, 0, "Type")
-	catalog.AddIndex(&Token{}, false, 0, "Application")
-	catalog.AddIndex(&Token{}, false, 0, "User")
-
-	if removeAfter > 0 {
-		catalog.AddIndex(&Token{}, false, removeAfter, "ExpiresAt")
-	}
 }
 
 // GetTokenData implements the flame.GenericToken interface.
@@ -142,6 +139,11 @@ type Client interface {
 	ValidSecret(string) bool
 }
 
+func init() {
+	// add index
+	coal.AddIndex(&Application{}, true, 0, "Key")
+}
+
 // Application is the built-in model used to store clients.
 type Application struct {
 	coal.Base    `json:"-" bson:",inline" coal:"applications"`
@@ -150,11 +152,6 @@ type Application struct {
 	Secret       string   `json:"secret,omitempty" bson:"-"`
 	SecretHash   []byte   `json:"-" bson:"secret"`
 	RedirectURIs []string `json:"redirect-uris" bson:"redirect_uris"`
-}
-
-// AddApplicationIndexes will add application indexes to the specified catalog.
-func AddApplicationIndexes(catalog *coal.Catalog) {
-	catalog.AddIndex(&Application{}, true, 0, "Key")
 }
 
 // IsConfidential implements the flame.Client interface.
@@ -220,6 +217,11 @@ type ResourceOwner interface {
 	ValidPassword(string) bool
 }
 
+func init() {
+	// add index
+	coal.AddIndex(&User{}, true, 0, "Email")
+}
+
 // User is the built-in model used to store resource owners.
 type User struct {
 	coal.Base    `json:"-" bson:",inline" coal:"users"`
@@ -227,11 +229,6 @@ type User struct {
 	Email        string `json:"email" coal:"flame-resource-owner-id"`
 	Password     string `json:"password,omitempty" bson:"-"`
 	PasswordHash []byte `json:"-" bson:"password"`
-}
-
-// AddUserIndexes will add user indexes to the specified catalog.
-func AddUserIndexes(catalog *coal.Catalog) {
-	catalog.AddIndex(&User{}, true, 0, "Email")
 }
 
 // ValidPassword implements the flame.ResourceOwner interface.

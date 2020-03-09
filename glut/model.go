@@ -7,6 +7,12 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+func init() {
+	// index indexes
+	coal.AddIndex(&Model{}, true, 0, "Key")
+	coal.AddIndex(&Model{}, false, time.Minute, "Deadline")
+}
+
 // Model stores an encoded value.
 type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"values"`
@@ -35,15 +41,4 @@ func (m *Model) Validate() error {
 		v.Value("Locked", true, stick.IsNotZero)
 		v.Value("Token", true, stick.IsNotZero)
 	})
-}
-
-// AddModelIndexes will add required indexes to the specified catalog. If remove
-// after is specified, values are automatically removed when their deadline
-// timestamp falls behind the specified duration.
-func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
-	// index and require key to be unique
-	catalog.AddIndex(&Model{}, true, 0, "Key")
-
-	// index deadline and remove document automatically
-	catalog.AddIndex(&Model{}, false, removeAfter, "Deadline")
 }
