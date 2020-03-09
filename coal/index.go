@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Index is an index registered with a catalog.
+// Index is an index registered with a model.
 type Index struct {
 	Fields []string
 	Keys   bson.D
@@ -20,7 +20,7 @@ type Index struct {
 }
 
 // Compile will compile the index to a mongo.IndexModel.
-func (i *Index) Compile(model Model) mongo.IndexModel {
+func (i *Index) Compile() mongo.IndexModel {
 	// prepare options
 	opts := options.Index().SetUnique(i.Unique).SetBackground(true)
 
@@ -42,7 +42,7 @@ func (i *Index) Compile(model Model) mongo.IndexModel {
 }
 
 // AddIndex will add an index to the models index list. Fields that are prefixed
-// with a dash will result in an descending index.
+// with a dash will result in an descending key.
 func AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
 	// get meta
 	meta := GetMeta(model)
@@ -101,8 +101,9 @@ func AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []st
 	})
 }
 
-// EnsureIndexes will ensure that the added indexes exist. It may fail early if
-// some of the indexes are already existing and do not match the supplied index.
+// EnsureIndexes will ensure that the registered indexes of the specified model
+// exist. It may fail early if some of the indexes are already existing and do
+// not match the supplied index.
 func EnsureIndexes(store *Store, model Model) error {
 	// get meta
 	meta := GetMeta(model)
@@ -113,7 +114,7 @@ func EnsureIndexes(store *Store, model Model) error {
 
 	// ensure all indexes
 	for _, index := range meta.Indexes {
-		_, err := store.C(model).Native().Indexes().CreateOne(ctx, index.Compile(model))
+		_, err := store.C(model).Native().Indexes().CreateOne(ctx, index.Compile())
 		if err != nil {
 			return err
 		}
@@ -127,5 +128,6 @@ func cleanFields(fields []string) []string {
 	for _, field := range fields {
 		list = append(list, strings.TrimPrefix(field, "-"))
 	}
+
 	return list
 }

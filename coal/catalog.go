@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/xo"
 )
 
-// A Catalog provides a central mechanism for registering models and indexes.
+// Catalog allows managing related models.
 type Catalog struct {
 	models map[string]Model
 }
@@ -19,14 +19,14 @@ type Catalog struct {
 // NewCatalog will create a new catalog.
 func NewCatalog(models ...Model) *Catalog {
 	// create catalog
-	c := &Catalog{
+	catalog := &Catalog{
 		models: make(map[string]Model),
 	}
 
 	// add models
-	c.Add(models...)
+	catalog.Add(models...)
 
-	return c
+	return catalog
 }
 
 // Add will add the specified models to the catalog.
@@ -72,8 +72,9 @@ func (c *Catalog) All() []Model {
 	return all
 }
 
-// EnsureIndexes will ensure that the added indexes exist. It may fail early if
-// some indexes are already existing and do not match the supplied index.
+// EnsureIndexes will ensure that all registered indexes of the added models
+// exist. It may fail early if some of the indexes are already existing and do
+// not match the supplied index.
 func (c *Catalog) EnsureIndexes(store *Store) error {
 	// ensure all indexes
 	for _, model := range c.models {
