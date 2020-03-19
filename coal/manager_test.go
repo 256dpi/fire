@@ -106,8 +106,8 @@ func TestManagerFindFirst(t *testing.T) {
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
+			// fetch
 			post1.Lock++
-
 			var post postModel
 			found, err = m.FindFirst(ctx, &post, bson.M{
 				"Title": "Hello World!",
@@ -115,6 +115,15 @@ func TestManagerFindFirst(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, found)
 			assert.Equal(t, post1, post)
+
+			// sort
+			post2.Lock++
+			found, err = m.FindFirst(nil, &post, bson.M{
+				"Title": "Hello World!!!",
+			}, []string{"-Title"}, 0, false)
+			assert.NoError(t, err)
+			assert.True(t, found)
+			assert.Equal(t, post2, post)
 
 			return nil
 		})

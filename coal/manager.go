@@ -134,6 +134,11 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 		return false, ErrTransactionRequired
 	}
 
+	// check lock
+	if lock && (skip > 0) {
+		return false, fmt.Errorf("cannot lock with skip")
+	}
+
 	// check model
 	if model == nil {
 		model = &empty{}
@@ -145,29 +150,37 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 		return false, err
 	}
 
-	// prepare options
-	opts := options.FindOne()
-
-	// set sort
+	// translate sort
+	var sortDoc bson.D
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
+		sortDoc, err = m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
-
-		opts.SetSort(sortDoc)
-	}
-
-	// set skip
-	if skip > 0 {
-		opts.SetSkip(skip)
 	}
 
 	// find document
 	if lock {
-		err = m.coll.FindOneAndUpdate(ctx, filterDoc, incrementLock, returnAfterUpdate).Decode(model)
+		// prepare options
+		opts := options.FindOneAndUpdate()
+		if sortDoc != nil {
+			opts.SetSort(sortDoc)
+		}
+
+		// find and update
+		err = m.coll.FindOneAndUpdate(ctx, filterDoc, incrementLock, returnAfterUpdate, opts).Decode(model)
 	} else {
-		err = m.coll.FindOne(ctx, filterDoc).Decode(model)
+		// prepare options
+		opts := options.FindOne()
+		if sortDoc != nil {
+			opts.SetSort(sortDoc)
+		}
+		if skip > 0 {
+			opts.SetSkip(skip)
+		}
+
+		// find
+		err = m.coll.FindOne(ctx, filterDoc, opts).Decode(model)
 	}
 	if IsMissing(err) {
 		return false, nil
