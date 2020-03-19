@@ -81,6 +81,10 @@ func addIndex(model Model, unique bool, expiry time.Duration, fields []string, f
 		panic(err)
 	}
 
+	// TODO: Use public translator API here.
+	//  => trans.Document(filter) should work.
+	//  => Allow conversion of bson.Ds in lungo.
+
 	// translate filter
 	if filter != nil {
 		err = trans.value(filter, false)
