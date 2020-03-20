@@ -6,11 +6,11 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Model stores an arbitrary value.
+// Model stores an encoded value.
 type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"values"`
 
-	// The key of the value e.g. "my-com/sub-com/the-thing".
+	// The key of the value.
 	Key string `json:"key"`
 
 	// The content of the value.
@@ -26,9 +26,9 @@ type Model struct {
 	Token *coal.ID `json:"token"`
 }
 
-// AddModelIndexes will add model indexes to the specified catalog. If
-// removeAfter is values are automatically removed when their deadline timestamp
-// falls behind the specified duration.
+// AddModelIndexes will add model indexes to the specified catalog. If remove
+// after is specified, values are automatically removed when their deadline
+// timestamp falls behind the specified duration.
 func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// index and require key to be unique
 	catalog.AddIndex(&Model{}, true, 0, "Key")
