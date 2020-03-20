@@ -507,7 +507,7 @@ func TestQueuePeriodically(t *testing.T) {
 				ctx.Result = coal.Map{"foo": "bar"}
 				return nil
 			},
-			Periodically: time.Minute,
+			Periodicity: time.Minute,
 		})
 		q.Run()
 

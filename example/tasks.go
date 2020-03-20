@@ -56,7 +56,7 @@ func periodicTask(store *coal.Store) *axe.Task {
 
 			return nil
 		},
-		Periodically: 5 * time.Second,
+		Periodicity: 5 * time.Second,
 		PeriodicJob: axe.Blueprint{
 			Label: "periodic",
 		},

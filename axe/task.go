@@ -125,11 +125,11 @@ type Task struct {
 	// Default: 10m.
 	Timeout time.Duration
 
-	// Periodically may be set to let the system enqueue a job automatically
+	// Periodicity may be set to let the system enqueue a job automatically
 	// every given interval.
 	//
 	// Default: 0.
-	Periodically time.Duration
+	Periodicity time.Duration
 
 	// PeriodicJob is the blueprint of the job that is periodically enqueued.
 	//
@@ -186,7 +186,7 @@ func (t *Task) start(q *Queue) {
 	}
 
 	// run periodic enqueuer if interval is given
-	if t.Periodically > 0 {
+	if t.Periodicity > 0 {
 		q.tomb.Go(func() error {
 			return t.enqueuer(q)
 		})
@@ -250,7 +250,7 @@ func (t *Task) enqueuer(q *Queue) error {
 
 		// wait for next interval
 		select {
-		case <-time.After(t.Periodically):
+		case <-time.After(t.Periodicity):
 		case <-q.tomb.Dying():
 			return tomb.ErrDying
 		}

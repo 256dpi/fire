@@ -518,10 +518,10 @@ func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 		Handler: func(ctx *axe.Context) error {
 			return s.Cleanup(ctx, retention)
 		},
-		Workers:      1,
-		MaxAttempts:  1,
-		Lifetime:     periodicity,
-		Periodically: periodicity,
+		Workers:     1,
+		MaxAttempts: 1,
+		Lifetime:    periodicity,
+		Periodicity: periodicity,
 		PeriodicJob: axe.Blueprint{
 			Label: "periodic",
 		},
