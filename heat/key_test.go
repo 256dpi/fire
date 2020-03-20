@@ -35,8 +35,8 @@ func TestMeta(t *testing.T) {
 		User: "user",
 	}
 
-	meta := Meta(key)
-	assert.Equal(t, KeyMeta{
+	meta := GetMeta(key)
+	assert.Equal(t, Meta{
 		Name:   "test",
 		Expiry: time.Hour,
 	}, meta)
@@ -96,26 +96,26 @@ func (k *duplicateKey) Validate() error {
 
 func TestMetaPanics(t *testing.T) {
 	assert.PanicsWithValue(t, `heat: expected first struct field to be an embedded "heat.Base"`, func() {
-		Meta(&invalidKey1{})
+		GetMeta(&invalidKey1{})
 	})
 
 	assert.PanicsWithValue(t, `heat: expected to find a tag of the form 'json:"-"' on "heat.Base"`, func() {
-		Meta(&invalidKey2{})
+		GetMeta(&invalidKey2{})
 	})
 
 	assert.PanicsWithValue(t, `heat: expected to find a tag of the form 'heat:"name,expiry"' on "heat.Base"`, func() {
-		Meta(&invalidKey3{})
+		GetMeta(&invalidKey3{})
 	})
 
 	assert.PanicsWithValue(t, `heat: invalid duration as expiry on "heat.Base"`, func() {
-		Meta(&invalidKey4{})
+		GetMeta(&invalidKey4{})
 	})
 
 	assert.NotPanics(t, func() {
-		Meta(&testKey{})
+		GetMeta(&testKey{})
 	})
 
 	assert.PanicsWithValue(t, `heat: key name "test" has already been registered by type "*heat.testKey"`, func() {
-		Meta(&duplicateKey{})
+		GetMeta(&duplicateKey{})
 	})
 }

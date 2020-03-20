@@ -37,7 +37,7 @@ func NewNotary(name string, secret []byte) *Notary {
 // Issue will generate a token from the specified key.
 func (n *Notary) Issue(key Key) (string, error) {
 	// get key meta
-	meta := Meta(key)
+	meta := GetMeta(key)
 
 	// get base
 	base := key.GetBase()
@@ -80,7 +80,7 @@ func (n *Notary) Issue(key Key) (string, error) {
 // Verify will verify the specified token and fill the specified key.
 func (n *Notary) Verify(key Key, token string) error {
 	// get key name
-	meta := Meta(key)
+	meta := GetMeta(key)
 
 	// verify token
 	rawKey, err := Verify(n.secret, n.issuer, meta.Name, token)

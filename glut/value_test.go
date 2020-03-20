@@ -12,8 +12,8 @@ func TestMeta(t *testing.T) {
 		Data: "cool",
 	}
 
-	meta := Meta(key)
-	assert.Equal(t, ValueMeta{
+	meta := GetMeta(key)
+	assert.Equal(t, Meta{
 		Key: "value/simple",
 	}, meta)
 
@@ -51,26 +51,26 @@ type duplicateValue struct {
 
 func TestMetaPanics(t *testing.T) {
 	assert.PanicsWithValue(t, `glut: expected first struct field to be an embedded "glut.Base"`, func() {
-		Meta(&invalidValue1{})
+		GetMeta(&invalidValue1{})
 	})
 
 	assert.PanicsWithValue(t, `glut: expected to find a tag of the form 'json:"-"' on "glut.Base"`, func() {
-		Meta(&invalidValue2{})
+		GetMeta(&invalidValue2{})
 	})
 
 	assert.PanicsWithValue(t, `glut: expected to find a tag of the form 'glut:"key,ttl"' on "glut.Base"`, func() {
-		Meta(&invalidValue3{})
+		GetMeta(&invalidValue3{})
 	})
 
 	assert.PanicsWithValue(t, `glut: invalid duration as time to live on "glut.Base"`, func() {
-		Meta(&invalidValue4{})
+		GetMeta(&invalidValue4{})
 	})
 
 	assert.NotPanics(t, func() {
-		Meta(&simpleValue{})
+		GetMeta(&simpleValue{})
 	})
 
 	assert.PanicsWithValue(t, `glut: value key "value/simple" has already been registered by type "*glut.simpleValue"`, func() {
-		Meta(&duplicateValue{})
+		GetMeta(&duplicateValue{})
 	})
 }

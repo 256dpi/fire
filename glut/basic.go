@@ -14,7 +14,7 @@ import (
 // whether the value exists at all.
 func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -55,7 +55,7 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // method will ignore any locks held on the value.
 func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -105,7 +105,7 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // any locks held on the value.
 func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key

@@ -16,7 +16,7 @@ import (
 // value if a time to live is set.
 func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -133,7 +133,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 // update the deadline of the value if a time to live is set.
 func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -195,7 +195,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // GetLocked will load the contents of the specified value only if it is locked.
 func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -247,7 +247,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // DelLocked will delete the specified value only if it is locked.
 func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key
@@ -319,7 +319,7 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool
 // update the deadline of the value if a time to live is set.
 func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
-	meta := Meta(value)
+	meta := GetMeta(value)
 
 	// prepare key
 	key := meta.Key

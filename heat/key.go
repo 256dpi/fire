@@ -12,11 +12,11 @@ import (
 
 // Key is a structure used to encode a key.
 type Key interface {
-	// Validate should validate the token.
-	Validate() error
-
 	// GetBase should be implemented by embedding Base.
 	GetBase() *Base
+
+	// Validate should validate the token.
+	Validate() error
 }
 
 // Base can be embedded in a struct to turn it into a key.
@@ -32,19 +32,19 @@ func (b *Base) GetBase() *Base {
 
 var baseType = reflect.TypeOf(Base{})
 
-// KeyMeta contains meta information about a key.
-type KeyMeta struct {
+// Meta contains meta information about a key.
+type Meta struct {
 	Name   string
 	Expiry time.Duration
 }
 
-var metaCache = map[reflect.Type]KeyMeta{}
+var metaCache = map[reflect.Type]Meta{}
 var metaNames = map[string]reflect.Type{}
 var metaMutex sync.Mutex
 
-// Meta will parse the keys "heat" tag on the embedded heat.Base struct and
+// GetMeta will parse the keys "heat" tag on the embedded heat.Base struct and
 // return the encoded name and default expiry.
-func Meta(key Key) KeyMeta {
+func GetMeta(key Key) Meta {
 	// acquire mutex
 	metaMutex.Lock()
 	defer metaMutex.Unlock()
@@ -91,7 +91,7 @@ func Meta(key Key) KeyMeta {
 	}
 
 	// prepare meta
-	meta := KeyMeta{
+	meta := Meta{
 		Name:   name,
 		Expiry: expiry,
 	}

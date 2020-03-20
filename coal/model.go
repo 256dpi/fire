@@ -9,11 +9,11 @@ import (
 // Model defines the shape of a document stored in a collection. Custom types
 // must implement the interface by embedding the Base type.
 type Model interface {
-	// ID returns the primary id.
-	ID() ID
-
 	// GetBase returns the models base.
 	GetBase() *Base
+
+	// ID returns the primary id.
+	ID() ID
 }
 
 // Get will lookup the specified field on the model and return its value and

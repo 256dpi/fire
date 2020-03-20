@@ -37,19 +37,19 @@ func (b *Base) GetExtension() (string, error) {
 
 var baseType = reflect.TypeOf(Base{})
 
-// ValueMeta contains meta information about a value.
-type ValueMeta struct {
+// Meta contains meta information about a value.
+type Meta struct {
 	Key string
 	TTL time.Duration
 }
 
-var metaCache = map[reflect.Type]ValueMeta{}
+var metaCache = map[reflect.Type]Meta{}
 var metaKeys = map[string]reflect.Type{}
 var metaMutex sync.Mutex
 
-// Meta will parse the values "glut" tag on the embedded glut.Base struct and
+// GetMeta will parse the values "glut" tag on the embedded glut.Base struct and
 // return the encoded component and name.
-func Meta(value Value) ValueMeta {
+func GetMeta(value Value) Meta {
 	// acquire mutex
 	metaMutex.Lock()
 	defer metaMutex.Unlock()
@@ -96,7 +96,7 @@ func Meta(value Value) ValueMeta {
 	}
 
 	// prepare meta
-	meta := ValueMeta{
+	meta := Meta{
 		Key: key,
 		TTL: ttl,
 	}
