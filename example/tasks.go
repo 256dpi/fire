@@ -10,6 +10,12 @@ import (
 	"github.com/256dpi/fire/glut"
 )
 
+type counter struct {
+	glut.Base `json:"-" glut:"counter,0"`
+
+	Total int `json:"total"`
+}
+
 func incrementTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
 		Name:  "increment",
@@ -38,13 +44,11 @@ func periodicTask(store *coal.Store) *axe.Task {
 		Name:  "periodic",
 		Model: nil,
 		Handler: func(ctx *axe.Context) error {
-			// increment value
-			err := glut.Mut(ctx, store, "periodic", "counter", 0, func(ok bool, data coal.Map) (coal.Map, error) {
-				if !ok {
-					data = coal.Map{"n": int64(1)}
-				}
-				data["n"] = data["n"].(int64) + 1
-				return data, nil
+			// increment counter
+			var counter counter
+			err := glut.Mut(ctx, store, &counter, func(exists bool) error {
+				counter.Total++
+				return nil
 			})
 			if err != nil {
 				return err

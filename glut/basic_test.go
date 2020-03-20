@@ -11,63 +11,95 @@ import (
 
 func TestBasic(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
-		data, exists, err := Get(nil, tester.Store, "test/foo")
+		// get missing
+
+		var value simpleValue
+		exists, err := Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, exists)
-		assert.Nil(t, data)
+		assert.Equal(t, simpleValue{}, value)
 
-		created, err := Set(nil, tester.Store, "test/foo", coal.Map{"foo": "bar"}, 0)
+		// set new
+
+		value.Data = "Cool!"
+		created, err := Set(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, created)
 
-		value := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "test/foo", value.Key)
-		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-		assert.Nil(t, value.Deadline)
-		assert.Nil(t, value.Locked)
-		assert.Nil(t, value.Token)
+		model := tester.FindLast(&Model{}).(*Model)
+		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, coal.Map{"data": "Cool!"}, model.Data)
+		assert.Nil(t, model.Deadline)
+		assert.Nil(t, model.Locked)
+		assert.Nil(t, model.Token)
 
-		data, exists, err = Get(nil, tester.Store, "test/foo")
+		// get existing
+
+		value = simpleValue{}
+		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, coal.Map{"foo": "bar"}, data)
+		assert.Equal(t, simpleValue{
+			Data: "Cool!",
+		}, value)
 
-		created, err = Set(nil, tester.Store, "test/foo", coal.Map{"foo": "baz"}, 0)
+		// update
+
+		value.Data = "Hello!"
+		created, err = Set(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, created)
 
-		value = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "test/foo", value.Key)
-		assert.Equal(t, coal.Map{"foo": "baz"}, value.Data)
-		assert.Nil(t, value.Deadline)
-		assert.Nil(t, value.Locked)
-		assert.Nil(t, value.Token)
+		model = tester.FindLast(&Model{}).(*Model)
+		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Nil(t, model.Deadline)
+		assert.Nil(t, model.Locked)
+		assert.Nil(t, model.Token)
 
-		data, exists, err = Get(nil, tester.Store, "test/foo")
+		// get updated
+
+		value = simpleValue{}
+		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, coal.Map{"foo": "baz"}, data)
+		assert.Equal(t, simpleValue{
+			Data: "Hello!",
+		}, value)
 
-		err = Mut(nil, tester.Store, "test/foo", 0, func(ok bool, data coal.Map) (coal.Map, error) {
-			assert.True(t, ok)
-			assert.Equal(t, coal.Map{"foo": "baz"}, data)
-			data["foo"] = "quz"
-			return data, nil
+		// mutate
+
+		err = Mut(nil, tester.Store, &value, func(exists bool) error {
+			assert.True(t, exists)
+			assert.Equal(t, "Hello!", value.Data)
+			value.Data = "Hello!!!"
+			return nil
 		})
 		assert.NoError(t, err)
 
-		data, exists, err = Get(nil, tester.Store, "test/foo")
+		// get mutated
+
+		value = simpleValue{}
+		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, coal.Map{"foo": "quz"}, data)
+		assert.Equal(t, simpleValue{
+			Data: "Hello!!!",
+		}, value)
 
-		deleted, err := Del(nil, tester.Store, "test/foo")
+		// delete existing
+
+		value = simpleValue{}
+		deleted, err := Del(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, deleted)
 
 		assert.Equal(t, 0, tester.Count(&Model{}))
 
-		deleted, err = Del(nil, tester.Store, "test/foo")
+		// delete missing
+
+		value = simpleValue{}
+		deleted, err = Del(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, deleted)
 	})
@@ -75,15 +107,17 @@ func TestBasic(t *testing.T) {
 
 func TestDeadline(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
-		created, err := Set(nil, tester.Store, "test/foo", coal.Map{"foo": "bar"}, 100*time.Millisecond)
+		created, err := Set(nil, tester.Store, &ttlValue{
+			Data: "Nice!",
+		})
 		assert.NoError(t, err)
 		assert.True(t, created)
 
-		value := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "test/foo", value.Key)
-		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
-		assert.True(t, value.Deadline.After(time.Now()))
-		assert.Nil(t, value.Locked)
-		assert.Nil(t, value.Token)
+		model := tester.FindLast(&Model{}).(*Model)
+		assert.Equal(t, "value/ttl", model.Key)
+		assert.Equal(t, coal.Map{"data": "Nice!"}, model.Data)
+		assert.True(t, model.Deadline.After(time.Now()))
+		assert.Nil(t, model.Locked)
+		assert.Nil(t, model.Token)
 	})
 }

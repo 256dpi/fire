@@ -12,45 +12,64 @@ import (
 
 // Get will load the contents of the specified value. It will also return
 // whether the value exists at all.
-func Get(ctx context.Context, store *coal.Store, key string) (coal.Map, bool, error) {
+func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// get meta
+	meta := Meta(value)
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Get")
-	span.Log("key", key)
+	span.Log("key", meta.Key)
 	defer span.Finish()
 
 	// find value
-	var value Model
-	found, err := store.M(&Model{}).FindFirst(ctx, &value, bson.M{
-		"Key": key,
+	var model Model
+	found, err := store.M(&Model{}).FindFirst(ctx, &model, bson.M{
+		"Key": meta.Key,
 	}, nil, 0, false)
 	if err != nil {
-		return nil, false, err
+		return false, err
 	} else if !found {
-		return nil, false, nil
+		return false, nil
 	}
 
-	return value.Data, true, nil
+	// decode value
+	err = model.Data.Unmarshal(value, coal.TransferJSON)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // Set will write the specified value to the store and overwrite any existing
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
-func Set(ctx context.Context, store *coal.Store, key string, data coal.Map, ttl time.Duration) (bool, error) {
+func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// get meta
+	meta := Meta(value)
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Set")
-	span.Log("key", key)
-	span.Log("ttl", ttl.String())
+	span.Log("key", meta.Key)
+	span.Log("ttl", meta.TTL.String())
 	defer span.Finish()
 
 	// prepare deadline
 	var deadline *time.Time
-	if ttl > 0 {
-		deadline = coal.T(time.Now().Add(ttl))
+	if meta.TTL > 0 {
+		deadline = coal.T(time.Now().Add(meta.TTL))
+	}
+
+	// encode value
+	var data coal.Map
+	err := data.Marshal(value, coal.TransferJSON)
+	if err != nil {
+		return false, err
 	}
 
 	// upsert value
 	inserted, err := store.M(&Model{}).Upsert(ctx, nil, bson.M{
-		"Key": key,
+		"Key": meta.Key,
 	}, bson.M{
 		"$set": bson.M{
 			"Data":     data,
@@ -66,15 +85,18 @@ func Set(ctx context.Context, store *coal.Store, key string, data coal.Map, ttl 
 
 // Del will remove the specified value from the store. This method will ignore
 // any locks held on the value.
-func Del(ctx context.Context, store *coal.Store, key string) (bool, error) {
+func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// get meta
+	meta := Meta(value)
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Del")
-	span.Log("key", key)
+	span.Log("key", meta.Key)
 	defer span.Finish()
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
-		"Key": key,
+		"Key": meta.Key,
 	}, nil)
 	if err != nil {
 		return false, err
@@ -85,27 +107,25 @@ func Del(ctx context.Context, store *coal.Store, key string) (bool, error) {
 
 // Mut will load the specified value, run the callback and on success write the
 // value back. This method will ignore any locks held on the value.
-func Mut(ctx context.Context, store *coal.Store, key string, ttl time.Duration, fn func(bool, coal.Map) (coal.Map, error)) error {
+func Mut(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Mut")
-	span.Log("key", key)
-	span.Log("ttl", ttl.String())
 	defer span.Finish()
 
 	// get value
-	data, ok, err := Get(ctx, store, key)
+	exists, err := Get(ctx, store, value)
 	if err != nil {
 		return err
 	}
 
 	// run function
-	newData, err := fn(ok, data)
+	err = fn(exists)
 	if err != nil {
 		return err
 	}
 
-	// put value
-	_, err = Set(ctx, store, key, newData, ttl)
+	// set value
+	_, err = Set(ctx, store, value)
 	if err != nil {
 		return err
 	}
