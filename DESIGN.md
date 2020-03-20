@@ -15,11 +15,16 @@ represent database records. To define this class of structs the framework should
 define a `Model` interface that can be implemented by simply embedding a `Base`
 type in a struct. This is achieved by the public `GetBase` method that just returns
 the base type. Additional methods may added to the interface to require more
-functionality. The `Classify` function can then be used by the framework itself
+functionality. The `GetMeta` function can then be used by the framework itself
 or the user to classify a type and get its `Meta` object that contains all
 information that can be deducted from the type using reflection. Usually tags on
 the embedded `Base` type describe the type itself, like its name. A custom tag
 should be named after the package name.
+
+If a package uses multiple classifiable models it should add the class name to
+exported types and functions e.g. `ClassModel`, `ClassBase`, `GetClassBase`,
+`ClassMeta` and `GetClassMeta`. However, it is recommended to only use one class
+per package. 
 
 ### Framework Code
 
@@ -28,8 +33,8 @@ package pkg
 
 // Model defines a classifiable set of structs.
 type Model interface {
-	Method() string
 	GetBase() *Base
+	Method() string
 }
 
 // The Base struct is embedded in other structs as the first field to mark them
@@ -43,14 +48,14 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
-// The Meta struct is returned by Classify.
+// The Meta struct is returned by GetMeta.
 type Meta struct {
 	Field string
 }
 
-// Classify will analyze the provided model and return information about its
-// class by analyzing the types struct fields and tags.
-func Classify(model Model) Meta {
+// GetMeta will analyze the provided model and return information about it by
+// analyzing the types struct fields and tags.
+func GetMeta(model Model) Meta {
 	return Meta{}
 }
 ```
