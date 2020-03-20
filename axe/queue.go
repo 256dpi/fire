@@ -17,8 +17,11 @@ type board struct {
 	jobs map[coal.ID]*Job
 }
 
-// Queue manages the queueing of jobs.
-type Queue struct {
+// Options defines queue options.
+type Options struct {
+	// The store used to manage jobs.
+	Store *coal.Store
+
 	// MaxLag defines the maximum amount of lag that should be applied to every
 	// dequeue attempt.
 	//
@@ -41,25 +44,43 @@ type Queue struct {
 	// Default: 10s.
 	BlockPeriod time.Duration
 
-	store    *coal.Store
-	reporter func(error)
-	tasks    map[string]*Task
-	boards   map[string]*board
+	// The report that is called with job errors.
+	Reporter func(error)
+}
 
-	tomb tomb.Tomb
+// Queue manages job queueing.
+type Queue struct {
+	opts   Options
+	tasks  map[string]*Task
+	boards map[string]*board
+	tomb   tomb.Tomb
 }
 
 // NewQueue creates and returns a new queue.
-func NewQueue(store *coal.Store, reporter func(error)) *Queue {
+func NewQueue(opts Options) *Queue {
+	// set default max lag
+	if opts.MaxLag == 0 {
+		opts.MaxLag = 100 * time.Millisecond
+	}
+
+	// set default block period
+	if opts.BlockPeriod == 0 {
+		opts.BlockPeriod = 10 * time.Second
+	}
+
 	return &Queue{
-		store:    store,
-		reporter: reporter,
-		tasks:    make(map[string]*Task),
+		opts:  opts,
+		tasks: make(map[string]*Task),
 	}
 }
 
 // Add will add the specified task to the queue.
 func (q *Queue) Add(task *Task) {
+	// safety check
+	if q.boards != nil {
+		panic("axe: unable to add task to running queue")
+	}
+
 	// check existence
 	if q.tasks[task.Name] != nil {
 		panic(fmt.Sprintf(`axe: task with name "%s" already exists`, task.Name))
@@ -72,7 +93,7 @@ func (q *Queue) Add(task *Task) {
 // Enqueue will enqueue a job using the specified blueprint.
 func (q *Queue) Enqueue(bp Blueprint) (*Job, error) {
 	// enqueue job
-	job, err := Enqueue(nil, q.store, bp)
+	job, err := Enqueue(nil, q.opts.Store, bp)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +109,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		bp := cb(ctx)
 
 		// check if controller uses same store
-		if q.store == ctx.Controller.Store {
+		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
 			_, err := Enqueue(ctx, ctx.Store, bp)
 			if err != nil {
@@ -113,7 +134,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		bp := cb(ctx)
 
 		// check if controller uses same store
-		if q.store == ctx.Controller.Store {
+		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
 			_, err := Enqueue(ctx, ctx.Store, bp)
 			if err != nil {
@@ -139,16 +160,6 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 
 // Run will start fetching jobs from the queue and process them.
 func (q *Queue) Run() {
-	// set default max lag
-	if q.MaxLag == 0 {
-		q.MaxLag = 100 * time.Millisecond
-	}
-
-	// set default block period
-	if q.BlockPeriod == 0 {
-		q.MaxLag = 10 * time.Second
-	}
-
 	// initialize boards
 	q.boards = make(map[string]*board)
 
@@ -177,11 +188,11 @@ func (q *Queue) process() error {
 	}
 
 	// reconcile jobs
-	stream := coal.Reconcile(q.store, &Job{}, func(model coal.Model) {
+	stream := coal.Reconcile(q.opts.Store, &Job{}, func(model coal.Model) {
 		q.update(model.(*Job))
 	}, func(model coal.Model) {
 		q.update(model.(*Job))
-	}, nil, q.reporter)
+	}, nil, q.opts.Reporter)
 
 	// await close
 	<-q.tomb.Dying()
@@ -206,13 +217,11 @@ func (q *Queue) update(job *Job) {
 	// handle job
 	switch job.Status {
 	case StatusEnqueued, StatusDequeued, StatusFailed:
-		// apply random lag if configured
-		if q.MaxLag > 0 {
-			lag := time.Duration(rand.Int63n(int64(q.MaxLag)))
-			job.Available = job.Available.Add(lag)
-		}
+		// apply random lag
+		lag := time.Duration(rand.Int63n(int64(q.opts.MaxLag)))
+		job.Available = job.Available.Add(lag)
 
-		// updated job
+		// update job
 		board.jobs[job.ID()] = job
 	case StatusCompleted, StatusCancelled:
 		// remove job
@@ -224,7 +233,7 @@ func (q *Queue) get(name string) *Job {
 	// get board
 	board := q.boards[name]
 
-	// acquire board mutex
+	// lock board
 	board.Lock()
 	defer board.Unlock()
 
@@ -235,7 +244,7 @@ func (q *Queue) get(name string) *Job {
 	for _, job := range board.jobs {
 		if job.Available.Before(now) {
 			// block job until the specified timeout has been reached
-			job.Available = job.Available.Add(q.BlockPeriod)
+			job.Available = job.Available.Add(q.opts.BlockPeriod)
 
 			return job
 		}

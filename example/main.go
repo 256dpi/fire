@@ -173,10 +173,17 @@ func createHandler(store *coal.Store) http.Handler {
 	storage := blaze.NewStorage(store, fileNotary, fileService)
 
 	// create queue
-	queue := axe.NewQueue(store, reporter)
+	queue := axe.NewQueue(axe.Options{
+		Store:    store,
+		Reporter: reporter,
+	})
+
+	// add tasks
 	queue.Add(incrementTask(store))
 	queue.Add(periodicTask(store))
 	queue.Add(storage.CleanupTask(time.Minute, time.Minute))
+
+	// qun queue
 	queue.Run()
 
 	// create group

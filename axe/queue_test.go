@@ -18,7 +18,10 @@ func TestQueue(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "foo",
 			Model: &data{},
@@ -63,7 +66,10 @@ func TestQueueDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "delayed",
 			Model: &data{},
@@ -111,7 +117,10 @@ func TestQueueFailed(t *testing.T) {
 
 		i := 0
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "failed",
 			Model: &data{},
@@ -165,8 +174,11 @@ func TestQueueCrashed(t *testing.T) {
 
 		i := 0
 
-		q := NewQueue(tester.Store, func(err error) {
-			errs <- err
+		q := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				errs <- err
+			},
 		})
 		q.Add(&Task{
 			Name:  "crashed",
@@ -218,7 +230,10 @@ func TestQueueCancelNoRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
@@ -264,7 +279,10 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		i := 0
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
@@ -315,8 +333,11 @@ func TestQueueCancelCrash(t *testing.T) {
 
 		i := 0
 
-		q := NewQueue(tester.Store, func(err error) {
-			errs <- err
+		q := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				errs <- err
+			},
 		})
 		q.Add(&Task{
 			Name:  "cancel",
@@ -370,8 +391,11 @@ func TestQueueTimeout(t *testing.T) {
 
 		i := 0
 
-		q := NewQueue(tester.Store, func(err error) {
-			errs <- err
+		q := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				errs <- err
+			},
 		})
 		q.Add(&Task{
 			Name:  "timeout",
@@ -431,7 +455,10 @@ func TestQueueExisting(t *testing.T) {
 
 		done := make(chan struct{})
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name:  "existing",
 			Model: &data{},
@@ -469,7 +496,10 @@ func TestQueuePeriodically(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(tester.Store, panicReporter)
+		q := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: panicReporter,
+		})
 		q.Add(&Task{
 			Name: "foo",
 			Handler: func(ctx *Context) error {

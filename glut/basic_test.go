@@ -164,7 +164,7 @@ func TestExtended(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 		assert.Equal(t, extendedValue{
-			ID: "A7",
+			ID:   "A7",
 			Data: "Cool!",
 		}, value)
 
@@ -189,7 +189,7 @@ func TestExtended(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 		assert.Equal(t, extendedValue{
-			ID: "A7",
+			ID:   "A7",
 			Data: "Hello!",
 		}, value)
 
@@ -210,7 +210,7 @@ func TestExtended(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 		assert.Equal(t, extendedValue{
-			ID: "A7",
+			ID:   "A7",
 			Data: "Hello!!!",
 		}, value)
 

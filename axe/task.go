@@ -217,8 +217,8 @@ func (t *Task) worker(q *Queue) error {
 		// execute job and report errors
 		err := t.execute(q, job)
 		if err != nil {
-			if q.reporter != nil {
-				q.reporter(err)
+			if q.opts.Reporter != nil {
+				q.opts.Reporter(err)
 			}
 		}
 	}
@@ -234,9 +234,9 @@ func (t *Task) enqueuer(q *Queue) error {
 	for {
 		// enqueue task
 		_, err := q.Enqueue(blueprint)
-		if err != nil && q.reporter != nil {
+		if err != nil && q.opts.Reporter != nil {
 			// report error
-			q.reporter(err)
+			q.opts.Reporter(err)
 
 			// wait some time
 			select {
@@ -263,7 +263,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	defer trace.Finish()
 
 	// dequeue job
-	job, err := Dequeue(outerContext, q.store, job.ID(), t.Timeout)
+	job, err := Dequeue(outerContext, q.opts.Store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -317,7 +317,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(outerContext, q.store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(outerContext, q.opts.Store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -326,7 +326,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, q.store, job.ID(), e.Reason)
+		err = Cancel(outerContext, q.opts.Store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -339,19 +339,19 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(outerContext, q.store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(outerContext, q.opts.Store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, q.store, job.ID(), err.Error())
+		_ = Cancel(outerContext, q.opts.Store, job.ID(), err.Error())
 
 		return err
 	}
 
 	// complete job
-	err = Complete(outerContext, q.store, job.ID(), ctx.Result)
+	err = Complete(outerContext, q.opts.Store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}
