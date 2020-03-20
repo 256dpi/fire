@@ -49,7 +49,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 	locked := time.Now().Add(timeout)
 
 	// upsert value
-	inserted, err := store.M(&Value{}).Upsert(ctx, nil, bson.M{
+	inserted, err := store.M(&Model{}).Upsert(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 	}, bson.M{
@@ -69,7 +69,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 	}
 
 	// lock value
-	found, err := store.M(&Value{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"$and": []bson.M{
 			{
 				"Component": component,
@@ -124,7 +124,7 @@ func SetLocked(ctx context.Context, store *coal.Store, component, name string, d
 	}
 
 	// update value
-	found, err := store.M(&Value{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 		"Token":     token,
@@ -154,8 +154,8 @@ func GetLocked(ctx context.Context, store *coal.Store, component, name string, t
 	defer span.Finish()
 
 	// find value
-	var value Value
-	found, err := store.M(&Value{}).FindFirst(ctx, &value, bson.M{
+	var value Model
+	found, err := store.M(&Model{}).FindFirst(ctx, &value, bson.M{
 		"Component": component,
 		"Name":      name,
 		"Token":     token,
@@ -188,7 +188,7 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 	}
 
 	// delete value
-	deleted, err := store.M(&Value{}).DeleteFirst(ctx, nil, bson.M{
+	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 		"Token":     token,
@@ -249,7 +249,7 @@ func Unlock(ctx context.Context, store *coal.Store, component, name string, toke
 	}
 
 	// replace value
-	found, err := store.M(&Value{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 		"Token":     token,

@@ -70,7 +70,7 @@ func jobController(store *coal.Store) *fire.Controller {
 
 func valueController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
-		Model:     &glut.Value{},
+		Model:     &glut.Model{},
 		Store:     store,
 		Supported: fire.Only(fire.List, fire.Find),
 		Authorizers: fire.L{

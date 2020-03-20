@@ -9,7 +9,7 @@ import (
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-glut")
 var lungoStore = coal.MustOpen(nil, "test-fire-glut", nil)
 
-var modelList = []coal.Model{&Value{}}
+var modelList = []coal.Model{&Model{}}
 
 func withTester(t *testing.T, fn func(*testing.T, *coal.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {

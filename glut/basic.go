@@ -20,8 +20,8 @@ func Get(ctx context.Context, store *coal.Store, component, name string) (coal.M
 	defer span.Finish()
 
 	// find value
-	var value Value
-	found, err := store.M(&Value{}).FindFirst(ctx, &value, bson.M{
+	var value Model
+	found, err := store.M(&Model{}).FindFirst(ctx, &value, bson.M{
 		"Component": component,
 		"Name":      name,
 	}, nil, 0, false)
@@ -52,7 +52,7 @@ func Set(ctx context.Context, store *coal.Store, component, name string, data co
 	}
 
 	// upsert value
-	inserted, err := store.M(&Value{}).Upsert(ctx, nil, bson.M{
+	inserted, err := store.M(&Model{}).Upsert(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 	}, bson.M{
@@ -78,7 +78,7 @@ func Del(ctx context.Context, store *coal.Store, component, name string) (bool, 
 	defer span.Finish()
 
 	// delete value
-	deleted, err := store.M(&Value{}).DeleteFirst(ctx, nil, bson.M{
+	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
 		"Component": component,
 		"Name":      name,
 	}, nil)

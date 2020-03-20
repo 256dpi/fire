@@ -20,7 +20,7 @@ func TestBasic(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, created)
 
-		value := tester.FindLast(&Value{}).(*Value)
+		value := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", value.Component)
 		assert.Equal(t, "foo", value.Name)
 		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)
@@ -37,7 +37,7 @@ func TestBasic(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, created)
 
-		value = tester.FindLast(&Value{}).(*Value)
+		value = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", value.Component)
 		assert.Equal(t, "foo", value.Name)
 		assert.Equal(t, coal.Map{"foo": "baz"}, value.Data)
@@ -67,7 +67,7 @@ func TestBasic(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, deleted)
 
-		assert.Equal(t, 0, tester.Count(&Value{}))
+		assert.Equal(t, 0, tester.Count(&Model{}))
 
 		deleted, err = Del(nil, tester.Store, "test", "foo")
 		assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestDeadline(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, created)
 
-		value := tester.FindLast(&Value{}).(*Value)
+		value := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", value.Component)
 		assert.Equal(t, "foo", value.Name)
 		assert.Equal(t, coal.Map{"foo": "bar"}, value.Data)

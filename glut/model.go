@@ -6,8 +6,8 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Value stores an arbitrary value.
-type Value struct {
+// Model stores an arbitrary value.
+type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"values"`
 
 	// The component managing the value.
@@ -29,13 +29,13 @@ type Value struct {
 	Token *coal.ID `json:"token"`
 }
 
-// AddValueIndexes will add value indexes to the specified catalog. If
+// AddModelIndexes will add model indexes to the specified catalog. If
 // removeAfter is values are automatically removed when their deadline timestamp
 // falls behind the specified duration.
-func AddValueIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
+func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// index and require name to be unique among components
-	catalog.AddIndex(&Value{}, true, 0, "Component", "Name")
+	catalog.AddIndex(&Model{}, true, 0, "Component", "Name")
 
 	// add ttl index
-	catalog.AddIndex(&Value{}, false, removeAfter, "Deadline")
+	catalog.AddIndex(&Model{}, false, removeAfter, "Deadline")
 }

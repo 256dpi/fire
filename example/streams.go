@@ -37,7 +37,7 @@ func jobStream(store *coal.Store) *spark.Stream {
 
 func valueStream(store *coal.Store) *spark.Stream {
 	return &spark.Stream{
-		Model: &glut.Value{},
+		Model: &glut.Model{},
 		Store: store,
 	}
 }
