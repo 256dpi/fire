@@ -122,13 +122,11 @@ func TestQueueFailed(t *testing.T) {
 			Reporter: panicReporter,
 		})
 
-		i := 0
 		queue.Add(&Task{
 			Name:  "failed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				if i == 0 {
-					i++
+				if ctx.Attempt == 1 {
 					return E("foo", true)
 				}
 
@@ -181,13 +179,11 @@ func TestQueueCrashed(t *testing.T) {
 			},
 		})
 
-		i := 0
 		queue.Add(&Task{
 			Name:  "crashed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				if i == 0 {
-					i++
+				if ctx.Attempt == 1 {
 					return io.EOF
 				}
 
@@ -285,13 +281,11 @@ func TestQueueCancelRetry(t *testing.T) {
 			Reporter: panicReporter,
 		})
 
-		i := 0
 		queue.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				i++
-				return E("cancelled", i < 2)
+				return E("cancelled", ctx.Attempt == 1)
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
@@ -339,12 +333,10 @@ func TestQueueCancelCrash(t *testing.T) {
 			},
 		})
 
-		i := 0
 		queue.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				i++
 				return errors.New("foo")
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
@@ -395,13 +387,11 @@ func TestQueueTimeout(t *testing.T) {
 			},
 		})
 
-		i := 0
 		queue.Add(&Task{
 			Name:  "timeout",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				if i == 0 {
-					i++
+				if ctx.Attempt == 1 {
 					<-ctx.Done()
 					return nil
 				}

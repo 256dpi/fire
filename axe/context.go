@@ -20,6 +20,9 @@ type Context struct {
 	// The model carried by the job.
 	Model Model
 
+	// The current attempt to execute the job.
+	Attempt int
+
 	// The custom result of the job.
 	Result coal.Map
 

@@ -252,6 +252,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	ctx := &Context{
 		Context: innerContext,
 		Model:   model,
+		Attempt: job.Attempts, // incremented when dequeued
 		Task:    t,
 		Queue:   q,
 		Trace:   trace,
