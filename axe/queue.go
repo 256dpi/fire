@@ -158,8 +158,9 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 	})
 }
 
-// Run will start fetching jobs from the queue and process them.
-func (q *Queue) Run() {
+// Run will start fetching jobs from the queue and process them. It will return
+// a channel that is closed once the queue has been synced and is available.
+func (q *Queue) Run() chan struct{} {
 	// initialize boards
 	q.boards = make(map[string]*board)
 
@@ -170,8 +171,15 @@ func (q *Queue) Run() {
 		}
 	}
 
+	// prepare channel
+	synced := make(chan struct{})
+
 	// run process
-	q.tomb.Go(q.process)
+	q.tomb.Go(func() error {
+		return q.process(synced)
+	})
+
+	return synced
 }
 
 // Close will close the queue.
@@ -181,15 +189,16 @@ func (q *Queue) Close() {
 	_ = q.tomb.Wait()
 }
 
-func (q *Queue) process() error {
+func (q *Queue) process(synced chan struct{}) error {
 	// start tasks
 	for _, task := range q.tasks {
 		task.start(q)
 	}
 
 	// reconcile jobs
+	var once sync.Once
 	stream := coal.Reconcile(q.opts.Store, &Job{}, func() {
-		// synced
+		once.Do(func() { close(synced) })
 	}, func(model coal.Model) {
 		q.update(model.(*Job))
 	}, func(model coal.Model) {

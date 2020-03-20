@@ -22,6 +22,7 @@ func TestQueue(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "foo",
 			Model: &data{},
@@ -31,9 +32,8 @@ func TestQueue(t *testing.T) {
 				return nil
 			},
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "foo",
@@ -70,6 +70,7 @@ func TestQueueDelayed(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "delayed",
 			Model: &data{},
@@ -79,9 +80,8 @@ func TestQueueDelayed(t *testing.T) {
 				return nil
 			},
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "delayed",
@@ -121,6 +121,7 @@ func TestQueueFailed(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "failed",
 			Model: &data{},
@@ -136,9 +137,8 @@ func TestQueueFailed(t *testing.T) {
 			},
 			MinDelay: 10 * time.Millisecond,
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "failed",
@@ -180,6 +180,7 @@ func TestQueueCrashed(t *testing.T) {
 				errs <- err
 			},
 		})
+
 		q.Add(&Task{
 			Name:  "crashed",
 			Model: &data{},
@@ -194,9 +195,8 @@ func TestQueueCrashed(t *testing.T) {
 			},
 			MinDelay: 10 * time.Millisecond,
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "crashed",
@@ -234,6 +234,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
@@ -242,9 +243,8 @@ func TestQueueCancelNoRetry(t *testing.T) {
 				return E("cancelled", false)
 			},
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -283,6 +283,7 @@ func TestQueueCancelRetry(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
@@ -295,9 +296,8 @@ func TestQueueCancelRetry(t *testing.T) {
 			},
 			MinDelay: 10 * time.Millisecond,
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -339,6 +339,7 @@ func TestQueueCancelCrash(t *testing.T) {
 				errs <- err
 			},
 		})
+
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
@@ -352,9 +353,8 @@ func TestQueueCancelCrash(t *testing.T) {
 			MinDelay:    10 * time.Millisecond,
 			MaxAttempts: 2,
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name:  "cancel",
@@ -397,6 +397,7 @@ func TestQueueTimeout(t *testing.T) {
 				errs <- err
 			},
 		})
+
 		q.Add(&Task{
 			Name:  "timeout",
 			Model: &data{},
@@ -413,9 +414,8 @@ func TestQueueTimeout(t *testing.T) {
 			Timeout:  10 * time.Millisecond,
 			Lifetime: 5 * time.Millisecond,
 		})
-		q.Run()
 
-		time.Sleep(200 * time.Millisecond)
+		<-q.Run()
 
 		job, err := q.Enqueue(Blueprint{
 			Name: "timeout",
@@ -459,6 +459,7 @@ func TestQueueExisting(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name:  "existing",
 			Model: &data{},
@@ -469,6 +470,7 @@ func TestQueueExisting(t *testing.T) {
 			Timeout:  10 * time.Millisecond,
 			Lifetime: 5 * time.Millisecond,
 		})
+
 		q.Run()
 
 		<-done
@@ -500,6 +502,7 @@ func TestQueuePeriodically(t *testing.T) {
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
+
 		q.Add(&Task{
 			Name: "foo",
 			Handler: func(ctx *Context) error {
@@ -509,6 +512,7 @@ func TestQueuePeriodically(t *testing.T) {
 			},
 			Periodicity: time.Minute,
 		})
+
 		q.Run()
 
 		<-done
