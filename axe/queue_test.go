@@ -27,8 +27,11 @@ func TestQueue(t *testing.T) {
 			Name:  "foo",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				close(done)
 				ctx.Result = coal.Map{"foo": "bar"}
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
 				return nil
 			},
 		})
@@ -42,8 +45,6 @@ func TestQueue(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "foo", job.Name)
@@ -75,8 +76,11 @@ func TestQueueDelayed(t *testing.T) {
 			Name:  "delayed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				close(done)
 				ctx.Result = coal.Map{"foo": "bar"}
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
 				return nil
 			},
 		})
@@ -91,8 +95,6 @@ func TestQueueDelayed(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "delayed", job.Name)
@@ -115,13 +117,12 @@ func TestQueueFailed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		i := 0
-
 		q := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
+		i := 0
 		q.Add(&Task{
 			Name:  "failed",
 			Model: &data{},
@@ -131,8 +132,11 @@ func TestQueueFailed(t *testing.T) {
 					return E("foo", true)
 				}
 
-				close(done)
 				ctx.Result = coal.Map{"foo": "bar"}
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
 				return nil
 			},
 			MinDelay: 10 * time.Millisecond,
@@ -147,8 +151,6 @@ func TestQueueFailed(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "failed", job.Name)
@@ -172,8 +174,6 @@ func TestQueueCrashed(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
-		i := 0
-
 		q := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
@@ -181,6 +181,7 @@ func TestQueueCrashed(t *testing.T) {
 			},
 		})
 
+		i := 0
 		q.Add(&Task{
 			Name:  "crashed",
 			Model: &data{},
@@ -190,6 +191,9 @@ func TestQueueCrashed(t *testing.T) {
 					return io.EOF
 				}
 
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
 				return nil
 			},
@@ -206,8 +210,6 @@ func TestQueueCrashed(t *testing.T) {
 
 		<-done
 		assert.Equal(t, io.EOF, <-errs)
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "crashed", job.Name)
@@ -239,8 +241,11 @@ func TestQueueCancelNoRetry(t *testing.T) {
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
-				close(done)
 				return E("cancelled", false)
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
+				return nil
 			},
 		})
 
@@ -253,8 +258,6 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -277,22 +280,22 @@ func TestQueueCancelRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		i := 0
-
 		q := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
+		i := 0
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
 				i++
-				if i == 2 {
-					close(done)
-				}
 				return E("cancelled", i < 2)
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
+				return nil
 			},
 			MinDelay: 10 * time.Millisecond,
 		})
@@ -306,8 +309,6 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -331,8 +332,6 @@ func TestQueueCancelCrash(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 2)
 
-		i := 0
-
 		q := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
@@ -340,15 +339,17 @@ func TestQueueCancelCrash(t *testing.T) {
 			},
 		})
 
+		i := 0
 		q.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
 				i++
-				if i == 2 {
-					close(done)
-				}
 				return errors.New("foo")
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
+				return nil
 			},
 			MinDelay:    10 * time.Millisecond,
 			MaxAttempts: 2,
@@ -364,8 +365,6 @@ func TestQueueCancelCrash(t *testing.T) {
 
 		<-done
 		assert.Equal(t, "foo", (<-errs).Error())
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "cancel", job.Name)
@@ -389,8 +388,6 @@ func TestQueueTimeout(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
-		i := 0
-
 		q := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
@@ -398,6 +395,7 @@ func TestQueueTimeout(t *testing.T) {
 			},
 		})
 
+		i := 0
 		q.Add(&Task{
 			Name:  "timeout",
 			Model: &data{},
@@ -408,6 +406,9 @@ func TestQueueTimeout(t *testing.T) {
 					return nil
 				}
 
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
 				return nil
 			},
@@ -423,8 +424,6 @@ func TestQueueTimeout(t *testing.T) {
 		assert.NoError(t, err)
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "timeout", job.Name)
@@ -464,6 +463,9 @@ func TestQueueExisting(t *testing.T) {
 			Name:  "existing",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
 				return nil
 			},
@@ -474,8 +476,6 @@ func TestQueueExisting(t *testing.T) {
 		q.Run()
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job = tester.Fetch(&Job{}, job.ID()).(*Job)
 		assert.Equal(t, "existing", job.Name)
@@ -506,8 +506,11 @@ func TestQueuePeriodically(t *testing.T) {
 		q.Add(&Task{
 			Name: "foo",
 			Handler: func(ctx *Context) error {
-				close(done)
 				ctx.Result = coal.Map{"foo": "bar"}
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
 				return nil
 			},
 			Periodicity: time.Minute,
@@ -516,8 +519,6 @@ func TestQueuePeriodically(t *testing.T) {
 		q.Run()
 
 		<-done
-
-		time.Sleep(200 * time.Millisecond)
 
 		job := tester.FindLast(&Job{}).(*Job)
 		assert.Equal(t, "foo", job.Name)

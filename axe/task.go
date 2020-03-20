@@ -24,7 +24,11 @@ type Task struct {
 	// should return errors formatted with E to properly indicate the status of
 	// the job. If a task execution is successful the handler may return some
 	// data that is attached to the job.
-	Handler func(*Context) error
+	Handler func(ctx *Context) error
+
+	// Notifier is a callback that is called once after a job has been completed
+	// or cancelled.
+	Notifier func(ctx *Context, cancelled bool, reason string) error
 
 	// Workers defines the number for spawned workers that dequeue and execute
 	// jobs in parallel.
@@ -280,6 +284,14 @@ func (t *Task) execute(q *Queue, job *Job) error {
 			return err
 		}
 
+		// call notifier if available
+		if t.Notifier != nil {
+			err = t.Notifier(ctx, true, e.Reason)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 
@@ -296,6 +308,11 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// cancel job
 		_ = Cancel(outerContext, q.opts.Store, job.ID(), err.Error())
 
+		// call notifier if available
+		if t.Notifier != nil {
+			_ = t.Notifier(ctx, true, err.Error())
+		}
+
 		return err
 	}
 
@@ -303,6 +320,14 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	err = Complete(outerContext, q.opts.Store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
+	}
+
+	// call notifier if available
+	if t.Notifier != nil {
+		err = t.Notifier(ctx, false, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
