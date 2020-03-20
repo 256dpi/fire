@@ -16,15 +16,24 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Get")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	defer span.Finish()
 
 	// find value
 	var model Model
 	found, err := store.M(&Model{}).FindFirst(ctx, &model, bson.M{
-		"Key": meta.Key,
+		"Key": key,
 	}, nil, 0, false)
 	if err != nil {
 		return false, err
@@ -48,9 +57,18 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Set")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	defer span.Finish()
 
@@ -62,14 +80,14 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// encode value
 	var data coal.Map
-	err := data.Marshal(value, coal.TransferJSON)
+	err = data.Marshal(value, coal.TransferJSON)
 	if err != nil {
 		return false, err
 	}
 
 	// upsert value
 	inserted, err := store.M(&Model{}).Upsert(ctx, nil, bson.M{
-		"Key": meta.Key,
+		"Key": key,
 	}, bson.M{
 		"$set": bson.M{
 			"Data":     data,
@@ -89,14 +107,23 @@ func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Del")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	defer span.Finish()
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
-		"Key": meta.Key,
+		"Key": key,
 	}, nil)
 	if err != nil {
 		return false, err

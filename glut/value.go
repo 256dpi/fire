@@ -14,6 +14,10 @@ import (
 type Value interface {
 	// GetBase should be implemented by embedding Base.
 	GetBase() *Base
+
+	// GetExtension may be implemented to define a key extension. The returned
+	// string will be appended to the static key to compute the value key.
+	GetExtension() (string, error)
 }
 
 // Base can be embedded in a struct to turn it into a value.
@@ -24,6 +28,11 @@ type Base struct {
 // GetBase implements the Value interface.
 func (b *Base) GetBase() *Base {
 	return b
+}
+
+// GetExtension implements the Value interface.
+func (b *Base) GetExtension() (string, error) {
+	return "", nil
 }
 
 var baseType = reflect.TypeOf(Base{})

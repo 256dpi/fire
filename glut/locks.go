@@ -18,6 +18,15 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// get base
 	base := value.GetBase()
 
@@ -28,7 +37,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Lock")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
 	span.Log("timeout", timeout.String())
@@ -55,7 +64,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// prepare value
 	model := Model{
-		Key:      meta.Key,
+		Key:      key,
 		Data:     nil,
 		Deadline: deadline,
 		Locked:   &locked,
@@ -64,7 +73,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// insert value if missing
 	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, bson.M{
-		"Key": meta.Key,
+		"Key": key,
 	}, &model, false)
 	if err != nil {
 		return false, err
@@ -79,7 +88,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
 		"$and": []bson.M{
 			{
-				"Key": meta.Key,
+				"Key": key,
 			},
 			{
 				"$or": []bson.M{
@@ -126,12 +135,21 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// get base
 	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/SetLocked")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
 	defer span.Finish()
@@ -149,14 +167,14 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// encode data
 	var data coal.Map
-	err := data.Marshal(value, coal.TransferJSON)
+	err = data.Marshal(value, coal.TransferJSON)
 	if err != nil {
 		return false, err
 	}
 
 	// update value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"Key":   meta.Key,
+		"Key":   key,
 		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
@@ -179,12 +197,21 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// get base
 	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("token", base.Token.Hex())
 	defer span.Finish()
 
@@ -196,7 +223,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// find value
 	var model Model
 	found, err := store.M(&Model{}).FindFirst(ctx, &model, bson.M{
-		"Key":   meta.Key,
+		"Key":   key,
 		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
@@ -222,12 +249,21 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// get base
 	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/DelLocked")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("token", base.Token.Hex())
 	defer span.Finish()
 
@@ -238,7 +274,7 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
-		"Key":   meta.Key,
+		"Key":   key,
 		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
@@ -285,12 +321,21 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
 
+	// prepare key
+	key := meta.Key
+	extension, err := value.GetExtension()
+	if err != nil {
+		return false, err
+	} else if extension != "" {
+		key += extension
+	}
+
 	// get base
 	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Unlock")
-	span.Log("key", meta.Key)
+	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
 	defer span.Finish()
@@ -308,7 +353,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// replace value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"Key":   meta.Key,
+		"Key":   key,
 		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),

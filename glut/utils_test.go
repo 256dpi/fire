@@ -1,6 +1,7 @@
 package glut
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/256dpi/fire/coal"
@@ -21,6 +22,22 @@ type ttlValue struct {
 	Base `json:"-" glut:"value/ttl,5m"`
 
 	Data string `json:"data"`
+}
+
+type extendedValue struct {
+	Base `json:"-" glut:"value/extended,0"`
+
+	ID   string `json:"id"`
+	Data string `json:"data"`
+}
+
+func (v *extendedValue) GetExtension() (string, error) {
+	// check id
+	if v.ID == "" {
+		return "", fmt.Errorf("missing id")
+	}
+
+	return "/" + v.ID, nil
 }
 
 func withTester(t *testing.T, fn func(*testing.T, *coal.Tester)) {
