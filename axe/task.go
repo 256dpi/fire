@@ -112,18 +112,18 @@ type Task struct {
 	// Default: 2.
 	DelayFactor float64
 
-	// Timeout is the time after which a task can be dequeued again in case the
-	// worker was not able to set its status.
-	//
-	// Default: 10m.
-	Timeout time.Duration
-
 	// Lifetime is the time after which the context of a job is cancelled and
 	// the execution should be stopped. Should be several minutes less than
 	// timeout to prevent race conditions.
 	//
 	// Default: 5m.
 	Lifetime time.Duration
+
+	// Timeout is the time after which a task can be dequeued again in case the
+	// worker was not able to set its status.
+	//
+	// Default: 10m.
+	Timeout time.Duration
 
 	// Periodically may be set to let the system enqueue a job automatically
 	// every given interval.
@@ -163,14 +163,14 @@ func (t *Task) start(q *Queue) {
 		t.DelayFactor = 2
 	}
 
-	// set default timeout
-	if t.Timeout == 0 {
-		t.Timeout = 10 * time.Minute
-	}
-
 	// set default lifetime
 	if t.Lifetime == 0 {
 		t.Lifetime = 5 * time.Minute
+	}
+
+	// set default timeout
+	if t.Timeout == 0 {
+		t.Timeout = 10 * time.Minute
 	}
 
 	// check timeout
