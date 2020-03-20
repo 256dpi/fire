@@ -188,7 +188,9 @@ func (q *Queue) process() error {
 	}
 
 	// reconcile jobs
-	stream := coal.Reconcile(q.opts.Store, &Job{}, func(model coal.Model) {
+	stream := coal.Reconcile(q.opts.Store, &Job{}, func() {
+		// synced
+	}, func(model coal.Model) {
 		q.update(model.(*Job))
 	}, func(model coal.Model) {
 		q.update(model.(*Job))

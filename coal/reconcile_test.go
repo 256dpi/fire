@@ -9,19 +9,21 @@ import (
 
 func TestReconcile(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 
-		post := tester.Insert(&postModel{
+		post := &postModel{
+			Base:  B(),
 			Title: "foo",
-		}).(*postModel)
+		}
 
 		open := make(chan struct{})
 		done := make(chan struct{})
 
-		stream := Reconcile(tester.Store, &postModel{}, func(model Model) {
+		stream := Reconcile(tester.Store, &postModel{}, func() {
+			close(open)
+		}, func(model Model) {
 			assert.Equal(t, post.ID(), model.ID())
 			assert.Equal(t, "foo", model.(*postModel).Title)
-			close(open)
 		}, func(model Model) {
 			assert.Equal(t, post.ID(), model.ID())
 			assert.Equal(t, "bar", model.(*postModel).Title)
@@ -34,8 +36,11 @@ func TestReconcile(t *testing.T) {
 
 		<-open
 
+		tester.Insert(post)
+
 		post.Title = "bar"
 		tester.Replace(post)
+
 		tester.Delete(post)
 
 		<-done

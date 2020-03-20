@@ -8,7 +8,7 @@ import (
 // automatically load existing models once the underlying stream has been opened.
 // After that it will yield all changes to the collection until the returned
 // stream has been closed.
-func Reconcile(store *Store, model Model, created, updated func(Model), deleted func(ID), reporter func(error)) *Stream {
+func Reconcile(store *Store, model Model, synced func(), created, updated func(Model), deleted func(ID), reporter func(error)) *Stream {
 	// prepare load
 	load := func() error {
 		// get cursor
@@ -37,6 +37,11 @@ func Reconcile(store *Store, model Model, created, updated func(Model), deleted 
 		err = iter.Error()
 		if err != nil {
 			return err
+		}
+
+		// call callback if available
+		if synced != nil {
+			synced()
 		}
 
 		return nil
