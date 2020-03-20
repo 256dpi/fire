@@ -18,13 +18,17 @@ type Context struct {
 	context.Context
 
 	// The model carried by the job.
+	//
+	// Usage: Read Only
 	Model Model
-
-	// The current attempt to execute the job.
-	Attempt int
 
 	// The custom result of the job.
 	Result coal.Map
+
+	// The current attempt to execute the job.
+	//
+	// Usage: Read Only
+	Attempt int
 
 	// The task that processes this job.
 	//

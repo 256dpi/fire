@@ -43,9 +43,9 @@ type Meta struct {
 	TTL time.Duration
 }
 
+var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]Meta{}
 var metaKeys = map[string]reflect.Type{}
-var metaMutex sync.Mutex
 
 // GetMeta will parse the values "glut" tag on the embedded glut.Base struct and
 // return the encoded component and name.

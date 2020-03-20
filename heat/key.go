@@ -38,9 +38,9 @@ type Meta struct {
 	Expiry time.Duration
 }
 
+var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]Meta{}
 var metaNames = map[string]reflect.Type{}
-var metaMutex sync.Mutex
 
 // GetMeta will parse the keys "heat" tag on the embedded heat.Base struct and
 // return the encoded name and default expiry.
