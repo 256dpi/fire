@@ -11,26 +11,28 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Lock will lock the specified value using the provided token for the
-// specified duration. Lock may create a new value in the process and lock it
-// right away. It will also update the deadline of the value if a TTL is set.
-// An existing values contents are read and decoded to the specified value.
-func Lock(ctx context.Context, store *coal.Store, value Value, token coal.ID, timeout time.Duration) (bool, error) {
+// Lock will lock and read the specified value. Lock may create a new value in
+// the process and lock it right away. It will also update the deadline of the
+// value if a TTL is set.
+func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
 	// get meta
 	meta := Meta(value)
+
+	// get base
+	base := value.GetBase()
+
+	// ensure token
+	if base.Token == nil || base.Token.IsZero() {
+		base.Token = coal.P(coal.New())
+	}
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Lock")
 	span.Log("key", meta.Key)
 	span.Log("ttl", meta.TTL.String())
-	span.Log("token", token.Hex())
+	span.Log("token", base.Token.Hex())
 	span.Log("timeout", timeout.String())
 	defer span.Finish()
-
-	// check token
-	if token.IsZero() {
-		return false, fmt.Errorf("invalid token")
-	}
 
 	// check timeout
 	if timeout == 0 {
@@ -57,7 +59,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, token coal.ID, ti
 		Data:     nil,
 		Deadline: deadline,
 		Locked:   &locked,
-		Token:    &token,
+		Token:    base.Token,
 	}
 
 	// insert value if missing
@@ -93,7 +95,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, token coal.ID, ti
 					},
 					// we have the lock
 					{
-						"Token": token,
+						"Token": base.Token,
 					},
 				},
 			},
@@ -102,7 +104,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, token coal.ID, ti
 		"$set": bson.M{
 			"Deadline": deadline,
 			"Locked":   locked,
-			"Token":    token,
+			"Token":    base.Token,
 		},
 	}, nil, false)
 	if err != nil {
@@ -118,21 +120,24 @@ func Lock(ctx context.Context, store *coal.Store, value Value, token coal.ID, ti
 	return found, nil
 }
 
-// SetLocked will update the specified value only if it is locked with the
-// provided token. It will also update the deadline of the value if a TTL is set.
-func SetLocked(ctx context.Context, store *coal.Store, value Value, token coal.ID) (bool, error) {
+// SetLocked will update the specified value only if it is locked. It will als
+// update the deadline of the value if a TTL is set.
+func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
+
+	// get base
+	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/SetLocked")
 	span.Log("key", meta.Key)
 	span.Log("ttl", meta.TTL.String())
-	span.Log("token", token.Hex())
+	span.Log("token", base.Token.Hex())
 	defer span.Finish()
 
 	// check token
-	if token.IsZero() {
+	if base.Token == nil || base.Token.IsZero() {
 		return false, fmt.Errorf("invalid token")
 	}
 
@@ -152,7 +157,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 	// update value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"Key":   meta.Key,
-		"Token": token,
+		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -169,23 +174,30 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 	return found, nil
 }
 
-// GetLocked will load the contents of the specified value only if it is locked
-// with the provided token.
-func GetLocked(ctx context.Context, store *coal.Store, value Value, token coal.ID) (bool, error) {
+// GetLocked will load the contents of the specified value only if it is locked.
+func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
+
+	// get base
+	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
 	span.Log("key", meta.Key)
-	span.Log("token", token.Hex())
+	span.Log("token", base.Token.Hex())
 	defer span.Finish()
+
+	// check token
+	if base.Token == nil || base.Token.IsZero() {
+		return false, fmt.Errorf("invalid token")
+	}
 
 	// find value
 	var model Model
 	found, err := store.M(&Model{}).FindFirst(ctx, &model, bson.M{
 		"Key":   meta.Key,
-		"Token": token,
+		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -205,27 +217,29 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 	return true, nil
 }
 
-// DelLocked will delete the specified value only if it is locked with the
-// provided token.
-func DelLocked(ctx context.Context, store *coal.Store, value Value, token coal.ID) (bool, error) {
+// DelLocked will delete the specified value only if it is locked.
+func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
+
+	// get base
+	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/DelLocked")
 	span.Log("key", meta.Key)
-	span.Log("token", token.Hex())
+	span.Log("token", base.Token.Hex())
 	defer span.Finish()
 
 	// check token
-	if token.IsZero() {
+	if base.Token == nil || base.Token.IsZero() {
 		return false, fmt.Errorf("invalid token")
 	}
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
 		"Key":   meta.Key,
-		"Token": token,
+		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -239,13 +253,13 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 
 // MutLocked will load the specified value, run the callback and on success
 // write the value back.
-func MutLocked(ctx context.Context, store *coal.Store, value Value, token coal.ID, fn func(bool) error) error {
+func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/MutLocked")
 	defer span.Finish()
 
 	// get value
-	ok, err := GetLocked(ctx, store, value, token)
+	ok, err := GetLocked(ctx, store, value)
 	if err != nil {
 		return err
 	}
@@ -257,7 +271,7 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 	}
 
 	// set value
-	_, err = SetLocked(ctx, store, value, token)
+	_, err = SetLocked(ctx, store, value)
 	if err != nil {
 		return err
 	}
@@ -265,21 +279,24 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, token coal.I
 	return nil
 }
 
-// Unlock will unlock the specified value only if it is locked with the provided
-// token. It will also update the deadline of the value if a TTL is set.
-func Unlock(ctx context.Context, store *coal.Store, value Value, token coal.ID) (bool, error) {
+// Unlock will unlock the specified value only if it is locked. It will also
+// update the deadline of the value if a TTL is set.
+func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
+
+	// get base
+	base := value.GetBase()
 
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Unlock")
 	span.Log("key", meta.Key)
 	span.Log("ttl", meta.TTL.String())
-	span.Log("token", token.Hex())
+	span.Log("token", base.Token.Hex())
 	defer span.Finish()
 
 	// check token
-	if token.IsZero() {
+	if base.Token == nil || base.Token.IsZero() {
 		return false, fmt.Errorf("invalid token")
 	}
 
@@ -292,7 +309,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value, token coal.ID) 
 	// replace value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"Key":   meta.Key,
-		"Token": token,
+		"Token": base.Token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},

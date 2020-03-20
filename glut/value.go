@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // Value is a structure used to encode a value.
@@ -15,7 +17,9 @@ type Value interface {
 }
 
 // Base can be embedded in a struct to turn it into a value.
-type Base struct {}
+type Base struct {
+	Token *coal.ID
+}
 
 // GetBase implements the Value interface.
 func (b *Base) GetBase() *Base {
