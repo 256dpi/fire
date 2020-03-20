@@ -13,7 +13,7 @@ import (
 
 // Lock will lock and read the specified value. Lock may create a new value in
 // the process and lock it right away. It will also update the deadline of the
-// value if a TTL is set.
+// value if a time to live is set.
 func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
 	// get meta
 	meta := Meta(value)
@@ -41,7 +41,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// check TTL
 	if meta.TTL > 0 && meta.TTL < timeout {
-		return false, fmt.Errorf("timeout greather than TTL")
+		return false, fmt.Errorf("timeout greather than time to live")
 	}
 
 	// prepare deadline
@@ -121,7 +121,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 }
 
 // SetLocked will update the specified value only if it is locked. It will als
-// update the deadline of the value if a TTL is set.
+// update the deadline of the value if a time to live is set.
 func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)
@@ -280,7 +280,7 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool
 }
 
 // Unlock will unlock the specified value only if it is locked. It will also
-// update the deadline of the value if a TTL is set.
+// update the deadline of the value if a time to live is set.
 func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := Meta(value)

@@ -62,7 +62,7 @@ func TestMetaPanics(t *testing.T) {
 		Meta(&invalidValue3{})
 	})
 
-	assert.PanicsWithValue(t, `glut: invalid duration as TTL on "glut.Base"`, func() {
+	assert.PanicsWithValue(t, `glut: invalid duration as time to live on "glut.Base"`, func() {
 		Meta(&invalidValue4{})
 	})
 

@@ -83,7 +83,7 @@ func Meta(value Value) ValueMeta {
 	// get ttl
 	ttl, err := time.ParseDuration(tag[1])
 	if err != nil {
-		panic(`glut: invalid duration as TTL on "glut.Base"`)
+		panic(`glut: invalid duration as time to live on "glut.Base"`)
 	}
 
 	// prepare meta
