@@ -18,12 +18,12 @@ func TestQueue(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "foo",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -36,9 +36,9 @@ func TestQueue(t *testing.T) {
 			},
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "foo",
 			Model: &data{Foo: "bar"},
 		})
@@ -59,7 +59,7 @@ func TestQueue(t *testing.T) {
 		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -67,12 +67,12 @@ func TestQueueDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "delayed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -85,9 +85,9 @@ func TestQueueDelayed(t *testing.T) {
 			},
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "delayed",
 			Model: &data{Foo: "bar"},
 			Delay: 100 * time.Millisecond,
@@ -109,7 +109,7 @@ func TestQueueDelayed(t *testing.T) {
 		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -117,13 +117,13 @@ func TestQueueFailed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
 		i := 0
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "failed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -142,9 +142,9 @@ func TestQueueFailed(t *testing.T) {
 			MinDelay: 10 * time.Millisecond,
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "failed",
 			Model: &data{Foo: "bar"},
 		})
@@ -165,7 +165,7 @@ func TestQueueFailed(t *testing.T) {
 		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "foo", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -174,7 +174,7 @@ func TestQueueCrashed(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
 				errs <- err
@@ -182,7 +182,7 @@ func TestQueueCrashed(t *testing.T) {
 		})
 
 		i := 0
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "crashed",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -200,9 +200,9 @@ func TestQueueCrashed(t *testing.T) {
 			MinDelay: 10 * time.Millisecond,
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "crashed",
 			Model: &data{},
 		})
@@ -224,7 +224,7 @@ func TestQueueCrashed(t *testing.T) {
 		assert.Nil(t, job.Result)
 		assert.Equal(t, "EOF", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -232,12 +232,12 @@ func TestQueueCancelNoRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -249,9 +249,9 @@ func TestQueueCancelNoRetry(t *testing.T) {
 			},
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "cancel",
 			Model: &data{Foo: "bar"},
 		})
@@ -272,7 +272,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.Nil(t, job.Result)
 		assert.Equal(t, "cancelled", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -280,13 +280,13 @@ func TestQueueCancelRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
 		i := 0
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -300,9 +300,9 @@ func TestQueueCancelRetry(t *testing.T) {
 			MinDelay: 10 * time.Millisecond,
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "cancel",
 			Model: &data{Foo: "bar"},
 		})
@@ -323,7 +323,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.Nil(t, job.Result)
 		assert.Equal(t, "cancelled", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -332,7 +332,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 2)
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
 				errs <- err
@@ -340,7 +340,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		})
 
 		i := 0
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "cancel",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -355,9 +355,9 @@ func TestQueueCancelCrash(t *testing.T) {
 			MaxAttempts: 2,
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name:  "cancel",
 			Model: &data{Foo: "bar"},
 		})
@@ -379,7 +379,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.Nil(t, job.Result)
 		assert.Equal(t, "foo", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -388,7 +388,7 @@ func TestQueueTimeout(t *testing.T) {
 		done := make(chan struct{})
 		errs := make(chan error, 1)
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store: tester.Store,
 			Reporter: func(err error) {
 				errs <- err
@@ -396,7 +396,7 @@ func TestQueueTimeout(t *testing.T) {
 		})
 
 		i := 0
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "timeout",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -416,9 +416,9 @@ func TestQueueTimeout(t *testing.T) {
 			Lifetime: 5 * time.Millisecond,
 		})
 
-		<-q.Run()
+		<-queue.Run()
 
-		job, err := q.Enqueue(Blueprint{
+		job, err := queue.Enqueue(Blueprint{
 			Name: "timeout",
 		})
 		assert.NoError(t, err)
@@ -441,7 +441,7 @@ func TestQueueTimeout(t *testing.T) {
 		err = <-errs
 		assert.Equal(t, `task "timeout" ran longer than the specified lifetime`, err.Error())
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -454,12 +454,12 @@ func TestQueueExisting(t *testing.T) {
 
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name:  "existing",
 			Model: &data{},
 			Handler: func(ctx *Context) error {
@@ -473,7 +473,7 @@ func TestQueueExisting(t *testing.T) {
 			Lifetime: 5 * time.Millisecond,
 		})
 
-		q.Run()
+		queue.Run()
 
 		<-done
 
@@ -490,7 +490,7 @@ func TestQueueExisting(t *testing.T) {
 		assert.Nil(t, job.Result)
 		assert.Equal(t, "", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
 
@@ -498,12 +498,12 @@ func TestQueuePeriodically(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
 
-		q := NewQueue(Options{
+		queue := NewQueue(Options{
 			Store:    tester.Store,
 			Reporter: panicReporter,
 		})
 
-		q.Add(&Task{
+		queue.Add(&Task{
 			Name: "foo",
 			Handler: func(ctx *Context) error {
 				ctx.Result = coal.Map{"foo": "bar"}
@@ -516,7 +516,7 @@ func TestQueuePeriodically(t *testing.T) {
 			Periodicity: time.Minute,
 		})
 
-		q.Run()
+		queue.Run()
 
 		<-done
 
@@ -533,6 +533,6 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
-		q.Close()
+		queue.Close()
 	})
 }
