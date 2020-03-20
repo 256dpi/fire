@@ -7,18 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type simpleValue struct {
-	Base `json:"-" glut:"value/simple,0"`
-
-	Data string `json:"data"`
-}
-
-type ttlValue struct {
-	Base `json:"-" glut:"value/ttl,5m"`
-
-	Data string `json:"data"`
-}
-
 func TestMeta(t *testing.T) {
 	key := &simpleValue{
 		Data: "cool",

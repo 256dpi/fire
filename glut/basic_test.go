@@ -11,9 +11,10 @@ import (
 
 func TestBasic(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		var value simpleValue
+
 		// get missing
 
-		var value simpleValue
 		exists, err := Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, exists)
@@ -35,7 +36,7 @@ func TestBasic(t *testing.T) {
 
 		// get existing
 
-		value = simpleValue{}
+		value.Data = ""
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
@@ -59,7 +60,7 @@ func TestBasic(t *testing.T) {
 
 		// get updated
 
-		value = simpleValue{}
+		value.Data = ""
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
@@ -79,7 +80,7 @@ func TestBasic(t *testing.T) {
 
 		// get mutated
 
-		value = simpleValue{}
+		value.Data = ""
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
@@ -89,7 +90,6 @@ func TestBasic(t *testing.T) {
 
 		// delete existing
 
-		value = simpleValue{}
 		deleted, err := Del(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, deleted)
@@ -98,7 +98,6 @@ func TestBasic(t *testing.T) {
 
 		// delete missing
 
-		value = simpleValue{}
 		deleted, err = Del(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, deleted)
@@ -107,9 +106,11 @@ func TestBasic(t *testing.T) {
 
 func TestDeadline(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
-		created, err := Set(nil, tester.Store, &ttlValue{
+		value := &ttlValue{
 			Data: "Nice!",
-		})
+		}
+
+		created, err := Set(nil, tester.Store, value)
 		assert.NoError(t, err)
 		assert.True(t, created)
 

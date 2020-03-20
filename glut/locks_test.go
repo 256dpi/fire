@@ -11,9 +11,11 @@ import (
 
 func TestLock(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		var value1 simpleValue
+		var value2 simpleValue
+
 		// initial lock
 
-		var value1 simpleValue
 		locked, err := Lock(nil, tester.Store, &value1, time.Minute)
 		assert.NoError(t, err)
 		assert.True(t, locked)
@@ -44,7 +46,6 @@ func TestLock(t *testing.T) {
 
 		// lock attempt (different token)
 
-		var value2 simpleValue
 		locked, err = Lock(nil, tester.Store, &value2, time.Minute)
 		assert.NoError(t, err)
 		assert.False(t, locked)
