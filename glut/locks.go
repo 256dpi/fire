@@ -14,11 +14,10 @@ import (
 // Lock will lock the specified value using the specified token for the
 // specified duration. Lock may create a new value in the process and lock it
 // right away. It will also update the deadline of the value if TTL is set.
-func Lock(ctx context.Context, store *coal.Store, component, name string, token coal.ID, timeout, ttl time.Duration) (bool, error) {
+func Lock(ctx context.Context, store *coal.Store, key string, token coal.ID, timeout, ttl time.Duration) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Lock")
-	span.Tag("component", component)
-	span.Log("name", name)
+	span.Log("key", key)
 	span.Log("token", token.Hex())
 	span.Log("timeout", timeout.String())
 	span.Log("ttl", ttl.String())
@@ -50,8 +49,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 
 	// upsert value
 	inserted, err := store.M(&Model{}).Upsert(ctx, nil, bson.M{
-		"Component": component,
-		"Name":      name,
+		"Key": key,
 	}, bson.M{
 		"$setOnInsert": bson.M{
 			"Locked":   locked,
@@ -72,8 +70,7 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"$and": []bson.M{
 			{
-				"Component": component,
-				"Name":      name,
+				"Key": key,
 			},
 			{
 				"$or": []bson.M{
@@ -110,11 +107,10 @@ func Lock(ctx context.Context, store *coal.Store, component, name string, token 
 
 // SetLocked will update the specified value only if the value is locked by the
 // specified token.
-func SetLocked(ctx context.Context, store *coal.Store, component, name string, data coal.Map, token coal.ID) (bool, error) {
+func SetLocked(ctx context.Context, store *coal.Store, key string, data coal.Map, token coal.ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/SetLocked")
-	span.Tag("component", component)
-	span.Log("name", name)
+	span.Log("key", key)
 	span.Log("token", token.Hex())
 	defer span.Finish()
 
@@ -125,9 +121,8 @@ func SetLocked(ctx context.Context, store *coal.Store, component, name string, d
 
 	// update value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"Component": component,
-		"Name":      name,
-		"Token":     token,
+		"Key":   key,
+		"Token": token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -145,20 +140,18 @@ func SetLocked(ctx context.Context, store *coal.Store, component, name string, d
 
 // GetLocked will load the contents of the value with the specified name only
 // if the value is locked by the specified token.
-func GetLocked(ctx context.Context, store *coal.Store, component, name string, token coal.ID) (coal.Map, bool, error) {
+func GetLocked(ctx context.Context, store *coal.Store, key string, token coal.ID) (coal.Map, bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
-	span.Tag("component", component)
-	span.Log("name", name)
+	span.Log("key", key)
 	span.Log("token", token.Hex())
 	defer span.Finish()
 
 	// find value
 	var value Model
 	found, err := store.M(&Model{}).FindFirst(ctx, &value, bson.M{
-		"Component": component,
-		"Name":      name,
-		"Token":     token,
+		"Key":   key,
+		"Token": token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -174,11 +167,10 @@ func GetLocked(ctx context.Context, store *coal.Store, component, name string, t
 
 // DelLocked will update the specified value only if the value is locked by the
 // specified token.
-func DelLocked(ctx context.Context, store *coal.Store, component, name string, token coal.ID) (bool, error) {
+func DelLocked(ctx context.Context, store *coal.Store, key string, token coal.ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/DelLocked")
-	span.Tag("component", component)
-	span.Log("name", name)
+	span.Log("key", key)
 	span.Log("token", token.Hex())
 	defer span.Finish()
 
@@ -189,9 +181,8 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
-		"Component": component,
-		"Name":      name,
-		"Token":     token,
+		"Key":   key,
+		"Token": token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},
@@ -205,16 +196,15 @@ func DelLocked(ctx context.Context, store *coal.Store, component, name string, t
 
 // MutLocked will load the specified value, run the callback and on success
 // write the value back.
-func MutLocked(ctx context.Context, store *coal.Store, component, name string, token coal.ID, fn func(bool, coal.Map) (coal.Map, error)) error {
+func MutLocked(ctx context.Context, store *coal.Store, key string, token coal.ID, fn func(bool, coal.Map) (coal.Map, error)) error {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/MutLocked")
-	span.Tag("component", component)
-	span.Log("name", name)
+	span.Log("key", key)
 	span.Log("token", token.Hex())
 	defer span.Finish()
 
 	// get value
-	data, ok, err := GetLocked(ctx, store, component, name, token)
+	data, ok, err := GetLocked(ctx, store, key, token)
 	if err != nil {
 		return err
 	}
@@ -226,7 +216,7 @@ func MutLocked(ctx context.Context, store *coal.Store, component, name string, t
 	}
 
 	// put value
-	_, err = SetLocked(ctx, store, component, name, newData, token)
+	_, err = SetLocked(ctx, store, key, newData, token)
 	if err != nil {
 		return err
 	}
@@ -236,7 +226,14 @@ func MutLocked(ctx context.Context, store *coal.Store, component, name string, t
 
 // Unlock will unlock the specified value if the provided token does match. It
 // will also update the deadline of the value if TTL is set.
-func Unlock(ctx context.Context, store *coal.Store, component, name string, token coal.ID, ttl time.Duration) (bool, error) {
+func Unlock(ctx context.Context, store *coal.Store, key string, token coal.ID, ttl time.Duration) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Unlock")
+	span.Log("key", key)
+	span.Log("token", token.Hex())
+	span.Log("ttl", ttl.String())
+	defer span.Finish()
+
 	// check token
 	if token.IsZero() {
 		return false, fmt.Errorf("invalid token")
@@ -250,9 +247,8 @@ func Unlock(ctx context.Context, store *coal.Store, component, name string, toke
 
 	// replace value
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"Component": component,
-		"Name":      name,
-		"Token":     token,
+		"Key":   key,
+		"Token": token,
 		"Locked": bson.M{
 			"$gt": time.Now(),
 		},

@@ -10,11 +10,8 @@ import (
 type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"values"`
 
-	// The component managing the value.
-	Component string `json:"component"`
-
-	// The name of the value e.g. "my-value".
-	Name string `json:"name"`
+	// The key of the value e.g. "my-com/sub-com/the-thing".
+	Key string `json:"key"`
 
 	// The content of the value.
 	Data coal.Map `json:"data"`
@@ -33,8 +30,8 @@ type Model struct {
 // removeAfter is values are automatically removed when their deadline timestamp
 // falls behind the specified duration.
 func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
-	// index and require name to be unique among components
-	catalog.AddIndex(&Model{}, true, 0, "Component", "Name")
+	// index and require key to be unique
+	catalog.AddIndex(&Model{}, true, 0, "Key")
 
 	// add ttl index
 	catalog.AddIndex(&Model{}, false, removeAfter, "Deadline")
