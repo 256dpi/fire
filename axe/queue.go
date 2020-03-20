@@ -30,11 +30,16 @@ type Queue struct {
 	// Default: 100ms.
 	MaxLag time.Duration
 
-	// DequeueInterval defines the time after a worker might try to dequeue a job
-	// again that has not yet been associated.
+	// BlockPeriod defines the duration after which a job may be returned again
+	// from the board.
 	//
-	// Default: 2s.
-	DequeueInterval time.Duration
+	// It may take some time until the board is updated with the new state of
+	// the job after a dequeue. The block period prevents another worker from
+	// simultaneously trying to dequeue the job. If the initial worker failed to
+	// dequeue the job it will be available again after the defined period.
+	//
+	// Default: 10s.
+	BlockPeriod time.Duration
 
 	store    *coal.Store
 	reporter func(error)
@@ -139,9 +144,9 @@ func (q *Queue) Run() {
 		q.MaxLag = 100 * time.Millisecond
 	}
 
-	// set default dequeue interval
-	if q.DequeueInterval == 0 {
-		q.DequeueInterval = 2 * time.Second
+	// set default block period
+	if q.BlockPeriod == 0 {
+		q.MaxLag = 10 * time.Second
 	}
 
 	// initialize boards
@@ -219,34 +224,22 @@ func (q *Queue) get(name string) *Job {
 	// get board
 	board := q.boards[name]
 
-	// acquire mutex
+	// acquire board mutex
 	board.Lock()
 	defer board.Unlock()
 
 	// get time
 	now := time.Now()
 
-	// get a random job
-	var job *Job
-	for _, job = range board.jobs {
-		// ignore jobs that are not yet available
-		if job.Available.After(now) {
-			job = nil
-			continue
+	// return first available job
+	for _, job := range board.jobs {
+		if job.Available.Before(now) {
+			// block job until the specified timeout has been reached
+			job.Available = job.Available.Add(q.BlockPeriod)
+
+			return job
 		}
-
-		break
 	}
 
-	// check job
-	if job == nil {
-		return nil
-	}
-
-	// make job unavailable until the specified timeout has been reached. this
-	// ensures that a job dequeued by a crashed worker will be picked up by
-	// another worker at some point
-	job.Available = job.Available.Add(q.DequeueInterval)
-
-	return job
+	return nil
 }
