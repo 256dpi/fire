@@ -90,7 +90,7 @@ type Task struct {
 	PeriodicJob Blueprint
 }
 
-func (t *Task) start(q *Queue) {
+func (t *Task) start(queue *Queue) {
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 2
@@ -133,34 +133,34 @@ func (t *Task) start(q *Queue) {
 
 	// start workers for queue
 	for i := 0; i < t.Workers; i++ {
-		q.tomb.Go(func() error {
-			return t.worker(q)
+		queue.tomb.Go(func() error {
+			return t.worker(queue)
 		})
 	}
 
 	// run periodic enqueuer if interval is given
 	if t.Periodicity > 0 {
-		q.tomb.Go(func() error {
-			return t.enqueuer(q)
+		queue.tomb.Go(func() error {
+			return t.enqueuer(queue)
 		})
 	}
 }
 
-func (t *Task) worker(q *Queue) error {
+func (t *Task) worker(queue *Queue) error {
 	// run forever
 	for {
 		// return if queue is closed
-		if !q.tomb.Alive() {
+		if !queue.tomb.Alive() {
 			return tomb.ErrDying
 		}
 
 		// attempt to get job from queue
-		job := q.get(t.Name)
+		job := queue.get(t.Name)
 		if job == nil {
 			// wait some time before trying again
 			select {
 			case <-time.After(t.Interval):
-			case <-q.tomb.Dying():
+			case <-queue.tomb.Dying():
 				return tomb.ErrDying
 			}
 
@@ -168,16 +168,16 @@ func (t *Task) worker(q *Queue) error {
 		}
 
 		// execute job and report errors
-		err := t.execute(q, job)
+		err := t.execute(queue, job)
 		if err != nil {
-			if q.opts.Reporter != nil {
-				q.opts.Reporter(err)
+			if queue.opts.Reporter != nil {
+				queue.opts.Reporter(err)
 			}
 		}
 	}
 }
 
-func (t *Task) enqueuer(q *Queue) error {
+func (t *Task) enqueuer(queue *Queue) error {
 	// prepare blueprint
 	blueprint := t.PeriodicJob
 
@@ -186,15 +186,15 @@ func (t *Task) enqueuer(q *Queue) error {
 
 	for {
 		// enqueue task
-		_, err := q.Enqueue(blueprint)
-		if err != nil && q.opts.Reporter != nil {
+		_, err := queue.Enqueue(blueprint)
+		if err != nil && queue.opts.Reporter != nil {
 			// report error
-			q.opts.Reporter(err)
+			queue.opts.Reporter(err)
 
 			// wait some time
 			select {
 			case <-time.After(time.Second):
-			case <-q.tomb.Dying():
+			case <-queue.tomb.Dying():
 				return tomb.ErrDying
 			}
 
@@ -204,19 +204,19 @@ func (t *Task) enqueuer(q *Queue) error {
 		// wait for next interval
 		select {
 		case <-time.After(t.Periodicity):
-		case <-q.tomb.Dying():
+		case <-queue.tomb.Dying():
 			return tomb.ErrDying
 		}
 	}
 }
 
-func (t *Task) execute(q *Queue, job *Job) error {
+func (t *Task) execute(queue *Queue, job *Job) error {
 	// create trace
 	trace, outerContext := cinder.CreateTrace(context.Background(), t.Name)
 	defer trace.Finish()
 
 	// dequeue job
-	job, err := Dequeue(outerContext, q.opts.Store, job.ID(), t.Timeout)
+	job, err := Dequeue(outerContext, queue.opts.Store, job.ID(), t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -254,7 +254,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		Model:   model,
 		Attempt: job.Attempts, // incremented when dequeued
 		Task:    t,
-		Queue:   q,
+		Queue:   queue,
 		Trace:   trace,
 	}
 
@@ -271,7 +271,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check retry
 		if e.Retry {
 			// fail job
-			err = Fail(outerContext, q.opts.Store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			err = Fail(outerContext, queue.opts.Store, job.ID(), e.Reason, Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 			if err != nil {
 				return err
 			}
@@ -280,7 +280,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, q.opts.Store, job.ID(), e.Reason)
+		err = Cancel(outerContext, queue.opts.Store, job.ID(), e.Reason)
 		if err != nil {
 			return err
 		}
@@ -301,13 +301,13 @@ func (t *Task) execute(q *Queue, job *Job) error {
 		// check attempts
 		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
 			// fail job
-			_ = Fail(outerContext, q.opts.Store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
+			_ = Fail(outerContext, queue.opts.Store, job.ID(), err.Error(), Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts))
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, q.opts.Store, job.ID(), err.Error())
+		_ = Cancel(outerContext, queue.opts.Store, job.ID(), err.Error())
 
 		// call notifier if available
 		if t.Notifier != nil {
@@ -318,7 +318,7 @@ func (t *Task) execute(q *Queue, job *Job) error {
 	}
 
 	// complete job
-	err = Complete(outerContext, q.opts.Store, job.ID(), ctx.Result)
+	err = Complete(outerContext, queue.opts.Store, job.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}
