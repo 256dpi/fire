@@ -10,8 +10,8 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Get will load the contents of the value with the specified name. It will also
-// return whether the value exists at all.
+// Get will load the contents of the specified value. It will also return
+// whether the value exists at all.
 func Get(ctx context.Context, store *coal.Store, key string) (coal.Map, bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Get")

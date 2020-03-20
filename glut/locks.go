@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Lock will lock the specified value using the specified token for the
+// Lock will lock the specified value using the provided token for the
 // specified duration. Lock may create a new value in the process and lock it
 // right away. It will also update the deadline of the value if TTL is set.
 func Lock(ctx context.Context, store *coal.Store, key string, token coal.ID, timeout, ttl time.Duration) (bool, error) {
@@ -105,8 +105,8 @@ func Lock(ctx context.Context, store *coal.Store, key string, token coal.ID, tim
 	return found, nil
 }
 
-// SetLocked will update the specified value only if the value is locked by the
-// specified token.
+// SetLocked will update the specified value only if it is locked with the
+// provided token.
 func SetLocked(ctx context.Context, store *coal.Store, key string, data coal.Map, token coal.ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/SetLocked")
@@ -138,8 +138,8 @@ func SetLocked(ctx context.Context, store *coal.Store, key string, data coal.Map
 	return found, nil
 }
 
-// GetLocked will load the contents of the value with the specified name only
-// if the value is locked by the specified token.
+// GetLocked will load the contents of the specified value only if it is locked
+// with the provided token.
 func GetLocked(ctx context.Context, store *coal.Store, key string, token coal.ID) (coal.Map, bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
@@ -165,8 +165,8 @@ func GetLocked(ctx context.Context, store *coal.Store, key string, token coal.ID
 	return value.Data, true, nil
 }
 
-// DelLocked will update the specified value only if the value is locked by the
-// specified token.
+// DelLocked will update the specified value only if it is locked with the
+// provided token.
 func DelLocked(ctx context.Context, store *coal.Store, key string, token coal.ID) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/DelLocked")
@@ -224,8 +224,8 @@ func MutLocked(ctx context.Context, store *coal.Store, key string, token coal.ID
 	return nil
 }
 
-// Unlock will unlock the specified value if the provided token does match. It
-// will also update the deadline of the value if TTL is set.
+// Unlock will unlock the specified value only if it is locked with the provided
+// token. It will also update the deadline of the value if TTL is set.
 func Unlock(ctx context.Context, store *coal.Store, key string, token coal.ID, ttl time.Duration) (bool, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Unlock")
