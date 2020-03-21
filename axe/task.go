@@ -90,7 +90,7 @@ type Task struct {
 	PeriodicJob Blueprint
 }
 
-func (t *Task) start(queue *Queue) {
+func (t *Task) prepare() {
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 2
@@ -130,7 +130,9 @@ func (t *Task) start(queue *Queue) {
 	if t.Lifetime > t.Timeout {
 		panic("axe: lifetime must be less than timeout")
 	}
+}
 
+func (t *Task) start(queue *Queue) {
 	// start workers for queue
 	for i := 0; i < t.Workers; i++ {
 		queue.tomb.Go(func() error {

@@ -81,6 +81,9 @@ func (q *Queue) Add(task *Task) {
 		panic("axe: unable to add task to running queue")
 	}
 
+	// prepare task
+	task.prepare()
+
 	// check existence
 	if q.tasks[task.Name] != nil {
 		panic(fmt.Sprintf(`axe: task with name "%s" already exists`, task.Name))
