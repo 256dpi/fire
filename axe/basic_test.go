@@ -16,7 +16,7 @@ func TestEnqueue(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -79,7 +79,7 @@ func TestEnqueueDelayed(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 100*time.Millisecond, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 100*time.Millisecond, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -108,7 +108,7 @@ func TestDequeueTimeout(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -137,7 +137,7 @@ func TestFail(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -167,7 +167,7 @@ func TestFailDelayed(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -204,7 +204,7 @@ func TestCancel(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job, "", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -232,10 +232,11 @@ func TestCancel(t *testing.T) {
 func TestEnqueueLabeled(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job1 := simpleJob{
+			Base: B("test"),
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job1, "test", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job1, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -246,10 +247,11 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Equal(t, StatusEnqueued, list[0].Status)
 
 		job2 := simpleJob{
+			Base: B("test"),
 			Data: "Hello!",
 		}
 
-		enqueued, err = Enqueue(nil, tester.Store, &job2, "test", 0, 0)
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
 
@@ -265,7 +267,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		err = Complete(nil, tester.Store, &job1)
 		assert.NoError(t, err)
 
-		enqueued, err = Enqueue(nil, tester.Store, &job2, "test", 0, 0)
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -283,10 +285,11 @@ func TestEnqueueLabeled(t *testing.T) {
 func TestEnqueueInterval(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job1 := simpleJob{
+			Base: B("test"),
 			Data: "Hello!",
 		}
 
-		enqueued, err := Enqueue(nil, tester.Store, &job1, "test", 0, 0)
+		enqueued, err := Enqueue(nil, tester.Store, &job1, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -297,10 +300,11 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.Equal(t, StatusEnqueued, list[0].Status)
 
 		job2 := simpleJob{
+			Base: B("test"),
 			Data: "Hello!",
 		}
 
-		enqueued, err = Enqueue(nil, tester.Store, &job2, "test", 0, 0)
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
 
@@ -316,7 +320,7 @@ func TestEnqueueInterval(t *testing.T) {
 		err = Complete(nil, tester.Store, &job1)
 		assert.NoError(t, err)
 
-		enqueued, err = Enqueue(nil, tester.Store, &job2, "test", 0, 100*time.Millisecond)
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
 
@@ -328,7 +332,7 @@ func TestEnqueueInterval(t *testing.T) {
 
 		time.Sleep(200 * time.Millisecond)
 
-		enqueued, err = Enqueue(nil, tester.Store, &job2, "test", 0, 100*time.Millisecond)
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 

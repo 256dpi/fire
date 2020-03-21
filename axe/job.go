@@ -19,6 +19,16 @@ type Job interface {
 type Base struct {
 	// The id of the job.
 	JobID coal.ID
+
+	// The label of the job.
+	Label string
+}
+
+// B is a short-hand to construct a base with a label.
+func B(label string) Base {
+	return Base{
+		Label: label,
+	}
 }
 
 // ID will return the jobs id.

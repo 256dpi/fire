@@ -11,24 +11,6 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Blueprint describes a job to enqueued.
-type Blueprint struct {
-	// The job to be enqueued.
-	Job Job
-
-	// The job label. If given, the job will only be enqueued if no other job is
-	// available with the same label.
-	Label string
-
-	// The initial delay. If specified the job will not be dequeued until the
-	// specified time has passed.
-	Delay time.Duration
-
-	// The job period. If given, and a label is present, the job will only
-	// enqueued if no job has been finished in the specified duration.
-	Period time.Duration
-}
-
 // Task describes work that is managed using a job queue.
 type Task struct {
 	// The job this task should process.
@@ -203,10 +185,18 @@ func (t *Task) worker(queue *Queue) error {
 }
 
 func (t *Task) enqueuer(queue *Queue) error {
+	// get job, delay and period
+	job := t.PeriodicJob.Job
+	delay := t.PeriodicJob.Delay
+	period := t.PeriodicJob.Period
+
 	// run forever
 	for {
+		// reset id
+		job.GetBase().JobID = coal.New()
+
 		// enqueue task
-		_, err := queue.Enqueue(t.PeriodicJob)
+		_, err := queue.Enqueue(job, delay, period)
 		if err != nil && queue.opts.Reporter != nil {
 			// report error
 			queue.opts.Reporter(err)

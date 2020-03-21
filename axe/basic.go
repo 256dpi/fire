@@ -12,23 +12,25 @@ import (
 )
 
 // Enqueue will enqueue a job using the specified blueprint.
-func Enqueue(ctx context.Context, store *coal.Store, job Job, label string, delay, period time.Duration) (bool, error) {
+func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time.Duration) (bool, error) {
 	// get meta
 	meta := GetMeta(job)
-
-	// track
-	ctx, span := cinder.Track(ctx, "axe/Enqueue")
-	span.Log("name", meta.Name)
-	span.Log("label", label)
-	span.Log("delay", delay.String())
-	span.Log("period", period.String())
-	defer span.Finish()
 
 	// get base
 	base := job.GetBase()
 
-	// set id
-	base.JobID = coal.New()
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Enqueue")
+	span.Log("name", meta.Name)
+	span.Log("label", base.Label)
+	span.Log("delay", delay.String())
+	span.Log("period", period.String())
+	defer span.Finish()
+
+	// ensure id
+	if base.JobID.IsZero() {
+		base.JobID = coal.New()
+	}
 
 	// marshal model
 	var data coal.Map
@@ -44,7 +46,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, label string, dela
 	model := &Model{
 		Base:      coal.B(base.JobID),
 		Name:      meta.Name,
-		Label:     label,
+		Label:     base.Label,
 		Data:      data,
 		Status:    StatusEnqueued,
 		Created:   now,
@@ -52,7 +54,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, label string, dela
 	}
 
 	// insert unlabeled jobs immediately
-	if label == "" {
+	if base.Label == "" {
 		err := store.M(&Model{}).Insert(ctx, model)
 		if err != nil {
 			return false, err
@@ -64,7 +66,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, label string, dela
 	// prepare filter
 	filter := bson.M{
 		"Name":  meta.Name,
-		"Label": label,
+		"Label": base.Label,
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
 		},

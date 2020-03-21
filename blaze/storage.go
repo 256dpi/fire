@@ -523,8 +523,9 @@ func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 		Lifetime:    periodicity,
 		Periodicity: periodicity,
 		PeriodicJob: axe.Blueprint{
-			Job:   &CleanupJob{},
-			Label: "periodic",
+			Job: &CleanupJob{
+				Base: axe.B("periodic"),
+			},
 		},
 	}
 }

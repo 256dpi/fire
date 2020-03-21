@@ -12,6 +12,20 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
+// Blueprint describes a job to enqueued.
+type Blueprint struct {
+	// The job to be enqueued.
+	Job Job
+
+	// The initial delay. If specified the job will not be dequeued until the
+	// specified time has passed.
+	Delay time.Duration
+
+	// The job period. If given, and a label is present, the job will only
+	// enqueued if no job has been finished in the specified duration.
+	Period time.Duration
+}
+
 type board struct {
 	sync.Mutex
 	jobs map[coal.ID]*Model
@@ -95,8 +109,8 @@ func (q *Queue) Add(task *Task) {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func (q *Queue) Enqueue(bp Blueprint) (bool, error) {
-	return Enqueue(nil, q.opts.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
+func (q *Queue) Enqueue(job Job, delay, period time.Duration) (bool, error) {
+	return Enqueue(nil, q.opts.Store, job, delay, period)
 }
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
@@ -109,13 +123,13 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// check if controller uses same store
 		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
 		} else {
 			// enqueue job using queue store
-			_, err := q.Enqueue(bp)
+			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
@@ -134,13 +148,13 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// check if controller uses same store
 		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
 		} else {
 			// enqueue job using queue store
-			_, err := q.Enqueue(bp)
+			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
