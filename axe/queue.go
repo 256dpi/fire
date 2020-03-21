@@ -22,8 +22,7 @@ type Options struct {
 	// The store used to manage jobs.
 	Store *coal.Store
 
-	// MaxLag defines the maximum amount of lag that should be applied to every
-	// dequeue attempt.
+	// The maximum amount of lag that should be applied to every dequeue attempt.
 	//
 	// By default multiple processes compete with each other when getting jobs
 	// from the same queue. An artificial lag limits multiple simultaneous
@@ -33,8 +32,7 @@ type Options struct {
 	// Default: 100ms.
 	MaxLag time.Duration
 
-	// BlockPeriod defines the duration after which a job may be returned again
-	// from the board.
+	// The duration after which a job may be returned again from the board.
 	//
 	// It may take some time until the board is updated with the new state of
 	// the job after a dequeue. The block period prevents another worker from

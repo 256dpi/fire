@@ -17,7 +17,7 @@ type Blueprint struct {
 	Job Job
 
 	// The job label. If given, the job will only be enqueued if no other job is
-	// available with the same name and label.
+	// available with the same label.
 	Label string
 
 	// The initial delay. If specified the job will not be dequeued until the

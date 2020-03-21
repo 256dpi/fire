@@ -16,71 +16,64 @@ type Task struct {
 	// The job this task should process.
 	Job Job
 
-	// Handler is the callback called with jobs for processing. The handler
-	// should return errors formatted with E to properly indicate the status of
-	// the job. If a task execution is successful the handler may return some
-	// data that is attached to the job.
+	// The callback that is called with jobs for processing. The handler should
+	// return errors formatted with E to properly indicate the status of the job.
 	Handler func(ctx *Context) error
 
-	// Notifier is a callback that is called once after a job has been completed
-	// or cancelled.
+	// The callback that is called once a job has been completed or cancelled.
 	Notifier func(ctx *Context, cancelled bool, reason string) error
 
-	// Workers defines the number for spawned workers that dequeue and execute
-	// jobs in parallel.
+	// The number for spawned workers that dequeue and execute jobs in parallel.
 	//
 	// Default: 2.
 	Workers int
 
-	// MaxAttempts defines the maximum attempts to complete a task. Zero means
-	// that the jobs is retried forever. The error retry field will take
-	// precedence to this setting and allow retry beyond the configured maximum.
+	// The maximum attempts to complete a task. Zero means that the jobs is
+	// retried forever. The error retry field will take precedence to this
+	// setting and allow retry beyond the configured maximum.
 	//
 	// Default: 0
 	MaxAttempts int
 
-	// Interval defines the rate at which the worker will request a job from the
-	// queue.
+	// The rate at which a worker will request a job from the queue.
 	//
 	// Default: 100ms.
 	Interval time.Duration
 
-	// MinDelay is the minimal time after a failed task is retried.
+	// The minimal delay after a failed task is retried.
 	//
 	// Default: 1s.
 	MinDelay time.Duration
 
-	// MaxDelay is the maximal time after a failed task is retried.
+	// The maximal delay after a failed task is retried.
 	//
 	// Default: 10m.
 	MaxDelay time.Duration
 
-	// DelayFactor defines the exponential increase of the delay after individual
-	// attempts.
+	// The exponential increase of the delay after individual attempts.
 	//
 	// Default: 2.
 	DelayFactor float64
 
-	// Lifetime is the time after which the context of a job is cancelled and
-	// the execution should be stopped. Should be several minutes less than
-	// timeout to prevent race conditions.
+	// Time after which the context of a job is cancelled and the execution
+	// should be stopped. Should be several minutes less than timeout to prevent
+	// race conditions.
 	//
 	// Default: 5m.
 	Lifetime time.Duration
 
-	// Timeout is the time after which a task can be dequeued again in case the
-	// worker was not able to set its status.
+	// The time after which a task can be dequeued again in case the worker was
+	// unable to set its status.
 	//
 	// Default: 10m.
 	Timeout time.Duration
 
-	// Periodicity may be set to let the system enqueue a job automatically
-	// every given interval.
+	// Set to let the system enqueue a job periodically every given interval.
 	//
 	// Default: 0.
 	Periodicity time.Duration
 
-	// PeriodicJob is the blueprint of the job that is periodically enqueued.
+	// The blueprint of the job that is periodically enqueued.
 	//
 	// Default: Blueprint{Name: Task.Name}.
 	PeriodicJob Blueprint
@@ -90,6 +83,11 @@ func (t *Task) prepare() {
 	// check job
 	if t.Job == nil {
 		panic("axe: missing job")
+	}
+
+	// check handler
+	if t.Handler == nil {
+		panic("axe: missing handler")
 	}
 
 	// set default workers
