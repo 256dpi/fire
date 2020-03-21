@@ -13,16 +13,10 @@ import (
 // Get will load the contents of the specified value. It will also return
 // whether the value exists at all.
 func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// get meta
-	meta := GetMeta(value)
-
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// track
@@ -57,13 +51,10 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := GetMeta(value)
 
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// track
@@ -104,16 +95,10 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // Del will remove the specified value from the store. This method will ignore
 // any locks held on the value.
 func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// get meta
-	meta := GetMeta(value)
-
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// track

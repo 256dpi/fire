@@ -14,9 +14,10 @@ import (
 type Value interface {
 	// GetBase should be implemented by embedding Base.
 	GetBase() *Base
+}
 
-	// GetExtension may be implemented to define a key extension. The returned
-	// string will be appended to the static key to compute the value key.
+// ExtendedValue is a value that can extends its key.
+type ExtendedValue interface {
 	GetExtension() (string, error)
 }
 
@@ -30,26 +31,27 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
-// GetExtension implements the Value interface.
-func (b *Base) GetExtension() (string, error) {
-	return "", nil
-}
-
 var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a value.
 type Meta struct {
+	// The type of the value.
+	Type reflect.Type
+
+	// The values key.
 	Key string
+
+	// The values time to live.
 	TTL time.Duration
 }
 
 var metaMutex sync.Mutex
-var metaCache = map[reflect.Type]Meta{}
+var metaCache = map[reflect.Type]*Meta{}
 var metaKeys = map[string]reflect.Type{}
 
 // GetMeta will parse the values "glut" tag on the embedded glut.Base struct and
 // return the encoded component and name.
-func GetMeta(value Value) Meta {
+func GetMeta(value Value) *Meta {
 	// acquire mutex
 	metaMutex.Lock()
 	defer metaMutex.Unlock()
@@ -96,9 +98,10 @@ func GetMeta(value Value) Meta {
 	}
 
 	// prepare meta
-	meta := Meta{
-		Key: key,
-		TTL: ttl,
+	meta := &Meta{
+		Type: typ,
+		Key:  key,
+		TTL:  ttl,
 	}
 
 	// cache meta

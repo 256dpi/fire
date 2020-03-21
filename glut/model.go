@@ -26,13 +26,13 @@ type Model struct {
 	Token *coal.ID `json:"token"`
 }
 
-// AddModelIndexes will add model indexes to the specified catalog. If remove
+// AddModelIndexes will add required indexes to the specified catalog. If remove
 // after is specified, values are automatically removed when their deadline
 // timestamp falls behind the specified duration.
 func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// index and require key to be unique
 	catalog.AddIndex(&Model{}, true, 0, "Key")
 
-	// add ttl index
+	// index deadline and remove document automatically
 	catalog.AddIndex(&Model{}, false, removeAfter, "Deadline")
 }

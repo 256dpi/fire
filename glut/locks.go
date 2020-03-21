@@ -18,13 +18,10 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	// get meta
 	meta := GetMeta(value)
 
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// get base
@@ -135,13 +132,10 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get meta
 	meta := GetMeta(value)
 
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// get base
@@ -194,16 +188,10 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // GetLocked will load the contents of the specified value only if it is locked.
 func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// get meta
-	meta := GetMeta(value)
-
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// get base
@@ -246,16 +234,10 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // DelLocked will delete the specified value only if it is locked.
 func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// get meta
-	meta := GetMeta(value)
-
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// get base
@@ -321,13 +303,10 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := GetMeta(value)
 
-	// prepare key
-	key := meta.Key
-	extension, err := value.GetExtension()
+	// get key
+	key, err := GetKey(value)
 	if err != nil {
 		return false, err
-	} else if extension != "" {
-		key += extension
 	}
 
 	// get base

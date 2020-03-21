@@ -2,6 +2,7 @@ package glut
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,8 +14,10 @@ func TestMeta(t *testing.T) {
 	}
 
 	meta := GetMeta(key)
-	assert.Equal(t, Meta{
-		Key: "value/simple",
+	assert.Equal(t, &Meta{
+		Type: reflect.TypeOf(&simpleValue{}),
+		Key:  "value/simple",
+		TTL:  0,
 	}, meta)
 
 	data, err := json.Marshal(key)
