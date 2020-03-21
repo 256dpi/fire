@@ -11,102 +11,81 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Blueprint describes a job to enqueued.
-type Blueprint struct {
-	// The job to be enqueued.
-	Job Job
-
-	// The job label. If given, the job will only be enqueued if no other job is
-	// available with the same label.
-	Label string
-
-	// The initial delay. If specified the job will not be dequeued until the
-	// specified time has passed.
-	Delay time.Duration
-
-	// The job period. If given, and a label is present, the job will only
-	// enqueued if no job has been finished in the specified duration.
-	Period time.Duration
-}
-
 // Enqueue will enqueue a job using the specified blueprint.
-func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, error) {
+func Enqueue(ctx context.Context, store *coal.Store, job Job, label string, delay, period time.Duration) (bool, error) {
+	// get meta
+	meta := GetMeta(job)
+
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Enqueue")
-	span.Log("label", bp.Label)
-	span.Log("delay", bp.Delay.String())
-	span.Log("period", bp.Period.String())
+	span.Log("name", meta.Name)
+	span.Log("label", label)
+	span.Log("delay", delay.String())
+	span.Log("period", period.String())
 	defer span.Finish()
 
-	// check job
-	if bp.Job == nil {
-		return nil, fmt.Errorf("missing job")
-	}
+	// get base
+	base := job.GetBase()
 
-	// get meta
-	meta := GetMeta(bp.Job)
-
-	// log name
-	span.Log("name", meta.Name)
+	// set id
+	base.JobID = coal.New()
 
 	// marshal model
 	var data coal.Map
-	err := data.Marshal(bp.Job, coal.TransferJSON)
+	err := data.Marshal(job, coal.TransferJSON)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	// get time
 	now := time.Now()
 
 	// prepare job
-	job := &Model{
-		Base:      coal.B(),
+	model := &Model{
+		Base:      coal.B(base.JobID),
 		Name:      meta.Name,
-		Label:     bp.Label,
+		Label:     label,
 		Data:      data,
 		Status:    StatusEnqueued,
 		Created:   now,
-		Available: now.Add(bp.Delay),
+		Available: now.Add(delay),
 	}
 
 	// insert unlabeled jobs immediately
-	if bp.Label == "" {
-		err := store.M(&Model{}).Insert(ctx, job)
+	if label == "" {
+		err := store.M(&Model{}).Insert(ctx, model)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 
-		return job, nil
+		return true, nil
 	}
 
 	// prepare filter
 	filter := bson.M{
 		"Name":  meta.Name,
-		"Label": bp.Label,
+		"Label": label,
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
 		},
 	}
 
 	// add interval
-	if bp.Period > 0 {
+	if period > 0 {
 		delete(filter, "Status")
 		filter["Finished"] = bson.M{
-			"$gt": now.Add(-bp.Period),
+			"$gt": now.Add(-period),
 		}
 	}
 
 	// insert job if there is no other job in an available state with the
 	// provided label
-	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, filter, job, false)
+	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, filter, model, false)
 	if err != nil {
-		return nil, err
-	} else if !inserted {
-		return nil, nil
+		return false, err
 	}
 
-	return job, nil
+	return inserted, nil
 }
 
 // Dequeue will dequeue the job with the specified id. The provided timeout

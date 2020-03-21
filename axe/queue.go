@@ -95,14 +95,8 @@ func (q *Queue) Add(task *Task) {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func (q *Queue) Enqueue(bp Blueprint) (*Model, error) {
-	// enqueue job
-	job, err := Enqueue(nil, q.opts.Store, bp)
-	if err != nil {
-		return nil, err
-	}
-
-	return job, nil
+func (q *Queue) Enqueue(bp Blueprint) (bool, error) {
+	return Enqueue(nil, q.opts.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
 }
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
@@ -115,7 +109,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// check if controller uses same store
 		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
@@ -140,7 +134,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// check if controller uses same store
 		if q.opts.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Label, bp.Delay, bp.Period)
 			if err != nil {
 				return err
 			}
