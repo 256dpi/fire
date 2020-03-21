@@ -29,23 +29,19 @@ func Backoff(min, max time.Duration, factor float64, attempt int) time.Duration 
 		factor = 2
 	}
 
-	// calculate exponential
-	exp := float64(min) * math.Pow(factor, float64(attempt))
-
-	// ensure we wont overflow int64
-	if exp > maxInt64 {
-		return max
+	// calculate delay
+	delay := float64(min) * math.Pow(factor, float64(attempt))
+	if delay > maxInt64 {
+		delay = maxInt64
 	}
 
 	// get duration
-	dur := time.Duration(exp)
-
-	// keep within bounds
-	if dur < min {
-		return min
-	} else if dur > max {
-		return max
+	duration := time.Duration(delay)
+	if duration < min {
+		duration = min
+	} else if duration > max {
+		duration = max
 	}
 
-	return dur
+	return duration
 }
