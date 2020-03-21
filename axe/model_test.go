@@ -13,7 +13,7 @@ import (
 func TestAddJobIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		idx := coal.NewCatalog()
-		AddJobIndexes(idx, time.Hour)
+		AddModelIndexes(idx, time.Hour)
 
 		assert.NoError(t, idx.EnsureIndexes(tester.Store))
 		assert.NoError(t, idx.EnsureIndexes(tester.Store))

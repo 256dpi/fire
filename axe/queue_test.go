@@ -46,7 +46,7 @@ func TestQueue(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "foo", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -96,7 +96,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "delayed", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -150,7 +150,7 @@ func TestQueueFailed(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "failed", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -207,7 +207,7 @@ func TestQueueCrashed(t *testing.T) {
 		<-done
 		assert.Equal(t, io.EOF, <-errs)
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "crashed", job.Name)
 		assert.Equal(t, data{}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -255,7 +255,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "cancel", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCancelled, job.Status)
@@ -304,7 +304,7 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "cancel", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCancelled, job.Status)
@@ -358,7 +358,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		<-done
 		assert.Equal(t, "foo", (<-errs).Error())
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "cancel", job.Name)
 		assert.Equal(t, data{Foo: "bar"}, unmarshal(job.Data))
 		assert.Equal(t, StatusCancelled, job.Status)
@@ -415,7 +415,7 @@ func TestQueueTimeout(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "timeout", job.Name)
 		assert.Equal(t, data{}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -467,7 +467,7 @@ func TestQueueExisting(t *testing.T) {
 
 		<-done
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "existing", job.Name)
 		assert.Equal(t, data{}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)
@@ -510,7 +510,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 		<-done
 
-		job := tester.FindLast(&Job{}).(*Job)
+		job := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "foo", job.Name)
 		assert.Equal(t, data{}, unmarshal(job.Data))
 		assert.Equal(t, StatusCompleted, job.Status)

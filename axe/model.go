@@ -27,8 +27,8 @@ const (
 	StatusCancelled Status = "cancelled"
 )
 
-// Job is a single job managed by a queue.
-type Job struct {
+// Model stores an executable job.
+type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"jobs"`
 
 	// The name of the job.
@@ -68,16 +68,16 @@ type Job struct {
 	Reason string `json:"reason"`
 }
 
-// AddJobIndexes will add job indexes to the specified catalog. If a duration
+// AddModelIndexes will add job indexes to the specified catalog. If a duration
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
-func AddJobIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
+func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// add name index
-	catalog.AddIndex(&Job{}, false, 0, "Name")
+	catalog.AddIndex(&Model{}, false, 0, "Name")
 
 	// add status index
-	catalog.AddIndex(&Job{}, false, 0, "Status")
+	catalog.AddIndex(&Model{}, false, 0, "Status")
 
 	// add finished index
-	catalog.AddIndex(&Job{}, false, removeAfter, "Finished")
+	catalog.AddIndex(&Model{}, false, removeAfter, "Finished")
 }

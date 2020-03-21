@@ -14,7 +14,7 @@ type data struct {
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-axe")
 var lungoStore = coal.MustOpen(nil, "test-fire-axe", nil)
 
-var modelList = []coal.Model{&Job{}}
+var modelList = []coal.Model{&Model{}}
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {

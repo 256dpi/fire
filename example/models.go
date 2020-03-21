@@ -17,7 +17,7 @@ var catalog = coal.NewCatalog(
 	&flame.Application{},
 	&flame.User{},
 	&flame.Token{},
-	&axe.Job{},
+	&axe.Model{},
 	&glut.Model{},
 	&blaze.File{},
 )
@@ -32,7 +32,7 @@ func init() {
 	flame.AddApplicationIndexes(catalog)
 	flame.AddUserIndexes(catalog)
 	flame.AddTokenIndexes(catalog, true)
-	axe.AddJobIndexes(catalog, time.Second)
+	axe.AddModelIndexes(catalog, time.Second)
 	glut.AddModelIndexes(catalog, time.Minute)
 	blaze.AddFileIndexes(catalog)
 }

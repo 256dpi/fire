@@ -30,7 +30,7 @@ func itemStream(store *coal.Store) *spark.Stream {
 
 func jobStream(store *coal.Store) *spark.Stream {
 	return &spark.Stream{
-		Model: &axe.Job{},
+		Model: &axe.Model{},
 		Store: store,
 	}
 }

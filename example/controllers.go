@@ -59,7 +59,7 @@ func userController(store *coal.Store) *fire.Controller {
 
 func jobController(store *coal.Store) *fire.Controller {
 	return &fire.Controller{
-		Model:     &axe.Job{},
+		Model:     &axe.Model{},
 		Store:     store,
 		Supported: fire.Only(fire.List, fire.Find),
 		Authorizers: fire.L{

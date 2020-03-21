@@ -18,7 +18,7 @@ func TestEnqueue(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		list := *tester.FindAll(&Job{}).(*[]*Job)
+		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "", list[0].Label)
@@ -51,7 +51,7 @@ func TestEnqueue(t *testing.T) {
 		err = Complete(nil, tester.Store, job.ID(), coal.Map{"bar": "baz"})
 		assert.NoError(t, err)
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "foo", job.Name)
 		assert.Equal(t, "", job.Label)
 		assert.Equal(t, coal.Map{"foo": "bar"}, job.Data)
@@ -128,7 +128,7 @@ func TestFail(t *testing.T) {
 		err = Fail(nil, tester.Store, job.ID(), "some error", 0)
 		assert.NoError(t, err)
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusFailed, job.Status)
 		assert.NotZero(t, job.Ended)
 		assert.Equal(t, "some error", job.Reason)
@@ -154,7 +154,7 @@ func TestFailDelayed(t *testing.T) {
 		err = Fail(nil, tester.Store, job.ID(), "some error", 100*time.Millisecond)
 		assert.NoError(t, err)
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusFailed, job.Status)
 		assert.NotZero(t, job.Ended)
 		assert.Equal(t, "some error", job.Reason)
@@ -186,7 +186,7 @@ func TestCancel(t *testing.T) {
 		err = Cancel(nil, tester.Store, job.ID(), "some reason")
 		assert.NoError(t, err)
 
-		job = tester.Fetch(&Job{}, job.ID()).(*Job)
+		job = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusCancelled, job.Status)
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
@@ -203,7 +203,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, job1)
 
-		list := *tester.FindAll(&Job{}).(*[]*Job)
+		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -216,7 +216,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job2)
 
-		list = *tester.FindAll(&Job{}).(*[]*Job)
+		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -235,7 +235,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, job3)
 
-		list = *tester.FindAll(&Job{}).(*[]*Job)
+		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -255,7 +255,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, job1)
 
-		list := *tester.FindAll(&Job{}).(*[]*Job)
+		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -268,7 +268,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job2)
 
-		list = *tester.FindAll(&Job{}).(*[]*Job)
+		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -288,7 +288,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, job3)
 
-		list = *tester.FindAll(&Job{}).(*[]*Job)
+		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
@@ -304,7 +304,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, job4)
 
-		list = *tester.FindAll(&Job{}).(*[]*Job)
+		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
 		assert.Equal(t, "foo", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)

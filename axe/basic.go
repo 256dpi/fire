@@ -36,7 +36,7 @@ type Blueprint struct {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error) {
+func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Enqueue")
 	span.Log("name", bp.Name)
@@ -63,7 +63,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 	now := time.Now()
 
 	// prepare job
-	job := &Job{
+	job := &Model{
 		Base:      coal.B(),
 		Name:      bp.Name,
 		Label:     bp.Label,
@@ -75,7 +75,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 
 	// insert unlabeled jobs immediately
 	if bp.Label == "" {
-		err := store.M(&Job{}).Insert(ctx, job)
+		err := store.M(&Model{}).Insert(ctx, job)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 
 	// insert job if there is no other job in an available state with the
 	// provided label
-	inserted, err := store.M(&Job{}).InsertIfMissing(ctx, filter, job, false)
+	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, filter, job, false)
 	if err != nil {
 		return nil, err
 	} else if !inserted {
@@ -116,7 +116,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Job, error)
 // will be set to allow the job to be dequeued if the process failed to set its
 // status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
 // state are dequeued.
-func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Duration) (*Job, error) {
+func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Duration) (*Model, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Dequeue")
 	span.Log("id", id.Hex())
@@ -127,8 +127,8 @@ func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Du
 	now := time.Now()
 
 	// dequeue job
-	var job Job
-	found, err := store.M(&Job{}).UpdateFirst(ctx, &job, bson.M{
+	var job Model
+	found, err := store.M(&Model{}).UpdateFirst(ctx, &job, bson.M{
 		"_id": id,
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
@@ -167,7 +167,7 @@ func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Ma
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    id,
 		"Status": StatusDequeued,
 	}, bson.M{
@@ -201,7 +201,7 @@ func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, del
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    id,
 		"Status": StatusDequeued,
 	}, bson.M{
@@ -234,7 +234,7 @@ func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) e
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Job{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    id,
 		"Status": StatusDequeued,
 	}, bson.M{

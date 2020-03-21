@@ -14,7 +14,7 @@ import (
 
 type board struct {
 	sync.Mutex
-	jobs map[coal.ID]*Job
+	jobs map[coal.ID]*Model
 }
 
 // Options defines queue options.
@@ -91,7 +91,7 @@ func (q *Queue) Add(task *Task) {
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
-func (q *Queue) Enqueue(bp Blueprint) (*Job, error) {
+func (q *Queue) Enqueue(bp Blueprint) (*Model, error) {
 	// enqueue job
 	job, err := Enqueue(nil, q.opts.Store, bp)
 	if err != nil {
@@ -167,7 +167,7 @@ func (q *Queue) Run() chan struct{} {
 	// create boards
 	for _, task := range q.tasks {
 		q.boards[task.Name] = &board{
-			jobs: make(map[coal.ID]*Job),
+			jobs: make(map[coal.ID]*Model),
 		}
 	}
 
@@ -197,12 +197,12 @@ func (q *Queue) process(synced chan struct{}) error {
 
 	// reconcile jobs
 	var once sync.Once
-	stream := coal.Reconcile(q.opts.Store, &Job{}, func() {
+	stream := coal.Reconcile(q.opts.Store, &Model{}, func() {
 		once.Do(func() { close(synced) })
 	}, func(model coal.Model) {
-		q.update(model.(*Job))
+		q.update(model.(*Model))
 	}, func(model coal.Model) {
-		q.update(model.(*Job))
+		q.update(model.(*Model))
 	}, nil, q.opts.Reporter)
 
 	// await close
@@ -214,7 +214,7 @@ func (q *Queue) process(synced chan struct{}) error {
 	return tomb.ErrDying
 }
 
-func (q *Queue) update(job *Job) {
+func (q *Queue) update(job *Model) {
 	// get board
 	board, ok := q.boards[job.Name]
 	if !ok {
