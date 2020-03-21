@@ -35,7 +35,7 @@ type Link struct {
 // always moves forward by one step but it may also jump directly to "deleting".
 type State string
 
-// The individual states
+// The individual states.
 const (
 	Uploading State = "uploading"
 	Uploaded  State = "uploaded"
