@@ -12,7 +12,12 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Blueprint describes a job to enqueued.
+type board struct {
+	sync.Mutex
+	jobs map[coal.ID]*Model
+}
+
+// Blueprint describes an queueable job.
 type Blueprint struct {
 	// The job to be enqueued.
 	Job Job
@@ -21,14 +26,9 @@ type Blueprint struct {
 	// specified time has passed.
 	Delay time.Duration
 
-	// The job period. If given, and a label is present, the job will only
+	// The job period. If given, and a label is present, the job will only be
 	// enqueued if no job has been finished in the specified duration.
 	Period time.Duration
-}
-
-type board struct {
-	sync.Mutex
-	jobs map[coal.ID]*Model
 }
 
 // Options defines queue options.
@@ -56,33 +56,33 @@ type Options struct {
 	// Default: 10s.
 	BlockPeriod time.Duration
 
-	// The report that is called with job errors.
+	// The callback that is called with job errors.
 	Reporter func(error)
 }
 
 // Queue manages job queueing.
 type Queue struct {
-	opts   Options
-	tasks  map[string]*Task
-	boards map[string]*board
-	tomb   tomb.Tomb
+	options Options
+	tasks   map[string]*Task
+	boards  map[string]*board
+	tomb    tomb.Tomb
 }
 
 // NewQueue creates and returns a new queue.
-func NewQueue(opts Options) *Queue {
+func NewQueue(options Options) *Queue {
 	// set default max lag
-	if opts.MaxLag == 0 {
-		opts.MaxLag = 100 * time.Millisecond
+	if options.MaxLag == 0 {
+		options.MaxLag = 100 * time.Millisecond
 	}
 
 	// set default block period
-	if opts.BlockPeriod == 0 {
-		opts.BlockPeriod = 10 * time.Second
+	if options.BlockPeriod == 0 {
+		options.BlockPeriod = 10 * time.Second
 	}
 
 	return &Queue{
-		opts:  opts,
-		tasks: make(map[string]*Task),
+		options: options,
+		tasks:   make(map[string]*Task),
 	}
 }
 
@@ -108,9 +108,9 @@ func (q *Queue) Add(task *Task) {
 	q.tasks[name] = task
 }
 
-// Enqueue will enqueue a job using the specified blueprint.
+// Enqueue will enqueue a job.
 func (q *Queue) Enqueue(job Job, delay, period time.Duration) (bool, error) {
-	return Enqueue(nil, q.opts.Store, job, delay, period)
+	return Enqueue(nil, q.options.Store, job, delay, period)
 }
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
@@ -121,7 +121,7 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		bp := cb(ctx)
 
 		// check if controller uses same store
-		if q.opts.Store == ctx.Controller.Store {
+		if q.options.Store == ctx.Controller.Store {
 			// enqueue job using context store
 			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
 			if err != nil {
@@ -146,7 +146,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		bp := cb(ctx)
 
 		// check if controller uses same store
-		if q.opts.Store == ctx.Controller.Store {
+		if q.options.Store == ctx.Controller.Store {
 			// enqueue job using context store
 			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
 			if err != nil {
@@ -210,13 +210,15 @@ func (q *Queue) process(synced chan struct{}) error {
 
 	// reconcile jobs
 	var once sync.Once
-	stream := coal.Reconcile(q.opts.Store, &Model{}, func() {
-		once.Do(func() { close(synced) })
+	stream := coal.Reconcile(q.options.Store, &Model{}, func() {
+		once.Do(func() {
+			close(synced)
+		})
 	}, func(model coal.Model) {
 		q.update(model.(*Model))
 	}, func(model coal.Model) {
 		q.update(model.(*Model))
-	}, nil, q.opts.Reporter)
+	}, nil, q.options.Reporter)
 
 	// await close
 	<-q.tomb.Dying()
@@ -242,7 +244,7 @@ func (q *Queue) update(job *Model) {
 	switch job.Status {
 	case StatusEnqueued, StatusDequeued, StatusFailed:
 		// apply random lag
-		lag := time.Duration(rand.Int63n(int64(q.opts.MaxLag)))
+		lag := time.Duration(rand.Int63n(int64(q.options.MaxLag)))
 		job.Available = job.Available.Add(lag)
 
 		// update job
@@ -268,7 +270,7 @@ func (q *Queue) get(name string) (coal.ID, bool) {
 	for _, job := range board.jobs {
 		if job.Available.Before(now) {
 			// block job until the specified timeout has been reached
-			job.Available = job.Available.Add(q.opts.BlockPeriod)
+			job.Available = job.Available.Add(q.options.BlockPeriod)
 
 			return job.ID(), true
 		}

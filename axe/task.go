@@ -178,8 +178,8 @@ func (t *Task) worker(queue *Queue) error {
 
 		// execute job
 		err := t.execute(queue, name, id)
-		if err != nil && queue.opts.Reporter != nil {
-			queue.opts.Reporter(err)
+		if err != nil && queue.options.Reporter != nil {
+			queue.options.Reporter(err)
 		}
 	}
 }
@@ -197,9 +197,9 @@ func (t *Task) enqueuer(queue *Queue) error {
 
 		// enqueue task
 		_, err := queue.Enqueue(job, delay, period)
-		if err != nil && queue.opts.Reporter != nil {
+		if err != nil && queue.options.Reporter != nil {
 			// report error
-			queue.opts.Reporter(err)
+			queue.options.Reporter(err)
 
 			// wait some time
 			select {
@@ -230,7 +230,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	job.GetBase().JobID = id
 
 	// dequeue job
-	dequeued, attempt, err := Dequeue(outerContext, queue.opts.Store, job, t.Timeout)
+	dequeued, attempt, err := Dequeue(outerContext, queue.options.Store, job, t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		if anError.Retry {
 			// fail job
 			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
-			err = Fail(outerContext, queue.opts.Store, job, anError.Reason, delay)
+			err = Fail(outerContext, queue.options.Store, job, anError.Reason, delay)
 			if err != nil {
 				return err
 			}
@@ -280,7 +280,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, queue.opts.Store, job, anError.Reason)
+		err = Cancel(outerContext, queue.options.Store, job, anError.Reason)
 		if err != nil {
 			return err
 		}
@@ -302,13 +302,13 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		if t.MaxAttempts == 0 || attempt < t.MaxAttempts {
 			// fail job
 			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
-			_ = Fail(outerContext, queue.opts.Store, job, err.Error(), delay)
+			_ = Fail(outerContext, queue.options.Store, job, err.Error(), delay)
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, queue.opts.Store, job, err.Error())
+		_ = Cancel(outerContext, queue.options.Store, job, err.Error())
 
 		// call notifier if available
 		if t.Notifier != nil {
@@ -319,7 +319,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// complete job
-	err = Complete(outerContext, queue.opts.Store, job)
+	err = Complete(outerContext, queue.options.Store, job)
 	if err != nil {
 		return err
 	}

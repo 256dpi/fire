@@ -6,24 +6,15 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Status defines the allowed statuses of a job.
+// Status defines the statuses of a job.
 type Status string
 
 // The available job statuses.
 const (
-	// StatusEnqueued is used as the initial status when jobs are created.
-	StatusEnqueued Status = "enqueued"
-
-	// StatusDequeued is set when a job has been successfully dequeued.
-	StatusDequeued Status = "dequeued"
-
-	// StatusCompleted is set when a job has been successfully executed.
+	StatusEnqueued  Status = "enqueued"
+	StatusDequeued  Status = "dequeued"
 	StatusCompleted Status = "completed"
-
-	// StatusFailed is set when an execution of a job failed.
-	StatusFailed Status = "failed"
-
-	// StatusCancelled is set when a job has been cancelled.
+	StatusFailed    Status = "failed"
 	StatusCancelled Status = "cancelled"
 )
 
@@ -31,13 +22,13 @@ const (
 type Model struct {
 	coal.Base `json:"-" bson:",inline" coal:"jobs"`
 
-	// The name of the job.
+	// The job name.
 	Name string `json:"name"`
 
-	// The custom job label.
+	// The job label.
 	Label string `json:"label"`
 
-	// The data that has been supplied on creation.
+	// The encoded job data.
 	Data coal.Map `json:"data"`
 
 	// The current status of the job.
@@ -49,7 +40,7 @@ type Model struct {
 	// The time when the job is available for execution.
 	Available time.Time `json:"available-at" bson:"available_at"`
 
-	// The time when the job was dequeue the last time.
+	// The time when the job was dequeued the last time.
 	Started *time.Time `json:"started-at" bson:"started_at"`
 
 	// The time when the last attempt ended (completed, failed or cancelled).
