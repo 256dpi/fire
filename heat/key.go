@@ -39,12 +39,12 @@ type Meta struct {
 }
 
 var metaMutex sync.Mutex
-var metaCache = map[reflect.Type]Meta{}
+var metaCache = map[reflect.Type]*Meta{}
 var metaNames = map[string]reflect.Type{}
 
 // GetMeta will parse the keys "heat" tag on the embedded heat.Base struct and
 // return the encoded name and default expiry.
-func GetMeta(key Key) Meta {
+func GetMeta(key Key) *Meta {
 	// acquire mutex
 	metaMutex.Lock()
 	defer metaMutex.Unlock()
@@ -91,7 +91,7 @@ func GetMeta(key Key) Meta {
 	}
 
 	// prepare meta
-	meta := Meta{
+	meta := &Meta{
 		Name:   name,
 		Expiry: expiry,
 	}

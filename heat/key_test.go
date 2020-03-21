@@ -30,13 +30,13 @@ func (t *testKey) Validate() error {
 	return nil
 }
 
-func TestMeta(t *testing.T) {
+func TestGetMeta(t *testing.T) {
 	key := &testKey{
 		User: "user",
 	}
 
 	meta := GetMeta(key)
-	assert.Equal(t, Meta{
+	assert.Equal(t, &Meta{
 		Name:   "test",
 		Expiry: time.Hour,
 	}, meta)
