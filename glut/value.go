@@ -35,7 +35,7 @@ var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a value.
 type Meta struct {
-	// The type of the value.
+	// The values type.
 	Type reflect.Type
 
 	// The values key.

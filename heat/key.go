@@ -21,7 +21,10 @@ type Key interface {
 
 // Base can be embedded in a struct to turn it into a key.
 type Base struct {
-	ID     coal.ID
+	// The keys id.
+	ID coal.ID
+
+	// The keys expiry.
 	Expiry time.Time
 }
 
@@ -34,7 +37,10 @@ var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a key.
 type Meta struct {
-	Name   string
+	// The keys name.
+	Name string
+
+	// The keys expiry.
 	Expiry time.Duration
 }
 

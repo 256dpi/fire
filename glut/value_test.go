@@ -8,25 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMeta(t *testing.T) {
-	key := &simpleValue{
-		Data: "cool",
-	}
-
-	meta := GetMeta(key)
-	assert.Equal(t, &Meta{
-		Type: reflect.TypeOf(&simpleValue{}),
-		Key:  "value/simple",
-		TTL:  0,
-	}, meta)
-
-	data, err := json.Marshal(key)
-	assert.NoError(t, err)
-	assert.JSONEq(t, `{
-		"data": "cool"
-	}`, string(data))
-}
-
 type invalidValue1 struct {
 	Hello string
 	Base
@@ -43,7 +24,7 @@ type invalidValue3 struct {
 }
 
 type invalidValue4 struct {
-	Base  `json:"-" glut:"invalidValue4,foo"`
+	Base  `json:"-" glut:"foo,bar"`
 	Hello string
 }
 
@@ -52,7 +33,24 @@ type duplicateValue struct {
 	Hello string
 }
 
-func TestMetaPanics(t *testing.T) {
+func TestGetMeta(t *testing.T) {
+	key := &simpleValue{
+		Data: "cool",
+	}
+
+	meta := GetMeta(key)
+	assert.Equal(t, &Meta{
+		Type: reflect.TypeOf(&simpleValue{}),
+		Key:  "value/simple",
+		TTL:  0,
+	}, meta)
+
+	data, err := json.Marshal(key)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{
+		"data": "cool"
+	}`, string(data))
+
 	assert.PanicsWithValue(t, `glut: expected first struct field to be an embedded "glut.Base"`, func() {
 		GetMeta(&invalidValue1{})
 	})

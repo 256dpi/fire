@@ -30,25 +30,6 @@ func (t *testKey) Validate() error {
 	return nil
 }
 
-func TestGetMeta(t *testing.T) {
-	key := &testKey{
-		User: "user",
-	}
-
-	meta := GetMeta(key)
-	assert.Equal(t, &Meta{
-		Name:   "test",
-		Expiry: time.Hour,
-	}, meta)
-
-	data, err := json.Marshal(key)
-	assert.NoError(t, err)
-	assert.JSONEq(t, `{
-		"user": "user",
-		"role": ""
-	}`, string(data))
-}
-
 type invalidKey1 struct {
 	Hello string
 	Base
@@ -94,7 +75,24 @@ func (k *duplicateKey) Validate() error {
 	return nil
 }
 
-func TestMetaPanics(t *testing.T) {
+func TestGetMeta(t *testing.T) {
+	key := &testKey{
+		User: "user",
+	}
+
+	meta := GetMeta(key)
+	assert.Equal(t, &Meta{
+		Name:   "test",
+		Expiry: time.Hour,
+	}, meta)
+
+	data, err := json.Marshal(key)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{
+		"user": "user",
+		"role": ""
+	}`, string(data))
+
 	assert.PanicsWithValue(t, `heat: expected first struct field to be an embedded "heat.Base"`, func() {
 		GetMeta(&invalidKey1{})
 	})
