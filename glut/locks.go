@@ -15,6 +15,11 @@ import (
 // the process and lock it right away. It will also update the deadline of the
 // value if a time to live is set.
 func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Lock")
+	span.Log("timeout", timeout.String())
+	defer span.Finish()
+
 	// get meta
 	meta := GetMeta(value)
 
@@ -32,13 +37,10 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		base.Token = coal.P(coal.New())
 	}
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/Lock")
+	// log key, ttl and token
 	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
-	span.Log("timeout", timeout.String())
-	defer span.Finish()
 
 	// check timeout
 	if timeout == 0 {
@@ -129,6 +131,10 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 // SetLocked will update the specified value only if it is locked. It will als
 // update the deadline of the value if a time to live is set.
 func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/SetLocked")
+	defer span.Finish()
+
 	// get meta
 	meta := GetMeta(value)
 
@@ -141,12 +147,10 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get base
 	base := value.GetBase()
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/SetLocked")
+	// log key, ttl and token
 	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
-	defer span.Finish()
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
@@ -188,6 +192,10 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // GetLocked will load the contents of the specified value only if it is locked.
 func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/GetLocked")
+	defer span.Finish()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
@@ -197,11 +205,9 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get base
 	base := value.GetBase()
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/GetLocked")
+	// log key and token
 	span.Log("key", key)
 	span.Log("token", base.Token.Hex())
-	defer span.Finish()
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
@@ -234,6 +240,10 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // DelLocked will delete the specified value only if it is locked.
 func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/DelLocked")
+	defer span.Finish()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
@@ -243,11 +253,9 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get base
 	base := value.GetBase()
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/DelLocked")
+	// log key and token
 	span.Log("key", key)
 	span.Log("token", base.Token.Hex())
-	defer span.Finish()
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
@@ -300,6 +308,10 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool
 // Unlock will unlock the specified value only if it is locked. It will also
 // update the deadline of the value if a time to live is set.
 func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Unlock")
+	defer span.Finish()
+
 	// get meta
 	meta := GetMeta(value)
 
@@ -312,12 +324,10 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get base
 	base := value.GetBase()
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/Unlock")
+	// log key, ttl and token
 	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
 	span.Log("token", base.Token.Hex())
-	defer span.Finish()
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {

@@ -13,16 +13,18 @@ import (
 // Get will load the contents of the specified value. It will also return
 // whether the value exists at all.
 func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Get")
+	defer span.Finish()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/Get")
+	// log key
 	span.Log("key", key)
-	defer span.Finish()
 
 	// find value
 	var model Model
@@ -48,6 +50,10 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
 func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Set")
+	defer span.Finish()
+
 	// get meta
 	meta := GetMeta(value)
 
@@ -57,11 +63,9 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 		return false, err
 	}
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/Set")
+	// log key and ttl
 	span.Log("key", key)
 	span.Log("ttl", meta.TTL.String())
-	defer span.Finish()
 
 	// prepare deadline
 	var deadline *time.Time
@@ -95,16 +99,18 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // Del will remove the specified value from the store. This method will ignore
 // any locks held on the value.
 func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "glut/Del")
+	defer span.Finish()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
 
-	// track
-	ctx, span := cinder.Track(ctx, "glut/Del")
+	// log key
 	span.Log("key", key)
-	defer span.Finish()
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
