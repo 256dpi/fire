@@ -155,8 +155,8 @@ func (t *Task) worker(queue *Queue) error {
 		}
 
 		// attempt to get job from queue
-		job := queue.get(t.Name)
-		if job == nil {
+		id, ok := queue.get(t.Name)
+		if !ok {
 			// wait some time before trying again
 			select {
 			case <-time.After(t.Interval):
@@ -167,12 +167,10 @@ func (t *Task) worker(queue *Queue) error {
 			continue
 		}
 
-		// execute job and report errors
-		err := t.execute(queue, job)
-		if err != nil {
-			if queue.opts.Reporter != nil {
-				queue.opts.Reporter(err)
-			}
+		// execute job
+		err := t.execute(queue, id)
+		if err != nil && queue.opts.Reporter != nil {
+			queue.opts.Reporter(err)
 		}
 	}
 }
@@ -180,8 +178,6 @@ func (t *Task) worker(queue *Queue) error {
 func (t *Task) enqueuer(queue *Queue) error {
 	// prepare blueprint
 	blueprint := t.PeriodicJob
-
-	// override task name
 	blueprint.Name = t.Name
 
 	for {
@@ -210,13 +206,13 @@ func (t *Task) enqueuer(queue *Queue) error {
 	}
 }
 
-func (t *Task) execute(queue *Queue, job *Job) error {
+func (t *Task) execute(queue *Queue, id coal.ID) error {
 	// create trace
 	trace, outerContext := cinder.CreateTrace(context.Background(), t.Name)
 	defer trace.Finish()
 
 	// dequeue job
-	job, err := Dequeue(outerContext, queue.opts.Store, job.ID(), t.Timeout)
+	job, err := Dequeue(outerContext, queue.opts.Store, id, t.Timeout)
 	if err != nil {
 		return err
 	}
@@ -267,12 +263,12 @@ func (t *Task) execute(queue *Queue, job *Job) error {
 	}
 
 	// check error
-	if e, ok := err.(*Error); ok {
+	if anError, ok := err.(*Error); ok {
 		// check retry
-		if e.Retry {
+		if anError.Retry {
 			// fail job
 			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts)
-			err = Fail(outerContext, queue.opts.Store, job.ID(), e.Reason, delay)
+			err = Fail(outerContext, queue.opts.Store, job.ID(), anError.Reason, delay)
 			if err != nil {
 				return err
 			}
@@ -281,14 +277,14 @@ func (t *Task) execute(queue *Queue, job *Job) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, queue.opts.Store, job.ID(), e.Reason)
+		err = Cancel(outerContext, queue.opts.Store, job.ID(), anError.Reason)
 		if err != nil {
 			return err
 		}
 
 		// call notifier if available
 		if t.Notifier != nil {
-			err = t.Notifier(ctx, true, e.Reason)
+			err = t.Notifier(ctx, true, anError.Reason)
 			if err != nil {
 				return err
 			}

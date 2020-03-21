@@ -240,7 +240,7 @@ func (q *Queue) update(job *Job) {
 	}
 }
 
-func (q *Queue) get(name string) *Job {
+func (q *Queue) get(name string) (coal.ID, bool) {
 	// get board
 	board := q.boards[name]
 
@@ -257,9 +257,9 @@ func (q *Queue) get(name string) *Job {
 			// block job until the specified timeout has been reached
 			job.Available = job.Available.Add(q.opts.BlockPeriod)
 
-			return job
+			return job.ID(), true
 		}
 	}
 
-	return nil
+	return coal.ID{}, false
 }
