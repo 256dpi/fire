@@ -227,9 +227,10 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 
 	// prepare job
 	job := GetMeta(t.Job).Make()
+	job.GetBase().JobID = id
 
 	// dequeue job
-	dequeued, attempt, err := Dequeue(outerContext, queue.opts.Store, job, id, t.Timeout)
+	dequeued, attempt, err := Dequeue(outerContext, queue.opts.Store, job, t.Timeout)
 	if err != nil {
 		return err
 	}

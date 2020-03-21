@@ -26,7 +26,8 @@ func TestQueue(t *testing.T) {
 		queue.Add(&Task{
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
-				ctx.Result = coal.Map{"foo": "bar"}
+				job := ctx.Job.(*simpleJob)
+				job.Data = "Hello!!!"
 				return nil
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
@@ -49,7 +50,7 @@ func TestQueue(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, StatusCompleted, model.Status)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
@@ -75,7 +76,8 @@ func TestQueueDelayed(t *testing.T) {
 		queue.Add(&Task{
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
-				ctx.Result = coal.Map{"foo": "bar"}
+				job := ctx.Job.(*simpleJob)
+				job.Data = "Hello!!!"
 				return nil
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
@@ -98,7 +100,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, StatusCompleted, model.Status)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
@@ -128,7 +130,9 @@ func TestQueueFailed(t *testing.T) {
 					return E("foo", true)
 				}
 
-				ctx.Result = coal.Map{"foo": "bar"}
+				job := ctx.Job.(*simpleJob)
+				job.Data = "Hello!!!"
+
 				return nil
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
@@ -152,7 +156,7 @@ func TestQueueFailed(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, StatusCompleted, model.Status)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
@@ -497,7 +501,8 @@ func TestQueuePeriodically(t *testing.T) {
 		queue.Add(&Task{
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
-				ctx.Result = coal.Map{"foo": "bar"}
+				job := ctx.Job.(*simpleJob)
+				job.Data = "Hello!!!"
 				return nil
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
@@ -518,7 +523,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 		model := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, StatusCompleted, model.Status)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)

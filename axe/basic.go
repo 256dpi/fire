@@ -11,7 +11,8 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Enqueue will enqueue a job using the specified blueprint.
+// Enqueue will enqueue the specified job with the provided delay and period. It
+// will return whether a job has been enqueued.
 func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time.Duration) (bool, error) {
 	// get meta
 	meta := GetMeta(job)
@@ -72,7 +73,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time
 		},
 	}
 
-	// add interval
+	// add period
 	if period > 0 {
 		delete(filter, "Status")
 		filter["Finished"] = bson.M{
@@ -90,22 +91,16 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time
 	return inserted, nil
 }
 
-// Dequeue will dequeue the job with the specified id. The provided timeout
-// will be set to allow the job to be dequeued if the process failed to set its
-// status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
-// state are dequeued.
-func Dequeue(ctx context.Context, store *coal.Store, job Job, id coal.ID, timeout time.Duration) (bool, int, error) {
+// Dequeue will dequeue the specified job. The provided timeout will be set to
+// allow the job to be dequeued if the process failed to set its status. Only
+// jobs in the "enqueued", "dequeued" (passed timeout) or "failed" state are
+// dequeued. It will return whether a job has been dequeued.
+func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Duration) (bool, int, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Dequeue")
-	span.Log("id", id.Hex())
+	span.Log("id", job.ID().Hex())
 	span.Log("timeout", timeout.String())
 	defer span.Finish()
-
-	// get base
-	base := job.GetBase()
-
-	// set id
-	base.JobID = id
 
 	// get time
 	now := time.Now()
@@ -113,7 +108,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, id coal.ID, timeou
 	// dequeue job
 	var model Model
 	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
-		"_id": id,
+		"_id": job.ID(),
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
 		},

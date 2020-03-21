@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/256dpi/fire/cinder"
-	"github.com/256dpi/fire/coal"
 )
 
 // Context holds and stores contextual data.
@@ -15,12 +14,7 @@ type Context struct {
 	context.Context
 
 	// The processed job.
-	//
-	// Usage: Read Only
 	Job Job
-
-	// The custom result of the job.
-	Result coal.Map
 
 	// The current attempt to execute the job.
 	//

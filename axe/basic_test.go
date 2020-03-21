@@ -36,7 +36,7 @@ func TestEnqueue(t *testing.T) {
 		assert.Equal(t, 0, model.Attempts)
 		assert.Equal(t, "", model.Reason)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
@@ -83,19 +83,19 @@ func TestEnqueueDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
 
 		time.Sleep(200 * time.Millisecond)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
@@ -112,19 +112,19 @@ func TestDequeueTimeout(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), 100*time.Millisecond)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), 100*time.Millisecond)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
 
 		time.Sleep(200 * time.Millisecond)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), 100*time.Millisecond)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
@@ -141,7 +141,7 @@ func TestFail(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
@@ -154,7 +154,7 @@ func TestFail(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.Equal(t, "some error", model.Reason)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
@@ -171,7 +171,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
@@ -184,14 +184,14 @@ func TestFailDelayed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.Equal(t, "some error", model.Reason)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
 
 		time.Sleep(200 * time.Millisecond)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
@@ -208,7 +208,7 @@ func TestCancel(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
-		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 1, attempt)
@@ -222,7 +222,7 @@ func TestCancel(t *testing.T) {
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, "some reason", model.Reason)
 
-		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, job.ID(), time.Hour)
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
@@ -261,7 +261,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, StatusEnqueued, list[0].Status)
 
-		_, _, err = Dequeue(nil, tester.Store, &job1, job1.ID(), time.Second)
+		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
 
 		err = Complete(nil, tester.Store, &job1)
@@ -314,7 +314,7 @@ func TestEnqueueInterval(t *testing.T) {
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, StatusEnqueued, list[0].Status)
 
-		_, _, err = Dequeue(nil, tester.Store, &job1, job1.ID(), time.Second)
+		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
 
 		err = Complete(nil, tester.Store, &job1)
