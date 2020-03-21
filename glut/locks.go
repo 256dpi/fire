@@ -33,8 +33,8 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	}
 
 	// ensure token
-	if base.Token == nil || base.Token.IsZero() {
-		base.Token = coal.P(coal.New())
+	if base.Token.IsZero() {
+		base.Token = coal.New()
 	}
 
 	// log key, ttl and token
@@ -67,7 +67,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		Data:     nil,
 		Deadline: deadline,
 		Locked:   &locked,
-		Token:    base.Token,
+		Token:    coal.P(base.Token),
 	}
 
 	// insert value if missing
@@ -153,7 +153,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	span.Log("token", base.Token.Hex())
 
 	// check token
-	if base.Token == nil || base.Token.IsZero() {
+	if base.Token.IsZero() {
 		return false, fmt.Errorf("missing token")
 	}
 
@@ -210,7 +210,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	span.Log("token", base.Token.Hex())
 
 	// check token
-	if base.Token == nil || base.Token.IsZero() {
+	if base.Token.IsZero() {
 		return false, fmt.Errorf("missing token")
 	}
 
@@ -258,7 +258,7 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	span.Log("token", base.Token.Hex())
 
 	// check token
-	if base.Token == nil || base.Token.IsZero() {
+	if base.Token.IsZero() {
 		return false, fmt.Errorf("missing token")
 	}
 
@@ -330,7 +330,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	span.Log("token", base.Token.Hex())
 
 	// check token
-	if base.Token == nil || base.Token.IsZero() {
+	if base.Token.IsZero() {
 		return false, fmt.Errorf("missing token")
 	}
 

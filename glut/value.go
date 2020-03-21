@@ -23,7 +23,8 @@ type ExtendedValue interface {
 
 // Base can be embedded in a struct to turn it into a value.
 type Base struct {
-	Token *coal.ID
+	// The token used for value locking.
+	Token coal.ID
 }
 
 // GetBase implements the Value interface.

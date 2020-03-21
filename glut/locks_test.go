@@ -27,7 +27,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// additional lock (same token)
 
@@ -42,7 +42,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// lock attempt (different token)
 
@@ -57,7 +57,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// get with token
 
@@ -92,7 +92,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// set with different token
 
@@ -109,7 +109,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// get with token
 
@@ -132,7 +132,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// unlock with token
 
@@ -174,7 +174,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// mutate locked
 
@@ -189,7 +189,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, "value/simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
-		assert.Equal(t, value1.Token, model.Token)
+		assert.Equal(t, &value1.Token, model.Token)
 
 		// del with different token
 
