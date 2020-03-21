@@ -50,7 +50,7 @@ var metaCache = map[reflect.Type]*Meta{}
 var metaKeys = map[string]reflect.Type{}
 
 // GetMeta will parse the values "glut" tag on the embedded glut.Base struct and
-// return the encoded component and name.
+// return the meta object.
 func GetMeta(value Value) *Meta {
 	// acquire mutex
 	metaMutex.Lock()

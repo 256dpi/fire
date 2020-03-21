@@ -29,7 +29,7 @@ type invalidValue4 struct {
 }
 
 type duplicateValue struct {
-	Base  `json:"-" glut:"value/simple,0"`
+	Base  `json:"-" glut:"simple,0"`
 	Hello string
 }
 
@@ -41,7 +41,7 @@ func TestGetMeta(t *testing.T) {
 	meta := GetMeta(key)
 	assert.Equal(t, &Meta{
 		Type: reflect.TypeOf(&simpleValue{}),
-		Key:  "value/simple",
+		Key:  "simple",
 		TTL:  0,
 	}, meta)
 
@@ -71,7 +71,7 @@ func TestGetMeta(t *testing.T) {
 		GetMeta(&simpleValue{})
 	})
 
-	assert.PanicsWithValue(t, `glut: value key "value/simple" has already been registered by type "*glut.simpleValue"`, func() {
+	assert.PanicsWithValue(t, `glut: value key "simple" has already been registered by type "*glut.simpleValue"`, func() {
 		GetMeta(&duplicateValue{})
 	})
 }

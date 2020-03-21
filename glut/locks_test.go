@@ -24,7 +24,7 @@ func TestLock(t *testing.T) {
 		}, value1)
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -39,7 +39,7 @@ func TestLock(t *testing.T) {
 		}, value1)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -54,7 +54,7 @@ func TestLock(t *testing.T) {
 		}, value2)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Nil(t, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -89,7 +89,7 @@ func TestLock(t *testing.T) {
 		}, value1)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -106,7 +106,7 @@ func TestLock(t *testing.T) {
 		}, value2)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -129,7 +129,7 @@ func TestLock(t *testing.T) {
 		assert.False(t, unlocked)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -141,7 +141,7 @@ func TestLock(t *testing.T) {
 		assert.True(t, unlocked)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -154,7 +154,7 @@ func TestLock(t *testing.T) {
 		assert.False(t, modified)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -171,7 +171,7 @@ func TestLock(t *testing.T) {
 		}, value1)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
@@ -186,7 +186,7 @@ func TestLock(t *testing.T) {
 		})
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)

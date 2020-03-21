@@ -28,7 +28,7 @@ func TestBasic(t *testing.T) {
 		assert.True(t, created)
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Cool!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
@@ -52,7 +52,7 @@ func TestBasic(t *testing.T) {
 		assert.False(t, created)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/simple", model.Key)
+		assert.Equal(t, "simple", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
@@ -115,7 +115,7 @@ func TestDeadline(t *testing.T) {
 		assert.True(t, created)
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/ttl", model.Key)
+		assert.Equal(t, "ttl", model.Key)
 		assert.Equal(t, coal.Map{"data": "Nice!"}, model.Data)
 		assert.True(t, model.Deadline.After(time.Now()))
 		assert.Nil(t, model.Locked)
@@ -151,7 +151,7 @@ func TestExtended(t *testing.T) {
 		assert.True(t, created)
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/extended/A7", model.Key)
+		assert.Equal(t, "extended/A7", model.Key)
 		assert.Equal(t, coal.Map{"data": "Cool!", "id": "A7"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
@@ -176,7 +176,7 @@ func TestExtended(t *testing.T) {
 		assert.False(t, created)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "value/extended/A7", model.Key)
+		assert.Equal(t, "extended/A7", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!", "id": "A7"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
