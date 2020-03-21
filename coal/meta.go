@@ -29,6 +29,9 @@ type HasMany struct{}
 
 // A Field contains the meta information about a single field of a model.
 type Field struct {
+	// The index of the field in the struct.
+	Index int
+
 	// The struct field name e.g. "TireSize".
 	Name string
 
@@ -58,8 +61,6 @@ type Field struct {
 	RelName    string
 	RelType    string
 	RelInverse string
-
-	index int
 }
 
 // Meta stores extracted meta data from a model.
@@ -183,13 +184,13 @@ func GetMeta(model Model) *Meta {
 
 		// prepare field
 		metaField := &Field{
+			Index:     i,
 			Name:      field.Name,
 			Type:      field.Type,
 			Kind:      fieldKind,
 			JSONKey:   getJSONFieldName(&field),
 			BSONField: getBSONFieldName(&field),
 			Optional:  field.Type.Kind() == reflect.Ptr,
-			index:     i,
 		}
 
 		// check if field is a valid to-one relationship

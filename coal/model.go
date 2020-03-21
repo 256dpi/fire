@@ -26,7 +26,7 @@ func Get(model Model, name string) (interface{}, bool) {
 	}
 
 	// get value
-	value := reflect.ValueOf(model).Elem().Field(field.index).Interface()
+	value := reflect.ValueOf(model).Elem().Field(field.Index).Interface()
 
 	return value, true
 }
@@ -41,7 +41,7 @@ func Set(model Model, name string, value interface{}) bool {
 	}
 
 	// get value
-	fieldValue := reflect.ValueOf(model).Elem().Field(field.index)
+	fieldValue := reflect.ValueOf(model).Elem().Field(field.Index)
 
 	// get value value
 	valueValue := reflect.ValueOf(value)

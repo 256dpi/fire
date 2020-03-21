@@ -119,33 +119,34 @@ func TestMeta(t *testing.T) {
 		PluralName: "posts",
 		Fields: map[string]*Field{
 			"Title": {
+				Index:     1,
 				Name:      "Title",
 				Type:      reflect.TypeOf(""),
 				Kind:      reflect.String,
 				JSONKey:   "title",
 				BSONField: "title",
 				Flags:     []string{"foo"},
-				index:     1,
 			},
 			"Published": {
+				Index:     2,
 				Name:      "Published",
 				Type:      reflect.TypeOf(true),
 				Kind:      reflect.Bool,
 				JSONKey:   "published",
 				BSONField: "published",
 				Flags:     []string{"bar"},
-				index:     2,
 			},
 			"TextBody": {
+				Index:     3,
 				Name:      "TextBody",
 				Type:      reflect.TypeOf(""),
 				Kind:      reflect.String,
 				JSONKey:   "text-body",
 				BSONField: "text_body",
 				Flags:     []string{"bar", "baz"},
-				index:     3,
 			},
 			"Comments": {
+				Index:      4,
 				Name:       "Comments",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
@@ -154,9 +155,9 @@ func TestMeta(t *testing.T) {
 				RelName:    "comments",
 				RelType:    "comments",
 				RelInverse: "post",
-				index:      4,
 			},
 			"Selections": {
+				Index:      5,
 				Name:       "Selections",
 				Type:       hasManyType,
 				Kind:       reflect.Struct,
@@ -165,9 +166,9 @@ func TestMeta(t *testing.T) {
 				RelName:    "selections",
 				RelType:    "selections",
 				RelInverse: "posts",
-				index:      5,
 			},
 			"Note": {
+				Index:      6,
 				Name:       "Note",
 				Type:       hasOneType,
 				Kind:       reflect.Struct,
@@ -176,7 +177,6 @@ func TestMeta(t *testing.T) {
 				RelName:    "note",
 				RelType:    "notes",
 				RelInverse: "post",
-				index:      6,
 			},
 		},
 		OrderedFields: []*Field{
@@ -224,15 +224,16 @@ func TestMeta(t *testing.T) {
 		PluralName: "comments",
 		Fields: map[string]*Field{
 			"Message": {
+				Index:     1,
 				Name:      "Message",
 				Type:      reflect.TypeOf(""),
 				Kind:      reflect.String,
 				JSONKey:   "message",
 				BSONField: "message",
 				Flags:     []string{},
-				index:     1,
 			},
 			"Parent": {
+				Index:     2,
 				Name:      "Parent",
 				Type:      optionalToOneType,
 				Kind:      reflect.Array,
@@ -243,9 +244,9 @@ func TestMeta(t *testing.T) {
 				ToOne:     true,
 				RelName:   "parent",
 				RelType:   "comments",
-				index:     2,
 			},
 			"Post": {
+				Index:     3,
 				Name:      "Post",
 				Type:      toOneType,
 				Kind:      reflect.Array,
@@ -255,7 +256,6 @@ func TestMeta(t *testing.T) {
 				ToOne:     true,
 				RelName:   "post",
 				RelType:   "posts",
-				index:     3,
 			},
 		},
 		OrderedFields: []*Field{
@@ -286,15 +286,16 @@ func TestMeta(t *testing.T) {
 		PluralName: "selections",
 		Fields: map[string]*Field{
 			"Name": {
+				Index:     1,
 				Name:      "Name",
 				Type:      reflect.TypeOf(""),
 				Kind:      reflect.String,
 				JSONKey:   "name",
 				BSONField: "name",
 				Flags:     []string{},
-				index:     1,
 			},
 			"Posts": {
+				Index:     2,
 				Name:      "Posts",
 				Type:      toManyType,
 				Kind:      reflect.Slice,
@@ -303,7 +304,6 @@ func TestMeta(t *testing.T) {
 				ToMany:    true,
 				RelName:   "posts",
 				RelType:   "posts",
-				index:     2,
 			},
 		},
 		OrderedFields: []*Field{
