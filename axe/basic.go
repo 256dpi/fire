@@ -113,19 +113,25 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, erro
 // will be set to allow the job to be dequeued if the process failed to set its
 // status. Only jobs in the "enqueued", "dequeued" (passed timeout) or "failed"
 // state are dequeued.
-func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Duration) (*Model, error) {
+func Dequeue(ctx context.Context, store *coal.Store, job Job, id coal.ID, timeout time.Duration) (bool, int, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Dequeue")
 	span.Log("id", id.Hex())
 	span.Log("timeout", timeout.String())
 	defer span.Finish()
 
+	// get base
+	base := job.GetBase()
+
+	// set id
+	base.JobID = id
+
 	// get time
 	now := time.Now()
 
 	// dequeue job
-	var job Model
-	found, err := store.M(&Model{}).UpdateFirst(ctx, &job, bson.M{
+	var model Model
+	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
 		"_id": id,
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
@@ -144,33 +150,46 @@ func Dequeue(ctx context.Context, store *coal.Store, id coal.ID, timeout time.Du
 		},
 	}, nil, false)
 	if err != nil {
-		return nil, err
+		return false, 0, err
 	} else if !found {
-		return nil, nil
+		return false, 0, nil
 	}
 
-	return &job, nil
+	// decode job
+	err = model.Data.Unmarshal(job, coal.TransferJSON)
+	if err != nil {
+		return false, 0, err
+	}
+
+	return true, model.Attempts, nil
 }
 
-// Complete will complete the job with the specified id. Only jobs in the
-// "dequeued" state can be completed.
-func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Map) error {
+// Complete will complete the specified job. Only jobs in the "dequeued" state
+// can be completed.
+func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Complete")
-	span.Log("id", id.Hex())
+	span.Log("id", job.ID().Hex())
 	defer span.Finish()
+
+	// encode job
+	var data coal.Map
+	err := data.Marshal(job, coal.TransferJSON)
+	if err != nil {
+		return err
+	}
 
 	// get time
 	now := time.Now()
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    id,
+		"_id":    job.ID(),
 		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
 			"Status":   StatusCompleted,
-			"Result":   result,
+			"Data":     data,
 			"Ended":    now,
 			"Finished": now,
 		},
@@ -184,12 +203,12 @@ func Complete(ctx context.Context, store *coal.Store, id coal.ID, result coal.Ma
 	return nil
 }
 
-// Fail will fail the job with the specified id and the specified reason. It may
-// delay the job if requested. Only jobs in the "dequeued" state can be failed.
-func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, delay time.Duration) error {
+// Fail will fail the specified job with the provided reason. It may delay the
+// job if requested. Only jobs in the "dequeued" state can be failed.
+func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay time.Duration) error {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Fail")
-	span.Log("id", id.Hex())
+	span.Log("id", job.ID().Hex())
 	span.Log("reason", reason)
 	span.Log("delay", delay.String())
 	defer span.Finish()
@@ -199,7 +218,7 @@ func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, del
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    id,
+		"_id":    job.ID(),
 		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{
@@ -218,12 +237,12 @@ func Fail(ctx context.Context, store *coal.Store, id coal.ID, reason string, del
 	return nil
 }
 
-// Cancel will cancel the job with the specified id and the specified reason.
-// Only jobs in the "dequeued" state can be cancelled.
-func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) error {
+// Cancel will cancel the specified job with provided reason. Only jobs in the
+// "dequeued" state can be cancelled.
+func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) error {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Cancel")
-	span.Log("id", id.Hex())
+	span.Log("id", job.ID().Hex())
 	span.Log("reason", reason)
 	defer span.Finish()
 
@@ -232,7 +251,7 @@ func Cancel(ctx context.Context, store *coal.Store, id coal.ID, reason string) e
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    id,
+		"_id":    job.ID(),
 		"Status": StatusDequeued,
 	}, bson.M{
 		"$set": bson.M{

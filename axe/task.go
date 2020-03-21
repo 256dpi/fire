@@ -217,26 +217,22 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	trace, outerContext := cinder.CreateTrace(context.Background(), name)
 	defer trace.Finish()
 
+	// prepare job
+	job := GetMeta(t.Job).Make()
+
 	// dequeue job
-	model, err := Dequeue(outerContext, queue.opts.Store, id, t.Timeout)
+	dequeued, attempt, err := Dequeue(outerContext, queue.opts.Store, job, id, t.Timeout)
 	if err != nil {
 		return err
 	}
 
 	// return if missing (might be dequeued already by another process)
-	if model == nil {
+	if !dequeued {
 		return nil
 	}
 
 	// get time
 	start := time.Now()
-
-	// unmarshal job
-	job := GetMeta(t.Job).Make()
-	err = model.Data.Unmarshal(job, coal.TransferJSON)
-	if err != nil {
-		return err
-	}
 
 	// add timeout
 	innerContext, cancel := context.WithTimeout(outerContext, t.Lifetime)
@@ -246,7 +242,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	ctx := &Context{
 		Context: innerContext,
 		Job:     job,
-		Attempt: model.Attempts, // incremented when dequeued
+		Attempt: attempt,
 		Task:    t,
 		Queue:   queue,
 		Trace:   trace,
@@ -265,8 +261,8 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		// check retry
 		if anError.Retry {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, model.Attempts)
-			err = Fail(outerContext, queue.opts.Store, model.ID(), anError.Reason, delay)
+			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
+			err = Fail(outerContext, queue.opts.Store, job, anError.Reason, delay)
 			if err != nil {
 				return err
 			}
@@ -275,7 +271,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, queue.opts.Store, model.ID(), anError.Reason)
+		err = Cancel(outerContext, queue.opts.Store, job, anError.Reason)
 		if err != nil {
 			return err
 		}
@@ -294,16 +290,16 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// handle other errors
 	if err != nil {
 		// check attempts
-		if t.MaxAttempts == 0 || model.Attempts < t.MaxAttempts {
+		if t.MaxAttempts == 0 || attempt < t.MaxAttempts {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, model.Attempts)
-			_ = Fail(outerContext, queue.opts.Store, model.ID(), err.Error(), delay)
+			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
+			_ = Fail(outerContext, queue.opts.Store, job, err.Error(), delay)
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, queue.opts.Store, model.ID(), err.Error())
+		_ = Cancel(outerContext, queue.opts.Store, job, err.Error())
 
 		// call notifier if available
 		if t.Notifier != nil {
@@ -314,7 +310,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// complete job
-	err = Complete(outerContext, queue.opts.Store, model.ID(), ctx.Result)
+	err = Complete(outerContext, queue.opts.Store, job)
 	if err != nil {
 		return err
 	}

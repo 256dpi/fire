@@ -56,7 +56,6 @@ func TestQueue(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 1, job.Attempts)
-		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
 		queue.Close()
@@ -106,7 +105,6 @@ func TestQueueDelayed(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 1, job.Attempts)
-		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
 		queue.Close()
@@ -160,7 +158,6 @@ func TestQueueFailed(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 2, job.Attempts)
-		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "foo", job.Reason)
 
 		queue.Close()
@@ -217,7 +214,6 @@ func TestQueueCrashed(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 2, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "EOF", job.Reason)
 
 		queue.Close()
@@ -265,7 +261,6 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 1, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "cancelled", job.Reason)
 
 		queue.Close()
@@ -314,7 +309,6 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 2, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "cancelled", job.Reason)
 
 		queue.Close()
@@ -368,7 +362,6 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 2, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "foo", job.Reason)
 
 		queue.Close()
@@ -426,7 +419,6 @@ func TestQueueTimeout(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 2, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "", job.Reason)
 
 		err = <-errs
@@ -479,7 +471,6 @@ func TestQueueExisting(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 1, job.Attempts)
-		assert.Nil(t, job.Result)
 		assert.Equal(t, "", job.Reason)
 
 		queue.Close()
@@ -527,7 +518,6 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.NotZero(t, job.Ended)
 		assert.NotZero(t, job.Finished)
 		assert.Equal(t, 1, job.Attempts)
-		assert.Equal(t, coal.Map{"foo": "bar"}, job.Result)
 		assert.Equal(t, "", job.Reason)
 
 		queue.Close()

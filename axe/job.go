@@ -5,15 +5,26 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // Job is a structure used to encode a job.
 type Job interface {
+	ID() coal.ID
 	GetBase() *Base
 }
 
 // Base can be embedded in a struct to turn it into a job.
-type Base struct{}
+type Base struct {
+	// The id of the job.
+	JobID coal.ID
+}
+
+// ID will return the jobs id.
+func (b *Base) ID() coal.ID {
+	return b.JobID
+}
 
 // GetBase implements the Job interface.
 func (b *Base) GetBase() *Base {

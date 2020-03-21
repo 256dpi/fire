@@ -61,9 +61,6 @@ type Model struct {
 	// Attempts is incremented with each execution attempt.
 	Attempts int `json:"attempts"`
 
-	// The result submitted during completion.
-	Result coal.Map `json:"result"`
-
 	// The last message submitted when the job was failed or cancelled.
 	Reason string `json:"reason"`
 }
