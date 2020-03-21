@@ -21,7 +21,7 @@ type Blueprint struct {
 	Label string
 
 	// The job model. If given, data is overridden with the marshaled model.
-	Model Model
+	Model interface{}
 
 	// The job data.
 	Data coal.Map

@@ -18,7 +18,7 @@ type Task struct {
 	Name string
 
 	// Model is the model that holds task related data.
-	Model Model
+	Model interface{}
 
 	// Handler is the callback called with jobs for processing. The handler
 	// should return errors formatted with E to properly indicate the status of
@@ -226,7 +226,7 @@ func (t *Task) execute(queue *Queue, id coal.ID) error {
 	start := time.Now()
 
 	// prepare model
-	var model Model
+	var model interface{}
 
 	// check model
 	if t.Model != nil {

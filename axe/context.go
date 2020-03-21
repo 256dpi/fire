@@ -7,9 +7,6 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Model can be any BSON serializable type.
-type Model interface{}
-
 // Context holds and stores contextual data.
 type Context struct {
 	// The context that is cancelled when the task timeout has been reached.
@@ -20,7 +17,7 @@ type Context struct {
 	// The model carried by the job.
 	//
 	// Usage: Read Only
-	Model Model
+	Model interface{}
 
 	// The custom result of the job.
 	Result coal.Map
