@@ -12,7 +12,6 @@ import (
 
 // Value is a structure used to encode a value.
 type Value interface {
-	// GetBase should be implemented by embedding Base.
 	GetBase() *Base
 }
 
