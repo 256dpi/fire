@@ -23,14 +23,14 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	// get meta
 	meta := GetMeta(value)
 
+	// get base
+	base := value.GetBase()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
-
-	// get base
-	base := value.GetBase()
 
 	// ensure token
 	if base.Token == nil || base.Token.IsZero() {
@@ -44,7 +44,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// check timeout
 	if timeout == 0 {
-		return false, fmt.Errorf("invalid timeout")
+		return false, fmt.Errorf("missing timeout")
 	}
 
 	// check TTL
@@ -78,7 +78,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, err
 	}
 
-	// check if locked by upsert
+	// return if inserted
 	if inserted {
 		return true, nil
 	}
@@ -138,14 +138,14 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	// get meta
 	meta := GetMeta(value)
 
+	// get base
+	base := value.GetBase()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
-
-	// get base
-	base := value.GetBase()
 
 	// log key, ttl and token
 	span.Log("key", key)
@@ -154,7 +154,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
-		return false, fmt.Errorf("invalid token")
+		return false, fmt.Errorf("missing token")
 	}
 
 	// prepare deadline
@@ -196,14 +196,14 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
 	defer span.Finish()
 
+	// get base
+	base := value.GetBase()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
-
-	// get base
-	base := value.GetBase()
 
 	// log key and token
 	span.Log("key", key)
@@ -211,7 +211,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
-		return false, fmt.Errorf("invalid token")
+		return false, fmt.Errorf("missing token")
 	}
 
 	// find value
@@ -244,14 +244,14 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	ctx, span := cinder.Track(ctx, "glut/DelLocked")
 	defer span.Finish()
 
+	// get base
+	base := value.GetBase()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
-
-	// get base
-	base := value.GetBase()
 
 	// log key and token
 	span.Log("key", key)
@@ -259,7 +259,7 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
-		return false, fmt.Errorf("invalid token")
+		return false, fmt.Errorf("missing token")
 	}
 
 	// delete value
@@ -315,14 +315,14 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := GetMeta(value)
 
+	// get base
+	base := value.GetBase()
+
 	// get key
 	key, err := GetKey(value)
 	if err != nil {
 		return false, err
 	}
-
-	// get base
-	base := value.GetBase()
 
 	// log key, ttl and token
 	span.Log("key", key)
@@ -331,7 +331,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// check token
 	if base.Token == nil || base.Token.IsZero() {
-		return false, fmt.Errorf("invalid token")
+		return false, fmt.Errorf("missing token")
 	}
 
 	// prepare deadline
