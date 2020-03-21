@@ -66,7 +66,3 @@ func (i *Item) Validate() error {
 
 	return nil
 }
-
-type count struct {
-	Item coal.ID `bson:"item_id"`
-}

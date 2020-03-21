@@ -514,7 +514,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 // cleanup obsolete files.
 func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 	return &axe.Task{
-		Name: "fire/blaze.cleanup",
+		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
 			return s.Cleanup(ctx, retention)
 		},
@@ -523,6 +523,7 @@ func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 		Lifetime:    periodicity,
 		Periodicity: periodicity,
 		PeriodicJob: axe.Blueprint{
+			Job:   &CleanupJob{},
 			Label: "periodic",
 		},
 	}

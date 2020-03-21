@@ -16,13 +16,22 @@ type counter struct {
 	Total int `json:"total"`
 }
 
+type increment struct {
+	axe.Base `json:"-" axe:"increment"`
+
+	Item coal.ID `json:"item_id"`
+}
+
+type periodic struct {
+	axe.Base `json:"-" axe:"periodic"`
+}
+
 func incrementTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
-		Name:  "increment",
-		Model: &count{},
+		Job: &increment{},
 		Handler: func(ctx *axe.Context) error {
 			// get id
-			id := ctx.Model.(*count).Item
+			id := ctx.Model.(*increment).Item
 
 			// increment count
 			_, err := store.M(&Item{}).Update(ctx, nil, id, bson.M{
@@ -41,8 +50,7 @@ func incrementTask(store *coal.Store) *axe.Task {
 
 func periodicTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
-		Name:  "periodic",
-		Model: nil,
+		Job: &periodic{},
 		Handler: func(ctx *axe.Context) error {
 			// increment counter
 			var counter counter
@@ -58,6 +66,7 @@ func periodicTask(store *coal.Store) *axe.Task {
 		},
 		Periodicity: 5 * time.Second,
 		PeriodicJob: axe.Blueprint{
+			Job:   &periodic{},
 			Label: "periodic",
 		},
 	}

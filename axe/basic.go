@@ -13,18 +13,12 @@ import (
 
 // Blueprint describes a job to enqueued.
 type Blueprint struct {
-	// The task name.
-	Name string
+	// The job to be enqueued.
+	Job Job
 
 	// The job label. If given, the job will only be enqueued if no other job is
 	// available with the same name and label.
 	Label string
-
-	// The job model. If given, data is overridden with the marshaled model.
-	Model interface{}
-
-	// The job data.
-	Data coal.Map
 
 	// The initial delay. If specified the job will not be dequeued until the
 	// specified time has passed.
@@ -39,24 +33,27 @@ type Blueprint struct {
 func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Enqueue")
-	span.Log("name", bp.Name)
 	span.Log("label", bp.Label)
 	span.Log("delay", bp.Delay.String())
 	span.Log("period", bp.Period.String())
 	defer span.Finish()
 
-	// check name
-	if bp.Name == "" {
-		return nil, fmt.Errorf("missing name")
+	// check job
+	if bp.Job == nil {
+		return nil, fmt.Errorf("missing job")
 	}
 
-	// marshal model if given
-	if bp.Model != nil {
-		bp.Data = coal.Map{}
-		err := bp.Data.Marshal(bp.Model, coal.TransferBSON)
-		if err != nil {
-			return nil, err
-		}
+	// get meta
+	meta := GetMeta(bp.Job)
+
+	// log name
+	span.Log("name", meta.Name)
+
+	// marshal model
+	var data coal.Map
+	err := data.Marshal(bp.Job, coal.TransferJSON)
+	if err != nil {
+		return nil, err
 	}
 
 	// get time
@@ -65,9 +62,9 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, erro
 	// prepare job
 	job := &Model{
 		Base:      coal.B(),
-		Name:      bp.Name,
+		Name:      meta.Name,
 		Label:     bp.Label,
-		Data:      bp.Data,
+		Data:      data,
 		Status:    StatusEnqueued,
 		Created:   now,
 		Available: now.Add(bp.Delay),
@@ -85,7 +82,7 @@ func Enqueue(ctx context.Context, store *coal.Store, bp Blueprint) (*Model, erro
 
 	// prepare filter
 	filter := bson.M{
-		"Name":  bp.Name,
+		"Name":  meta.Name,
 		"Label": bp.Label,
 		"Status": bson.M{
 			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},

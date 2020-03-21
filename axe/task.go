@@ -14,11 +14,8 @@ import (
 
 // Task describes work that is managed using a job queue.
 type Task struct {
-	// Name is the unique name of the task.
-	Name string
-
-	// Model is the model that holds task related data.
-	Model interface{}
+	// The job this task should process.
+	Job Job
 
 	// Handler is the callback called with jobs for processing. The handler
 	// should return errors formatted with E to properly indicate the status of
@@ -91,6 +88,11 @@ type Task struct {
 }
 
 func (t *Task) prepare() {
+	// check job
+	if t.Job == nil {
+		panic("axe: missing job")
+	}
+
 	// set default workers
 	if t.Workers == 0 {
 		t.Workers = 2
@@ -130,6 +132,11 @@ func (t *Task) prepare() {
 	if t.Lifetime > t.Timeout {
 		panic("axe: lifetime must be less than timeout")
 	}
+
+	// check periodic job
+	if t.Periodicity > 0 && t.PeriodicJob.Job == nil {
+		panic("axe: missing periodic job")
+	}
 }
 
 func (t *Task) start(queue *Queue) {
@@ -149,6 +156,9 @@ func (t *Task) start(queue *Queue) {
 }
 
 func (t *Task) worker(queue *Queue) error {
+	// get name
+	name := GetMeta(t.Job).Name
+
 	// run forever
 	for {
 		// return if queue is closed
@@ -157,7 +167,7 @@ func (t *Task) worker(queue *Queue) error {
 		}
 
 		// attempt to get job from queue
-		id, ok := queue.get(t.Name)
+		id, ok := queue.get(name)
 		if !ok {
 			// wait some time before trying again
 			select {
@@ -170,7 +180,7 @@ func (t *Task) worker(queue *Queue) error {
 		}
 
 		// execute job
-		err := t.execute(queue, id)
+		err := t.execute(queue, name, id)
 		if err != nil && queue.opts.Reporter != nil {
 			queue.opts.Reporter(err)
 		}
@@ -178,13 +188,10 @@ func (t *Task) worker(queue *Queue) error {
 }
 
 func (t *Task) enqueuer(queue *Queue) error {
-	// prepare blueprint
-	blueprint := t.PeriodicJob
-	blueprint.Name = t.Name
-
+	// run forever
 	for {
 		// enqueue task
-		_, err := queue.Enqueue(blueprint)
+		_, err := queue.Enqueue(t.PeriodicJob)
 		if err != nil && queue.opts.Reporter != nil {
 			// report error
 			queue.opts.Reporter(err)
@@ -208,9 +215,9 @@ func (t *Task) enqueuer(queue *Queue) error {
 	}
 }
 
-func (t *Task) execute(queue *Queue, id coal.ID) error {
+func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// create trace
-	trace, outerContext := cinder.CreateTrace(context.Background(), t.Name)
+	trace, outerContext := cinder.CreateTrace(context.Background(), name)
 	defer trace.Finish()
 
 	// dequeue job
@@ -230,16 +237,13 @@ func (t *Task) execute(queue *Queue, id coal.ID) error {
 	// prepare model
 	var model interface{}
 
-	// check model
-	if t.Model != nil {
-		// instantiate model
-		model = reflect.New(reflect.TypeOf(t.Model).Elem()).Interface()
+	// instantiate model
+	model = reflect.New(reflect.TypeOf(t.Job).Elem()).Interface()
 
-		// unmarshal model
-		err = job.Data.Unmarshal(model, coal.TransferBSON)
-		if err != nil {
-			return err
-		}
+	// unmarshal model
+	err = job.Data.Unmarshal(model, coal.TransferJSON)
+	if err != nil {
+		return err
 	}
 
 	// add timeout
@@ -261,7 +265,7 @@ func (t *Task) execute(queue *Queue, id coal.ID) error {
 
 	// return immediately if lifetime has been reached
 	if time.Since(start) > t.Lifetime {
-		return fmt.Errorf(`task "%s" ran longer than the specified lifetime`, t.Name)
+		return fmt.Errorf(`task "%s" ran longer than the specified lifetime`, name)
 	}
 
 	// check error

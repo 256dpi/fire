@@ -84,13 +84,16 @@ func (q *Queue) Add(task *Task) {
 	// prepare task
 	task.prepare()
 
+	// get name
+	name := GetMeta(task.Job).Name
+
 	// check existence
-	if q.tasks[task.Name] != nil {
-		panic(fmt.Sprintf(`axe: task with name "%s" already exists`, task.Name))
+	if q.tasks[name] != nil {
+		panic(fmt.Sprintf(`axe: task with name "%s" already exists`, name))
 	}
 
 	// save task
-	q.tasks[task.Name] = task
+	q.tasks[name] = task
 }
 
 // Enqueue will enqueue a job using the specified blueprint.
@@ -169,7 +172,8 @@ func (q *Queue) Run() chan struct{} {
 
 	// create boards
 	for _, task := range q.tasks {
-		q.boards[task.Name] = &board{
+		name := GetMeta(task.Job).Name
+		q.boards[name] = &board{
 			jobs: make(map[coal.ID]*Model),
 		}
 	}
