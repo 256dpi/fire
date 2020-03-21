@@ -14,10 +14,10 @@ type Context struct {
 	// Values: opentracing.Span, *cinder.Trace
 	context.Context
 
-	// The model carried by the job.
+	// The processed job.
 	//
 	// Usage: Read Only
-	Model interface{}
+	Job Job
 
 	// The custom result of the job.
 	Result coal.Map

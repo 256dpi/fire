@@ -43,7 +43,7 @@ func GetMeta(job Job) *Meta {
 	defer metaMutex.Unlock()
 
 	// get typ
-	typ := reflect.TypeOf(job)
+	typ := reflect.TypeOf(job).Elem()
 
 	// check cache
 	if meta, ok := metaCache[typ]; ok {
@@ -51,7 +51,7 @@ func GetMeta(job Job) *Meta {
 	}
 
 	// get first field
-	field := typ.Elem().Field(0)
+	field := typ.Field(0)
 
 	// check field type and name
 	if field.Type != baseType || !field.Anonymous || field.Name != "Base" {
@@ -90,4 +90,9 @@ func GetMeta(job Job) *Meta {
 	metaNames[name] = typ
 
 	return meta
+}
+
+// Make returns a pointer to a new zero initialized job e.g. *Increment.
+func (m *Meta) Make() Job {
+	return reflect.New(m.Type).Interface().(Job)
 }

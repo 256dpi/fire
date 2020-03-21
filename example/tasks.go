@@ -30,11 +30,11 @@ func incrementTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
 		Job: &increment{},
 		Handler: func(ctx *axe.Context) error {
-			// get id
-			id := ctx.Model.(*increment).Item
+			// get item
+			item := ctx.Job.(*increment).Item
 
 			// increment count
-			_, err := store.M(&Item{}).Update(ctx, nil, id, bson.M{
+			_, err := store.M(&Item{}).Update(ctx, nil, item, bson.M{
 				"$inc": bson.M{
 					"Count": 1,
 				},

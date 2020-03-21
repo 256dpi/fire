@@ -35,7 +35,7 @@ func TestGetMeta(t *testing.T) {
 
 	meta := GetMeta(key)
 	assert.Equal(t, &Meta{
-		Type: reflect.TypeOf(&simpleJob{}),
+		Type: reflect.TypeOf(simpleJob{}),
 		Name: "simple",
 	}, meta)
 
@@ -61,7 +61,12 @@ func TestGetMeta(t *testing.T) {
 		GetMeta(&simpleJob{})
 	})
 
-	assert.PanicsWithValue(t, `axe: job name "simple" has already been registered by type "*axe.simpleJob"`, func() {
+	assert.PanicsWithValue(t, `axe: job name "simple" has already been registered by type "axe.simpleJob"`, func() {
 		GetMeta(&duplicateJob{})
 	})
+}
+
+func TestMetaMake(t *testing.T) {
+	job := GetMeta(&simpleJob{}).Make()
+	assert.Equal(t, &simpleJob{}, job)
 }

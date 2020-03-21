@@ -3,7 +3,6 @@ package axe
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -221,27 +220,22 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	defer trace.Finish()
 
 	// dequeue job
-	job, err := Dequeue(outerContext, queue.opts.Store, id, t.Timeout)
+	model, err := Dequeue(outerContext, queue.opts.Store, id, t.Timeout)
 	if err != nil {
 		return err
 	}
 
 	// return if missing (might be dequeued already by another process)
-	if job == nil {
+	if model == nil {
 		return nil
 	}
 
 	// get time
 	start := time.Now()
 
-	// prepare model
-	var model interface{}
-
-	// instantiate model
-	model = reflect.New(reflect.TypeOf(t.Job).Elem()).Interface()
-
-	// unmarshal model
-	err = job.Data.Unmarshal(model, coal.TransferJSON)
+	// unmarshal job
+	job := GetMeta(t.Job).Make()
+	err = model.Data.Unmarshal(job, coal.TransferJSON)
 	if err != nil {
 		return err
 	}
@@ -253,8 +247,8 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// prepare context
 	ctx := &Context{
 		Context: innerContext,
-		Model:   model,
-		Attempt: job.Attempts, // incremented when dequeued
+		Job:     job,
+		Attempt: model.Attempts, // incremented when dequeued
 		Task:    t,
 		Queue:   queue,
 		Trace:   trace,
@@ -273,8 +267,8 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		// check retry
 		if anError.Retry {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts)
-			err = Fail(outerContext, queue.opts.Store, job.ID(), anError.Reason, delay)
+			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, model.Attempts)
+			err = Fail(outerContext, queue.opts.Store, model.ID(), anError.Reason, delay)
 			if err != nil {
 				return err
 			}
@@ -283,7 +277,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, queue.opts.Store, job.ID(), anError.Reason)
+		err = Cancel(outerContext, queue.opts.Store, model.ID(), anError.Reason)
 		if err != nil {
 			return err
 		}
@@ -302,16 +296,16 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// handle other errors
 	if err != nil {
 		// check attempts
-		if t.MaxAttempts == 0 || job.Attempts < t.MaxAttempts {
+		if t.MaxAttempts == 0 || model.Attempts < t.MaxAttempts {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, job.Attempts)
-			_ = Fail(outerContext, queue.opts.Store, job.ID(), err.Error(), delay)
+			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, model.Attempts)
+			_ = Fail(outerContext, queue.opts.Store, model.ID(), err.Error(), delay)
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, queue.opts.Store, job.ID(), err.Error())
+		_ = Cancel(outerContext, queue.opts.Store, model.ID(), err.Error())
 
 		// call notifier if available
 		if t.Notifier != nil {
@@ -322,7 +316,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// complete job
-	err = Complete(outerContext, queue.opts.Store, job.ID(), ctx.Result)
+	err = Complete(outerContext, queue.opts.Store, model.ID(), ctx.Result)
 	if err != nil {
 		return err
 	}
