@@ -8,6 +8,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Get will load the contents of the specified value. It will also return
@@ -77,7 +78,7 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// encode value
-	var data coal.Map
+	var data stick.Map
 	err = data.Marshal(value, meta.Coding)
 	if err != nil {
 		return false, err

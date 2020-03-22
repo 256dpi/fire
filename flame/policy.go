@@ -10,8 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/cinder"
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
@@ -39,7 +39,7 @@ type Key struct {
 	heat.Base `json:"-" heat:"fire/flame.key,1h"`
 
 	// The extra data included in the key.
-	Extra coal.Map `json:"extra,omitempty"`
+	Extra stick.Map `json:"extra,omitempty"`
 }
 
 // Validate implements the heat.Key interface.
@@ -236,7 +236,7 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	data := token.GetTokenData()
 
 	// get extra data
-	var extra coal.Map
+	var extra stick.Map
 	if p.TokenData != nil {
 		extra = p.TokenData(client, resourceOwner, token)
 	}

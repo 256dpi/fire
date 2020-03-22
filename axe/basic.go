@@ -9,6 +9,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Enqueue will enqueue the specified job with the provided delay and isolation.
@@ -33,7 +34,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	defer span.Finish()
 
 	// encode job
-	var data coal.Map
+	var data stick.Map
 	err := data.Marshal(job, meta.Coding)
 	if err != nil {
 		return false, err
@@ -197,7 +198,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	defer span.Finish()
 
 	// encode job
-	var data coal.Map
+	var data stick.Map
 	err := data.Marshal(job, meta.Coding)
 	if err != nil {
 		return err

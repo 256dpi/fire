@@ -16,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // A Controller provides a JSON API based interface to a model.
@@ -1306,7 +1307,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// set original on update operations
 	if ctx.Operation == Update {
 		original := c.meta.Make()
-		stack.AbortIf(coal.BSON.Transfer(model, original))
+		stack.AbortIf(stick.BSON.Transfer(model, original))
 		ctx.Original = original
 	}
 }

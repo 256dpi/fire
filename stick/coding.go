@@ -1,4 +1,4 @@
-package coal
+package stick
 
 import (
 	"encoding/json"

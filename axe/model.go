@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // State defines the states of a job.
@@ -41,7 +42,7 @@ type Model struct {
 	Label string `json:"label"`
 
 	// The encoded job data.
-	Data coal.Map `json:"data"`
+	Data stick.Map `json:"data"`
 
 	// The current state of the job.
 	State State `json:"state"`

@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
 
@@ -35,7 +34,7 @@ func TestGetMeta(t *testing.T) {
 	assert.Equal(t, &Meta{
 		Type:   reflect.TypeOf(testJob{}),
 		Name:   "test",
-		Coding: coal.JSON,
+		Coding: stick.JSON,
 		Accessor: &stick.Accessor{
 			Name: "axe.testJob",
 			Fields: map[string]*stick.Field{
@@ -51,7 +50,7 @@ func TestGetMeta(t *testing.T) {
 	assert.Equal(t, &Meta{
 		Type:   reflect.TypeOf(bsonJob{}),
 		Name:   "bson",
-		Coding: coal.BSON,
+		Coding: stick.BSON,
 		Accessor: &stick.Accessor{
 			Name: "axe.bsonJob",
 			Fields: map[string]*stick.Field{

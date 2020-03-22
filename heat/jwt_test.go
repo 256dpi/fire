@@ -6,14 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestIssueAndVerify(t *testing.T) {
 	key1 := RawKey{
 		ID:     "id",
 		Expiry: time.Now().Add(time.Hour).Round(time.Second),
-		Data: coal.Map{
+		Data: stick.Map{
 			"user": "user",
 			"role": "role",
 		},

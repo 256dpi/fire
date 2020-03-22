@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestLock(t *testing.T) {
@@ -90,7 +91,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
 
@@ -107,7 +108,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
 
@@ -130,7 +131,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
 
@@ -142,7 +143,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
 
@@ -155,7 +156,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
 
@@ -172,7 +173,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
 
@@ -187,7 +188,7 @@ func TestLock(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!!!"}, model.Data)
 		assert.True(t, model.Locked.After(time.Now()))
 		assert.Equal(t, &value1.Token, model.Token)
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Notary is used to issue and verify tokens from keys.
@@ -57,8 +58,8 @@ func (n *Notary) Issue(key Key) (string, error) {
 	}
 
 	// get data
-	var data coal.Map
-	err = data.Marshal(key, coal.JSON)
+	var data stick.Map
+	err = data.Marshal(key, stick.JSON)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +99,7 @@ func (n *Notary) Verify(key Key, token string) error {
 	key.GetBase().Expiry = rawKey.Expiry
 
 	// assign data
-	err = rawKey.Data.Unmarshal(key, coal.JSON)
+	err = rawKey.Data.Unmarshal(key, stick.JSON)
 	if err != nil {
 		return err
 	}

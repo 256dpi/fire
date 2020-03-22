@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
 
@@ -41,7 +40,7 @@ func TestGetMeta(t *testing.T) {
 		Type:   reflect.TypeOf(&testValue{}),
 		Key:    "test",
 		TTL:    0,
-		Coding: coal.JSON,
+		Coding: stick.JSON,
 		Accessor: &stick.Accessor{
 			Name: "glut.testValue",
 			Fields: map[string]*stick.Field{
@@ -58,7 +57,7 @@ func TestGetMeta(t *testing.T) {
 		Type:   reflect.TypeOf(&bsonValue{}),
 		Key:    "bson",
 		TTL:    0,
-		Coding: coal.BSON,
+		Coding: stick.BSON,
 		Accessor: &stick.Accessor{
 			Name: "glut.bsonValue",
 			Fields: map[string]*stick.Field{

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestBasic(t *testing.T) {
@@ -29,7 +30,7 @@ func TestBasic(t *testing.T) {
 
 		model := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Cool!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Cool!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -53,7 +54,7 @@ func TestBasic(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -116,7 +117,7 @@ func TestDeadline(t *testing.T) {
 
 		model := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "ttl", model.Key)
-		assert.Equal(t, coal.Map{"data": "Nice!"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Nice!"}, model.Data)
 		assert.True(t, model.Deadline.After(time.Now()))
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -152,7 +153,7 @@ func TestExtended(t *testing.T) {
 
 		model := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "extended/A7", model.Key)
-		assert.Equal(t, coal.Map{"data": "Cool!", "id": "A7"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Cool!", "id": "A7"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)
@@ -177,7 +178,7 @@ func TestExtended(t *testing.T) {
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "extended/A7", model.Key)
-		assert.Equal(t, coal.Map{"data": "Hello!", "id": "A7"}, model.Data)
+		assert.Equal(t, stick.Map{"data": "Hello!", "id": "A7"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
 		assert.Nil(t, model.Token)

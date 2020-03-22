@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Model stores an encoded value.
@@ -14,7 +15,7 @@ type Model struct {
 	Key string `json:"key"`
 
 	// The content of the value.
-	Data coal.Map `json:"data"`
+	Data stick.Map `json:"data"`
 
 	// The time after the value can be deleted.
 	Deadline *time.Time `json:"deadline"`

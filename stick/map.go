@@ -1,4 +1,4 @@
-package coal
+package stick
 
 // Map represents a simple map. It provides methods to marshal and unmarshal
 // concrete types to and from the map using JSON or BSON coding.

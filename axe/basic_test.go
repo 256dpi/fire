@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestQueueing(t *testing.T) {
@@ -30,7 +30,7 @@ func TestQueueing(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Enqueued,
@@ -56,7 +56,7 @@ func TestQueueing(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Dequeued,
@@ -89,7 +89,7 @@ func TestQueueing(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!!!",
 			},
 			State:     Completed,
@@ -152,7 +152,7 @@ func TestQueueingDelayed(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Dequeued,
@@ -210,7 +210,7 @@ func TestDequeueTimeout(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Dequeued,
@@ -263,7 +263,7 @@ func TestFail(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Failed,
@@ -303,7 +303,7 @@ func TestFail(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Dequeued,
@@ -361,7 +361,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Failed,
@@ -408,7 +408,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Dequeued,
@@ -467,7 +467,7 @@ func TestCancel(t *testing.T) {
 		assert.Equal(t, &Model{
 			Base: model.Base,
 			Name: "test",
-			Data: coal.Map{
+			Data: stick.Map{
 				"data": "Hello!",
 			},
 			State:     Cancelled,

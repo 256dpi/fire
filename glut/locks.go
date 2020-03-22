@@ -9,6 +9,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Lock will lock and read the specified value. Lock may create a new value in
@@ -164,7 +165,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// encode data
-	var data coal.Map
+	var data stick.Map
 	err = data.Marshal(value, meta.Coding)
 	if err != nil {
 		return false, err

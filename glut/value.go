@@ -52,7 +52,7 @@ type Meta struct {
 	TTL time.Duration
 
 	// The used transfer coding.
-	Coding coal.Coding
+	Coding stick.Coding
 
 	// The accessor.
 	Accessor *stick.Accessor
@@ -94,9 +94,9 @@ func GetMeta(value Value) *Meta {
 	}
 
 	// get coding
-	coding := coal.JSON
+	coding := stick.JSON
 	if hasBSON {
-		coding = coal.BSON
+		coding = stick.BSON
 	}
 
 	// split tag
