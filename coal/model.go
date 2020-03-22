@@ -15,21 +15,6 @@ type Model interface {
 	GetAccessor(interface{}) *stick.Accessor
 }
 
-// Slice takes a slice of the form *[]*Post and returns a new slice that
-// contains all models.
-func Slice(ptr interface{}) []Model {
-	// get slice
-	slice := reflect.ValueOf(ptr).Elem()
-
-	// collect models
-	models := make([]Model, slice.Len())
-	for i := 0; i < slice.Len(); i++ {
-		models[i] = slice.Index(i).Interface().(Model)
-	}
-
-	return models
-}
-
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID    `json:"-" bson:"_id,omitempty"`
@@ -74,4 +59,19 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 
 type empty struct {
 	Base `bson:",inline"`
+}
+
+// Slice takes a slice of the form *[]*Post and returns a new slice that
+// contains all models.
+func Slice(ptr interface{}) []Model {
+	// get slice
+	slice := reflect.ValueOf(ptr).Elem()
+
+	// collect models
+	models := make([]Model, slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		models[i] = slice.Index(i).Interface().(Model)
+	}
+
+	return models
 }
