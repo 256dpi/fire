@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
-	"github.com/256dpi/fire/heat"
 )
 
 func TestPolicyIssueAndVerify(t *testing.T) {
@@ -30,7 +29,7 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID(), key.ID)
 	assert.Equal(t, token.ExpiresAt, key.Expiry.Local())
-	assert.Equal(t, heat.Data{
+	assert.Equal(t, coal.Map{
 		"name": "Hello",
 	}, key.Extra)
 }
