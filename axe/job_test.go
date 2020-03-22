@@ -24,14 +24,14 @@ type invalidJob3 struct {
 }
 
 func TestGetMeta(t *testing.T) {
-	key := &simpleJob{
+	key := &testJob{
 		Data: "cool",
 	}
 
 	meta := GetMeta(key)
 	assert.Equal(t, &Meta{
-		Type: reflect.TypeOf(simpleJob{}),
-		Name: "simple",
+		Type: reflect.TypeOf(testJob{}),
+		Name: "test",
 	}, meta)
 
 	data, err := json.Marshal(key)
@@ -54,6 +54,6 @@ func TestGetMeta(t *testing.T) {
 }
 
 func TestMetaMake(t *testing.T) {
-	job := GetMeta(&simpleJob{}).Make()
-	assert.Equal(t, &simpleJob{}, job)
+	job := GetMeta(&testJob{}).Make()
+	assert.Equal(t, &testJob{}, job)
 }

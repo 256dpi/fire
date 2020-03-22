@@ -7,7 +7,7 @@ import (
 
 const maxInt64 = float64(math.MaxInt64 - 512)
 
-// Backoff is the simple backoff algorithm to calculate the delay of job.
+// Backoff will calculate the exponential delay.
 func Backoff(min, max time.Duration, factor float64, attempt int) time.Duration {
 	// set default min
 	if min <= 0 {

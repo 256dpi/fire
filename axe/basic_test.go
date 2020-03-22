@@ -12,7 +12,7 @@ import (
 
 func TestQueueing(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -29,7 +29,7 @@ func TestQueueing(t *testing.T) {
 		assert.NotNil(t, model.Available)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -55,7 +55,7 @@ func TestQueueing(t *testing.T) {
 		assert.NotNil(t, model.Started)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -88,7 +88,7 @@ func TestQueueing(t *testing.T) {
 		assert.NotNil(t, model.Finished)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!!!",
 			},
@@ -119,7 +119,7 @@ func TestQueueing(t *testing.T) {
 
 func TestQueueingDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -151,7 +151,7 @@ func TestQueueingDelayed(t *testing.T) {
 		assert.NotNil(t, model.Started)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -176,7 +176,7 @@ func TestQueueingDelayed(t *testing.T) {
 
 func TestDequeueTimeout(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -209,7 +209,7 @@ func TestDequeueTimeout(t *testing.T) {
 		assert.NotZero(t, model.Events[1].Timestamp)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -238,7 +238,7 @@ func TestDequeueTimeout(t *testing.T) {
 
 func TestFail(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -262,7 +262,7 @@ func TestFail(t *testing.T) {
 		assert.NotNil(t, model.Ended)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -302,7 +302,7 @@ func TestFail(t *testing.T) {
 		assert.NotZero(t, model.Events[2].Timestamp)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -336,7 +336,7 @@ func TestFail(t *testing.T) {
 
 func TestFailDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -360,7 +360,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.NotNil(t, model.Ended)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -407,7 +407,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.NotZero(t, model.Events[2].Timestamp)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -441,7 +441,7 @@ func TestFailDelayed(t *testing.T) {
 
 func TestCancel(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -466,7 +466,7 @@ func TestCancel(t *testing.T) {
 		assert.NotNil(t, model.Finished)
 		assert.Equal(t, &Model{
 			Base: model.Base,
-			Name: "simple",
+			Name: "test",
 			Data: coal.Map{
 				"data": "Hello!",
 			},
@@ -503,7 +503,7 @@ func TestCancel(t *testing.T) {
 
 func TestEnqueueLabeled(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job1 := simpleJob{
+		job1 := testJob{
 			Base: B("test"),
 			Data: "Hello!",
 		}
@@ -515,11 +515,11 @@ func TestEnqueueLabeled(t *testing.T) {
 
 		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Enqueued, list[0].Status)
 
-		job2 := simpleJob{
+		job2 := testJob{
 			Base: B("test"),
 			Data: "Hello!",
 		}
@@ -531,7 +531,7 @@ func TestEnqueueLabeled(t *testing.T) {
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Enqueued, list[0].Status)
 
@@ -548,10 +548,10 @@ func TestEnqueueLabeled(t *testing.T) {
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Completed, list[0].Status)
-		assert.Equal(t, "simple", list[1].Name)
+		assert.Equal(t, "test", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
 		assert.Equal(t, Enqueued, list[1].Status)
 	})
@@ -559,7 +559,7 @@ func TestEnqueueLabeled(t *testing.T) {
 
 func TestEnqueueIsolation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job1 := simpleJob{
+		job1 := testJob{
 			Base: B("test"),
 			Data: "Hello!",
 		}
@@ -571,11 +571,11 @@ func TestEnqueueIsolation(t *testing.T) {
 
 		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Enqueued, list[0].Status)
 
-		job2 := simpleJob{
+		job2 := testJob{
 			Base: B("test"),
 			Data: "Hello!",
 		}
@@ -592,7 +592,7 @@ func TestEnqueueIsolation(t *testing.T) {
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Enqueued, list[0].Status)
 
@@ -609,7 +609,7 @@ func TestEnqueueIsolation(t *testing.T) {
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Completed, list[0].Status)
 
@@ -622,10 +622,10 @@ func TestEnqueueIsolation(t *testing.T) {
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
-		assert.Equal(t, "simple", list[0].Name)
+		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
 		assert.Equal(t, Completed, list[0].Status)
-		assert.Equal(t, "simple", list[1].Name)
+		assert.Equal(t, "test", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
 		assert.Equal(t, Enqueued, list[1].Status)
 	})

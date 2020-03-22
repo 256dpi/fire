@@ -12,8 +12,8 @@ var lungoStore = coal.MustOpen(nil, "test-fire-axe", nil)
 
 var modelList = []coal.Model{&Model{}}
 
-type simpleJob struct {
-	Base `json:"-" axe:"simple"`
+type testJob struct {
+	Base `json:"-" axe:"test"`
 
 	Data string `json:"data"`
 }

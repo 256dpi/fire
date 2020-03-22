@@ -22,9 +22,9 @@ func TestQueue(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
-				job := ctx.Job.(*simpleJob)
+				job := ctx.Job.(*testJob)
 				job.Data = "Hello!!!"
 				return nil
 			},
@@ -36,7 +36,7 @@ func TestQueue(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -47,7 +47,7 @@ func TestQueue(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -86,9 +86,9 @@ func TestQueueDelayed(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
-				job := ctx.Job.(*simpleJob)
+				job := ctx.Job.(*testJob)
 				job.Data = "Hello!!!"
 				return nil
 			},
@@ -100,7 +100,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -111,7 +111,7 @@ func TestQueueDelayed(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -150,13 +150,13 @@ func TestQueueFailed(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				if ctx.Attempt == 1 {
 					return E("some error", true)
 				}
 
-				job := ctx.Job.(*simpleJob)
+				job := ctx.Job.(*testJob)
 				job.Data = "Hello!!!"
 
 				return nil
@@ -170,7 +170,7 @@ func TestQueueFailed(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -181,7 +181,7 @@ func TestQueueFailed(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -234,7 +234,7 @@ func TestQueueCrashed(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				if ctx.Attempt == 1 {
 					return io.EOF
@@ -251,7 +251,7 @@ func TestQueueCrashed(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -263,7 +263,7 @@ func TestQueueCrashed(t *testing.T) {
 		assert.Equal(t, io.EOF, <-errs)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -313,7 +313,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				return E("cancelled", false)
 			},
@@ -325,7 +325,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -336,7 +336,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
@@ -376,7 +376,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				return E("some error", ctx.Attempt == 1)
 			},
@@ -389,7 +389,7 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -400,7 +400,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
@@ -454,7 +454,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				return errors.New("some error")
 			},
@@ -468,7 +468,7 @@ func TestQueueCancelCrash(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -480,7 +480,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.Equal(t, "some error", (<-errs).Error())
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
@@ -534,7 +534,7 @@ func TestQueueTimeout(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				if ctx.Attempt == 1 {
 					<-ctx.Done()
@@ -553,7 +553,7 @@ func TestQueueTimeout(t *testing.T) {
 
 		<-queue.Run()
 
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -564,7 +564,7 @@ func TestQueueTimeout(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -595,7 +595,7 @@ func TestQueueTimeout(t *testing.T) {
 		}, model.Events)
 
 		err = <-errs
-		assert.Equal(t, `task "simple" ran longer than the specified lifetime`, err.Error())
+		assert.Equal(t, `task "test" ran longer than the specified lifetime`, err.Error())
 
 		queue.Close()
 	})
@@ -603,7 +603,7 @@ func TestQueueTimeout(t *testing.T) {
 
 func TestQueueExisting(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		job := simpleJob{
+		job := testJob{
 			Data: "Hello!",
 		}
 
@@ -619,7 +619,7 @@ func TestQueueExisting(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				return nil
 			},
@@ -636,7 +636,7 @@ func TestQueueExisting(t *testing.T) {
 		<-done
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
@@ -675,9 +675,9 @@ func TestQueuePeriodically(t *testing.T) {
 		})
 
 		queue.Add(&Task{
-			Job: &simpleJob{},
+			Job: &testJob{},
 			Handler: func(ctx *Context) error {
-				job := ctx.Job.(*simpleJob)
+				job := ctx.Job.(*testJob)
 				job.Data = "Hello!!!"
 				return nil
 			},
@@ -687,7 +687,7 @@ func TestQueuePeriodically(t *testing.T) {
 			},
 			Periodicity: time.Minute,
 			PeriodicJob: Blueprint{
-				Job: &simpleJob{
+				Job: &testJob{
 					Data: "Hello!",
 				},
 			},
@@ -698,7 +698,7 @@ func TestQueuePeriodically(t *testing.T) {
 		<-done
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "simple", model.Name)
+		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
