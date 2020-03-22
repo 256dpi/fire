@@ -18,18 +18,19 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	meta := GetMeta(job)
 	base := job.GetBase()
 
-	// track
-	ctx, span := cinder.Track(ctx, "axe/Enqueue")
-	span.Log("name", meta.Name)
-	span.Log("label", base.Label)
-	span.Log("delay", delay.String())
-	span.Log("isolation", isolation.String())
-	defer span.Finish()
-
 	// ensure id
 	if base.DocID.IsZero() {
 		base.DocID = coal.New()
 	}
+
+	// track
+	ctx, span := cinder.Track(ctx, "axe/Enqueue")
+	span.Tag("name", meta.Name)
+	span.Log("label", base.Label)
+	span.Log("id", job.ID().Hex())
+	span.Log("delay", delay.String())
+	span.Log("isolation", isolation.String())
+	defer span.Finish()
 
 	// encode job
 	var data coal.Map
@@ -117,8 +118,12 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 // jobs in the "enqueued", "dequeued" (passed timeout) or "failed" state are
 // dequeued. It will return whether a job has been dequeued.
 func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Duration) (bool, int, error) {
+	// get meta
+	meta := GetMeta(job)
+
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Dequeue")
+	span.Tag("name", meta.Name)
 	span.Log("id", job.ID().Hex())
 	span.Log("timeout", timeout.String())
 	defer span.Finish()
@@ -170,14 +175,24 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 		return false, 0, err
 	}
 
+	// set and log label
+	job.GetBase().Label = model.Label
+	span.Log("label", model.Label)
+
 	return true, model.Attempts, nil
 }
 
 // Complete will complete the specified job. Only jobs in the "dequeued" state
 // can be completed.
 func Complete(ctx context.Context, store *coal.Store, job Job) error {
+	// get meta and base
+	meta := GetMeta(job)
+	base := job.GetBase()
+
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Complete")
+	span.Tag("name", meta.Name)
+	span.Log("label", base.Label)
 	span.Log("id", job.ID().Hex())
 	defer span.Finish()
 
@@ -221,8 +236,14 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 // Fail will fail the specified job with the provided reason. It may delay the
 // job if requested. Only jobs in the "dequeued" state can be failed.
 func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay time.Duration) error {
+	// get meta and base
+	meta := GetMeta(job)
+	base := job.GetBase()
+
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Fail")
+	span.Tag("name", meta.Name)
+	span.Log("label", base.Label)
 	span.Log("id", job.ID().Hex())
 	span.Log("reason", reason)
 	span.Log("delay", delay.String())
@@ -258,11 +279,17 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	return nil
 }
 
-// Cancel will cancel the specified job with provided reason. Only jobs in the
-// "dequeued" state can be cancelled.
+// Cancel will cancel the specified job with the provided reason. Only jobs in
+// the "dequeued" state can be cancelled.
 func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) error {
+	// get meta and base
+	meta := GetMeta(job)
+	base := job.GetBase()
+
 	// track
 	ctx, span := cinder.Track(ctx, "axe/Cancel")
+	span.Tag("name", meta.Name)
+	span.Log("label", base.Label)
 	span.Log("id", job.ID().Hex())
 	span.Log("reason", reason)
 	defer span.Finish()
