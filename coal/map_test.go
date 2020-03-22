@@ -20,7 +20,7 @@ func TestMap(t *testing.T) {
 
 	input := &parent{
 		Title: "foo",
-		Data:  MustMap(child{Body: "body"}, TransferJSON),
+		Data:  MustMap(child{Body: "body"}, JSON),
 	}
 
 	bytes1, err := json.Marshal(input)
@@ -38,7 +38,7 @@ func TestMap(t *testing.T) {
 	}, output1)
 
 	var ch1 child
-	output1.Data.MustUnmarshal(&ch1, TransferJSON)
+	output1.Data.MustUnmarshal(&ch1, JSON)
 	assert.Equal(t, child{Body: "body"}, ch1)
 
 	bytes2, err := bson.Marshal(input)
@@ -55,6 +55,6 @@ func TestMap(t *testing.T) {
 	}, output2)
 
 	var ch2 child
-	output2.Data.MustUnmarshal(&ch2, TransferJSON)
+	output2.Data.MustUnmarshal(&ch2, JSON)
 	assert.Equal(t, child{Body: "body"}, ch2)
 }

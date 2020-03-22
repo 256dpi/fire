@@ -34,7 +34,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 
 	// encode job
 	var data coal.Map
-	err := data.Marshal(job, coal.TransferJSON)
+	err := data.Marshal(job, coal.JSON)
 	if err != nil {
 		return false, err
 	}
@@ -170,7 +170,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	}
 
 	// decode job
-	err = model.Data.Unmarshal(job, coal.TransferJSON)
+	err = model.Data.Unmarshal(job, coal.JSON)
 	if err != nil {
 		return false, 0, err
 	}
@@ -198,7 +198,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 
 	// encode job
 	var data coal.Map
-	err := data.Marshal(job, coal.TransferJSON)
+	err := data.Marshal(job, coal.JSON)
 	if err != nil {
 		return err
 	}

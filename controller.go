@@ -1306,7 +1306,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// set original on update operations
 	if ctx.Operation == Update {
 		original := c.meta.Make()
-		stack.AbortIf(coal.TransferBSON(model, original))
+		stack.AbortIf(coal.BSON.Transfer(model, original))
 		ctx.Original = original
 	}
 }

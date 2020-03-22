@@ -120,7 +120,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	}
 
 	// decode value
-	err = model.Data.Unmarshal(value, coal.TransferJSON)
+	err = model.Data.Unmarshal(value, coal.JSON)
 	if err != nil {
 		return false, err
 	}
@@ -165,7 +165,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// encode data
 	var data coal.Map
-	err = data.Marshal(value, coal.TransferJSON)
+	err = data.Marshal(value, coal.JSON)
 	if err != nil {
 		return false, err
 	}
@@ -230,7 +230,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// decode value
-	err = model.Data.Unmarshal(value, coal.TransferJSON)
+	err = model.Data.Unmarshal(value, coal.JSON)
 	if err != nil {
 		return false, err
 	}
