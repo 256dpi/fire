@@ -127,7 +127,7 @@ func TestQueueFailed(t *testing.T) {
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
 				if ctx.Attempt == 1 {
-					return E("foo", true)
+					return E("some error", true)
 				}
 
 				job := ctx.Job.(*simpleJob)
@@ -164,7 +164,7 @@ func TestQueueFailed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, []string{"foo"}, model.Errors)
+		assert.Equal(t, []string{"some error"}, model.Errors)
 
 		queue.Close()
 	})

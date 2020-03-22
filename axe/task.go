@@ -11,13 +11,16 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Error is used to signal failed job executions.
+// Error is used to control retry an cancellation. These errors are expected and
+// are not forwarded to the reporter.
 type Error struct {
 	Reason string
 	Retry  bool
 }
 
-// E is a short-hand to construct an error.
+// E is a short-hand to construct an error. If retry is true the job will be
+// retried and if false it will be cancelled. These settings take precedence
+// over the tasks max attempts setting.
 func E(reason string, retry bool) *Error {
 	return &Error{
 		Reason: reason,
