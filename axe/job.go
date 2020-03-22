@@ -1,7 +1,6 @@
 package axe
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -54,7 +53,6 @@ type Meta struct {
 
 var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]*Meta{}
-var metaNames = map[string]reflect.Type{}
 
 // GetMeta will parse the jobs "axe" tag on the embedded axe.Base struct and
 // return the meta object.
@@ -94,9 +92,6 @@ func GetMeta(job Job) *Meta {
 
 	// get name
 	name := tag[0]
-	if existing := metaNames[name]; existing != nil {
-		panic(fmt.Sprintf(`axe: job name %q has already been registered by type %q`, name, existing.String()))
-	}
 
 	// prepare meta
 	meta := &Meta{
@@ -106,9 +101,6 @@ func GetMeta(job Job) *Meta {
 
 	// cache meta
 	metaCache[typ] = meta
-
-	// flag name
-	metaNames[name] = typ
 
 	return meta
 }

@@ -23,11 +23,6 @@ type invalidJob3 struct {
 	Hello string
 }
 
-type duplicateJob struct {
-	Base  `json:"-" axe:"simple"`
-	Hello string
-}
-
 func TestGetMeta(t *testing.T) {
 	key := &simpleJob{
 		Data: "cool",
@@ -55,14 +50,6 @@ func TestGetMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `axe: expected to find a tag of the form 'axe:"name"' on "axe.Base"`, func() {
 		GetMeta(&invalidJob3{})
-	})
-
-	assert.NotPanics(t, func() {
-		GetMeta(&simpleJob{})
-	})
-
-	assert.PanicsWithValue(t, `axe: job name "simple" has already been registered by type "axe.simpleJob"`, func() {
-		GetMeta(&duplicateJob{})
 	})
 }
 

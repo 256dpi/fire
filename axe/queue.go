@@ -17,17 +17,17 @@ type board struct {
 	jobs map[coal.ID]*Model
 }
 
-// Blueprint describes an queueable job.
+// Blueprint describes a queueable job.
 type Blueprint struct {
 	// The job to be enqueued.
 	Job Job
 
-	// The initial delay. If specified the job will not be dequeued until the
-	// specified time has passed.
+	// The job delay. If specified, the job will not be dequeued until the
+	// specified duration has passed.
 	Delay time.Duration
 
-	// The job isolation. If given the job will only be enqueued if no job has
-	// been finished in the specified duration.
+	// The job isolation. If specified, the job will only be enqueued if no job
+	// has been executed in the specified duration.
 	Isolation time.Duration
 }
 
@@ -41,7 +41,7 @@ type Options struct {
 	// By default multiple workers compete with each other when getting jobs
 	// from the same queue. An artificial lag limits multiple simultaneous
 	// dequeue attempts and allows the worker with the smallest lag to dequeue
-	// the job and inform the other workers to prevent parallel dequeue attempts.
+	// the job and inform the other workers to limit parallel dequeue attempts.
 	//
 	// Default: 100ms.
 	MaxLag time.Duration
