@@ -16,6 +16,8 @@ type Value interface {
 
 // ExtendedValue is a value that can extends its key.
 type ExtendedValue interface {
+	Value
+
 	GetExtension() (string, error)
 }
 
