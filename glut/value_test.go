@@ -42,6 +42,15 @@ func TestGetMeta(t *testing.T) {
 		Key:    "test",
 		TTL:    0,
 		Coding: coal.JSON,
+		Accessor: &stick.Accessor{
+			Name: "glut.testValue",
+			Fields: map[string]*stick.Field{
+				"Data": {
+					Index: 1,
+					Type: reflect.TypeOf(""),
+				},
+			},
+		},
 	}, meta)
 
 	meta = GetMeta(&bsonValue{})
@@ -50,6 +59,15 @@ func TestGetMeta(t *testing.T) {
 		Key:    "bson",
 		TTL:    0,
 		Coding: coal.BSON,
+		Accessor: &stick.Accessor{
+			Name: "glut.bsonValue",
+			Fields: map[string]*stick.Field{
+				"Data": {
+					Index: 1,
+					Type: reflect.TypeOf(""),
+				},
+			},
+		},
 	}, meta)
 
 	assert.PanicsWithValue(t, `glut: expected first struct field to be an embedded "glut.Base"`, func() {

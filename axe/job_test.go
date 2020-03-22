@@ -36,6 +36,15 @@ func TestGetMeta(t *testing.T) {
 		Type:   reflect.TypeOf(testJob{}),
 		Name:   "test",
 		Coding: coal.JSON,
+		Accessor: &stick.Accessor{
+			Name: "axe.testJob",
+			Fields: map[string]*stick.Field{
+				"Data": {
+					Index: 1,
+					Type: reflect.TypeOf(""),
+				},
+			},
+		},
 	}, meta)
 
 	meta = GetMeta(&bsonJob{})
@@ -43,6 +52,15 @@ func TestGetMeta(t *testing.T) {
 		Type:   reflect.TypeOf(bsonJob{}),
 		Name:   "bson",
 		Coding: coal.BSON,
+		Accessor: &stick.Accessor{
+			Name: "axe.bsonJob",
+			Fields: map[string]*stick.Field{
+				"Data": {
+					Index: 1,
+					Type: reflect.TypeOf(""),
+				},
+			},
+		},
 	}, meta)
 
 	assert.PanicsWithValue(t, `axe: expected first struct field to be an embedded "axe.Base"`, func() {
