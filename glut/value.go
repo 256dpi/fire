@@ -1,7 +1,6 @@
 package glut
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -47,7 +46,6 @@ type Meta struct {
 
 var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]*Meta{}
-var metaKeys = map[string]reflect.Type{}
 
 // GetMeta will parse the values "glut" tag on the embedded glut.Base struct and
 // return the meta object.
@@ -87,9 +85,6 @@ func GetMeta(value Value) *Meta {
 
 	// get key
 	key := tag[0]
-	if existing := metaKeys[key]; existing != nil {
-		panic(fmt.Sprintf(`glut: value key %q has already been registered by type %q`, key, existing.String()))
-	}
 
 	// get ttl
 	ttl, err := time.ParseDuration(tag[1])
@@ -106,9 +101,6 @@ func GetMeta(value Value) *Meta {
 
 	// cache meta
 	metaCache[typ] = meta
-
-	// flag key
-	metaKeys[key] = typ
 
 	return meta
 }
