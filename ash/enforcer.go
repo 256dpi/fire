@@ -4,6 +4,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/stick"
 )
 
 // E is a short-hand function to create an enforcer.
@@ -67,7 +68,7 @@ func AddFilter(filter bson.M) *Enforcer {
 func WhitelistReadableFields(fields ...string) *Enforcer {
 	return E("ash/WhitelistReadableFields", fire.Except(fire.Delete, fire.ResourceAction, fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
-		ctx.ReadableFields = fire.Intersect(ctx.ReadableFields, fields)
+		ctx.ReadableFields = stick.Intersect(ctx.ReadableFields, fields)
 
 		return nil
 	})
@@ -80,7 +81,7 @@ func WhitelistReadableFields(fields ...string) *Enforcer {
 func WhitelistWritableFields(fields ...string) *Enforcer {
 	return E("ash/WhitelistWritableFields", fire.Only(fire.Create, fire.Update), func(ctx *fire.Context) error {
 		// set new list
-		ctx.WritableFields = fire.Intersect(ctx.WritableFields, fields)
+		ctx.WritableFields = stick.Intersect(ctx.WritableFields, fields)
 
 		return nil
 	})

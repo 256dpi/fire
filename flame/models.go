@@ -9,6 +9,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 // TokenType defines the type of a token.
@@ -168,7 +169,7 @@ func (a *Application) IsConfidential() bool {
 
 // ValidRedirectURI implements the flame.Client interface.
 func (a *Application) ValidRedirectURI(uri string) bool {
-	return fire.Contains(a.RedirectURIs, uri)
+	return stick.Contains(a.RedirectURIs, uri)
 }
 
 // ValidSecret implements the flame.Client interface.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 var validTag = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
@@ -127,12 +128,12 @@ func WhitelistFields(fields Fields) *Authorizer {
 
 			// merge creatable fields
 			if ctx.Operation == fire.Create && len(fields.Creatable) > 0 {
-				writable = fire.Union(writable, fields.Creatable)
+				writable = stick.Union(writable, fields.Creatable)
 			}
 
 			// merge updatable fields
 			if ctx.Operation == fire.Update && len(fields.Updatable) > 0 {
-				writable = fire.Union(writable, fields.Updatable)
+				writable = stick.Union(writable, fields.Updatable)
 			}
 
 			// add enforcer

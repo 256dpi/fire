@@ -166,7 +166,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		action, ok := g.actions[s[0]]
 		if ok {
 			// check if action is allowed
-			if Contains(action.Action.Methods, r.Method) {
+			if stick.Contains(action.Action.Methods, r.Method) {
 				// run authorizers and handle errors
 				for _, cb := range action.Authorizers {
 					// check if callback should be run

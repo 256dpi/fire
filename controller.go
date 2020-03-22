@@ -732,7 +732,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is readable
-	if !Contains(ctx.ReadableFields, rel.Name) {
+	if !stick.Contains(ctx.ReadableFields, rel.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
@@ -898,7 +898,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is readable
-	if !Contains(ctx.ReadableFields, field.Name) {
+	if !stick.Contains(ctx.ReadableFields, field.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
@@ -946,7 +946,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(ctx.WritableFields, rel.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1012,7 +1012,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(ctx.WritableFields, rel.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1101,7 +1101,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(ctx.WritableFields, rel.Name) {
 		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1262,7 +1262,7 @@ func (c *Controller) initialFields(r *jsonapi.Request) []string {
 		}
 
 		// whitelist requested fields
-		list = Intersect(requested, list)
+		list = stick.Intersect(requested, list)
 	}
 
 	return list
@@ -1331,7 +1331,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		// handle attributes filter
 		if field := c.meta.Attributes[name]; field != nil {
 			// check whitelist
-			if !Contains(c.Filters, field.Name) {
+			if !stick.Contains(c.Filters, field.Name) {
 				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
@@ -1349,7 +1349,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		// handle relationship filters
 		if field := c.meta.Relationships[name]; field != nil {
 			// check whitelist
-			if !field.ToOne && !field.ToMany || !Contains(c.Filters, field.Name) {
+			if !field.ToOne && !field.ToMany || !stick.Contains(c.Filters, field.Name) {
 				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
@@ -1387,7 +1387,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 
 		// check whitelist
-		if !Contains(c.Sorters, field.Name) {
+		if !stick.Contains(c.Sorters, field.Name) {
 			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
 		}
 
@@ -1464,7 +1464,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		}
 
 		// check whitelist
-		if !Contains(whitelist, name) {
+		if !stick.Contains(whitelist, name) {
 			// ignore violation if tolerated
 			if c.TolerateViolations {
 				continue
@@ -1492,7 +1492,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		}
 
 		// check whitelist
-		if !Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
+		if !stick.Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
 			// ignore violation if tolerated
 			if c.TolerateViolations {
 				continue
@@ -1613,7 +1613,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		}
 
 		// check if whitelisted
-		if !Contains(whitelist, field.RelName) {
+		if !stick.Contains(whitelist, field.RelName) {
 			continue
 		}
 
@@ -1781,7 +1781,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 	// go through all relationships
 	for _, field := range c.meta.Relationships {
 		// check if whitelisted
-		if !Contains(whitelist, field.RelName) {
+		if !stick.Contains(whitelist, field.RelName) {
 			continue
 		}
 

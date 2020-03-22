@@ -100,7 +100,7 @@ func (t *Tester) RunAction(ctx *Context, action *Action) (*httptest.ResponseReco
 		rec = ctx.ResponseWriter.(*httptest.ResponseRecorder)
 
 		// check method
-		if !Contains(action.Methods, ctx.HTTPRequest.Method) {
+		if !stick.Contains(action.Methods, ctx.HTTPRequest.Method) {
 			rec.WriteHeader(http.StatusMethodNotAllowed)
 			return nil
 		}

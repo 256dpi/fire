@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrAccessDenied can be returned by any callback to deny access.
@@ -273,7 +274,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 	// iterate through all fields
 	for _, field := range coal.GetMeta(model).Relationships {
 		// exclude field if requested
-		if Contains(excludedFields, field.Name) {
+		if stick.Contains(excludedFields, field.Name) {
 			continue
 		}
 
