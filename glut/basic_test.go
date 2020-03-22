@@ -11,14 +11,14 @@ import (
 
 func TestBasic(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
-		var value simpleValue
+		var value testValue
 
 		// get missing
 
 		exists, err := Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, exists)
-		assert.Equal(t, simpleValue{}, value)
+		assert.Equal(t, testValue{}, value)
 
 		// set new
 
@@ -28,7 +28,7 @@ func TestBasic(t *testing.T) {
 		assert.True(t, created)
 
 		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "simple", model.Key)
+		assert.Equal(t, "test", model.Key)
 		assert.Equal(t, coal.Map{"data": "Cool!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
@@ -40,7 +40,7 @@ func TestBasic(t *testing.T) {
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, simpleValue{
+		assert.Equal(t, testValue{
 			Data: "Cool!",
 		}, value)
 
@@ -52,7 +52,7 @@ func TestBasic(t *testing.T) {
 		assert.False(t, created)
 
 		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "simple", model.Key)
+		assert.Equal(t, "test", model.Key)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Nil(t, model.Deadline)
 		assert.Nil(t, model.Locked)
@@ -64,7 +64,7 @@ func TestBasic(t *testing.T) {
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, simpleValue{
+		assert.Equal(t, testValue{
 			Data: "Hello!",
 		}, value)
 
@@ -84,7 +84,7 @@ func TestBasic(t *testing.T) {
 		exists, err = Get(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, exists)
-		assert.Equal(t, simpleValue{
+		assert.Equal(t, testValue{
 			Data: "Hello!!!",
 		}, value)
 

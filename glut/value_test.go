@@ -29,14 +29,14 @@ type invalidValue4 struct {
 }
 
 func TestGetMeta(t *testing.T) {
-	key := &simpleValue{
+	key := &testValue{
 		Data: "cool",
 	}
 
 	meta := GetMeta(key)
 	assert.Equal(t, &Meta{
-		Type: reflect.TypeOf(&simpleValue{}),
-		Key:  "simple",
+		Type: reflect.TypeOf(&testValue{}),
+		Key:  "test",
 		TTL:  0,
 	}, meta)
 
