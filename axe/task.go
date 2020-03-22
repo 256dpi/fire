@@ -288,7 +288,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		return err
 	}
 
-	// return if missing (might be dequeued already by another worker)
+	// return if not dequeued (might be dequeued already by another worker)
 	if !dequeued {
 		return nil
 	}
@@ -313,7 +313,8 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// run handler
 	err = t.Handler(ctx)
 
-	// return immediately if lifetime has been reached
+	// return immediately if lifetime has been reached. another worker might
+	// already have dequeued the job
 	if time.Since(start) > t.Lifetime {
 		return fmt.Errorf(`task "%s" ran longer than the specified lifetime`, name)
 	}
