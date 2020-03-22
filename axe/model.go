@@ -52,8 +52,8 @@ type Model struct {
 	// Attempts is incremented with each execution attempt.
 	Attempts int `json:"attempts"`
 
-	// The last message submitted when the job was failed or cancelled.
-	Reason string `json:"reason"`
+	// The errors encountered when processing the job.
+	Errors []string `json:"errors"`
 }
 
 // AddModelIndexes will add job indexes to the specified catalog. If a duration

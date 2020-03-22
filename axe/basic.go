@@ -50,6 +50,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		Status:    StatusEnqueued,
 		Created:   now,
 		Available: now.Add(delay),
+		Errors:    []string{},
 	}
 
 	// insert unlabeled unisolated jobs immediately
@@ -222,7 +223,9 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 			"Status":    StatusFailed,
 			"Available": now.Add(delay),
 			"Ended":     now,
-			"Reason":    reason,
+		},
+		"$push": bson.M{
+			"Errors": reason,
 		},
 	}, nil, false)
 	if err != nil {
@@ -255,7 +258,9 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 			"Status":   StatusCancelled,
 			"Ended":    now,
 			"Finished": now,
-			"Reason":   reason,
+		},
+		"$push": bson.M{
+			"Errors": reason,
 		},
 	}, nil, false)
 	if err != nil {

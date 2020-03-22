@@ -36,6 +36,7 @@ func TestQueueing(t *testing.T) {
 			Status:    StatusEnqueued,
 			Created:   model.Created,
 			Available: model.Available,
+			Errors:    []string{},
 		}, model)
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
@@ -58,6 +59,7 @@ func TestQueueing(t *testing.T) {
 			Available: model.Available,
 			Started:   model.Started,
 			Attempts:  1,
+			Errors:    []string{},
 		}, model)
 
 		job.Data = "Hello!!!"
@@ -83,6 +85,7 @@ func TestQueueing(t *testing.T) {
 			Ended:     model.Ended,
 			Finished:  model.Finished,
 			Attempts:  1,
+			Errors:    []string{},
 		}, model)
 	})
 }
@@ -169,7 +172,7 @@ func TestFail(t *testing.T) {
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusFailed, model.Status)
 		assert.NotZero(t, model.Ended)
-		assert.Equal(t, "some error", model.Reason)
+		assert.Equal(t, []string{"some error"}, model.Errors)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -179,7 +182,7 @@ func TestFail(t *testing.T) {
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusDequeued, model.Status)
 		assert.Zero(t, model.Ended)
-		assert.Equal(t, "some error", model.Reason)
+		assert.Equal(t, []string{"some error"}, model.Errors)
 	})
 }
 
@@ -205,7 +208,7 @@ func TestFailDelayed(t *testing.T) {
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusFailed, model.Status)
 		assert.NotZero(t, model.Ended)
-		assert.Equal(t, "some error", model.Reason)
+		assert.Equal(t, []string{"some error"}, model.Errors)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -222,7 +225,7 @@ func TestFailDelayed(t *testing.T) {
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, StatusDequeued, model.Status)
 		assert.Zero(t, model.Ended)
-		assert.Equal(t, "some error", model.Reason)
+		assert.Equal(t, []string{"some error"}, model.Errors)
 	})
 }
 
@@ -249,7 +252,7 @@ func TestCancel(t *testing.T) {
 		assert.Equal(t, StatusCancelled, model.Status)
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
-		assert.Equal(t, "some reason", model.Reason)
+		assert.Equal(t, []string{"some reason"}, model.Errors)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)

@@ -58,7 +58,7 @@ func TestQueue(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.Empty(t, model.Errors)
 
 		queue.Close()
 	})
@@ -108,7 +108,7 @@ func TestQueueDelayed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.Empty(t, model.Errors)
 
 		queue.Close()
 	})
@@ -164,7 +164,7 @@ func TestQueueFailed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, "foo", model.Reason)
+		assert.Equal(t, []string{"foo"}, model.Errors)
 
 		queue.Close()
 	})
@@ -221,7 +221,7 @@ func TestQueueCrashed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, "EOF", model.Reason)
+		assert.Equal(t, []string{"EOF"}, model.Errors)
 
 		queue.Close()
 	})
@@ -269,7 +269,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "cancelled", model.Reason)
+		assert.Equal(t, []string{"cancelled"}, model.Errors)
 
 		queue.Close()
 	})
@@ -287,7 +287,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		queue.Add(&Task{
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
-				return E("cancelled", ctx.Attempt == 1)
+				return E("some error", ctx.Attempt == 1)
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
@@ -318,7 +318,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, "cancelled", model.Reason)
+		assert.Equal(t, []string{"some error", "some error"}, model.Errors)
 
 		queue.Close()
 	})
@@ -339,7 +339,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		queue.Add(&Task{
 			Job: &simpleJob{},
 			Handler: func(ctx *Context) error {
-				return errors.New("foo")
+				return errors.New("some error")
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)
@@ -360,7 +360,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.True(t, enqueued)
 
 		<-done
-		assert.Equal(t, "foo", (<-errs).Error())
+		assert.Equal(t, "some error", (<-errs).Error())
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
@@ -372,7 +372,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, "foo", model.Reason)
+		assert.Equal(t, []string{"some error", "some error"}, model.Errors)
 
 		queue.Close()
 	})
@@ -430,7 +430,7 @@ func TestQueueTimeout(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.Empty(t, model.Errors)
 
 		err = <-errs
 		assert.Equal(t, `task "simple" ran longer than the specified lifetime`, err.Error())
@@ -483,7 +483,7 @@ func TestQueueExisting(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.Empty(t, model.Errors)
 
 		queue.Close()
 	})
@@ -531,7 +531,7 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.Empty(t, model.Errors)
 
 		queue.Close()
 	})
