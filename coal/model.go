@@ -10,13 +10,8 @@ import (
 // Model defines the shape of a document stored in a collection. Custom types
 // must implement the interface by embedding the Base type.
 type Model interface {
-	// GetBase returns the models base.
-	GetBase() *Base
-
-	// ID returns the primary id.
 	ID() ID
-
-	// GetAccessor should return the accessor.
+	GetBase() *Base
 	GetAccessor(interface{}) *stick.Accessor
 }
 
