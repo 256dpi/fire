@@ -48,13 +48,13 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		Name:      meta.Name,
 		Label:     base.Label,
 		Data:      data,
-		Status:    Enqueued,
+		State:     Enqueued,
 		Created:   now,
 		Available: now.Add(delay),
 		Events: []Event{
 			{
 				Timestamp: now,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 		},
 	}
@@ -73,28 +73,28 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	filter := bson.M{
 		"Name":  meta.Name,
 		"Label": base.Label,
-		"Status": bson.M{
+		"State": bson.M{
 			"$in": bson.A{Enqueued, Dequeued, Failed},
 		},
 	}
 
 	// ensure isolation
 	if isolation > 0 {
-		// remove status
-		delete(filter, "Status")
+		// remove state
+		delete(filter, "State")
 
-		// consider status and finished time
+		// consider state and finished time
 		filter["$or"] = bson.A{
 			// not finished
 			bson.M{
-				"Status": bson.M{
+				"State": bson.M{
 					"$in": bson.A{Enqueued, Dequeued, Failed},
 				},
 				"Finished": nil,
 			},
 			// finished recently
 			bson.M{
-				"Status": bson.M{
+				"State": bson.M{
 					"$in": bson.A{Completed, Cancelled},
 				},
 				"Finished": bson.M{
@@ -114,7 +114,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 }
 
 // Dequeue will dequeue the specified job. The provided timeout will be set to
-// allow the job to be dequeued if the worker failed to set its status. Only
+// allow the job to be dequeued if the worker failed to set its state. Only
 // jobs in the "enqueued", "dequeued" (passed timeout) or "failed" state are
 // dequeued. It will return whether a job has been dequeued.
 func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Duration) (bool, int, error) {
@@ -140,7 +140,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	var model Model
 	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
 		"_id": job.ID(),
-		"Status": bson.M{
+		"State": bson.M{
 			"$in": bson.A{Enqueued, Dequeued, Failed},
 		},
 		"Available": bson.M{
@@ -148,7 +148,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 		},
 	}, bson.M{
 		"$set": bson.M{
-			"Status":    Dequeued,
+			"State":     Dequeued,
 			"Available": now.Add(timeout),
 			"Started":   now,
 			"Ended":     nil,
@@ -159,7 +159,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 		"$push": bson.M{
 			"Events": Event{
 				Timestamp: now,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 		},
 	}, nil, false)
@@ -208,11 +208,11 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    job.ID(),
-		"Status": Dequeued,
+		"_id":   job.ID(),
+		"State": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":   Completed,
+			"State":    Completed,
 			"Data":     data,
 			"Ended":    now,
 			"Finished": now,
@@ -220,7 +220,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 		"$push": bson.M{
 			"Events": Event{
 				Timestamp: now,
-				Status:    Completed,
+				State:     Completed,
 			},
 		},
 	}, nil, false)
@@ -254,18 +254,18 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    job.ID(),
-		"Status": Dequeued,
+		"_id":   job.ID(),
+		"State": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":    Failed,
+			"State":     Failed,
 			"Available": now.Add(delay),
 			"Ended":     now,
 		},
 		"$push": bson.M{
 			"Events": Event{
 				Timestamp: now,
-				Status:    Failed,
+				State:     Failed,
 				Reason:    reason,
 			},
 		},
@@ -299,18 +299,18 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":    job.ID(),
-		"Status": Dequeued,
+		"_id":   job.ID(),
+		"State": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":   Cancelled,
+			"State":    Cancelled,
 			"Ended":    now,
 			"Finished": now,
 		},
 		"$push": bson.M{
 			"Events": Event{
 				Timestamp: now,
-				Status:    Cancelled,
+				State:     Cancelled,
 				Reason:    reason,
 			},
 		},

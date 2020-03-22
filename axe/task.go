@@ -69,8 +69,8 @@ type Task struct {
 	// The job this task should execute.
 	Job Job
 
-	// The callback that is called with jobs for execution. The handler should
-	// return errors formatted with E to properly indicate the status of the job.
+	// The callback that is called with jobs for execution. The handler may
+	// return errors formatted with E to manually control the state of the job.
 	Handler func(ctx *Context) error
 
 	// The callback that is called once a job has been completed or cancelled.
@@ -116,7 +116,7 @@ type Task struct {
 	Lifetime time.Duration
 
 	// The time after which a task can be dequeued again in case the worker was
-	// unable to set its status.
+	// unable to set its state.
 	//
 	// Default: 10m.
 	Timeout time.Duration

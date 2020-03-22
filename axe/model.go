@@ -6,16 +6,16 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Status defines the statuses of a job.
-type Status string
+// State defines the states of a job.
+type State string
 
-// The available job statuses.
+// The available job states.
 const (
-	Enqueued  Status = "enqueued"
-	Dequeued  Status = "dequeued"
-	Completed Status = "completed"
-	Failed    Status = "failed"
-	Cancelled Status = "cancelled"
+	Enqueued  State = "enqueued"
+	Dequeued  State = "dequeued"
+	Completed State = "completed"
+	Failed    State = "failed"
+	Cancelled State = "cancelled"
 )
 
 // Event is logged during a jobs execution.
@@ -23,8 +23,8 @@ type Event struct {
 	// The time when the event was reported.
 	Timestamp time.Time `json:"timestamp"`
 
-	// The new status of the job.
-	Status Status `json:"status"`
+	// The new state of the job.
+	State State `json:"state"`
 
 	// The reason when failed or cancelled.
 	Reason string `json:"reason"`
@@ -43,8 +43,8 @@ type Model struct {
 	// The encoded job data.
 	Data coal.Map `json:"data"`
 
-	// The current status of the job.
-	Status Status `json:"status"`
+	// The current state of the job.
+	State State `json:"state"`
 
 	// The time when the job was created.
 	Created time.Time `json:"created-at" bson:"created_at"`
@@ -75,8 +75,8 @@ func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	// index name
 	catalog.AddIndex(&Model{}, false, 0, "Name")
 
-	// index status
-	catalog.AddIndex(&Model{}, false, 0, "Status")
+	// index state
+	catalog.AddIndex(&Model{}, false, 0, "State")
 
 	// remove finished jobs after some time
 	catalog.AddIndex(&Model{}, false, removeAfter, "Finished")

@@ -33,13 +33,13 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Enqueued,
+			State:     Enqueued,
 			Created:   model.Created,
 			Available: model.Available,
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 			},
 		}, model)
@@ -59,7 +59,7 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Dequeued,
+			State:     Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -67,11 +67,11 @@ func TestQueueing(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 			},
 		}, model)
@@ -92,7 +92,7 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!!!",
 			},
-			Status:    Completed,
+			State:     Completed,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -102,15 +102,15 @@ func TestQueueing(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: *model.Finished,
-					Status:    Completed,
+					State:     Completed,
 				},
 			},
 		}, model)
@@ -155,7 +155,7 @@ func TestQueueingDelayed(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Dequeued,
+			State:     Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -163,11 +163,11 @@ func TestQueueingDelayed(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 			},
 		}, model)
@@ -213,7 +213,7 @@ func TestDequeueTimeout(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Dequeued,
+			State:     Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -221,15 +221,15 @@ func TestDequeueTimeout(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: model.Events[1].Timestamp,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 			},
 		}, model)
@@ -266,7 +266,7 @@ func TestFail(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Failed,
+			State:     Failed,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -275,15 +275,15 @@ func TestFail(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: *model.Ended,
-					Status:    Failed,
+					State:     Failed,
 					Reason:    "some error",
 				},
 			},
@@ -306,7 +306,7 @@ func TestFail(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Dequeued,
+			State:     Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -314,20 +314,20 @@ func TestFail(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: model.Events[1].Timestamp,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: model.Events[2].Timestamp,
-					Status:    Failed,
+					State:     Failed,
 					Reason:    "some error",
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 			},
 		}, model)
@@ -364,7 +364,7 @@ func TestFailDelayed(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Failed,
+			State:     Failed,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -373,15 +373,15 @@ func TestFailDelayed(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: *model.Ended,
-					Status:    Failed,
+					State:     Failed,
 					Reason:    "some error",
 				},
 			},
@@ -411,7 +411,7 @@ func TestFailDelayed(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Dequeued,
+			State:     Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -419,20 +419,20 @@ func TestFailDelayed(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: model.Events[1].Timestamp,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: model.Events[2].Timestamp,
-					Status:    Failed,
+					State:     Failed,
 					Reason:    "some error",
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 			},
 		}, model)
@@ -470,7 +470,7 @@ func TestCancel(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    Cancelled,
+			State:     Cancelled,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -480,15 +480,15 @@ func TestCancel(t *testing.T) {
 			Events: []Event{
 				{
 					Timestamp: model.Created,
-					Status:    Enqueued,
+					State:     Enqueued,
 				},
 				{
 					Timestamp: *model.Started,
-					Status:    Dequeued,
+					State:     Dequeued,
 				},
 				{
 					Timestamp: *model.Ended,
-					Status:    Cancelled,
+					State:     Cancelled,
 					Reason:    "some reason",
 				},
 			},
@@ -517,7 +517,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Enqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].State)
 
 		job2 := testJob{
 			Base: B("test"),
@@ -533,7 +533,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Enqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].State)
 
 		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
@@ -550,10 +550,10 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 2)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Completed, list[0].Status)
+		assert.Equal(t, Completed, list[0].State)
 		assert.Equal(t, "test", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
-		assert.Equal(t, Enqueued, list[1].Status)
+		assert.Equal(t, Enqueued, list[1].State)
 	})
 }
 
@@ -573,7 +573,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Enqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].State)
 
 		job2 := testJob{
 			Base: B("test"),
@@ -594,7 +594,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Enqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].State)
 
 		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
@@ -611,7 +611,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Completed, list[0].Status)
+		assert.Equal(t, Completed, list[0].State)
 
 		time.Sleep(200 * time.Millisecond)
 
@@ -624,9 +624,9 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 2)
 		assert.Equal(t, "test", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, Completed, list[0].Status)
+		assert.Equal(t, Completed, list[0].State)
 		assert.Equal(t, "test", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
-		assert.Equal(t, Enqueued, list[1].Status)
+		assert.Equal(t, Enqueued, list[1].State)
 	})
 }

@@ -241,7 +241,7 @@ func (q *Queue) update(job *Model) {
 	defer board.Unlock()
 
 	// handle job
-	switch job.Status {
+	switch job.State {
 	case Enqueued, Dequeued, Failed:
 		// apply random lag
 		lag := time.Duration(rand.Int63n(int64(q.options.MaxLag)))

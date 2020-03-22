@@ -50,7 +50,7 @@ func TestQueue(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -60,15 +60,15 @@ func TestQueue(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -114,7 +114,7 @@ func TestQueueDelayed(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -124,15 +124,15 @@ func TestQueueDelayed(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -184,7 +184,7 @@ func TestQueueFailed(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -196,24 +196,24 @@ func TestQueueFailed(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: model.Events[1].Timestamp,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: model.Events[2].Timestamp,
-				Status:    Failed,
+				State:     Failed,
 				Reason:    "some error",
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -266,7 +266,7 @@ func TestQueueCrashed(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -278,24 +278,24 @@ func TestQueueCrashed(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: model.Events[1].Timestamp,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: model.Events[2].Timestamp,
-				Status:    Failed,
+				State:     Failed,
 				Reason:    "EOF",
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -339,7 +339,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Cancelled, model.Status)
+		assert.Equal(t, Cancelled, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -349,15 +349,15 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Cancelled,
+				State:     Cancelled,
 				Reason:    "cancelled",
 			},
 		}, model.Events)
@@ -403,7 +403,7 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Cancelled, model.Status)
+		assert.Equal(t, Cancelled, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -415,24 +415,24 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: model.Events[1].Timestamp,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: model.Events[2].Timestamp,
-				Status:    Failed,
+				State:     Failed,
 				Reason:    "some error",
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Cancelled,
+				State:     Cancelled,
 				Reason:    "some error",
 			},
 		}, model.Events)
@@ -483,7 +483,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Cancelled, model.Status)
+		assert.Equal(t, Cancelled, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -495,24 +495,24 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: model.Events[1].Timestamp,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: model.Events[2].Timestamp,
-				Status:    Failed,
+				State:     Failed,
 				Reason:    "some error",
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Cancelled,
+				State:     Cancelled,
 				Reason:    "some error",
 			},
 		}, model.Events)
@@ -567,7 +567,7 @@ func TestQueueTimeout(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -578,19 +578,19 @@ func TestQueueTimeout(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: model.Events[1].Timestamp,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -639,7 +639,7 @@ func TestQueueExisting(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -649,15 +649,15 @@ func TestQueueExisting(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
@@ -701,7 +701,7 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.Equal(t, "test", model.Name)
 		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
-		assert.Equal(t, Completed, model.Status)
+		assert.Equal(t, Completed, model.State)
 		assert.NotZero(t, model.Created)
 		assert.NotZero(t, model.Available)
 		assert.NotZero(t, model.Started)
@@ -711,15 +711,15 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.Equal(t, []Event{
 			{
 				Timestamp: model.Created,
-				Status:    Enqueued,
+				State:     Enqueued,
 			},
 			{
 				Timestamp: *model.Started,
-				Status:    Dequeued,
+				State:     Dequeued,
 			},
 			{
 				Timestamp: *model.Finished,
-				Status:    Completed,
+				State:     Completed,
 			},
 		}, model.Events)
 
