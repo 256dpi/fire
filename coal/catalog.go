@@ -129,7 +129,8 @@ func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, field
 	})
 }
 
-// AddPartialIndex is similar to Add except that it adds a partial index.
+// AddPartialIndex is similar to Add except that it adds a partial index. The
+// filter must be an ordered document to ensure equality.
 func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.D) {
 	// get name
 	name := GetMeta(model).PluralName
