@@ -40,7 +40,7 @@ func TestGetMeta(t *testing.T) {
 			Fields: map[string]*stick.Field{
 				"Data": {
 					Index: 1,
-					Type: reflect.TypeOf(""),
+					Type:  reflect.TypeOf(""),
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func TestGetMeta(t *testing.T) {
 			Fields: map[string]*stick.Field{
 				"Data": {
 					Index: 1,
-					Type: reflect.TypeOf(""),
+					Type:  reflect.TypeOf(""),
 				},
 			},
 		},

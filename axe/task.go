@@ -9,6 +9,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Error is used to control retry an cancellation. These errors are expected and
@@ -324,7 +325,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		// check retry
 		if anError.Retry {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
+			delay := stick.Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
 			err = Fail(outerContext, queue.options.Store, job, anError.Reason, delay)
 			if err != nil {
 				return err
@@ -355,7 +356,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		// check attempts
 		if t.MaxAttempts == 0 || attempt < t.MaxAttempts {
 			// fail job
-			delay := Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
+			delay := stick.Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
 			_ = Fail(outerContext, queue.options.Store, job, err.Error(), delay)
 
 			return err

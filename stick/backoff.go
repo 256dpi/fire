@@ -1,4 +1,4 @@
-package axe
+package stick
 
 import (
 	"math"
