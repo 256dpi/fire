@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/stick"
 )
 
 // C is a short-hand function to extract the collection of a model.
@@ -141,7 +143,7 @@ func ToM(model Model) bson.M {
 
 	// add all fields
 	for name, field := range GetMeta(model).DatabaseFields {
-		m[name] = MustGet(model, field.Name)
+		m[name] = stick.MustGet(model, field.Name)
 	}
 
 	return m
@@ -160,7 +162,7 @@ func ToD(model Model) bson.D {
 		if field.BSONField != "" {
 			d = append(d, bson.E{
 				Key:   field.BSONField,
-				Value: MustGet(model, field.Name),
+				Value: stick.MustGet(model, field.Name),
 			})
 		}
 	}

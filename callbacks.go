@@ -79,15 +79,15 @@ func TimestampValidator() *Callback {
 		// to the timestamp inferred from the model id
 		if ctf != "" {
 			if ctx.Operation == Create {
-				coal.MustSet(ctx.Model, ctf, now)
-			} else if t := coal.MustGet(ctx.Model, ctf).(time.Time); t.IsZero() {
-				coal.MustSet(ctx.Model, ctf, ctx.Model.ID().Timestamp())
+				stick.MustSet(ctx.Model, ctf, now)
+			} else if t := stick.MustGet(ctx.Model, ctf).(time.Time); t.IsZero() {
+				stick.MustSet(ctx.Model, ctf, ctx.Model.ID().Timestamp())
 			}
 		}
 
 		// always set updated timestamp
 		if utf != "" {
-			coal.MustSet(ctx.Model, utf, now)
+			stick.MustSet(ctx.Model, utf, now)
 		}
 
 		return nil
@@ -125,7 +125,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 				}
 
 				// check equality
-				if !reflect.DeepEqual(coal.MustGet(ctx.Model, field), def) {
+				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), def) {
 					return E("field " + field + " is protected")
 				}
 			}
@@ -136,7 +136,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 			// check all fields
 			for field := range pairs {
 				// check equality
-				if !reflect.DeepEqual(coal.MustGet(ctx.Model, field), coal.MustGet(ctx.Original, field)) {
+				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), stick.MustGet(ctx.Original, field)) {
 					return E("field " + field + " is protected")
 				}
 			}
@@ -207,7 +207,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 		// check all references
 		for field, collection := range pairs {
 			// read referenced id
-			ref := coal.MustGet(ctx.Model, field)
+			ref := stick.MustGet(ctx.Model, field)
 
 			// continue if reference is not set
 			if oid, ok := ref.(*coal.ID); ok && oid == nil {
@@ -360,7 +360,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		var ids []coal.ID
 
 		// get reference
-		ref := coal.MustGet(ctx.Model, reference)
+		ref := stick.MustGet(ctx.Model, reference)
 
 		// handle to-one reference
 		if id, ok := ref.(coal.ID); ok {
@@ -401,7 +401,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 
 		// add matchers
 		for sourceField, targetField := range matcher {
-			query[targetField] = coal.MustGet(ctx.Model, sourceField)
+			query[targetField] = stick.MustGet(ctx.Model, sourceField)
 		}
 
 		// find matching documents
@@ -436,12 +436,12 @@ type noZero int
 func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Callback {
 	return C("fire/UniqueFieldValidator", Only(Create, Update), func(ctx *Context) error {
 		// return if field has not been changed when updating
-		if ctx.Operation == Update && reflect.DeepEqual(coal.MustGet(ctx.Model, field), coal.MustGet(ctx.Original, field)) {
+		if ctx.Operation == Update && reflect.DeepEqual(stick.MustGet(ctx.Model, field), stick.MustGet(ctx.Original, field)) {
 			return nil
 		}
 
 		// get value
-		value := coal.MustGet(ctx.Model, field)
+		value := stick.MustGet(ctx.Model, field)
 
 		// return if value is the zero value
 		if value != NoZero && reflect.DeepEqual(value, zero) {
@@ -455,7 +455,7 @@ func UniqueFieldValidator(field string, zero interface{}, filters ...string) *Ca
 
 		// add filters
 		for _, field := range filters {
-			query[field] = coal.MustGet(ctx.Model, field)
+			query[field] = stick.MustGet(ctx.Model, field)
 		}
 
 		// exclude soft deleted documents if supported

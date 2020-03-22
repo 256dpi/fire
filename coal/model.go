@@ -20,28 +20,6 @@ type Model interface {
 	GetAccessor(interface{}) *stick.Accessor
 }
 
-// Get will lookup the specified field on the model and return its value and
-// whether the field was found at all.
-func Get(model Model, name string) (interface{}, bool) {
-	return stick.Get(model, name)
-}
-
-// Set will set the specified field on the model with the provided value and
-// return whether the field has been found and the value has been set.
-func Set(model Model, name string, value interface{}) bool {
-	return stick.Set(model, name, value)
-}
-
-// MustGet will call Get and panic if the operation failed.
-func MustGet(model Model, name string) interface{} {
-	return stick.MustGet(model, name)
-}
-
-// MustSet will call Set and panic if the operation failed.
-func MustSet(model Model, name string, value interface{}) {
-	stick.MustSet(model, name, value)
-}
-
 // Slice takes a slice of the form *[]*Post and returns a new slice that
 // contains all models.
 func Slice(ptr interface{}) []Model {

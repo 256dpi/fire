@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestBasicOperations(t *testing.T) {
@@ -4696,7 +4697,7 @@ func TestTransactions(t *testing.T) {
 		})
 
 		assert.Equal(t, 1, tester.Count(&postModel{}))
-		assert.Equal(t, "Post 1", coal.MustGet(tester.Fetch(&postModel{}, coal.MustFromHex(id)), "Title"))
+		assert.Equal(t, "Post 1", stick.MustGet(tester.Fetch(&postModel{}, coal.MustFromHex(id)), "Title"))
 
 		assert.Equal(t, []string{"foo", "foo"}, errs)
 	})

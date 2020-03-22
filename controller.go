@@ -480,7 +480,7 @@ func (c *Controller) createResource(ctx *Context) {
 	// set initial update token if consistent update is enabled
 	if c.ConsistentUpdate {
 		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
-		coal.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
+		stick.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
 	}
 
 	// check if idempotent create is enabled
@@ -489,7 +489,7 @@ func (c *Controller) createResource(ctx *Context) {
 		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
 
 		// get supplied idempotent create token
-		idempotentCreateToken := coal.MustGet(ctx.Model, idempotentCreateField).(string)
+		idempotentCreateToken := stick.MustGet(ctx.Model, idempotentCreateField).(string)
 		if idempotentCreateToken == "" {
 			stack.Abort(jsonapi.BadRequest("missing idempotent create token"))
 		}
@@ -568,15 +568,15 @@ func (c *Controller) updateResource(ctx *Context) {
 	var storedIdempotentCreateToken string
 	if c.IdempotentCreate {
 		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
-		storedIdempotentCreateToken = coal.MustGet(ctx.Model, idempotentCreateField).(string)
+		storedIdempotentCreateToken = stick.MustGet(ctx.Model, idempotentCreateField).(string)
 	}
 
 	// get and reset stored consistent update token
 	var storedConsistentUpdateToken string
 	if c.ConsistentUpdate {
 		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
-		storedConsistentUpdateToken = coal.MustGet(ctx.Model, consistentUpdateField).(string)
-		coal.MustSet(ctx.Model, consistentUpdateField, "")
+		storedConsistentUpdateToken = stick.MustGet(ctx.Model, consistentUpdateField).(string)
+		stick.MustSet(ctx.Model, consistentUpdateField, "")
 	}
 
 	// assign attributes
@@ -585,7 +585,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	// check if idempotent create token has been changed
 	if c.IdempotentCreate {
 		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
-		idempotentCreateToken := coal.MustGet(ctx.Model, idempotentCreateField).(string)
+		idempotentCreateToken := stick.MustGet(ctx.Model, idempotentCreateField).(string)
 		if storedIdempotentCreateToken != idempotentCreateToken {
 			stack.Abort(jsonapi.BadRequest("idempotent create token cannot be changed"))
 		}
@@ -600,13 +600,13 @@ func (c *Controller) updateResource(ctx *Context) {
 		consistentUpdateField := coal.L(ctx.Model, "fire-consistent-update", true)
 
 		// get consistent update token
-		consistentUpdateToken := coal.MustGet(ctx.Model, consistentUpdateField).(string)
+		consistentUpdateToken := stick.MustGet(ctx.Model, consistentUpdateField).(string)
 		if consistentUpdateToken != storedConsistentUpdateToken {
 			stack.Abort(jsonapi.BadRequest("invalid consistent update token"))
 		}
 
 		// generate new update token
-		coal.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
+		stick.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
 
 		// update model
 		found, err := ctx.M(c.Model).ReplaceFirst(ctx, bson.M{
@@ -766,12 +766,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// lookup id of related resource
 		id := coal.New()
 		if rel.Optional {
-			oid := coal.MustGet(ctx.Model, rel.Name).(*coal.ID)
+			oid := stick.MustGet(ctx.Model, rel.Name).(*coal.ID)
 			if oid != nil {
 				id = *oid
 			}
 		} else {
-			id = coal.MustGet(ctx.Model, rel.Name).(coal.ID)
+			id = stick.MustGet(ctx.Model, rel.Name).(coal.ID)
 		}
 
 		// prepare selector
@@ -802,7 +802,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// finish to-many relationship
 	if rel.ToMany {
 		// get ids from loaded model
-		ids := coal.MustGet(ctx.Model, rel.Name).([]coal.ID)
+		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// prepare selector
 		selector := bson.M{
@@ -1030,7 +1030,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 		}
 
 		// get current ids
-		ids := coal.MustGet(ctx.Model, rel.Name).([]coal.ID)
+		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// check if id is already present
 		if coal.Contains(ids, refID) {
@@ -1039,7 +1039,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 		// add id
 		ids = append(ids, refID)
-		coal.MustSet(ctx.Model, rel.Name, ids)
+		stick.MustSet(ctx.Model, rel.Name, ids)
 	}
 
 	// run validators
@@ -1122,7 +1122,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 		var pos = -1
 
 		// get current ids
-		ids := coal.MustGet(ctx.Model, rel.Name).([]coal.ID)
+		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// check if id is already present
 		for i, id := range ids {
@@ -1134,7 +1134,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 		// remove id if present
 		if pos >= 0 {
 			ids = append(ids[:pos], ids[pos+1:]...)
-			coal.MustSet(ctx.Model, rel.Name, ids)
+			stick.MustSet(ctx.Model, rel.Name, ids)
 		}
 	}
 
@@ -1537,12 +1537,12 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 
 		// set id properly
 		if !field.Optional {
-			coal.MustSet(ctx.Model, field.Name, id)
+			stick.MustSet(ctx.Model, field.Name, id)
 		} else {
 			if !id.IsZero() {
-				coal.MustSet(ctx.Model, field.Name, &id)
+				stick.MustSet(ctx.Model, field.Name, &id)
 			} else {
-				coal.MustSet(ctx.Model, field.Name, coal.N())
+				stick.MustSet(ctx.Model, field.Name, coal.N())
 			}
 		}
 	}
@@ -1576,7 +1576,7 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 		}
 
 		// set ids
-		coal.MustSet(ctx.Model, field.Name, ids)
+		stick.MustSet(ctx.Model, field.Name, ids)
 	}
 }
 
@@ -1798,7 +1798,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			if field.Optional {
 				// get and check optional field
-				oid := coal.MustGet(model, field.Name).(*coal.ID)
+				oid := stick.MustGet(model, field.Name).(*coal.ID)
 
 				// create reference if id is available
 				if oid != nil {
@@ -1811,7 +1811,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 				// directly create reference
 				reference = &jsonapi.Resource{
 					Type: field.RelType,
-					ID:   coal.MustGet(model, field.Name).(coal.ID).Hex(),
+					ID:   stick.MustGet(model, field.Name).(coal.ID).Hex(),
 				}
 			}
 
@@ -1824,7 +1824,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			}
 		} else if field.ToMany {
 			// get ids
-			ids := coal.MustGet(model, field.Name).([]coal.ID)
+			ids := stick.MustGet(model, field.Name).([]coal.ID)
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(ids))

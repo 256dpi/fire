@@ -268,12 +268,12 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 		// check all fields
 		for _, field := range fields {
 			// get value
-			value := coal.MustGet(ctx.Model, field)
+			value := stick.MustGet(ctx.Model, field)
 
 			// get old value
 			var oldValue interface{}
 			if ctx.Original != nil {
-				oldValue = coal.MustGet(ctx.Original, field)
+				oldValue = stick.MustGet(ctx.Original, field)
 			}
 
 			// get path
@@ -294,7 +294,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 					newLink = nil
 				}
 				err = s.validateLink(ctx, newLink, oldLink, path)
-				coal.MustSet(ctx.Model, field, value)
+				stick.MustSet(ctx.Model, field, value)
 			case *Link:
 				var oldLink *Link
 				if oldValue != nil {
@@ -306,7 +306,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 					newLink = nil
 				}
 				err = s.validateLink(ctx, newLink, oldLink, path)
-				coal.MustSet(ctx.Model, field, newLink)
+				stick.MustSet(ctx.Model, field, newLink)
 			default:
 				err = fmt.Errorf("unsupported type")
 			}
@@ -430,14 +430,14 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 	// iterate over all fields
 	for _, field := range fields {
 		// get value
-		value := coal.MustGet(model, field)
+		value := stick.MustGet(model, field)
 
 		// inspect type
 		var err error
 		switch value := value.(type) {
 		case Link:
 			err = s.decorateLink(&value)
-			coal.MustSet(model, field, value)
+			stick.MustSet(model, field, value)
 		case *Link:
 			err = s.decorateLink(value)
 		}

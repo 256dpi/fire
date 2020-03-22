@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/stick"
 )
 
 func TestBaseID(t *testing.T) {
@@ -14,63 +16,24 @@ func TestBaseID(t *testing.T) {
 	assert.Equal(t, id, post.Base.DocID)
 }
 
-func TestGet(t *testing.T) {
-	post := &postModel{}
+func TestDynamicAccess(t *testing.T) {
+	post := &postModel{
+		Title: "title",
+	}
 
-	value, ok := Get(post, "TextBody")
-	assert.Equal(t, "", value)
-	assert.True(t, ok)
-
-	post.TextBody = "hello"
-
-	value, ok = Get(post, "TextBody")
-	assert.Equal(t, "hello", value)
-	assert.True(t, ok)
-
-	value, ok = Get(post, "missing")
-	assert.Nil(t, value)
+	val, ok := stick.Get(post, "title")
 	assert.False(t, ok)
-}
+	assert.Nil(t, val)
 
-func TestMustGet(t *testing.T) {
-	post := &postModel{}
-
-	assert.Equal(t, "", MustGet(post, "TextBody"))
-
-	post.TextBody = "hello"
-
-	assert.Equal(t, "hello", MustGet(post, "TextBody"))
-
-	assert.PanicsWithValue(t, `stick: could not get field "missing" on "coal.postModel"`, func() {
-		MustGet(post, "missing")
-	})
-}
-
-func TestSet(t *testing.T) {
-	post := &postModel{}
-
-	ok := Set(post, "TextBody", "3")
+	val, ok = stick.Get(post, "Title")
 	assert.True(t, ok)
-	assert.Equal(t, "3", post.TextBody)
+	assert.Equal(t, "title", val)
 
-	ok = Set(post, "missing", "-")
+	ok = stick.Set(post, "title", "foo")
 	assert.False(t, ok)
+	assert.Equal(t, "title", post.Title)
 
-	ok = Set(post, "TextBody", 1)
-	assert.False(t, ok)
-}
-
-func TestMustSet(t *testing.T) {
-	post := &postModel{}
-
-	MustSet(post, "TextBody", "3")
-	assert.Equal(t, "3", post.TextBody)
-
-	assert.PanicsWithValue(t, `stick: could not set "missing" on "coal.postModel"`, func() {
-		MustSet(post, "missing", "-")
-	})
-
-	assert.PanicsWithValue(t, `stick: could not set "TextBody" on "coal.postModel"`, func() {
-		MustSet(post, "TextBody", 1)
-	})
+	ok = stick.Set(post, "Title", "foo")
+	assert.True(t, ok)
+	assert.Equal(t, "foo", post.Title)
 }

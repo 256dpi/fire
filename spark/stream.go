@@ -5,6 +5,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Map holds custom data for a subscription.
@@ -93,7 +94,7 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 			softDeleteField := coal.L(s.Model, "fire-soft-delete", true)
 
 			// get deleted time
-			t := coal.MustGet(model, softDeleteField).(*time.Time)
+			t := stick.MustGet(model, softDeleteField).(*time.Time)
 
 			// change type if document has been soft deleted
 			if t != nil && !t.IsZero() {
