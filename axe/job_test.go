@@ -1,7 +1,6 @@
 package axe
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -9,6 +8,11 @@ import (
 
 	"github.com/256dpi/fire/coal"
 )
+
+type bsonJob struct {
+	Base `bson:"-" axe:"bson"`
+	Data string `bson:"data"`
+}
 
 type invalidJob1 struct {
 	Hello string
@@ -26,28 +30,25 @@ type invalidJob3 struct {
 }
 
 func TestGetMeta(t *testing.T) {
-	key := &testJob{
-		Data: "cool",
-	}
-
-	meta := GetMeta(key)
+	meta := GetMeta(&testJob{})
 	assert.Equal(t, &Meta{
 		Type:   reflect.TypeOf(testJob{}),
 		Name:   "test",
 		Coding: coal.JSON,
 	}, meta)
 
-	data, err := json.Marshal(key)
-	assert.NoError(t, err)
-	assert.JSONEq(t, `{
-		"data": "cool"
-	}`, string(data))
+	meta = GetMeta(&bsonJob{})
+	assert.Equal(t, &Meta{
+		Type:   reflect.TypeOf(bsonJob{}),
+		Name:   "bson",
+		Coding: coal.BSON,
+	}, meta)
 
 	assert.PanicsWithValue(t, `axe: expected first struct field to be an embedded "axe.Base"`, func() {
 		GetMeta(&invalidJob1{})
 	})
 
-	assert.PanicsWithValue(t, `axe: expected to find a tag of the form 'json:"-"' on "axe.Base"`, func() {
+	assert.PanicsWithValue(t, `axe: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "axe.Base"`, func() {
 		GetMeta(&invalidJob2{})
 	})
 

@@ -75,9 +75,19 @@ func GetMeta(value Value) *Meta {
 		panic(`glut: expected first struct field to be an embedded "glut.Base"`)
 	}
 
-	// check json tag
-	if field.Tag.Get("json") != "-" {
-		panic(`glut: expected to find a tag of the form 'json:"-"' on "glut.Base"`)
+	// check coding tag
+	json, hasJSON := field.Tag.Lookup("json")
+	bson, hasBSON := field.Tag.Lookup("bson")
+	if (hasJSON && hasBSON) || (!hasJSON && !hasBSON) {
+		panic(`glut: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "glut.Base"`)
+	} else if (hasJSON && json != "-") || (hasBSON && bson != "-") {
+		panic(`glut: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "glut.Base"`)
+	}
+
+	// get coding
+	coding := coal.JSON
+	if hasBSON {
+		coding = coal.BSON
 	}
 
 	// split tag
@@ -102,7 +112,7 @@ func GetMeta(value Value) *Meta {
 		Type:   typ,
 		Key:    key,
 		TTL:    ttl,
-		Coding: coal.JSON,
+		Coding: coding,
 	}
 
 	// cache meta

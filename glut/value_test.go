@@ -1,7 +1,6 @@
 package glut
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -9,6 +8,11 @@ import (
 
 	"github.com/256dpi/fire/coal"
 )
+
+type bsonValue struct {
+	Base `bson:"-" glut:"bson,0"`
+	Data string `bson:"data"`
+}
 
 type invalidValue1 struct {
 	Hello string
@@ -31,11 +35,7 @@ type invalidValue4 struct {
 }
 
 func TestGetMeta(t *testing.T) {
-	key := &testValue{
-		Data: "cool",
-	}
-
-	meta := GetMeta(key)
+	meta := GetMeta(&testValue{})
 	assert.Equal(t, &Meta{
 		Type:   reflect.TypeOf(&testValue{}),
 		Key:    "test",
@@ -43,17 +43,19 @@ func TestGetMeta(t *testing.T) {
 		Coding: coal.JSON,
 	}, meta)
 
-	data, err := json.Marshal(key)
-	assert.NoError(t, err)
-	assert.JSONEq(t, `{
-		"data": "cool"
-	}`, string(data))
+	meta = GetMeta(&bsonValue{})
+	assert.Equal(t, &Meta{
+		Type:   reflect.TypeOf(&bsonValue{}),
+		Key:    "bson",
+		TTL:    0,
+		Coding: coal.BSON,
+	}, meta)
 
 	assert.PanicsWithValue(t, `glut: expected first struct field to be an embedded "glut.Base"`, func() {
 		GetMeta(&invalidValue1{})
 	})
 
-	assert.PanicsWithValue(t, `glut: expected to find a tag of the form 'json:"-"' on "glut.Base"`, func() {
+	assert.PanicsWithValue(t, `glut: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "glut.Base"`, func() {
 		GetMeta(&invalidValue2{})
 	})
 

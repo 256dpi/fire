@@ -80,9 +80,19 @@ func GetMeta(job Job) *Meta {
 		panic(`axe: expected first struct field to be an embedded "axe.Base"`)
 	}
 
-	// check json tag
-	if field.Tag.Get("json") != "-" {
-		panic(`axe: expected to find a tag of the form 'json:"-"' on "axe.Base"`)
+	// check coding tag
+	json, hasJSON := field.Tag.Lookup("json")
+	bson, hasBSON := field.Tag.Lookup("bson")
+	if (hasJSON && hasBSON) || (!hasJSON && !hasBSON) {
+		panic(`axe: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "axe.Base"`)
+	} else if (hasJSON && json != "-") || (hasBSON && bson != "-") {
+		panic(`axe: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "axe.Base"`)
+	}
+
+	// get coding
+	coding := coal.JSON
+	if hasBSON {
+		coding = coal.BSON
 	}
 
 	// split tag
@@ -100,7 +110,7 @@ func GetMeta(job Job) *Meta {
 	meta := &Meta{
 		Type:   typ,
 		Name:   name,
-		Coding: coal.JSON,
+		Coding: coding,
 	}
 
 	// cache meta
