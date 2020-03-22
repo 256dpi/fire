@@ -60,12 +60,12 @@ type Model struct {
 // is specified, completed and cancelled jobs are automatically removed when
 // their finished timestamp falls behind the specified duration.
 func AddModelIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
-	// add name index
+	// index name
 	catalog.AddIndex(&Model{}, false, 0, "Name")
 
-	// add status index
+	// index status
 	catalog.AddIndex(&Model{}, false, 0, "Status")
 
-	// add finished index
+	// remove finished jobs after some time
 	catalog.AddIndex(&Model{}, false, removeAfter, "Finished")
 }
