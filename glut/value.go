@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Value is a structure used to encode a value.
 type Value interface {
 	GetBase() *Base
+	GetAccessor(v interface{}) *stick.Accessor
 }
 
 // ExtendedValue is a value that can extends its key.
@@ -32,6 +34,11 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
+// GetAccessor implements the Model interface.
+func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
+	return GetMeta(v.(Value)).Accessor
+}
+
 var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a value.
@@ -47,6 +54,9 @@ type Meta struct {
 
 	// The used transfer coding.
 	Coding coal.Coding
+
+	// The accessor.
+	Accessor *stick.Accessor
 }
 
 var metaMutex sync.Mutex
@@ -109,10 +119,11 @@ func GetMeta(value Value) *Meta {
 
 	// prepare meta
 	meta := &Meta{
-		Type:   typ,
-		Key:    key,
-		TTL:    ttl,
-		Coding: coding,
+		Type:     typ,
+		Key:      key,
+		TTL:      ttl,
+		Coding:   coding,
+		Accessor: stick.BuildAccessor(value, "Base"),
 	}
 
 	// cache meta

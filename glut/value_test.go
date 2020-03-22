@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 type bsonValue struct {
@@ -66,4 +67,26 @@ func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `glut: invalid duration as time to live on "glut.Base"`, func() {
 		GetMeta(&invalidValue4{})
 	})
+}
+
+func TestDynamicAccess(t *testing.T) {
+	value := &testValue{
+		Data: "data",
+	}
+
+	val, ok := stick.Get(value, "data")
+	assert.False(t, ok)
+	assert.Nil(t, val)
+
+	val, ok = stick.Get(value, "Data")
+	assert.True(t, ok)
+	assert.Equal(t, "data", val)
+
+	ok = stick.Set(value, "data", "foo")
+	assert.False(t, ok)
+	assert.Equal(t, "data", value.Data)
+
+	ok = stick.Set(value, "Data", "foo")
+	assert.True(t, ok)
+	assert.Equal(t, "foo", value.Data)
 }

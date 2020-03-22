@@ -1,12 +1,14 @@
 package heat
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/stick"
 )
 
 type testKey struct {
@@ -67,22 +69,24 @@ func (k *invalidKey4) Validate() error {
 }
 
 func TestGetMeta(t *testing.T) {
-	key := &testKey{
-		User: "user",
-	}
-
-	meta := GetMeta(key)
+	meta := GetMeta(&testKey{})
 	assert.Equal(t, &Meta{
 		Name:   "test",
 		Expiry: time.Hour,
+		Accessor: &stick.Accessor{
+			Name: "heat.testKey",
+			Fields: map[string]*stick.Field{
+				"User": {
+					Index: 1,
+					Type:  reflect.TypeOf(""),
+				},
+				"Role": {
+					Index: 2,
+					Type:  reflect.TypeOf(""),
+				},
+			},
+		},
 	}, meta)
-
-	data, err := json.Marshal(key)
-	assert.NoError(t, err)
-	assert.JSONEq(t, `{
-		"user": "user",
-		"role": ""
-	}`, string(data))
 
 	assert.PanicsWithValue(t, `heat: expected first struct field to be an embedded "heat.Base"`, func() {
 		GetMeta(&invalidKey1{})
@@ -99,4 +103,26 @@ func TestGetMeta(t *testing.T) {
 	assert.PanicsWithValue(t, `heat: invalid duration as expiry on "heat.Base"`, func() {
 		GetMeta(&invalidKey4{})
 	})
+}
+
+func TestDynamicAccess(t *testing.T) {
+	key := &testKey{
+		User: "user",
+	}
+
+	val, ok := stick.Get(key, "user")
+	assert.False(t, ok)
+	assert.Nil(t, val)
+
+	val, ok = stick.Get(key, "User")
+	assert.True(t, ok)
+	assert.Equal(t, "user", val)
+
+	ok = stick.Set(key, "user", "foo")
+	assert.False(t, ok)
+	assert.Equal(t, "user", key.User)
+
+	ok = stick.Set(key, "User", "foo")
+	assert.True(t, ok)
+	assert.Equal(t, "foo", key.User)
 }

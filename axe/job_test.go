@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 type bsonJob struct {
@@ -60,4 +61,26 @@ func TestGetMeta(t *testing.T) {
 func TestMetaMake(t *testing.T) {
 	job := GetMeta(&testJob{}).Make()
 	assert.Equal(t, &testJob{}, job)
+}
+
+func TestDynamicAccess(t *testing.T) {
+	job := &testJob{
+		Data: "data",
+	}
+
+	val, ok := stick.Get(job, "data")
+	assert.False(t, ok)
+	assert.Nil(t, val)
+
+	val, ok = stick.Get(job, "Data")
+	assert.True(t, ok)
+	assert.Equal(t, "data", val)
+
+	ok = stick.Set(job, "data", "foo")
+	assert.False(t, ok)
+	assert.Equal(t, "data", job.Data)
+
+	ok = stick.Set(job, "Data", "foo")
+	assert.True(t, ok)
+	assert.Equal(t, "foo", job.Data)
 }

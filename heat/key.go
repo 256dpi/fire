@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Key is a structure used to encode a key.
@@ -16,6 +17,9 @@ type Key interface {
 
 	// Validate should validate the token.
 	Validate() error
+
+	// GetAccessor should return the accessor.
+	GetAccessor(interface{}) *stick.Accessor
 }
 
 // Base can be embedded in a struct to turn it into a key.
@@ -32,6 +36,11 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
+// GetAccessor implements the Model interface.
+func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
+	return GetMeta(v.(Key)).Accessor
+}
+
 var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a key.
@@ -41,6 +50,9 @@ type Meta struct {
 
 	// The keys expiry.
 	Expiry time.Duration
+
+	// The accessor.
+	Accessor *stick.Accessor
 }
 
 var metaMutex sync.Mutex
@@ -93,8 +105,9 @@ func GetMeta(key Key) *Meta {
 
 	// prepare meta
 	meta := &Meta{
-		Name:   name,
-		Expiry: expiry,
+		Name:     name,
+		Expiry:   expiry,
+		Accessor: stick.BuildAccessor(key, "Base"),
 	}
 
 	// cache meta

@@ -6,12 +6,14 @@ import (
 	"sync"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Job is a structure used to encode a job.
 type Job interface {
 	ID() coal.ID
 	GetBase() *Base
+	GetAccessor(v interface{}) *stick.Accessor
 }
 
 // Base can be embedded in a struct to turn it into a job.
@@ -40,6 +42,11 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
+// GetAccessor implements the Model interface.
+func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
+	return GetMeta(v.(Job)).Accessor
+}
+
 var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a job.
@@ -52,6 +59,9 @@ type Meta struct {
 
 	// The used transfer coding.
 	Coding coal.Coding
+
+	// The accessor.
+	Accessor *stick.Accessor
 }
 
 var metaMutex sync.Mutex
@@ -108,9 +118,10 @@ func GetMeta(job Job) *Meta {
 
 	// prepare meta
 	meta := &Meta{
-		Type:   typ,
-		Name:   name,
-		Coding: coding,
+		Type:     typ,
+		Name:     name,
+		Coding:   coding,
+		Accessor: stick.BuildAccessor(job, "Base"),
 	}
 
 	// cache meta
