@@ -14,10 +14,8 @@ import (
 // Enqueue will enqueue the specified job with the provided delay and isolation.
 // It will return whether a job has been enqueued.
 func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation time.Duration) (bool, error) {
-	// get meta
+	// get meta and base
 	meta := GetMeta(job)
-
-	// get base
 	base := job.GetBase()
 
 	// track
@@ -33,7 +31,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		base.JobID = coal.New()
 	}
 
-	// marshal model
+	// encode job
 	var data coal.Map
 	err := data.Marshal(job, coal.TransferJSON)
 	if err != nil {
@@ -99,8 +97,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		}
 	}
 
-	// insert job if there is no other job in an available state with the
-	// provided label
+	// insert job if missing
 	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, filter, model, false)
 	if err != nil {
 		return false, err
@@ -141,8 +138,9 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	}, bson.M{
 		"$set": bson.M{
 			"Status":    StatusDequeued,
-			"Started":   now,
 			"Available": now.Add(timeout),
+			"Started":   now,
+			"Ended":     nil,
 		},
 		"$inc": bson.M{
 			"Attempts": 1,
@@ -222,9 +220,9 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	}, bson.M{
 		"$set": bson.M{
 			"Status":    StatusFailed,
-			"Reason":    reason,
-			"Ended":     now,
 			"Available": now.Add(delay),
+			"Ended":     now,
+			"Reason":    reason,
 		},
 	}, nil, false)
 	if err != nil {
@@ -255,9 +253,9 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	}, bson.M{
 		"$set": bson.M{
 			"Status":   StatusCancelled,
-			"Reason":   reason,
 			"Ended":    now,
 			"Finished": now,
+			"Reason":   reason,
 		},
 	}, nil, false)
 	if err != nil {

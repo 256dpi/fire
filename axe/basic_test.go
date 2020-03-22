@@ -175,6 +175,11 @@ func TestFail(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
+
+		model = tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, StatusDequeued, model.Status)
+		assert.Zero(t, model.Ended)
+		assert.Equal(t, "some error", model.Reason)
 	})
 }
 
@@ -213,6 +218,11 @@ func TestFailDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
+
+		model = tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, StatusDequeued, model.Status)
+		assert.Zero(t, model.Ended)
+		assert.Equal(t, "some error", model.Reason)
 	})
 }
 
