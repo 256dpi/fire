@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/256dpi/fire/stick"
 )
 
 var metaMutex sync.Mutex
@@ -94,6 +96,9 @@ type Meta struct {
 
 	// The flagged fields.
 	FlaggedFields map[string][]*Field
+
+	// The accessor.
+	Accessor *stick.Accessor
 }
 
 // GetMeta returns the meta structure for the specified model. It will always
@@ -328,6 +333,20 @@ func GetMeta(model Model) *Meta {
 
 			// save list
 			meta.FlaggedFields[flag] = list
+		}
+	}
+
+	// build accessor
+	meta.Accessor = &stick.Accessor{
+		Name:   modelType.String(),
+		Fields: map[string]*stick.Field{},
+	}
+
+	// add accessor fields
+	for _, field := range meta.Fields {
+		meta.Accessor.Fields[field.Name] = &stick.Field{
+			Type:  field.Type,
+			Index: field.Index,
 		}
 	}
 

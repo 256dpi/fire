@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/stick"
 )
 
 func TestGetMeta(t *testing.T) {
@@ -214,6 +216,35 @@ func TestMeta(t *testing.T) {
 				post.Fields["TextBody"],
 			},
 		},
+		Accessor: &stick.Accessor{
+			Name: "coal.postModel",
+			Fields: map[string]*stick.Field{
+				"Title": {
+					Index: 1,
+					Type:  reflect.TypeOf(""),
+				},
+				"Published": {
+					Index: 2,
+					Type:  reflect.TypeOf(true),
+				},
+				"TextBody": {
+					Index: 3,
+					Type:  reflect.TypeOf(""),
+				},
+				"Comments": {
+					Index: 4,
+					Type:  hasManyType,
+				},
+				"Selections": {
+					Index: 5,
+					Type:  hasManyType,
+				},
+				"Note": {
+					Index: 6,
+					Type:  hasOneType,
+				},
+			},
+		},
 	}, post)
 
 	comment := GetMeta(&commentModel{})
@@ -276,6 +307,23 @@ func TestMeta(t *testing.T) {
 			"post":   comment.Fields["Post"],
 		},
 		FlaggedFields: map[string][]*Field{},
+		Accessor: &stick.Accessor{
+			Name: "coal.commentModel",
+			Fields: map[string]*stick.Field{
+				"Message": {
+					Index: 1,
+					Type:  reflect.TypeOf(""),
+				},
+				"Parent": {
+					Index: 2,
+					Type:  optionalToOneType,
+				},
+				"Post": {
+					Index: 3,
+					Type:  toOneType,
+				},
+			},
+		},
 	}, comment)
 
 	selection := GetMeta(&selectionModel{})
@@ -321,6 +369,19 @@ func TestMeta(t *testing.T) {
 			"posts": selection.Fields["Posts"],
 		},
 		FlaggedFields: map[string][]*Field{},
+		Accessor: &stick.Accessor{
+			Name: "coal.selectionModel",
+			Fields: map[string]*stick.Field{
+				"Name": {
+					Index: 1,
+					Type:  reflect.TypeOf(""),
+				},
+				"Posts": {
+					Index: 2,
+					Type:  toManyType,
+				},
+			},
+		},
 	}, selection)
 }
 

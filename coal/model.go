@@ -2,8 +2,9 @@
 package coal
 
 import (
-	"fmt"
 	"reflect"
+
+	"github.com/256dpi/fire/stick"
 )
 
 // Model defines the shape of a document stored in a collection. Custom types
@@ -14,67 +15,31 @@ type Model interface {
 
 	// ID returns the primary id.
 	ID() ID
+
+	// GetAccessor should return the accessor.
+	GetAccessor(interface{}) *stick.Accessor
 }
 
 // Get will lookup the specified field on the model and return its value and
 // whether the field was found at all.
 func Get(model Model, name string) (interface{}, bool) {
-	// find field
-	field := GetMeta(model).Fields[name]
-	if field == nil {
-		return nil, false
-	}
-
-	// get value
-	value := reflect.ValueOf(model).Elem().Field(field.Index).Interface()
-
-	return value, true
+	return stick.Get(model, name)
 }
 
 // Set will set the specified field on the model with the provided value and
 // return whether the field has been found and the value has been set.
 func Set(model Model, name string, value interface{}) bool {
-	// find field
-	field := GetMeta(model).Fields[name]
-	if field == nil {
-		return false
-	}
-
-	// get value
-	fieldValue := reflect.ValueOf(model).Elem().Field(field.Index)
-
-	// get value value
-	valueValue := reflect.ValueOf(value)
-
-	// check type
-	if fieldValue.Type() != valueValue.Type() {
-		return false
-	}
-
-	// set value
-	fieldValue.Set(valueValue)
-
-	return true
+	return stick.Set(model, name, value)
 }
 
 // MustGet will call Get and panic if the operation failed.
 func MustGet(model Model, name string) interface{} {
-	// get value
-	value, ok := Get(model, name)
-	if !ok {
-		panic(fmt.Sprintf(`coal: could not get field "%s" on "%s"`, name, GetMeta(model).Name))
-	}
-
-	return value
+	return stick.MustGet(model, name)
 }
 
 // MustSet will call Set and panic if the operation failed.
 func MustSet(model Model, name string, value interface{}) {
-	// get value
-	ok := Set(model, name, value)
-	if !ok {
-		panic(fmt.Sprintf(`coal: could not set "%s" on "%s"`, name, GetMeta(model).Name))
-	}
+	stick.MustSet(model, name, value)
 }
 
 // Slice takes a slice of the form *[]*Post and returns a new slice that
@@ -127,6 +92,11 @@ func (b *Base) ID() ID {
 // GetBase implements the Model interface.
 func (b *Base) GetBase() *Base {
 	return b
+}
+
+// GetAccessor implements the Model interface.
+func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
+	return GetMeta(v.(Model)).Accessor
 }
 
 type empty struct {

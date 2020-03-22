@@ -1,21 +1,30 @@
-package coal
+package stick
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBaseID(t *testing.T) {
-	id := New()
-	post := &postModel{Base: B(id)}
-	assert.Equal(t, id, post.ID())
-	assert.Equal(t, id, post.DocID)
-	assert.Equal(t, id, post.Base.DocID)
+type accessible struct {
+	TextBody string
+}
+
+func (a *accessible) GetAccessor(interface{}) *Accessor {
+	return &Accessor{
+		Name: "stick.accessible",
+		Fields: map[string]*Field{
+			"TextBody": {
+				Index: 0,
+				Type:  reflect.TypeOf(""),
+			},
+		},
+	}
 }
 
 func TestGet(t *testing.T) {
-	post := &postModel{}
+	post := &accessible{}
 
 	value, ok := Get(post, "TextBody")
 	assert.Equal(t, "", value)
@@ -33,7 +42,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestMustGet(t *testing.T) {
-	post := &postModel{}
+	post := &accessible{}
 
 	assert.Equal(t, "", MustGet(post, "TextBody"))
 
@@ -41,13 +50,13 @@ func TestMustGet(t *testing.T) {
 
 	assert.Equal(t, "hello", MustGet(post, "TextBody"))
 
-	assert.PanicsWithValue(t, `stick: could not get field "missing" on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `stick: could not get field "missing" on "stick.accessible"`, func() {
 		MustGet(post, "missing")
 	})
 }
 
 func TestSet(t *testing.T) {
-	post := &postModel{}
+	post := &accessible{}
 
 	ok := Set(post, "TextBody", "3")
 	assert.True(t, ok)
@@ -61,16 +70,16 @@ func TestSet(t *testing.T) {
 }
 
 func TestMustSet(t *testing.T) {
-	post := &postModel{}
+	post := &accessible{}
 
 	MustSet(post, "TextBody", "3")
 	assert.Equal(t, "3", post.TextBody)
 
-	assert.PanicsWithValue(t, `stick: could not set "missing" on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `stick: could not set "missing" on "stick.accessible"`, func() {
 		MustSet(post, "missing", "-")
 	})
 
-	assert.PanicsWithValue(t, `stick: could not set "TextBody" on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `stick: could not set "TextBody" on "stick.accessible"`, func() {
 		MustSet(post, "TextBody", 1)
 	})
 }

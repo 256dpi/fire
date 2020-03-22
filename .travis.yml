@@ -29,6 +29,7 @@ script:
   - env GO111MODULE=on go test -coverprofile=glut.coverprofile ./glut
   - env GO111MODULE=on go test -coverprofile=heat.coverprofile ./heat
   - env GO111MODULE=on go test -coverprofile=spark.coverprofile ./spark
+  - env GO111MODULE=on go test -coverprofile=stick.coverprofile ./stick
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 after_script:
