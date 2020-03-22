@@ -1,7 +1,6 @@
 package heat
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -46,7 +45,6 @@ type Meta struct {
 
 var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]*Meta{}
-var metaNames = map[string]reflect.Type{}
 
 // GetMeta will parse the keys "heat" tag on the embedded heat.Base struct and
 // return the encoded name and default expiry.
@@ -86,9 +84,6 @@ func GetMeta(key Key) *Meta {
 
 	// get name
 	name := tag[0]
-	if existing := metaNames[name]; existing != nil {
-		panic(fmt.Sprintf(`heat: key name %q has already been registered by type %q`, name, existing.String()))
-	}
 
 	// get expiry
 	expiry, err := time.ParseDuration(tag[1])
@@ -104,9 +99,6 @@ func GetMeta(key Key) *Meta {
 
 	// cache meta
 	metaCache[typ] = meta
-
-	// flag name
-	metaNames[name] = typ
 
 	return meta
 }

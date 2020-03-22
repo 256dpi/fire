@@ -66,15 +66,6 @@ func (k *invalidKey4) Validate() error {
 	return nil
 }
 
-type duplicateKey struct {
-	Base  `json:"-" heat:"test,2h"`
-	Hello string
-}
-
-func (k *duplicateKey) Validate() error {
-	return nil
-}
-
 func TestGetMeta(t *testing.T) {
 	key := &testKey{
 		User: "user",
@@ -107,13 +98,5 @@ func TestGetMeta(t *testing.T) {
 
 	assert.PanicsWithValue(t, `heat: invalid duration as expiry on "heat.Base"`, func() {
 		GetMeta(&invalidKey4{})
-	})
-
-	assert.NotPanics(t, func() {
-		GetMeta(&testKey{})
-	})
-
-	assert.PanicsWithValue(t, `heat: key name "test" has already been registered by type "*heat.testKey"`, func() {
-		GetMeta(&duplicateKey{})
 	})
 }
