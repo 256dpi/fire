@@ -38,7 +38,7 @@ type Options struct {
 
 	// The maximum amount of lag that should be applied to every dequeue attempt.
 	//
-	// By default multiple processes compete with each other when getting jobs
+	// By default multiple workers compete with each other when getting jobs
 	// from the same queue. An artificial lag limits multiple simultaneous
 	// dequeue attempts and allows the worker with the smallest lag to dequeue
 	// the job and inform the other workers to prevent parallel dequeue attempts.
@@ -170,7 +170,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 	})
 }
 
-// Run will start fetching jobs from the queue and process them. It will return
+// Run will start fetching jobs from the queue and execute them. It will return
 // a channel that is closed once the queue has been synced and is available.
 func (q *Queue) Run() chan struct{} {
 	// initialize boards

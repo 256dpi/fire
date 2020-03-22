@@ -40,7 +40,7 @@ type Context struct {
 	// Values: opentracing.Span, *cinder.Trace
 	context.Context
 
-	// The processed job.
+	// The executed job.
 	Job Job
 
 	// The current attempt to execute the job.
@@ -48,7 +48,7 @@ type Context struct {
 	// Usage: Read Only
 	Attempt int
 
-	// The task that processes this job.
+	// The task that executes this job.
 	//
 	// Usage: Read Only
 	Task *Task
@@ -66,10 +66,10 @@ type Context struct {
 
 // Task describes work that is managed using a job queue.
 type Task struct {
-	// The job this task should process.
+	// The job this task should execute.
 	Job Job
 
-	// The callback that is called with jobs for processing. The handler should
+	// The callback that is called with jobs for execution. The handler should
 	// return errors formatted with E to properly indicate the status of the job.
 	Handler func(ctx *Context) error
 
@@ -288,7 +288,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		return err
 	}
 
-	// return if missing (might be dequeued already by another process)
+	// return if missing (might be dequeued already by another worker)
 	if !dequeued {
 		return nil
 	}

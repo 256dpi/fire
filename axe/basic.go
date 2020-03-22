@@ -113,7 +113,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 }
 
 // Dequeue will dequeue the specified job. The provided timeout will be set to
-// allow the job to be dequeued if the process failed to set its status. Only
+// allow the job to be dequeued if the worker failed to set its status. Only
 // jobs in the "enqueued", "dequeued" (passed timeout) or "failed" state are
 // dequeued. It will return whether a job has been dequeued.
 func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Duration) (bool, int, error) {
