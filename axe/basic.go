@@ -54,8 +54,8 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		Available: now.Add(delay),
 	}
 
-	// insert unlabeled jobs immediately
-	if base.Label == "" {
+	// insert unlabeled unisolated jobs immediately
+	if base.Label == "" && isolation == 0 {
 		err := store.M(&Model{}).Insert(ctx, model)
 		if err != nil {
 			return false, err

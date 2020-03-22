@@ -26,8 +26,8 @@ type Blueprint struct {
 	// specified time has passed.
 	Delay time.Duration
 
-	// The job isolation. If given, and a label is present, the job will only be
-	// enqueued if no job has been finished in the specified duration.
+	// The job isolation. If given the job will only be enqueued if no job has
+	// been finished in the specified duration.
 	Isolation time.Duration
 }
 
