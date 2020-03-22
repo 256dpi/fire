@@ -73,11 +73,29 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		},
 	}
 
-	// add isolation
+	// ensure isolation
 	if isolation > 0 {
+		// remove status
 		delete(filter, "Status")
-		filter["Finished"] = bson.M{
-			"$gt": now.Add(-isolation),
+
+		// consider status and finished time
+		filter["$or"] = bson.A{
+			// not finished
+			bson.M{
+				"Status": bson.M{
+					"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
+				},
+				"Finished": nil,
+			},
+			// finished recently
+			bson.M{
+				"Status": bson.M{
+					"$in": bson.A{StatusCompleted, StatusCancelled},
+				},
+				"Finished": bson.M{
+					"$gt": now.Add(-isolation),
+				},
+			},
 		}
 	}
 

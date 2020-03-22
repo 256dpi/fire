@@ -332,6 +332,11 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.False(t, enqueued)
 		assert.NotZero(t, job2.ID())
 
+		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 100*time.Millisecond)
+		assert.NoError(t, err)
+		assert.False(t, enqueued)
+		assert.NotZero(t, job2.ID())
+
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
