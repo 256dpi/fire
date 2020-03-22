@@ -27,8 +27,8 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	defer span.Finish()
 
 	// ensure id
-	if base.JobID.IsZero() {
-		base.JobID = coal.New()
+	if base.DocID.IsZero() {
+		base.DocID = coal.New()
 	}
 
 	// encode job
@@ -43,7 +43,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 
 	// prepare job
 	model := &Model{
-		Base:      coal.B(base.JobID),
+		Base:      coal.B(base.DocID),
 		Name:      meta.Name,
 		Label:     base.Label,
 		Data:      data,

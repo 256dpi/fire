@@ -246,7 +246,7 @@ func (t *Task) enqueuer(queue *Queue) error {
 	// run forever
 	for {
 		// reset id
-		job.GetBase().JobID = coal.New()
+		job.GetBase().DocID = coal.New()
 
 		// enqueue task
 		_, err := queue.Enqueue(job, delay, isolation)
@@ -280,7 +280,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 
 	// prepare job
 	job := GetMeta(t.Job).Make()
-	job.GetBase().JobID = id
+	job.GetBase().DocID = id
 
 	// dequeue job
 	dequeued, attempt, err := Dequeue(outerContext, queue.options.Store, job, t.Timeout)
