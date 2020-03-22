@@ -57,7 +57,20 @@ func TestQueue(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Empty(t, model.Errors)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -108,7 +121,20 @@ func TestQueueDelayed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Empty(t, model.Errors)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -165,7 +191,31 @@ func TestQueueFailed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, []string{"some error"}, model.Errors)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: model.Events[2].Timestamp,
+				Status:    Failed,
+				Reason:    "some error",
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -223,7 +273,31 @@ func TestQueueCrashed(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, []string{"EOF"}, model.Errors)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: model.Events[2].Timestamp,
+				Status:    Failed,
+				Reason:    "EOF",
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -272,7 +346,21 @@ func TestQueueCancelNoRetry(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, []string{"cancelled"}, model.Errors)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Cancelled,
+				Reason:    "cancelled",
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -322,7 +410,32 @@ func TestQueueCancelRetry(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, []string{"some error", "some error"}, model.Errors)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: model.Events[2].Timestamp,
+				Status:    Failed,
+				Reason:    "some error",
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Cancelled,
+				Reason:    "some error",
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -377,7 +490,32 @@ func TestQueueCancelCrash(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Equal(t, []string{"some error", "some error"}, model.Errors)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: model.Events[2].Timestamp,
+				Status:    Failed,
+				Reason:    "some error",
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Cancelled,
+				Reason:    "some error",
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -436,7 +574,25 @@ func TestQueueTimeout(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 2, model.Attempts)
-		assert.Empty(t, model.Errors)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		err = <-errs
 		assert.Equal(t, `task "simple" ran longer than the specified lifetime`, err.Error())
@@ -490,7 +646,20 @@ func TestQueueExisting(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Empty(t, model.Errors)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})
@@ -539,7 +708,20 @@ func TestQueuePeriodically(t *testing.T) {
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, 1, model.Attempts)
-		assert.Empty(t, model.Errors)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				Status:    Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				Status:    Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				Status:    Completed,
+			},
+		}, model.Events)
 
 		queue.Close()
 	})

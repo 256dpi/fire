@@ -50,7 +50,12 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		Status:    Enqueued,
 		Created:   now,
 		Available: now.Add(delay),
-		Errors:    []string{},
+		Events: []Event{
+			{
+				Timestamp: now,
+				Status:    Enqueued,
+			},
+		},
 	}
 
 	// insert unlabeled unisolated jobs immediately
@@ -146,6 +151,12 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 		"$inc": bson.M{
 			"Attempts": 1,
 		},
+		"$push": bson.M{
+			"Events": Event{
+				Timestamp: now,
+				Status:    Dequeued,
+			},
+		},
 	}, nil, false)
 	if err != nil {
 		return false, 0, err
@@ -191,6 +202,12 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 			"Ended":    now,
 			"Finished": now,
 		},
+		"$push": bson.M{
+			"Events": Event{
+				Timestamp: now,
+				Status:    Completed,
+			},
+		},
 	}, nil, false)
 	if err != nil {
 		return err
@@ -225,7 +242,11 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 			"Ended":     now,
 		},
 		"$push": bson.M{
-			"Errors": reason,
+			"Events": Event{
+				Timestamp: now,
+				Status:    Failed,
+				Reason:    reason,
+			},
 		},
 	}, nil, false)
 	if err != nil {
@@ -260,7 +281,11 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 			"Finished": now,
 		},
 		"$push": bson.M{
-			"Errors": reason,
+			"Events": Event{
+				Timestamp: now,
+				Status:    Cancelled,
+				Reason:    reason,
+			},
 		},
 	}, nil, false)
 	if err != nil {

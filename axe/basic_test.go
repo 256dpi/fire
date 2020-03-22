@@ -36,7 +36,12 @@ func TestQueueing(t *testing.T) {
 			Status:    Enqueued,
 			Created:   model.Created,
 			Available: model.Available,
-			Errors:    []string{},
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+			},
 		}, model)
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
@@ -59,7 +64,16 @@ func TestQueueing(t *testing.T) {
 			Available: model.Available,
 			Started:   model.Started,
 			Attempts:  1,
-			Errors:    []string{},
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+			},
 		}, model)
 
 		job.Data = "Hello!!!"
@@ -85,7 +99,20 @@ func TestQueueing(t *testing.T) {
 			Ended:     model.Ended,
 			Finished:  model.Finished,
 			Attempts:  1,
-			Errors:    []string{},
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: *model.Finished,
+					Status:    Completed,
+				},
+			},
 		}, model)
 	})
 }
@@ -117,6 +144,33 @@ func TestQueueingDelayed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, dequeued)
 		assert.Equal(t, 0, attempt)
+
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  1,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+			},
+		}, model)
 	})
 }
 
@@ -147,6 +201,38 @@ func TestDequeueTimeout(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, dequeued)
 		assert.Equal(t, 2, attempt)
+
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  2,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: model.Events[1].Timestamp,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+			},
+		}, model)
 	})
 }
 
@@ -170,9 +256,38 @@ func TestFail(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, Failed, model.Status)
-		assert.NotZero(t, model.Ended)
-		assert.Equal(t, []string{"some error"}, model.Errors)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotNil(t, model.Ended)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Failed,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Ended:     model.Ended,
+			Attempts:  1,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: *model.Ended,
+					Status:    Failed,
+					Reason:    "some error",
+				},
+			},
+		}, model)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -180,9 +295,42 @@ func TestFail(t *testing.T) {
 		assert.Equal(t, 2, attempt)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, Dequeued, model.Status)
-		assert.Zero(t, model.Ended)
-		assert.Equal(t, []string{"some error"}, model.Errors)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  2,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: model.Events[1].Timestamp,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: model.Events[2].Timestamp,
+					Status:    Failed,
+					Reason:    "some error",
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+			},
+		}, model)
 	})
 }
 
@@ -206,9 +354,38 @@ func TestFailDelayed(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, Failed, model.Status)
-		assert.NotZero(t, model.Ended)
-		assert.Equal(t, []string{"some error"}, model.Errors)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotNil(t, model.Ended)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Failed,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Ended:     model.Ended,
+			Attempts:  1,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: *model.Ended,
+					Status:    Failed,
+					Reason:    "some error",
+				},
+			},
+		}, model)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -223,9 +400,42 @@ func TestFailDelayed(t *testing.T) {
 		assert.Equal(t, 2, attempt)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, Dequeued, model.Status)
-		assert.Zero(t, model.Ended)
-		assert.Equal(t, []string{"some error"}, model.Errors)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  2,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: model.Events[1].Timestamp,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: model.Events[2].Timestamp,
+					Status:    Failed,
+					Reason:    "some error",
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+			},
+		}, model)
 	})
 }
 
@@ -249,10 +459,40 @@ func TestCancel(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, Cancelled, model.Status)
-		assert.NotZero(t, model.Ended)
-		assert.NotZero(t, model.Finished)
-		assert.Equal(t, []string{"some reason"}, model.Errors)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotNil(t, model.Ended)
+		assert.NotNil(t, model.Finished)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    Cancelled,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Ended:     model.Ended,
+			Finished:  model.Finished,
+			Attempts:  1,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					Status:    Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					Status:    Dequeued,
+				},
+				{
+					Timestamp: *model.Ended,
+					Status:    Cancelled,
+					Reason:    "some reason",
+				},
+			},
+		}, model)
 
 		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
