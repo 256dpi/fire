@@ -145,12 +145,12 @@ func (t *Translator) field(field *string) error {
 	structField := t.meta.Fields[*field]
 	if structField == nil {
 		return fmt.Errorf("unknown field %q", *field)
-	} else if structField.BSONField == "" {
+	} else if structField.BSONKey == "" {
 		return fmt.Errorf("virtual field %q", *field)
 	}
 
 	// replace field
-	*field = structField.BSONField
+	*field = structField.BSONKey
 
 	return nil
 }

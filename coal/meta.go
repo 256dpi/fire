@@ -44,8 +44,8 @@ type Field struct {
 	// The JSON object key name e.g. "tire-size".
 	JSONKey string
 
-	// The BSON document field e.g. "tire_size".
-	BSONField string
+	// The BSON document key name e.g. "tire_size".
+	BSONKey string
 
 	// The custom flags.
 	Flags []string
@@ -190,13 +190,13 @@ func GetMeta(model Model) *Meta {
 
 		// prepare field
 		metaField := &Field{
-			Index:     i,
-			Name:      field.Name,
-			Type:      field.Type,
-			Kind:      fieldKind,
-			JSONKey:   getJSONFieldName(&field),
-			BSONField: getBSONFieldName(&field),
-			Optional:  field.Type.Kind() == reflect.Ptr,
+			Index:    i,
+			Name:     field.Name,
+			Type:     field.Type,
+			Kind:     fieldKind,
+			JSONKey:  stick.GetJSONKey(&field),
+			BSONKey:  stick.GetBSONKey(&field),
+			Optional: field.Type.Kind() == reflect.Ptr,
 		}
 
 		// check if field is a valid to-one relationship
@@ -292,14 +292,14 @@ func GetMeta(model Model) *Meta {
 		meta.OrderedFields = append(meta.OrderedFields, metaField)
 
 		// add db fields
-		if metaField.BSONField != "" {
+		if metaField.BSONKey != "" {
 			// check existence
-			if meta.DatabaseFields[metaField.BSONField] != nil {
-				panic(fmt.Sprintf(`coal: duplicate BSON field "%s"`, metaField.BSONField))
+			if meta.DatabaseFields[metaField.BSONKey] != nil {
+				panic(fmt.Sprintf(`coal: duplicate BSON field "%s"`, metaField.BSONKey))
 			}
 
 			// add field
-			meta.DatabaseFields[metaField.BSONField] = metaField
+			meta.DatabaseFields[metaField.BSONKey] = metaField
 		}
 
 		// add attributes
@@ -354,38 +354,4 @@ func (m *Meta) MakeSlice() interface{} {
 	pointer := reflect.New(slice.Type())
 	pointer.Elem().Set(slice)
 	return pointer.Interface()
-}
-
-func getJSONFieldName(field *reflect.StructField) string {
-	tag := field.Tag.Get("json")
-	values := strings.Split(tag, ",")
-
-	// check for "-"
-	if tag == "-" {
-		return ""
-	}
-
-	// check first value
-	if len(values) > 0 && len(values[0]) > 0 {
-		return values[0]
-	}
-
-	return field.Name
-}
-
-func getBSONFieldName(field *reflect.StructField) string {
-	tag := field.Tag.Get("bson")
-	values := strings.Split(tag, ",")
-
-	// check for "-"
-	if tag == "-" {
-		return ""
-	}
-
-	// check first value
-	if len(values) > 0 && len(values[0]) > 0 {
-		return values[0]
-	}
-
-	return strings.ToLower(field.Name)
 }

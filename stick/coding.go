@@ -3,6 +3,8 @@ package stick
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -55,4 +57,46 @@ func (c Coding) Transfer(in, out interface{}) error {
 	}
 
 	return nil
+}
+
+// GetJSONKey will return the JSON key for the specified struct field.
+func GetJSONKey(field *reflect.StructField) string {
+	// get tag
+	tag := field.Tag.Get("json")
+
+	// check for "-"
+	if tag == "-" {
+		return ""
+	}
+
+	// split
+	values := strings.Split(tag, ",")
+
+	// check first value
+	if len(values) > 0 && len(values[0]) > 0 {
+		return values[0]
+	}
+
+	return field.Name
+}
+
+// GetBSONKey will return the BSON key for the specified struct field.
+func GetBSONKey(field *reflect.StructField) string {
+	// get tag
+	tag := field.Tag.Get("bson")
+
+	// check for "-"
+	if tag == "-" {
+		return ""
+	}
+
+	// split
+	values := strings.Split(tag, ",")
+
+	// check first value
+	if len(values) > 0 && len(values[0]) > 0 {
+		return values[0]
+	}
+
+	return strings.ToLower(field.Name)
 }

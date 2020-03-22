@@ -35,7 +35,7 @@ func F(m Model, field string) string {
 	}
 
 	// get field
-	bsonField := f.BSONField
+	bsonField := f.BSONKey
 
 	// prefix field again
 	if prefixed {
@@ -159,9 +159,9 @@ func ToD(model Model) bson.D {
 
 	// add all fields
 	for _, field := range fields {
-		if field.BSONField != "" {
+		if field.BSONKey != "" {
 			d = append(d, bson.E{
-				Key:   field.BSONField,
+				Key:   field.BSONKey,
 				Value: stick.MustGet(model, field.Name),
 			})
 		}

@@ -823,7 +823,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// prepare selector
 		selector := bson.M{
-			inverse.BSONField: ctx.Model.ID(),
+			inverse.BSONKey: ctx.Model.ID(),
 		}
 
 		// handle virtual request
@@ -853,7 +853,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// prepare selector
 		selector := bson.M{
-			inverse.BSONField: bson.M{
+			inverse.BSONKey: bson.M{
 				"$in": []coal.ID{ctx.Model.ID()},
 			},
 		}
@@ -1337,12 +1337,12 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// handle boolean values
 			if field.Kind == reflect.Bool && len(values) == 1 {
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: values[0] == "true"})
+				ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: values[0] == "true"})
 				continue
 			}
 
 			// handle string values
-			ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": values}})
+			ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: bson.M{"$in": values}})
 			continue
 		}
 
@@ -1364,7 +1364,7 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 
 			// set relationship filter
-			ctx.Filters = append(ctx.Filters, bson.M{field.BSONField: bson.M{"$in": ids}})
+			ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: bson.M{"$in": ids}})
 			continue
 		}
 
@@ -1393,9 +1393,9 @@ func (c *Controller) loadModels(ctx *Context) {
 
 		// add sorter
 		if descending {
-			ctx.Sorting = append(ctx.Sorting, "-"+field.BSONField)
+			ctx.Sorting = append(ctx.Sorting, "-"+field.BSONKey)
 		} else {
-			ctx.Sorting = append(ctx.Sorting, field.BSONField)
+			ctx.Sorting = append(ctx.Sorting, field.BSONKey)
 		}
 	}
 
@@ -1637,7 +1637,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// prepare query
 		query := bson.M{
-			rel.BSONField: bson.M{
+			rel.BSONKey: bson.M{
 				"$in": modelIDs,
 			},
 		}
@@ -1666,8 +1666,8 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// load all references
 		var references []bson.M
 		stack.AbortIf(ctx.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
-			"_id":         1,
-			rel.BSONField: 1,
+			"_id":       1,
+			rel.BSONKey: 1,
 		})))
 
 		// prepare entry
@@ -1680,7 +1680,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 				// handle to one references
 				if rel.ToOne {
 					// get reference id
-					rid, _ := reference[rel.BSONField].(coal.ID)
+					rid, _ := reference[rel.BSONKey].(coal.ID)
 					if !rid.IsZero() && rid == modelID {
 						// add reference
 						entry[modelID] = append(entry[modelID], reference["_id"].(coal.ID))
@@ -1690,7 +1690,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 				// handle to many references
 				if rel.ToMany {
 					// get reference ids
-					rids, _ := reference[rel.BSONField].(bson.A)
+					rids, _ := reference[rel.BSONKey].(bson.A)
 					for _, _rid := range rids {
 						// get reference id
 						rid, _ := _rid.(coal.ID)
