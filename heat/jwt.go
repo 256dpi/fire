@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+
+	"github.com/256dpi/fire/coal"
 )
 
 const minSecretLen = 16
@@ -17,14 +19,14 @@ var jwtParser = &jwt.Parser{
 }
 
 type jwtClaims struct {
-	Issuer    string `json:"iss,omitempty"`
-	Audience  string `json:"aud,omitempty"`
-	ID        string `json:"jti,omitempty"`
-	Subject   string `json:"sub,omitempty"`
-	Issued    int64  `json:"iat,omitempty"`
-	NotBefore int64  `json:"nbf,omitempty"`
-	Expires   int64  `json:"exp,omitempty"`
-	Data      Data   `json:"dat,omitempty"`
+	Issuer    string   `json:"iss,omitempty"`
+	Audience  string   `json:"aud,omitempty"`
+	ID        string   `json:"jti,omitempty"`
+	Subject   string   `json:"sub,omitempty"`
+	Issued    int64    `json:"iat,omitempty"`
+	NotBefore int64    `json:"nbf,omitempty"`
+	Expires   int64    `json:"exp,omitempty"`
+	Data      coal.Map `json:"dat,omitempty"`
 }
 
 func (c jwtClaims) Valid() error {
@@ -84,14 +86,11 @@ var ErrInvalidToken = errors.New("invalid token")
 // ErrExpiredToken is returned if a token is expired but otherwise valid.
 var ErrExpiredToken = errors.New("expired token")
 
-// Data is generic JSON object.
-type Data map[string]interface{}
-
 // RawKey represents a raw key.
 type RawKey struct {
 	ID     string
 	Expiry time.Time
-	Data   Data
+	Data   coal.Map
 }
 
 // Issue will sign a token from the specified raw key.

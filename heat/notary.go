@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/256dpi/jsonapi/v2"
-
 	"github.com/256dpi/fire/coal"
 )
 
@@ -59,7 +57,8 @@ func (n *Notary) Issue(key Key) (string, error) {
 	}
 
 	// get data
-	data, err := jsonapi.StructToMap(key, nil)
+	var data coal.Map
+	err = data.Marshal(key, coal.JSON)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +67,7 @@ func (n *Notary) Issue(key Key) (string, error) {
 	token, err := Issue(n.secret, n.issuer, meta.Name, RawKey{
 		ID:     base.ID.Hex(),
 		Expiry: base.Expiry,
-		Data:   Data(data),
+		Data:   data,
 	})
 	if err != nil {
 		return "", err
@@ -99,7 +98,7 @@ func (n *Notary) Verify(key Key, token string) error {
 	key.GetBase().Expiry = rawKey.Expiry
 
 	// assign data
-	err = jsonapi.Map(rawKey.Data).Assign(key)
+	err = rawKey.Data.Unmarshal(key, coal.JSON)
 	if err != nil {
 		return err
 	}
