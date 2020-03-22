@@ -47,7 +47,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		Name:      meta.Name,
 		Label:     base.Label,
 		Data:      data,
-		Status:    StatusEnqueued,
+		Status:    Enqueued,
 		Created:   now,
 		Available: now.Add(delay),
 		Errors:    []string{},
@@ -68,7 +68,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		"Name":  meta.Name,
 		"Label": base.Label,
 		"Status": bson.M{
-			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
+			"$in": bson.A{Enqueued, Dequeued, Failed},
 		},
 	}
 
@@ -82,14 +82,14 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 			// not finished
 			bson.M{
 				"Status": bson.M{
-					"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
+					"$in": bson.A{Enqueued, Dequeued, Failed},
 				},
 				"Finished": nil,
 			},
 			// finished recently
 			bson.M{
 				"Status": bson.M{
-					"$in": bson.A{StatusCompleted, StatusCancelled},
+					"$in": bson.A{Completed, Cancelled},
 				},
 				"Finished": bson.M{
 					"$gt": now.Add(-isolation),
@@ -131,14 +131,14 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
 		"_id": job.ID(),
 		"Status": bson.M{
-			"$in": bson.A{StatusEnqueued, StatusDequeued, StatusFailed},
+			"$in": bson.A{Enqueued, Dequeued, Failed},
 		},
 		"Available": bson.M{
 			"$lte": now,
 		},
 	}, bson.M{
 		"$set": bson.M{
-			"Status":    StatusDequeued,
+			"Status":    Dequeued,
 			"Available": now.Add(timeout),
 			"Started":   now,
 			"Ended":     nil,
@@ -183,10 +183,10 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    job.ID(),
-		"Status": StatusDequeued,
+		"Status": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":   StatusCompleted,
+			"Status":   Completed,
 			"Data":     data,
 			"Ended":    now,
 			"Finished": now,
@@ -217,10 +217,10 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    job.ID(),
-		"Status": StatusDequeued,
+		"Status": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":    StatusFailed,
+			"Status":    Failed,
 			"Available": now.Add(delay),
 			"Ended":     now,
 		},
@@ -252,10 +252,10 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	// update job
 	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":    job.ID(),
-		"Status": StatusDequeued,
+		"Status": Dequeued,
 	}, bson.M{
 		"$set": bson.M{
-			"Status":   StatusCancelled,
+			"Status":   Cancelled,
 			"Ended":    now,
 			"Finished": now,
 		},

@@ -33,7 +33,7 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    StatusEnqueued,
+			Status:    Enqueued,
 			Created:   model.Created,
 			Available: model.Available,
 			Errors:    []string{},
@@ -54,7 +54,7 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!",
 			},
-			Status:    StatusDequeued,
+			Status:    Dequeued,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -78,7 +78,7 @@ func TestQueueing(t *testing.T) {
 			Data: coal.Map{
 				"data": "Hello!!!",
 			},
-			Status:    StatusCompleted,
+			Status:    Completed,
 			Created:   model.Created,
 			Available: model.Available,
 			Started:   model.Started,
@@ -170,7 +170,7 @@ func TestFail(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, StatusFailed, model.Status)
+		assert.Equal(t, Failed, model.Status)
 		assert.NotZero(t, model.Ended)
 		assert.Equal(t, []string{"some error"}, model.Errors)
 
@@ -180,7 +180,7 @@ func TestFail(t *testing.T) {
 		assert.Equal(t, 2, attempt)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, StatusDequeued, model.Status)
+		assert.Equal(t, Dequeued, model.Status)
 		assert.Zero(t, model.Ended)
 		assert.Equal(t, []string{"some error"}, model.Errors)
 	})
@@ -206,7 +206,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, StatusFailed, model.Status)
+		assert.Equal(t, Failed, model.Status)
 		assert.NotZero(t, model.Ended)
 		assert.Equal(t, []string{"some error"}, model.Errors)
 
@@ -223,7 +223,7 @@ func TestFailDelayed(t *testing.T) {
 		assert.Equal(t, 2, attempt)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, StatusDequeued, model.Status)
+		assert.Equal(t, Dequeued, model.Status)
 		assert.Zero(t, model.Ended)
 		assert.Equal(t, []string{"some error"}, model.Errors)
 	})
@@ -249,7 +249,7 @@ func TestCancel(t *testing.T) {
 		assert.NoError(t, err)
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, StatusCancelled, model.Status)
+		assert.Equal(t, Cancelled, model.Status)
 		assert.NotZero(t, model.Ended)
 		assert.NotZero(t, model.Finished)
 		assert.Equal(t, []string{"some reason"}, model.Errors)
@@ -277,7 +277,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusEnqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].Status)
 
 		job2 := simpleJob{
 			Base: B("test"),
@@ -293,7 +293,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusEnqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].Status)
 
 		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
@@ -310,10 +310,10 @@ func TestEnqueueLabeled(t *testing.T) {
 		assert.Len(t, list, 2)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusCompleted, list[0].Status)
+		assert.Equal(t, Completed, list[0].Status)
 		assert.Equal(t, "simple", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
-		assert.Equal(t, StatusEnqueued, list[1].Status)
+		assert.Equal(t, Enqueued, list[1].Status)
 	})
 }
 
@@ -333,7 +333,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusEnqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].Status)
 
 		job2 := simpleJob{
 			Base: B("test"),
@@ -354,7 +354,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusEnqueued, list[0].Status)
+		assert.Equal(t, Enqueued, list[0].Status)
 
 		_, _, err = Dequeue(nil, tester.Store, &job1, time.Second)
 		assert.NoError(t, err)
@@ -371,7 +371,7 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 1)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusCompleted, list[0].Status)
+		assert.Equal(t, Completed, list[0].Status)
 
 		time.Sleep(200 * time.Millisecond)
 
@@ -384,9 +384,9 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Len(t, list, 2)
 		assert.Equal(t, "simple", list[0].Name)
 		assert.Equal(t, "test", list[0].Label)
-		assert.Equal(t, StatusCompleted, list[0].Status)
+		assert.Equal(t, Completed, list[0].Status)
 		assert.Equal(t, "simple", list[1].Name)
 		assert.Equal(t, "test", list[1].Label)
-		assert.Equal(t, StatusEnqueued, list[1].Status)
+		assert.Equal(t, Enqueued, list[1].Status)
 	})
 }

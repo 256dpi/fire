@@ -242,14 +242,14 @@ func (q *Queue) update(job *Model) {
 
 	// handle job
 	switch job.Status {
-	case StatusEnqueued, StatusDequeued, StatusFailed:
+	case Enqueued, Dequeued, Failed:
 		// apply random lag
 		lag := time.Duration(rand.Int63n(int64(q.options.MaxLag)))
 		job.Available = job.Available.Add(lag)
 
 		// update job
 		board.jobs[job.ID()] = job
-	case StatusCompleted, StatusCancelled:
+	case Completed, Cancelled:
 		// remove job
 		delete(board.jobs, job.ID())
 	}

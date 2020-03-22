@@ -11,11 +11,11 @@ type Status string
 
 // The available job statuses.
 const (
-	StatusEnqueued  Status = "enqueued"
-	StatusDequeued  Status = "dequeued"
-	StatusCompleted Status = "completed"
-	StatusFailed    Status = "failed"
-	StatusCancelled Status = "cancelled"
+	Enqueued  Status = "enqueued"
+	Dequeued  Status = "dequeued"
+	Completed Status = "completed"
+	Failed    Status = "failed"
+	Cancelled Status = "cancelled"
 )
 
 // Model stores an executable job.
