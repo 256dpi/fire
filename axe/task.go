@@ -11,6 +11,56 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
+// Error is used to signal failed job executions.
+type Error struct {
+	Reason string
+	Retry  bool
+}
+
+// E is a short-hand to construct an error.
+func E(reason string, retry bool) *Error {
+	return &Error{
+		Reason: reason,
+		Retry:  retry,
+	}
+}
+
+// Error implements the error interface.
+func (c *Error) Error() string {
+	return c.Reason
+}
+
+// Context holds and stores contextual data.
+type Context struct {
+	// The context that is cancelled when the task timeout has been reached.
+	//
+	// Values: opentracing.Span, *cinder.Trace
+	context.Context
+
+	// The processed job.
+	Job Job
+
+	// The current attempt to execute the job.
+	//
+	// Usage: Read Only
+	Attempt int
+
+	// The task that processes this job.
+	//
+	// Usage: Read Only
+	Task *Task
+
+	// The queue this job was dequeued from.
+	//
+	// Usage: Read Only
+	Queue *Queue
+
+	// The current trace.
+	//
+	// Usage: Read Only
+	Trace *cinder.Trace
+}
+
 // Task describes work that is managed using a job queue.
 type Task struct {
 	// The job this task should process.
