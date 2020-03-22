@@ -745,7 +745,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// prepare sub context
 	subCtx := &Context{
 		Context:        ctx,
-		Data:           Map{},
+		Data:           stick.Map{},
 		HTTPRequest:    ctx.HTTPRequest,
 		ResponseWriter: nil,
 		Controller:     rc,

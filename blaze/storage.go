@@ -20,6 +20,7 @@ import (
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrInvalidHandle is returned if the provided handle is invalid.
@@ -112,7 +113,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 		}
 
 		// respond with keys
-		return ctx.Respond(fire.Map{
+		return ctx.Respond(stick.Map{
 			"keys": keys,
 		})
 	})

@@ -13,6 +13,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // A Tester provides facilities to the test a fire API.
@@ -140,7 +141,7 @@ func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
 
 	// ensure data
 	if ctx.Data == nil {
-		ctx.Data = Map{}
+		ctx.Data = stick.Map{}
 	}
 
 	// ensure operation

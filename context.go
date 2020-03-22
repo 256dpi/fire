@@ -11,6 +11,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // An Operation indicates the purpose of a yield to a callback in the processing
@@ -104,7 +105,7 @@ type Context struct {
 	context.Context
 
 	// The custom data map.
-	Data Map
+	Data stick.Map
 
 	// The current operation in process.
 	//

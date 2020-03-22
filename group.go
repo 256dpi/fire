@@ -15,6 +15,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // GroupAction defines a group action.
@@ -142,7 +143,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		// prepare context
 		ctx := &Context{
 			Context:        r.Context(),
-			Data:           Map{},
+			Data:           stick.Map{},
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Group:          g,

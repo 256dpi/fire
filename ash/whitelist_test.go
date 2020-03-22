@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestWhitelist(t *testing.T) {
@@ -44,7 +45,7 @@ func TestWhitelist(t *testing.T) {
 	})
 
 	ctx := &fire.Context{
-		Data:           fire.Map{"key": "foo"},
+		Data:           stick.Map{"key": "foo"},
 		Operation:      fire.Create,
 		ReadableFields: []string{"Title", "Published", "Author"},
 		WritableFields: []string{"Title", "Published", "Author"},
@@ -59,7 +60,7 @@ func TestWhitelist(t *testing.T) {
 	})
 
 	ctx = &fire.Context{
-		Data:           fire.Map{"key": "bar"},
+		Data:           stick.Map{"key": "bar"},
 		Operation:      fire.Create,
 		ReadableFields: []string{"Title", "Published", "Author"},
 		WritableFields: []string{"Title", "Published", "Author"},

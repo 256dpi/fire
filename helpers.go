@@ -4,9 +4,6 @@ import (
 	"fmt"
 )
 
-// Map is a general purpose type to represent a map.
-type Map map[string]interface{}
-
 // SafeError wraps an error to indicate presentation safety.
 type SafeError struct {
 	Err error

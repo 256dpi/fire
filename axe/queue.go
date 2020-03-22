@@ -10,6 +10,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 type board struct {
@@ -161,7 +162,7 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		}
 
 		// respond with an empty object
-		err := ctx.Respond(fire.Map{})
+		err := ctx.Respond(stick.Map{})
 		if err != nil {
 			return err
 		}
