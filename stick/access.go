@@ -22,6 +22,49 @@ type Accessible interface {
 	GetAccessor(interface{}) *Accessor
 }
 
+// BuildAccessor will build an accessor for the provided type.
+func BuildAccessor(v interface{}, ignore ...string) *Accessor {
+	// get type
+	typ := reflect.TypeOf(v)
+
+	// unwrap pointer
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	// prepare accessor
+	accessor := &Accessor{
+		Name:   typ.String(),
+		Fields: map[string]*Field{},
+	}
+
+	// add fields
+	// iterate through all fields
+	for i := 0; i < typ.NumField(); i++ {
+		// get field
+		field := typ.Field(i)
+
+		// check field
+		var skip bool
+		for _, ign := range ignore {
+			if ign == field.Name {
+				skip = true
+			}
+		}
+		if skip {
+			continue
+		}
+
+		// add field
+		accessor.Fields[field.Name] = &Field{
+			Index: i,
+			Type:  field.Type,
+		}
+	}
+
+	return accessor
+}
+
 // Get will lookup the specified field on the accessible and return its value
 // and whether the field was found at all.
 func Get(acc Accessible, name string) (interface{}, bool) {

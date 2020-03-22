@@ -8,31 +8,36 @@ import (
 )
 
 type accessible struct {
-	TextBody string
+	String string
 }
 
-func (a *accessible) GetAccessor(interface{}) *Accessor {
-	return &Accessor{
+func (a *accessible) GetAccessor(v interface{}) *Accessor {
+	return BuildAccessor(v)
+}
+
+func TestBuildAccessor(t *testing.T) {
+	accessor := BuildAccessor(accessible{})
+	assert.Equal(t, &Accessor{
 		Name: "stick.accessible",
 		Fields: map[string]*Field{
-			"TextBody": {
+			"String": {
 				Index: 0,
 				Type:  reflect.TypeOf(""),
 			},
 		},
-	}
+	}, accessor)
 }
 
 func TestGet(t *testing.T) {
 	post := &accessible{}
 
-	value, ok := Get(post, "TextBody")
+	value, ok := Get(post, "String")
 	assert.Equal(t, "", value)
 	assert.True(t, ok)
 
-	post.TextBody = "hello"
+	post.String = "hello"
 
-	value, ok = Get(post, "TextBody")
+	value, ok = Get(post, "String")
 	assert.Equal(t, "hello", value)
 	assert.True(t, ok)
 
@@ -43,12 +48,10 @@ func TestGet(t *testing.T) {
 
 func TestMustGet(t *testing.T) {
 	post := &accessible{}
+	assert.Equal(t, "", MustGet(post, "String"))
 
-	assert.Equal(t, "", MustGet(post, "TextBody"))
-
-	post.TextBody = "hello"
-
-	assert.Equal(t, "hello", MustGet(post, "TextBody"))
+	post.String = "hello"
+	assert.Equal(t, "hello", MustGet(post, "String"))
 
 	assert.PanicsWithValue(t, `stick: could not get field "missing" on "stick.accessible"`, func() {
 		MustGet(post, "missing")
@@ -58,28 +61,28 @@ func TestMustGet(t *testing.T) {
 func TestSet(t *testing.T) {
 	post := &accessible{}
 
-	ok := Set(post, "TextBody", "3")
+	ok := Set(post, "String", "3")
 	assert.True(t, ok)
-	assert.Equal(t, "3", post.TextBody)
+	assert.Equal(t, "3", post.String)
 
 	ok = Set(post, "missing", "-")
 	assert.False(t, ok)
 
-	ok = Set(post, "TextBody", 1)
+	ok = Set(post, "String", 1)
 	assert.False(t, ok)
 }
 
 func TestMustSet(t *testing.T) {
 	post := &accessible{}
 
-	MustSet(post, "TextBody", "3")
-	assert.Equal(t, "3", post.TextBody)
+	MustSet(post, "String", "3")
+	assert.Equal(t, "3", post.String)
 
 	assert.PanicsWithValue(t, `stick: could not set "missing" on "stick.accessible"`, func() {
 		MustSet(post, "missing", "-")
 	})
 
-	assert.PanicsWithValue(t, `stick: could not set "TextBody" on "stick.accessible"`, func() {
-		MustSet(post, "TextBody", 1)
+	assert.PanicsWithValue(t, `stick: could not set "String" on "stick.accessible"`, func() {
+		MustSet(post, "String", 1)
 	})
 }

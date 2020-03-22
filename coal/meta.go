@@ -128,6 +128,7 @@ func GetMeta(model Model) *Meta {
 		Attributes:     make(map[string]*Field),
 		Relationships:  make(map[string]*Field),
 		FlaggedFields:  make(map[string][]*Field),
+		Accessor:       stick.BuildAccessor(model, "Base"),
 	}
 
 	// iterate through all fields
@@ -333,20 +334,6 @@ func GetMeta(model Model) *Meta {
 
 			// save list
 			meta.FlaggedFields[flag] = list
-		}
-	}
-
-	// build accessor
-	meta.Accessor = &stick.Accessor{
-		Name:   modelType.String(),
-		Fields: map[string]*stick.Field{},
-	}
-
-	// add accessor fields
-	for _, field := range meta.Fields {
-		meta.Accessor.Fields[field.Name] = &stick.Field{
-			Type:  field.Type,
-			Index: field.Index,
 		}
 	}
 
