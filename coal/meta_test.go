@@ -10,110 +10,7 @@ import (
 )
 
 func TestGetMeta(t *testing.T) {
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`, func() {
-		type m struct {
-			Base
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`, func() {
-		type m struct {
-			Base `json:"-"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:""`
-			Foo  string `json:"foo"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected an embedded "coal.Base" as the first struct field`, func() {
-		type m struct {
-			Foo  string `json:"foo"`
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  ID `coal:"foo:foo:foo"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  []ID `coal:"foo:foo:foo"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-one relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  HasOne
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`, func() {
-		type m struct {
-			Base `json:"-" bson:",inline" coal:"foo:foos"`
-			Foo  HasMany
-		}
-
-		GetMeta(&m{})
-	})
-
-	// assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
-	// 	type m struct {
-	// 		Base  `json:"-" bson:",inline" coal:"ms"`
-	// 		Text1 string `json:"text"`
-	// 		Text2 string `json:"text"`
-	// 	}
-	//
-	// 	GetMeta(&m{})
-	// })
-
-	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
-		type m struct {
-			Base  `json:"-" bson:",inline" coal:"ms"`
-			Text1 string `bson:"text"`
-			Text2 string `bson:"text"`
-		}
-
-		GetMeta(&m{})
-	})
-
-	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
-		type m struct {
-			Base    `json:"-" bson:",inline" coal:"ms"`
-			Parent1 ID `coal:"parent:parents"`
-			Parent2 ID `coal:"parent:parents"`
-		}
-
-		GetMeta(&m{})
-	})
-}
-
-func TestMeta(t *testing.T) {
 	post := GetMeta(&postModel{})
-
 	assert.Equal(t, &Meta{
 		Type:       reflect.TypeOf(postModel{}),
 		Name:       "coal.postModel",
@@ -385,20 +282,122 @@ func TestMeta(t *testing.T) {
 	}, selection)
 }
 
+func TestGetMetaErrors(t *testing.T) {
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`, func() {
+		type m struct {
+			Base
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`, func() {
+		type m struct {
+			Base `json:"-"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:""`
+			Foo  string `json:"foo"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected an embedded "coal.Base" as the first struct field`, func() {
+		type m struct {
+			Foo  string `json:"foo"`
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  ID `coal:"foo:foo:foo"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-many relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  []ID `coal:"foo:foo:foo"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-one relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  HasOne
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  HasMany
+		}
+
+		GetMeta(&m{})
+	})
+
+	// assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
+	// 	type m struct {
+	// 		Base  `json:"-" bson:",inline" coal:"ms"`
+	// 		Text1 string `json:"text"`
+	// 		Text2 string `json:"text"`
+	// 	}
+	//
+	// 	GetMeta(&m{})
+	// })
+
+	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
+		type m struct {
+			Base  `json:"-" bson:",inline" coal:"ms"`
+			Text1 string `bson:"text"`
+			Text2 string `bson:"text"`
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
+		type m struct {
+			Base    `json:"-" bson:",inline" coal:"ms"`
+			Parent1 ID `coal:"parent:parents"`
+			Parent2 ID `coal:"parent:parents"`
+		}
+
+		GetMeta(&m{})
+	})
+}
+
 func TestMetaMake(t *testing.T) {
 	post := GetMeta(&postModel{}).Make()
-	assert.Equal(t, "<*coal.postModel Value>", reflect.ValueOf(post).String())
+	assert.Equal(t, "*coal.postModel", reflect.TypeOf(post).String())
 }
 
 func TestMetaMakeSlice(t *testing.T) {
 	posts := GetMeta(&postModel{}).MakeSlice()
-	assert.Equal(t, "<*[]*coal.postModel Value>", reflect.ValueOf(posts).String())
+	assert.Equal(t, "*[]*coal.postModel", reflect.TypeOf(posts).String())
 }
 
 func TestMetaSpecial(t *testing.T) {
 	type m struct {
 		Base `json:"-" bson:",inline" coal:"foos"`
-		Foo  string `json:",omitempty" bson:",omitempty"`
+		Foo  string `json:"," bson:","`
 	}
 
 	meta := GetMeta(&m{})
