@@ -19,7 +19,6 @@ type Value interface {
 // ExtendedValue is a value that can extends its key.
 type ExtendedValue interface {
 	Value
-
 	GetExtension() (string, error)
 }
 
@@ -34,7 +33,7 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
-// GetAccessor implements the Model interface.
+// GetAccessor implements the Value interface.
 func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Value)).Accessor
 }

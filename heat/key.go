@@ -12,13 +12,8 @@ import (
 
 // Key is a structure used to encode a key.
 type Key interface {
-	// GetBase should be implemented by embedding Base.
-	GetBase() *Base
-
-	// Validate should validate the token.
 	Validate() error
-
-	// GetAccessor should return the accessor.
+	GetBase() *Base
 	GetAccessor(interface{}) *stick.Accessor
 }
 
@@ -36,7 +31,7 @@ func (b *Base) GetBase() *Base {
 	return b
 }
 
-// GetAccessor implements the Model interface.
+// GetAccessor implements the Key interface.
 func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Key)).Accessor
 }
