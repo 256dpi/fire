@@ -102,6 +102,11 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	span.Log("timeout", timeout.String())
 	defer span.Finish()
 
+	// check timeout
+	if timeout == 0 {
+		return false, 0, fmt.Errorf("missing timeout")
+	}
+
 	// get time
 	now := time.Now()
 

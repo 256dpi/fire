@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func TestEnqueue(t *testing.T) {
+func TestQueueing(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job := simpleJob{
 			Data: "Hello!",
@@ -19,22 +19,24 @@ func TestEnqueue(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
 
 		model := list[0]
-		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, "", model.Label)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, StatusEnqueued, model.Status)
 		assert.NotZero(t, model.Created)
-		assert.NotZero(t, model.Available)
-		assert.Zero(t, model.Started)
-		assert.Zero(t, model.Ended)
-		assert.Zero(t, model.Finished)
-		assert.Equal(t, 0, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.NotNil(t, model.Available)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    StatusEnqueued,
+			Created:   model.Created,
+			Available: model.Available,
+		}, model)
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -42,38 +44,50 @@ func TestEnqueue(t *testing.T) {
 		assert.Equal(t, 1, attempt)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, "", model.Label)
-		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
-		assert.Equal(t, StatusDequeued, model.Status)
 		assert.NotZero(t, model.Created)
-		assert.NotZero(t, model.Available)
-		assert.NotZero(t, model.Started)
-		assert.Zero(t, model.Ended)
-		assert.Zero(t, model.Finished)
-		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!",
+			},
+			Status:    StatusDequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  1,
+		}, model)
 
 		job.Data = "Hello!!!"
 		err = Complete(nil, tester.Store, &job)
 		assert.NoError(t, err)
 
 		model = tester.Fetch(&Model{}, job.ID()).(*Model)
-		assert.Equal(t, "simple", model.Name)
-		assert.Equal(t, "", model.Label)
-		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
-		assert.Equal(t, StatusCompleted, model.Status)
 		assert.NotZero(t, model.Created)
-		assert.NotZero(t, model.Available)
-		assert.NotZero(t, model.Started)
-		assert.NotZero(t, model.Ended)
-		assert.NotZero(t, model.Finished)
-		assert.Equal(t, 1, model.Attempts)
-		assert.Equal(t, "", model.Reason)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotNil(t, model.Ended)
+		assert.NotNil(t, model.Finished)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "simple",
+			Data: coal.Map{
+				"data": "Hello!!!",
+			},
+			Status:    StatusCompleted,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Ended:     model.Ended,
+			Finished:  model.Finished,
+			Attempts:  1,
+		}, model)
 	})
 }
 
-func TestEnqueueDelayed(t *testing.T) {
+func TestQueueingDelayed(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job := simpleJob{
 			Data: "Hello!",
@@ -82,6 +96,7 @@ func TestEnqueueDelayed(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 100*time.Millisecond, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -111,6 +126,7 @@ func TestDequeueTimeout(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
 		assert.NoError(t, err)
@@ -140,6 +156,7 @@ func TestFail(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -170,6 +187,7 @@ func TestFailDelayed(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -207,6 +225,7 @@ func TestCancel(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
 
 		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, time.Hour)
 		assert.NoError(t, err)
@@ -239,6 +258,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job1, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job1.ID())
 
 		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
@@ -254,6 +274,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
+		assert.NotZero(t, job2.ID())
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
@@ -270,6 +291,7 @@ func TestEnqueueLabeled(t *testing.T) {
 		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job2.ID())
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
@@ -292,6 +314,7 @@ func TestEnqueueInterval(t *testing.T) {
 		enqueued, err := Enqueue(nil, tester.Store, &job1, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job1.ID())
 
 		list := *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
@@ -307,6 +330,7 @@ func TestEnqueueInterval(t *testing.T) {
 		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 0)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
+		assert.NotZero(t, job2.ID())
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
@@ -323,6 +347,7 @@ func TestEnqueueInterval(t *testing.T) {
 		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.False(t, enqueued)
+		assert.NotZero(t, job2.ID())
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 1)
@@ -335,6 +360,7 @@ func TestEnqueueInterval(t *testing.T) {
 		enqueued, err = Enqueue(nil, tester.Store, &job2, 0, 100*time.Millisecond)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
+		assert.NotZero(t, job2.ID())
 
 		list = *tester.FindAll(&Model{}).(*[]*Model)
 		assert.Len(t, list, 2)
