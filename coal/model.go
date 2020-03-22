@@ -57,10 +57,6 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Model)).Accessor
 }
 
-type empty struct {
-	Base `bson:",inline"`
-}
-
 // Slice takes a slice of the form *[]*Post and returns a new slice that
 // contains all models.
 func Slice(ptr interface{}) []Model {

@@ -12,6 +12,10 @@ import (
 	"github.com/256dpi/fire/cinder"
 )
 
+type empty struct {
+	Base `bson:",inline"`
+}
+
 // Level describes the safety level under which an operation should be executed.
 type Level int
 
