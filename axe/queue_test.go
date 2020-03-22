@@ -12,8 +12,6 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func panicReporter(err error) { panic(err) }
-
 func TestQueue(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
@@ -50,6 +48,7 @@ func TestQueue(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -100,6 +99,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -156,6 +156,7 @@ func TestQueueFailed(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -213,6 +214,7 @@ func TestQueueCrashed(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -261,6 +263,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
 		assert.NotZero(t, model.Created)
@@ -310,6 +313,7 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
 		assert.NotZero(t, model.Created)
@@ -364,6 +368,7 @@ func TestQueueCancelCrash(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Cancelled, model.Status)
 		assert.NotZero(t, model.Created)
@@ -422,6 +427,7 @@ func TestQueueTimeout(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -475,6 +481,7 @@ func TestQueueExisting(t *testing.T) {
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)
@@ -523,6 +530,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 		model := tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "simple", model.Name)
+		assert.Empty(t, model.Label)
 		assert.Equal(t, coal.Map{"data": "Hello!!!"}, model.Data)
 		assert.Equal(t, Completed, model.Status)
 		assert.NotZero(t, model.Created)

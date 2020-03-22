@@ -31,3 +31,7 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		fn(t, tester)
 	})
 }
+
+func panicReporter(err error) {
+	panic(err)
+}
