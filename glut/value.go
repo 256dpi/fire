@@ -44,6 +44,9 @@ type Meta struct {
 
 	// The values time to live.
 	TTL time.Duration
+
+	// The used transfer coding.
+	Coding coal.Coding
 }
 
 var metaMutex sync.Mutex
@@ -96,9 +99,10 @@ func GetMeta(value Value) *Meta {
 
 	// prepare meta
 	meta := &Meta{
-		Type: typ,
-		Key:  key,
-		TTL:  ttl,
+		Type:   typ,
+		Key:    key,
+		TTL:    ttl,
+		Coding: coal.JSON,
 	}
 
 	// cache meta

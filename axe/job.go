@@ -49,6 +49,9 @@ type Meta struct {
 
 	// The jobs name.
 	Name string
+
+	// The used transfer coding.
+	Coding coal.Coding
 }
 
 var metaMutex sync.Mutex
@@ -95,8 +98,9 @@ func GetMeta(job Job) *Meta {
 
 	// prepare meta
 	meta := &Meta{
-		Type: typ,
-		Name: name,
+		Type:   typ,
+		Name:   name,
+		Coding: coal.JSON,
 	}
 
 	// cache meta

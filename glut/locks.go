@@ -120,7 +120,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	}
 
 	// decode value
-	err = model.Data.Unmarshal(value, coal.JSON)
+	err = model.Data.Unmarshal(value, meta.Coding)
 	if err != nil {
 		return false, err
 	}
@@ -165,7 +165,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// encode data
 	var data coal.Map
-	err = data.Marshal(value, coal.JSON)
+	err = data.Marshal(value, meta.Coding)
 	if err != nil {
 		return false, err
 	}
@@ -196,7 +196,8 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	ctx, span := cinder.Track(ctx, "glut/GetLocked")
 	defer span.Finish()
 
-	// get base
+	// get meta and base
+	meta := GetMeta(value)
 	base := value.GetBase()
 
 	// get key
@@ -230,7 +231,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// decode value
-	err = model.Data.Unmarshal(value, coal.JSON)
+	err = model.Data.Unmarshal(value, meta.Coding)
 	if err != nil {
 		return false, err
 	}

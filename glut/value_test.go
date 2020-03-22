@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/coal"
 )
 
 type invalidValue1 struct {
@@ -35,9 +37,10 @@ func TestGetMeta(t *testing.T) {
 
 	meta := GetMeta(key)
 	assert.Equal(t, &Meta{
-		Type: reflect.TypeOf(&testValue{}),
-		Key:  "test",
-		TTL:  0,
+		Type:   reflect.TypeOf(&testValue{}),
+		Key:    "test",
+		TTL:    0,
+		Coding: coal.JSON,
 	}, meta)
 
 	data, err := json.Marshal(key)

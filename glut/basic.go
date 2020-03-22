@@ -13,6 +13,9 @@ import (
 // Get will load the contents of the specified value. It will also return
 // whether the value exists at all.
 func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// get meta
+	meta := GetMeta(value)
+
 	// track
 	ctx, span := cinder.Track(ctx, "glut/Get")
 	defer span.Finish()
@@ -38,7 +41,7 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// decode value
-	err = model.Data.Unmarshal(value, coal.JSON)
+	err = model.Data.Unmarshal(value, meta.Coding)
 	if err != nil {
 		return false, err
 	}
@@ -75,7 +78,7 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// encode value
 	var data coal.Map
-	err = data.Marshal(value, coal.JSON)
+	err = data.Marshal(value, meta.Coding)
 	if err != nil {
 		return false, err
 	}
