@@ -26,9 +26,9 @@ type Blueprint struct {
 	// specified time has passed.
 	Delay time.Duration
 
-	// The job period. If given, and a label is present, the job will only be
+	// The job isolation. If given, and a label is present, the job will only be
 	// enqueued if no job has been finished in the specified duration.
-	Period time.Duration
+	Isolation time.Duration
 }
 
 // Options defines queue options.
@@ -109,8 +109,8 @@ func (q *Queue) Add(task *Task) {
 }
 
 // Enqueue will enqueue a job.
-func (q *Queue) Enqueue(job Job, delay, period time.Duration) (bool, error) {
-	return Enqueue(nil, q.options.Store, job, delay, period)
+func (q *Queue) Enqueue(job Job, delay, isolation time.Duration) (bool, error) {
+	return Enqueue(nil, q.options.Store, job, delay, isolation)
 }
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
@@ -123,13 +123,13 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// check if controller uses same store
 		if q.options.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
 		} else {
 			// enqueue job using queue store
-			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Period)
+			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
@@ -148,13 +148,13 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// check if controller uses same store
 		if q.options.Store == ctx.Controller.Store {
 			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Period)
+			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
 		} else {
 			// enqueue job using queue store
-			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Period)
+			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}

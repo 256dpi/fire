@@ -304,7 +304,7 @@ func TestEnqueueLabeled(t *testing.T) {
 	})
 }
 
-func TestEnqueueInterval(t *testing.T) {
+func TestEnqueueIsolation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job1 := simpleJob{
 			Base: B("test"),

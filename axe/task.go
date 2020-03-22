@@ -185,10 +185,10 @@ func (t *Task) worker(queue *Queue) error {
 }
 
 func (t *Task) enqueuer(queue *Queue) error {
-	// get job, delay and period
+	// get job, delay and isolation
 	job := t.PeriodicJob.Job
 	delay := t.PeriodicJob.Delay
-	period := t.PeriodicJob.Period
+	isolation := t.PeriodicJob.Isolation
 
 	// run forever
 	for {
@@ -196,7 +196,7 @@ func (t *Task) enqueuer(queue *Queue) error {
 		job.GetBase().JobID = coal.New()
 
 		// enqueue task
-		_, err := queue.Enqueue(job, delay, period)
+		_, err := queue.Enqueue(job, delay, isolation)
 		if err != nil && queue.options.Reporter != nil {
 			// report error
 			queue.options.Reporter(err)

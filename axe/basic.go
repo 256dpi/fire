@@ -11,9 +11,9 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// Enqueue will enqueue the specified job with the provided delay and period. It
-// will return whether a job has been enqueued.
-func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time.Duration) (bool, error) {
+// Enqueue will enqueue the specified job with the provided delay and isolation.
+// It will return whether a job has been enqueued.
+func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation time.Duration) (bool, error) {
 	// get meta
 	meta := GetMeta(job)
 
@@ -25,7 +25,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time
 	span.Log("name", meta.Name)
 	span.Log("label", base.Label)
 	span.Log("delay", delay.String())
-	span.Log("period", period.String())
+	span.Log("isolation", isolation.String())
 	defer span.Finish()
 
 	// ensure id
@@ -73,11 +73,11 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, period time
 		},
 	}
 
-	// add period
-	if period > 0 {
+	// add isolation
+	if isolation > 0 {
 		delete(filter, "Status")
 		filter["Finished"] = bson.M{
-			"$gt": now.Add(-period),
+			"$gt": now.Add(-isolation),
 		}
 	}
 
