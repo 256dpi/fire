@@ -30,7 +30,7 @@ func TestApplicationInterfaces(t *testing.T) {
 	coal.Require(&Application{}, "flame-client-id")
 
 	var _ coal.Model = &Application{}
-	var _ fire.ValidatableModel = &Application{}
+	var _ coal.ValidatableModel = &Application{}
 	var _ Client = &Application{}
 }
 
@@ -38,7 +38,7 @@ func TestUserInterfaces(t *testing.T) {
 	coal.Require(&User{}, "flame-resource-owner-id")
 
 	var _ coal.Model = &User{}
-	var _ fire.ValidatableModel = &User{}
+	var _ coal.ValidatableModel = &User{}
 	var _ ResourceOwner = &User{}
 }
 

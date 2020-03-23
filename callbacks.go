@@ -34,20 +34,11 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
-// The ValidatableModel interface is used by the ModelValidator to validate
-// models.
-type ValidatableModel interface {
-	coal.Model
-
-	// The Validate method that should return normal errors about invalid fields.
-	Validate() error
-}
-
 // ModelValidator performs a validation of the model using the Validate method.
 func ModelValidator() *Callback {
 	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
 		// check model
-		m, ok := ctx.Model.(ValidatableModel)
+		m, ok := ctx.Model.(coal.ValidatableModel)
 		if !ok {
 			return fmt.Errorf("model is not validatable")
 		}

@@ -15,6 +15,12 @@ type Model interface {
 	GetAccessor(interface{}) *stick.Accessor
 }
 
+// The ValidatableModel interface defines a modal that can be validated.
+type ValidatableModel interface {
+	Model
+	Validate() error
+}
+
 // Base is the base for every coal model.
 type Base struct {
 	DocID ID    `json:"-" bson:"_id,omitempty"`

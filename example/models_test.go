@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -19,5 +18,5 @@ func TestItem(t *testing.T) {
 	coal.Require(&Item{}, "fire-soft-delete")
 	coal.Require(&Item{}, "fire-created-timestamp", "fire-updated-timestamp")
 
-	var _ fire.ValidatableModel = &Item{}
+	var _ coal.ValidatableModel = &Item{}
 }
