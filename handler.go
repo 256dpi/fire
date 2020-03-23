@@ -138,3 +138,29 @@ func Except(ops ...Operation) Matcher {
 		return true
 	}
 }
+
+// Combine will combine multiple callbacks.
+func Combine(name string, cbs ...*Callback) *Callback {
+	return C(name, func(ctx *Context) bool {
+		// check if one of the callback matches
+		for _, cb := range cbs {
+			if cb.Matcher(ctx) {
+				return true
+			}
+		}
+
+		return false
+	}, func(ctx *Context) error {
+		// call all matching callbacks
+		for _, cb := range cbs {
+			if cb.Matcher(ctx) {
+				err := cb.Handler(ctx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+}
