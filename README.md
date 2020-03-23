@@ -287,7 +287,6 @@ Go on Fire ships with several built-in callbacks that implement common concerns:
 - [Dependent Resources Validator](https://godoc.org/github.com/256dpi/fire#DependentResourcesValidator)
 - [Referenced Resources Validator](https://godoc.org/github.com/256dpi/fire#ReferencedResourcesValidator)
 - [Matching References Validator](https://godoc.org/github.com/256dpi/fire#MatchingReferencesValidator)
-- [Unique Field Validator](https://godoc.org/github.com/256dpi/fire#UniqueFieldValidator)
 - [Relationship Validator](https://godoc.org/github.com/256dpi/fire#RelationshipValidator)
 - [Timestamp Validator](https://godoc.org/github.com/256dpi/fire#TimestampValidator)
 
