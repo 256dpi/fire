@@ -12,7 +12,7 @@ import (
 var ErrStop = errors.New("stop")
 
 // ErrInvalidated may be returned to the receiver if the underlying collection
-// has been invalidated due to a drop or rename of the collection or database.
+// or database has been invalidated due to a drop or rename.
 var ErrInvalidated = errors.New("invalidated")
 
 // Event defines the event type.
@@ -156,29 +156,22 @@ func (s *Stream) tail() error {
 		}
 
 		// prepare type
-		var typ Event
-
-		// parse operation type
+		var event Event
 		switch ch.OperationType {
 		case "insert":
-			typ = Created
+			event = Created
 		case "replace", "update":
-			typ = Updated
+			event = Updated
 		case "delete":
-			typ = Deleted
+			event = Deleted
 		case "drop", "renamed", "dropDatabase", "invalidate":
 			return ErrInvalidated
 		}
 
-		// prepare document
-		var doc Model
-
 		// unmarshal document for created and updated events
-		if typ != Deleted {
-			// make model
+		var doc Model
+		if event == Created || event == Updated {
 			doc = GetMeta(s.model).Make()
-
-			// unmarshal document
 			err = bson.Unmarshal(ch.FullDocument, doc)
 			if err != nil {
 				return err
@@ -186,7 +179,7 @@ func (s *Stream) tail() error {
 		}
 
 		// call receiver
-		err = s.receiver(typ, ch.DocumentKey.ID, doc, nil, ch.ResumeToken)
+		err = s.receiver(event, ch.DocumentKey.ID, doc, nil, ch.ResumeToken)
 		if err != nil {
 			return err
 		}
