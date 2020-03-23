@@ -3507,12 +3507,12 @@ func TestDatabaseErrors(t *testing.T) {
 				}
 			}
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-			assert.Equal(t, http.StatusConflict, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"errors": [
 					{
-						"status": "409",
-						"title": "conflict",
+						"status": "400",
+						"title": "bad request",
 						"detail": "document is not unique"
 					}
 				]
