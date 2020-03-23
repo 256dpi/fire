@@ -251,16 +251,6 @@ type Context struct {
 	Trace *cinder.Trace
 }
 
-// C is a shorthand to get a traced collection for the specified model.
-func (c *Context) C(model coal.Model) *coal.Collection {
-	return c.Store.C(model)
-}
-
-// M is a shorthand to get a manager for the specified model.
-func (c *Context) M(model coal.Model) *coal.Manager {
-	return c.Store.M(model)
-}
-
 // Query returns the composite query of Selector and Filter.
 func (c *Context) Query() bson.M {
 	// prepare sub queries

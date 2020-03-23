@@ -495,7 +495,7 @@ func (c *Controller) createResource(ctx *Context) {
 		}
 
 		// insert model
-		inserted, err := ctx.M(c.Model).InsertIfMissing(ctx, bson.M{
+		inserted, err := ctx.Store.M(c.Model).InsertIfMissing(ctx, bson.M{
 			idempotentCreateField: idempotentCreateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
@@ -509,7 +509,7 @@ func (c *Controller) createResource(ctx *Context) {
 		}
 	} else {
 		// insert model
-		err := ctx.M(c.Model).Insert(ctx, ctx.Model)
+		err := ctx.Store.M(c.Model).Insert(ctx, ctx.Model)
 		if coal.IsDuplicate(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
@@ -609,7 +609,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		stick.MustSet(ctx.Model, consistentUpdateField, coal.New().Hex())
 
 		// update model
-		found, err := ctx.M(c.Model).ReplaceFirst(ctx, bson.M{
+		found, err := ctx.Store.M(c.Model).ReplaceFirst(ctx, bson.M{
 			"_id":                 ctx.Model.ID(),
 			consistentUpdateField: consistentUpdateToken,
 		}, ctx.Model, false)
@@ -624,7 +624,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		}
 	} else {
 		// replace model
-		found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
+		found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 		if coal.IsDuplicate(err) {
 			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
@@ -681,7 +681,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		softDeleteField := coal.L(c.Model, "fire-soft-delete", true)
 
 		// soft delete model
-		found, err := ctx.M(c.Model).Update(ctx, nil, ctx.Model.ID(), bson.M{
+		found, err := ctx.Store.M(c.Model).Update(ctx, nil, ctx.Model.ID(), bson.M{
 			"$set": bson.M{
 				softDeleteField: time.Now(),
 			},
@@ -694,7 +694,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 		}
 	} else {
 		// delete model
-		found, err := ctx.M(c.Model).Delete(ctx, nil, ctx.Model.ID())
+		found, err := ctx.Store.M(c.Model).Delete(ctx, nil, ctx.Model.ID())
 		stack.AbortIf(err)
 
 		// check if missing
@@ -957,7 +957,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
+	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
@@ -1046,7 +1046,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
+	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
@@ -1142,7 +1142,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// replace model
-	found, err := ctx.M(c.Model).Replace(ctx, ctx.Model, false)
+	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
 		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
@@ -1293,7 +1293,7 @@ func (c *Controller) loadModel(ctx *Context) {
 
 	// find model
 	model := c.meta.Make()
-	found, err := ctx.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0, lock)
+	found, err := ctx.Store.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0, lock)
 	stack.AbortIf(err)
 
 	// check if missing
@@ -1422,7 +1422,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// load documents
 	models := c.meta.MakeSlice()
-	err := ctx.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false)
+	err := ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false)
 	stack.AbortIf(err)
 
 	// set models
@@ -1658,14 +1658,14 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		filters = append(filters, ctx.RelationshipFilters[field.Name]...)
 
 		// translate filters
-		queryDoc, err := ctx.M(rc.Model).T().Document(bson.M{
+		queryDoc, err := ctx.Store.M(rc.Model).T().Document(bson.M{
 			"$and": filters,
 		})
 		stack.AbortIf(err)
 
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
+		stack.AbortIf(ctx.Store.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
 			"_id":       1,
 			rel.BSONKey: 1,
 		})))
@@ -1938,7 +1938,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	// add pagination links
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// count resources
-		count, err := ctx.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
+		count, err := ctx.Store.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
 		stack.AbortIf(err)
 
 		// calculate last page

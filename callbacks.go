@@ -164,7 +164,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 			}
 
 			// count referencing documents
-			count, err := ctx.M(model).Count(ctx, query, 0, 1, false)
+			count, err := ctx.Store.M(model).Count(ctx, query, 0, 1, false)
 			if err != nil {
 				return err
 			}
@@ -219,7 +219,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 				}
 
 				// count entities in database
-				count, err := ctx.M(collection).Count(ctx, query, 0, 0, false)
+				count, err := ctx.Store.M(collection).Count(ctx, query, 0, 0, false)
 				if err != nil {
 					return err
 				}
@@ -235,7 +235,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 			// handle to-one relationships
 
 			// count entities in database
-			count, err := ctx.M(collection).Count(ctx, bson.M{
+			count, err := ctx.Store.M(collection).Count(ctx, bson.M{
 				"_id": ref,
 			}, 0, 1, false)
 			if err != nil {
@@ -378,7 +378,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		}
 
 		// find matching documents
-		count, err := ctx.M(target).Count(ctx, query, 0, 0, false)
+		count, err := ctx.Store.M(target).Count(ctx, query, 0, 0, false)
 		if err != nil {
 			return err
 		}
