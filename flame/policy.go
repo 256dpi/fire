@@ -91,30 +91,30 @@ type Policy struct {
 	Clients []Client
 
 	// Grants should return the permitted grants for the provided client.
-	Grants func(*Context, Client) (Grants, error)
+	Grants func(ctx *Context, c Client) (Grants, error)
 
 	// ClientFilter may return a filter that should be applied when looking
 	// up a client. This callback can be used to select clients based on other
 	// request parameters. It can return ErrInvalidFilter to cancel the
 	// authentication request.
-	ClientFilter func(*Context, Client) (bson.M, error)
+	ClientFilter func(ctx *Context, c Client) (bson.M, error)
 
 	// RedirectURIValidator should validate a redirect URI and return the valid
 	// or corrected redirect URI. It can return ErrInvalidRedirectURI to to
 	// cancel the authorization request. The validator is during the
 	// authorization and the token request. If the result differs, no token will
 	// be issue and the request aborted.
-	RedirectURIValidator func(*Context, Client, string) (string, error)
+	RedirectURIValidator func(ctx *Context, c Client, redirectURI string) (string, error)
 
 	// ResourceOwners should return a list of resource owner models that are
 	// tried in order to resolve grant requests.
-	ResourceOwners func(*Context, Client) ([]ResourceOwner, error)
+	ResourceOwners func(ctx *Context, c Client) ([]ResourceOwner, error)
 
 	// ResourceOwnerFilter may return a filter that should be applied when
 	// looking up a resource owner. This callback can be used to select resource
 	// owners based on other request parameters. It can return ErrInvalidFilter
 	// to cancel the authentication request.
-	ResourceOwnerFilter func(*Context, Client, ResourceOwner) (bson.M, error)
+	ResourceOwnerFilter func(ctx *Context, c Client, ro ResourceOwner) (bson.M, error)
 
 	// GrantStrategy is invoked by the authenticator with the requested scope,
 	// the client and the resource owner before issuing an access token. The
@@ -122,11 +122,11 @@ type Policy struct {
 	// ErrGrantRejected or ErrInvalidScope to cancel the grant request.
 	//
 	// Note: ResourceOwner is not set for a client credentials grant.
-	GrantStrategy func(*Context, Client, ResourceOwner, oauth2.Scope) (oauth2.Scope, error)
+	GrantStrategy func(ctx *Context, c Client, ro ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error)
 
 	// The URL to the page that obtains the approval of the user in implicit and
 	// authorization code grants.
-	ApprovalURL func(*Context, Client) (string, error)
+	ApprovalURL func(ctx *Context, c Client) (string, error)
 
 	// ApproveStrategy is invoked by the authenticator to verify the
 	// authorization approval by an authenticated resource owner in the implicit
@@ -136,12 +136,12 @@ type Policy struct {
 	//
 	// Note: GenericToken represents the token that authorizes the resource
 	// owner to give the approval.
-	ApproveStrategy func(*Context, Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error)
+	ApproveStrategy func(ctx *Context, c Client, ro ResourceOwner, token GenericToken, scope oauth2.Scope) (oauth2.Scope, error)
 
 	// TokenData may return a map of data that should be included in the
 	// generated JWT tokens as the "dat" field as well as in the token
 	// introspection's response "extra" field.
-	TokenData func(Client, ResourceOwner, GenericToken) map[string]interface{}
+	TokenData func(c Client, ro ResourceOwner, token GenericToken) map[string]interface{}
 
 	// The token and code lifespans.
 	AccessTokenLifespan       time.Duration

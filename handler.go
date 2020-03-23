@@ -98,11 +98,11 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 
 // Handler is function that takes a context, mutates is to modify the behaviour
 // and response or return an error.
-type Handler func(*Context) error
+type Handler func(ctx *Context) error
 
 // Matcher is a function that makes an assessment of a context and decides whether
 // an operation should be allowed to be carried out.
-type Matcher func(*Context) bool
+type Matcher func(ctx *Context) bool
 
 // All will match all contexts.
 func All() Matcher {
