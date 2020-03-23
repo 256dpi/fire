@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/256dpi/jsonapi/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -280,6 +281,15 @@ func (c *Context) Query() bson.M {
 
 	// otherwise return $and query
 	return bson.M{"$and": subQueries}
+}
+
+// Modified will return whether the specified field has been changed.
+func (c *Context) Modified(field string) bool {
+	// get values
+	newValue := stick.MustGet(c.Model, field)
+	oldValue := stick.MustGet(c.Original, field)
+
+	return !reflect.DeepEqual(newValue, oldValue)
 }
 
 // Parse will decode a custom JSON body to the specified object.

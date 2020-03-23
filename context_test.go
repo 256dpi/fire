@@ -2,8 +2,11 @@ package fire
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestOperation(t *testing.T) {
@@ -30,4 +33,35 @@ func TestOperation(t *testing.T) {
 		assert.Equal(t, entry.a, entry.o.Action())
 		assert.Equal(t, entry.s, entry.o.String())
 	}
+}
+
+func TestContextModified(t *testing.T) {
+	model := &postModel{}
+	original := &postModel{}
+
+	c1 := &Context{
+		Model:    model,
+		Original: original,
+	}
+
+	// zero values
+	assert.False(t, c1.Modified("Title"))
+	assert.False(t, c1.Modified("Published"))
+	assert.False(t, c1.Modified("Deleted"))
+
+	// changed values
+	model.Title = "Hello"
+	model.Published = true
+	model.Deleted = coal.T(time.Now())
+	assert.True(t, c1.Modified("Title"))
+	assert.True(t, c1.Modified("Published"))
+	assert.True(t, c1.Modified("Deleted"))
+
+	// same values
+	original.Title = "Hello"
+	original.Published = true
+	original.Deleted = model.Deleted
+	assert.False(t, c1.Modified("Title"))
+	assert.False(t, c1.Modified("Published"))
+	assert.False(t, c1.Modified("Deleted"))
 }
