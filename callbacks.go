@@ -170,7 +170,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 				return err
 			}
 
-			// return err of documents are found
+			// return error if documents are found
 			if count != 0 {
 				return E("resource has dependent resources")
 			}
@@ -257,15 +257,15 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by combining a DependentResourcesValidator and a
 // ReferencedResourcesValidator based on the specified model and catalog.
-func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFields ...string) *Callback {
+func RelationshipValidator(model coal.Model, catalog *coal.Catalog, exclude ...string) *Callback {
 	// prepare lists
-	dependentResources := make(map[coal.Model]string)
+	resources := make(map[coal.Model]string)
 	references := make(map[string]coal.Model)
 
 	// iterate through all fields
 	for _, field := range coal.GetMeta(model).Relationships {
-		// exclude field if requested
-		if stick.Contains(excludedFields, field.Name) {
+		// continue if relationship is excluded
+		if stick.Contains(exclude, field.Name) {
 			continue
 		}
 
@@ -277,19 +277,19 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 				panic(fmt.Sprintf(`fire: missing model in catalog: "%s"`, field.RelType))
 			}
 
-			// get related bson field
-			bsonField := ""
-			for _, relatedField := range coal.GetMeta(relatedModel).Relationships {
-				if relatedField.RelName == field.RelInverse {
-					bsonField = relatedField.Name
+			// get related field
+			relatedField := ""
+			for _, relationship := range coal.GetMeta(relatedModel).Relationships {
+				if relationship.RelName == field.RelInverse {
+					relatedField = relationship.Name
 				}
 			}
-			if bsonField == "" {
+			if relatedField == "" {
 				panic(fmt.Sprintf(`fire: missing field for inverse relationship: "%s"`, field.RelInverse))
 			}
 
-			// add relationship
-			dependentResources[relatedModel] = bsonField
+			// add resource
+			resources[relatedModel] = relatedField
 		}
 
 		// handle to-one and to-many relationships
@@ -300,29 +300,29 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, excludedFiel
 				panic(fmt.Sprintf(`fire: missing model in catalog: "%s"`, field.RelType))
 			}
 
-			// add relationship
+			// add reference
 			references[field.Name] = relatedModel
 		}
 	}
 
 	// create callbacks
-	cb1 := DependentResourcesValidator(dependentResources)
-	cb2 := ReferencedResourcesValidator(references)
+	drv := DependentResourcesValidator(resources)
+	rrv := ReferencedResourcesValidator(references)
 
 	return C("fire/RelationshipValidator", func(ctx *Context) bool {
-		return cb1.Matcher(ctx) || cb2.Matcher(ctx)
+		return drv.Matcher(ctx) || rrv.Matcher(ctx)
 	}, func(ctx *Context) error {
 		// run dependent resources validator
-		if cb1.Matcher(ctx) {
-			err := cb1.Handler(ctx)
+		if drv.Matcher(ctx) {
+			err := drv.Handler(ctx)
 			if err != nil {
 				return err
 			}
 		}
 
-		// run dependent resources validator
-		if cb2.Matcher(ctx) {
-			err := cb2.Handler(ctx)
+		// run referenced resources validator
+		if rrv.Matcher(ctx) {
+			err := rrv.Handler(ctx)
 			if err != nil {
 				return err
 			}
