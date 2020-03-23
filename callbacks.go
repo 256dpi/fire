@@ -126,8 +126,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 		if ctx.Operation == Update {
 			// check all fields
 			for field := range pairs {
-				// check equality
-				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), stick.MustGet(ctx.Original, field)) {
+				if ctx.Modified(field) {
 					return E("field " + field + " is protected")
 				}
 			}
