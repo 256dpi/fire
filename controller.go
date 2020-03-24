@@ -57,16 +57,26 @@ type Controller struct {
 	// privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
 
+	// Modifiers are run to modify the model during Create and Update operations
+	// after the model is loaded and the changed attributes have been assigned
+	// during an Update but before the model is validated. Returned errors will
+	// cause the abortion of the request with a bad request status by default.
+	//
+	// The callbacks are expected to modify the model to ensure default values,
+	// aggregate fields or in general add data to the model.
+	Modifiers []*Callback
+
 	// Validators are run to validate Create, Update and Delete operations
-	// after the models are loaded and the changed attributes have been assigned
-	// during an Update. Returned errors will cause the abortion of the request
-	// with a bad request status by default.
+	// after the model is loaded, changed, modified and passed basic validation.
+	// Returned errors will cause the abortion of the request with a bad request
+	// status by default.
 	//
 	// The callbacks are expected to validate the model being created, updated
 	// or deleted and return errors if the presented attributes or relationships
 	// are invalid or do not comply with the stated requirements. Necessary
 	// authorization checks should be repeated and now also include the model's
-	// attributes and relationships.
+	// attributes and relationships. The model should not be further modified to
+	// ensure that the validators do not influence each other.
 	Validators []*Callback
 
 	// Decorators are run after the models or model have been loaded from the
@@ -474,6 +484,9 @@ func (c *Controller) createResource(ctx *Context) {
 	// assign attributes
 	c.assignData(ctx, ctx.Request.Data.One)
 
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
 
@@ -585,6 +598,9 @@ func (c *Controller) updateResource(ctx *Context) {
 	// assign attributes
 	c.assignData(ctx, ctx.Request.Data.One)
 
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
 
@@ -677,6 +693,8 @@ func (c *Controller) deleteResource(ctx *Context) {
 
 	// load model
 	c.loadModel(ctx)
+
+	// skip modifiers
 
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
@@ -962,6 +980,9 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// assign relationship
 	c.assignRelationship(ctx, ctx.Request, rel)
 
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
 
@@ -1053,6 +1074,9 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 		ids = append(ids, refID)
 		stick.MustSet(ctx.Model, rel.Name, ids)
 	}
+
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
@@ -1152,6 +1176,9 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 			stick.MustSet(ctx.Model, rel.Name, ids)
 		}
 	}
+
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
 	stack.AbortIf(ctx.Model.Validate())
