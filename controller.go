@@ -22,8 +22,8 @@ import (
 // A Controller provides a JSON API based interface to a model.
 //
 // Database transactions are automatically used for list, find, create, update
-// and delete operations. The created session can be accessed through the context
-// to use it in callbacks.
+// and delete operations. The created session can be accessed through the
+// context to use it in callbacks.
 //
 // Note: A controller must not be modified after being added to a group.
 type Controller struct {
@@ -34,8 +34,8 @@ type Controller struct {
 	Store *coal.Store
 
 	// Supported may be set to limit the supported operations of a controller.
-	// By default all operations are supported. If the operation is not supported
-	// the request will be aborted with an unsupported method error.
+	// By default all operations are supported. If the operation is not
+	// supported the request will be aborted with an unsupported method error.
 	Supported Matcher
 
 	// Filters is a list of fields that are filterable. Only fields that are
@@ -62,8 +62,8 @@ type Controller struct {
 	// during an Update. Returned errors will cause the abortion of the request
 	// with a bad request status by default.
 	//
-	// The callbacks are expected to validate the model being created, updated or
-	// deleted and return errors if the presented attributes or relationships
+	// The callbacks are expected to validate the model being created, updated
+	// or deleted and return errors if the presented attributes or relationships
 	// are invalid or do not comply with the stated requirements. Necessary
 	// authorization checks should be repeated and now also include the model's
 	// attributes and relationships.
@@ -126,12 +126,12 @@ type Controller struct {
 	IdempotentCreate bool
 
 	// ConsistentUpdate can be set to true to enable the consistent update
-	// mechanism. When updating a resource, the client has to first load the most
-	// recent resource and retain the server generated "update token" and send
-	// it with the update in the defined update token field. The controller will
-	// then check if the stored document still has the same token. The controller
-	// will determine the token field from the provided model using the
-	// "fire-consistent-update" flag.
+	// mechanism. When updating a resource, the client has to first load the
+	// most recent resource and retain the server generated "update token" and
+	// send it with the update in the defined update token field. The controller
+	// will then check if the stored document still has the same token. The
+	// controller will determine the token field from the provided model using
+	// the "fire-consistent-update" flag.
 	ConsistentUpdate bool
 
 	// SoftDelete can be set to true to enable the soft delete mechanism. If
