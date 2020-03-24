@@ -14,9 +14,17 @@ type bsonJob struct {
 	Data string `bson:"data"`
 }
 
+func (j *bsonJob) Validate() error {
+	return nil
+}
+
 type invalidJob1 struct {
 	Hello string
 	Base
+}
+
+func (j *invalidJob1) Validate() error {
+	return nil
 }
 
 type invalidJob2 struct {
@@ -24,9 +32,17 @@ type invalidJob2 struct {
 	Hello string
 }
 
+func (j *invalidJob2) Validate() error {
+	return nil
+}
+
 type invalidJob3 struct {
 	Base  `json:"-" axe:""`
 	Hello string
+}
+
+func (j *invalidJob3) Validate() error {
+	return nil
 }
 
 func TestGetMeta(t *testing.T) {

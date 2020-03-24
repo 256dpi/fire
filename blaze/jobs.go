@@ -6,3 +6,8 @@ import "github.com/256dpi/fire/axe"
 type CleanupJob struct {
 	axe.Base `json:"-" axe:"fire/blaze.cleanup"`
 }
+
+// Validate validates the job.
+func (j *CleanupJob) Validate() error {
+	return nil
+}

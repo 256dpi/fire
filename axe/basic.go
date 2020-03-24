@@ -33,9 +33,15 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	span.Log("isolation", isolation.String())
 	defer span.Finish()
 
+	// validate job
+	err := job.Validate()
+	if err != nil {
+		return false, err
+	}
+
 	// encode job
 	var data stick.Map
-	err := data.Marshal(job, meta.Coding)
+	err = data.Marshal(job, meta.Coding)
 	if err != nil {
 		return false, err
 	}
@@ -180,6 +186,12 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	job.GetBase().Label = model.Label
 	span.Log("label", model.Label)
 
+	// validate job
+	err = job.Validate()
+	if err != nil {
+		return false, 0, err
+	}
+
 	return true, model.Attempts, nil
 }
 
@@ -197,9 +209,15 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	span.Log("id", job.ID().Hex())
 	defer span.Finish()
 
+	// validate job
+	err := job.Validate()
+	if err != nil {
+		return err
+	}
+
 	// encode job
 	var data stick.Map
-	err := data.Marshal(job, meta.Coding)
+	err = data.Marshal(job, meta.Coding)
 	if err != nil {
 		return err
 	}

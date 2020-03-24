@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/256dpi/fire"
@@ -16,6 +17,15 @@ type testJob struct {
 	Base `json:"-" axe:"test"`
 
 	Data string `json:"data"`
+}
+
+func (j *testJob) Validate() error {
+	// check data
+	if j.Data == "error" {
+		return fmt.Errorf("data error")
+	}
+
+	return nil
 }
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {

@@ -28,7 +28,7 @@ func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage)
 		ResourceActions: fire.M{
 			"add": queue.Action([]string{"POST"}, func(ctx *fire.Context) axe.Blueprint {
 				return axe.Blueprint{
-					Job: &increment{
+					Job: &incrementJob{
 						Item: ctx.Model.ID(),
 					},
 				}

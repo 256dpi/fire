@@ -630,3 +630,16 @@ func TestEnqueueIsolation(t *testing.T) {
 		assert.Equal(t, Enqueued, list[1].State)
 	})
 }
+
+func TestValidation(t *testing.T) {
+	job := &testJob{
+		Data: "error",
+	}
+
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		ok, err := Enqueue(nil, tester.Store, job, 0, 0)
+		assert.Error(t, err)
+		assert.False(t, ok)
+		assert.Equal(t, "data error", err.Error())
+	})
+}

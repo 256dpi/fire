@@ -185,8 +185,17 @@ func (t *Task) prepare() {
 	}
 
 	// check periodic job
-	if t.Periodicity > 0 && t.PeriodicJob.Job == nil {
-		panic("axe: missing periodic job")
+	if t.Periodicity > 0 {
+		// check existence
+		if t.PeriodicJob.Job == nil {
+			panic("axe: missing periodic job")
+		}
+
+		// validate job
+		err := t.PeriodicJob.Job.Validate()
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 }
 

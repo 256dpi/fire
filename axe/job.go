@@ -12,6 +12,7 @@ import (
 // Job is a structure used to encode a job.
 type Job interface {
 	ID() coal.ID
+	Validate() error
 	GetBase() *Base
 	GetAccessor(v interface{}) *stick.Accessor
 }

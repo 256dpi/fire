@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,24 +17,37 @@ type counter struct {
 	Total int `json:"total"`
 }
 
-type increment struct {
+type incrementJob struct {
 	axe.Base `json:"-" axe:"increment"`
 
 	Item coal.ID `json:"item_id"`
 }
 
-type periodic struct {
+func (j *incrementJob) Validate() error {
+	// check item
+	if j.Item.IsZero() {
+		return fmt.Errorf("missing item")
+	}
+
+	return nil
+}
+
+type periodicJob struct {
 	axe.Base `json:"-" axe:"periodic"`
+}
+
+func (j *periodicJob) Validate() error {
+	return nil
 }
 
 func incrementTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
-		Job: &increment{},
+		Job: &incrementJob{},
 		Handler: func(ctx *axe.Context) error {
 			// get item
-			item := ctx.Job.(*increment).Item
+			item := ctx.Job.(*incrementJob).Item
 
-			// increment count
+			// incrementJob count
 			_, err := store.M(&Item{}).Update(ctx, nil, item, bson.M{
 				"$inc": bson.M{
 					"Count": 1,
@@ -50,9 +64,9 @@ func incrementTask(store *coal.Store) *axe.Task {
 
 func periodicTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
-		Job: &periodic{},
+		Job: &periodicJob{},
 		Handler: func(ctx *axe.Context) error {
-			// increment counter
+			// incrementJob counter
 			var counter counter
 			err := glut.Mut(ctx, store, &counter, func(exists bool) error {
 				counter.Total++
@@ -66,8 +80,8 @@ func periodicTask(store *coal.Store) *axe.Task {
 		},
 		Periodicity: 5 * time.Second,
 		PeriodicJob: axe.Blueprint{
-			Job: &periodic{
-				Base: axe.B("periodic"),
+			Job: &periodicJob{
+				Base: axe.B("periodicJob"),
 			},
 		},
 	}
