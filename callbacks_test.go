@@ -52,21 +52,6 @@ func TestBasicAuthorizer(t *testing.T) {
 	})
 }
 
-func TestModelValidator(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *Tester) {
-		post := &postModel{
-			Title: "error",
-		}
-
-		validator := ModelValidator()
-
-		err := tester.RunCallback(&Context{Operation: Create, Model: post}, validator)
-		assert.Error(t, err)
-		assert.True(t, IsSafe(err))
-		assert.Equal(t, "validation error", err.Error())
-	})
-}
-
 func TestTimestampValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		type model struct {

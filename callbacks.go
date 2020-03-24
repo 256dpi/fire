@@ -34,21 +34,6 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
-// ModelValidator performs a validation of the model using the Validate method.
-func ModelValidator() *Callback {
-	return C("fire/ModelValidator", Only(Create, Update), func(ctx *Context) error {
-		// TODO: Do this in the controller.
-
-		// validate model
-		err := ctx.Model.Validate()
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-}
-
 // TimestampValidator will set timestamp fields on create and update operations.
 // The fields are inferred from the model using the "fire-created-timestamp" and
 // "fire-updated-timestamp" flags. Missing created timestamps are retroactively

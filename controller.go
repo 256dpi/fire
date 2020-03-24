@@ -474,6 +474,9 @@ func (c *Controller) createResource(ctx *Context) {
 	// assign attributes
 	c.assignData(ctx, ctx.Request.Data.One)
 
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
+
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
@@ -582,6 +585,12 @@ func (c *Controller) updateResource(ctx *Context) {
 	// assign attributes
 	c.assignData(ctx, ctx.Request.Data.One)
 
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
+
+	// run validators
+	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+
 	// check if idempotent create token has been changed
 	if c.IdempotentCreate {
 		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
@@ -590,9 +599,6 @@ func (c *Controller) updateResource(ctx *Context) {
 			stack.Abort(jsonapi.BadRequest("idempotent create token cannot be changed"))
 		}
 	}
-
-	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
 	// check if consistent update is enabled
 	if c.ConsistentUpdate {
@@ -671,6 +677,9 @@ func (c *Controller) deleteResource(ctx *Context) {
 
 	// load model
 	c.loadModel(ctx)
+
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -953,6 +962,9 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// assign relationship
 	c.assignRelationship(ctx, ctx.Request, rel)
 
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
+
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
 
@@ -1041,6 +1053,9 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 		ids = append(ids, refID)
 		stick.MustSet(ctx.Model, rel.Name, ids)
 	}
+
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -1137,6 +1152,9 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 			stick.MustSet(ctx.Model, rel.Name, ids)
 		}
 	}
+
+	// validate model
+	stack.AbortIf(ctx.Model.Validate())
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
