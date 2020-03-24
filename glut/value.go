@@ -12,6 +12,7 @@ import (
 
 // Value is a structure used to encode a value.
 type Value interface {
+	Validate() error
 	GetBase() *Base
 	GetAccessor(v interface{}) *stick.Accessor
 }

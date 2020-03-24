@@ -12,8 +12,8 @@ mechanism and formalizes a method that is both extendable and type-safe.**
 A framework can create a class of structs be defining a `Model` interface that
 can be implemented by embedding a provided `Base` type in a struct. The interface
 must at least require the `GetBase` method that is implemented automatically when
-embedding `Base`. The `Validate` must be implemented manually to allow the
-framework to assess whether the structure is correct at all times.
+embedding `Base`. The `Validate` must be implemented to allow the framework to
+assess whether the data is correct before encoding and after decoding.
 
 The package level `GetMeta` function can be used by the framework or application
 to classify a type and retrieve its `Meta` object. The `Meta` object contains

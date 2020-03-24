@@ -230,3 +230,16 @@ func TestExtended(t *testing.T) {
 		assert.False(t, deleted)
 	})
 }
+
+func TestValidation(t *testing.T) {
+	value := &testValue{
+		Data: "error",
+	}
+
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		ok, err := Set(nil, tester.Store, value)
+		assert.Error(t, err)
+		assert.False(t, ok)
+		assert.Equal(t, "data error", err.Error())
+	})
+}

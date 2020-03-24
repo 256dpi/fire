@@ -14,9 +14,17 @@ type bsonValue struct {
 	Data string `bson:"data"`
 }
 
+func (v *bsonValue) Validate() error {
+	return nil
+}
+
 type invalidValue1 struct {
 	Hello string
 	Base
+}
+
+func (v *invalidValue1) Validate() error {
+	return nil
 }
 
 type invalidValue2 struct {
@@ -24,14 +32,26 @@ type invalidValue2 struct {
 	Hello string
 }
 
+func (v *invalidValue2) Validate() error {
+	return nil
+}
+
 type invalidValue3 struct {
 	Base  `json:"-" glut:""`
 	Hello string
 }
 
+func (v *invalidValue3) Validate() error {
+	return nil
+}
+
 type invalidValue4 struct {
 	Base  `json:"-" glut:"foo,bar"`
 	Hello string
+}
+
+func (v *invalidValue4) Validate() error {
+	return nil
 }
 
 func TestGetMeta(t *testing.T) {

@@ -11,10 +11,14 @@ import (
 	"github.com/256dpi/fire/glut"
 )
 
-type counter struct {
+type counterValue struct {
 	glut.Base `json:"-" glut:"counter,0"`
 
 	Total int `json:"total"`
+}
+
+func (v *counterValue) Validate() error {
+	return nil
 }
 
 type incrementJob struct {
@@ -47,7 +51,7 @@ func incrementTask(store *coal.Store) *axe.Task {
 			// get item
 			item := ctx.Job.(*incrementJob).Item
 
-			// incrementJob count
+			// increment count
 			_, err := store.M(&Item{}).Update(ctx, nil, item, bson.M{
 				"$inc": bson.M{
 					"Count": 1,
@@ -66,8 +70,8 @@ func periodicTask(store *coal.Store) *axe.Task {
 	return &axe.Task{
 		Job: &periodicJob{},
 		Handler: func(ctx *axe.Context) error {
-			// incrementJob counter
-			var counter counter
+			// increment counter
+			var counter counterValue
 			err := glut.Mut(ctx, store, &counter, func(exists bool) error {
 				counter.Total++
 				return nil
@@ -81,7 +85,7 @@ func periodicTask(store *coal.Store) *axe.Task {
 		Periodicity: 5 * time.Second,
 		PeriodicJob: axe.Blueprint{
 			Job: &periodicJob{
-				Base: axe.B("periodicJob"),
+				Base: axe.B("periodic"),
 			},
 		},
 	}

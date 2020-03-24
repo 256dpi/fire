@@ -126,6 +126,12 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, err
 	}
 
+	// validate value
+	err = value.Validate()
+	if err != nil {
+		return false, err
+	}
+
 	return found, nil
 }
 
@@ -162,6 +168,12 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	var deadline *time.Time
 	if meta.TTL > 0 {
 		deadline = coal.T(time.Now().Add(meta.TTL))
+	}
+
+	// validate value
+	err = value.Validate()
+	if err != nil {
+		return false, err
 	}
 
 	// encode data
@@ -233,6 +245,12 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// decode value
 	err = model.Data.Unmarshal(value, meta.Coding)
+	if err != nil {
+		return false, err
+	}
+
+	// validate value
+	err = value.Validate()
 	if err != nil {
 		return false, err
 	}

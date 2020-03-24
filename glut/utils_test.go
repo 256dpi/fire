@@ -18,10 +18,23 @@ type testValue struct {
 	Data string `json:"data"`
 }
 
+func (v *testValue) Validate() error {
+	// check data
+	if v.Data == "error" {
+		return fmt.Errorf("data error")
+	}
+
+	return nil
+}
+
 type ttlValue struct {
 	Base `json:"-" glut:"ttl,5m"`
 
 	Data string `json:"data"`
+}
+
+func (v *ttlValue) Validate() error {
+	return nil
 }
 
 type extendedValue struct {
@@ -29,6 +42,10 @@ type extendedValue struct {
 
 	ID   string `json:"id"`
 	Data string `json:"data"`
+}
+
+func (v *extendedValue) Validate() error {
+	return nil
 }
 
 func (v *extendedValue) GetExtension() (string, error) {

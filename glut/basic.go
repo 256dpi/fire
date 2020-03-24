@@ -47,6 +47,12 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 		return false, err
 	}
 
+	// validate value
+	err = value.Validate()
+	if err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
@@ -75,6 +81,12 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	var deadline *time.Time
 	if meta.TTL > 0 {
 		deadline = coal.T(time.Now().Add(meta.TTL))
+	}
+
+	// validate value
+	err = value.Validate()
+	if err != nil {
+		return false, err
 	}
 
 	// encode value
