@@ -34,12 +34,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 	})
 }
 
-// TimestampValidator will set timestamp fields on create and update operations.
+// TimestampModifier will set timestamp fields on create and update operations.
 // The fields are inferred from the model using the "fire-created-timestamp" and
 // "fire-updated-timestamp" flags. Missing created timestamps are retroactively
 // set using the timestamp encoded in the model id.
-func TimestampValidator() *Callback {
-	return C("fire/TimestampValidator", Only(Create, Update), func(ctx *Context) error {
+func TimestampModifier() *Callback {
+	return C("fire/TimestampModifier", Only(Create, Update), func(ctx *Context) error {
 		// get time
 		now := time.Now()
 

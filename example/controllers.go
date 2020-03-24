@@ -16,9 +16,11 @@ func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage)
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Validators: fire.L{
+		Modifiers: fire.L{
 			storage.Validator(),
-			fire.TimestampValidator(),
+			fire.TimestampModifier(),
+		},
+		Validators: fire.L{
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
 		Decorators: fire.L{

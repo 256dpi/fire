@@ -52,7 +52,7 @@ func TestBasicAuthorizer(t *testing.T) {
 	})
 }
 
-func TestTimestampValidator(t *testing.T) {
+func TestTimestampModifier(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		type model struct {
 			coal.Base `json:"-" bson:",inline" coal:"posts"`
@@ -63,7 +63,7 @@ func TestTimestampValidator(t *testing.T) {
 
 		m := &model{}
 
-		validator := TimestampValidator()
+		validator := TimestampModifier()
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: m}, validator)
 		assert.NoError(t, err)
