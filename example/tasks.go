@@ -14,12 +14,17 @@ import (
 
 type counterValue struct {
 	glut.Base `json:"-" glut:"counter,0"`
+
+	// the counter total
 	Total int `json:"total"`
+
 	stick.NoValidation
 }
 
 type incrementJob struct {
 	axe.Base `json:"-" axe:"increment"`
+
+	// the item to increment
 	Item coal.ID `json:"item_id"`
 }
 
