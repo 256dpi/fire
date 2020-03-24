@@ -21,28 +21,19 @@ func (j *bsonJob) Validate() error {
 type invalidJob1 struct {
 	Hello string
 	Base
-}
-
-func (j *invalidJob1) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidJob2 struct {
 	Base  `axe:"foo/bar"`
 	Hello string
-}
-
-func (j *invalidJob2) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidJob3 struct {
 	Base  `json:"-" axe:""`
 	Hello string
-}
-
-func (j *invalidJob3) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 func TestGetMeta(t *testing.T) {

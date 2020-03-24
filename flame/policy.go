@@ -40,11 +40,8 @@ type Key struct {
 
 	// The extra data included in the key.
 	Extra stick.Map `json:"extra,omitempty"`
-}
 
-// Validate implements the heat.Key interface.
-func (k *Key) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 // Grants defines the selected grants.

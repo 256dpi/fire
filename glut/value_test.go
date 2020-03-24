@@ -21,37 +21,25 @@ func (v *bsonValue) Validate() error {
 type invalidValue1 struct {
 	Hello string
 	Base
-}
-
-func (v *invalidValue1) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidValue2 struct {
 	Base  `glut:"foo/bar"`
 	Hello string
-}
-
-func (v *invalidValue2) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidValue3 struct {
 	Base  `json:"-" glut:""`
 	Hello string
-}
-
-func (v *invalidValue3) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidValue4 struct {
 	Base  `json:"-" glut:"foo,bar"`
 	Hello string
-}
-
-func (v *invalidValue4) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 func TestGetMeta(t *testing.T) {

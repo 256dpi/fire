@@ -9,21 +9,17 @@ import (
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/glut"
+	"github.com/256dpi/fire/stick"
 )
 
 type counterValue struct {
 	glut.Base `json:"-" glut:"counter,0"`
-
 	Total int `json:"total"`
-}
-
-func (v *counterValue) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type incrementJob struct {
 	axe.Base `json:"-" axe:"increment"`
-
 	Item coal.ID `json:"item_id"`
 }
 
@@ -38,10 +34,7 @@ func (j *incrementJob) Validate() error {
 
 type periodicJob struct {
 	axe.Base `json:"-" axe:"periodic"`
-}
-
-func (j *periodicJob) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 func incrementTask(store *coal.Store) *axe.Task {

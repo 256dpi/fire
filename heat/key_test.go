@@ -35,37 +35,25 @@ func (t *testKey) Validate() error {
 type invalidKey1 struct {
 	Hello string
 	Base
-}
-
-func (k *invalidKey1) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidKey2 struct {
 	Base  `heat:"foo,1h"`
 	Hello string
-}
-
-func (k *invalidKey2) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidKey3 struct {
 	Base  `json:"-" heat:","`
 	Hello string
-}
-
-func (k *invalidKey3) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 type invalidKey4 struct {
 	Base  `json:"-" heat:"foo,bar"`
 	Hello string
-}
-
-func (k *invalidKey4) Validate() error {
-	return nil
+	stick.NoValidation
 }
 
 func TestGetMeta(t *testing.T) {
