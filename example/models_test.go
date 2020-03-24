@@ -18,5 +18,5 @@ func TestItem(t *testing.T) {
 	coal.Require(&Item{}, "fire-soft-delete")
 	coal.Require(&Item{}, "fire-created-timestamp", "fire-updated-timestamp")
 
-	var _ coal.ValidatableModel = &Item{}
+	var _ coal.Model = &Item{}
 }

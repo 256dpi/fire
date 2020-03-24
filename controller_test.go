@@ -4041,6 +4041,7 @@ func TestSoftDelete(t *testing.T) {
 		assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-soft-delete" on "fire.missingSoftDeleteField"`, func() {
 			type missingSoftDeleteField struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
@@ -4054,6 +4055,7 @@ func TestSoftDelete(t *testing.T) {
 			type invalidSoftDeleteFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
 				Foo       int `coal:"fire-soft-delete"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
@@ -4213,6 +4215,7 @@ func TestIdempotentCreate(t *testing.T) {
 		assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-idempotent-create" on "fire.missingIdempotentCreateField"`, func() {
 			type missingIdempotentCreateField struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
@@ -4226,6 +4229,7 @@ func TestIdempotentCreate(t *testing.T) {
 			type invalidIdempotentCreateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
 				Foo       int `coal:"fire-idempotent-create"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
@@ -4362,6 +4366,7 @@ func TestEnsureConsistency(t *testing.T) {
 		assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-consistent-update" on "fire.missingConsistentUpdateField"`, func() {
 			type missingConsistentUpdateField struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
@@ -4375,6 +4380,7 @@ func TestEnsureConsistency(t *testing.T) {
 			type invalidConsistentUpdateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
 				Foo       int `coal:"fire-consistent-update"`
+				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{

@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -18,6 +19,16 @@ const (
 	Failed    State = "failed"
 	Cancelled State = "cancelled"
 )
+
+// Valid returns whether the state is valid.
+func (s State) Valid() bool {
+	switch s {
+	case Enqueued, Dequeued, Completed, Failed, Cancelled:
+		return true
+	default:
+		return false
+	}
+}
 
 // Event is logged during a jobs execution.
 type Event struct {
@@ -67,6 +78,21 @@ type Model struct {
 
 	// The individual job events.
 	Events []Event `json:"events"`
+}
+
+// Validate will validate the model.
+func (m *Model) Validate() error {
+	// check name
+	if m.Name == "" {
+		return fmt.Errorf("missing name")
+	}
+
+	// check state
+	if !m.State.Valid() {
+		return fmt.Errorf("invalid state")
+	}
+
+	return nil
 }
 
 // AddModelIndexes will add job indexes to the specified catalog. If a duration

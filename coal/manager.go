@@ -10,10 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/cinder"
+	"github.com/256dpi/fire/stick"
 )
 
 type empty struct {
 	Base `bson:",inline"`
+	stick.NoValidation
 }
 
 // Level describes the safety level under which an operation should be executed.

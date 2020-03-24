@@ -8,6 +8,7 @@ import (
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-blaze")
@@ -21,6 +22,7 @@ type testModel struct {
 	coal.Base    `json:"-" bson:",inline" coal:"tests"`
 	RequiredFile Link  `json:"required-file"`
 	OptionalFile *Link `json:"optional-file"`
+	stick.NoValidation
 }
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {

@@ -1,6 +1,7 @@
 package glut
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -25,6 +26,16 @@ type Model struct {
 
 	// The token used to lock the value.
 	Token *coal.ID `json:"token"`
+}
+
+// Validate will validate the model.
+func (m *Model) Validate() error {
+	// check key
+	if m.Key == "" {
+		return fmt.Errorf("missing key")
+	}
+
+	return nil
 }
 
 // AddModelIndexes will add required indexes to the specified catalog. If remove

@@ -11,14 +11,9 @@ import (
 // must implement the interface by embedding the Base type.
 type Model interface {
 	ID() ID
+	Validate() error
 	GetBase() *Base
 	GetAccessor(interface{}) *stick.Accessor
-}
-
-// The ValidatableModel interface defines a modal that can be validated.
-type ValidatableModel interface {
-	Model
-	Validate() error
 }
 
 // Base is the base for every coal model.

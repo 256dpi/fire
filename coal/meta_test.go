@@ -286,6 +286,7 @@ func TestGetMetaErrors(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`, func() {
 		type m struct {
 			Base
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -294,6 +295,7 @@ func TestGetMetaErrors(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`, func() {
 		type m struct {
 			Base `json:"-"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -303,6 +305,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:""`
 			Foo  string `json:"foo"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -312,6 +315,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Foo  string `json:"foo"`
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -321,6 +325,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  ID `coal:"foo:foo:foo"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -330,6 +335,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  []ID `coal:"foo:foo:foo"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -339,6 +345,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasOne
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -348,6 +355,7 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasMany
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -368,6 +376,7 @@ func TestGetMetaErrors(t *testing.T) {
 			Base  `json:"-" bson:",inline" coal:"ms"`
 			Text1 string `bson:"text"`
 			Text2 string `bson:"text"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -378,6 +387,7 @@ func TestGetMetaErrors(t *testing.T) {
 			Base    `json:"-" bson:",inline" coal:"ms"`
 			Parent1 ID `coal:"parent:parents"`
 			Parent2 ID `coal:"parent:parents"`
+			stick.NoValidation
 		}
 
 		GetMeta(&m{})
@@ -398,6 +408,7 @@ func TestMetaSpecial(t *testing.T) {
 	type m struct {
 		Base `json:"-" bson:",inline" coal:"foos"`
 		Foo  string `json:"," bson:","`
+		stick.NoValidation
 	}
 
 	meta := GetMeta(&m{})

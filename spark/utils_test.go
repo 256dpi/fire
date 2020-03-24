@@ -5,12 +5,14 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 type itemModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"items"`
 	Foo       string
 	Bar       string
+	stick.NoValidation
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark")

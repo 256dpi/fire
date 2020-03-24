@@ -1,6 +1,7 @@
 package blaze
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -44,6 +45,16 @@ const (
 	Deleting  State = "deleting"
 )
 
+// Valid returns whether the state is valid.
+func (s State) Valid() bool {
+	switch s {
+	case Uploading, Uploaded, Claimed, Released, Deleting:
+		return true
+	default:
+		return false
+	}
+}
+
 // File tracks uploaded files and their state.
 type File struct {
 	coal.Base `json:"-" bson:",inline" coal:"files"`
@@ -62,6 +73,16 @@ type File struct {
 
 	// The service specific blob handle.
 	Handle Handle `json:"handle"`
+}
+
+// Validate will validate the model.
+func (f *File) Validate() error {
+	// check state
+	if !f.State.Valid() {
+		return fmt.Errorf("invalid state")
+	}
+
+	return nil
 }
 
 // AddFileIndexes will add files indexes to the specified catalog.

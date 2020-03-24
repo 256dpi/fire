@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestC(t *testing.T) {
@@ -72,6 +73,7 @@ func TestTimestampValidator(t *testing.T) {
 			coal.Base `json:"-" bson:",inline" coal:"posts"`
 			CreatedAt time.Time `coal:"fire-created-timestamp"`
 			UpdateAt  time.Time `coal:"fire-updated-timestamp"`
+			stick.NoValidation
 		}
 
 		m := &model{}

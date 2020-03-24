@@ -8,6 +8,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 var tester = fire.NewTester(nil)
@@ -16,6 +17,7 @@ type postModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"posts"`
 	Title     string `json:"title"`
 	Published bool   `json:"published"`
+	stick.NoValidation
 }
 
 func blank() *Authorizer {

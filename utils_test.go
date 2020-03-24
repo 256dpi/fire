@@ -7,6 +7,7 @@ import (
 
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 type postModel struct {
@@ -34,6 +35,7 @@ type commentModel struct {
 	Deleted   *time.Time `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
 	Parent    *coal.ID   `json:"-" bson:"parent_id" coal:"parent:comments"`
 	Post      coal.ID    `json:"-" bson:"post_id" coal:"post:posts"`
+	stick.NoValidation
 }
 
 type selectionModel struct {
@@ -42,12 +44,14 @@ type selectionModel struct {
 	CreateToken string    `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
 	UpdateToken string    `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
 	Posts       []coal.ID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	stick.NoValidation
 }
 
 type noteModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"notes"`
 	Title     string  `json:"title" bson:"title"`
 	Post      coal.ID `json:"-" bson:"post_id" coal:"post:posts"`
+	stick.NoValidation
 }
 
 type fooModel struct {
@@ -58,11 +62,13 @@ type fooModel struct {
 	Bar       coal.ID   `json:"-" bson:"bar_id" coal:"bar:bars"`
 	OptBar    *coal.ID  `json:"-" bson:"opt_bar_id" coal:"opt-bar:bars"`
 	Bars      []coal.ID `json:"-" bson:"bar_ids" coal:"bars:bars"`
+	stick.NoValidation
 }
 
 type barModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"bars"`
 	Foo       coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
+	stick.NoValidation
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire")

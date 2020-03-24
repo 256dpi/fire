@@ -15,11 +15,19 @@ type postModel struct {
 	Note       HasOne  `json:"-" bson:"-" coal:"note:notes:post"`
 }
 
+func (m *postModel) Validate() error {
+	return nil
+}
+
 type commentModel struct {
 	Base    `json:"-" bson:",inline" coal:"comments"`
 	Message string `json:"message"`
 	Parent  *ID    `json:"-" coal:"parent:comments"`
 	Post    ID     `json:"-" bson:"post_id" coal:"post:posts"`
+}
+
+func (m *commentModel) Validate() error {
+	return nil
 }
 
 type selectionModel struct {
@@ -28,12 +36,20 @@ type selectionModel struct {
 	Posts []ID   `json:"-" bson:"post_ids" coal:"posts:posts"`
 }
 
+func (m *selectionModel) Validate() error {
+	return nil
+}
+
 type noteModel struct {
 	Base      `json:"-" bson:",inline" coal:"notes"`
 	Title     string    `json:"title" bson:"title"`
 	CreatedAt time.Time `json:"created-at" bson:"created_at"`
 	UpdatedAt time.Time `json:"updated-at" bson:"updated_at"`
 	Post      ID        `json:"-" bson:"post_id" coal:"post:posts"`
+}
+
+func (m *noteModel) Validate() error {
+	return nil
 }
 
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")
