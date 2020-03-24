@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
@@ -3057,6 +3058,484 @@ func TestValidators(t *testing.T) {
 					"status": "400",
 					"detail": "not valid"
 				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestDecorators(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Decorators: L{
+				C("TestDecorator", All(), func(ctx *Context) error {
+					if ctx.Model != nil {
+						ctx.Model.(*postModel).TextBody = "Hello World!"
+					}
+
+					for _, model := range ctx.Models {
+						model.(*postModel).TextBody = "Hello World!"
+					}
+
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// create post
+		post1 := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID().Hex()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": "Hello World!"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}],
+				"links": {
+					"self": "/posts"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": "Hello World!"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "post-2",
+					"published": true
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			post2 := tester.FindLast(&postModel{}).ID().Hex()
+
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": true,
+						"text-body": "Hello World!"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post2+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post1, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1+`",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "Post 1",
+						"published": true,
+						"text-body": "Hello World!"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("DELETE", "/posts/"+post1, "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestNotifiers(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Notifiers: L{
+				C("TestNotifier", All(), func(ctx *Context) error {
+					if ctx.Response != nil {
+						ctx.Response.Meta = jsonapi.Map{
+							"Hello": "World!",
+						}
+					} else {
+						ctx.Response = &jsonapi.Document{
+							Meta: jsonapi.Map{
+								"Hello": "World!",
+							},
+						}
+					}
+
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// create post
+		post1 := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID().Hex()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}],
+				"links": {
+					"self": "/posts"
+				},
+				"meta": {
+					"Hello": "World!"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				},
+				"meta": {
+					"Hello": "World!"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "post-2",
+					"published": true
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			post2 := tester.FindLast(&postModel{}).ID().Hex()
+
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post2+`"
+				},
+				"meta": {
+					"Hello": "World!"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post1, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1+`",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "Post 1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				},
+				"meta": {
+					"Hello": "World!"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("DELETE", "/posts/"+post1, "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"meta": {
+					"Hello": "World!"
+				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 	})
