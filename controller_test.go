@@ -1802,6 +1802,37 @@ func TestToManyRelationship(t *testing.T) {
 	})
 }
 
+func TestSupported(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model:     &commentModel{},
+			Store:     tester.Store,
+			Supported: Except(List),
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// attempt list comments
+		tester.Request("GET", "comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors":[{
+					"status": "405",
+					"title": "method not allowed",
+					"detail": "unsupported operation"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestFiltering(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
@@ -4181,7 +4212,7 @@ func TestDatabaseErrors(t *testing.T) {
 	})
 }
 
-func TestSoftProtection(t *testing.T) {
+func TestTolerateViolations(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
@@ -4302,37 +4333,6 @@ func TestSoftProtection(t *testing.T) {
 				"links": {
 					"self": "/selections/`+selection+`"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
-		})
-	})
-}
-
-func TestOperations(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *Tester) {
-		tester.Assign("", &Controller{
-			Model: &postModel{},
-			Store: tester.Store,
-		}, &Controller{
-			Model:     &commentModel{},
-			Store:     tester.Store,
-			Supported: Except(List),
-		}, &Controller{
-			Model: &selectionModel{},
-			Store: tester.Store,
-		}, &Controller{
-			Model: &noteModel{},
-			Store: tester.Store,
-		})
-
-		// attempt list comments
-		tester.Request("GET", "comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-			assert.Equal(t, http.StatusMethodNotAllowed, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"errors":[{
-					"status": "405",
-					"title": "method not allowed",
-					"detail": "unsupported operation"
-				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 	})
@@ -4480,7 +4480,7 @@ func TestPagination(t *testing.T) {
 	})
 }
 
-func TestForcedPagination(t *testing.T) {
+func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:     &postModel{},
@@ -5016,7 +5016,7 @@ func TestIdempotentCreate(t *testing.T) {
 	})
 }
 
-func TestEnsureConsistency(t *testing.T) {
+func TestConsistentUpdate(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		// missing field on model
 		assert.PanicsWithValue(t, `coal: no or multiple fields flagged as "fire-consistent-update" on "fire.missingConsistentUpdateField"`, func() {
