@@ -12,8 +12,8 @@ mechanism and formalizes a method that is both extendable and type-safe.**
 A framework can create a class of structs be defining a `Model` interface that
 can be implemented by embedding a provided `Base` type in a struct. The interface
 must at least require the `GetBase` method that is implemented automatically when
-embedding `Base`. Additional methods may added to the interface to require more
-functionality.
+embedding `Base`. The `Validate` must be implemented manually to allow the
+framework to assess whether the structure is correct at all times.
 
 The package level `GetMeta` function can be used by the framework or application
 to classify a type and retrieve its `Meta` object. The `Meta` object contains
@@ -37,8 +37,8 @@ package pkg
 
 // Model is a classifiable model.
 type Model interface {
+    Validate() error
     GetBase() *Base
-    SomeMethod() string
 }
 
 // The Base struct is embedded in other structs as the first field to make them
@@ -78,9 +78,9 @@ type Entity struct {
     SomeField string
 }
 
-// SomeMethod implements the Model interface.
-func (e *Entity) SomeMethod() string {
-    return e.Base.SomeField + ", " + e.SomeField
+// Validate implements the Model interface.
+func (e *Entity) Validate() error {
+    return nil
 }
 ```
 
@@ -105,8 +105,8 @@ pattern to allow customization of the abstracted logic's inner data structure.
 package pkg
 
 type Controller struct {
-    SomeField string
-    SomeModel Model
+    Field string
+    Model Model
 }
 
 func (c *Controller) execute() error {
@@ -145,8 +145,8 @@ func Run() {
 
     // add controller
     manager.Add(&pkg.Controller{
-        SomeField: "foo",
-        SomeModel: &Entity{},
+        Field: "foo",
+        Model: &Entity{},
     })
 
     // run manager
@@ -174,10 +174,10 @@ import "context"
 type Context struct{
     context.Context
 
-    SomeField      string
-    SomeModel      Model
-    SomeController *Controller
-    SomeManager    *Manager
+    Field      string
+    Model      Model
+    Controller *Controller
+    Manager    *Manager
 }
 ```
 
