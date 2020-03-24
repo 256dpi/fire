@@ -2885,6 +2885,183 @@ func TestSorting(t *testing.T) {
 	})
 }
 
+func TestAuthorizers(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestAuthorizer", All(), func(ctx *Context) error {
+					return E("not authorized")
+				}),
+			},
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "401",
+					"detail": "not authorized"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "401",
+					"detail": "not authorized"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "post-2"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "401",
+					"detail": "not authorized"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post.Hex(), `{
+			"data": {
+				"type": "posts",
+				"id": "`+post.Hex()+`",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "401",
+					"detail": "not authorized"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("DELETE", "/posts/"+post.Hex(), "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "401",
+					"detail": "not authorized"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestValidators(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Validators: L{
+				C("TestValidators", All(), func(ctx *Context) error {
+					return E("not valid")
+				}),
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		})
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "post-2"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"detail": "not valid"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post.Hex(), `{
+			"data": {
+				"type": "posts",
+				"id": "`+post.Hex()+`",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"detail": "not valid"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("DELETE", "/posts/"+post.Hex(), "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"detail": "not valid"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestSparseFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
