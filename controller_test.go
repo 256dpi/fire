@@ -1802,6 +1802,83 @@ func TestToManyRelationship(t *testing.T) {
 	})
 }
 
+func TestModelValidation(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+		})
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "error"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"detail": "validation error"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post.Hex(), `{
+			"data": {
+				"type": "posts",
+				"id": "`+post.Hex()+`",
+				"attributes": {
+					"title": "error"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"detail": "validation error"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// delete
+		tester.Request("DELETE", "/posts/"+post.Hex(), "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, "", r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestSupported(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{

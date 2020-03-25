@@ -488,7 +488,15 @@ func (c *Controller) createResource(ctx *Context) {
 	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -602,7 +610,15 @@ func (c *Controller) updateResource(ctx *Context) {
 	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -697,7 +713,15 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// skip modifiers
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -984,7 +1008,15 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -1079,7 +1111,15 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
@@ -1181,7 +1221,15 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
-	stack.AbortIf(ctx.Model.Validate())
+	err := ctx.Model.Validate()
+	if IsSafe(err) {
+		stack.Abort(&jsonapi.Error{
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		})
+	} else if err != nil {
+		stack.Abort(err)
+	}
 
 	// run validators
 	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
