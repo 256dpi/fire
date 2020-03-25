@@ -634,7 +634,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 // Update will update the document with the specified id. It will return whether
 // a document has been found. Lock can be set to true to force a write lock on
 // the document and prevent a stale read during a transaction in case the
-// update did not chang the document.
+// update did not change the document.
 //
 // A transaction is required for locking.
 func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {

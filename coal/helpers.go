@@ -15,8 +15,8 @@ func C(m Model) string {
 	return GetMeta(m).Collection
 }
 
-// F is a short-hand function to extract the database BSON field name of a model
-// field. Additionally, it supports the "-" prefix for retrieving sort keys.
+// F is a short-hand function to extract the BSON key of a model field.
+// Additionally, it supports the "-" prefix for retrieving sort keys.
 //
 // Note: F will panic if no field has been found.
 func F(m Model, field string) string {
@@ -45,7 +45,7 @@ func F(m Model, field string) string {
 	return bsonField
 }
 
-// A is a short-hand function to extract the attribute JSON key of a model field.
+// A is a short-hand function to extract the JSON key of a model field.
 //
 // Note: A will panic if no field has been found.
 func A(m Model, field string) string {
