@@ -13,6 +13,8 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+// TODO: Validate model after loading and before writing?
+
 type empty struct {
 	Base `bson:",inline"`
 	stick.NoValidation
