@@ -18,24 +18,6 @@ func (j *bsonJob) Validate() error {
 	return nil
 }
 
-type invalidJob1 struct {
-	Hello string
-	Base
-	stick.NoValidation
-}
-
-type invalidJob2 struct {
-	Base  `axe:"foo/bar"`
-	Hello string
-	stick.NoValidation
-}
-
-type invalidJob3 struct {
-	Base  `json:"-" axe:""`
-	Hello string
-	stick.NoValidation
-}
-
 func TestGetMeta(t *testing.T) {
 	meta := GetMeta(&testJob{})
 	assert.Equal(t, &Meta{
@@ -70,15 +52,33 @@ func TestGetMeta(t *testing.T) {
 	}, meta)
 
 	assert.PanicsWithValue(t, `axe: expected first struct field to be an embedded "axe.Base"`, func() {
-		GetMeta(&invalidJob1{})
+		type invalidJob struct {
+			Hello string
+			Base
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidJob{})
 	})
 
 	assert.PanicsWithValue(t, `axe: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "axe.Base"`, func() {
-		GetMeta(&invalidJob2{})
+		type invalidJob struct {
+			Base  `axe:"foo/bar"`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidJob{})
 	})
 
 	assert.PanicsWithValue(t, `axe: expected to find a tag of the form 'axe:"name"' on "axe.Base"`, func() {
-		GetMeta(&invalidJob3{})
+		type invalidJob struct {
+			Base  `json:"-" axe:""`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidJob{})
 	})
 }
 

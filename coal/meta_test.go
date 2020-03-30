@@ -284,41 +284,41 @@ func TestGetMeta(t *testing.T) {
 
 func TestGetMetaErrors(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base `json:"-"`
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base `json:"-" bson:",inline" coal:""`
 			Foo  string `json:"foo"`
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected an embedded "coal.Base" as the first struct field`, func() {
-		type m struct {
+		type invalidModel struct {
 			Foo  string `json:"foo"`
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type"' on to-one relationship`, func() {
@@ -352,45 +352,45 @@ func TestGetMetaErrors(t *testing.T) {
 	})
 
 	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:type:inverse"' on has-many relationship`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  HasMany
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	// assert.PanicsWithValue(t, `coal: duplicate JSON key "text"`, func() {
-	// 	type m struct {
+	// 	type invalidModel struct {
 	// 		Base  `json:"-" bson:",inline" coal:"ms"`
 	// 		Text1 string `json:"text"`
 	// 		Text2 string `json:"text"`
 	// 	}
 	//
-	// 	GetMeta(&m{})
+	// 	GetMeta(&invalidModel{})
 	// })
 
 	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base  `json:"-" bson:",inline" coal:"ms"`
 			Text1 string `bson:"text"`
 			Text2 string `bson:"text"`
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 
 	assert.PanicsWithValue(t, `coal: duplicate relationship "parent"`, func() {
-		type m struct {
+		type invalidModel struct {
 			Base    `json:"-" bson:",inline" coal:"ms"`
 			Parent1 ID `coal:"parent:parents"`
 			Parent2 ID `coal:"parent:parents"`
 			stick.NoValidation
 		}
 
-		GetMeta(&m{})
+		GetMeta(&invalidModel{})
 	})
 }
 

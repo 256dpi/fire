@@ -18,30 +18,6 @@ func (v *bsonValue) Validate() error {
 	return nil
 }
 
-type invalidValue1 struct {
-	Hello string
-	Base
-	stick.NoValidation
-}
-
-type invalidValue2 struct {
-	Base  `glut:"foo/bar"`
-	Hello string
-	stick.NoValidation
-}
-
-type invalidValue3 struct {
-	Base  `json:"-" glut:""`
-	Hello string
-	stick.NoValidation
-}
-
-type invalidValue4 struct {
-	Base  `json:"-" glut:"foo,bar"`
-	Hello string
-	stick.NoValidation
-}
-
 func TestGetMeta(t *testing.T) {
 	meta := GetMeta(&testValue{})
 	assert.Equal(t, &Meta{
@@ -78,19 +54,43 @@ func TestGetMeta(t *testing.T) {
 	}, meta)
 
 	assert.PanicsWithValue(t, `glut: expected first struct field to be an embedded "glut.Base"`, func() {
-		GetMeta(&invalidValue1{})
+		type invalidValue struct {
+			Hello string
+			Base
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidValue{})
 	})
 
 	assert.PanicsWithValue(t, `glut: expected to find a coding tag of the form 'json:"-"' or 'bson:"-"' on "glut.Base"`, func() {
-		GetMeta(&invalidValue2{})
+		type invalidValue struct {
+			Base  `glut:"foo/bar"`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidValue{})
 	})
 
 	assert.PanicsWithValue(t, `glut: expected to find a tag of the form 'glut:"key,ttl"' on "glut.Base"`, func() {
-		GetMeta(&invalidValue3{})
+		type invalidValue struct {
+			Base  `json:"-" glut:""`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidValue{})
 	})
 
 	assert.PanicsWithValue(t, `glut: invalid duration as time to live on "glut.Base"`, func() {
-		GetMeta(&invalidValue4{})
+		type invalidValue struct {
+			Base  `json:"-" glut:"foo,bar"`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidValue{})
 	})
 }
 

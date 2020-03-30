@@ -32,30 +32,6 @@ func (t *testKey) Validate() error {
 	return nil
 }
 
-type invalidKey1 struct {
-	Hello string
-	Base
-	stick.NoValidation
-}
-
-type invalidKey2 struct {
-	Base  `heat:"foo,1h"`
-	Hello string
-	stick.NoValidation
-}
-
-type invalidKey3 struct {
-	Base  `json:"-" heat:","`
-	Hello string
-	stick.NoValidation
-}
-
-type invalidKey4 struct {
-	Base  `json:"-" heat:"foo,bar"`
-	Hello string
-	stick.NoValidation
-}
-
 func TestGetMeta(t *testing.T) {
 	meta := GetMeta(&testKey{})
 	assert.Equal(t, &Meta{
@@ -77,19 +53,43 @@ func TestGetMeta(t *testing.T) {
 	}, meta)
 
 	assert.PanicsWithValue(t, `heat: expected first struct field to be an embedded "heat.Base"`, func() {
-		GetMeta(&invalidKey1{})
+		type invalidKey struct {
+			Hello string
+			Base
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidKey{})
 	})
 
 	assert.PanicsWithValue(t, `heat: expected to find a tag of the form 'json:"-"' on "heat.Base"`, func() {
-		GetMeta(&invalidKey2{})
+		type invalidKey struct {
+			Base  `heat:"foo,1h"`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidKey{})
 	})
 
 	assert.PanicsWithValue(t, `heat: expected to find a tag of the form 'heat:"name,expiry"' on "heat.Base"`, func() {
-		GetMeta(&invalidKey3{})
+		type invalidKey struct {
+			Base  `json:"-" heat:","`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidKey{})
 	})
 
 	assert.PanicsWithValue(t, `heat: invalid duration as expiry on "heat.Base"`, func() {
-		GetMeta(&invalidKey4{})
+		type invalidKey struct {
+			Base  `json:"-" heat:"foo,bar"`
+			Hello string
+			stick.NoValidation
+		}
+
+		GetMeta(&invalidKey{})
 	})
 }
 
