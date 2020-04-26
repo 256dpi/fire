@@ -28,6 +28,7 @@ script:
   - env GO111MODULE=on go test -coverprofile=flame.coverprofile ./flame
   - env GO111MODULE=on go test -coverprofile=glut.coverprofile ./glut
   - env GO111MODULE=on go test -coverprofile=heat.coverprofile ./heat
+  - env GO111MODULE=on go test -coverprofile=nitro.coverprofile ./nitro
   - env GO111MODULE=on go test -coverprofile=spark.coverprofile ./spark
   - env GO111MODULE=on go test -coverprofile=stick.coverprofile ./stick
   - $HOME/gopath/bin/gover
