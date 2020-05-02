@@ -1,9 +1,9 @@
 package spark
 
 import (
-	"encoding/json"
 	"net"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -25,34 +25,37 @@ const (
 
 	// the time after a connection is closed when there is no ping response
 	receiveTimeout = 90 * time.Second
+
+	// per-connection outbox buffer size
+	outboxSize = 16
 )
 
-type request struct {
-	Subscribe   map[string]Map `json:"subscribe"`
-	Unsubscribe []string       `json:"unsubscribe"`
-}
+// Protocol describes the lifecycle and message dispatch hooks of a connection.
+type Protocol struct {
+	// Message is a template used to construct incoming messages.
+	Message Message
 
-type response map[string]map[string]string
+	// Connect is called once after the connection has been established.
+	Connect func(*Client) error
+
+	// Handle is called for each message received from the client.
+	Handle func(*Client, Message) error
+
+	// Disconnect is called once before the connection is closed.
+	Disconnect func(*Client) error
+}
 
 type manager struct {
-	watcher *Watcher
-
-	upgrader     *websocket.Upgrader
-	events       chan *Event
-	subscribes   chan chan *Event
-	unsubscribes chan chan *Event
-
-	tomb tomb.Tomb
+	protocol *Protocol
+	upgrader *websocket.Upgrader
+	tomb     tomb.Tomb
 }
 
-func newManager(w *Watcher) *manager {
+func newManager(p *Protocol) *manager {
 	// create manager
 	m := &manager{
-		watcher:      w,
-		upgrader:     &websocket.Upgrader{},
-		events:       make(chan *Event, 10),
-		subscribes:   make(chan chan *Event, 10),
-		unsubscribes: make(chan chan *Event, 10),
+		protocol: p,
+		upgrader: &websocket.Upgrader{},
 	}
 
 	// do not check request origin
@@ -60,55 +63,14 @@ func newManager(w *Watcher) *manager {
 		return true
 	}
 
-	// run background process
-	m.tomb.Go(m.run)
+	// keep the tomb alive until close so connection goroutines can rely on
+	// m.tomb.Dying() as a shutdown signal
+	m.tomb.Go(func() error {
+		<-m.tomb.Dying()
+		return tomb.ErrDying
+	})
 
 	return m
-}
-
-func (m *manager) run() error {
-	// prepare queues
-	queues := map[chan *Event]bool{}
-
-	for {
-		select {
-		// handle subscribes
-		case q := <-m.subscribes:
-			// store queue
-			queues[q] = true
-		// handle events
-		case e := <-m.events:
-			// add message to all queues
-			for q := range queues {
-				select {
-				case q <- e:
-				default:
-					// close and delete queue
-					close(q)
-					delete(queues, q)
-				}
-			}
-		// handle unsubscribes
-		case q := <-m.unsubscribes:
-			// delete queue
-			delete(queues, q)
-		case <-m.tomb.Dying():
-			// close all queues
-			for queue := range queues {
-				close(queue)
-			}
-
-			return tomb.ErrDying
-		}
-	}
-}
-
-func (m *manager) broadcast(evt *Event) {
-	// queue event
-	select {
-	case m.events <- evt:
-	case <-m.tomb.Dying():
-	}
 }
 
 func (m *manager) handle(ctx *fire.Context) error {
@@ -118,57 +80,56 @@ func (m *manager) handle(ctx *fire.Context) error {
 	}
 
 	// try to upgrade connection
-	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
+	ws, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
 		// error has already been written to client
 		return nil
 	}
 
-	// ensure the connections gets closed
-	defer conn.Close()
+	// ensure the connection gets closed
+	defer ws.Close()
 
-	// construct state
-	var state State
-	if m.watcher.factory != nil {
-		state, err = m.watcher.factory(ctx)
+	// set read limit
+	ws.SetReadLimit(maxMessageSize)
+
+	// prepare client
+	conn := &Client{
+		ws:     ws,
+		ctx:    ctx,
+		outbox: make(chan Message, outboxSize),
+		done:   make(chan struct{}),
+	}
+
+	// signal client done on exit
+	defer close(conn.done)
+
+	// call connect if available
+	if m.protocol.Connect != nil {
+		err = m.protocol.Connect(conn)
 		if err != nil {
-			return xo.WF(err, "state factory failed")
+			return xo.WF(err, "connect failed")
 		}
 	}
 
-	// prepare queue
-	queue := make(chan *Event, 10)
-
-	// register queue
-	select {
-	case m.subscribes <- queue:
-	case <-m.tomb.Dying():
-		return tomb.ErrDying
+	// ensure disconnect is called
+	if m.protocol.Disconnect != nil {
+		defer func() {
+			_ = m.protocol.Disconnect(conn)
+		}()
 	}
-
-	// ensure unsubscribe
-	defer func() {
-		select {
-		case m.unsubscribes <- queue:
-		case <-m.tomb.Dying():
-		}
-	}()
-
-	// set read limit (we only expect pong messages)
-	conn.SetReadLimit(maxMessageSize)
 
 	// prepare pinger ticker
 	pinger := time.NewTimer(pingTimeout)
 
 	// reset read deadline if a pong has been received
-	conn.SetPongHandler(func(string) error {
+	ws.SetPongHandler(func(string) error {
 		pinger.Reset(pingTimeout)
-		return conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+		return ws.SetReadDeadline(time.Now().Add(receiveTimeout))
 	})
 
 	// prepare channels
 	errs := make(chan error, 1)
-	reqs := make(chan request, 10)
+	msgs := make(chan Message, 16)
 
 	// signal reader to exit when writer returns
 	writerDone := make(chan struct{})
@@ -178,14 +139,14 @@ func (m *manager) handle(ctx *fire.Context) error {
 	go func() {
 		for {
 			// reset read timeout
-			err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+			err := ws.SetReadDeadline(time.Now().Add(receiveTimeout))
 			if err != nil {
 				errs <- xo.W(err)
 				return
 			}
 
 			// read next message from connection
-			typ, bytes, err := conn.ReadMessage()
+			typ, bytes, err := ws.ReadMessage()
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				close(errs)
 				return
@@ -199,14 +160,21 @@ func (m *manager) handle(ctx *fire.Context) error {
 
 			// check message type
 			if typ != websocket.TextMessage {
-				writeWebsocketError(conn, "not a text message")
+				writeWebsocketError(ws, "not a text message")
 				close(errs)
 				return
 			}
 
-			// decode request
-			var req request
-			err = json.Unmarshal(bytes, &req)
+			// clone the protocol message template and decode into it
+			msg := cloneMessage(m.protocol.Message)
+			err = GetMeta(msg).Coding.Unmarshal(bytes, msg)
+			if err != nil {
+				errs <- xo.W(err)
+				return
+			}
+
+			// validate message
+			err = msg.Validate()
 			if err != nil {
 				errs <- xo.W(err)
 				return
@@ -215,9 +183,9 @@ func (m *manager) handle(ctx *fire.Context) error {
 			// reset pinger
 			pinger.Reset(pingTimeout)
 
-			// forward request
+			// forward message
 			select {
-			case reqs <- req:
+			case msgs <- msg:
 			case <-m.tomb.Dying():
 				close(errs)
 				return
@@ -228,104 +196,30 @@ func (m *manager) handle(ctx *fire.Context) error {
 		}
 	}()
 
-	// prepare registry
-	reg := map[string]*Subscription{}
-
 	// run writer
 	for {
 		select {
-		// handle request
-		case req := <-reqs:
-			// handle subscriptions
-			for name, data := range req.Subscribe {
-				// get stream
-				stream, ok := m.watcher.streams[name]
-				if !ok {
-					writeWebsocketError(conn, "invalid subscription")
-					return nil
-				}
-
-				// prepare subscription
-				sub := &Subscription{
-					Context: ctx,
-					Data:    data,
-					Stream:  stream,
-					State:   state,
-				}
-
-				// validate subscription if available
-				if stream.Validator != nil {
-					err := stream.Validator(sub)
-					if err != nil {
-						writeWebsocketError(conn, "invalid subscription")
-						return nil
-					}
-				}
-
-				// add subscription
-				reg[name] = sub
-			}
-
-			// handle unsubscriptions
-			for _, name := range req.Unsubscribe {
-				delete(reg, name)
-			}
-		// handle events
-		case evt, ok := <-queue:
-			// check if closed
-			if !ok {
-				return nil
-			}
-
-			// update state before dispatch
-			if state != nil {
-				err = state.Update(evt)
+		// dispatch incoming messages
+		case msg := <-msgs:
+			if m.protocol.Handle != nil {
+				err = m.protocol.Handle(conn, msg)
 				if err != nil {
-					return xo.WF(err, "state update failed")
+					return xo.WF(err, "handle failed")
 				}
 			}
-
-			// get subscription
-			sub, ok := reg[evt.Stream.Name()]
-			if !ok {
-				continue
-			}
-
-			// run selector if present
-			if evt.Stream.Selector != nil {
-				if !evt.Stream.Selector(evt, sub) {
-					continue
-				}
-			}
-
-			// create response
-			res := response{
-				evt.Stream.Name(): {
-					evt.ID.Hex(): string(evt.Type),
-				},
-			}
-
-			// set write deadline
-			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
-			if err != nil {
-				return err
-			}
-
-			// write message
-			err = conn.WriteJSON(res)
+		// drain outbox
+		case msg := <-conn.outbox:
+			err = conn.write(nil, msg)
 			if err != nil {
 				return err
 			}
 		// handle pings
 		case <-pinger.C:
-			// set write deadline
-			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+			err = ws.SetWriteDeadline(time.Now().Add(writeTimeout))
 			if err != nil {
 				return err
 			}
-
-			// write ping message
-			err = conn.WriteMessage(websocket.PingMessage, nil)
+			err = ws.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				return err
 			}
@@ -344,6 +238,11 @@ func (m *manager) close() {
 	_ = m.tomb.Wait()
 }
 
-func writeWebsocketError(conn *websocket.Conn, msg string) {
-	_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, msg), time.Time{})
+func writeWebsocketError(ws *websocket.Conn, msg string) {
+	_ = ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, msg), time.Time{})
+}
+
+func cloneMessage(template Message) Message {
+	typ := reflect.TypeOf(template).Elem()
+	return reflect.New(typ).Interface().(Message)
 }
