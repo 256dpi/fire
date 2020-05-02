@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/256dpi/xo"
-	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
@@ -35,19 +34,18 @@ func TestWatcher(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 
-		ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:1234/watch", nil)
+		conn, err := Connect("ws://0.0.0.0:1234/watch")
 		assert.NoError(t, err)
-		assert.NotNil(t, ws)
+		assert.NotNil(t, conn)
 
-		defer ws.Close()
+		defer conn.Close()
 
 		/* subscribe */
 
-		err = ws.WriteMessage(websocket.TextMessage, []byte(`{
-			"subscribe": {
-				"items": {}
-			}
-		}`))
+		err = conn.Send(nil, &Command{
+			Type: Subscribe,
+			Name: "items",
+		})
 		assert.NoError(t, err)
 
 		time.Sleep(100 * time.Millisecond)
@@ -58,45 +56,45 @@ func TestWatcher(t *testing.T) {
 			Bar: "bar",
 		}).(*itemModel)
 
-		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
-		typ, bytes, err := ws.ReadMessage()
+		var cmd Command
+		err = conn.Receive(nil, &cmd)
 		assert.NoError(t, err)
-		assert.Equal(t, websocket.TextMessage, typ)
-		assert.JSONEq(t, `{
-			"items": {
-				"`+itm.ID().Hex()+`": "created"
-			}
-		}`, string(bytes))
+		assert.Equal(t, Command{
+			Type: Created,
+			Name: "items",
+			ID:   itm.ID().Hex(),
+		}, cmd)
 
 		/* update model */
 
 		itm.Foo = "bar"
 		tester.Replace(itm)
 
-		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
-		typ, bytes, err = ws.ReadMessage()
+		err = conn.Receive(nil, &cmd)
 		assert.NoError(t, err)
-		assert.Equal(t, websocket.TextMessage, typ)
-		assert.JSONEq(t, `{
-			"items": {
-				"`+itm.ID().Hex()+`": "updated"
-			}
-		}`, string(bytes))
+		assert.Equal(t, Command{
+			Type: Updated,
+			Name: "items",
+			ID:   itm.ID().Hex(),
+		}, cmd)
 
 		/* delete model */
 
 		tester.Delete(itm)
 
-		_ = ws.SetReadDeadline(time.Now().Add(time.Minute))
-		typ, bytes, err = ws.ReadMessage()
+		err = conn.Receive(nil, &cmd)
 		assert.NoError(t, err)
-		assert.Equal(t, websocket.TextMessage, typ)
-		assert.JSONEq(t, `{
-			"items": {
-				"`+itm.ID().Hex()+`": "deleted"
-			}
-		}`, string(bytes))
+		assert.Equal(t, Command{
+			Type: Deleted,
+			Name: "items",
+			ID:   itm.ID().Hex(),
+		}, cmd)
+
+		/* close */
 
 		watcher.Close()
+
+		err = conn.Receive(nil, &cmd)
+		assert.Error(t, err)
 	})
 }

@@ -27,6 +27,17 @@ const (
 	receiveTimeout = 90 * time.Second
 )
 
+type Protocol struct {
+	Message        Message
+	Connect        func(*Client) error
+	Handle         func(*Client, Message) error
+	Disconnect     func(*Client) error
+	MaxMessageSize int
+	WriteTimeout   time.Duration
+	PingTimeout    time.Duration
+	ReceiveTimeout time.Duration
+}
+
 type request struct {
 	Subscribe   map[string]Map `json:"subscribe"`
 	Unsubscribe []string       `json:"unsubscribe"`
@@ -35,24 +46,16 @@ type request struct {
 type response map[string]map[string]string
 
 type manager struct {
-	watcher *Watcher
-
-	upgrader     *websocket.Upgrader
-	events       chan *Event
-	subscribes   chan chan *Event
-	unsubscribes chan chan *Event
-
-	tomb tomb.Tomb
+	protocol *Protocol
+	upgrader *websocket.Upgrader
+	tomb     tomb.Tomb
 }
 
-func newManager(w *Watcher) *manager {
+func newManager(p *Protocol) *manager {
 	// create manager
 	m := &manager{
-		watcher:      w,
-		upgrader:     &websocket.Upgrader{},
-		events:       make(chan *Event, 10),
-		subscribes:   make(chan chan *Event, 10),
-		unsubscribes: make(chan chan *Event, 10),
+		protocol: p,
+		upgrader: &websocket.Upgrader{},
 	}
 
 	// do not check request origin
@@ -72,11 +75,11 @@ func (m *manager) run() error {
 
 	for {
 		select {
-		// handle subscribes
+		// message subscribes
 		case q := <-m.subscribes:
 			// store queue
 			queues[q] = true
-		// handle events
+		// message events
 		case e := <-m.events:
 			// add message to all queues
 			for q := range queues {
@@ -88,7 +91,7 @@ func (m *manager) run() error {
 					delete(queues, q)
 				}
 			}
-		// handle unsubscribes
+		// message unsubscribes
 		case q := <-m.unsubscribes:
 			// delete queue
 			delete(queues, q)
@@ -109,14 +112,6 @@ func (m *manager) run() error {
 	}
 }
 
-func (m *manager) broadcast(evt *Event) {
-	// queue event
-	select {
-	case m.events <- evt:
-	case <-m.tomb.Dying():
-	}
-}
-
 func (m *manager) handle(ctx *fire.Context) error {
 	// check if alive
 	if !m.tomb.Alive() {
@@ -124,43 +119,36 @@ func (m *manager) handle(ctx *fire.Context) error {
 	}
 
 	// try to upgrade connection
-	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
+	ws, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
 		// error has already been written to client
 		return nil
 	}
 
 	// ensure the connections gets closed
-	defer conn.Close()
+	defer ws.Close()
 
-	// prepare queue
-	queue := make(chan *Event, 10)
+	// set read limit
+	ws.SetReadLimit(maxMessageSize)
 
-	// register queue
-	select {
-	case m.subscribes <- queue:
-	case <-m.tomb.Dying():
-		return tomb.ErrDying
-	}
+	// prepare conn
+	conn := &Client{ws: ws}
 
-	// ensure unsubscribe
-	defer func() {
-		select {
-		case m.unsubscribes <- queue:
-		case <-m.tomb.Dying():
+	// call connect if available
+	if m.protocol.Connect != nil {
+		err = m.protocol.Connect(conn)
+		if err != nil {
+			return err
 		}
-	}()
-
-	// set read limit (we only expect pong messages)
-	conn.SetReadLimit(maxMessageSize)
+	}
 
 	// prepare pinger ticker
 	pinger := time.NewTimer(pingTimeout)
 
 	// reset read deadline if a pong has been received
-	conn.SetPongHandler(func(string) error {
+	ws.SetPongHandler(func(string) error {
 		pinger.Reset(pingTimeout)
-		return conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+		return ws.SetReadDeadline(time.Now().Add(receiveTimeout))
 	})
 
 	// prepare channels
@@ -171,14 +159,14 @@ func (m *manager) handle(ctx *fire.Context) error {
 	go func() {
 		for {
 			// reset read timeout
-			err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
+			err := ws.SetReadDeadline(time.Now().Add(receiveTimeout))
 			if err != nil {
 				errs <- xo.W(err)
 				return
 			}
 
 			// read next message from connection
-			typ, bytes, err := conn.ReadMessage()
+			typ, bytes, err := ws.ReadMessage()
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				close(errs)
 				return
@@ -218,102 +206,26 @@ func (m *manager) handle(ctx *fire.Context) error {
 		}
 	}()
 
-	// prepare registry
-	reg := map[string]*Subscription{}
-
 	// run writer
 	for {
 		select {
-		// handle request
-		case req := <-reqs:
-			// handle subscriptions
-			for name, data := range req.Subscribe {
-				// get stream
-				stream, ok := m.watcher.streams[name]
-				if !ok {
-					writeWebsocketError(conn, "invalid subscription")
-					return nil
-				}
-
-				// prepare subscription
-				sub := &Subscription{
-					Context: ctx,
-					Data:    data,
-					Stream:  stream,
-				}
-
-				// validate subscription if available
-				if stream.Validator != nil {
-					err := stream.Validator(sub)
-					if err != nil {
-						writeWebsocketError(conn, "invalid subscription")
-						return nil
-					}
-				}
-
-				// add subscription
-				reg[name] = sub
-			}
-
-			// handle unsubscriptions
-			for _, name := range req.Unsubscribe {
-				delete(reg, name)
-			}
-		// handle events
-		case evt, ok := <-queue:
-			// check if closed
-			if !ok {
-				return nil
-			}
-
-			// get subscription
-			sub, ok := reg[evt.Stream.Name()]
-			if !ok {
-				continue
-			}
-
-			// run selector if present
-			if evt.Stream.Selector != nil {
-				if !evt.Stream.Selector(evt, sub) {
-					continue
-				}
-			}
-
-			// create response
-			res := response{
-				evt.Stream.Name(): {
-					evt.ID.Hex(): string(evt.Type),
-				},
-			}
-
-			// set write deadline
-			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
-			if err != nil {
-				return err
-			}
-
-			// write message
-			err = conn.WriteJSON(res)
-			if err != nil {
-				return err
-			}
 		// handle pings
 		case <-pinger.C:
 			// set write deadline
-			err := conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+			err := ws.SetWriteDeadline(time.Now().Add(writeTimeout))
 			if err != nil {
 				return err
 			}
 
 			// write ping message
-			err = conn.WriteMessage(websocket.PingMessage, nil)
+			err = ws.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				return err
 			}
-		// handle errors
+		// message errors
 		case err := <-errs:
 			return err
-		// handle close
+		// message close
 		case <-m.tomb.Dying():
 			return nil
 		}

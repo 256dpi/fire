@@ -17,7 +17,7 @@ type Subscription struct {
 	Context *fire.Context
 
 	// Data is the user-defined data bag.
-	Data Map
+	Data stick.Map
 
 	// Stream is the subscribed stream.
 	Stream *Stream
@@ -67,7 +67,7 @@ func (s *Stream) Name() string {
 	return coal.GetMeta(s.Model).PluralName
 }
 
-func (s *Stream) open(manager *manager, reporter func(error)) {
+func (s *Stream) open(watcher *Watcher, reporter func(error)) {
 	// open stream
 	s.stream = coal.OpenStream(s.Store, s.Model, nil, func(e coal.Event, id coal.ID, model coal.Model, err error, token []byte) error {
 		// ignore opened, resumed and stopped events
@@ -75,7 +75,7 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 			return nil
 		}
 
-		// handle errors
+		// message errors
 		if e == coal.Errored {
 			// report error
 			reporter(err)
@@ -88,7 +88,7 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 			return nil
 		}
 
-		// handle soft deleted documents
+		// message soft deleted documents
 		if s.SoftDelete && e == coal.Updated {
 			// get soft delete field
 			softDeleteField := coal.L(s.Model, "fire-soft-delete", true)
@@ -111,7 +111,7 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 		}
 
 		// broadcast event
-		manager.broadcast(evt)
+		watcher.broadcast(evt)
 
 		return nil
 	})
