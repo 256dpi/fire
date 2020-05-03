@@ -38,6 +38,35 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 	}
 }
 
+// Upload will uploaded the provided stream using the configured service and
+// return a claim key.
+func (s *Storage) Upload(ctx context.Context, contentType string, contentLength int64, stream io.Reader) (string, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
+	defer span.Finish()
+
+	// set default content type
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	// upload file to service
+	file, err := s.upload(ctx, contentType, contentLength, stream)
+	if err != nil {
+		return "", err
+	}
+
+	// issue claim key
+	claimKey, err := s.notary.Issue(&ClaimKey{
+		File: file.ID(),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return claimKey, nil
+}
+
 // UploadAction returns an action that provides and upload that service that
 // stores blobs and returns claim keys.
 func (s *Storage) UploadAction(limit int64) *fire.Action {
@@ -94,21 +123,8 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 	ctx.Trace.Push("blaze/Storage.uploadRaw")
 	defer ctx.Trace.Pop()
 
-	// set default content type
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	// upload file to service
-	file, err := s.upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// issue claim key
-	claimKey, err := s.notary.Issue(&ClaimKey{
-		File: file.ID(),
-	})
+	// upload body
+	claimKey, err := s.Upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -141,16 +157,8 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 			return nil, err
 		}
 
-		// upload file to service
-		file, err := s.upload(ctx, contentType, -1, part)
-		if err != nil {
-			return nil, err
-		}
-
-		// issue claim key
-		claimKey, err := s.notary.Issue(&ClaimKey{
-			File: file.ID(),
-		})
+		// upload part
+		claimKey, err := s.Upload(ctx, contentType, -1, part)
 		if err != nil {
 			return nil, err
 		}
