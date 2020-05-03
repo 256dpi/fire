@@ -120,7 +120,7 @@ func (s *Storage) Upload(ctx context.Context, contentType string, length int64, 
 func (s *Storage) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
-		limit = serve.MustByteSize("4M")
+		limit = serve.MustByteSize("8M")
 	}
 
 	return fire.A("blaze/Storage.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
