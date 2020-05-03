@@ -2,7 +2,6 @@ package blaze
 
 import (
 	"context"
-	"io"
 
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/serve"
@@ -42,65 +41,43 @@ func (g *GridFS) Prepare(_ context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string, r io.Reader) (int64, error) {
+func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string) (Upload, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return 0, ErrInvalidHandle
+		return nil, ErrInvalidHandle
 	}
 
 	// open stream
 	stream, err := g.bucket.OpenUploadStreamWithID(ctx, id, "")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	// write all data
-	n, err := io.Copy(stream, r)
-	if err != nil {
-		_ = stream.Abort()
-		return 0, err
-	}
-
-	// close stream
-	err = stream.Close()
-	if coal.IsDuplicate(err) {
-		return 0, ErrUsedHandle
-	} else if err != nil {
-		return 0, err
-	}
-
-	return n, nil
+	return &gridFSUpload{
+		stream: stream,
+	}, nil
 }
 
 // Download implements the Service interface.
-func (g *GridFS) Download(ctx context.Context, handle Handle, w io.Writer) error {
+func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return ErrInvalidHandle
+		return nil, ErrInvalidHandle
 	}
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
 	if err == lungo.ErrFileNotFound {
-		return ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 
-	// ensure stream is closed
-	defer stream.Close()
-
-	// read all data
-	_, err = io.Copy(w, stream)
-	if err == lungo.ErrFileNotFound {
-		return ErrNotFound
-	} else if err != nil {
-		return err
-	}
-
-	return nil
+	return &gridFSDownload{
+		stream: stream,
+	}, nil
 }
 
 // Delete implements the Service interface.
@@ -124,5 +101,81 @@ func (g *GridFS) Delete(ctx context.Context, handle Handle) (bool, error) {
 
 // Cleanup implements the Service interface.
 func (g *GridFS) Cleanup(_ context.Context) error {
+	return nil
+}
+
+type gridFSUpload struct {
+	stream *lungo.UploadStream
+}
+
+func (u *gridFSUpload) Resume() (int64, error) {
+	panic("implement me")
+}
+
+func (u *gridFSUpload) Write(data []byte) (int, error) {
+	// write stream
+	n, err := u.stream.Write(data)
+	if coal.IsDuplicate(err) {
+		return 0, ErrUsedHandle
+	} else if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+func (u *gridFSUpload) Suspend() (int64, error) {
+	panic("implement me")
+}
+
+func (u *gridFSUpload) Abort() error {
+	panic("implement me")
+}
+
+func (u *gridFSUpload) Close() error {
+	// close stream
+	err := u.stream.Close()
+	if coal.IsDuplicate(err) {
+		return ErrUsedHandle
+	} else if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type gridFSDownload struct {
+	stream *lungo.DownloadStream
+}
+
+func (d *gridFSDownload) Skip(skip int64) (int64, error) {
+	panic("implement me")
+}
+
+func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
+	panic("implement me")
+}
+
+func (d *gridFSDownload) Read(buf []byte) (int, error) {
+	// read stream
+	n, err := d.stream.Read(buf)
+	if err == lungo.ErrFileNotFound {
+		return 0, ErrNotFound
+	} else if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+func (d *gridFSDownload) Close() error {
+	// close stream
+	err := d.stream.Close()
+	if err == lungo.ErrFileNotFound {
+		return ErrNotFound
+	} else if err != nil {
+		return err
+	}
+
 	return nil
 }

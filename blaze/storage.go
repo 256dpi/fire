@@ -2,7 +2,6 @@ package blaze
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -22,37 +21,6 @@ import (
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
 )
-
-// ErrInvalidHandle is returned if the provided handle is invalid.
-var ErrInvalidHandle = errors.New("invalid handle")
-
-// ErrUsedHandle is returned if the provided handle has already been used.
-var ErrUsedHandle = errors.New("used handle")
-
-// ErrNotFound is returned if there is no blob for the provided handle.
-var ErrNotFound = errors.New("not found")
-
-// Handle is a reference to a blob stored in a service.
-type Handle map[string]interface{}
-
-// Service is responsible for managing blobs.
-type Service interface {
-	// Prepare should return a new handle for uploading a blob.
-	Prepare(ctx context.Context) (Handle, error)
-
-	// Upload should persist a blob with data read from the provided reader.
-	Upload(ctx context.Context, handle Handle, contentType string, r io.Reader) (int64, error)
-
-	// Download lookup the blob and stream its content to the provider writer.
-	Download(ctx context.Context, handle Handle, w io.Writer) error
-
-	// Delete should delete the blob.
-	Delete(ctx context.Context, handle Handle) (bool, error)
-
-	// Cleanup is called periodically and allows the service to cleanup its
-	// storage until the context is cancelled.
-	Cleanup(ctx context.Context) error
-}
 
 // Storage provides file storage services.
 type Storage struct {
@@ -234,7 +202,7 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 	}
 
 	// upload file to service
-	length, err = s.service.Upload(ctx, handle, contentType, stream)
+	length, err = UploadFrom(ctx, s.service, handle, contentType, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +472,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Length, 10))
 
 		// download file
-		err = s.service.Download(ctx, file.Handle, ctx.ResponseWriter)
+		err = DownloadTo(ctx, s.service, file.Handle, ctx.ResponseWriter)
 		if err != nil {
 			return err
 		}

@@ -3,14 +3,13 @@ package blaze
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"strconv"
 )
 
 // Memory is a service for testing purposes that stores blobs in memory.
 type Memory struct {
 	// The stored blobs.
-	Blobs map[string]Blob
+	Blobs map[string]*Blob
 
 	// The next id.
 	Next int
@@ -19,7 +18,7 @@ type Memory struct {
 // NewMemory will create a new memory service.
 func NewMemory() *Memory {
 	return &Memory{
-		Blobs: map[string]Blob{},
+		Blobs: map[string]*Blob{},
 	}
 }
 
@@ -37,55 +36,49 @@ func (s *Memory) Prepare(_ context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (s *Memory) Upload(_ context.Context, handle Handle, contentType string, r io.Reader) (int64, error) {
+func (s *Memory) Upload(_ context.Context, handle Handle, contentType string) (Upload, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return 0, ErrInvalidHandle
+		return nil, ErrInvalidHandle
 	}
 
 	// check blob
 	_, ok := s.Blobs[id]
 	if ok {
-		return 0, ErrUsedHandle
+		return nil, ErrUsedHandle
 	}
 
-	// read bytes
-	bytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return 0, err
+	// prepare blob
+	blob := &Blob{
+		Type: contentType,
 	}
 
-	// set blob
-	s.Blobs[id] = Blob{
-		Type:  contentType,
-		Bytes: bytes,
-	}
+	// store blob
+	s.Blobs[id] = blob
 
-	return int64(len(bytes)), nil
+	return &memoryUpload{
+		blob: blob,
+	}, nil
 }
 
 // Download implements the Service interface.
-func (s *Memory) Download(_ context.Context, handle Handle, w io.Writer) error {
+func (s *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return ErrInvalidHandle
+		return nil, ErrInvalidHandle
 	}
 
 	// get blob
-	file, ok := s.Blobs[id]
+	blob, ok := s.Blobs[id]
 	if !ok {
-		return ErrNotFound
+		return nil, ErrNotFound
 	}
 
-	// write bytes
-	_, err := w.Write(file.Bytes)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return &memoryDownload{
+		blob: blob,
+	}, nil
 }
 
 // Delete implements the Service interface.
@@ -109,5 +102,62 @@ func (s *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
 
 // Cleanup implements the Service interface.
 func (s *Memory) Cleanup(_ context.Context) error {
+	return nil
+}
+
+type memoryUpload struct {
+	blob *Blob
+}
+
+func (u *memoryUpload) Resume() (int64, error) {
+	panic("implement me")
+}
+
+func (u *memoryUpload) Write(data []byte) (int, error) {
+	// append data
+	u.blob.Bytes = append(u.blob.Bytes, data...)
+
+	return len(data), nil
+}
+
+func (u *memoryUpload) Suspend() (int64, error) {
+	panic("implement me")
+}
+
+func (u *memoryUpload) Abort() error {
+	panic("implement me")
+}
+
+func (u *memoryUpload) Close() error {
+	return nil
+}
+
+type memoryDownload struct {
+	blob *Blob
+	pos  int
+}
+
+func (u *memoryDownload) Skip(skip int64) (int64, error) {
+	panic("implement me")
+}
+
+func (u *memoryDownload) Seek(offset int64, whence int) (int64, error) {
+	panic("implement me")
+}
+
+func (u *memoryDownload) Read(buf []byte) (int, error) {
+	// check EOF
+	if u.pos >= len(u.blob.Bytes) {
+		return 0, io.EOF
+	}
+
+	// copy bytes
+	n := copy(buf, u.blob.Bytes[u.pos:])
+	u.pos += n
+
+	return n, nil
+}
+
+func (u *memoryDownload) Close() error {
 	return nil
 }
