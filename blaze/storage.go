@@ -167,10 +167,6 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 }
 
 func (s *Storage) uploadBody(ctx *fire.Context, contentType string) ([]string, error) {
-	// trace
-	ctx.Trace.Push("blaze/Storage.uploadBody")
-	defer ctx.Trace.Pop()
-
 	// upload stream
 	claimKey, _, err := s.Upload(ctx, contentType, func(upload Upload) (int64, error) {
 		return UploadFrom(upload, ctx.HTTPRequest.Body)
@@ -183,10 +179,6 @@ func (s *Storage) uploadBody(ctx *fire.Context, contentType string) ([]string, e
 }
 
 func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
-	// trace
-	ctx.Trace.Push("blaze/Storage.uploadMultipart")
-	defer ctx.Trace.Pop()
-
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
 
@@ -296,10 +288,6 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 }
 
 func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path string) error {
-	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.validateLink")
-	defer span.Finish()
-
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -448,6 +436,10 @@ func (s *Storage) decorateLink(link *Link) error {
 // Download will initiate a download for the blob referenced by the provided
 // view key.
 func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Download")
+	defer span.Finish()
+
 	// verify key
 	var key ViewKey
 	err := s.notary.Verify(&key, viewKey)
