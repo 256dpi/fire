@@ -17,6 +17,31 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
+func TestStorageUpload(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		service := NewMemory()
+		storage := NewStorage(tester.Store, testNotary, service)
+
+		body := strings.NewReader("Hello World!")
+		key, err := storage.Upload(nil, "application/octet-stream", 12, body)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+		assert.Equal(t, map[string]*Blob{
+			"1": {
+				Type:  "application/octet-stream",
+				Bytes: []byte("Hello World!"),
+			},
+		}, service.Blobs)
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Len(t, files, 1)
+		assert.Equal(t, Uploaded, files[0].State)
+		assert.Equal(t, "application/octet-stream", files[0].Type)
+		assert.Equal(t, int64(12), files[0].Length)
+		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
+	})
+}
+
 func TestStorageUploadInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
