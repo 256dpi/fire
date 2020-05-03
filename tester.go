@@ -93,6 +93,11 @@ func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 
 // RunAction is a helper to test actions.
 func (t *Tester) RunAction(ctx *Context, action *Action) (*httptest.ResponseRecorder, error) {
+	// set default
+	if action.BodyLimit <= 0 {
+		action.BodyLimit = serve.MustByteSize("8M")
+	}
+
 	// get context
 	var rec *httptest.ResponseRecorder
 	err := t.RunHandler(ctx, func(ctx *Context) error {
