@@ -23,9 +23,13 @@ func TestStorageUpload(t *testing.T) {
 		storage := NewStorage(tester.Store, testNotary, service)
 
 		body := strings.NewReader("Hello World!")
-		key, err := storage.Upload(nil, "application/octet-stream", 12, body)
+		key, file, err := storage.Upload(nil, "application/octet-stream", 12, body)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
+		assert.Equal(t, Uploaded, file.State)
+		assert.Equal(t, "application/octet-stream", file.Type)
+		assert.Equal(t, int64(12), file.Length)
+		assert.Equal(t, Handle{"id": "1"}, file.Handle)
 		assert.Equal(t, map[string]*Blob{
 			"1": {
 				Type:  "application/octet-stream",

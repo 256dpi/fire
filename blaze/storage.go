@@ -40,7 +40,7 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 
 // Upload will uploaded the provided stream using the configured service and
 // return a claim key.
-func (s *Storage) Upload(ctx context.Context, contentType string, contentLength int64, stream io.Reader) (string, error) {
+func (s *Storage) Upload(ctx context.Context, contentType string, contentLength int64, stream io.Reader) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
 	defer span.Finish()
@@ -53,7 +53,7 @@ func (s *Storage) Upload(ctx context.Context, contentType string, contentLength 
 	// upload file to service
 	file, err := s.upload(ctx, contentType, contentLength, stream)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// issue claim key
@@ -61,10 +61,10 @@ func (s *Storage) Upload(ctx context.Context, contentType string, contentLength 
 		File: file.ID(),
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return claimKey, nil
+	return claimKey, file, nil
 }
 
 // UploadAction returns an action that provides and upload that service that
@@ -124,7 +124,7 @@ func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength
 	defer ctx.Trace.Pop()
 
 	// upload body
-	claimKey, err := s.Upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
+	claimKey, _, err := s.Upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		}
 
 		// upload part
-		claimKey, err := s.Upload(ctx, contentType, -1, part)
+		claimKey, _, err := s.Upload(ctx, contentType, -1, part)
 		if err != nil {
 			return nil, err
 		}
@@ -215,17 +215,25 @@ func (s *Storage) upload(ctx context.Context, contentType string, length int64, 
 		return nil, err
 	}
 
+	// get time
+	now := time.Now()
+
 	// update file
 	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
 		"$set": bson.M{
 			"State":   Uploaded,
-			"Updated": time.Now(),
+			"Updated": now,
 			"Length":  length,
 		},
 	}, false)
 	if err != nil {
 		return nil, err
 	}
+
+	// set fields
+	file.State = Uploaded
+	file.Updated = now
+	file.Length = length
 
 	return file, nil
 }
