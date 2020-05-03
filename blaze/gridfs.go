@@ -148,10 +148,6 @@ type gridFSDownload struct {
 	stream *lungo.DownloadStream
 }
 
-func (d *gridFSDownload) Skip(skip int64) (int64, error) {
-	panic("implement me")
-}
-
 func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	panic("implement me")
 }

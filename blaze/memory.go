@@ -125,7 +125,7 @@ func (u *memoryUpload) Suspend() (int64, error) {
 }
 
 func (u *memoryUpload) Abort() error {
-	panic("implement me")
+	return nil
 }
 
 func (u *memoryUpload) Close() error {
@@ -135,10 +135,6 @@ func (u *memoryUpload) Close() error {
 type memoryDownload struct {
 	blob *Blob
 	pos  int
-}
-
-func (u *memoryDownload) Skip(skip int64) (int64, error) {
-	panic("implement me")
 }
 
 func (u *memoryDownload) Seek(offset int64, whence int) (int64, error) {
