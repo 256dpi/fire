@@ -22,8 +22,9 @@ func TestStorageUpload(t *testing.T) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
 
-		body := strings.NewReader("Hello World!")
-		key, file, err := storage.Upload(nil, "application/octet-stream", 12, body)
+		key, file, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 		assert.Equal(t, Uploaded, file.State)
@@ -374,7 +375,40 @@ func TestStorageDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		_, file, err := storage.Upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		file.State = Claimed
+		tester.Replace(file)
+
+		key, err := storage.notary.Issue(&ViewKey{
+			Base: heat.Base{},
+			File: file.ID(),
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		download, file, err := storage.Download(nil, key)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, file)
+
+		var buffer bytes.Buffer
+		err = DownloadTo(download, &buffer)
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World!", buffer.String())
+	})
+}
+
+func TestStorageDownloadAction(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
+
+		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
 		assert.NoError(t, err)
 		assert.NotNil(t, file)
 
@@ -405,7 +439,9 @@ func TestStorageCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		_, file, err := storage.Upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
 		assert.NoError(t, err)
 		assert.NotNil(t, file)
 

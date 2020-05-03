@@ -40,21 +40,15 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 
 // Upload will uploaded the provided stream using the configured service and
 // return a claim key.
-func (s *Storage) Upload(ctx context.Context, contentType string, length int64, stream io.Reader) (string, *File, error) {
+func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
 	span.Log("contentType", contentType)
-	span.Log("length", length)
 	defer span.Finish()
 
 	// set default content type
 	if contentType == "" {
 		contentType = "application/octet-stream"
-	}
-
-	// limit upload if length has been specified
-	if length != -1 {
-		stream = io.LimitReader(stream, length)
 	}
 
 	// create handle
@@ -78,8 +72,14 @@ func (s *Storage) Upload(ctx context.Context, contentType string, length int64, 
 		return "", nil, err
 	}
 
-	// upload file to service
-	length, err = UploadFrom(ctx, s.service, handle, contentType, stream)
+	// begin upload
+	upload, err := s.service.Upload(ctx, handle, contentType)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// perform upload
+	length, err := cb(upload)
 	if err != nil {
 		return "", nil, err
 	}
@@ -148,7 +148,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 		if contentType == "multipart/form-data" {
 			keys, err = s.uploadMultipart(ctx, ctParams["boundary"])
 		} else {
-			keys, err = s.uploadBody(ctx, contentType, contentLength)
+			keys, err = s.uploadBody(ctx, contentType)
 		}
 
 		// check limit error
@@ -166,13 +166,15 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (s *Storage) uploadBody(ctx *fire.Context, contentType string, contentLength int64) ([]string, error) {
+func (s *Storage) uploadBody(ctx *fire.Context, contentType string) ([]string, error) {
 	// trace
 	ctx.Trace.Push("blaze/Storage.uploadBody")
 	defer ctx.Trace.Pop()
 
-	// upload body
-	claimKey, _, err := s.Upload(ctx, contentType, contentLength, ctx.HTTPRequest.Body)
+	// upload stream
+	claimKey, _, err := s.Upload(ctx, contentType, func(upload Upload) (int64, error) {
+		return UploadFrom(upload, ctx.HTTPRequest.Body)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +208,9 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		}
 
 		// upload part
-		claimKey, _, err := s.Upload(ctx, contentType, -1, part)
+		claimKey, _, err := s.Upload(ctx, contentType, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, part)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -441,6 +445,37 @@ func (s *Storage) decorateLink(link *Link) error {
 	return nil
 }
 
+// Download will initiate a download for the blob referenced by the provided
+// view key.
+func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
+	// verify key
+	var key ViewKey
+	err := s.notary.Verify(&key, viewKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// load file
+	var file File
+	found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
+		"_id":   key.File,
+		"State": Claimed,
+	}, nil, 0, false)
+	if err != nil {
+		return nil, nil, err
+	} else if !found {
+		return nil, nil, fmt.Errorf("missing file")
+	}
+
+	// begin download
+	download, err := s.service.Download(ctx, file.Handle)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return download, &file, nil
+}
+
 // DownloadAction returns an action that allows downloading files using view
 // keys.
 func (s *Storage) DownloadAction() *fire.Action {
@@ -450,23 +485,10 @@ func (s *Storage) DownloadAction() *fire.Action {
 			return fmt.Errorf("stores must be identical")
 		}
 
-		// verify key
-		var key ViewKey
-		err := s.notary.Verify(&key, ctx.HTTPRequest.URL.Query().Get("key"))
+		// initiate download
+		download, file, err := s.Download(ctx, ctx.HTTPRequest.URL.Query().Get("key"))
 		if err != nil {
 			return err
-		}
-
-		// load file
-		var file File
-		found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
-			"_id":   key.File,
-			"State": Claimed,
-		}, nil, 0, false)
-		if err != nil {
-			return err
-		} else if !found {
-			return fmt.Errorf("missing file")
 		}
 
 		// set content type and length
@@ -474,7 +496,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Length, 10))
 
 		// download file
-		err = DownloadTo(ctx, s.service, file.Handle, ctx.ResponseWriter)
+		err = DownloadTo(download, ctx.ResponseWriter)
 		if err != nil {
 			return err
 		}

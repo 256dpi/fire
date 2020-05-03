@@ -1,18 +1,9 @@
 package blaze
 
-import (
-	"context"
-	"io"
-)
+import "io"
 
 // UploadFrom will upload a blob from the provided reader.
-func UploadFrom(ctx context.Context, svc Service, handle Handle, contentType string, reader io.Reader) (int64, error) {
-	// start upload
-	upload, err := svc.Upload(ctx, handle, contentType)
-	if err != nil {
-		return 0, err
-	}
-
+func UploadFrom(upload Upload, reader io.Reader) (int64, error) {
 	// copy all data
 	n, err := io.Copy(upload, reader)
 	if err != nil {
@@ -30,15 +21,9 @@ func UploadFrom(ctx context.Context, svc Service, handle Handle, contentType str
 }
 
 // DownloadTo will download a blob to the provided writer.
-func DownloadTo(ctx context.Context, svc Service, handle Handle, writer io.Writer) error {
-	// start download
-	download, err := svc.Download(ctx, handle)
-	if err != nil {
-		return err
-	}
-
+func DownloadTo(download Download, writer io.Writer) error {
 	// copy all data
-	_, err = io.Copy(writer, download)
+	_, err := io.Copy(writer, download)
 	if err != nil {
 		_ = download.Close()
 		return err
