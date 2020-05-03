@@ -39,7 +39,7 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 }
 
 // Upload will uploaded the provided stream using the configured service and
-// return a claim key.
+// return a claim key and the uploaded file.
 func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
@@ -115,8 +115,8 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 	return claimKey, file, nil
 }
 
-// UploadAction returns an action that provides and upload that service that
-// stores blobs and returns claim keys.
+// UploadAction returns an action that provides an upload service that stores
+// files and returns claim keys.
 func (s *Storage) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
@@ -220,7 +220,8 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	return claimKeys, nil
 }
 
-// Claim will claim the provided link.
+// Claim will claim the provided link. The claimed link must be persisted in the
+// same transaction as the claim to prevent loosing files.
 func (s *Storage) Claim(ctx context.Context, link *Link) error {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Claim")
@@ -474,7 +475,7 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 	return nil
 }
 
-// Download will initiate a download for the blob referenced by the provided
+// Download will initiate a download for the file referenced by the provided
 // view key.
 func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
 	// track
