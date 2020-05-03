@@ -356,6 +356,28 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 	return nil
 }
 
+// Decorate will populate the view key of the provided link if a file is
+// available.
+func (s *Storage) Decorate(link *Link) error {
+	// skip if file is missing
+	if link == nil || link.File == nil || link.File.IsZero() {
+		return nil
+	}
+
+	// issue view key
+	viewKey, err := s.notary.Issue(&ViewKey{
+		File: *link.File,
+	})
+	if err != nil {
+		return err
+	}
+
+	// set key
+	link.ViewKey = viewKey
+
+	return nil
+}
+
 // Decorator will generate view keys for all or just the specified link fields
 // on the returned model or models.
 func (s *Storage) Decorator(fields ...string) *fire.Callback {
@@ -400,35 +422,15 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 		var err error
 		switch value := value.(type) {
 		case Link:
-			err = s.decorateLink(&value)
+			err = s.Decorate(&value)
 			stick.MustSet(model, field, value)
 		case *Link:
-			err = s.decorateLink(value)
+			err = s.Decorate(value)
 		}
 		if err != nil {
 			return err
 		}
 	}
-
-	return nil
-}
-
-func (s *Storage) decorateLink(link *Link) error {
-	// skip if file is missing
-	if link == nil || link.File == nil || link.File.IsZero() {
-		return nil
-	}
-
-	// issue view key
-	viewKey, err := s.notary.Issue(&ViewKey{
-		File: *link.File,
-	})
-	if err != nil {
-		return err
-	}
-
-	// set key
-	link.ViewKey = viewKey
 
 	return nil
 }
