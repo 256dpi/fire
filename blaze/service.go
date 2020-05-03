@@ -19,17 +19,17 @@ type Handle map[string]interface{}
 
 // Upload handles the upload of a blob.
 type Upload interface {
-	Resume() (int64, error)
+	// Resume() (int64, error)
 	Write(data []byte) (int, error)
-	Suspend() (int64, error)
+	// Suspend() (int64, error)
 	Abort() error
 	Close() error
 }
 
 // Download handles the download of a blob.
 type Download interface {
-	Skip(skip int64) (int64, error)
-	Seek(offset int64, whence int) (int64, error)
+	// Skip(skip int64) (int64, error)
+	// Seek(offset int64, whence int) (int64, error)
 	Read(buf []byte) (int, error)
 	Close() error
 }
