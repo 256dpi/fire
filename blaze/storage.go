@@ -110,6 +110,8 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 		if err != nil && strings.HasSuffix(err.Error(), serve.ErrBodyLimitExceeded.Error()) {
 			ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
 			return nil
+		} else if err != nil {
+			return err
 		}
 
 		// respond with keys
