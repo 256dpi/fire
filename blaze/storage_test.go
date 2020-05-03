@@ -46,25 +46,7 @@ func TestStorageUpload(t *testing.T) {
 	})
 }
 
-func TestStorageUploadInvalidContentType(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
-
-		body := strings.NewReader("Hello World!")
-		req := httptest.NewRequest("POST", "/foo", body)
-
-		res, err := tester.RunAction(&fire.Context{
-			HTTPRequest: req,
-		}, storage.UploadAction(0))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.Code)
-		assert.Equal(t, "", res.Body.String())
-
-		assert.Equal(t, 0, tester.Count(&File{}))
-	})
-}
-
-func TestStorageUploadRaw(t *testing.T) {
+func TestStorageUploadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -96,7 +78,25 @@ func TestStorageUploadRaw(t *testing.T) {
 	})
 }
 
-func TestStorageUploadRawLimit(t *testing.T) {
+func TestStorageUploadActionInvalidContentType(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
+
+		body := strings.NewReader("Hello World!")
+		req := httptest.NewRequest("POST", "/foo", body)
+
+		res, err := tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, storage.UploadAction(0))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "", res.Body.String())
+
+		assert.Equal(t, 0, tester.Count(&File{}))
+	})
+}
+
+func TestStorageUploadActionLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -114,7 +114,7 @@ func TestStorageUploadRawLimit(t *testing.T) {
 	})
 }
 
-func TestStorageUploadFormFiles(t *testing.T) {
+func TestStorageUploadActionFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -171,7 +171,7 @@ func TestStorageUploadFormFiles(t *testing.T) {
 	})
 }
 
-func TestStorageUploadFormFilesLimit(t *testing.T) {
+func TestStorageUploadActionFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -199,7 +199,7 @@ func TestStorageUploadFormFilesLimit(t *testing.T) {
 	})
 }
 
-func TestStorageUploadMultipart(t *testing.T) {
+func TestStorageUploadActionMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service)
@@ -249,7 +249,7 @@ func TestStorageUploadMultipart(t *testing.T) {
 	})
 }
 
-func TestStorageUploadMultipartLimit(t *testing.T) {
+func TestStorageUploadActionMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
@@ -374,7 +374,7 @@ func TestStorageDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		file, err := storage.upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+		_, file, err := storage.Upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
 		assert.NoError(t, err)
 		assert.NotNil(t, file)
 
@@ -405,7 +405,7 @@ func TestStorageCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		file, err := storage.upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+		_, file, err := storage.Upload(nil, "foo/bar", 12, strings.NewReader("Hello World!"))
 		assert.NoError(t, err)
 		assert.NotNil(t, file)
 

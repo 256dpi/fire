@@ -40,9 +40,11 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 
 // Upload will uploaded the provided stream using the configured service and
 // return a claim key.
-func (s *Storage) Upload(ctx context.Context, contentType string, contentLength int64, stream io.Reader) (string, *File, error) {
+func (s *Storage) Upload(ctx context.Context, contentType string, length int64, stream io.Reader) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
+	span.Log("contentType", contentType)
+	span.Log("length", length)
 	defer span.Finish()
 
 	// set default content type
@@ -50,11 +52,57 @@ func (s *Storage) Upload(ctx context.Context, contentType string, contentLength 
 		contentType = "application/octet-stream"
 	}
 
-	// upload file to service
-	file, err := s.upload(ctx, contentType, contentLength, stream)
+	// limit upload if length has been specified
+	if length != -1 {
+		stream = io.LimitReader(stream, length)
+	}
+
+	// create handle
+	handle, err := s.service.Prepare(ctx)
 	if err != nil {
 		return "", nil, err
 	}
+
+	// prepare file
+	file := &File{
+		Base:    coal.B(),
+		State:   Uploading,
+		Updated: time.Now(),
+		Type:    contentType,
+		Handle:  handle,
+	}
+
+	// create file
+	err = s.store.M(file).Insert(ctx, file)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// upload file to service
+	length, err = UploadFrom(ctx, s.service, handle, contentType, stream)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// get time
+	now := time.Now()
+
+	// update file
+	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
+		"$set": bson.M{
+			"State":   Uploaded,
+			"Updated": now,
+			"Length":  length,
+		},
+	}, false)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// set fields
+	file.State = Uploaded
+	file.Updated = now
+	file.Length = length
 
 	// issue claim key
 	claimKey, err := s.notary.Issue(&ClaimKey{
@@ -100,7 +148,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 		if contentType == "multipart/form-data" {
 			keys, err = s.uploadMultipart(ctx, ctParams["boundary"])
 		} else {
-			keys, err = s.uploadRaw(ctx, contentType, contentLength)
+			keys, err = s.uploadBody(ctx, contentType, contentLength)
 		}
 
 		// check limit error
@@ -118,9 +166,9 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (s *Storage) uploadRaw(ctx *fire.Context, contentType string, contentLength int64) ([]string, error) {
+func (s *Storage) uploadBody(ctx *fire.Context, contentType string, contentLength int64) ([]string, error) {
 	// trace
-	ctx.Trace.Push("blaze/Storage.uploadRaw")
+	ctx.Trace.Push("blaze/Storage.uploadBody")
 	defer ctx.Trace.Pop()
 
 	// upload body
@@ -174,68 +222,6 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	}
 
 	return claimKeys, nil
-}
-
-func (s *Storage) upload(ctx context.Context, contentType string, length int64, stream io.Reader) (*File, error) {
-	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.upload")
-	span.Log("contentType", contentType)
-	span.Log("length", length)
-	defer span.Finish()
-
-	// limit upload if length has been specified
-	if length != -1 {
-		stream = io.LimitReader(stream, length)
-	}
-
-	// create handle
-	handle, err := s.service.Prepare(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// prepare file
-	file := &File{
-		Base:    coal.B(),
-		State:   Uploading,
-		Updated: time.Now(),
-		Type:    contentType,
-		Handle:  handle,
-	}
-
-	// create file
-	err = s.store.M(file).Insert(ctx, file)
-	if err != nil {
-		return nil, err
-	}
-
-	// upload file to service
-	length, err = UploadFrom(ctx, s.service, handle, contentType, stream)
-	if err != nil {
-		return nil, err
-	}
-
-	// get time
-	now := time.Now()
-
-	// update file
-	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
-		"$set": bson.M{
-			"State":   Uploaded,
-			"Updated": now,
-			"Length":  length,
-		},
-	}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	// set fields
-	file.State = Uploaded
-	file.Updated = now
-	file.Length = length
-
-	return file, nil
 }
 
 // Validator will validate all or just the specified link fields of the model.
