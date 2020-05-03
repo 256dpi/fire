@@ -280,6 +280,58 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 	})
 }
 
+func TestStorageClaimDecorateRelease(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory())
+
+		/* upload */
+
+		key, _, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		model := &testModel{}
+
+		/* claim without key */
+
+		err = storage.Claim(nil, &model.RequiredFile)
+		assert.Error(t, err)
+
+		/* claim with key */
+
+		model.RequiredFile.ClaimKey = key
+		err = storage.Claim(nil, &model.RequiredFile)
+		assert.NoError(t, err)
+
+		/* decorate */
+
+		err = storage.Decorate(&model.RequiredFile)
+		assert.NoError(t, err)
+
+		/* download */
+
+		download, _, err := storage.Download(nil, model.RequiredFile.ViewKey)
+		assert.NoError(t, err)
+
+		var buffer bytes.Buffer
+		err = DownloadTo(download, &buffer)
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World!", buffer.String())
+
+		/* release */
+
+		err = storage.Release(nil, &model.RequiredFile)
+		assert.NoError(t, err)
+
+		/* release again */
+
+		err = storage.Release(nil, &model.RequiredFile)
+		assert.Error(t, err)
+	})
+}
+
 func TestStorageValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())

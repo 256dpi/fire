@@ -220,6 +220,84 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	return claimKeys, nil
 }
 
+// Claim will claim the provided link.
+func (s *Storage) Claim(ctx context.Context, link *Link) error {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Claim")
+	defer span.Finish()
+
+	// check file
+	if link.File != nil {
+		return fmt.Errorf("exiting claimed filed")
+	}
+
+	// check claim key
+	if link.ClaimKey == "" {
+		return fmt.Errorf("missing claim key")
+	}
+
+	// verify claim key
+	var key ClaimKey
+	err := s.notary.Verify(&key, link.ClaimKey)
+	if err != nil {
+		return err
+	}
+
+	// claim file
+	var file File
+	found, err := s.store.M(&File{}).UpdateFirst(ctx, &file, bson.M{
+		"_id":   key.File,
+		"State": Uploaded,
+	}, bson.M{
+		"$set": bson.M{
+			"State":   Claimed,
+			"Updated": time.Now(),
+		},
+	}, nil, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return fmt.Errorf("unable to claim file")
+	}
+
+	// update link
+	link.Type = file.Type
+	link.Length = file.Length
+	link.File = coal.P(file.ID())
+
+	return nil
+}
+
+// Release will release the provided link.
+func (s *Storage) Release(ctx context.Context, link *Link) error {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Release")
+	defer span.Finish()
+
+	// release file
+	found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":   link.File,
+		"State": Claimed,
+	}, bson.M{
+		"$set": bson.M{
+			"State":   Released,
+			"Updated": time.Now(),
+		},
+	}, nil, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return fmt.Errorf("unable to release file")
+	}
+
+	// update link
+	link.Type = ""
+	link.Length = 0
+	link.File = nil
+
+	return nil
+}
+
 // Validator will validate all or just the specified link fields of the model.
 func (s *Storage) Validator(fields ...string) *fire.Callback {
 	return fire.C("blaze/Storage.Validator", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
@@ -300,56 +378,17 @@ func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path
 
 	// claim new file
 	if added || updated {
-		// check claim
-		if newLink.ClaimKey == "" {
-			return fmt.Errorf("%s: missing claim key", path)
-		}
-
-		// verify claim key
-		var claimKey ClaimKey
-		err := s.notary.Verify(&claimKey, newLink.ClaimKey)
+		err := s.Claim(ctx, newLink)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s: %w", path, err)
 		}
-
-		// claim new file
-		var newFile File
-		found, err := s.store.M(&File{}).UpdateFirst(ctx, &newFile, bson.M{
-			"_id":   claimKey.File,
-			"State": Uploaded,
-		}, bson.M{
-			"$set": bson.M{
-				"State":   Claimed,
-				"Updated": time.Now(),
-			},
-		}, nil, false)
-		if err != nil {
-			return err
-		} else if !found {
-			return fmt.Errorf("%s: unable to claim file", path)
-		}
-
-		// update link
-		newLink.Type = newFile.Type
-		newLink.Length = newFile.Length
-		newLink.File = coal.P(newFile.ID())
 	}
 
 	// release old file
 	if updated || deleted {
-		found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
-			"_id":   oldLink.File,
-			"State": Claimed,
-		}, bson.M{
-			"$set": bson.M{
-				"State":   Released,
-				"Updated": time.Now(),
-			},
-		}, nil, false)
+		err := s.Release(ctx, oldLink)
 		if err != nil {
-			return err
-		} else if !found {
-			return fmt.Errorf("%s: unable to release file", path)
+			return fmt.Errorf("%s: %w", path, err)
 		}
 	}
 
