@@ -541,7 +541,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.
-func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
+func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
 	return &axe.Task{
 		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
@@ -549,7 +549,8 @@ func (s *Storage) CleanupTask(periodicity, retention time.Duration) *axe.Task {
 		},
 		Workers:     1,
 		MaxAttempts: 1,
-		Lifetime:    periodicity,
+		Lifetime:    lifetime,
+		Timeout:     timeout,
 		Periodicity: periodicity,
 		PeriodicJob: axe.Blueprint{
 			Job: &CleanupJob{
