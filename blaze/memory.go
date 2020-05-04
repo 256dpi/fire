@@ -22,11 +22,6 @@ func NewMemory() *Memory {
 	}
 }
 
-// Initialize implements the Service interface.
-func (m *Memory) Initialize(_ context.Context) error {
-	return nil
-}
-
 // Prepare implements the Service interface.
 func (m *Memory) Prepare(_ context.Context) (Handle, error) {
 	// increment id

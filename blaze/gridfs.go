@@ -4,29 +4,20 @@ import (
 	"context"
 
 	"github.com/256dpi/lungo"
-	"github.com/256dpi/serve"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
 )
 
 // GridFS stores blobs in a GridFs bucket.
 type GridFS struct {
-	store  *coal.Store
 	bucket *lungo.Bucket
 }
 
 // NewGridFS creates a new GridFS service.
-func NewGridFS(store *coal.Store, chunkSize int64) *GridFS {
-	// set default chunk size
-	if chunkSize == 0 {
-		chunkSize = serve.MustByteSize("2M")
-	}
-
+func NewGridFS(bucket *lungo.Bucket) *GridFS {
 	return &GridFS{
-		store:  store,
-		bucket: lungo.NewBucket(store.DB(), options.GridFSBucket().SetChunkSizeBytes(int32(chunkSize))),
+		bucket: bucket,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/256dpi/lungo"
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
 
@@ -56,6 +57,15 @@ func main() {
 		panic(err)
 	}
 
+	// create bucket
+	bucket := lungo.NewBucket(store.DB())
+
+	// ensure indexes
+	err = bucket.EnsureIndexes(nil, false)
+	if err != nil {
+		panic(err)
+	}
+
 	// get port
 	port, err := strconv.Atoi(port)
 	if err != nil {
@@ -80,7 +90,7 @@ func main() {
 		flame.TokenMigrator(true),
 		cinder.RootHandler(),
 		serve.CORS(corsOptions),
-		createHandler(store),
+		createHandler(store, bucket),
 	)
 
 	// configure local jaeger
@@ -127,7 +137,7 @@ func prepareDatabase(store *coal.Store) error {
 	return nil
 }
 
-func createHandler(store *coal.Store) http.Handler {
+func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	// prepare master
 	master := heat.Secret(secret)
 
@@ -169,7 +179,7 @@ func createHandler(store *coal.Store) http.Handler {
 
 	// create storage
 	fileNotary := heat.NewNotary("example", fileSecret)
-	fileService := blaze.NewGridFS(store, serve.MustByteSize("1M"))
+	fileService := blaze.NewGridFS(bucket)
 	storage := blaze.NewStorage(store, fileNotary, fileService)
 
 	// create queue
