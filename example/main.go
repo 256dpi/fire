@@ -87,6 +87,9 @@ func main() {
 
 	// compose handler
 	handler := serve.Compose(
+		serve.Throttle(100),
+		serve.Timeout(time.Minute),
+		serve.Limit(serve.MustByteSize("8M")),
 		flame.TokenMigrator(true),
 		cinder.RootHandler(),
 		serve.CORS(corsOptions),
