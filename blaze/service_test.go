@@ -10,6 +10,9 @@ import (
 )
 
 func abstractServiceTest(t *testing.T, svc Service) {
+	err := svc.Initialize(nil)
+	assert.NoError(t, err)
+
 	handle, err := svc.Prepare(nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)

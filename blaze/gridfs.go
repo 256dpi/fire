@@ -30,6 +30,17 @@ func NewGridFS(store *coal.Store, chunkSize int64) *GridFS {
 	}
 }
 
+// Initialize implements the Service interface.
+func (g *GridFS) Initialize(ctx context.Context) error {
+	// ensure indexes
+	err := g.bucket.EnsureIndexes(ctx,false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Prepare implements the Service interface.
 func (g *GridFS) Prepare(_ context.Context) (Handle, error) {
 	// create handle

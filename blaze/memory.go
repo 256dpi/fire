@@ -22,21 +22,26 @@ func NewMemory() *Memory {
 	}
 }
 
+// Initialize implements the Service interface.
+func (m *Memory) Initialize(_ context.Context) error {
+	return nil
+}
+
 // Prepare implements the Service interface.
-func (s *Memory) Prepare(_ context.Context) (Handle, error) {
+func (m *Memory) Prepare(_ context.Context) (Handle, error) {
 	// increment id
-	s.Next++
+	m.Next++
 
 	// create handle
 	handle := Handle{
-		"id": strconv.FormatInt(int64(s.Next), 10),
+		"id": strconv.FormatInt(int64(m.Next), 10),
 	}
 
 	return handle, nil
 }
 
 // Upload implements the Service interface.
-func (s *Memory) Upload(_ context.Context, handle Handle, contentType string) (Upload, error) {
+func (m *Memory) Upload(_ context.Context, handle Handle, contentType string) (Upload, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -44,7 +49,7 @@ func (s *Memory) Upload(_ context.Context, handle Handle, contentType string) (U
 	}
 
 	// check blob
-	_, ok := s.Blobs[id]
+	_, ok := m.Blobs[id]
 	if ok {
 		return nil, ErrUsedHandle
 	}
@@ -55,7 +60,7 @@ func (s *Memory) Upload(_ context.Context, handle Handle, contentType string) (U
 	}
 
 	// store blob
-	s.Blobs[id] = blob
+	m.Blobs[id] = blob
 
 	return &memoryUpload{
 		blob: blob,
@@ -63,7 +68,7 @@ func (s *Memory) Upload(_ context.Context, handle Handle, contentType string) (U
 }
 
 // Download implements the Service interface.
-func (s *Memory) Download(_ context.Context, handle Handle) (Download, error) {
+func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -71,7 +76,7 @@ func (s *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 	}
 
 	// get blob
-	blob, ok := s.Blobs[id]
+	blob, ok := m.Blobs[id]
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -82,7 +87,7 @@ func (s *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 }
 
 // Delete implements the Service interface.
-func (s *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
+func (m *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -90,18 +95,18 @@ func (s *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
 	}
 
 	// check blob
-	if _, ok := s.Blobs[id]; !ok {
+	if _, ok := m.Blobs[id]; !ok {
 		return false, ErrNotFound
 	}
 
 	// delete blob
-	delete(s.Blobs, id)
+	delete(m.Blobs, id)
 
 	return true, nil
 }
 
 // Cleanup implements the Service interface.
-func (s *Memory) Cleanup(_ context.Context) error {
+func (m *Memory) Cleanup(_ context.Context) error {
 	return nil
 }
 

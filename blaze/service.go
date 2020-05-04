@@ -35,6 +35,9 @@ type Download interface {
 
 // Service is responsible for managing blobs.
 type Service interface {
+	// Initialize should initialize the service.
+	Initialize(ctx context.Context) error
+
 	// Prepare should return a new handle for uploading a blob.
 	Prepare(ctx context.Context) (Handle, error)
 
