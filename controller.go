@@ -119,10 +119,8 @@ type Controller struct {
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
-	// TolerateViolations will not raise an error if a non-writable field is
-	// set during a Create or Update operation. Frameworks like Ember.js just
-	// serialize the complete state of a model and thus might send attributes
-	// and relationships that are not writable.
+	// TolerateViolations will prevent errors if a non-writable field is
+	// changed during a Create or Update operation.
 	TolerateViolations bool
 
 	// IdempotentCreate can be set to true to enable the idempotent create
@@ -1546,6 +1544,9 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		}
 	}
 
+	// prepare fields to verify read only access
+	verifyReadOnly := make([]string, 0, len(res.Attributes)+len(res.Relationships))
+
 	// whitelist attributes
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
@@ -1558,14 +1559,12 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !stick.Contains(whitelist, name) {
-			// ignore violation if tolerated
+			// ignore violation if tolerated or verify read only access
 			if c.TolerateViolations {
 				continue
+			} else {
+				verifyReadOnly = append(verifyReadOnly, field.Name)
 			}
-
-			// raise error
-			pointer := fmt.Sprintf("/data/attributes/%s", name)
-			stack.Abort(jsonapi.BadRequestPointer("attribute is not writable", pointer))
 		}
 
 		// set attribute
@@ -1586,18 +1585,23 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 
 		// check whitelist
 		if !stick.Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
-			// ignore violation if tolerated
+			// ignore violation if tolerated or verify read only access
 			if c.TolerateViolations {
 				continue
+			} else {
+				verifyReadOnly = append(verifyReadOnly, field.Name)
 			}
-
-			// raise error
-			pointer := fmt.Sprintf("/data/relationships/%s", name)
-			stack.Abort(jsonapi.BadRequestPointer("relationship is not writable", pointer))
 		}
 
 		// assign relationship
 		c.assignRelationship(ctx, rel, field)
+	}
+
+	// verify read only fields
+	for _, field := range verifyReadOnly {
+		if ctx.Modified(field) {
+			stack.Abort(jsonapi.BadRequestPointer("field is not writable", field))
+		}
 	}
 }
 

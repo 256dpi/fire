@@ -4077,12 +4077,68 @@ func TestWritableFields(t *testing.T) {
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "attribute is not writable",
+					"detail": "field is not writable",
 					"source": {
-						"pointer": "/data/attributes/published"
+						"pointer": "Published"
 					}
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create post with protected field zero value
+		tester.Request("POST", "posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "Post 1",
+					"published": false
+				},
+				"relationships": {}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotEmpty(t, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		post1 := tester.FindLast(&postModel{}).ID().Hex()
+
+		// attempt to update post with protected field
+		tester.Request("PATCH", "posts/"+post1, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1+`",
+				"attributes": {
+					"published": true
+				},
+				"relationships": {}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "field is not writable",
+					"source": {
+						"pointer": "Published"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update post with protected field zero value
+		tester.Request("PATCH", "posts/"+post1, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1+`",
+				"attributes": {
+					"published": false
+				},
+				"relationships": {}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotEmpty(t, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
 		// attempt to create selection with protected relationship
@@ -4105,22 +4161,80 @@ func TestWritableFields(t *testing.T) {
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "relationship is not writable",
+					"detail": "field is not writable",
 					"source": {
-						"pointer": "/data/relationships/posts"
+						"pointer": "Posts"
 					}
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		post := coal.New()
+		// create selection with protected relationship zero value
+		tester.Request("POST", "selections", `{
+			"data": {
+				"type": "selections",
+				"attributes": {},
+				"relationships": {
+					"posts": {
+						"data": null
+					}
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotEmpty(t, r.Body.String(), tester.DebugRequest(rq, r))
+		})
 
-		selection := tester.Insert(&selectionModel{
-			Posts: []coal.ID{post},
-		}).ID().Hex()
+		selection1 := tester.FindLast(&selectionModel{}).ID().Hex()
+
+		// attempt to update selection with protected relationship
+		tester.Request("PATCH", "selections/"+selection1, `{
+			"data": {
+				"type": "selections",
+				"id": "`+selection1+`",
+				"relationships": {
+					"posts": {
+						"data": [{
+							"type": "posts",
+							"id": "`+coal.New().Hex()+`"
+						}]
+					}
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "field is not writable",
+					"source": {
+						"pointer": "Posts"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update selection with protected relationship zero value
+		tester.Request("PATCH", "selections/"+selection1, `{
+			"data": {
+				"type": "selections",
+				"id": "`+selection1+`",
+				"relationships": {
+					"posts": {
+						"data": null
+					}
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotEmpty(t, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		post2 := coal.New().Hex()
 
 		// attempt to update posts relationship
-		tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
+		tester.Request("PATCH", "selections/"+selection1+"/relationships/posts", `{
 			"data": [
 				{
 					"type": "posts",
@@ -4139,7 +4253,7 @@ func TestWritableFields(t *testing.T) {
 		})
 
 		// attempt to add to posts relationship
-		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
+		tester.Request("POST", "selections/"+selection1+"/relationships/posts", `{
 			"data": [
 				{
 					"type": "posts",
@@ -4158,11 +4272,11 @@ func TestWritableFields(t *testing.T) {
 		})
 
 		// attempt to remove from posts relationship
-		tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
+		tester.Request("DELETE", "selections/"+selection1+"/relationships/posts", `{
 			"data": [
 				{
 					"type": "posts",
-					"id": "`+post.Hex()+`"
+					"id": "`+post2+`"
 				}
 			]
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {

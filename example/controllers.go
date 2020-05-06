@@ -35,10 +35,9 @@ func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage)
 				}
 			}),
 		},
-		TolerateViolations: true,
-		IdempotentCreate:   true,
-		ConsistentUpdate:   true,
-		SoftDelete:         true,
+		IdempotentCreate: true,
+		ConsistentUpdate: true,
+		SoftDelete:       true,
 	}
 }
 
@@ -52,7 +51,6 @@ func userController(store *coal.Store) *fire.Controller {
 		Validators: fire.L{
 			fire.RelationshipValidator(&flame.User{}, catalog),
 		},
-		TolerateViolations: true,
 	}
 }
 
