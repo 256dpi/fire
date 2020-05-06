@@ -37,31 +37,57 @@ func TestOperation(t *testing.T) {
 
 func TestContextModified(t *testing.T) {
 	model := &postModel{}
-	original := &postModel{}
 
-	c1 := &Context{
-		Model:    model,
-		Original: original,
+	ctx := &Context{
+		Model: model,
 	}
 
 	// zero values
-	assert.False(t, c1.Modified("Title"))
-	assert.False(t, c1.Modified("Published"))
-	assert.False(t, c1.Modified("Deleted"))
+	assert.False(t, ctx.Modified("Title"))
+	assert.False(t, ctx.Modified("Published"))
+	assert.False(t, ctx.Modified("Deleted"))
 
 	// changed values
 	model.Title = "Hello"
 	model.Published = true
 	model.Deleted = coal.T(time.Now())
-	assert.True(t, c1.Modified("Title"))
-	assert.True(t, c1.Modified("Published"))
-	assert.True(t, c1.Modified("Deleted"))
+	assert.True(t, ctx.Modified("Title"))
+	assert.True(t, ctx.Modified("Published"))
+	assert.True(t, ctx.Modified("Deleted"))
+
+	/* with original */
+
+	model = &postModel{}
+	original := &postModel{}
+	ctx.Model = model
+	ctx.Original = original
+
+	// zero values
+	assert.False(t, ctx.Modified("Title"))
+	assert.False(t, ctx.Modified("Published"))
+	assert.False(t, ctx.Modified("Deleted"))
+
+	// changed values
+	model.Title = "Hello"
+	model.Published = true
+	model.Deleted = coal.T(time.Now())
+	assert.True(t, ctx.Modified("Title"))
+	assert.True(t, ctx.Modified("Published"))
+	assert.True(t, ctx.Modified("Deleted"))
 
 	// same values
 	original.Title = "Hello"
 	original.Published = true
 	original.Deleted = model.Deleted
-	assert.False(t, c1.Modified("Title"))
-	assert.False(t, c1.Modified("Published"))
-	assert.False(t, c1.Modified("Deleted"))
+	assert.False(t, ctx.Modified("Title"))
+	assert.False(t, ctx.Modified("Published"))
+	assert.False(t, ctx.Modified("Deleted"))
+
+	// reset values
+	model.Title = ""
+	model.Published = false
+	model.Deleted = nil
+	assert.True(t, ctx.Modified("Title"))
+	assert.True(t, ctx.Modified("Published"))
+	assert.True(t, ctx.Modified("Deleted"))
 }

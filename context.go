@@ -273,11 +273,20 @@ func (c *Context) Query() bson.M {
 	return bson.M{"$and": subQueries}
 }
 
-// Modified will return whether the specified field has been changed.
+// Modified will return whether the specified field has been changed. During an
+// update operation the modification is checked against the original model. For
+// all other operations, the field is checked against its zero value.
 func (c *Context) Modified(field string) bool {
-	// get values
+	// determine old value
+	var oldValue interface{}
+	if c.Original != nil {
+		oldValue = stick.MustGet(c.Original, field)
+	} else {
+		oldValue = reflect.Zero(coal.GetMeta(c.Model).Fields[field].Type).Interface()
+	}
+
+	// get new value
 	newValue := stick.MustGet(c.Model, field)
-	oldValue := stick.MustGet(c.Original, field)
 
 	return !reflect.DeepEqual(newValue, oldValue)
 }
