@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,14 +28,8 @@ var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
-	// visualize as PDF
-	pdf, err := catalog.VisualizePDF("Example")
-	if err != nil {
-		panic(err)
-	}
-
-	// write visualization dot
-	err = ioutil.WriteFile("models.pdf", pdf, 0777)
+	// visualize models
+	err := catalog.Visualize("Example", "models.pdf")
 	if err != nil {
 		panic(err)
 	}
@@ -51,17 +44,11 @@ func main() {
 		})
 	}
 
-	// prepare database
-	err = prepareDatabase(store)
-	if err != nil {
-		panic(err)
-	}
-
 	// create bucket
 	bucket := lungo.NewBucket(store.DB())
 
-	// ensure indexes
-	err = bucket.EnsureIndexes(nil, false)
+	// prepare database
+	err = prepareDatabase(store, bucket)
 	if err != nil {
 		panic(err)
 	}
@@ -90,9 +77,9 @@ func main() {
 		serve.Throttle(100),
 		serve.Timeout(time.Minute),
 		serve.Limit(serve.MustByteSize("8M")),
+		serve.CORS(corsOptions),
 		flame.TokenMigrator(true),
 		cinder.RootHandler(),
-		serve.CORS(corsOptions),
 		createHandler(store, bucket),
 	)
 
@@ -107,9 +94,15 @@ func main() {
 	}
 }
 
-func prepareDatabase(store *coal.Store) error {
+func prepareDatabase(store *coal.Store, bucket *lungo.Bucket) error {
 	// ensure indexes
 	err := catalog.EnsureIndexes(store)
+	if err != nil {
+		return err
+	}
+
+	// ensure bucket indexes
+	err = bucket.EnsureIndexes(nil, false)
 	if err != nil {
 		return err
 	}
@@ -141,12 +134,12 @@ func prepareDatabase(store *coal.Store) error {
 }
 
 func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
-	// prepare master
-	master := heat.Secret(secret)
+	// prepare master secret
+	masterSecret := heat.Secret(secret)
 
 	// derive secrets
-	authSecret := master.Derive("auth")
-	fileSecret := master.Derive("file")
+	authSecret := masterSecret.Derive("auth")
+	fileSecret := masterSecret.Derive("file")
 
 	// create reporter
 	reporter := func(err error) {
@@ -157,7 +150,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	mux := http.NewServeMux()
 
 	// create policy
-	policy := flame.DefaultPolicy(heat.NewNotary("example", authSecret))
+	policy := flame.DefaultPolicy(heat.NewNotary("example/auth", authSecret))
 	policy.Grants = flame.StaticGrants(true, true, true, true, true)
 	policy.ApprovalURL = flame.StaticApprovalURL("http://0.0.0.0:4200/authorize")
 	policy.GrantStrategy = func(_ *flame.Context, client flame.Client, owner flame.ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
@@ -181,7 +174,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	watcher.Add(fileStream(store))
 
 	// create storage
-	fileNotary := heat.NewNotary("example", fileSecret)
+	fileNotary := heat.NewNotary("example/file", fileSecret)
 	fileService := blaze.NewGridFS(bucket)
 	storage := blaze.NewStorage(store, fileNotary, fileService)
 

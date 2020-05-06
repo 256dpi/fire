@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"sort"
 	"strings"
@@ -169,6 +170,25 @@ func (c *Catalog) EnsureIndexes(store *Store) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// Visualize writes a PDF document that visualizes the models and their
+// relationships. The method expects the graphviz toolkit to be installed and
+// accessible by the calling program.
+func (c *Catalog) Visualize(title, file string) error {
+	// visualize as PDF
+	pdf, err := c.VisualizePDF(title)
+	if err != nil {
+		return err
+	}
+
+	// write visualization dot
+	err = ioutil.WriteFile(file, pdf, 0644)
+	if err != nil {
+		return err
 	}
 
 	return nil
