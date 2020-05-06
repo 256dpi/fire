@@ -4,8 +4,8 @@ github.com/256dpi/jsonapi/v2 v2.0.0 h1:0Eb6l+UDfCU21LKST2LQDuTxxUpnTGxLOP6GGX4rE
 github.com/256dpi/jsonapi/v2 v2.0.0/go.mod h1:f0ZOq/bhmnZdIjyYnDnwb9eAIH7V1upZ5hMP48OcgBw=
 github.com/256dpi/lungo v0.2.1 h1:TeYhV1npzNnrvJCshbzRC+i/1pxenZdYz0HRjOm4zkk=
 github.com/256dpi/lungo v0.2.1/go.mod h1:0vZD+S6RecWAZLfEYChpmJJM5wR9KL2cmGQ+qyCt/Ss=
-github.com/256dpi/oauth2/v2 v2.0.0 h1:Zr+4csXqy0j9uU0SVyDWmghF3qSv+jgQLsEphEg+uCM=
-github.com/256dpi/oauth2/v2 v2.0.0/go.mod h1:Sr+K9gSyEntfoZF3IFVoCecBgZbfuG8x5NnFinlKM3k=
+github.com/256dpi/oauth2/v2 v2.1.0 h1:7q59kUT1rtxXbAR6uA0eLt63BqkblTSnBW62gJy2YBY=
+github.com/256dpi/oauth2/v2 v2.1.0/go.mod h1:Sr+K9gSyEntfoZF3IFVoCecBgZbfuG8x5NnFinlKM3k=
 github.com/256dpi/serve v0.3.4 h1:fF3Z2DleYUzdXVlGsxpG4dIvzKT2re6N78euvce6uS0=
 github.com/256dpi/serve v0.3.4/go.mod h1:lsKXdFQwTBjrcS+i5fwTB9XGXRp93N+QbcOlVnwEr18=
 github.com/256dpi/stack v0.3.0 h1:qvV9aSc4LCByIRZ1B0h72N5OuRmPieG3ry85Ya4G+R8=
