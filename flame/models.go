@@ -75,13 +75,13 @@ type Token struct {
 }
 
 // AddTokenIndexes will add access token indexes to the specified catalog.
-func AddTokenIndexes(catalog *coal.Catalog, autoExpire bool) {
+func AddTokenIndexes(catalog *coal.Catalog, removeAfter time.Duration) {
 	catalog.AddIndex(&Token{}, false, 0, "Type")
 	catalog.AddIndex(&Token{}, false, 0, "Application")
 	catalog.AddIndex(&Token{}, false, 0, "User")
 
-	if autoExpire {
-		catalog.AddIndex(&Token{}, false, time.Minute, "ExpiresAt")
+	if removeAfter > 0 {
+		catalog.AddIndex(&Token{}, false, removeAfter, "ExpiresAt")
 	}
 }
 

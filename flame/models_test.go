@@ -2,6 +2,7 @@ package flame
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -12,7 +13,7 @@ import (
 func TestAddIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		i := coal.NewCatalog()
-		AddTokenIndexes(i, true)
+		AddTokenIndexes(i, time.Minute)
 		AddApplicationIndexes(i)
 		AddUserIndexes(i)
 

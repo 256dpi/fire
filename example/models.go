@@ -31,7 +31,7 @@ func init() {
 	// add system indexes
 	flame.AddApplicationIndexes(catalog)
 	flame.AddUserIndexes(catalog)
-	flame.AddTokenIndexes(catalog, true)
+	flame.AddTokenIndexes(catalog, time.Minute)
 	axe.AddModelIndexes(catalog, time.Second)
 	glut.AddModelIndexes(catalog, time.Minute)
 	blaze.AddFileIndexes(catalog)
