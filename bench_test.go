@@ -54,6 +54,26 @@ func BenchmarkFind(b *testing.B) {
 	})
 }
 
+func BenchmarkCreate(b *testing.B) {
+	store := mongoStore
+
+	b.Run("00X", func(b *testing.B) {
+		createBenchmark(b, store, 0)
+	})
+
+	b.Run("01X", func(b *testing.B) {
+		createBenchmark(b, store, 1)
+	})
+
+	b.Run("10X", func(b *testing.B) {
+		createBenchmark(b, store, 10)
+	})
+
+	b.Run("50X", func(b *testing.B) {
+		createBenchmark(b, store, 50)
+	})
+}
+
 func listBenchmark(b *testing.B, store *coal.Store, items, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
@@ -124,6 +144,45 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	parallelBenchmark(b, parallelism, func() {
 		tester.Request("GET", "posts/"+id.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			if r.Code != http.StatusOK {
+				panic("not ok")
+			}
+		})
+	})
+}
+
+func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
+	tester := NewTester(store, modelList...)
+	tester.Clean()
+
+	tester.Assign("", &Controller{
+		Model: &postModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &commentModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &selectionModel{},
+		Store: tester.Store,
+	}, &Controller{
+		Model: &noteModel{},
+		Store: tester.Store,
+	})
+
+	tester.Handler = serve.Compose(
+		serve.Throttle(100),
+		tester.Handler,
+	)
+
+	parallelBenchmark(b, parallelism, func() {
+		tester.Request("POST", "posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			if r.Code != http.StatusCreated {
 				panic("not ok")
 			}
 		})
