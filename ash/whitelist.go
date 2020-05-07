@@ -68,7 +68,7 @@ func (m *Matrix) Collect(i int, tags ...string) []string {
 //	ash.C(&ash.Strategy{
 //		All: ash.Whitelist(ash.Matrix{
 //			Model: &Post{},
-//			Candidates: ash.L{User(), Admin()},
+//			Candidates: ash.L{Public(), Token("user")},
 //			Access: map[string][]string{
 //				"Title": {"R", "RC"},
 //				"Body":  {"R", "RW"},
@@ -106,7 +106,7 @@ type Fields struct {
 // is to implement a custom candidate authorizer with which this authorizer can
 // be chained together:
 //
-//	User().And(WhitelistFields(Fields{
+//	Token("user").And(WhitelistFields(Fields{
 //		Readable: []string{"foo", "bar"},
 //		Writable: []string{"foo"},
 //	}))

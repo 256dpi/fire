@@ -133,7 +133,7 @@ func (t *Tester) RunHandler(ctx *Context, h Handler) error {
 }
 
 // WithContext runs the given function with a prepared context.
-func (t *Tester) WithContext(ctx *Context, fn func(*Context)) {
+func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 	// ensure context
 	if ctx == nil {
 		ctx = &Context{}
