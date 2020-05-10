@@ -43,7 +43,7 @@ type Item struct {
 	Name        string      `json:"name"`
 	State       bool        `json:"state"`
 	Count       int         `json:"count"`
-	Blob        blaze.Blob  `json:"blob"`
+	Blob        *blaze.Blob `json:"blob"`
 	File        *blaze.Link `json:"file"`
 	Created     time.Time   `json:"created-at" bson:"created_at" coal:"fire-created-timestamp"`
 	Updated     time.Time   `json:"updated-at" bson:"updated_at" coal:"fire-updated-timestamp"`
@@ -62,6 +62,22 @@ func (i *Item) Validate() error {
 	// check timestamps
 	if i.Created.IsZero() || i.Updated.IsZero() {
 		return fire.E("missing timestamp")
+	}
+
+	// check blob
+	if i.Blob != nil {
+		err := i.Blob.Validate("blob")
+		if err != nil {
+			return err
+		}
+	}
+
+	// check file
+	if i.File != nil {
+		err := i.File.Validate("file")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
