@@ -269,7 +269,8 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 	return nil
 }
 
-// Release will release the provided link.
+// Release will release the provided link. The released link must be persisted
+// in the same transaction as the release to prevent orphaned files.
 func (s *Storage) Release(ctx context.Context, link *Link) error {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Release")
