@@ -197,7 +197,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// check if transaction already exists
-	if getKey(ctx, hasTransaction) {
+	if HasTransaction(ctx) {
 		return fn(ctx)
 	}
 
@@ -266,4 +266,9 @@ func getKey(ctx context.Context, key interface{}) bool {
 	}
 
 	return false
+}
+
+// HasTransaction will return whether the context carries a transaction.
+func HasTransaction(ctx context.Context) bool {
+	return getKey(ctx, hasTransaction)
 }

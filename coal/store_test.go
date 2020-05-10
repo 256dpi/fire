@@ -75,7 +75,9 @@ func TestStoreT(t *testing.T) {
 func TestKeys(t *testing.T) {
 	ctx := context.Background()
 	assert.False(t, getKey(ctx, hasTransaction))
+	assert.False(t, HasTransaction(ctx))
 
 	ctx = withKey(ctx, hasTransaction)
 	assert.True(t, getKey(ctx, hasTransaction))
+	assert.True(t, HasTransaction(ctx))
 }
