@@ -2,7 +2,7 @@ module github.com/256dpi/fire
 
 require (
 	github.com/256dpi/jsonapi/v2 v2.0.0
-	github.com/256dpi/lungo v0.2.1
+	github.com/256dpi/lungo v0.2.3
 	github.com/256dpi/oauth2/v2 v2.1.0
 	github.com/256dpi/serve v0.3.4
 	github.com/256dpi/stack v0.3.0
@@ -17,7 +17,7 @@ require (
 	github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1 // indirect
 	github.com/uber/jaeger-client-go v2.22.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
-	go.mongodb.org/mongo-driver v1.3.0
+	go.mongodb.org/mongo-driver v1.3.3
 	go.uber.org/atomic v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect

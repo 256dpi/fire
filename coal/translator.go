@@ -1,7 +1,6 @@
 package coal
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -171,17 +170,12 @@ func (t *Translator) convert(in bson.M) (bson.D, error) {
 	return *doc, nil
 }
 
-func (t *Translator) convertFast(in bson.M) (out bson.D, err error) {
-	// catch panic due to unsupported type
-	defer func() {
-		fail := recover()
-		if fail != nil {
-			err = errors.New(fail.(string)[9:])
-		}
-	}()
-
+func (t *Translator) convertFast(in bson.M) (bson.D, error) {
 	// convert
-	out = *bsonkit.Convert(in)
+	doc, err := bsonkit.Convert(in)
+	if err != nil {
+		return nil, err
+	}
 
-	return
+	return *doc, nil
 }
