@@ -1,7 +1,6 @@
 # Design
 
-This document describes some of of the design patterns used throughout the fire
-framework.
+This document describes design patterns used throughout the fire framework.
 
 ## Classifiable Models
 
@@ -184,7 +183,7 @@ type Context struct{
 ## Function Handlers
 
 **The function handlers pattern promotes the use of function handlers instead
-of interface types to integrate custom logic. At best it is combined with 
+of interface types to integrate custom logic. At best, it is combined with 
 patterns like open controllers and rich contexts.**
 
 The framework may need to integrate custom logic that is run as part of a more
