@@ -186,6 +186,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 
 	// add tasks
 	queue.Add(incrementTask(store))
+	queue.Add(generateTask(store, storage))
 	queue.Add(periodicTask(store))
 	queue.Add(storage.CleanupTask(time.Minute, time.Minute, time.Minute, time.Minute))
 

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/axe"
+	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/glut"
 	"github.com/256dpi/fire/stick"
@@ -29,6 +31,22 @@ type incrementJob struct {
 }
 
 func (j *incrementJob) Validate() error {
+	// check item
+	if j.Item.IsZero() {
+		return fmt.Errorf("missing item")
+	}
+
+	return nil
+}
+
+type generateJob struct {
+	axe.Base `json:"-" axe:"generate"`
+
+	// the item to generate
+	Item coal.ID `json:"item_id"`
+}
+
+func (j *generateJob) Validate() error {
 	// check item
 	if j.Item.IsZero() {
 		return fmt.Errorf("missing item")
@@ -60,6 +78,63 @@ func incrementTask(store *coal.Store) *axe.Task {
 			}
 
 			return nil
+		},
+	}
+}
+
+func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
+	return &axe.Task{
+		Job: &generateJob{},
+		Handler: func(ctx *axe.Context) error {
+			// upload random image
+			claimKey, _, err := storage.Upload(ctx, "image/png", func(upload blaze.Upload) (int64, error) {
+				return blaze.UploadFrom(upload, randomImage())
+			})
+			if err != nil {
+				return err
+			}
+
+			// get id
+			id := ctx.Job.(*generateJob).Item
+
+			// use transaction
+			return store.T(ctx, func(ctx context.Context) error {
+				// get item
+				var item Item
+				found, err := store.M(&item).Find(ctx, &item, id, true)
+				if err != nil {
+					return err
+				} else if !found {
+					return fmt.Errorf("unknown item")
+				}
+
+				// release file if available
+				if item.File != nil {
+					err = storage.Release(ctx, item.File)
+					if err != nil {
+						return err
+					}
+				}
+
+				// prepare link
+				item.File = &blaze.Link{
+					ClaimKey: claimKey,
+				}
+
+				// claim file
+				err = storage.Claim(ctx, item.File)
+				if err != nil {
+					return err
+				}
+
+				// replace item
+				_, err = store.M(&item).Replace(ctx, &item, false)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})
 		},
 	}
 }
