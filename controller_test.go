@@ -3071,7 +3071,7 @@ func TestAuthorizers(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// update
+		// delete
 		tester.Request("DELETE", "/posts/"+post.Hex(), "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusUnauthorized, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
@@ -3086,12 +3086,15 @@ func TestAuthorizers(t *testing.T) {
 
 func TestModifiers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
+		var calls []Operation
+
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
 			Modifiers: L{
 				C("TestModifier", All(), func(ctx *Context) error {
 					ctx.Model.(*postModel).TextBody += "!!!"
+					calls = append(calls, ctx.Operation)
 					return nil
 				}),
 			},
@@ -3300,11 +3303,13 @@ func TestModifiers(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// update
+		// delete
 		tester.Request("DELETE", "/posts/"+post1, "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
 		})
+
+		assert.Equal(t, []Operation{Create, Update, Delete}, calls)
 	})
 }
 
@@ -3382,7 +3387,7 @@ func TestValidators(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// update
+		// delete
 		tester.Request("DELETE", "/posts/"+post.Hex(), "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
@@ -3616,7 +3621,7 @@ func TestDecorators(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// update
+		// delete
 		tester.Request("DELETE", "/posts/"+post1, "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.Empty(t, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3861,7 +3866,7 @@ func TestNotifiers(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// update
+		// delete
 		tester.Request("DELETE", "/posts/"+post1, "{}", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{

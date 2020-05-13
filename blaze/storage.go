@@ -241,7 +241,7 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 
 	// check file
 	if link.File != nil {
-		return fmt.Errorf("exiting claimed filed")
+		return fmt.Errorf("existing claimed filed")
 	}
 
 	// check claim key

@@ -57,10 +57,11 @@ type Controller struct {
 	// privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
 
-	// Modifiers are run to modify the model during Create and Update operations
-	// after the model is loaded and the changed attributes have been assigned
-	// during an Update but before the model is validated. Returned errors will
-	// cause the abortion of the request with a bad request status by default.
+	// Modifiers are run to modify the model during Create, Update and Delete
+	// operations after the model is loaded and the changed attributes have been
+	// assigned during an Update but before the model is validated. Returned
+	// errors will cause the abortion of the request with a bad request status
+	// by default.
 	//
 	// The callbacks are expected to modify the model to ensure default values,
 	// aggregate fields or in general add data to the model.
@@ -708,7 +709,8 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// load model
 	c.loadModel(ctx)
 
-	// skip modifiers
+	// run modifiers
+	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
