@@ -127,6 +127,12 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 					return err
 				}
 
+				// validate item
+				err = item.Validate()
+				if err != nil {
+					return err
+				}
+
 				// replace item
 				_, err = store.M(&item).Replace(ctx, &item, false)
 				if err != nil {
