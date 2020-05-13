@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// GridFS stores blobs in a GridFs bucket.
+// GridFS stores blobs in a GridFS bucket.
 type GridFS struct {
 	bucket *lungo.Bucket
 }
@@ -21,7 +21,7 @@ func NewGridFS(bucket *lungo.Bucket) *GridFS {
 	}
 }
 
-// Initialize implements the Service interface.
+// Initialize will initialize the GridFS bucket.
 func (g *GridFS) Initialize(ctx context.Context) error {
 	// ensure indexes
 	err := g.bucket.EnsureIndexes(ctx, false)

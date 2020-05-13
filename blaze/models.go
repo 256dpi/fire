@@ -11,7 +11,7 @@ import (
 )
 
 // Blob may be used instead of a bytes slice for inline storage if the type
-// needs be stored as well.
+// needs to be stored as well.
 type Blob struct {
 	Type  string `json:"type"`
 	Bytes []byte `json:"bytes"`

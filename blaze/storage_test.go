@@ -2,6 +2,7 @@ package blaze
 
 import (
 	"bytes"
+	"context"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,7 @@ func TestStorageUploadAction(t *testing.T) {
 		req.Header.Set("Content-Type", "application/octet-stream")
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(0))
 		assert.NoError(t, err)
@@ -87,6 +89,7 @@ func TestStorageUploadActionInvalidContentType(t *testing.T) {
 		req := httptest.NewRequest("POST", "/foo", body)
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(0))
 		assert.NoError(t, err)
@@ -107,6 +110,7 @@ func TestStorageUploadActionLimit(t *testing.T) {
 		req.Header.Set("Content-Type", "application/octet-stream")
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(1))
 		assert.NoError(t, err)
@@ -142,6 +146,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(0))
 		assert.NoError(t, err)
@@ -192,6 +197,7 @@ func TestStorageUploadActionFormFilesLimit(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(1))
 		assert.NoError(t, err)
@@ -231,6 +237,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(0))
 		assert.NoError(t, err)
@@ -272,6 +279,7 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, storage.UploadAction(1))
 		assert.NoError(t, err)
@@ -296,13 +304,17 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 
 		/* claim without key */
 
-		err = storage.Claim(nil, &model.RequiredFile)
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Claim(ctx, &model.RequiredFile)
+		})
 		assert.Error(t, err)
 
 		/* claim with key */
 
 		model.RequiredFile.ClaimKey = key
-		err = storage.Claim(nil, &model.RequiredFile)
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Claim(ctx, &model.RequiredFile)
+		})
 		assert.NoError(t, err)
 
 		/* decorate */
@@ -322,12 +334,16 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 
 		/* release */
 
-		err = storage.Release(nil, &model.RequiredFile)
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Release(ctx, &model.RequiredFile)
+		})
 		assert.NoError(t, err)
 
 		/* release again */
 
-		err = storage.Release(nil, &model.RequiredFile)
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Release(ctx, &model.RequiredFile)
+		})
 		assert.Error(t, err)
 	})
 }
@@ -336,7 +352,7 @@ func TestStorageValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory())
 
-		validator := storage.Validator()
+		validator := storage.Modifier()
 
 		/* missing */
 

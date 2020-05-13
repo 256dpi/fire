@@ -11,7 +11,7 @@ import (
 type ClaimKey struct {
 	heat.Base `json:"-" heat:"fire/blaze.claim,1h"`
 
-	// The uploaded file.
+	// The claimable file.
 	File coal.ID
 }
 

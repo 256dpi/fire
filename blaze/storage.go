@@ -39,12 +39,18 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 }
 
 // Upload will uploaded the provided stream using the configured service and
-// return a claim key and the uploaded file.
+// return a claim key and the uploaded file. Upload must be called outside of a
+// transaction to ensure the uploaded file is tracked in case of errors.
 func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
 	span.Log("contentType", contentType)
 	defer span.Finish()
+
+	// check transaction
+	if coal.HasTransaction(ctx) {
+		return "", nil, fmt.Errorf("unexpected transaction for upload")
+	}
 
 	// set default content type
 	if contentType == "" {
@@ -116,7 +122,8 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 }
 
 // UploadAction returns an action that provides an upload service that stores
-// files and returns claim keys.
+// files and returns claim keys. The action should be protected and only allow
+// authorized clients.
 func (s *Storage) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
@@ -227,6 +234,11 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Claim")
 	defer span.Finish()
 
+	// check transaction
+	if !coal.HasTransaction(ctx) {
+		return fmt.Errorf("missing transaction for claim")
+	}
+
 	// check file
 	if link.File != nil {
 		return fmt.Errorf("exiting claimed filed")
@@ -276,6 +288,11 @@ func (s *Storage) Release(ctx context.Context, link *Link) error {
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Release")
 	defer span.Finish()
 
+	// check transaction
+	if !coal.HasTransaction(ctx) {
+		return fmt.Errorf("missing transaction for release")
+	}
+
 	// release file
 	found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":   link.File,
@@ -300,9 +317,10 @@ func (s *Storage) Release(ctx context.Context, link *Link) error {
 	return nil
 }
 
-// Validator will validate all or just the specified link fields of the model.
-func (s *Storage) Validator(fields ...string) *fire.Callback {
-	return fire.C("blaze/Storage.Validator", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
+// Modifier will handle modifications on all or just the specified link fields
+// of the model.
+func (s *Storage) Modifier(fields ...string) *fire.Callback {
+	return fire.C("blaze/Storage.Modifier", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != s.store {
 			return fmt.Errorf("stores must be identical")
@@ -341,7 +359,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.validateLink(ctx, newLink, oldLink, path)
+				err = s.modifyLink(ctx, newLink, oldLink, path)
 				stick.MustSet(ctx.Model, field, value)
 			case *Link:
 				var oldLink *Link
@@ -353,7 +371,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.validateLink(ctx, newLink, oldLink, path)
+				err = s.modifyLink(ctx, newLink, oldLink, path)
 				stick.MustSet(ctx.Model, field, newLink)
 			default:
 				err = fmt.Errorf("unsupported type")
@@ -367,7 +385,7 @@ func (s *Storage) Validator(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Storage) validateLink(ctx context.Context, newLink, oldLink *Link, path string) error {
+func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, path string) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -512,7 +530,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 }
 
 // DownloadAction returns an action that allows downloading files using view
-// keys.
+// keys. This action is usually publicly accessible.
 func (s *Storage) DownloadAction() *fire.Action {
 	return fire.A("blaze/Storage.DownloadAction", []string{"GET"}, 0, func(ctx *fire.Context) error {
 		// check store
@@ -563,7 +581,7 @@ func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Dur
 
 // Cleanup will remove obsolete files and remove their blobs. Files in the
 // states "uploading" or "uploaded" are removed after the specified retention
-// which defaults to 1 hour if zero. Files in the states "released" and
+// which defaults to one hour if zero. Files in the states "released" and
 // "deleting" are removed immediately. It will also allow the service to cleanup.
 func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	// track
