@@ -18,29 +18,6 @@ func TestAddFileIndexes(t *testing.T) {
 	})
 }
 
-func TestBlobValidate(t *testing.T) {
-	blob := &Blob{}
-
-	err := blob.Validate("foo")
-	assert.Error(t, err)
-	assert.Equal(t, "foo type invalid", err.Error())
-
-	blob.Type = "foo/bar"
-
-	err = blob.Validate("foo")
-	assert.Error(t, err)
-	assert.Equal(t, "foo bytes missing", err.Error())
-
-	err = blob.Validate("foo", "bar/foo")
-	assert.Error(t, err)
-	assert.Equal(t, "foo type unallowed", err.Error())
-
-	blob.Bytes = []byte("foo")
-
-	err = blob.Validate("foo")
-	assert.NoError(t, err)
-}
-
 func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 

@@ -6,10 +6,16 @@ import (
 	"strconv"
 )
 
+// MemoryBlob is a blob stored by the memory service.
+type MemoryBlob struct {
+	Type  string
+	Bytes []byte
+}
+
 // Memory is a service for testing purposes that stores blobs in memory.
 type Memory struct {
 	// The stored blobs.
-	Blobs map[string]*Blob
+	Blobs map[string]*MemoryBlob
 
 	// The next id.
 	Next int
@@ -18,7 +24,7 @@ type Memory struct {
 // NewMemory will create a new memory service.
 func NewMemory() *Memory {
 	return &Memory{
-		Blobs: map[string]*Blob{},
+		Blobs: map[string]*MemoryBlob{},
 	}
 }
 
@@ -50,7 +56,7 @@ func (m *Memory) Upload(_ context.Context, handle Handle, contentType string) (U
 	}
 
 	// prepare blob
-	blob := &Blob{
+	blob := &MemoryBlob{
 		Type: contentType,
 	}
 
@@ -106,7 +112,7 @@ func (m *Memory) Cleanup(_ context.Context) error {
 }
 
 type memoryUpload struct {
-	blob *Blob
+	blob *MemoryBlob
 }
 
 func (u *memoryUpload) Resume() (int64, error) {
@@ -133,7 +139,7 @@ func (u *memoryUpload) Close() error {
 }
 
 type memoryDownload struct {
-	blob *Blob
+	blob *MemoryBlob
 	pos  int
 }
 

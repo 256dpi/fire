@@ -10,31 +10,6 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Blob may be used instead of a bytes slice for inline storage if the type
-// needs to be stored as well.
-type Blob struct {
-	Type  string `json:"type"`
-	Bytes []byte `json:"bytes"`
-}
-
-// Validate will validate the blob.
-func (b *Blob) Validate(name string, whitelist ...string) error {
-	// check type
-	typ, _, err := mime.ParseMediaType(b.Type)
-	if err != nil {
-		return fire.E("%s type invalid", name)
-	} else if len(whitelist) > 0 && !stick.Contains(whitelist, typ) {
-		return fire.E("%s type unallowed", name)
-	}
-
-	// check bytes
-	if len(b.Bytes) == 0 {
-		return fire.E("%s bytes missing", name)
-	}
-
-	return nil
-}
-
 // Link is used to link a file to a model.
 type Link struct {
 	// The type of the linked file.

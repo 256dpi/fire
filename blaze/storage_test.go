@@ -32,7 +32,7 @@ func TestStorageUpload(t *testing.T) {
 		assert.Equal(t, "application/octet-stream", file.Type)
 		assert.Equal(t, int64(12), file.Length)
 		assert.Equal(t, Handle{"id": "1"}, file.Handle)
-		assert.Equal(t, map[string]*Blob{
+		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
@@ -65,7 +65,7 @@ func TestStorageUploadAction(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
-		assert.Equal(t, map[string]*Blob{
+		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
@@ -153,7 +153,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
 
-		assert.Equal(t, map[string]*Blob{
+		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World 1!"),
@@ -244,7 +244,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
 
-		assert.Equal(t, map[string]*Blob{
+		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Type:  "text/css",
 				Bytes: []byte("h1 { color: red; }"),
