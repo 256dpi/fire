@@ -86,7 +86,7 @@ type File struct {
 	// The last time the file was updated.
 	Updated time.Time `json:"updated-at" bson:"updated_at"`
 
-	// The MIME type of the file e.g. "image/png".
+	// The type of the file e.g. "image/png".
 	Type string `json:"type"`
 
 	// The total length of the file.
@@ -101,6 +101,22 @@ func (f *File) Validate() error {
 	// check state
 	if !f.State.Valid() {
 		return fmt.Errorf("invalid state")
+	}
+
+	// check type
+	err := ValidateType(f.Type)
+	if err != nil {
+		return fire.E("type %w", err)
+	}
+
+	// check length
+	if f.Length == 0 && (f.State == Uploaded || f.State == Claimed) {
+		return fire.E("missing length")
+	}
+
+	// check handle
+	if len(f.Handle) == 0 {
+		return fire.E("missing handle")
 	}
 
 	return nil

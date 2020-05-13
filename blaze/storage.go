@@ -72,6 +72,12 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 		Handle:  handle,
 	}
 
+	// validate file
+	err = file.Validate()
+	if err != nil {
+		return "", nil, err
+	}
+
 	// create file
 	err = s.store.M(file).Insert(ctx, file)
 	if err != nil {
@@ -93,6 +99,17 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 	// get time
 	now := time.Now()
 
+	// set fields
+	file.State = Uploaded
+	file.Updated = now
+	file.Length = length
+
+	// validate file
+	err = file.Validate()
+	if err != nil {
+		return "", nil, err
+	}
+
 	// update file
 	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
 		"$set": bson.M{
@@ -104,11 +121,6 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 	if err != nil {
 		return "", nil, err
 	}
-
-	// set fields
-	file.State = Uploaded
-	file.Updated = now
-	file.Length = length
 
 	// issue claim key
 	claimKey, err := s.notary.Issue(&ClaimKey{
