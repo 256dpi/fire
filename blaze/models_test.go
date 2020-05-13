@@ -18,6 +18,19 @@ func TestAddFileIndexes(t *testing.T) {
 	})
 }
 
+func TestValidateType(t *testing.T) {
+	err := ValidateType("")
+	assert.Error(t, err)
+	assert.Equal(t, "type invalid", err.Error())
+
+	err = ValidateType("image/png")
+	assert.NoError(t, err)
+
+	err = ValidateType("image/png", "image/jpeg")
+	assert.Error(t, err)
+	assert.Equal(t, "type unallowed", err.Error())
+}
+
 func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 

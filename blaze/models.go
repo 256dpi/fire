@@ -40,11 +40,9 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 	}
 
 	// check type
-	typ, _, err := mime.ParseMediaType(l.FileType)
+	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
-		return fire.E("%s type invalid", name)
-	} else if len(whitelist) > 0 && !stick.Contains(whitelist, typ) {
-		return fire.E("%s type unallowed", name)
+		return fire.E("%s %w", name, err)
 	}
 
 	// check length
@@ -112,4 +110,17 @@ func (f *File) Validate() error {
 func AddFileIndexes(catalog *coal.Catalog) {
 	// index state for fast lookups
 	catalog.AddIndex(&File{}, false, 0, "State", "Updated")
+}
+
+// ValidateType will validate a content/media type.
+func ValidateType(typ string, whitelist ...string) error {
+	// check media type
+	typ, _, err := mime.ParseMediaType(typ)
+	if err != nil {
+		return fire.E("type invalid")
+	} else if len(whitelist) > 0 && !stick.Contains(whitelist, typ) {
+		return fire.E("type unallowed")
+	}
+
+	return nil
 }
