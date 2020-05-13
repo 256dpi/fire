@@ -45,10 +45,20 @@ func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 
 	err := link.Validate("foo")
+	assert.Equal(t, "foo invalid file", err.Error())
+
+	link.File = coal.P(coal.ID{})
+
+	err = link.Validate("foo")
+	assert.Equal(t, "foo invalid file", err.Error())
+
+	link.File = coal.P(coal.New())
+
+	err = link.Validate("foo")
 	assert.Error(t, err)
 	assert.Equal(t, "foo type invalid", err.Error())
 
-	link.Type = "foo/bar"
+	link.FileType = "foo/bar"
 
 	err = link.Validate("foo")
 	assert.Error(t, err)
@@ -58,17 +68,7 @@ func TestLinkValidate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "foo type unallowed", err.Error())
 
-	link.Length = 12
-
-	err = link.Validate("foo")
-	assert.Equal(t, "foo invalid file", err.Error())
-
-	link.File = coal.P(coal.ID{})
-
-	err = link.Validate("foo")
-	assert.Equal(t, "foo invalid file", err.Error())
-
-	link.File = coal.P(coal.New())
+	link.FileLength = 12
 
 	err = link.Validate("foo")
 	assert.NoError(t, err)

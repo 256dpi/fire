@@ -274,9 +274,9 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 	}
 
 	// update link
-	link.Type = file.Type
-	link.Length = file.Length
 	link.File = coal.P(file.ID())
+	link.FileType = file.Type
+	link.FileLength = file.Length
 
 	return nil
 }
@@ -310,9 +310,9 @@ func (s *Storage) Release(ctx context.Context, link *Link) error {
 	}
 
 	// update link
-	link.Type = ""
-	link.Length = 0
 	link.File = nil
+	link.FileType = ""
+	link.FileLength = 0
 
 	return nil
 }
@@ -433,6 +433,10 @@ func (s *Storage) Decorate(link *Link) error {
 
 	// set key
 	link.ViewKey = viewKey
+
+	// copy info
+	link.Type = link.FileType
+	link.Length = link.FileLength
 
 	return nil
 }

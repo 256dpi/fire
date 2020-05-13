@@ -38,25 +38,34 @@ func (b *Blob) Validate(name string, whitelist ...string) error {
 // Link is used to link a file to a model.
 type Link struct {
 	// The type of the linked file.
-	Type string `json:"type"`
+	Type string `json:"type" bson:"-"`
 
 	// The length of the linked file.
-	Length int64 `json:"length"`
+	Length int64 `json:"length" bson:"-"`
 
-	// The key for claiming the linked file.
+	// The key for claiming a file.
 	ClaimKey string `json:"claim-key" bson:"-"`
 
 	// The key for viewing the linked file.
 	ViewKey string `json:"view-key" bson:"-"`
 
-	// The reference to the linked file.
+	// The internal reference to the linked file.
 	File *coal.ID `json:"-" bson:"file_id"`
+
+	// The internal information about the linked file.
+	FileType   string `json:"-" bson:"type"`
+	FileLength int64  `json:"-" bson:"length"`
 }
 
 // Validate will validate the link.
 func (l *Link) Validate(name string, whitelist ...string) error {
+	// check file
+	if l.File == nil || l.File.IsZero() {
+		return fire.E("%s invalid file", name)
+	}
+
 	// check type
-	typ, _, err := mime.ParseMediaType(l.Type)
+	typ, _, err := mime.ParseMediaType(l.FileType)
 	if err != nil {
 		return fire.E("%s type invalid", name)
 	} else if len(whitelist) > 0 && !stick.Contains(whitelist, typ) {
@@ -64,13 +73,8 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 	}
 
 	// check length
-	if l.Length <= 0 {
+	if l.FileLength <= 0 {
 		return fire.E("%s zero length", name)
-	}
-
-	// check file
-	if l.File == nil || l.File.IsZero() {
-		return fire.E("%s invalid file", name)
 	}
 
 	return nil
