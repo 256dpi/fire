@@ -868,7 +868,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 		opts.SetSort(sortDoc)
 	}
 
-	// set token
+	// set token (to determine insert vs. update)
 	token := New()
 	_, err = bsonkit.Put(&updateDoc, "$setOnInsert._tk", token, false)
 	if err != nil {
