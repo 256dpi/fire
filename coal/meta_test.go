@@ -163,7 +163,7 @@ func TestGetMeta(t *testing.T) {
 			"Parent": {
 				Index:    2,
 				Name:     "Parent",
-				Type:     optionalToOneType,
+				Type:     optToOneType,
 				Kind:     reflect.Array,
 				JSONKey:  "",
 				BSONKey:  "parent",
@@ -213,7 +213,7 @@ func TestGetMeta(t *testing.T) {
 				},
 				"Parent": {
 					Index: 2,
-					Type:  optionalToOneType,
+					Type:  optToOneType,
 				},
 				"Post": {
 					Index: 3,
@@ -302,7 +302,7 @@ func TestGetMeta(t *testing.T) {
 			"Ref2": {
 				Index:       2,
 				Name:        "Ref2",
-				Type:        optionalToOneRefType,
+				Type:        optToOneRefType,
 				Kind:        reflect.Struct,
 				BSONKey:     "ref2",
 				Flags:       []string{},
@@ -351,7 +351,7 @@ func TestGetMeta(t *testing.T) {
 				},
 				"Ref2": {
 					Index: 2,
-					Type:  optionalToOneRefType,
+					Type:  optToOneRefType,
 				},
 				"Ref3": {
 					Index: 3,

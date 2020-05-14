@@ -14,12 +14,12 @@ var metaCache = map[reflect.Type]*Meta{}
 
 var baseType = reflect.TypeOf(Base{})
 var toOneType = reflect.TypeOf(New())
-var optionalToOneType = reflect.TypeOf(new(ID))
+var optToOneType = reflect.TypeOf(new(ID))
 var toManyType = reflect.TypeOf(make([]ID, 0))
 var hasOneType = reflect.TypeOf(HasOne{})
 var hasManyType = reflect.TypeOf(HasMany{})
 var toOneRefType = reflect.TypeOf(Ref{})
-var optionalToOneRefType = reflect.TypeOf(&Ref{})
+var optToOneRefType = reflect.TypeOf(&Ref{})
 var toManyRefType = reflect.TypeOf([]Ref{})
 
 // The HasOne type denotes a has-one relationship in a model declaration.
@@ -207,7 +207,7 @@ func GetMeta(model Model) *Meta {
 		}
 
 		// check if field is a valid to-one relationship
-		if field.Type == toOneType || field.Type == optionalToOneType {
+		if field.Type == toOneType || field.Type == optToOneType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
@@ -249,7 +249,7 @@ func GetMeta(model Model) *Meta {
 		}
 
 		// check if field is a valid polymorphic to-one relationship
-		if field.Type == toOneRefType || field.Type == optionalToOneRefType {
+		if field.Type == toOneRefType || field.Type == optToOneRefType {
 			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
 				// check tag
 				if strings.Count(coalTags[0], ":") > 1 {
