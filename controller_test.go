@@ -458,7 +458,7 @@ func TestBasicOperations(t *testing.T) {
 	})
 }
 
-func TestHasOneRelationship(t *testing.T) {
+func TestHasOneRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
@@ -707,7 +707,7 @@ func TestHasOneRelationship(t *testing.T) {
 	})
 }
 
-func TestHasManyRelationship(t *testing.T) {
+func TestHasManyRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
@@ -929,7 +929,7 @@ func TestHasManyRelationship(t *testing.T) {
 	})
 }
 
-func TestToOneRelationship(t *testing.T) {
+func TestToOneRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
@@ -1265,7 +1265,7 @@ func TestToOneRelationship(t *testing.T) {
 	})
 }
 
-func TestToManyRelationship(t *testing.T) {
+func TestToManyRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
