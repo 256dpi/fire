@@ -371,7 +371,7 @@ func TestGetMetaErrors(t *testing.T) {
 	// 	GetMeta(&invalidModel{})
 	// })
 
-	assert.PanicsWithValue(t, `coal: duplicate BSON field "text"`, func() {
+	assert.PanicsWithValue(t, `coal: duplicate BSON key "text"`, func() {
 		type invalidModel struct {
 			Base  `json:"-" bson:",inline" coal:"ms"`
 			Text1 string `bson:"text"`

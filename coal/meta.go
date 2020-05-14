@@ -295,7 +295,7 @@ func GetMeta(model Model) *Meta {
 		if metaField.BSONKey != "" {
 			// check existence
 			if meta.DatabaseFields[metaField.BSONKey] != nil {
-				panic(fmt.Sprintf(`coal: duplicate BSON field "%s"`, metaField.BSONKey))
+				panic(fmt.Sprintf(`coal: duplicate BSON key "%s"`, metaField.BSONKey))
 			}
 
 			// add field
