@@ -156,23 +156,13 @@ func (t *Translator) field(field *string) error {
 
 func (t *Translator) convert(in bson.M) (bson.D, error) {
 	// attempt fast conversion
-	ret, err := t.convertFast(in)
+	doc, err := bsonkit.Convert(in)
 	if err == nil {
-		return ret, nil
+		return *doc, err
 	}
 
 	// otherwise convert safely
-	doc, err := bsonkit.Transform(in)
-	if err != nil {
-		return nil, err
-	}
-
-	return *doc, nil
-}
-
-func (t *Translator) convertFast(in bson.M) (bson.D, error) {
-	// convert
-	doc, err := bsonkit.Convert(in)
+	doc, err = bsonkit.Transform(in)
 	if err != nil {
 		return nil, err
 	}
