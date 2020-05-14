@@ -131,7 +131,7 @@ func (s *Store) DB() lungo.IDatabase {
 // perform safe CRUD operations.
 func (s *Store) C(model Model) *Collection {
 	// get name
-	name := C(model)
+	name := GetMeta(model).Collection
 
 	// check cache
 	val, ok := s.colls.Load(name)
@@ -155,7 +155,7 @@ func (s *Store) C(model Model) *Collection {
 // operations to ensure they are as safe as possible.
 func (s *Store) M(model Model) *Manager {
 	// get name
-	name := C(model)
+	name := GetMeta(model).Collection
 
 	// check cache
 	val, ok := s.managers.Load(name)

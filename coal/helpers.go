@@ -10,11 +10,6 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// C is a short-hand function to extract the collection of a model.
-func C(m Model) string {
-	return GetMeta(m).Collection
-}
-
 // F is a short-hand function to extract the BSON key of a model field.
 // Additionally, it supports the "-" prefix for retrieving sort keys.
 //
@@ -43,32 +38,6 @@ func F(m Model, field string) string {
 	}
 
 	return bsonField
-}
-
-// A is a short-hand function to extract the JSON key of a model field.
-//
-// Note: A will panic if no field has been found.
-func A(m Model, field string) string {
-	// find field
-	f := GetMeta(m).Fields[field]
-	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
-	}
-
-	return f.JSONKey
-}
-
-// R is a short-hand function to extract the relationship name of a model field.
-//
-// Note: R will panic if no field has been found.
-func R(m Model, field string) string {
-	// find field
-	f := GetMeta(m).Fields[field]
-	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
-	}
-
-	return f.RelName
 }
 
 // L is a short-hand function to lookup a flagged field of a model.
