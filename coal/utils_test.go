@@ -3,8 +3,6 @@ package coal
 import (
 	"testing"
 	"time"
-
-	"github.com/256dpi/fire/stick"
 )
 
 type postModel struct {
@@ -58,8 +56,11 @@ type polyModel struct {
 	Base `json:"-" bson:",inline" coal:"polys"`
 	Ref1 Ref   `json:"-" coal:"ref1:*"`
 	Ref2 *Ref  `json:"-" coal:"ref2:posts"`
-	Ref3 []Ref `json:"-" coal:"ref3:notes,selections"`
-	stick.NoValidation
+	Ref3 []Ref `json:"-" coal:"ref3:notes+selections"`
+}
+
+func (m *polyModel) Validate() error {
+	return nil
 }
 
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")

@@ -280,6 +280,86 @@ func TestGetMeta(t *testing.T) {
 			},
 		},
 	}, selection)
+
+	poly := GetMeta(&polyModel{})
+	assert.Equal(t, &Meta{
+		Type:       reflect.TypeOf(polyModel{}),
+		Name:       "coal.polyModel",
+		Collection: "polys",
+		PluralName: "polys",
+		Fields: map[string]*Field{
+			"Ref1": {
+				Index:       1,
+				Name:        "Ref1",
+				Type:        toOneRefType,
+				Kind:        reflect.Struct,
+				BSONKey:     "ref1",
+				Flags:       []string{},
+				ToOne:       true,
+				Polymorphic: true,
+				RelName:     "ref1",
+			},
+			"Ref2": {
+				Index:       2,
+				Name:        "Ref2",
+				Type:        optionalToOneRefType,
+				Kind:        reflect.Struct,
+				BSONKey:     "ref2",
+				Flags:       []string{},
+				Optional:    true,
+				ToOne:       true,
+				Polymorphic: true,
+				RelName:     "ref2",
+				RelTypes:    []string{"posts"},
+			},
+			"Ref3": {
+				Index:       3,
+				Name:        "Ref3",
+				Type:        toManyRefType,
+				Kind:        reflect.Slice,
+				BSONKey:     "ref3",
+				Flags:       []string{},
+				ToMany:      true,
+				Polymorphic: true,
+				RelName:     "ref3",
+				RelTypes:    []string{"notes", "selections"},
+			},
+		},
+		OrderedFields: []*Field{
+			poly.Fields["Ref1"],
+			poly.Fields["Ref2"],
+			poly.Fields["Ref3"],
+		},
+		DatabaseFields: map[string]*Field{
+			"ref1": poly.Fields["Ref1"],
+			"ref2": poly.Fields["Ref2"],
+			"ref3": poly.Fields["Ref3"],
+		},
+		Attributes: map[string]*Field{},
+		Relationships: map[string]*Field{
+			"ref1": poly.Fields["Ref1"],
+			"ref2": poly.Fields["Ref2"],
+			"ref3": poly.Fields["Ref3"],
+		},
+		FlaggedFields: map[string][]*Field{},
+		Accessor: &stick.Accessor{
+			Name: "coal.polyModel",
+			Fields: map[string]*stick.Field{
+				"Ref1": {
+					Index: 1,
+					Type:  toOneRefType,
+				},
+				"Ref2": {
+					Index: 2,
+					Type:  optionalToOneRefType,
+				},
+				"Ref3": {
+					Index: 3,
+					Type:  toManyRefType,
+				},
+			},
+		},
+	}, poly)
 }
 
 func TestGetMetaErrors(t *testing.T) {
@@ -335,6 +415,26 @@ func TestGetMetaErrors(t *testing.T) {
 		type m struct {
 			Base `json:"-" bson:",inline" coal:"foo:foos"`
 			Foo  []ID `coal:"foo:foo:foo"`
+			stick.NoValidation
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:*|type+type..."' on polymorphic to-one relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  Ref `coal:"foo:foo:foo"`
+			stick.NoValidation
+		}
+
+		GetMeta(&m{})
+	})
+
+	assert.PanicsWithValue(t, `coal: expected to find a tag of the form 'coal:"name:*|type+type..."' on polymorphic to-many relationship`, func() {
+		type m struct {
+			Base `json:"-" bson:",inline" coal:"foo:foos"`
+			Foo  []Ref `coal:"foo:foo:foo"`
 			stick.NoValidation
 		}
 
