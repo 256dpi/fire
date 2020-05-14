@@ -3,6 +3,8 @@ package coal
 import (
 	"testing"
 	"time"
+
+	"github.com/256dpi/fire/stick"
 )
 
 type postModel struct {
@@ -52,10 +54,18 @@ func (m *noteModel) Validate() error {
 	return nil
 }
 
+type polyModel struct {
+	Base `json:"-" bson:",inline" coal:"polys"`
+	Ref1 Ref   `json:"-" coal:"ref1:*"`
+	Ref2 *Ref  `json:"-" coal:"ref2:posts"`
+	Ref3 []Ref `json:"-" coal:"ref3:notes,selections"`
+	stick.NoValidation
+}
+
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")
 var lungoStore = MustOpen(nil, "test-fire-coal", nil)
 
-var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}}
+var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &polyModel{}}
 
 func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
