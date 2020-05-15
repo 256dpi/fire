@@ -3972,6 +3972,8 @@ func TestReadableFields(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestReadableFields", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
+					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.ReadableFields = []string{"Published"}
 					return nil
 				}),
@@ -3981,6 +3983,8 @@ func TestReadableFields(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestReadableFields", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{"Post", "Title"}, ctx.ReadableFields)
+					assert.Equal(t, []string{"Post", "Title"}, ctx.WritableFields)
 					ctx.ReadableFields = []string{}
 					return nil
 				}),
@@ -4045,6 +4049,8 @@ func TestWritableFields(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
+					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.WritableFields = []string{"Title"}
 					return nil
 				}),
@@ -4057,6 +4063,8 @@ func TestWritableFields(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{"CreateToken", "Name", "NoValidation", "Posts", "UpdateToken"}, ctx.ReadableFields)
+					assert.Equal(t, []string{"CreateToken", "Name", "NoValidation", "Posts", "UpdateToken"}, ctx.WritableFields)
 					ctx.WritableFields = []string{}
 					return nil
 				}),
