@@ -3973,7 +3973,7 @@ func TestReadableFields(t *testing.T) {
 			Authorizers: L{
 				C("TestReadableFields", All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
-					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.WritableFields)
+					assert.Equal(t, []string{"Published", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.ReadableFields = []string{"Published"}
 					return nil
 				}),
@@ -4050,7 +4050,7 @@ func TestWritableFields(t *testing.T) {
 			Authorizers: L{
 				C("TestWritableFields", All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
-					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.WritableFields)
+					assert.Equal(t, []string{"Published", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.WritableFields = []string{"Title"}
 					return nil
 				}),

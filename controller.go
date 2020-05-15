@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -322,8 +323,8 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// prepare context
 	ctx.Selector = selector
 	ctx.Filters = []bson.M{}
-	ctx.ReadableFields = c.initialFields(ctx.JSONAPIRequest)
-	ctx.WritableFields = c.initialFields(nil)
+	ctx.ReadableFields = c.initialFields(false, ctx.JSONAPIRequest)
+	ctx.WritableFields = c.initialFields(true, nil)
 	ctx.RelationshipFilters = map[string][]bson.M{}
 
 	// set store
@@ -1319,7 +1320,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	c.runAction(action, ctx, http.StatusBadRequest)
 }
 
-func (c *Controller) initialFields(r *jsonapi.Request) []string {
+func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
 	// prepare list
 	list := make([]string, 0, len(c.meta.Attributes)+len(c.meta.Relationships))
 
@@ -1330,7 +1331,9 @@ func (c *Controller) initialFields(r *jsonapi.Request) []string {
 
 	// add relationships
 	for _, f := range c.meta.Relationships {
-		list = append(list, f.Name)
+		if !write || f.ToOne || f.ToMany {
+			list = append(list, f.Name)
+		}
 	}
 
 	// check if a field whitelist has been provided
@@ -1345,7 +1348,7 @@ func (c *Controller) initialFields(r *jsonapi.Request) []string {
 			}
 
 			// add relationship
-			if f := c.meta.Relationships[field]; f != nil {
+			if f := c.meta.Relationships[field]; f != nil && (!write || f.ToOne || f.ToMany) {
 				requested = append(requested, f.Name)
 				continue
 			}
@@ -1357,6 +1360,9 @@ func (c *Controller) initialFields(r *jsonapi.Request) []string {
 		// whitelist requested fields
 		list = stick.Intersect(requested, list)
 	}
+
+	// sort list
+	sort.Strings(list)
 
 	return list
 }
