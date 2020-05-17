@@ -15,7 +15,7 @@ type Ref struct {
 	ID ID `bson:"id"`
 }
 
-// R is short.hand to provide a reference to the provided model.
+// R is short-hand to retrieve a reference to the provided model.
 func R(model Model) Ref {
 	return Ref{
 		Coll: GetMeta(model).Collection,
