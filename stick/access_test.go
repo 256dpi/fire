@@ -8,7 +8,8 @@ import (
 )
 
 type accessible struct {
-	String string
+	String    string
+	OptString *string
 }
 
 func (a *accessible) GetAccessor(v interface{}) *Accessor {
@@ -70,6 +71,16 @@ func TestSet(t *testing.T) {
 
 	ok = Set(post, "String", 1)
 	assert.False(t, ok)
+}
+
+func TestSetNil(t *testing.T) {
+	post := &accessible{}
+
+	ok := Set(post, "OptString", nil)
+	assert.True(t, ok)
+
+	ok = Set(post, "OptString", (*string)(nil))
+	assert.True(t, ok)
 }
 
 func TestMustSet(t *testing.T) {
