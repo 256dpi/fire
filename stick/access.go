@@ -96,8 +96,8 @@ func Set(acc Accessible, name string, value interface{}) bool {
 	valueValue := reflect.ValueOf(value)
 
 	// correct untyped nil values
-	if fieldValue.Type().Kind() == reflect.Ptr && value == nil {
-		valueValue = reflect.Zero(fieldValue.Type())
+	if value == nil && field.Type.Kind() == reflect.Ptr {
+		valueValue = reflect.Zero(field.Type)
 	}
 
 	// check type

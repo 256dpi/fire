@@ -25,6 +25,10 @@ func TestBuildAccessor(t *testing.T) {
 				Index: 0,
 				Type:  reflect.TypeOf(""),
 			},
+			"OptString": {
+				Index: 1,
+				Type:  reflect.PtrTo(reflect.TypeOf("")),
+			},
 		},
 	}, accessor)
 }
