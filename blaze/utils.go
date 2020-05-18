@@ -7,7 +7,7 @@ import (
 )
 
 var linkType = reflect.TypeOf(Link{})
-var optionalLinkType = reflect.TypeOf(&Link{})
+var optLinkType = reflect.TypeOf(&Link{})
 
 func collectFields(model coal.Model) []string {
 	// prepare list
@@ -15,7 +15,7 @@ func collectFields(model coal.Model) []string {
 
 	// collect fields
 	for name, field := range coal.GetMeta(model).Fields {
-		if field.Type == linkType || field.Type == optionalLinkType {
+		if field.Type == linkType || field.Type == optLinkType {
 			list = append(list, name)
 		}
 	}
