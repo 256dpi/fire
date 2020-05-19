@@ -29,6 +29,10 @@ func TestValidateType(t *testing.T) {
 	err = ValidateType("image/png", "image/jpeg")
 	assert.Error(t, err)
 	assert.Equal(t, "type unallowed", err.Error())
+
+	err = ValidateType("text/html; charset=utf-8")
+	assert.Error(t, err)
+	assert.Equal(t, "type ambiguous", err.Error())
 }
 
 func TestLinkValidate(t *testing.T) {

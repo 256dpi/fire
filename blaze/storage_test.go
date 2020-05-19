@@ -21,7 +21,7 @@ import (
 func TestStorageUpload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service)
+		storage := NewStorage(tester.Store, testNotary, service, register)
 
 		key, file, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
@@ -51,7 +51,7 @@ func TestStorageUpload(t *testing.T) {
 func TestStorageUploadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service)
+		storage := NewStorage(tester.Store, testNotary, service, register)
 
 		body := strings.NewReader("Hello World!")
 
@@ -83,7 +83,7 @@ func TestStorageUploadAction(t *testing.T) {
 
 func TestStorageUploadActionInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		body := strings.NewReader("Hello World!")
 		req := httptest.NewRequest("POST", "/foo", body)
@@ -102,7 +102,7 @@ func TestStorageUploadActionInvalidContentType(t *testing.T) {
 
 func TestStorageUploadActionLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		body := strings.NewReader("Hello World!")
 
@@ -122,7 +122,7 @@ func TestStorageUploadActionLimit(t *testing.T) {
 func TestStorageUploadActionFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service)
+		storage := NewStorage(tester.Store, testNotary, service, register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -179,7 +179,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 
 func TestStorageUploadActionFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -209,7 +209,7 @@ func TestStorageUploadActionFormFilesLimit(t *testing.T) {
 func TestStorageUploadActionMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service)
+		storage := NewStorage(tester.Store, testNotary, service, register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -259,7 +259,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 
 func TestStorageUploadActionMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -290,7 +290,7 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 
 func TestStorageClaimDecorateRelease(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		/* upload */
 
@@ -300,12 +300,14 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
-		model := &testModel{}
+		model := &testModel{
+			Base: coal.B(),
+		}
 
 		/* claim without key */
 
 		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
-			return storage.Claim(ctx, &model.RequiredFile)
+			return storage.Claim(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
 
@@ -313,7 +315,7 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 
 		model.RequiredFile.ClaimKey = key
 		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
-			return storage.Claim(ctx, &model.RequiredFile)
+			return storage.Claim(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
 
@@ -335,14 +337,14 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 		/* release */
 
 		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
-			return storage.Release(ctx, &model.RequiredFile)
+			return storage.Release(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
 
 		/* release again */
 
 		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
-			return storage.Release(ctx, &model.RequiredFile)
+			return storage.Release(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
 	})
@@ -350,13 +352,15 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 
 func TestStorageValidator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		validator := storage.Modifier()
 
 		/* missing */
 
-		model := &testModel{}
+		model := &testModel{
+			Base: coal.B(),
+		}
 		err := tester.RunCallback(&fire.Context{
 			Operation: fire.Create,
 			Model:     model,
@@ -371,15 +375,18 @@ func TestStorageValidator(t *testing.T) {
 
 		file1 := tester.Insert(&File{
 			State: Uploaded,
+			Type:  "image/png",
 		}).(*File)
 
 		claimKey1, err := storage.notary.Issue(&ClaimKey{
 			File: file1.ID(),
+			Type: file1.Type,
 		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, claimKey1)
 
 		model = &testModel{
+			Base: coal.B(),
 			RequiredFile: Link{
 				ClaimKey: claimKey1,
 			},
@@ -401,7 +408,7 @@ func TestStorageValidator(t *testing.T) {
 
 func TestStorageDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		decorator := storage.Decorator()
 
@@ -441,7 +448,7 @@ func TestStorageDecorator(t *testing.T) {
 
 func TestStorageDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
@@ -472,7 +479,7 @@ func TestStorageDownload(t *testing.T) {
 
 func TestStorageDownloadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
@@ -505,7 +512,7 @@ func TestStorageDownloadAction(t *testing.T) {
 
 func TestStorageCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory())
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
 		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))

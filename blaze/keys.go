@@ -1,8 +1,7 @@
 package blaze
 
 import (
-	"fmt"
-
+	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -12,17 +11,17 @@ type ClaimKey struct {
 	heat.Base `json:"-" heat:"fire/blaze.claim,1h"`
 
 	// The claimable file.
-	File coal.ID
+	File coal.ID `json:"file"`
 
-	// The files type.
-	Type string
+	// The files media type.
+	Type string `json:"type"`
 }
 
-// Validate implements the heat.Key interface.
+// Validate will validate the claim key.
 func (k *ClaimKey) Validate() error {
 	// check file
 	if k.File.IsZero() {
-		return fmt.Errorf("missing file")
+		return fire.E("missing file")
 	}
 
 	// check type
@@ -39,14 +38,14 @@ type ViewKey struct {
 	heat.Base `json:"-" heat:"fire/blaze.view,24h"`
 
 	// The viewable file.
-	File coal.ID
+	File coal.ID `json:"file"`
 }
 
-// Validate implements the heat.Key interface.
+// Validate will validate the view key.
 func (k *ViewKey) Validate() error {
 	// check file
 	if k.File.IsZero() {
-		return fmt.Errorf("missing file")
+		return fire.E("missing file")
 	}
 
 	return nil

@@ -25,6 +25,13 @@ type testModel struct {
 	stick.NoValidation
 }
 
+var register = NewRegister()
+
+func init() {
+	register.Add(&testModel{}, "RequiredFile", "test-req")
+	register.Add(&testModel{}, "OptionalFile", "test-opt")
+}
+
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
 		tester := fire.NewTester(mongoStore, modelList...)

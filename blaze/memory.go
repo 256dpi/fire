@@ -42,7 +42,7 @@ func (m *Memory) Prepare(_ context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Memory) Upload(_ context.Context, handle Handle, contentType string) (Upload, error) {
+func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string) (Upload, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -57,7 +57,7 @@ func (m *Memory) Upload(_ context.Context, handle Handle, contentType string) (U
 
 	// prepare blob
 	blob := &MemoryBlob{
-		Type: contentType,
+		Type: mediaType,
 	}
 
 	// store blob
@@ -115,9 +115,9 @@ type memoryUpload struct {
 	blob *MemoryBlob
 }
 
-func (u *memoryUpload) Resume() (int64, error) {
-	panic("implement me")
-}
+// func (u *memoryUpload) Resume() (int64, error) {
+// 	panic("implement me")
+// }
 
 func (u *memoryUpload) Write(data []byte) (int, error) {
 	// append data
@@ -126,9 +126,9 @@ func (u *memoryUpload) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (u *memoryUpload) Suspend() (int64, error) {
-	panic("implement me")
-}
+// func (u *memoryUpload) Suspend() (int64, error) {
+// 	panic("implement me")
+// }
 
 func (u *memoryUpload) Abort() error {
 	return nil
@@ -143,9 +143,9 @@ type memoryDownload struct {
 	pos  int
 }
 
-func (u *memoryDownload) Seek(offset int64, whence int) (int64, error) {
-	panic("implement me")
-}
+// func (u *memoryDownload) Seek(offset int64, whence int) (int64, error) {
+// 	panic("implement me")
+// }
 
 func (u *memoryDownload) Read(buf []byte) (int, error) {
 	// check EOF

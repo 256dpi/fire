@@ -12,7 +12,7 @@ import (
 
 // Link is used to link a file to a model.
 type Link struct {
-	// The type of the linked file.
+	// The media type of the linked file.
 	Type string `json:"type" bson:"-"`
 
 	// The length of the linked file.
@@ -86,7 +86,7 @@ type File struct {
 	// The last time the file was updated.
 	Updated time.Time `json:"updated-at" bson:"updated_at"`
 
-	// The type of the file e.g. "image/png".
+	// The media type of the file e.g. "image/png".
 	Type string `json:"type"`
 
 	// The total length of the file.
@@ -94,6 +94,12 @@ type File struct {
 
 	// The service specific blob handle.
 	Handle Handle `json:"handle"`
+
+	// The binding of the file.
+	Binding string `json:"binding"`
+
+	// The owner of the file.
+	Owner *coal.ID `json:"owner"`
 }
 
 // Validate will validate the model.
@@ -119,6 +125,18 @@ func (f *File) Validate() error {
 		return fire.E("missing handle")
 	}
 
+	// check binding
+	if f.Binding == "" && f.State == Claimed {
+		return fire.E("missing binding")
+	}
+
+	// check owner
+	if f.Owner != nil && f.Owner.IsZero() {
+		return fire.E("invalid owner")
+	} else if f.Owner == nil && f.State == Claimed {
+		return fire.E("missing owner")
+	}
+
 	return nil
 }
 
@@ -128,13 +146,15 @@ func AddFileIndexes(catalog *coal.Catalog) {
 	catalog.AddIndex(&File{}, false, 0, "State", "Updated")
 }
 
-// ValidateType will validate a content/media type.
-func ValidateType(typ string, whitelist ...string) error {
+// ValidateType will validate a media type.
+func ValidateType(str string, whitelist ...string) error {
 	// check media type
-	typ, _, err := mime.ParseMediaType(typ)
+	mediaType, _, err := mime.ParseMediaType(str)
 	if err != nil {
 		return fire.E("type invalid")
-	} else if len(whitelist) > 0 && !stick.Contains(whitelist, typ) {
+	} else if str != mediaType {
+		return fire.E("type ambiguous")
+	} else if len(whitelist) > 0 && !stick.Contains(whitelist, mediaType) {
 		return fire.E("type unallowed")
 	}
 

@@ -110,9 +110,9 @@ type gridFSUpload struct {
 	stream *lungo.UploadStream
 }
 
-func (u *gridFSUpload) Resume() (int64, error) {
-	panic("implement me")
-}
+// func (u *gridFSUpload) Resume() (int64, error) {
+// 	panic("implement me")
+// }
 
 func (u *gridFSUpload) Write(data []byte) (int, error) {
 	// write stream
@@ -126,12 +126,12 @@ func (u *gridFSUpload) Write(data []byte) (int, error) {
 	return n, nil
 }
 
-func (u *gridFSUpload) Suspend() (int64, error) {
-	panic("implement me")
-}
+// func (u *gridFSUpload) Suspend() (int64, error) {
+// 	panic("implement me")
+// }
 
 func (u *gridFSUpload) Abort() error {
-	panic("implement me")
+	return u.stream.Abort()
 }
 
 func (u *gridFSUpload) Close() error {
@@ -150,9 +150,9 @@ type gridFSDownload struct {
 	stream *lungo.DownloadStream
 }
 
-func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
-	panic("implement me")
-}
+// func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
+// 	panic("implement me")
+// }
 
 func (d *gridFSDownload) Read(buf []byte) (int, error) {
 	// read stream

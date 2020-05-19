@@ -22,11 +22,16 @@ var catalog = coal.NewCatalog(
 	&blaze.File{},
 )
 
+var register = blaze.NewRegister()
+
 func init() {
 	// add item indexes
 	catalog.AddIndex(&Item{}, false, 0, "Name")
 	catalog.AddIndex(&Item{}, false, time.Second, "Deleted")
 	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
+
+	// add item bindings
+	register.Add(&Item{}, "File", "item-file", "image/png")
 
 	// add system indexes
 	flame.AddApplicationIndexes(catalog)

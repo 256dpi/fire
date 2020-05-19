@@ -176,7 +176,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	// create storage
 	fileNotary := heat.NewNotary("example/file", fileSecret)
 	fileService := blaze.NewGridFS(bucket)
-	storage := blaze.NewStorage(store, fileNotary, fileService)
+	storage := blaze.NewStorage(store, fileNotary, fileService, register)
 
 	// create queue
 	queue := axe.NewQueue(axe.Options{

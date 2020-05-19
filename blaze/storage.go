@@ -24,27 +24,29 @@ import (
 
 // Storage provides file storage services.
 type Storage struct {
-	store   *coal.Store
-	notary  *heat.Notary
-	service Service
+	store    *coal.Store
+	notary   *heat.Notary
+	service  Service
+	register *Register
 }
 
 // NewStorage creates a new storage.
-func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storage {
+func NewStorage(store *coal.Store, notary *heat.Notary, service Service, register *Register) *Storage {
 	return &Storage{
-		store:   store,
-		notary:  notary,
-		service: service,
+		store:    store,
+		notary:   notary,
+		service:  service,
+		register: register,
 	}
 }
 
 // Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside of a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload) (int64, error)) (string, *File, error) {
+func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
-	span.Log("contentType", contentType)
+	span.Log("type", mediaType)
 	defer span.Finish()
 
 	// check transaction
@@ -52,9 +54,9 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 		return "", nil, fmt.Errorf("unexpected transaction for upload")
 	}
 
-	// set default content type
-	if contentType == "" {
-		contentType = "application/octet-stream"
+	// set default type
+	if mediaType == "" {
+		mediaType = "application/octet-stream"
 	}
 
 	// create handle
@@ -68,7 +70,7 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 		Base:    coal.B(),
 		State:   Uploading,
 		Updated: time.Now(),
-		Type:    contentType,
+		Type:    mediaType,
 		Handle:  handle,
 	}
 
@@ -85,7 +87,7 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 	}
 
 	// begin upload
-	upload, err := s.service.Upload(ctx, handle, contentType)
+	upload, err := s.service.Upload(ctx, handle, mediaType)
 	if err != nil {
 		return "", nil, err
 	}
@@ -186,9 +188,9 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (s *Storage) uploadBody(ctx *fire.Context, contentType string) ([]string, error) {
+func (s *Storage) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
 	// upload stream
-	claimKey, _, err := s.Upload(ctx, contentType, func(upload Upload) (int64, error) {
+	claimKey, _, err := s.Upload(ctx, mediaType, func(upload Upload) (int64, error) {
 		return UploadFrom(upload, ctx.HTTPRequest.Body)
 	})
 	if err != nil {
@@ -240,13 +242,49 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	return claimKeys, nil
 }
 
-// Claim will claim the provided link. The claimed link must be persisted in the
-// same transaction as the claim to prevent loosing files.
-func (s *Storage) Claim(ctx context.Context, link *Link) error {
-	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Claim")
-	defer span.Finish()
+// Claim will claim the link at the field on the provided model. The claimed
+// link must be persisted in the same transaction as the claim to ensure
+// consistency.
+func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) error {
+	// get value
+	value := stick.MustGet(model, field)
 
+	// lookup binding
+	binding := s.register.Lookup(model, field)
+	if binding == nil {
+		return fmt.Errorf("missing binding")
+	}
+
+	// get link
+	var link Link
+	switch value := value.(type) {
+	case Link:
+		link = value
+	case *Link:
+		link = *value
+	}
+
+	// claim file
+	err := s.ClaimLink(ctx, &link, binding.Name, coal.P(model.ID()))
+	if err != nil {
+		return err
+	}
+
+	// set link
+	switch value.(type) {
+	case Link:
+		stick.MustSet(model, field, link)
+	case *Link:
+		stick.MustSet(model, field, &link)
+	}
+
+	return nil
+}
+
+// ClaimLink will claim the provided link under the specified binding. The
+// claimed link must be persisted in the same transaction as the claim to ensure
+// consistency.
+func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, owner *coal.ID) error {
 	// check transaction
 	if !coal.HasTransaction(ctx) {
 		return fmt.Errorf("missing transaction for claim")
@@ -262,11 +300,50 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 		return fmt.Errorf("missing claim key")
 	}
 
-	// verify claim key
-	var key ClaimKey
-	err := s.notary.Verify(&key, link.ClaimKey)
+	// claim file
+	file, err := s.ClaimFile(ctx, link.ClaimKey, binding, owner)
 	if err != nil {
 		return err
+	}
+
+	// update link
+	*link = Link{
+		File:       coal.P(file.ID()),
+		FileType:   file.Type,
+		FileLength: file.Length,
+	}
+
+	return nil
+}
+
+// ClaimFile will claim the file referenced by the provided claim key using the
+// specified binding and owner.
+func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner *coal.ID) (*File, error) {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.ClaimFile")
+	defer span.Finish()
+
+	// get binding
+	bnd := s.register.Get(binding)
+	if bnd == nil {
+		return nil, fmt.Errorf("unknown binding: %s", binding)
+	}
+
+	// check owner
+	if owner == nil || owner.IsZero() {
+		return nil, fmt.Errorf("missing owner")
+	}
+
+	// verify claim key
+	var key ClaimKey
+	err := s.notary.Verify(&key, claimKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// verify type
+	if len(bnd.Types) > 0 && !stick.Contains(bnd.Types, key.Type) {
+		return nil, fmt.Errorf("unsupported type: %s", key.Type)
 	}
 
 	// claim file
@@ -278,28 +355,60 @@ func (s *Storage) Claim(ctx context.Context, link *Link) error {
 		"$set": bson.M{
 			"State":   Claimed,
 			"Updated": time.Now(),
+			"Binding": binding,
+			"Owner":   owner,
 		},
 	}, nil, false)
 	if err != nil {
-		return err
+		return nil, err
 	} else if !found {
-		return fmt.Errorf("unable to claim file")
+		return nil, fmt.Errorf("unable to claim file")
 	}
 
-	// update link
-	link.File = coal.P(file.ID())
-	link.FileType = file.Type
-	link.FileLength = file.Length
+	return &file, nil
+}
+
+// Release will release the link at the field on the provided model. The
+// released link must be persisted in the same transaction as the release to
+// ensure consistency.
+func (s *Storage) Release(ctx context.Context, model coal.Model, field string) error {
+	// get field
+	value := stick.MustGet(model, field)
+
+	// get link
+	var link Link
+	switch value := value.(type) {
+	case Link:
+		link = value
+	case *Link:
+		link = *value
+	}
+
+	// release link
+	err := s.ReleaseLink(ctx, &link)
+	if err != nil {
+		return err
+	}
+
+	// unset link
+	switch value.(type) {
+	case Link:
+		stick.MustSet(model, field, Link{})
+	case *Link:
+		stick.MustSet(model, field, nil)
+	}
 
 	return nil
 }
 
-// Release will release the provided link. The released link must be persisted
-// in the same transaction as the release to prevent orphaned files.
-func (s *Storage) Release(ctx context.Context, link *Link) error {
-	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Release")
-	defer span.Finish()
+// ReleaseLink will release the provided link. The released link must be
+// persisted in the same transaction as the release to ensure consistency.
+func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
+	// get file
+	file := link.File
+	if file == nil || file.IsZero() {
+		return fmt.Errorf("invalid file id")
+	}
 
 	// check transaction
 	if !coal.HasTransaction(ctx) {
@@ -307,13 +416,30 @@ func (s *Storage) Release(ctx context.Context, link *Link) error {
 	}
 
 	// release file
+	err := s.ReleaseFile(ctx, *file)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ReleaseFile will release the file with the provided id.
+func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.ReleaseFile")
+	defer span.Finish()
+
+	// release file
 	found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":   link.File,
+		"_id":   file,
 		"State": Claimed,
 	}, bson.M{
 		"$set": bson.M{
 			"State":   Released,
 			"Updated": time.Now(),
+			"Binding": "",
+			"Owner":   nil,
 		},
 	}, nil, false)
 	if err != nil {
@@ -322,16 +448,11 @@ func (s *Storage) Release(ctx context.Context, link *Link) error {
 		return fmt.Errorf("unable to release file")
 	}
 
-	// update link
-	link.File = nil
-	link.FileType = ""
-	link.FileLength = 0
-
 	return nil
 }
 
 // Modifier will handle modifications on all or just the specified link fields
-// of the model.
+// on the model.
 func (s *Storage) Modifier(fields ...string) *fire.Callback {
 	return fire.C("blaze/Storage.Modifier", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
 		// check store
@@ -344,6 +465,9 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 			fields = collectFields(ctx.Controller.Model)
 		}
 
+		// get owner
+		owner := coal.P(ctx.Model.ID())
+
 		// check all fields
 		for _, field := range fields {
 			// get value
@@ -355,8 +479,8 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 				oldValue = stick.MustGet(ctx.Original, field)
 			}
 
-			// get path
-			path := coal.GetMeta(ctx.Model).Fields[field].JSONKey
+			// get binding
+			binding := s.register.Lookup(ctx.Model, field)
 
 			// inspect type
 			var err error
@@ -364,15 +488,15 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 			case Link:
 				var oldLink *Link
 				if oldValue != nil {
-					r := oldValue.(Link)
-					oldLink = &r
+					l := oldValue.(Link)
+					oldLink = &l
 				}
 				newLink := &value
 				if ctx.Operation == fire.Delete {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.modifyLink(ctx, newLink, oldLink, path)
+				err = s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				stick.MustSet(ctx.Model, field, value)
 			case *Link:
 				var oldLink *Link
@@ -384,13 +508,13 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.modifyLink(ctx, newLink, oldLink, path)
+				err = s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				stick.MustSet(ctx.Model, field, newLink)
 			default:
-				err = fmt.Errorf("unsupported type")
+				err = fmt.Errorf("%s: unsupported type: %T", field, value)
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %w", field, err)
 			}
 		}
 
@@ -398,7 +522,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, path string) error {
+func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner *coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -409,19 +533,23 @@ func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, path s
 		return nil
 	}
 
-	// claim new file
-	if added || updated {
-		err := s.Claim(ctx, newLink)
+	// release old file
+	if updated || deleted {
+		err := s.ReleaseLink(ctx, oldLink)
 		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
+			return err
 		}
 	}
 
-	// release old file
-	if updated || deleted {
-		err := s.Release(ctx, oldLink)
+	// claim new file
+	if added || updated {
+		// unset file
+		newLink.File = nil
+
+		// claim
+		err := s.ClaimLink(ctx, newLink, binding, owner)
 		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
+			return err
 		}
 	}
 
@@ -574,6 +702,8 @@ func (s *Storage) DownloadAction() *fire.Action {
 		return nil
 	})
 }
+
+// TODO: Periodically verify claimed files.
 
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.

@@ -110,7 +110,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 
 				// release file if available
 				if item.File != nil {
-					err = storage.Release(ctx, item.File)
+					err = storage.Release(ctx, &item, "File")
 					if err != nil {
 						return err
 					}
@@ -122,7 +122,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 				}
 
 				// claim file
-				err = storage.Claim(ctx, item.File)
+				err = storage.Claim(ctx, &item, "File")
 				if err != nil {
 					return err
 				}
