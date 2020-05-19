@@ -38,7 +38,7 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service) *Storag
 	}
 }
 
-// Upload will uploaded the provided stream using the configured service and
+// Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside of a
 // transaction to ensure the uploaded file is tracked in case of errors.
 func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload) (int64, error)) (string, *File, error) {
@@ -125,6 +125,7 @@ func (s *Storage) Upload(ctx context.Context, contentType string, cb func(Upload
 	// issue claim key
 	claimKey, err := s.notary.Issue(&ClaimKey{
 		File: file.ID(),
+		Type: file.Type,
 	})
 	if err != nil {
 		return "", nil, err
@@ -524,7 +525,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 		return nil, nil, err
 	}
 
-	// load file
+	// find file
 	var file File
 	found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
 		"_id":   key.File,
@@ -600,15 +601,15 @@ func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Dur
 // which defaults to one hour if zero. Files in the states "released" and
 // "deleting" are removed immediately. It will also allow the service to cleanup.
 func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
-	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Cleanup")
-	span.Log("retention", retention.String())
-	defer span.Finish()
-
 	// set default retention
 	if retention == 0 {
 		retention = time.Hour
 	}
+
+	// track
+	ctx, span := cinder.Track(ctx, "blaze/Storage.Cleanup")
+	span.Log("retention", retention.String())
+	defer span.Finish()
 
 	// get iterator for deletable files
 	iter, err := s.store.M(&File{}).FindEach(ctx, bson.M{

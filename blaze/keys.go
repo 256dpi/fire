@@ -13,6 +13,9 @@ type ClaimKey struct {
 
 	// The claimable file.
 	File coal.ID
+
+	// The files type.
+	Type string
 }
 
 // Validate implements the heat.Key interface.
@@ -20,6 +23,12 @@ func (k *ClaimKey) Validate() error {
 	// check file
 	if k.File.IsZero() {
 		return fmt.Errorf("missing file")
+	}
+
+	// check type
+	err := ValidateType(k.Type)
+	if err != nil {
+		return err
 	}
 
 	return nil
