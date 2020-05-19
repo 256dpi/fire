@@ -369,7 +369,7 @@ func TestStorageValidator(t *testing.T) {
 			},
 		}, validator)
 		assert.Error(t, err)
-		assert.Equal(t, "required-file: missing claim key", err.Error())
+		assert.Equal(t, "RequiredFile: missing claim key", err.Error())
 
 		/* required */
 
