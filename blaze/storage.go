@@ -93,7 +93,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	}
 
 	// perform upload
-	length, err := cb(upload)
+	size, err := cb(upload)
 	if err != nil {
 		return "", nil, err
 	}
@@ -104,7 +104,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	// set fields
 	file.State = Uploaded
 	file.Updated = now
-	file.Length = length
+	file.Size = size
 
 	// validate file
 	err = file.Validate()
@@ -117,7 +117,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 		"$set": bson.M{
 			"State":   Uploaded,
 			"Updated": now,
-			"Length":  length,
+			"Size":    size,
 		},
 	}, false)
 	if err != nil {
@@ -308,9 +308,9 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 
 	// update link
 	*link = Link{
-		File:       coal.P(file.ID()),
-		FileType:   file.Type,
-		FileLength: file.Length,
+		File:     coal.P(file.ID()),
+		FileType: file.Type,
+		FileSize: file.Size,
 	}
 
 	return nil
@@ -577,7 +577,7 @@ func (s *Storage) Decorate(link *Link) error {
 
 	// copy info
 	link.Type = link.FileType
-	link.Length = link.FileLength
+	link.Size = link.FileSize
 
 	return nil
 }
@@ -691,7 +691,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 
 		// set content type and length
 		ctx.ResponseWriter.Header().Set("Content-Type", file.Type)
-		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Length, 10))
+		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
 
 		// download file
 		err = DownloadTo(download, ctx.ResponseWriter)

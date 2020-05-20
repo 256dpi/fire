@@ -15,8 +15,8 @@ type Link struct {
 	// The media type of the linked file.
 	Type string `json:"type" bson:"-"`
 
-	// The length of the linked file.
-	Length int64 `json:"length" bson:"-"`
+	// The size of the linked file.
+	Size int64 `json:"size" bson:"-"`
 
 	// The key for claiming a file.
 	ClaimKey string `json:"claim-key" bson:"-"`
@@ -28,8 +28,8 @@ type Link struct {
 	File *coal.ID `json:"-" bson:"file_id"`
 
 	// The internal information about the linked file.
-	FileType   string `json:"-" bson:"type"`
-	FileLength int64  `json:"-" bson:"length"`
+	FileType string `json:"-" bson:"type"`
+	FileSize int64  `json:"-" bson:"size"`
 }
 
 // Validate will validate the link.
@@ -39,15 +39,15 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 		return fire.E("%s invalid file", name)
 	}
 
-	// check type
+	// check file type
 	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
 		return fire.E("%s %w", name, err)
 	}
 
-	// check length
-	if l.FileLength <= 0 {
-		return fire.E("%s zero length", name)
+	// check file size
+	if l.FileSize <= 0 {
+		return fire.E("%s zero size", name)
 	}
 
 	return nil
@@ -89,8 +89,8 @@ type File struct {
 	// The media type of the file e.g. "image/png".
 	Type string `json:"type"`
 
-	// The total length of the file.
-	Length int64 `json:"length"`
+	// The size of the file.
+	Size int64 `json:"size"`
 
 	// The service specific blob handle.
 	Handle Handle `json:"handle"`
@@ -115,9 +115,9 @@ func (f *File) Validate() error {
 		return fire.E("type %w", err)
 	}
 
-	// check length
-	if f.Length == 0 && (f.State == Uploaded || f.State == Claimed) {
-		return fire.E("missing length")
+	// check size
+	if f.Size <= 0 && (f.State == Uploaded || f.State == Claimed) {
+		return fire.E("missing size")
 	}
 
 	// check handle

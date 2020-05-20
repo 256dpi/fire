@@ -30,7 +30,7 @@ func TestStorageUpload(t *testing.T) {
 		assert.NotEmpty(t, key)
 		assert.Equal(t, Uploaded, file.State)
 		assert.Equal(t, "application/octet-stream", file.Type)
-		assert.Equal(t, int64(12), file.Length)
+		assert.Equal(t, int64(12), file.Size)
 		assert.Equal(t, Handle{"id": "1"}, file.Handle)
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
@@ -43,7 +43,7 @@ func TestStorageUpload(t *testing.T) {
 		assert.Len(t, files, 1)
 		assert.Equal(t, Uploaded, files[0].State)
 		assert.Equal(t, "application/octet-stream", files[0].Type)
-		assert.Equal(t, int64(12), files[0].Length)
+		assert.Equal(t, int64(12), files[0].Size)
 		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 	})
 }
@@ -76,7 +76,7 @@ func TestStorageUploadAction(t *testing.T) {
 		assert.Len(t, files, 1)
 		assert.Equal(t, Uploaded, files[0].State)
 		assert.Equal(t, "application/octet-stream", files[0].Type)
-		assert.Equal(t, int64(12), files[0].Length)
+		assert.Equal(t, int64(12), files[0].Size)
 		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 	})
 }
@@ -168,11 +168,11 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 		assert.Len(t, files, 2)
 		assert.Equal(t, Uploaded, files[0].State)
 		assert.Equal(t, "application/octet-stream", files[0].Type)
-		assert.Equal(t, int64(14), files[0].Length)
+		assert.Equal(t, int64(14), files[0].Size)
 		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 		assert.Equal(t, Uploaded, files[1].State)
 		assert.Equal(t, "application/octet-stream", files[1].Type)
-		assert.Equal(t, int64(14), files[1].Length)
+		assert.Equal(t, int64(14), files[1].Size)
 		assert.Equal(t, Handle{"id": "2"}, files[1].Handle)
 	})
 }

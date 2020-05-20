@@ -56,13 +56,13 @@ func TestLinkValidate(t *testing.T) {
 
 	err = link.Validate("foo")
 	assert.Error(t, err)
-	assert.Equal(t, "foo zero length", err.Error())
+	assert.Equal(t, "foo zero size", err.Error())
 
 	err = link.Validate("foo", "bar/foo")
 	assert.Error(t, err)
 	assert.Equal(t, "foo type unallowed", err.Error())
 
-	link.FileLength = 12
+	link.FileSize = 12
 
 	err = link.Validate("foo")
 	assert.NoError(t, err)
