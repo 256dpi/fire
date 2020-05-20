@@ -13,6 +13,9 @@ type ClaimKey struct {
 	// The claimable file.
 	File coal.ID `json:"file"`
 
+	// The files size.
+	Size int64 `json:"size"`
+
 	// The files media type.
 	Type string `json:"type"`
 }
@@ -22,6 +25,11 @@ func (k *ClaimKey) Validate() error {
 	// check file
 	if k.File.IsZero() {
 		return fire.E("missing file")
+	}
+
+	// check size
+	if k.Size <= 0 {
+		return fire.E("missing size")
 	}
 
 	// check type

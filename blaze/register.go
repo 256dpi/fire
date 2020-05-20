@@ -17,6 +17,9 @@ type Binding struct {
 	// The link field on the model.
 	Field string
 
+	// The file size limit.
+	Limit int64
+
 	// The allowed media types.
 	Types []string
 }
@@ -37,7 +40,7 @@ func NewRegister() *Register {
 
 // Add will add the specified binding to the register. The name of the binding
 // must be unique among all registered bindings.
-func (r *Register) Add(owner coal.Model, field, name string, types ...string) {
+func (r *Register) Add(owner coal.Model, field, name string, limit int64, types ...string) {
 	// check owner
 	if owner == nil {
 		panic(`blaze: missing owner`)
@@ -51,6 +54,11 @@ func (r *Register) Add(owner coal.Model, field, name string, types ...string) {
 	// check name
 	if name == "" {
 		panic(`blaze: missing name`)
+	}
+
+	// check limit
+	if limit < 0 {
+		panic("blaze: invalid limit")
 	}
 
 	// check types
@@ -71,6 +79,7 @@ func (r *Register) Add(owner coal.Model, field, name string, types ...string) {
 		Name:  name,
 		Owner: owner,
 		Field: field,
+		Limit: limit,
 		Types: types,
 	}
 

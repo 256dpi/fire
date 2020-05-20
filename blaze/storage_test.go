@@ -375,11 +375,13 @@ func TestStorageValidator(t *testing.T) {
 
 		file1 := tester.Insert(&File{
 			State: Uploaded,
+			Size:  42,
 			Type:  "image/png",
 		}).(*File)
 
 		claimKey1, err := storage.notary.Issue(&ClaimKey{
 			File: file1.ID(),
+			Size: file1.Size,
 			Type: file1.Type,
 		})
 		assert.NoError(t, err)

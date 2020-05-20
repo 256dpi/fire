@@ -127,6 +127,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	// issue claim key
 	claimKey, err := s.notary.Issue(&ClaimKey{
 		File: file.ID(),
+		Size: file.Size,
 		Type: file.Type,
 	})
 	if err != nil {
@@ -339,6 +340,11 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 	err := s.notary.Verify(&key, claimKey)
 	if err != nil {
 		return nil, err
+	}
+
+	// verify limit
+	if bnd.Limit > 0 && key.Size > bnd.Limit {
+		return nil, fmt.Errorf("too big")
 	}
 
 	// verify type

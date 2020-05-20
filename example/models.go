@@ -31,7 +31,7 @@ func init() {
 	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
 
 	// add item bindings
-	register.Add(&Item{}, "File", "item-file", "image/png")
+	register.Add(&Item{}, "File", "item-file", 0, "image/png")
 
 	// add system indexes
 	flame.AddApplicationIndexes(catalog)
