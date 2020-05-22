@@ -32,6 +32,10 @@ func BenchmarkList(b *testing.B) {
 	b.Run("50X", func(b *testing.B) {
 		listBenchmark(b, store, 20, 50)
 	})
+
+	b.Run("100X", func(b *testing.B) {
+		listBenchmark(b, store, 20, 100)
+	})
 }
 
 func BenchmarkFind(b *testing.B) {
@@ -52,6 +56,10 @@ func BenchmarkFind(b *testing.B) {
 	b.Run("50X", func(b *testing.B) {
 		findBenchmark(b, store, 50)
 	})
+
+	b.Run("100X", func(b *testing.B) {
+		findBenchmark(b, store, 100)
+	})
 }
 
 func BenchmarkCreate(b *testing.B) {
@@ -71,6 +79,10 @@ func BenchmarkCreate(b *testing.B) {
 
 	b.Run("50X", func(b *testing.B) {
 		createBenchmark(b, store, 50)
+	})
+
+	b.Run("100X", func(b *testing.B) {
+		createBenchmark(b, store, 100)
 	})
 }
 
