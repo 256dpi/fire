@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -26,6 +27,15 @@ var mongoURI = getEnv("MONGODB_URI", "")
 var secret = getEnv("SECRET", "abcd1234abcd1234")
 var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
+
+var reporter = func(err error) {
+	println(err.Error())
+}
+
+var reporterWithStack = func(err error) {
+	reporter(err)
+	debug.PrintStack()
+}
 
 func main() {
 	// visualize models
@@ -74,6 +84,7 @@ func main() {
 
 	// compose handler
 	handler := serve.Compose(
+		serve.Recover(reporterWithStack),
 		serve.Throttle(100),
 		serve.Timeout(time.Minute),
 		serve.Limit(serve.MustByteSize("8M")),
@@ -140,11 +151,6 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	// derive secrets
 	authSecret := masterSecret.Derive("auth")
 	fileSecret := masterSecret.Derive("file")
-
-	// create reporter
-	reporter := func(err error) {
-		println(err.Error())
-	}
 
 	// create mux
 	mux := http.NewServeMux()
