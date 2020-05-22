@@ -46,7 +46,7 @@ func Connect(uri string) (*Store, error) {
 
 	// prepare options
 	opts := options.Client().ApplyURI(uri)
-	opts.SetReadConcern(readconcern.Majority())
+	opts.SetReadConcern(readconcern.Linearizable())
 	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
 
 	// create client

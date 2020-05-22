@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"gopkg.in/tomb.v2"
 )
 
@@ -119,8 +120,11 @@ func (s *Stream) tail() error {
 		opts.SetResumeAfter(bson.Raw(s.token))
 	}
 
+	// get collection
+	coll := s.store.DB().Collection(GetMeta(s.model).Collection, options.Collection().SetReadConcern(readconcern.Majority()))
+
 	// open change stream
-	cs, err := s.store.C(s.model).Native().Watch(ctx, []bson.M{}, opts)
+	cs, err := coll.Watch(ctx, []bson.M{}, opts)
 	if err != nil {
 		return err
 	}
