@@ -19,21 +19,10 @@ type Span struct {
 // the span from the context it will create a child from the traces tail.
 // If not it considers the span history to have diverged from the trace.
 func Track(ctx context.Context, name string) (context.Context, *Span) {
-	// check context
-	if ctx == nil {
-		return nil, nil
-	}
-
 	// get span
-	span := opentracing.SpanFromContext(ctx)
+	span := GetSpan(ctx)
 	if span == nil {
-		return ctx, nil
-	}
-
-	// use trace tail if span is the root span
-	trace := GetTrace(ctx)
-	if trace != nil && trace.Root() == span {
-		span = trace.Tail()
+		return nil, nil
 	}
 
 	// create child

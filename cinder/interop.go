@@ -6,6 +6,30 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+// GetSpan will return the last span added to the history found in the context.
+// If a trace is found and the root is the last added span it will return the
+// trace's tail.
+func GetSpan(ctx context.Context) opentracing.Span {
+	// check context
+	if ctx == nil {
+		return nil
+	}
+
+	// get span
+	span := opentracing.SpanFromContext(ctx)
+	if span == nil {
+		return nil
+	}
+
+	// get trace
+	trace := GetTrace(ctx)
+	if trace != nil && trace.Root() == span {
+		span = trace.Tail()
+	}
+
+	return span
+}
+
 // Branch will wrap the provided context with the tail of the found trace in the
 // context if the root span matches the span found in the context. This ensures
 // that opentracing compatible code will properly branch of the trace tail
