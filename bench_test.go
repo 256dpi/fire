@@ -12,29 +12,31 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var textBody = strings.Repeat("X", 100)
+const benchListItems = 20
+
+var benchTextBody = strings.Repeat("X", 100)
 
 var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal")
 
 func BenchmarkList(b *testing.B) {
 	b.Run("00X", func(b *testing.B) {
-		listBenchmark(b, benchStore, 20, 0)
+		listBenchmark(b, benchStore, 0)
 	})
 
 	b.Run("01X", func(b *testing.B) {
-		listBenchmark(b, benchStore, 20, 1)
+		listBenchmark(b, benchStore, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		listBenchmark(b, benchStore, 20, 10)
+		listBenchmark(b, benchStore, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		listBenchmark(b, benchStore, 20, 50)
+		listBenchmark(b, benchStore, 50)
 	})
 
 	b.Run("100X", func(b *testing.B) {
-		listBenchmark(b, benchStore, 20, 100)
+		listBenchmark(b, benchStore, 100)
 	})
 }
 
@@ -82,7 +84,7 @@ func BenchmarkCreate(b *testing.B) {
 	})
 }
 
-func listBenchmark(b *testing.B, store *coal.Store, items, parallelism int) {
+func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
@@ -105,10 +107,10 @@ func listBenchmark(b *testing.B, store *coal.Store, items, parallelism int) {
 		tester.Handler,
 	)
 
-	for i := 0; i < items; i++ {
+	for i := 0; i < benchListItems; i++ {
 		tester.Insert(&postModel{
 			Title:    "Hello World!",
-			TextBody: textBody,
+			TextBody: benchTextBody,
 		})
 	}
 
@@ -146,7 +148,7 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 
 	id := tester.Insert(&postModel{
 		Title:    "Hello World!",
-		TextBody: textBody,
+		TextBody: benchTextBody,
 	}).ID()
 
 	parallelBenchmark(b, parallelism, func() {
