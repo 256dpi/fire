@@ -487,6 +487,9 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 
 			// get binding
 			binding := s.register.Lookup(ctx.Model, field)
+			if binding == nil {
+				return fmt.Errorf("missing binding")
+			}
 
 			// inspect type
 			var err error
