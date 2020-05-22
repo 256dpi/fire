@@ -13,6 +13,10 @@ func TestTrack(t *testing.T) {
 	assert.Nil(t, ctx)
 	assert.Nil(t, span)
 
+	ctx, span = Track(context.Background(), "foo")
+	assert.NotNil(t, ctx)
+	assert.Nil(t, span)
+
 	_, root := opentracing.StartSpanFromContext(context.Background(), "root")
 
 	ctx, span = Track(root, "track")

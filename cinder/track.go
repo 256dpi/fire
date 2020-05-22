@@ -22,7 +22,7 @@ func Track(ctx context.Context, name string) (context.Context, *Span) {
 	// get span
 	span := GetSpan(ctx)
 	if span == nil {
-		return nil, nil
+		return ctx, nil
 	}
 
 	// create child
