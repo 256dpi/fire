@@ -14,75 +14,71 @@ import (
 
 var textBody = strings.Repeat("X", 100)
 
-func BenchmarkList(b *testing.B) {
-	store := mongoStore
+var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal")
 
+func BenchmarkList(b *testing.B) {
 	b.Run("00X", func(b *testing.B) {
-		listBenchmark(b, store, 20, 0)
+		listBenchmark(b, benchStore, 20, 0)
 	})
 
 	b.Run("01X", func(b *testing.B) {
-		listBenchmark(b, store, 20, 1)
+		listBenchmark(b, benchStore, 20, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		listBenchmark(b, store, 20, 10)
+		listBenchmark(b, benchStore, 20, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		listBenchmark(b, store, 20, 50)
+		listBenchmark(b, benchStore, 20, 50)
 	})
 
 	b.Run("100X", func(b *testing.B) {
-		listBenchmark(b, store, 20, 100)
+		listBenchmark(b, benchStore, 20, 100)
 	})
 }
 
 func BenchmarkFind(b *testing.B) {
-	store := mongoStore
-
 	b.Run("00X", func(b *testing.B) {
-		findBenchmark(b, store, 0)
+		findBenchmark(b, benchStore, 0)
 	})
 
 	b.Run("01X", func(b *testing.B) {
-		findBenchmark(b, store, 1)
+		findBenchmark(b, benchStore, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		findBenchmark(b, store, 10)
+		findBenchmark(b, benchStore, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		findBenchmark(b, store, 50)
+		findBenchmark(b, benchStore, 50)
 	})
 
 	b.Run("100X", func(b *testing.B) {
-		findBenchmark(b, store, 100)
+		findBenchmark(b, benchStore, 100)
 	})
 }
 
 func BenchmarkCreate(b *testing.B) {
-	store := mongoStore
-
 	b.Run("00X", func(b *testing.B) {
-		createBenchmark(b, store, 0)
+		createBenchmark(b, benchStore, 0)
 	})
 
 	b.Run("01X", func(b *testing.B) {
-		createBenchmark(b, store, 1)
+		createBenchmark(b, benchStore, 1)
 	})
 
 	b.Run("10X", func(b *testing.B) {
-		createBenchmark(b, store, 10)
+		createBenchmark(b, benchStore, 10)
 	})
 
 	b.Run("50X", func(b *testing.B) {
-		createBenchmark(b, store, 50)
+		createBenchmark(b, benchStore, 50)
 	})
 
 	b.Run("100X", func(b *testing.B) {
-		createBenchmark(b, store, 100)
+		createBenchmark(b, benchStore, 100)
 	})
 }
 
