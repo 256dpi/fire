@@ -14,9 +14,9 @@ import (
 
 const benchListItems = 20
 
-var benchTextBody = strings.Repeat("X", 100)
-
 var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal")
+
+var benchThrottle = 100
 
 func BenchmarkList(b *testing.B) {
 	b.Run("00X", func(b *testing.B) {
@@ -103,14 +103,14 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	})
 
 	tester.Handler = serve.Compose(
-		serve.Throttle(100),
+		serve.Throttle(benchThrottle),
 		tester.Handler,
 	)
 
 	for i := 0; i < benchListItems; i++ {
 		tester.Insert(&postModel{
 			Title:    "Hello World!",
-			TextBody: benchTextBody,
+			TextBody: strings.Repeat("X", 100),
 		})
 	}
 
@@ -142,13 +142,13 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	})
 
 	tester.Handler = serve.Compose(
-		serve.Throttle(100),
+		serve.Throttle(benchThrottle),
 		tester.Handler,
 	)
 
 	id := tester.Insert(&postModel{
 		Title:    "Hello World!",
-		TextBody: benchTextBody,
+		TextBody: strings.Repeat("X", 100),
 	}).ID()
 
 	parallelBenchmark(b, parallelism, func() {
@@ -179,7 +179,7 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	})
 
 	tester.Handler = serve.Compose(
-		serve.Throttle(100),
+		serve.Throttle(benchThrottle),
 		tester.Handler,
 	)
 
@@ -188,7 +188,8 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 			"data": {
 				"type": "posts",
 				"attributes": {
-					"title": "Post 1"
+					"title": "Post 1",
+					"text-body": "`+strings.Repeat("X", 100)+`"
 				}
 			}
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
