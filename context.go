@@ -296,7 +296,7 @@ func (c *Context) Parse(obj interface{}) error {
 	// unmarshal json
 	err := json.NewDecoder(c.HTTPRequest.Body).Decode(obj)
 	if err == io.EOF {
-		return E("incomplete request body")
+		return stick.E("incomplete request body")
 	} else if err != nil {
 		return err
 	}

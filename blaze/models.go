@@ -5,7 +5,6 @@ import (
 	"mime"
 	"time"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -36,18 +35,18 @@ type Link struct {
 func (l *Link) Validate(name string, whitelist ...string) error {
 	// check file
 	if l.File == nil || l.File.IsZero() {
-		return fire.E("%s invalid file", name)
+		return stick.E("%s invalid file", name)
 	}
 
 	// check file type
 	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
-		return fire.E("%s %w", name, err)
+		return stick.E("%s %w", name, err)
 	}
 
 	// check file size
 	if l.FileSize <= 0 {
-		return fire.E("%s zero size", name)
+		return stick.E("%s zero size", name)
 	}
 
 	return nil
@@ -112,29 +111,29 @@ func (f *File) Validate() error {
 	// check type
 	err := ValidateType(f.Type)
 	if err != nil {
-		return fire.E("type %w", err)
+		return stick.E("type %w", err)
 	}
 
 	// check size
 	if f.Size <= 0 && (f.State == Uploaded || f.State == Claimed) {
-		return fire.E("missing size")
+		return stick.E("missing size")
 	}
 
 	// check handle
 	if len(f.Handle) == 0 {
-		return fire.E("missing handle")
+		return stick.E("missing handle")
 	}
 
 	// check binding
 	if f.Binding == "" && f.State == Claimed {
-		return fire.E("missing binding")
+		return stick.E("missing binding")
 	}
 
 	// check owner
 	if f.Owner != nil && f.Owner.IsZero() {
-		return fire.E("invalid owner")
+		return stick.E("invalid owner")
 	} else if f.Owner == nil && f.State == Claimed {
-		return fire.E("missing owner")
+		return stick.E("missing owner")
 	}
 
 	return nil
@@ -151,11 +150,11 @@ func ValidateType(str string, whitelist ...string) error {
 	// check media type
 	mediaType, _, err := mime.ParseMediaType(str)
 	if err != nil {
-		return fire.E("type invalid")
+		return stick.E("type invalid")
 	} else if str != mediaType {
-		return fire.E("type ambiguous")
+		return stick.E("type ambiguous")
 	} else if len(whitelist) > 0 && !stick.Contains(whitelist, mediaType) {
-		return fire.E("type unallowed")
+		return stick.E("type unallowed")
 	}
 
 	return nil

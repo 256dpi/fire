@@ -6,7 +6,6 @@ import (
 	"github.com/256dpi/oauth2/v2"
 	"github.com/asaskevich/govalidator"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
@@ -113,12 +112,12 @@ func (t *Token) SetTokenData(data TokenData) {
 func (t *Token) Validate() error {
 	// check id
 	if t.ID().IsZero() {
-		return fire.E("invalid id")
+		return stick.E("invalid id")
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return fire.E("missing expiry")
+		return stick.E("missing expiry")
 	}
 
 	return nil
@@ -187,18 +186,18 @@ func (a *Application) Validate() error {
 
 	// check name
 	if a.Name == "" {
-		return fire.E("missing name")
+		return stick.E("missing name")
 	}
 
 	// check key
 	if a.Key == "" {
-		return fire.E("missing key")
+		return stick.E("missing key")
 	}
 
 	// check redirect uri
 	for _, redirectURI := range a.RedirectURIs {
 		if redirectURI != "" && !govalidator.IsURL(redirectURI) {
-			return fire.E("invalid redirect uri")
+			return stick.E("invalid redirect uri")
 		}
 	}
 
@@ -267,17 +266,17 @@ func (u *User) Validate() error {
 
 	// check name
 	if u.Name == "" {
-		return fire.E("missing name")
+		return stick.E("missing name")
 	}
 
 	// check email
 	if u.Email == "" || !govalidator.IsEmail(u.Email) {
-		return fire.E("invalid email")
+		return stick.E("invalid email")
 	}
 
 	// check password hash
 	if len(u.PasswordHash) == 0 {
-		return fire.E("missing password hash")
+		return stick.E("missing password hash")
 	}
 
 	return nil

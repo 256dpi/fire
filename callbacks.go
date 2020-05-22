@@ -98,7 +98,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 
 				// check equality
 				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), def) {
-					return E("field " + field + " is protected")
+					return stick.E("field " + field + " is protected")
 				}
 			}
 		}
@@ -108,7 +108,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 			// check all fields
 			for field := range pairs {
 				if ctx.Modified(field) {
-					return E("field " + field + " is protected")
+					return stick.E("field " + field + " is protected")
 				}
 			}
 		}
@@ -152,7 +152,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 
 			// return error if documents are found
 			if count != 0 {
-				return E("resource has dependent resources")
+				return stick.E("resource has dependent resources")
 			}
 		}
 
@@ -207,7 +207,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 				// check for existence
 				if int(count) != len(ids) {
-					return E("missing references for field " + field)
+					return stick.E("missing references for field " + field)
 				}
 
 				continue
@@ -225,7 +225,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 			// check for existence
 			if count != 1 {
-				return E("missing reference for field " + field)
+				return stick.E("missing reference for field " + field)
 			}
 		}
 
@@ -366,7 +366,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 
 		// return error if a document is missing (does not match)
 		if int(count) != len(ids) {
-			return E("references do not match")
+			return stick.E("references do not match")
 		}
 
 		return nil

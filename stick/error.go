@@ -1,4 +1,4 @@
-package fire
+package stick
 
 import (
 	"fmt"
@@ -25,6 +25,11 @@ func Safe(err error) error {
 // Error implements the error interface.
 func (err *SafeError) Error() string {
 	return err.Err.Error()
+}
+
+// Unwrap will return the wrapped error.
+func (err *SafeError) Unwrap() error {
+	return err.Err
 }
 
 // IsSafe can be used to check if an error has been wrapped using Safe.

@@ -23,7 +23,7 @@ type postModel struct {
 
 func (p *postModel) Validate() error {
 	if p.Title == "error" {
-		return E("validation error")
+		return stick.E("validation error")
 	}
 
 	return nil
