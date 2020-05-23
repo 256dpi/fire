@@ -2,8 +2,8 @@ package fire
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -90,7 +90,7 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
-	tester.Assign("", &Controller{
+	group := tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
@@ -108,6 +108,8 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 		serve.Throttle(benchThrottle),
 		tester.Handler,
 	)
+
+	group.reporter = func(err error) {}
 
 	for i := 0; i < benchListItems; i++ {
 		tester.Insert(&postModel{
@@ -116,12 +118,9 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 		})
 	}
 
-	parallelBenchmark(b, parallelism, func() {
-		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-			if r.Code != http.StatusOK {
-				panic("not ok")
-			}
-		})
+	parallelBenchmark(b, parallelism, func() bool {
+		res := serve.Record(tester.Handler, "GET", "/posts", nil, "")
+		return res.Code == http.StatusOK
 	})
 }
 
@@ -129,7 +128,7 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
-	tester.Assign("", &Controller{
+	group := tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
@@ -148,17 +147,16 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 		tester.Handler,
 	)
 
+	group.reporter = func(err error) {}
+
 	id := tester.Insert(&postModel{
 		Title:    "Hello World!",
 		TextBody: strings.Repeat("X", 100),
 	}).ID()
 
-	parallelBenchmark(b, parallelism, func() {
-		tester.Request("GET", "posts/"+id.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-			if r.Code != http.StatusOK {
-				panic("not ok")
-			}
-		})
+	parallelBenchmark(b, parallelism, func() bool {
+		res := serve.Record(tester.Handler, "GET", "/posts/"+id.Hex(), nil, "")
+		return res.Code == http.StatusOK
 	})
 }
 
@@ -166,7 +164,7 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	tester := NewTester(store, modelList...)
 	tester.Clean()
 
-	tester.Assign("", &Controller{
+	group := tester.Assign("", &Controller{
 		Model: &postModel{},
 		Store: tester.Store,
 	}, &Controller{
@@ -185,8 +183,10 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 		tester.Handler,
 	)
 
-	parallelBenchmark(b, parallelism, func() {
-		tester.Request("POST", "posts", `{
+	group.reporter = func(err error) {}
+
+	parallelBenchmark(b, parallelism, func() bool {
+		res := serve.Record(tester.Handler, "POST", "/posts", nil, `{
 			"data": {
 				"type": "posts",
 				"attributes": {
@@ -194,15 +194,12 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 					"text-body": "`+strings.Repeat("X", 100)+`"
 				}
 			}
-		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
-			if r.Code != http.StatusCreated {
-				panic("not ok")
-			}
-		})
+		}`)
+		return res.Code == http.StatusCreated
 	})
 }
 
-func parallelBenchmark(b *testing.B, parallelism int, fn func()) {
+func parallelBenchmark(b *testing.B, parallelism int, fn func() bool) {
 	if parallelism != 0 {
 		b.SetParallelism(parallelism)
 	}
@@ -212,15 +209,21 @@ func parallelBenchmark(b *testing.B, parallelism int, fn func()) {
 
 	now := time.Now()
 
-	if parallelism != 0 {
+	var errs int64
+
+	if parallelism > 0 {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				fn()
+				if !fn() {
+					atomic.AddInt64(&errs, 1)
+				}
 			}
 		})
 	} else {
 		for i := 0; i < b.N; i++ {
-			fn()
+			if !fn() {
+				errs++
+			}
 		}
 	}
 
@@ -229,4 +232,6 @@ func parallelBenchmark(b *testing.B, parallelism int, fn func()) {
 	nsPerOp := float64(time.Since(now)) / float64(b.N)
 	opsPerS := float64(time.Second) / nsPerOp
 	b.ReportMetric(opsPerS, "ops/s")
+
+	b.ReportMetric(float64(errs), "errors")
 }
