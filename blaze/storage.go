@@ -266,7 +266,7 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 	}
 
 	// claim file
-	err := s.ClaimLink(ctx, &link, binding.Name, coal.P(model.ID()))
+	err := s.ClaimLink(ctx, &link, binding.Name, model.ID())
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 // ClaimLink will claim the provided link under the specified binding. The
 // claimed link must be persisted in the same transaction as the claim to ensure
 // consistency.
-func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, owner *coal.ID) error {
+func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
 	// check transaction
 	if !coal.HasTransaction(ctx) {
 		return fmt.Errorf("missing transaction for claim")
@@ -319,7 +319,7 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 
 // ClaimFile will claim the file referenced by the provided claim key using the
 // specified binding and owner.
-func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner *coal.ID) (*File, error) {
+func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
 	// track
 	ctx, span := cinder.Track(ctx, "blaze/Storage.ClaimFile")
 	defer span.Finish()
@@ -331,7 +331,7 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 	}
 
 	// check owner
-	if owner == nil || owner.IsZero() {
+	if owner.IsZero() {
 		return nil, fmt.Errorf("missing owner")
 	}
 
@@ -472,7 +472,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 		}
 
 		// get owner
-		owner := coal.P(ctx.Model.ID())
+		owner := ctx.Model.ID()
 
 		// check all fields
 		for _, field := range fields {
@@ -531,7 +531,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner *coal.ID) error {
+func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
