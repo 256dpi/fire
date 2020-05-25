@@ -490,6 +490,7 @@ func TestStorageDownloadAction(t *testing.T) {
 		assert.NotNil(t, file)
 
 		file.State = Claimed
+		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
 		tester.Replace(file)
 
 		key, err := storage.notary.Issue(&ViewKey{
@@ -507,8 +508,70 @@ func TestStorageDownloadAction(t *testing.T) {
 		}, action)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":  []string{"bytes"},
+			"Content-Length": []string{"12"},
+			"Content-Type":   []string{"foo/bar"},
+			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
+	})
+}
+
+func TestStorageDownloadActionStream(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+
+		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		file.State = Claimed
+		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+		tester.Replace(file)
+
+		key, err := storage.notary.Issue(&ViewKey{
+			Base: heat.Base{},
+			File: file.ID(),
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		action := storage.DownloadAction()
+
+		req := httptest.NewRequest("HEAD", "/foo?key="+key, nil)
+		rec, err := tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":  []string{"bytes"},
+			"Content-Length": []string{"12"},
+			"Content-Type":   []string{"foo/bar"},
+			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+		}, rec.Header())
+		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
+		assert.Equal(t, "", rec.Body.String())
+
+		req = httptest.NewRequest("HEAD", "/foo?key="+key, nil)
+		req.Header.Set("Range", "bytes=0-5")
+		rec, err = tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusPartialContent, rec.Code)
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":  []string{"bytes"},
+			"Content-Length": []string{"6"},
+			"Content-Type":   []string{"foo/bar"},
+			"Content-Range":  []string{"bytes 0-5/12"},
+			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+		}, rec.Header())
+		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
+		assert.Equal(t, "", rec.Body.String())
 	})
 }
 

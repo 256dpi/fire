@@ -686,7 +686,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 // DownloadAction returns an action that allows downloading files using view
 // keys. This action is usually publicly accessible.
 func (s *Storage) DownloadAction() *fire.Action {
-	return fire.A("blaze/Storage.DownloadAction", []string{"GET"}, 0, func(ctx *fire.Context) error {
+	return fire.A("blaze/Storage.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.store {
 			return fmt.Errorf("stores must be identical")
@@ -702,11 +702,8 @@ func (s *Storage) DownloadAction() *fire.Action {
 		ctx.ResponseWriter.Header().Set("Content-Type", file.Type)
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
 
-		// download file
-		err = DownloadTo(download, ctx.ResponseWriter)
-		if err != nil {
-			return err
-		}
+		// stream download
+		http.ServeContent(ctx.ResponseWriter, ctx.HTTPRequest, "", file.Updated, download)
 
 		return nil
 	})
