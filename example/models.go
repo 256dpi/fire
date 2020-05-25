@@ -30,8 +30,13 @@ func init() {
 	catalog.AddIndex(&Item{}, false, time.Second, "Deleted")
 	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
 
-	// add item bindings
-	register.Add(&Item{}, "File", "item-file", 0, "image/png")
+	// add item file binding
+	register.Add(&blaze.Binding{
+		Name:  "item-file",
+		Owner: &Item{},
+		Field: "File",
+		Types: []string{"image/png"},
+	})
 
 	// add system indexes
 	flame.AddApplicationIndexes(catalog)
