@@ -702,6 +702,9 @@ func (s *Storage) DownloadAction() *fire.Action {
 		ctx.ResponseWriter.Header().Set("Content-Type", file.Type)
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
 
+		// unset any content security policy
+		ctx.ResponseWriter.Header().Del("Content-Security-Policy")
+
 		// stream download
 		http.ServeContent(ctx.ResponseWriter, ctx.HTTPRequest, "", file.Updated, download)
 
