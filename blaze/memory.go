@@ -2,9 +2,14 @@ package blaze
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strconv"
+	"sync"
 )
+
+var errStreamClosed = errors.New("stream closed")
+var errInvalidPosition = errors.New("invalid position")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {
@@ -112,7 +117,9 @@ func (m *Memory) Cleanup(_ context.Context) error {
 }
 
 type memoryUpload struct {
-	blob *MemoryBlob
+	blob   *MemoryBlob
+	closed bool
+	mutex  sync.Mutex
 }
 
 // func (u *memoryUpload) Resume() (int64, error) {
@@ -120,6 +127,15 @@ type memoryUpload struct {
 // }
 
 func (u *memoryUpload) Write(data []byte) (int, error) {
+	// acquire mutex
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+
+	// check flag
+	if u.closed {
+		return 0, errStreamClosed
+	}
+
 	// append data
 	u.blob.Bytes = append(u.blob.Bytes, data...)
 
@@ -131,35 +147,106 @@ func (u *memoryUpload) Write(data []byte) (int, error) {
 // }
 
 func (u *memoryUpload) Abort() error {
+	// acquire mutex
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+
+	// check flag
+	if u.closed {
+		return errStreamClosed
+	}
+
 	return nil
 }
 
 func (u *memoryUpload) Close() error {
+	// acquire mutex
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+
+	// check flag
+	if u.closed {
+		return errStreamClosed
+	}
+
 	return nil
 }
 
 type memoryDownload struct {
-	blob *MemoryBlob
-	pos  int
+	blob     *MemoryBlob
+	position int64
+	closed   bool
+	mutex    sync.Mutex
 }
 
-// func (u *memoryDownload) Seek(offset int64, whence int) (int64, error) {
-// 	panic("implement me")
-// }
+func (d *memoryDownload) Seek(offset int64, whence int) (int64, error) {
+	// acquire mutex
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
-func (u *memoryDownload) Read(buf []byte) (int, error) {
+	// check flag
+	if d.closed {
+		return 0, errStreamClosed
+	}
+
+	// get position
+	position := d.position
+
+	// adjust position
+	switch whence {
+	case io.SeekStart:
+		position = offset
+	case io.SeekCurrent:
+		position = position + offset
+	case io.SeekEnd:
+		position = int64(len(d.blob.Bytes)) - offset
+	}
+
+	// check position
+	if position < 0 {
+		return 0, errInvalidPosition
+	}
+
+	// update position
+	d.position = position
+
+	return d.position, nil
+}
+
+func (d *memoryDownload) Read(buf []byte) (int, error) {
+	// acquire mutex
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// check flag
+	if d.closed {
+		return 0, errStreamClosed
+	}
+
 	// check EOF
-	if u.pos >= len(u.blob.Bytes) {
+	if d.position >= int64(len(d.blob.Bytes)) {
 		return 0, io.EOF
 	}
 
 	// copy bytes
-	n := copy(buf, u.blob.Bytes[u.pos:])
-	u.pos += n
+	n := copy(buf, d.blob.Bytes[d.position:])
+	d.position += int64(n)
 
 	return n, nil
 }
 
-func (u *memoryDownload) Close() error {
+func (d *memoryDownload) Close() error {
+	// acquire mutex
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// check flag
+	if d.closed {
+		return errStreamClosed
+	}
+
+	// set flag
+	d.closed = true
+
 	return nil
 }

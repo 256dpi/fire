@@ -28,7 +28,7 @@ type Upload interface {
 
 // Download handles the download of a blob.
 type Download interface {
-	// Seek(offset int64, whence int) (int64, error)
+	Seek(offset int64, whence int) (int64, error)
 	Read(buf []byte) (int, error)
 	Close() error
 }

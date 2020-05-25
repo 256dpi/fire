@@ -19,3 +19,14 @@ func TestGridFSService(t *testing.T) {
 		abstractServiceTest(t, svc)
 	})
 }
+
+func TestGridFSServiceSeek(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		svc := NewGridFS(lungo.NewBucket(tester.Store.DB()))
+
+		err := svc.Initialize(nil)
+		assert.NoError(t, err)
+
+		abstractServiceSeekTest(t, svc)
+	})
+}

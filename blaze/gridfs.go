@@ -150,9 +150,17 @@ type gridFSDownload struct {
 	stream *lungo.DownloadStream
 }
 
-// func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
-// 	panic("implement me")
-// }
+func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
+	// seek stream
+	n, err := d.stream.Seek(offset, whence)
+	if err == lungo.ErrFileNotFound {
+		return 0, ErrNotFound
+	} else if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
 
 func (d *gridFSDownload) Read(buf []byte) (int, error) {
 	// read stream
