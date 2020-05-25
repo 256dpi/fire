@@ -483,6 +483,21 @@ func TestStorageDownloadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
+		action := storage.DownloadAction()
+
+		/* no key */
+
+		req := httptest.NewRequest("GET", "/foo", nil)
+		rec, err := tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.Equal(t, http.Header{}, rec.Header())
+		assert.Equal(t, "", rec.Body.String())
+
+		/* with key */
+
 		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
@@ -500,10 +515,8 @@ func TestStorageDownloadAction(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
-		action := storage.DownloadAction()
-
-		req := httptest.NewRequest("GET", "/foo?key="+key, nil)
-		rec, err := tester.RunAction(&fire.Context{
+		req = httptest.NewRequest("GET", "/foo?key="+key, nil)
+		rec, err = tester.RunAction(&fire.Context{
 			HTTPRequest: req,
 		}, action)
 		assert.NoError(t, err)

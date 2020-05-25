@@ -692,8 +692,15 @@ func (s *Storage) DownloadAction() *fire.Action {
 			return fmt.Errorf("stores must be identical")
 		}
 
+		// get key
+		key := ctx.HTTPRequest.URL.Query().Get("key")
+		if key == "" {
+			ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
 		// initiate download
-		download, file, err := s.Download(ctx, ctx.HTTPRequest.URL.Query().Get("key"))
+		download, file, err := s.Download(ctx, key)
 		if err != nil {
 			return err
 		}
