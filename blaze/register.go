@@ -22,6 +22,9 @@ type Binding struct {
 
 	// The allowed media types.
 	Types []string
+
+	// The filename used for downloads.
+	Filename string
 }
 
 // Register manages multiple bindings.

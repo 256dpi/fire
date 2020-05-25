@@ -699,15 +699,36 @@ func (s *Storage) DownloadAction() *fire.Action {
 			return nil
 		}
 
+		// get dl
+		dl := ctx.HTTPRequest.URL.Query().Get("dl") == "1"
+
 		// initiate download
 		download, file, err := s.Download(ctx, key)
 		if err != nil {
 			return err
 		}
 
-		// set content type and length
+		// get binding
+		binding := s.register.Get(file.Binding)
+		if binding == nil {
+			return fmt.Errorf("missing binding")
+		}
+
+		// prepare content disposition
+		contentDisposition := "inline"
+		if dl {
+			contentDisposition = "attachment"
+		}
+
+		// append file to disposition if present
+		if binding.Filename != "" {
+			contentDisposition = fmt.Sprintf(`%s; filename="%s"`, contentDisposition, binding.Filename)
+		}
+
+		// set content type, length and disposition
 		ctx.ResponseWriter.Header().Set("Content-Type", file.Type)
 		ctx.ResponseWriter.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
+		ctx.ResponseWriter.Header().Set("Content-Disposition", contentDisposition)
 
 		// unset any content security policy
 		ctx.ResponseWriter.Header().Del("Content-Security-Policy")

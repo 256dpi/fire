@@ -506,6 +506,8 @@ func TestStorageDownloadAction(t *testing.T) {
 
 		file.State = Claimed
 		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+		file.Binding = "test-req"
+		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
 		key, err := storage.notary.Issue(&ViewKey{
@@ -522,10 +524,28 @@ func TestStorageDownloadAction(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, http.Header{
-			"Accept-Ranges":  []string{"bytes"},
-			"Content-Length": []string{"12"},
-			"Content-Type":   []string{"foo/bar"},
-			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"12"},
+			"Content-Type":        []string{"foo/bar"},
+			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+		}, rec.Header())
+		assert.Equal(t, "Hello World!", rec.Body.String())
+
+		/* attachment */
+
+		req = httptest.NewRequest("GET", "/foo?key="+key+"&dl=1", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"12"},
+			"Content-Type":        []string{"foo/bar"},
+			"Content-Disposition": []string{`attachment; filename="foo"`},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
 	})
@@ -543,6 +563,8 @@ func TestStorageDownloadActionStream(t *testing.T) {
 
 		file.State = Claimed
 		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+		file.Binding = "test-req"
+		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
 		key, err := storage.notary.Issue(&ViewKey{
@@ -561,10 +583,11 @@ func TestStorageDownloadActionStream(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, http.Header{
-			"Accept-Ranges":  []string{"bytes"},
-			"Content-Length": []string{"12"},
-			"Content-Type":   []string{"foo/bar"},
-			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"12"},
+			"Content-Type":        []string{"foo/bar"},
+			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
 		assert.Equal(t, "", rec.Body.String())
@@ -577,11 +600,12 @@ func TestStorageDownloadActionStream(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusPartialContent, rec.Code)
 		assert.Equal(t, http.Header{
-			"Accept-Ranges":  []string{"bytes"},
-			"Content-Length": []string{"6"},
-			"Content-Type":   []string{"foo/bar"},
-			"Content-Range":  []string{"bytes 0-5/12"},
-			"Last-Modified":  []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"6"},
+			"Content-Type":        []string{"foo/bar"},
+			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Content-Range":       []string{"bytes 0-5/12"},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
 		assert.Equal(t, "", rec.Body.String())
