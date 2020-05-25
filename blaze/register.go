@@ -40,29 +40,29 @@ func NewRegister() *Register {
 
 // Add will add the specified binding to the register. The name of the binding
 // must be unique among all registered bindings.
-func (r *Register) Add(owner coal.Model, field, name string, limit int64, types ...string) {
+func (r *Register) Add(binding *Binding) {
 	// check owner
-	if owner == nil {
+	if binding.Owner == nil {
 		panic(`blaze: missing owner`)
 	}
 
 	// check field
-	if coal.GetMeta(owner).Fields[field] == nil {
-		panic(fmt.Sprintf(`blaze: unknown field: %s`, field))
+	if coal.GetMeta(binding.Owner).Fields[binding.Field] == nil {
+		panic(fmt.Sprintf(`blaze: unknown field: %s`, binding.Field))
 	}
 
 	// check name
-	if name == "" {
+	if binding.Name == "" {
 		panic(`blaze: missing name`)
 	}
 
 	// check limit
-	if limit < 0 {
+	if binding.Limit < 0 {
 		panic("blaze: invalid limit")
 	}
 
 	// check types
-	for _, typ := range types {
+	for _, typ := range binding.Types {
 		err := ValidateType(typ)
 		if err != nil {
 			panic(fmt.Sprintf(`blaze: %s`, err.Error()))
@@ -70,22 +70,13 @@ func (r *Register) Add(owner coal.Model, field, name string, limit int64, types 
 	}
 
 	// check existing
-	if _, ok := r.names[name]; ok {
-		panic(fmt.Sprintf(`blaze: duplicate binding: %s`, name))
-	}
-
-	// create binding
-	binding := &Binding{
-		Name:  name,
-		Owner: owner,
-		Field: field,
-		Limit: limit,
-		Types: types,
+	if _, ok := r.names[binding.Name]; ok {
+		panic(fmt.Sprintf(`blaze: duplicate binding: %s`, binding.Name))
 	}
 
 	// store binding
-	r.names[name] = binding
-	r.ids[bid(owner, field)] = binding
+	r.names[binding.Name] = binding
+	r.ids[bid(binding.Owner, binding.Field)] = binding
 }
 
 // Get will get the binding with the specified name.

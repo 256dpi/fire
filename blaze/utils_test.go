@@ -28,8 +28,18 @@ type testModel struct {
 var register = NewRegister()
 
 func init() {
-	register.Add(&testModel{}, "RequiredFile", "test-req", 0)
-	register.Add(&testModel{}, "OptionalFile", "test-opt", 0)
+	register.Add(&Binding{
+		Name:     "test-req",
+		Owner:    &testModel{},
+		Field:    "RequiredFile",
+		Filename: "foo",
+	})
+
+	register.Add(&Binding{
+		Name:  "test-opt",
+		Owner: &testModel{},
+		Field: "OptionalFile",
+	})
 }
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
