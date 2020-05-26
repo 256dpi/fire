@@ -104,8 +104,8 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 				for _, enforcer := range enforcers {
 					// check if enforcer can be run
 					if !enforcer.Matcher(ctx) {
-						// an authorizer should not return an enforcer that cannot
-						// enforce the authentication
+						// an authorizer should not return an enforcer that
+						// cannot enforce the authentication
 						panic("ash: invalid enforcer")
 					}
 
