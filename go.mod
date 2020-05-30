@@ -9,9 +9,10 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20171111151018-521b25f4b05f
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/opentracing/opentracing-go v1.1.0
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.4.0
 	github.com/tidwall/gjson v1.1.3
 	github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1 // indirect
