@@ -41,7 +41,7 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 	// check file type
 	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
-		return stick.E("%s %w", name, err)
+		return stick.E("%s %s", name, err.Error())
 	}
 
 	// check file size
@@ -111,7 +111,7 @@ func (f *File) Validate() error {
 	// check type
 	err := ValidateType(f.Type)
 	if err != nil {
-		return stick.E("type %w", err)
+		return stick.E("type %s", err.Error())
 	}
 
 	// check size
