@@ -1,7 +1,6 @@
 package stick
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -37,7 +36,7 @@ func TestF(t *testing.T) {
 }
 
 func TestWF(t *testing.T) {
-	err := errors.New("foo")
+	err := F("foo")
 	err = WF(err, "bar %d", 42)
 
 	str := err.Error()
@@ -52,6 +51,14 @@ func TestWF(t *testing.T) {
 	str = fmt.Sprintf("%+v", err)
 	assert.Equal(t, []string{
 		"foo",
+		"github.com/256dpi/fire/stick.F",
+		"  /Users/256dpi/Development/GitHub/256dpi/fire/stick/error.go:LN",
+		"github.com/256dpi/fire/stick.TestWF",
+		"  /Users/256dpi/Development/GitHub/256dpi/fire/stick/error_test.go:LN",
+		"testing.tRunner",
+		"  /usr/local/Cellar/go/1.14.1/libexec/src/testing/testing.go:LN",
+		"runtime.goexit",
+		"  /usr/local/Cellar/go/1.14.1/libexec/src/runtime/asm_amd64.s:LN",
 		"bar 42",
 		"github.com/256dpi/fire/stick.WF",
 		"  /Users/256dpi/Development/GitHub/256dpi/fire/stick/error.go:LN",
@@ -132,7 +139,7 @@ func TestE(t *testing.T) {
 }
 
 func TestSafeError(t *testing.T) {
-	err1 := errors.New("foo")
+	err1 := F("foo")
 	assert.False(t, IsSafe(err1))
 	assert.Equal(t, "foo", err1.Error())
 	assert.Nil(t, AsSafe(err1))
