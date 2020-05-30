@@ -10,7 +10,6 @@ import (
 )
 
 var errStreamClosed = stick.F("stream closed")
-var errInvalidPosition = stick.F("invalid position")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {
@@ -205,7 +204,7 @@ func (d *memoryDownload) Seek(offset int64, whence int) (int64, error) {
 
 	// check position
 	if position < 0 {
-		return 0, errInvalidPosition
+		return 0, ErrInvalidPosition
 	}
 
 	// update position

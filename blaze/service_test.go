@@ -111,7 +111,7 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 
 	pos, err = dl.Seek(-2, io.SeekStart)
 	assert.Error(t, err)
-	assert.Equal(t, errInvalidPosition, err)
+	assert.Equal(t, ErrInvalidPosition, err)
 
 	// overflow
 

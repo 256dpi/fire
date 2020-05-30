@@ -156,7 +156,7 @@ func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	if err == lungo.ErrFileNotFound {
 		return 0, ErrNotFound
 	} else if err == lungo.ErrInvalidPosition {
-		return 0, errInvalidPosition
+		return 0, ErrInvalidPosition
 	} else if err != nil {
 		return 0, err
 	}

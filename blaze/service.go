@@ -15,6 +15,9 @@ var ErrUsedHandle = stick.F("used handle")
 // ErrNotFound is returned if there is no blob for the provided handle.
 var ErrNotFound = stick.F("not found")
 
+// ErrInvalidPosition is returned if a seek resulted in an invalid position.
+var ErrInvalidPosition = stick.F("invalid position")
+
 // Handle is a reference to a blob stored in a service.
 type Handle map[string]interface{}
 
