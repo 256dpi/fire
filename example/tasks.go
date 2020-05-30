@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,7 +32,7 @@ type incrementJob struct {
 func (j *incrementJob) Validate() error {
 	// check item
 	if j.Item.IsZero() {
-		return fmt.Errorf("missing item")
+		return stick.F("missing item")
 	}
 
 	return nil
@@ -49,7 +48,7 @@ type generateJob struct {
 func (j *generateJob) Validate() error {
 	// check item
 	if j.Item.IsZero() {
-		return fmt.Errorf("missing item")
+		return stick.F("missing item")
 	}
 
 	return nil
@@ -105,7 +104,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 				if err != nil {
 					return err
 				} else if !found {
-					return fmt.Errorf("unknown item")
+					return stick.F("unknown item")
 				}
 
 				// release file if available

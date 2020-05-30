@@ -1,11 +1,11 @@
 package axe
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-axe")
@@ -22,7 +22,7 @@ type testJob struct {
 func (j *testJob) Validate() error {
 	// check data
 	if j.Data == "error" {
-		return fmt.Errorf("data error")
+		return stick.F("data error")
 	}
 
 	return nil

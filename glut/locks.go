@@ -2,7 +2,6 @@ package glut
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,12 +44,12 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// check timeout
 	if timeout == 0 {
-		return false, fmt.Errorf("missing timeout")
+		return false, stick.F("missing timeout")
 	}
 
 	// check TTL
 	if meta.TTL > 0 && meta.TTL < timeout {
-		return false, fmt.Errorf("timeout greather than time to live")
+		return false, stick.F("timeout greater than time to live")
 	}
 
 	// prepare deadline
@@ -161,7 +160,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, fmt.Errorf("missing token")
+		return false, stick.F("missing token")
 	}
 
 	// prepare deadline
@@ -225,7 +224,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, fmt.Errorf("missing token")
+		return false, stick.F("missing token")
 	}
 
 	// find value
@@ -279,7 +278,7 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, fmt.Errorf("missing token")
+		return false, stick.F("missing token")
 	}
 
 	// delete value
@@ -351,7 +350,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// check token
 	if base.Token.IsZero() {
-		return false, fmt.Errorf("missing token")
+		return false, stick.F("missing token")
 	}
 
 	// prepare deadline

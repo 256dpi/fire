@@ -1,7 +1,6 @@
 package blaze
 
 import (
-	"fmt"
 	"mime"
 	"time"
 
@@ -105,7 +104,7 @@ type File struct {
 func (f *File) Validate() error {
 	// check state
 	if !f.State.Valid() {
-		return fmt.Errorf("invalid state")
+		return stick.F("invalid state")
 	}
 
 	// check type

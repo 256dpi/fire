@@ -1,7 +1,6 @@
 package heat
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -91,7 +90,7 @@ func (n *Notary) Verify(key Key, token string) error {
 	// check id
 	kid, err := coal.FromHex(rawKey.ID)
 	if err != nil {
-		return fmt.Errorf("invalid token id")
+		return stick.F("invalid token id")
 	}
 
 	// set id and expiry

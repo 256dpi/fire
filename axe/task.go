@@ -2,7 +2,6 @@ package axe
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -326,7 +325,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job
 	if time.Since(start) > t.Lifetime {
-		return fmt.Errorf(`task "%s" ran longer than the specified lifetime`, name)
+		return stick.F(`task "%s" ran longer than the specified lifetime`, name)
 	}
 
 	// check error

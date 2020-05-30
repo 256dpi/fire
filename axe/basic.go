@@ -2,7 +2,6 @@ package axe
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -137,7 +136,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 
 	// check timeout
 	if timeout == 0 {
-		return false, 0, fmt.Errorf("missing timeout")
+		return false, 0, stick.F("missing timeout")
 	}
 
 	// get time
@@ -246,7 +245,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	if err != nil {
 		return err
 	} else if !found {
-		return fmt.Errorf("missing job")
+		return stick.F("missing job")
 	}
 
 	return nil
@@ -292,7 +291,7 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	if err != nil {
 		return err
 	} else if !found {
-		return fmt.Errorf("missing job")
+		return stick.F("missing job")
 	}
 
 	return nil
@@ -337,7 +336,7 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	if err != nil {
 		return err
 	} else if !found {
-		return fmt.Errorf("missing job")
+		return stick.F("missing job")
 	}
 
 	return nil

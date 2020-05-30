@@ -1,6 +1,6 @@
 package glut
 
-import "fmt"
+import "github.com/256dpi/fire/stick"
 
 // GetKey will get the key of a value.
 func GetKey(value Value) (string, error) {
@@ -24,7 +24,7 @@ func GetKey(value Value) (string, error) {
 
 	// check extension
 	if extension == "" {
-		return "", fmt.Errorf("missing extension")
+		return "", stick.F("missing extension")
 	}
 
 	return key + extension, nil

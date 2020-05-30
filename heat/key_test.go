@@ -1,7 +1,6 @@
 package heat
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -21,12 +20,12 @@ type testKey struct {
 func (t *testKey) Validate() error {
 	// check user
 	if t.User == "" {
-		return fmt.Errorf("missing user")
+		return stick.F("missing user")
 	}
 
 	// check role
 	if t.Role == "" {
-		return fmt.Errorf("missing role")
+		return stick.F("missing role")
 	}
 
 	return nil

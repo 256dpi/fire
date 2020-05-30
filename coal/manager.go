@@ -3,7 +3,6 @@ package coal
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"go.mongodb.org/mongo-driver/bson"
@@ -144,7 +143,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 
 	// check lock
 	if lock && (skip > 0) {
-		return false, fmt.Errorf("cannot lock with skip")
+		return false, stick.F("cannot lock with skip")
 	}
 
 	// check model
@@ -223,7 +222,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 
 	// check lock
 	if lock && (skip > 0 || limit > 0) {
-		return fmt.Errorf("cannot lock with skip and limit")
+		return stick.F("cannot lock with skip and limit")
 	}
 
 	// translate filter
@@ -303,7 +302,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 
 	// check lock
 	if lock && (skip > 0 || limit > 0) {
-		return nil, fmt.Errorf("cannot lock with skip and limit")
+		return nil, stick.F("cannot lock with skip and limit")
 	}
 
 	// translate filter
@@ -378,7 +377,7 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 
 	// check lock
 	if lock && (skip > 0 || limit > 0) {
-		return 0, fmt.Errorf("cannot lock with skip and limit")
+		return 0, stick.F("cannot lock with skip and limit")
 	}
 
 	// translate filter
@@ -566,7 +565,7 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 
 	// check id
 	if model.ID().IsZero() {
-		return false, fmt.Errorf("model has a zero id")
+		return false, stick.F("model has a zero id")
 	}
 
 	// require transaction
@@ -658,7 +657,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 	if lock {
 		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
 		if err != nil {
-			return false, fmt.Errorf("unable to add lock: %w", err)
+			return false, stick.WF(err, "unable to add lock")
 		}
 	}
 
@@ -743,7 +742,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 	if lock {
 		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
 		if err != nil {
-			return false, fmt.Errorf("unable to add lock: %w", err)
+			return false, stick.WF(err, "unable to add lock")
 		}
 	}
 
@@ -795,7 +794,7 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 	if lock {
 		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
 		if err != nil {
-			return 0, fmt.Errorf("unable to add lock: %w", err)
+			return 0, stick.WF(err, "unable to add lock")
 		}
 	}
 
@@ -851,7 +850,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 	if lock {
 		_, err := bsonkit.Put(&updateDoc, "$inc._lk", 1, false)
 		if err != nil {
-			return false, fmt.Errorf("unable to add lock: %w", err)
+			return false, stick.WF(err, "unable to add lock")
 		}
 	}
 
@@ -872,7 +871,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 	token := New()
 	_, err = bsonkit.Put(&updateDoc, "$setOnInsert._tk", token, false)
 	if err != nil {
-		return false, fmt.Errorf("unable to set token: %w", err)
+		return false, stick.WF(err, "unable to set token")
 	}
 
 	// find and update document

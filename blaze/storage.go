@@ -51,7 +51,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 
 	// check transaction
 	if coal.HasTransaction(ctx) {
-		return "", nil, fmt.Errorf("unexpected transaction for upload")
+		return "", nil, stick.F("unexpected transaction for upload")
 	}
 
 	// set default type
@@ -149,7 +149,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 	return fire.A("blaze/Storage.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.store {
-			return fmt.Errorf("stores must be identical")
+			return stick.F("stores must be identical")
 		}
 
 		// get content type
@@ -253,7 +253,7 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 	// lookup binding
 	binding := s.register.Lookup(model, field)
 	if binding == nil {
-		return fmt.Errorf("missing binding")
+		return stick.F("missing binding")
 	}
 
 	// get link
@@ -288,17 +288,17 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
 	// check transaction
 	if !coal.HasTransaction(ctx) {
-		return fmt.Errorf("missing transaction for claim")
+		return stick.F("missing transaction for claim")
 	}
 
 	// check file
 	if link.File != nil {
-		return fmt.Errorf("existing claimed filed")
+		return stick.F("existing claimed filed")
 	}
 
 	// check claim key
 	if link.ClaimKey == "" {
-		return fmt.Errorf("missing claim key")
+		return stick.F("missing claim key")
 	}
 
 	// claim file
@@ -327,12 +327,12 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 	// get binding
 	bnd := s.register.Get(binding)
 	if bnd == nil {
-		return nil, fmt.Errorf("unknown binding: %s", binding)
+		return nil, stick.F("unknown binding: %s", binding)
 	}
 
 	// check owner
 	if owner.IsZero() {
-		return nil, fmt.Errorf("missing owner")
+		return nil, stick.F("missing owner")
 	}
 
 	// verify claim key
@@ -344,12 +344,12 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 
 	// verify limit
 	if bnd.Limit > 0 && key.Size > bnd.Limit {
-		return nil, fmt.Errorf("too big")
+		return nil, stick.F("too big")
 	}
 
 	// verify type
 	if len(bnd.Types) > 0 && !stick.Contains(bnd.Types, key.Type) {
-		return nil, fmt.Errorf("unsupported type: %s", key.Type)
+		return nil, stick.F("unsupported type: %s", key.Type)
 	}
 
 	// claim file
@@ -368,7 +368,7 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 	if err != nil {
 		return nil, err
 	} else if !found {
-		return nil, fmt.Errorf("unable to claim file")
+		return nil, stick.F("unable to claim file")
 	}
 
 	return &file, nil
@@ -413,12 +413,12 @@ func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 	// get file
 	file := link.File
 	if file == nil || file.IsZero() {
-		return fmt.Errorf("invalid file id")
+		return stick.F("invalid file id")
 	}
 
 	// check transaction
 	if !coal.HasTransaction(ctx) {
-		return fmt.Errorf("missing transaction for release")
+		return stick.F("missing transaction for release")
 	}
 
 	// release file
@@ -451,7 +451,7 @@ func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
 	if err != nil {
 		return err
 	} else if !found {
-		return fmt.Errorf("unable to release file")
+		return stick.F("unable to release file")
 	}
 
 	return nil
@@ -463,7 +463,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 	return fire.C("blaze/Storage.Modifier", fire.Only(fire.Create, fire.Update, fire.Delete), func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != s.store {
-			return fmt.Errorf("stores must be identical")
+			return stick.F("stores must be identical")
 		}
 
 		// collect fields if empty
@@ -488,7 +488,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 			// get binding
 			binding := s.register.Lookup(ctx.Model, field)
 			if binding == nil {
-				return fmt.Errorf("missing binding")
+				return stick.F("missing binding")
 			}
 
 			// inspect type
@@ -520,10 +520,10 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 				err = s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				stick.MustSet(ctx.Model, field, newLink)
 			default:
-				err = fmt.Errorf("%s: unsupported type: %T", field, value)
+				err = stick.F("%s: unsupported type: %T", field, value)
 			}
 			if err != nil {
-				return fmt.Errorf("%s: %w", field, err)
+				return stick.WF(err, field)
 			}
 		}
 
@@ -671,7 +671,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 	if err != nil {
 		return nil, nil, err
 	} else if !found {
-		return nil, nil, fmt.Errorf("missing file")
+		return nil, nil, stick.F("missing file")
 	}
 
 	// begin download
@@ -689,7 +689,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 	return fire.A("blaze/Storage.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.store {
-			return fmt.Errorf("stores must be identical")
+			return stick.F("stores must be identical")
 		}
 
 		// get key
@@ -711,7 +711,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 		// get binding
 		binding := s.register.Get(file.Binding)
 		if binding == nil {
-			return fmt.Errorf("missing binding")
+			return stick.F("missing binding")
 		}
 
 		// prepare content disposition

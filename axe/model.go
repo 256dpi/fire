@@ -1,7 +1,6 @@
 package axe
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -84,12 +83,12 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check name
 	if m.Name == "" {
-		return fmt.Errorf("missing name")
+		return stick.F("missing name")
 	}
 
 	// check state
 	if !m.State.Valid() {
-		return fmt.Errorf("invalid state")
+		return stick.F("invalid state")
 	}
 
 	return nil

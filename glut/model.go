@@ -1,7 +1,6 @@
 package glut
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/256dpi/fire/coal"
@@ -32,7 +31,7 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check key
 	if m.Key == "" {
-		return fmt.Errorf("missing key")
+		return stick.F("missing key")
 	}
 
 	return nil

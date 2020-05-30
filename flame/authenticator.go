@@ -5,7 +5,6 @@ package flame
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 type ctxKey string
@@ -906,7 +906,7 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		stack.Abort(fmt.Errorf("unable to determine client id field"))
+		stack.Abort(stick.F("unable to determine client id field"))
 	}
 
 	// add additional filter if provided
@@ -1011,7 +1011,7 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		stack.Abort(fmt.Errorf("unable to determine resource owner id field"))
+		stack.Abort(stick.F("unable to determine resource owner id field"))
 	}
 
 	// add additional filter if provided

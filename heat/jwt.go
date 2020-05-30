@@ -2,7 +2,6 @@ package heat
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -36,19 +35,19 @@ func (c jwtClaims) Valid() error {
 	// check issuer
 	if c.Issuer == "" {
 		err.Errors |= jwt.ValidationErrorIssuer
-		err.Inner = fmt.Errorf("missing issuer")
+		err.Inner = stick.F("missing issuer")
 	}
 
 	// check audience
 	if c.Audience == "" {
 		err.Errors |= jwt.ValidationErrorAudience
-		err.Inner = fmt.Errorf("missing audience")
+		err.Inner = stick.F("missing audience")
 	}
 
 	// check id
 	if c.ID == "" {
 		err.Errors |= jwt.ValidationErrorId
-		err.Inner = fmt.Errorf("missing id")
+		err.Inner = stick.F("missing id")
 	}
 
 	// skip subject
@@ -59,7 +58,7 @@ func (c jwtClaims) Valid() error {
 	// check issued
 	if c.Issued > now {
 		err.Errors |= jwt.ValidationErrorNotValidYet
-		err.Inner = fmt.Errorf("used before issued")
+		err.Inner = stick.F("used before issued")
 	}
 
 	// skip not before
@@ -67,7 +66,7 @@ func (c jwtClaims) Valid() error {
 	// check expire
 	if c.Expires < now {
 		err.Errors |= jwt.ValidationErrorExpired
-		err.Inner = fmt.Errorf("expired")
+		err.Inner = stick.F("expired")
 	}
 
 	// skip data
@@ -97,27 +96,27 @@ type RawKey struct {
 func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 	// check secret
 	if len(secret) < minSecretLen {
-		return "", fmt.Errorf("secret too small")
+		return "", stick.F("secret too small")
 	}
 
 	// check issuer
 	if issuer == "" {
-		return "", fmt.Errorf("missing issuer")
+		return "", stick.F("missing issuer")
 	}
 
 	// check name
 	if name == "" {
-		return "", fmt.Errorf("missing name")
+		return "", stick.F("missing name")
 	}
 
 	// check id
 	if key.ID == "" {
-		return "", fmt.Errorf("missing id")
+		return "", stick.F("missing id")
 	}
 
 	// check expiry
 	if key.Expiry.IsZero() {
-		return "", fmt.Errorf("missing expiry")
+		return "", stick.F("missing expiry")
 	}
 
 	// get time
@@ -148,17 +147,17 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	// check secret
 	if len(secret) < minSecretLen {
-		return nil, fmt.Errorf("secret too small")
+		return nil, stick.F("secret too small")
 	}
 
 	// check issuer
 	if issuer == "" {
-		return nil, fmt.Errorf("missing issuer")
+		return nil, stick.F("missing issuer")
 	}
 
 	// check name
 	if name == "" {
-		return nil, fmt.Errorf("missing name")
+		return nil, stick.F("missing name")
 	}
 
 	// parse token
