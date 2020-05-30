@@ -1,7 +1,6 @@
 package flame
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 func panicReporter(err error) {
@@ -342,7 +342,7 @@ func TestInvalidClientFilter(t *testing.T) {
 		})
 
 		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
-			return nil, errors.New("foo")
+			return nil, stick.F("foo")
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{
@@ -409,7 +409,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 		})
 
 		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
-			return nil, errors.New("foo")
+			return nil, stick.F("foo")
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{

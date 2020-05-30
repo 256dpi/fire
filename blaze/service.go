@@ -2,17 +2,18 @@ package blaze
 
 import (
 	"context"
-	"errors"
+
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrInvalidHandle is returned if the provided handle is invalid.
-var ErrInvalidHandle = errors.New("invalid handle")
+var ErrInvalidHandle = stick.F("invalid handle")
 
 // ErrUsedHandle is returned if the provided handle has already been used.
-var ErrUsedHandle = errors.New("used handle")
+var ErrUsedHandle = stick.F("used handle")
 
 // ErrNotFound is returned if there is no blob for the provided handle.
-var ErrNotFound = errors.New("not found")
+var ErrNotFound = stick.F("not found")
 
 // Handle is a reference to a blob stored in a service.
 type Handle map[string]interface{}

@@ -1,7 +1,6 @@
 package axe
 
 import (
-	"errors"
 	"io"
 	"testing"
 	"time"
@@ -456,7 +455,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		queue.Add(&Task{
 			Job: &testJob{},
 			Handler: func(ctx *Context) error {
-				return errors.New("some error")
+				return stick.F("some error")
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)

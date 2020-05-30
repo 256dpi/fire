@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,7 +43,7 @@ func TestGroupStackAbort(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("Panic", All(), func(*Context) error {
-					stack.Abort(errors.New("foo"))
+					stack.Abort(stick.F("foo"))
 					return nil
 				}),
 			},

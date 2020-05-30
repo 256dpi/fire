@@ -1,12 +1,12 @@
 package flame
 
 import (
-	"errors"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // TokenMigrator is a middleware that detects access tokens passed via query
@@ -56,7 +56,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 
 	// check existence
 	if len(apps) > 1 {
-		return "", errors.New("application name conflict")
+		return "", stick.F("application name conflict")
 	} else if len(apps) == 1 {
 		return apps[0].Key, nil
 	}

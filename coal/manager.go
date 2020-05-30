@@ -2,7 +2,6 @@ package coal
 
 import (
 	"context"
-	"errors"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,7 +49,7 @@ func max(levels []Level) Level {
 
 // ErrTransactionRequired is returned if an operation would be unsafe to perform
 // without a transaction.
-var ErrTransactionRequired = errors.New("operation requires a transaction")
+var ErrTransactionRequired = stick.F("operation requires a transaction")
 
 var incrementLock = bson.M{
 	"$inc": bson.M{

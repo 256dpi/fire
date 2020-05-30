@@ -4,7 +4,6 @@ package flame
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -222,7 +221,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get client
 			client := a.getFirstClient(ctx, data.ClientID)
 			if client == nil {
-				stack.Abort(errors.New("missing client"))
+				stack.Abort(stick.F("missing client"))
 			}
 
 			// create new context with client

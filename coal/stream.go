@@ -1,20 +1,20 @@
 package coal
 
 import (
-	"errors"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"gopkg.in/tomb.v2"
+
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrStop may be returned by a receiver to stop the stream.
-var ErrStop = errors.New("stop")
+var ErrStop = stick.F("stop")
 
 // ErrInvalidated may be returned to the receiver if the underlying collection
 // or database has been invalidated due to a drop or rename.
-var ErrInvalidated = errors.New("invalidated")
+var ErrInvalidated = stick.F("invalidated")
 
 // Event defines the event type.
 type Event string

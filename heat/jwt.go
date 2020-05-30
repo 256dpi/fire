@@ -1,7 +1,6 @@
 package heat
 
 import (
-	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -80,10 +79,10 @@ func (c jwtClaims) Valid() error {
 }
 
 // ErrInvalidToken is returned if a token is in some way invalid.
-var ErrInvalidToken = errors.New("invalid token")
+var ErrInvalidToken = stick.F("invalid token")
 
 // ErrExpiredToken is returned if a token is expired but otherwise valid.
-var ErrExpiredToken = errors.New("expired token")
+var ErrExpiredToken = stick.F("expired token")
 
 // RawKey represents a raw key.
 type RawKey struct {

@@ -2,14 +2,15 @@ package blaze
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strconv"
 	"sync"
+
+	"github.com/256dpi/fire/stick"
 )
 
-var errStreamClosed = errors.New("stream closed")
-var errInvalidPosition = errors.New("invalid position")
+var errStreamClosed = stick.F("stream closed")
+var errInvalidPosition = stick.F("invalid position")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {

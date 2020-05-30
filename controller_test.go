@@ -1,7 +1,6 @@
 package fire
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -5617,7 +5616,7 @@ func TestTransactions(t *testing.T) {
 			Notifiers: L{
 				C("foo", All(), func(ctx *Context) error {
 					if ctx.Model.(*postModel).Title == "FAIL" {
-						return errors.New("foo")
+						return stick.F("foo")
 					}
 					return nil
 				}),

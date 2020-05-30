@@ -1,7 +1,6 @@
 package ash
 
 import (
-	"errors"
 	"os"
 	"testing"
 
@@ -40,14 +39,14 @@ func accessDenied() *Authorizer {
 
 func directError() *Authorizer {
 	return A("directError", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {
-		return nil, errors.New("error")
+		return nil, stick.F("error")
 	})
 }
 
 func indirectError() *Authorizer {
 	return A("indirectError", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {
 		return S{E("indirectError", fire.All(), func(_ *fire.Context) error {
-			return errors.New("error")
+			return stick.F("error")
 		})}, nil
 	})
 }
