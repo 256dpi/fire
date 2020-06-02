@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/256dpi/xo"
 	"gopkg.in/tomb.v2"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -37,7 +37,7 @@ func (c *Error) Error() string {
 type Context struct {
 	// The context that is cancelled when the task timeout has been reached.
 	//
-	// Values: opentracing.Span, *cinder.Trace
+	// Values: opentracing.Span, *xo.Trace
 	context.Context
 
 	// The executed job.
@@ -61,7 +61,7 @@ type Context struct {
 	// The current trace.
 	//
 	// Usage: Read Only
-	Trace *cinder.Trace
+	Trace *xo.Trace
 }
 
 // Task describes work that is managed using a job queue.
@@ -284,8 +284,8 @@ func (t *Task) enqueuer(queue *Queue) error {
 
 func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// create trace
-	trace, outerContext := cinder.CreateTrace(context.Background(), name)
-	defer trace.Finish()
+	trace, outerContext := xo.CreateTrace(context.Background(), name)
+	defer trace.End()
 
 	// prepare job
 	job := GetMeta(t.Job).Make()

@@ -10,9 +10,9 @@ import (
 
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/stack"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
@@ -57,9 +57,9 @@ func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create trace
-		trace, rcx := cinder.CreateTrace(r.Context(), "flame/Authenticator.Endpoint")
+		trace, rcx := xo.CreateTrace(r.Context(), "flame/Authenticator.Endpoint")
 		trace.Tag("prefix", prefix)
-		defer trace.Finish()
+		defer trace.End()
 		r = r.WithContext(rcx)
 
 		// continue any previous aborts
@@ -72,8 +72,8 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 			// set critical error on last span
 			trace.Tag("error", true)
-			trace.Log("error", err.Error())
-			trace.Log("stack", stack.Trace())
+			trace.Tag("error", err.Error())
+			trace.Tag("stack", stack.Trace())
 
 			// otherwise report critical errors
 			if a.reporter != nil {
@@ -121,12 +121,12 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// create trace
-			trace, rcx := cinder.CreateTrace(r.Context(), "flame/Authenticator.Authorizer")
+			trace, rcx := xo.CreateTrace(r.Context(), "flame/Authenticator.Authorizer")
 			trace.Tag("scope", scope)
 			trace.Tag("force", force)
 			trace.Tag("loadClient", loadClient)
 			trace.Tag("loadResourceOwner", loadResourceOwner)
-			defer trace.Finish()
+			defer trace.End()
 			r = r.WithContext(rcx)
 
 			// immediately pass on request if force is not set and there is
@@ -148,8 +148,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 				// set critical error on last span
 				trace.Tag("error", true)
-				trace.Log("error", err.Error())
-				trace.Log("stack", stack.Trace())
+				trace.Tag("error", err.Error())
+				trace.Tag("stack", stack.Trace())
 
 				// otherwise report critical errors
 				if a.reporter != nil {

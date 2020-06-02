@@ -1,11 +1,9 @@
 package fire
 
 import (
-	"os"
 	"testing"
 	"time"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -88,11 +86,4 @@ func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func TestMain(m *testing.M) {
-	closer := cinder.SetupTesting("test-fire")
-	ret := m.Run()
-	closer()
-	os.Exit(ret)
 }

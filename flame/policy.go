@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/256dpi/oauth2/v2"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
 )
@@ -57,7 +57,7 @@ type Context struct {
 	// The context that is cancelled when the underlying connection transport
 	// has been closed.
 	//
-	// Values: opentracing.Span, *cinder.Trace
+	// Values: opentracing.Span, *xo.Trace
 	context.Context
 
 	// The underlying HTTP request.
@@ -68,7 +68,7 @@ type Context struct {
 	// The current trace.
 	//
 	// Usage: Read Only
-	Trace *cinder.Trace
+	Trace *xo.Trace
 
 	writer http.ResponseWriter
 	grants Grants

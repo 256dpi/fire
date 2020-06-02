@@ -9,9 +9,9 @@ import (
 
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -55,7 +55,7 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 	group.Add(controllers...)
 
 	// set handler
-	t.Handler = serve.Compose(cinder.RootHandler(), group.Endpoint(prefix))
+	t.Handler = serve.Compose(xo.RootHandler(), group.Endpoint(prefix))
 
 	return group
 }
@@ -202,8 +202,8 @@ func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 	}
 
 	// create trace
-	ctx.Trace, ctx.Context = cinder.CreateTrace(ctx.Context, "fire/Tester.WithContext")
-	defer ctx.Trace.Finish()
+	ctx.Trace, ctx.Context = xo.CreateTrace(ctx.Context, "fire/Tester.WithContext")
+	defer ctx.Trace.End()
 
 	// yield context
 	if !ctx.Operation.Action() && ctx.Store != nil {

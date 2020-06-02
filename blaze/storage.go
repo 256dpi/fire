@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
@@ -45,9 +45,9 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service, registe
 // transaction to ensure the uploaded file is tracked in case of errors.
 func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Upload")
-	span.Log("type", mediaType)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "blaze/Storage.Upload")
+	span.Tag("type", mediaType)
+	defer span.End()
 
 	// check transaction
 	if coal.HasTransaction(ctx) {
@@ -321,8 +321,8 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 // specified binding and owner.
 func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.ClaimFile")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "blaze/Storage.ClaimFile")
+	defer span.End()
 
 	// get binding
 	bnd := s.register.Get(binding)
@@ -433,8 +433,8 @@ func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 // ReleaseFile will release the file with the provided id.
 func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
 	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.ReleaseFile")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "blaze/Storage.ReleaseFile")
+	defer span.End()
 
 	// release file
 	found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
@@ -652,8 +652,8 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 // view key.
 func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Download")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "blaze/Storage.Download")
+	defer span.End()
 
 	// verify key
 	var key ViewKey
@@ -774,9 +774,9 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	}
 
 	// track
-	ctx, span := cinder.Track(ctx, "blaze/Storage.Cleanup")
-	span.Log("retention", retention.String())
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "blaze/Storage.Cleanup")
+	span.Tag("retention", retention.String())
+	defer span.End()
 
 	// get iterator for deletable files
 	iter, err := s.store.M(&File{}).FindEach(ctx, bson.M{

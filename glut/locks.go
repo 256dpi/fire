@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -16,9 +16,9 @@ import (
 // value if a time to live is set.
 func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Lock")
-	span.Log("timeout", timeout.String())
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Lock")
+	span.Tag("timeout", timeout.String())
+	defer span.End()
 
 	// get meta
 	meta := GetMeta(value)
@@ -38,9 +38,9 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	}
 
 	// log key, ttl and token
-	span.Log("key", key)
-	span.Log("ttl", meta.TTL.String())
-	span.Log("token", base.Token.Hex())
+	span.Tag("key", key)
+	span.Tag("ttl", meta.TTL.String())
+	span.Tag("token", base.Token.Hex())
 
 	// check timeout
 	if timeout == 0 {
@@ -138,8 +138,8 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 // update the deadline of the value if a time to live is set.
 func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/SetLocked")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/SetLocked")
+	defer span.End()
 
 	// get meta
 	meta := GetMeta(value)
@@ -154,9 +154,9 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// log key, ttl and token
-	span.Log("key", key)
-	span.Log("ttl", meta.TTL.String())
-	span.Log("token", base.Token.Hex())
+	span.Tag("key", key)
+	span.Tag("ttl", meta.TTL.String())
+	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {
@@ -205,8 +205,8 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // GetLocked will load the contents of the specified value only if it is locked.
 func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/GetLocked")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/GetLocked")
+	defer span.End()
 
 	// get meta and base
 	meta := GetMeta(value)
@@ -219,8 +219,8 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// log key and token
-	span.Log("key", key)
-	span.Log("token", base.Token.Hex())
+	span.Tag("key", key)
+	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {
@@ -260,8 +260,8 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // DelLocked will delete the specified value only if it is locked.
 func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/DelLocked")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/DelLocked")
+	defer span.End()
 
 	// get base
 	base := value.GetBase()
@@ -273,8 +273,8 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	}
 
 	// log key and token
-	span.Log("key", key)
-	span.Log("token", base.Token.Hex())
+	span.Tag("key", key)
+	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {
@@ -300,8 +300,8 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // write the value back.
 func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/MutLocked")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/MutLocked")
+	defer span.End()
 
 	// get value
 	ok, err := GetLocked(ctx, store, value)
@@ -328,8 +328,8 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool
 // update the deadline of the value if a time to live is set.
 func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Unlock")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Unlock")
+	defer span.End()
 
 	// get meta
 	meta := GetMeta(value)
@@ -344,9 +344,9 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// log key, ttl and token
-	span.Log("key", key)
-	span.Log("ttl", meta.TTL.String())
-	span.Log("token", base.Token.Hex())
+	span.Tag("key", key)
+	span.Tag("ttl", meta.TTL.String())
+	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {

@@ -1,11 +1,7 @@
 package ash
 
 import (
-	"os"
-	"testing"
-
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -58,11 +54,4 @@ func conditional(key string) *Authorizer {
 		}
 		return nil, nil
 	})
-}
-
-func TestMain(m *testing.M) {
-	closer := cinder.SetupTesting("test-ash")
-	ret := m.Run()
-	closer()
-	os.Exit(ret)
 }

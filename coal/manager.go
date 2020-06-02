@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/stick"
 )
 
@@ -83,9 +83,9 @@ func (m *Manager) T() *Translator {
 // A transaction is required for locking.
 func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Find")
-	span.Log("id", id.Hex())
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Find")
+	span.Tag("id", id.Hex())
+	defer span.End()
 
 	// check lock
 	if lock && !HasTransaction(ctx) {
@@ -129,11 +129,11 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 // exclude documents from the filter it should be run during a transaction.
 func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.FindFirst")
-	span.Log("filter", filter)
-	span.Log("sort", sort)
-	span.Log("skip", skip)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.FindFirst")
+	span.Tag("filter", filter)
+	span.Tag("sort", sort)
+	span.Tag("skip", skip)
+	defer span.End()
 
 	// check lock
 	if lock && !HasTransaction(ctx) {
@@ -207,12 +207,12 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 // interleaving operations move the documents in the used index.
 func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.FindAll")
-	span.Log("filter", filter)
-	span.Log("sort", sort)
-	span.Log("skip", skip)
-	span.Log("limit", limit)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.FindAll")
+	span.Tag("filter", filter)
+	span.Tag("sort", sort)
+	span.Tag("skip", skip)
+	span.Tag("limit", limit)
+	defer span.End()
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
@@ -280,17 +280,17 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 // interleaving operations move the documents in the used index.
 func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.FindEach")
-	span.Log("filter", filter)
-	span.Log("sort", sort)
-	span.Log("skip", skip)
-	span.Log("limit", limit)
+	ctx, span := xo.Track(ctx, "coal/Manager.FindEach")
+	span.Tag("filter", filter)
+	span.Tag("sort", sort)
+	span.Tag("skip", skip)
+	span.Tag("limit", limit)
 
 	// finish span on error
 	var iter *Iterator
 	defer func() {
 		if iter == nil {
-			span.Finish()
+			span.End()
 		}
 	}()
 
@@ -363,11 +363,11 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 // interleaving operations move the documents in the used index.
 func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Count")
-	span.Log("filter", filter)
-	span.Log("skip", skip)
-	span.Log("limit", limit)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Count")
+	span.Tag("filter", filter)
+	span.Tag("skip", skip)
+	span.Tag("limit", limit)
+	defer span.End()
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
@@ -427,8 +427,8 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 // interleaving operations move the documents in the used index.
 func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, level ...Level) ([]interface{}, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Distinct")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Distinct")
+	defer span.End()
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
@@ -469,8 +469,8 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 // an error is encountered.
 func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Insert")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Insert")
+	defer span.End()
 
 	// ensure ids
 	for _, model := range models {
@@ -507,9 +507,9 @@ func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 // the filter is not covered by a unique index.
 func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.InsertIfMissing")
-	span.Log("filter", filter)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.InsertIfMissing")
+	span.Tag("filter", filter)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -559,8 +559,8 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 // A transaction is required for locking.
 func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Replace")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Replace")
+	defer span.End()
 
 	// check id
 	if model.ID().IsZero() {
@@ -599,9 +599,9 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.ReplaceFirst")
-	span.Log("filter", filter)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.ReplaceFirst")
+	span.Tag("filter", filter)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -636,10 +636,10 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 // A transaction is required for locking.
 func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Update")
-	span.Log("id", id.Hex())
-	span.Log("update", update)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Update")
+	span.Tag("id", id.Hex())
+	span.Tag("update", update)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -697,10 +697,10 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateFirst")
-	span.Log("filter", filter)
-	span.Log("update", update)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.UpdateFirst")
+	span.Tag("filter", filter)
+	span.Tag("update", update)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -767,10 +767,10 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.UpdateAll")
-	span.Log("filter", filter)
-	span.Log("update", update)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.UpdateAll")
+	span.Tag("filter", filter)
+	span.Tag("update", update)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -818,10 +818,10 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 // the filter is not covered by a unique index.
 func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Upsert")
-	span.Log("filter", filter)
-	span.Log("update", update)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Upsert")
+	span.Tag("filter", filter)
+	span.Tag("update", update)
+	defer span.End()
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -888,9 +888,9 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 // whether a document has been found and deleted.
 func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.Delete")
-	span.Log("id", id.Hex())
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.Delete")
+	span.Tag("id", id.Hex())
+	defer span.End()
 
 	// delete document
 	if model == nil {
@@ -924,9 +924,9 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteAll")
-	span.Log("filter", filter)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.DeleteAll")
+	span.Tag("filter", filter)
+	defer span.End()
 
 	// translate filter
 	filterDoc, err := m.trans.Document(filter)
@@ -950,9 +950,9 @@ func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, sort []string) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "coal/Manager.DeleteFirst")
-	span.Log("filter", filter)
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Manager.DeleteFirst")
+	span.Tag("filter", filter)
+	defer span.End()
 
 	// translate filter
 	filterDoc, err := m.trans.Document(filter)

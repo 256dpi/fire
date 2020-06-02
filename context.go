@@ -8,9 +8,9 @@ import (
 	"reflect"
 
 	"github.com/256dpi/jsonapi/v2"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -102,7 +102,7 @@ type Context struct {
 	// underlying connection transport has been closed. It may also carry the
 	// database session if transactions have been enabled.
 	//
-	// Values: lungo.ISessionContext?, opentracing.Span, *cinder.Trace
+	// Values: lungo.ISessionContext?, opentracing.Span, *xo.Trace
 	context.Context
 
 	// The custom data map.
@@ -248,7 +248,7 @@ type Context struct {
 	// The current trace.
 	//
 	// Usage: Read Only
-	Trace *cinder.Trace
+	Trace *xo.Trace
 }
 
 // Query returns the composite query of Selector and Filter.

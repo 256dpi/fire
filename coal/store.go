@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/256dpi/lungo"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-
-	"github.com/256dpi/fire/cinder"
 )
 
 // MustConnect will call Connect and panic on errors.
@@ -202,8 +201,8 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// trace
-	ctx, span := cinder.Track(ctx, "coal/Store.T")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "coal/Store.T")
+	defer span.End()
 
 	// prepare options
 	opts := options.Session().

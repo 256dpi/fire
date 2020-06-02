@@ -1,11 +1,9 @@
 package blaze
 
 import (
-	"os"
 	"testing"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
@@ -54,11 +52,4 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func TestMain(m *testing.M) {
-	closer := cinder.SetupTesting("test-blaze")
-	ret := m.Run()
-	closer()
-	os.Exit(ret)
 }

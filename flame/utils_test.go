@@ -2,11 +2,9 @@ package flame
 
 import (
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -42,11 +40,4 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 	})))
 
 	return router
-}
-
-func TestMain(m *testing.M) {
-	closer := cinder.SetupTesting("test-flame")
-	ret := m.Run()
-	closer()
-	os.Exit(ret)
 }

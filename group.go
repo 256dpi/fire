@@ -12,8 +12,8 @@ import (
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
+	"github.com/256dpi/xo"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -101,8 +101,8 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create trace
-		trace, tc := cinder.CreateTrace(r.Context(), "fire/Group.Endpoint")
-		defer trace.Finish()
+		trace, tc := xo.CreateTrace(r.Context(), "fire/Group.Endpoint")
+		defer trace.End()
 		r = r.WithContext(tc)
 
 		// continue any previous aborts
@@ -115,8 +115,8 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 			// set critical error on last span
 			trace.Tag("error", true)
-			trace.Log("error", err.Error())
-			trace.Log("stack", stack.Trace())
+			trace.Tag("error", err.Error())
+			trace.Tag("stack", stack.Trace())
 
 			// report critical errors if possible
 			if g.reporter != nil {

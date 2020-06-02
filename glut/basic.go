@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -18,8 +18,8 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	meta := GetMeta(value)
 
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Get")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Get")
+	defer span.End()
 
 	// get key
 	key, err := GetKey(value)
@@ -28,7 +28,7 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// log key
-	span.Log("key", key)
+	span.Tag("key", key)
 
 	// find value
 	var model Model
@@ -61,8 +61,8 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // method will ignore any locks held on the value.
 func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Set")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Set")
+	defer span.End()
 
 	// get meta
 	meta := GetMeta(value)
@@ -74,8 +74,8 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// log key and ttl
-	span.Log("key", key)
-	span.Log("ttl", meta.TTL.String())
+	span.Tag("key", key)
+	span.Tag("ttl", meta.TTL.String())
 
 	// prepare deadline
 	var deadline *time.Time
@@ -116,8 +116,8 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // any locks held on the value.
 func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Del")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Del")
+	defer span.End()
 
 	// get key
 	key, err := GetKey(value)
@@ -126,7 +126,7 @@ func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	}
 
 	// log key
-	span.Log("key", key)
+	span.Tag("key", key)
 
 	// delete value
 	deleted, err := store.M(&Model{}).DeleteFirst(ctx, nil, bson.M{
@@ -143,8 +143,8 @@ func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // value back. This method will ignore any locks held on the value.
 func Mut(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// track
-	ctx, span := cinder.Track(ctx, "glut/Mut")
-	defer span.Finish()
+	ctx, span := xo.Track(ctx, "glut/Mut")
+	defer span.End()
 
 	// get value
 	exists, err := Get(ctx, store, value)

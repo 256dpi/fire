@@ -23,7 +23,6 @@ script:
   - env GO111MODULE=on go test -coverprofile=auth.coverprofile ./ash
   - env GO111MODULE=on go test -coverprofile=axe.coverprofile ./axe
   - env GO111MODULE=on go test -coverprofile=blaze.coverprofile ./blaze
-  - env GO111MODULE=on go test -coverprofile=cinder.coverprofile ./cinder
   - env GO111MODULE=on go test -coverprofile=coal.coverprofile ./coal
   - env GO111MODULE=on go test -coverprofile=example.coverprofile ./example
   - env GO111MODULE=on go test -coverprofile=flame.coverprofile ./flame

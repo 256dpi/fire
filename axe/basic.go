@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -24,13 +24,13 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	}
 
 	// track
-	ctx, span := cinder.Track(ctx, "axe/Enqueue")
+	ctx, span := xo.Track(ctx, "axe/Enqueue")
 	span.Tag("name", meta.Name)
-	span.Log("label", base.Label)
-	span.Log("id", job.ID().Hex())
-	span.Log("delay", delay.String())
-	span.Log("isolation", isolation.String())
-	defer span.Finish()
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	span.Tag("delay", delay.String())
+	span.Tag("isolation", isolation.String())
+	defer span.End()
 
 	// validate job
 	err := job.Validate()
@@ -128,11 +128,11 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	meta := GetMeta(job)
 
 	// track
-	ctx, span := cinder.Track(ctx, "axe/Dequeue")
+	ctx, span := xo.Track(ctx, "axe/Dequeue")
 	span.Tag("name", meta.Name)
-	span.Log("id", job.ID().Hex())
-	span.Log("timeout", timeout.String())
-	defer span.Finish()
+	span.Tag("id", job.ID().Hex())
+	span.Tag("timeout", timeout.String())
+	defer span.End()
 
 	// check timeout
 	if timeout == 0 {
@@ -183,7 +183,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 
 	// set and log label
 	job.GetBase().Label = model.Label
-	span.Log("label", model.Label)
+	span.Tag("label", model.Label)
 
 	// validate job
 	err = job.Validate()
@@ -202,11 +202,11 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	base := job.GetBase()
 
 	// track
-	ctx, span := cinder.Track(ctx, "axe/Complete")
+	ctx, span := xo.Track(ctx, "axe/Complete")
 	span.Tag("name", meta.Name)
-	span.Log("label", base.Label)
-	span.Log("id", job.ID().Hex())
-	defer span.Finish()
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	defer span.End()
 
 	// validate job
 	err := job.Validate()
@@ -259,13 +259,13 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	base := job.GetBase()
 
 	// track
-	ctx, span := cinder.Track(ctx, "axe/Fail")
+	ctx, span := xo.Track(ctx, "axe/Fail")
 	span.Tag("name", meta.Name)
-	span.Log("label", base.Label)
-	span.Log("id", job.ID().Hex())
-	span.Log("reason", reason)
-	span.Log("delay", delay.String())
-	defer span.Finish()
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	span.Tag("reason", reason)
+	span.Tag("delay", delay.String())
+	defer span.End()
 
 	// get time
 	now := time.Now()
@@ -305,12 +305,12 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	base := job.GetBase()
 
 	// track
-	ctx, span := cinder.Track(ctx, "axe/Cancel")
+	ctx, span := xo.Track(ctx, "axe/Cancel")
 	span.Tag("name", meta.Name)
-	span.Log("label", base.Label)
-	span.Log("id", job.ID().Hex())
-	span.Log("reason", reason)
-	defer span.Finish()
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	span.Tag("reason", reason)
+	defer span.End()
 
 	// get time
 	now := time.Now()

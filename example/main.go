@@ -11,11 +11,11 @@ import (
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
-	"github.com/256dpi/fire/cinder"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/heat"
@@ -90,12 +90,12 @@ func main() {
 		serve.Limit(serve.MustByteSize("8M")),
 		serve.CORS(corsOptions),
 		flame.TokenMigrator(true),
-		cinder.RootHandler(),
+		xo.RootHandler(),
 		createHandler(store, bucket),
 	)
 
 	// configure local jaeger
-	cinder.SetupTesting("example")
+	xo.Install(xo.Config{})
 
 	// run http server
 	fmt.Printf("Running on http://0.0.0.0:%d\n", port)
