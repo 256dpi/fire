@@ -405,16 +405,16 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 type Iterator struct {
 	ctx     context.Context
 	cursor  lungo.ICursor
-	spans   []*xo.Span
+	spans   []xo.Span
 	counter int64
 	error   error
 }
 
-func newIterator(ctx context.Context, cursor lungo.ICursor, span *xo.Span) *Iterator {
+func newIterator(ctx context.Context, cursor lungo.ICursor, span xo.Span) *Iterator {
 	return &Iterator{
 		ctx:    ctx,
 		cursor: cursor,
-		spans:  []*xo.Span{span},
+		spans:  []xo.Span{span},
 	}
 }
 

@@ -284,7 +284,7 @@ func (t *Task) enqueuer(queue *Queue) error {
 
 func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// create trace
-	trace, outerContext := xo.CreateTrace(context.Background(), "TASK " + name)
+	trace, outerContext := xo.CreateTrace(context.Background(), "TASK "+name)
 	defer trace.End()
 
 	// prepare job
