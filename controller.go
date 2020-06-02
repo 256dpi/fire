@@ -1521,8 +1521,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// load documents
 	models := c.meta.MakeSlice()
-	err := ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false)
-	stack.AbortIf(err)
+	stack.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false))
 
 	// set models
 	ctx.Models = coal.Slice(models)

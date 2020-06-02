@@ -1125,8 +1125,7 @@ func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, e
 	})
 
 	// save token
-	err := a.store.M(token).Insert(ctx, token)
-	stack.AbortIf(err)
+	stack.AbortIf(a.store.M(token).Insert(ctx, token))
 
 	return token
 }
