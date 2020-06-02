@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -28,16 +27,10 @@ var secret = getEnv("SECRET", "abcd1234abcd1234")
 var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
 
-var reporter = func(err error) {
-	println(err.Error())
-}
-
-var reporterWithStack = func(err error) {
-	reporter(err)
-	debug.PrintStack()
-}
-
 func main() {
+	// install xo
+	xo.Install(xo.Config{})
+
 	// visualize models
 	err := catalog.Visualize("Example", "models.pdf")
 	if err != nil {
@@ -84,7 +77,7 @@ func main() {
 
 	// compose handler
 	handler := serve.Compose(
-		serve.Recover(reporterWithStack),
+		serve.Recover(xo.Capture),
 		serve.Throttle(100),
 		serve.Timeout(time.Minute),
 		serve.Limit(serve.MustByteSize("8M")),
@@ -93,9 +86,6 @@ func main() {
 		xo.RootHandler(),
 		createHandler(store, bucket),
 	)
-
-	// configure local jaeger
-	xo.Install(xo.Config{})
 
 	// run http server
 	fmt.Printf("Running on http://0.0.0.0:%d\n", port)
@@ -167,13 +157,13 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	}
 
 	// create authenticator
-	a := flame.NewAuthenticator(store, policy, reporter)
+	a := flame.NewAuthenticator(store, policy, xo.Capture)
 
 	// register authenticator
 	mux.Handle("/auth/", a.Endpoint("/auth/"))
 
 	// create watcher
-	watcher := spark.NewWatcher(reporter)
+	watcher := spark.NewWatcher(xo.Capture)
 	watcher.Add(itemStream(store))
 	watcher.Add(jobStream(store))
 	watcher.Add(valueStream(store))
@@ -187,7 +177,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	// create queue
 	queue := axe.NewQueue(axe.Options{
 		Store:    store,
-		Reporter: reporter,
+		Reporter: xo.Capture,
 	})
 
 	// add tasks
@@ -200,7 +190,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	queue.Run()
 
 	// create group
-	g := fire.NewGroup(reporter)
+	g := fire.NewGroup(xo.Capture)
 
 	// add controllers
 	g.Add(itemController(store, queue, storage))
