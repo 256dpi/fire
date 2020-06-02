@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/axe"
@@ -32,7 +33,7 @@ type incrementJob struct {
 func (j *incrementJob) Validate() error {
 	// check item
 	if j.Item.IsZero() {
-		return stick.F("missing item")
+		return xo.F("missing item")
 	}
 
 	return nil
@@ -48,7 +49,7 @@ type generateJob struct {
 func (j *generateJob) Validate() error {
 	// check item
 	if j.Item.IsZero() {
-		return stick.F("missing item")
+		return xo.F("missing item")
 	}
 
 	return nil
@@ -104,7 +105,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 				if err != nil {
 					return err
 				} else if !found {
-					return stick.F("unknown item")
+					return xo.F("unknown item")
 				}
 
 				// release file if available

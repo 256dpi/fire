@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/256dpi/fire/stick"
+	"github.com/256dpi/xo"
 )
 
-var errStreamClosed = stick.F("stream closed")
+var errStreamClosed = xo.F("stream closed")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {

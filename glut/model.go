@@ -3,6 +3,8 @@ package glut
 import (
 	"time"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -31,7 +33,7 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check key
 	if m.Key == "" {
-		return stick.F("missing key")
+		return xo.F("missing key")
 	}
 
 	return nil

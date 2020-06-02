@@ -15,23 +15,23 @@ import (
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
 // that the request includes invalid filter parameters.
-var ErrInvalidFilter = stick.F("invalid filter")
+var ErrInvalidFilter = xo.F("invalid filter")
 
 // ErrInvalidRedirectURI should be returned by the RedirectURIValidator to
 // indicate that the redirect URI is invalid.
-var ErrInvalidRedirectURI = stick.F("invalid redirect uri")
+var ErrInvalidRedirectURI = xo.F("invalid redirect uri")
 
 // ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
 // of the grant based on the provided conditions.
-var ErrGrantRejected = stick.F("grant rejected")
+var ErrGrantRejected = xo.F("grant rejected")
 
 // ErrApprovalRejected should be returned by the ApproveStrategy to indicate a
 // rejection of the approval based on the provided conditions.
-var ErrApprovalRejected = stick.F("approval rejected")
+var ErrApprovalRejected = xo.F("approval rejected")
 
 // ErrInvalidScope should be returned by the GrantStrategy to indicate that the
 // requested scope exceeds the grantable scope.
-var ErrInvalidScope = stick.F("invalid scope")
+var ErrInvalidScope = xo.F("invalid scope")
 
 // Key is they key used to issue and verify tokens and codes.
 type Key struct {

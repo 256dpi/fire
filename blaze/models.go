@@ -4,6 +4,8 @@ import (
 	"mime"
 	"time"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -104,7 +106,7 @@ type File struct {
 func (f *File) Validate() error {
 	// check state
 	if !f.State.Valid() {
-		return stick.F("invalid state")
+		return xo.F("invalid state")
 	}
 
 	// check type

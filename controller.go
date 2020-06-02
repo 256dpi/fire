@@ -13,6 +13,7 @@ import (
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/stack"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -791,7 +792,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// get related controller
 	rc := ctx.Group.controllers[rel.RelType]
 	if rc == nil {
-		stack.Abort(stick.F("missing related controller for %s", rel.RelType))
+		stack.Abort(xo.F("missing related controller for %s", rel.RelType))
 	}
 
 	// prepare sub context
@@ -839,7 +840,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// check response
 		if len(subCtx.Response.Data.Many) > 1 {
-			stack.Abort(stick.F("to one relationship returned more than one result"))
+			stack.Abort(xo.F("to one relationship returned more than one result"))
 		}
 
 		// pull out resource
@@ -870,7 +871,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			stack.Abort(stick.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			stack.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
 		// prepare selector
@@ -883,7 +884,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// check response
 		if len(subCtx.Response.Data.Many) > 1 {
-			stack.Abort(stick.F("has one relationship returned more than one result"))
+			stack.Abort(xo.F("has one relationship returned more than one result"))
 		}
 
 		// pull out resource
@@ -900,7 +901,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			stack.Abort(stick.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			stack.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
 		// prepare selector
@@ -1272,7 +1273,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// get action
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
-		stack.Abort(stick.F("missing collection action callback"))
+		stack.Abort(xo.F("missing collection action callback"))
 	}
 
 	// limit request body size
@@ -1300,7 +1301,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	// get action
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
 	if !ok {
-		stack.Abort(stick.F("missing resource action callback"))
+		stack.Abort(xo.F("missing resource action callback"))
 	}
 
 	// limit request body size
@@ -1540,7 +1541,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(stick.F("unknown writable field %s", field))
+			stack.Abort(xo.F("unknown writable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1700,7 +1701,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(stick.F("unknown readable field %s", field))
+			stack.Abort(xo.F("unknown readable field %s", field))
 		}
 
 		// add relationships
@@ -1724,13 +1725,13 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// get related controller
 		rc := ctx.Group.controllers[field.RelType]
 		if rc == nil {
-			stack.Abort(stick.F("missing related controller %s", field.RelType))
+			stack.Abort(xo.F("missing related controller %s", field.RelType))
 		}
 
 		// find relationship
 		rel := rc.meta.Relationships[field.RelInverse]
 		if rel == nil {
-			stack.Abort(stick.F("no relationship matching the inverse name %s", field.RelInverse))
+			stack.Abort(xo.F("no relationship matching the inverse name %s", field.RelInverse))
 		}
 
 		// collect model ids
@@ -1853,7 +1854,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(stick.F("unknown readable field %s", field))
+			stack.Abort(xo.F("unknown readable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1967,7 +1968,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			// check length
 			if len(refs) > 1 {
-				stack.Abort(stick.F("has one relationship returned more than one result"))
+				stack.Abort(xo.F("has one relationship returned more than one result"))
 			}
 
 			// prepare reference

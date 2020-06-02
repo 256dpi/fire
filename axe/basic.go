@@ -136,7 +136,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 
 	// check timeout
 	if timeout == 0 {
-		return false, 0, stick.F("missing timeout")
+		return false, 0, xo.F("missing timeout")
 	}
 
 	// get time
@@ -245,7 +245,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	if err != nil {
 		return err
 	} else if !found {
-		return stick.F("missing job")
+		return xo.F("missing job")
 	}
 
 	return nil
@@ -291,7 +291,7 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	if err != nil {
 		return err
 	} else if !found {
-		return stick.F("missing job")
+		return xo.F("missing job")
 	}
 
 	return nil
@@ -336,7 +336,7 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	if err != nil {
 		return err
 	} else if !found {
-		return stick.F("missing job")
+		return xo.F("missing job")
 	}
 
 	return nil

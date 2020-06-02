@@ -325,7 +325,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job
 	if time.Since(start) > t.Lifetime {
-		return stick.F(`task "%s" ran longer than the specified lifetime`, name)
+		return xo.F(`task "%s" ran longer than the specified lifetime`, name)
 	}
 
 	// check error

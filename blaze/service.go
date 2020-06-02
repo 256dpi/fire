@@ -3,20 +3,20 @@ package blaze
 import (
 	"context"
 
-	"github.com/256dpi/fire/stick"
+	"github.com/256dpi/xo"
 )
 
 // ErrInvalidHandle is returned if the provided handle is invalid.
-var ErrInvalidHandle = stick.F("invalid handle")
+var ErrInvalidHandle = xo.F("invalid handle")
 
 // ErrUsedHandle is returned if the provided handle has already been used.
-var ErrUsedHandle = stick.F("used handle")
+var ErrUsedHandle = xo.F("used handle")
 
 // ErrNotFound is returned if there is no blob for the provided handle.
-var ErrNotFound = stick.F("not found")
+var ErrNotFound = xo.F("not found")
 
 // ErrInvalidPosition is returned if a seek resulted in an invalid position.
-var ErrInvalidPosition = stick.F("invalid position")
+var ErrInvalidPosition = xo.F("invalid position")
 
 // Handle is a reference to a blob stored in a service.
 type Handle map[string]interface{}

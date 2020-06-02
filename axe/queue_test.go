@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
@@ -455,7 +456,7 @@ func TestQueueCancelCrash(t *testing.T) {
 		queue.Add(&Task{
 			Job: &testJob{},
 			Handler: func(ctx *Context) error {
-				return stick.F("some error")
+				return xo.F("some error")
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
 				close(done)

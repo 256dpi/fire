@@ -4,32 +4,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/256dpi/xo"
 	"github.com/pkg/errors"
 )
-
-// ErrorfFunc is used by F to format errors.
-var ErrorfFunc = errors.Errorf
-
-// WrapFunc is used by W to wrap errors.
-var WrapFunc = errors.WithStack
-
-// WrapfFunc is used by FW to format and wrap errors.
-var WrapfFunc = errors.Wrapf
-
-// F formats and error using ErrorfFunc.
-func F(format string, args ...interface{}) error {
-	return ErrorfFunc(format, args...)
-}
-
-// W wraps and error using WrapFunc.
-func W(err error) error {
-	return WrapFunc(err)
-}
-
-// WF formats and wraps and error using WrapfFunc.
-func WF(err error, format string, args ...interface{}) error {
-	return WrapfFunc(err, format, args...)
-}
 
 // SafeError wraps an error to indicate presentation safety.
 type SafeError struct {
@@ -38,7 +15,7 @@ type SafeError struct {
 
 // E is a short-hand function to construct a safe error.
 func E(format string, args ...interface{}) error {
-	return Safe(F(format, args...))
+	return Safe(xo.F(format, args...))
 }
 
 // Safe wraps an error and marks it as safe. Wrapped errors are safe to be

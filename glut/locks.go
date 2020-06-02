@@ -44,12 +44,12 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 
 	// check timeout
 	if timeout == 0 {
-		return false, stick.F("missing timeout")
+		return false, xo.F("missing timeout")
 	}
 
 	// check TTL
 	if meta.TTL > 0 && meta.TTL < timeout {
-		return false, stick.F("timeout greater than time to live")
+		return false, xo.F("timeout greater than time to live")
 	}
 
 	// prepare deadline
@@ -160,7 +160,7 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, stick.F("missing token")
+		return false, xo.F("missing token")
 	}
 
 	// prepare deadline
@@ -224,7 +224,7 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, stick.F("missing token")
+		return false, xo.F("missing token")
 	}
 
 	// find value
@@ -278,7 +278,7 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 	// check token
 	if base.Token.IsZero() {
-		return false, stick.F("missing token")
+		return false, xo.F("missing token")
 	}
 
 	// delete value
@@ -350,7 +350,7 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 
 	// check token
 	if base.Token.IsZero() {
-		return false, stick.F("missing token")
+		return false, xo.F("missing token")
 	}
 
 	// prepare deadline

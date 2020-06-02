@@ -1,6 +1,8 @@
 package ash
 
 import (
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -35,14 +37,14 @@ func accessDenied() *Authorizer {
 
 func directError() *Authorizer {
 	return A("directError", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {
-		return nil, stick.F("error")
+		return nil, xo.F("error")
 	})
 }
 
 func indirectError() *Authorizer {
 	return A("indirectError", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {
 		return S{E("indirectError", fire.All(), func(_ *fire.Context) error {
-			return stick.F("error")
+			return xo.F("error")
 		})}, nil
 	})
 }

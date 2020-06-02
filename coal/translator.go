@@ -4,10 +4,9 @@ import (
 	"strings"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/256dpi/fire/stick"
 )
 
 var unsafeOperators = map[string]bool{
@@ -91,7 +90,7 @@ func (t *Translator) value(value interface{}, skipTranslation bool) error {
 			if strings.HasPrefix(pair.Key, "$") {
 				// validate operator
 				if unsafeOperators[pair.Key] {
-					return stick.F("unsafe operator %q", pair.Key)
+					return xo.F("unsafe operator %q", pair.Key)
 				}
 			} else if !skipTranslation {
 				// translate field
@@ -126,7 +125,7 @@ func (t *Translator) value(value interface{}, skipTranslation bool) error {
 		primitive.Regex, primitive.Binary:
 		return nil
 	default:
-		return stick.F("unsupported type %T", value)
+		return xo.F("unsupported type %T", value)
 	}
 }
 
@@ -144,9 +143,9 @@ func (t *Translator) field(field *string) error {
 	// check meta
 	structField := t.meta.Fields[*field]
 	if structField == nil {
-		return stick.F("unknown field %q", *field)
+		return xo.F("unknown field %q", *field)
 	} else if structField.BSONKey == "" {
-		return stick.F("virtual field %q", *field)
+		return xo.F("virtual field %q", *field)
 	}
 
 	// replace field

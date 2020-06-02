@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/stick"
@@ -20,12 +21,12 @@ type testKey struct {
 func (t *testKey) Validate() error {
 	// check user
 	if t.User == "" {
-		return stick.F("missing user")
+		return xo.F("missing user")
 	}
 
 	// check role
 	if t.Role == "" {
-		return stick.F("missing role")
+		return xo.F("missing role")
 	}
 
 	return nil

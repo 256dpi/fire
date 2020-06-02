@@ -3,6 +3,8 @@ package axe
 import (
 	"time"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -83,12 +85,12 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check name
 	if m.Name == "" {
-		return stick.F("missing name")
+		return xo.F("missing name")
 	}
 
 	// check state
 	if !m.State.Valid() {
-		return stick.F("invalid state")
+		return xo.F("invalid state")
 	}
 
 	return nil

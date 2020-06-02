@@ -8,13 +8,13 @@ import (
 
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/oauth2/v2/oauth2test"
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
-	"github.com/256dpi/fire/stick"
 )
 
 func panicReporter(err error) {
@@ -342,7 +342,7 @@ func TestInvalidClientFilter(t *testing.T) {
 		})
 
 		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
-			return nil, stick.F("foo")
+			return nil, xo.F("foo")
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{
@@ -409,7 +409,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 		})
 
 		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
-			return nil, stick.F("foo")
+			return nil, xo.F("foo")
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{

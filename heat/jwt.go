@@ -3,6 +3,7 @@ package heat
 import (
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/dgrijalva/jwt-go"
 
 	"github.com/256dpi/fire/stick"
@@ -34,19 +35,19 @@ func (c jwtClaims) Valid() error {
 	// check issuer
 	if c.Issuer == "" {
 		err.Errors |= jwt.ValidationErrorIssuer
-		err.Inner = stick.F("missing issuer")
+		err.Inner = xo.F("missing issuer")
 	}
 
 	// check audience
 	if c.Audience == "" {
 		err.Errors |= jwt.ValidationErrorAudience
-		err.Inner = stick.F("missing audience")
+		err.Inner = xo.F("missing audience")
 	}
 
 	// check id
 	if c.ID == "" {
 		err.Errors |= jwt.ValidationErrorId
-		err.Inner = stick.F("missing id")
+		err.Inner = xo.F("missing id")
 	}
 
 	// skip subject
@@ -57,7 +58,7 @@ func (c jwtClaims) Valid() error {
 	// check issued
 	if c.Issued > now {
 		err.Errors |= jwt.ValidationErrorNotValidYet
-		err.Inner = stick.F("used before issued")
+		err.Inner = xo.F("used before issued")
 	}
 
 	// skip not before
@@ -65,7 +66,7 @@ func (c jwtClaims) Valid() error {
 	// check expire
 	if c.Expires < now {
 		err.Errors |= jwt.ValidationErrorExpired
-		err.Inner = stick.F("expired")
+		err.Inner = xo.F("expired")
 	}
 
 	// skip data
@@ -79,10 +80,10 @@ func (c jwtClaims) Valid() error {
 }
 
 // ErrInvalidToken is returned if a token is in some way invalid.
-var ErrInvalidToken = stick.F("invalid token")
+var ErrInvalidToken = xo.F("invalid token")
 
 // ErrExpiredToken is returned if a token is expired but otherwise valid.
-var ErrExpiredToken = stick.F("expired token")
+var ErrExpiredToken = xo.F("expired token")
 
 // RawKey represents a raw key.
 type RawKey struct {
@@ -95,27 +96,27 @@ type RawKey struct {
 func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 	// check secret
 	if len(secret) < minSecretLen {
-		return "", stick.F("secret too small")
+		return "", xo.F("secret too small")
 	}
 
 	// check issuer
 	if issuer == "" {
-		return "", stick.F("missing issuer")
+		return "", xo.F("missing issuer")
 	}
 
 	// check name
 	if name == "" {
-		return "", stick.F("missing name")
+		return "", xo.F("missing name")
 	}
 
 	// check id
 	if key.ID == "" {
-		return "", stick.F("missing id")
+		return "", xo.F("missing id")
 	}
 
 	// check expiry
 	if key.Expiry.IsZero() {
-		return "", stick.F("missing expiry")
+		return "", xo.F("missing expiry")
 	}
 
 	// get time
@@ -146,17 +147,17 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	// check secret
 	if len(secret) < minSecretLen {
-		return nil, stick.F("secret too small")
+		return nil, xo.F("secret too small")
 	}
 
 	// check issuer
 	if issuer == "" {
-		return nil, stick.F("missing issuer")
+		return nil, xo.F("missing issuer")
 	}
 
 	// check name
 	if name == "" {
-		return nil, stick.F("missing name")
+		return nil, xo.F("missing name")
 	}
 
 	// parse token

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/256dpi/stack"
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/stick"
@@ -43,7 +44,7 @@ func TestGroupStackAbort(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("Panic", All(), func(*Context) error {
-					stack.Abort(stick.F("foo"))
+					stack.Abort(xo.F("foo"))
 					return nil
 				}),
 			},

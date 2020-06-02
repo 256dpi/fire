@@ -3,6 +3,8 @@ package glut
 import (
 	"testing"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -20,7 +22,7 @@ type testValue struct {
 func (v *testValue) Validate() error {
 	// check data
 	if v.Data == "error" {
-		return stick.F("data error")
+		return xo.F("data error")
 	}
 
 	return nil
@@ -42,7 +44,7 @@ type extendedValue struct {
 func (v *extendedValue) GetExtension() (string, error) {
 	// check id
 	if v.ID == "" {
-		return "", stick.F("missing id")
+		return "", xo.F("missing id")
 	}
 
 	return "/" + v.ID, nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"go.mongodb.org/mongo-driver/bson"
@@ -5616,7 +5617,7 @@ func TestTransactions(t *testing.T) {
 			Notifiers: L{
 				C("foo", All(), func(ctx *Context) error {
 					if ctx.Model.(*postModel).Title == "FAIL" {
-						return stick.F("foo")
+						return xo.F("foo")
 					}
 					return nil
 				}),
