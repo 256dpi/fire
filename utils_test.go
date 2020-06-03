@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -21,7 +23,7 @@ type postModel struct {
 
 func (p *postModel) Validate() error {
 	if p.Title == "error" {
-		return stick.E("validation error")
+		return xo.SF("validation error")
 	}
 
 	return nil

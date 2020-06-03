@@ -176,7 +176,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 					// call callback
 					err := cb.Handler(ctx)
-					if stick.IsSafe(err) {
+					if xo.IsSafe(err) {
 						stack.Abort(&jsonapi.Error{
 							Status: http.StatusUnauthorized,
 							Detail: err.Error(),

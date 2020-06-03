@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/glut"
 	"github.com/256dpi/fire/spark"
-	"github.com/256dpi/fire/stick"
 )
 
 func itemStream(store *coal.Store) *spark.Stream {
@@ -16,7 +17,7 @@ func itemStream(store *coal.Store) *spark.Stream {
 		Validator: func(sub *spark.Subscription) error {
 			// check state
 			if _, ok := sub.Data["state"].(bool); !ok {
-				return stick.E("invalid state")
+				return xo.SF("invalid state")
 			}
 
 			return nil

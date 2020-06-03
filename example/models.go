@@ -4,12 +4,13 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/glut"
-	"github.com/256dpi/fire/stick"
 )
 
 var catalog = coal.NewCatalog(
@@ -65,12 +66,12 @@ type Item struct {
 func (i *Item) Validate() error {
 	// check name
 	if utf8.RuneCountInString(i.Name) < 1 {
-		return stick.E("missing name")
+		return xo.SF("missing name")
 	}
 
 	// check timestamps
 	if i.Created.IsZero() || i.Updated.IsZero() {
-		return stick.E("missing timestamp")
+		return xo.SF("missing timestamp")
 	}
 
 	// check file

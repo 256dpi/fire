@@ -3001,7 +3001,7 @@ func TestAuthorizers(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestAuthorizer", All(), func(ctx *Context) error {
-					return stick.E("not authorized")
+					return xo.SF("not authorized")
 				}),
 			},
 		})
@@ -3320,7 +3320,7 @@ func TestValidators(t *testing.T) {
 			Store: tester.Store,
 			Validators: L{
 				C("TestValidators", All(), func(ctx *Context) error {
-					return stick.E("not valid")
+					return xo.SF("not valid")
 				}),
 			},
 		}, &Controller{

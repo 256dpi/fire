@@ -36,18 +36,18 @@ type Link struct {
 func (l *Link) Validate(name string, whitelist ...string) error {
 	// check file
 	if l.File == nil || l.File.IsZero() {
-		return stick.E("%s invalid file", name)
+		return xo.SF("%s invalid file", name)
 	}
 
 	// check file type
 	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
-		return stick.E("%s %s", name, err.Error())
+		return xo.SF("%s %s", name, err.Error())
 	}
 
 	// check file size
 	if l.FileSize <= 0 {
-		return stick.E("%s zero size", name)
+		return xo.SF("%s zero size", name)
 	}
 
 	return nil
@@ -112,29 +112,29 @@ func (f *File) Validate() error {
 	// check type
 	err := ValidateType(f.Type)
 	if err != nil {
-		return stick.E("type %s", err.Error())
+		return xo.SF("type %s", err.Error())
 	}
 
 	// check size
 	if f.Size <= 0 && (f.State == Uploaded || f.State == Claimed) {
-		return stick.E("missing size")
+		return xo.SF("missing size")
 	}
 
 	// check handle
 	if len(f.Handle) == 0 {
-		return stick.E("missing handle")
+		return xo.SF("missing handle")
 	}
 
 	// check binding
 	if f.Binding == "" && f.State == Claimed {
-		return stick.E("missing binding")
+		return xo.SF("missing binding")
 	}
 
 	// check owner
 	if f.Owner != nil && f.Owner.IsZero() {
-		return stick.E("invalid owner")
+		return xo.SF("invalid owner")
 	} else if f.Owner == nil && f.State == Claimed {
-		return stick.E("missing owner")
+		return xo.SF("missing owner")
 	}
 
 	return nil
@@ -151,11 +151,11 @@ func ValidateType(str string, whitelist ...string) error {
 	// check media type
 	mediaType, _, err := mime.ParseMediaType(str)
 	if err != nil {
-		return stick.E("type invalid")
+		return xo.SF("type invalid")
 	} else if str != mediaType {
-		return stick.E("type ambiguous")
+		return xo.SF("type ambiguous")
 	} else if len(whitelist) > 0 && !stick.Contains(whitelist, mediaType) {
-		return stick.E("type unallowed")
+		return xo.SF("type unallowed")
 	}
 
 	return nil

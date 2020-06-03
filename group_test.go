@@ -8,8 +8,6 @@ import (
 	"github.com/256dpi/stack"
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/256dpi/fire/stick"
 )
 
 func panicReporter(err error) {
@@ -80,7 +78,7 @@ func TestGroupAction(t *testing.T) {
 			Authorizers: L{
 				C("TestGroupAction", All(), func(ctx *Context) error {
 					if ctx.HTTPRequest.Method == "DELETE" {
-						return stick.E("error")
+						return xo.SF("error")
 					}
 					return nil
 				}),

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/256dpi/oauth2/v2"
+	"github.com/256dpi/xo"
 	"github.com/asaskevich/govalidator"
 
 	"github.com/256dpi/fire/coal"
@@ -112,12 +113,12 @@ func (t *Token) SetTokenData(data TokenData) {
 func (t *Token) Validate() error {
 	// check id
 	if t.ID().IsZero() {
-		return stick.E("invalid id")
+		return xo.SF("invalid id")
 	}
 
 	// check expires at
 	if t.ExpiresAt.IsZero() {
-		return stick.E("missing expiry")
+		return xo.SF("missing expiry")
 	}
 
 	return nil
@@ -186,18 +187,18 @@ func (a *Application) Validate() error {
 
 	// check name
 	if a.Name == "" {
-		return stick.E("missing name")
+		return xo.SF("missing name")
 	}
 
 	// check key
 	if a.Key == "" {
-		return stick.E("missing key")
+		return xo.SF("missing key")
 	}
 
 	// check redirect uri
 	for _, redirectURI := range a.RedirectURIs {
 		if redirectURI != "" && !govalidator.IsURL(redirectURI) {
-			return stick.E("invalid redirect uri")
+			return xo.SF("invalid redirect uri")
 		}
 	}
 
@@ -266,17 +267,17 @@ func (u *User) Validate() error {
 
 	// check name
 	if u.Name == "" {
-		return stick.E("missing name")
+		return xo.SF("missing name")
 	}
 
 	// check email
 	if u.Email == "" || !govalidator.IsEmail(u.Email) {
-		return stick.E("invalid email")
+		return xo.SF("invalid email")
 	}
 
 	// check password hash
 	if len(u.PasswordHash) == 0 {
-		return stick.E("missing password hash")
+		return xo.SF("missing password hash")
 	}
 
 	return nil

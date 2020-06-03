@@ -490,7 +490,7 @@ func (c *Controller) createResource(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -612,7 +612,7 @@ func (c *Controller) updateResource(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -716,7 +716,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -1011,7 +1011,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -1114,7 +1114,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -1224,7 +1224,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 
 	// validate model
 	err := ctx.Model.Validate()
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -2087,7 +2087,7 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 
 		// call callback
 		err := cb.Handler(ctx)
-		if stick.IsSafe(err) {
+		if xo.IsSafe(err) {
 			stack.Abort(&jsonapi.Error{
 				Status: errorStatus,
 				Detail: err.Error(),
@@ -2105,7 +2105,7 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 
 	// call action
 	err := a.Handler(ctx)
-	if stick.IsSafe(err) {
+	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: errorStatus,
 			Detail: err.Error(),

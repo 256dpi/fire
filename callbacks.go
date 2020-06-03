@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/256dpi/jsonapi/v2"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
@@ -98,7 +99,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 
 				// check equality
 				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), def) {
-					return stick.E("field " + field + " is protected")
+					return xo.SF("field " + field + " is protected")
 				}
 			}
 		}
@@ -108,7 +109,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 			// check all fields
 			for field := range pairs {
 				if ctx.Modified(field) {
-					return stick.E("field " + field + " is protected")
+					return xo.SF("field " + field + " is protected")
 				}
 			}
 		}
@@ -152,7 +153,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 
 			// return error if documents are found
 			if count != 0 {
-				return stick.E("resource has dependent resources")
+				return xo.SF("resource has dependent resources")
 			}
 		}
 
@@ -207,7 +208,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 				// check for existence
 				if int(count) != len(ids) {
-					return stick.E("missing references for field " + field)
+					return xo.SF("missing references for field " + field)
 				}
 
 				continue
@@ -225,7 +226,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 			// check for existence
 			if count != 1 {
-				return stick.E("missing reference for field " + field)
+				return xo.SF("missing reference for field " + field)
 			}
 		}
 
@@ -366,7 +367,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 
 		// return error if a document is missing (does not match)
 		if int(count) != len(ids) {
-			return stick.E("references do not match")
+			return xo.SF("references do not match")
 		}
 
 		return nil
