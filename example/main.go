@@ -29,7 +29,9 @@ var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
 	// install xo
-	xo.Install(xo.Config{})
+	xo.Install(xo.Config{
+		NoTraceAttributes: true,
+	})
 
 	// visualize models
 	err := catalog.Visualize("Example", "models.pdf")
