@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/gorilla/websocket"
 	"gopkg.in/tomb.v2"
 
@@ -187,7 +188,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 			// reset read timeout
 			err := conn.SetReadDeadline(time.Now().Add(receiveTimeout))
 			if err != nil {
-				errs <- err
+				errs <- xo.W(err)
 				return
 			}
 
@@ -200,7 +201,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				close(errs)
 				return
 			} else if err != nil {
-				errs <- err
+				errs <- xo.W(err)
 				return
 			}
 
@@ -215,7 +216,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 			var req request
 			err = json.Unmarshal(bytes, &req)
 			if err != nil {
-				errs <- err
+				errs <- xo.W(err)
 				return
 			}
 
@@ -465,19 +466,19 @@ func (m *manager) handleSSE(ctx *fire.Context) error {
 			// write prefix
 			_, err := w.Write([]byte("data: "))
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			// write json
 			err = enc.Encode(res)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			// write suffix
 			_, err = w.Write([]byte("\n"))
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			// flush writer
