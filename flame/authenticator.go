@@ -76,7 +76,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 			// otherwise report critical errors
 			if a.reporter != nil {
-				a.reporter(err)
+				a.reporter(xo.W(err))
 			}
 
 			// ignore errors caused by writing critical errors
@@ -152,7 +152,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 				// otherwise report critical errors
 				if a.reporter != nil {
-					a.reporter(err)
+					a.reporter(xo.W(err))
 				}
 
 				// write generic server error
