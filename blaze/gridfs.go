@@ -2,8 +2,10 @@ package blaze
 
 import (
 	"context"
+	"io"
 
 	"github.com/256dpi/lungo"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire/coal"
@@ -26,7 +28,7 @@ func (g *GridFS) Initialize(ctx context.Context) error {
 	// ensure indexes
 	err := g.bucket.EnsureIndexes(ctx, false)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil
@@ -47,13 +49,13 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string) (Upload, e
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return nil, ErrInvalidHandle
+		return nil, xo.W(ErrInvalidHandle)
 	}
 
 	// open stream
 	stream, err := g.bucket.OpenUploadStreamWithID(ctx, id, "")
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return &gridFSUpload{
@@ -66,15 +68,15 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return nil, ErrInvalidHandle
+		return nil, xo.W(ErrInvalidHandle)
 	}
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
 	if err == lungo.ErrFileNotFound {
-		return nil, ErrNotFound
+		return nil, xo.W(ErrNotFound)
 	} else if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return &gridFSDownload{
@@ -87,15 +89,15 @@ func (g *GridFS) Delete(ctx context.Context, handle Handle) (bool, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return false, ErrInvalidHandle
+		return false, xo.W(ErrInvalidHandle)
 	}
 
 	// delete file
 	err := g.bucket.Delete(ctx, id)
 	if err == lungo.ErrFileNotFound {
-		return false, ErrNotFound
+		return false, xo.W(ErrNotFound)
 	} else if err != nil {
-		return false, err
+		return false, xo.W(err)
 	}
 
 	return true, nil
@@ -118,9 +120,9 @@ func (u *gridFSUpload) Write(data []byte) (int, error) {
 	// write stream
 	n, err := u.stream.Write(data)
 	if coal.IsDuplicate(err) {
-		return 0, ErrUsedHandle
+		return 0, xo.W(ErrUsedHandle)
 	} else if err != nil {
-		return 0, err
+		return 0, xo.W(err)
 	}
 
 	return n, nil
@@ -131,16 +133,16 @@ func (u *gridFSUpload) Write(data []byte) (int, error) {
 // }
 
 func (u *gridFSUpload) Abort() error {
-	return u.stream.Abort()
+	return xo.W(u.stream.Abort())
 }
 
 func (u *gridFSUpload) Close() error {
 	// close stream
 	err := u.stream.Close()
 	if coal.IsDuplicate(err) {
-		return ErrUsedHandle
+		return xo.W(ErrUsedHandle)
 	} else if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil
@@ -154,11 +156,11 @@ func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	// seek stream
 	n, err := d.stream.Seek(offset, whence)
 	if err == lungo.ErrFileNotFound {
-		return 0, ErrNotFound
+		return 0, xo.W(ErrNotFound)
 	} else if err == lungo.ErrInvalidPosition {
-		return 0, ErrInvalidPosition
+		return 0, xo.W(ErrInvalidPosition)
 	} else if err != nil {
-		return 0, err
+		return 0, xo.W(err)
 	}
 
 	return n, nil
@@ -168,9 +170,11 @@ func (d *gridFSDownload) Read(buf []byte) (int, error) {
 	// read stream
 	n, err := d.stream.Read(buf)
 	if err == lungo.ErrFileNotFound {
-		return 0, ErrNotFound
+		return 0, xo.W(ErrNotFound)
+	} else if err == io.EOF {
+		return 0, io.EOF
 	} else if err != nil {
-		return 0, err
+		return 0, xo.W(err)
 	}
 
 	return n, nil
@@ -180,9 +184,9 @@ func (d *gridFSDownload) Close() error {
 	// close stream
 	err := d.stream.Close()
 	if err == lungo.ErrFileNotFound {
-		return ErrNotFound
+		return xo.W(ErrNotFound)
 	} else if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil

@@ -208,7 +208,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 	// get first part
 	part, err := reader.NextPart()
 	if err != nil && err != io.EOF {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// collect claim keys
@@ -219,7 +219,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		// parse content type
 		contentType, _, err := mime.ParseMediaType(part.Header.Get("Content-Type"))
 		if err != nil {
-			return nil, err
+			return nil, xo.W(err)
 		}
 
 		// upload part
@@ -236,7 +236,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		// get next part
 		part, err = reader.NextPart()
 		if err != nil && err != io.EOF {
-			return nil, err
+			return nil, xo.W(err)
 		}
 	}
 
