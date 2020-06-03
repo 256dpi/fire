@@ -29,7 +29,7 @@ var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
 	// install xo
-	xo.Install(xo.Config{
+	xo.Debug(xo.Config{
 		NoTraceAttributes: true,
 	})
 

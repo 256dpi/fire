@@ -6,11 +6,10 @@ require (
 	github.com/256dpi/oauth2/v2 v2.1.0
 	github.com/256dpi/serve v0.3.5
 	github.com/256dpi/stack v0.3.0
-	github.com/256dpi/xo v0.0.0-20200603095658-f5fad6057221
+	github.com/256dpi/xo v0.1.0
 	github.com/asaskevich/govalidator v0.0.0-20171111151018-521b25f4b05f
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/websocket v1.4.0
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.0
 	github.com/tidwall/gjson v1.1.3
 	github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1 // indirect
