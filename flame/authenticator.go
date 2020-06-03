@@ -4,12 +4,12 @@ package flame
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/256dpi/oauth2/v2"
-	"github.com/256dpi/stack"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -62,21 +62,20 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 		r = r.WithContext(rcx)
 
 		// continue any previous aborts
-		defer stack.Resume(func(err error) {
+		defer xo.Resume(func(err error) {
 			// directly write oauth2 errors
-			if oauth2Error, ok := err.(*oauth2.Error); ok {
+			var oauth2Error *oauth2.Error
+			if errors.As(err, &oauth2Error) {
 				_ = oauth2.WriteError(w, oauth2Error)
 				return
 			}
 
-			// set critical error on last span
-			trace.Tag("error", true)
-			trace.Tag("error", err.Error())
-			trace.Tag("stack", stack.Trace())
+			// record error
+			trace.Record(err)
 
 			// otherwise report critical errors
 			if a.reporter != nil {
-				a.reporter(xo.W(err))
+				a.reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors
@@ -138,21 +137,20 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// continue any previous aborts
-			defer stack.Resume(func(err error) {
+			defer xo.Resume(func(err error) {
 				// directly write bearer errors
-				if bearerError, ok := err.(*oauth2.Error); ok {
+				var bearerError *oauth2.Error
+				if errors.As(err, &bearerError) {
 					_ = oauth2.WriteBearerError(w, bearerError)
 					return
 				}
 
-				// set critical error on last span
-				trace.Tag("error", true)
-				trace.Tag("error", err.Error())
-				trace.Tag("stack", stack.Trace())
+				// record error
+				trace.Record(err)
 
 				// otherwise report critical errors
 				if a.reporter != nil {
-					a.reporter(xo.W(err))
+					a.reporter(err)
 				}
 
 				// write generic server error
@@ -164,14 +162,14 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// parse bearer token
 			tk, err := oauth2.ParseBearerToken(r)
-			stack.AbortIf(err)
+			xo.AbortIf(err)
 
 			// parse token
 			key, err := a.policy.Verify(tk)
 			if err == heat.ErrExpiredToken {
-				stack.Abort(oauth2.InvalidToken("expired bearer token"))
+				xo.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
-				stack.Abort(oauth2.InvalidToken("malformed bearer token"))
+				xo.Abort(oauth2.InvalidToken("malformed bearer token"))
 			}
 
 			// prepare context
@@ -185,7 +183,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get token
 			accessToken := a.getToken(ctx, key.Base.ID)
 			if accessToken == nil {
-				stack.Abort(oauth2.InvalidToken("unknown bearer token"))
+				xo.Abort(oauth2.InvalidToken("unknown bearer token"))
 			}
 
 			// get token data
@@ -193,17 +191,17 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// validate token type
 			if data.Type != AccessToken {
-				stack.Abort(oauth2.InvalidToken("invalid bearer token type"))
+				xo.Abort(oauth2.InvalidToken("invalid bearer token type"))
 			}
 
 			// validate expiration
 			if data.ExpiresAt.Before(time.Now()) {
-				stack.Abort(oauth2.InvalidToken("expired access token"))
+				xo.Abort(oauth2.InvalidToken("expired access token"))
 			}
 
 			// validate scope
 			if !data.Scope.Includes(requiredScope) {
-				stack.Abort(oauth2.InsufficientScope(requiredScope.String()))
+				xo.Abort(oauth2.InsufficientScope(requiredScope.String()))
 			}
 
 			// create new context with access token
@@ -220,7 +218,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get client
 			client := a.getFirstClient(ctx, data.ClientID)
 			if client == nil {
-				stack.Abort(xo.F("missing client"))
+				xo.Abort(xo.F("missing client"))
 			}
 
 			// create new context with client
@@ -238,7 +236,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			// get resource owner
 			resourceOwner := a.getFirstResourceOwner(ctx, client, *data.ResourceOwnerID)
 			if resourceOwner == nil {
-				stack.Abort(oauth2.InvalidToken("missing resource owner"))
+				xo.Abort(oauth2.InvalidToken("missing resource owner"))
 			}
 
 			// create new context with resource owner
@@ -257,43 +255,43 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(ctx.Request)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// make sure the response type is known
 	if !oauth2.KnownResponseType(req.ResponseType) {
-		stack.Abort(oauth2.InvalidRequest("unknown response type"))
+		xo.Abort(oauth2.InvalidRequest("unknown response type"))
 	}
 
 	// get client
 	client := a.findFirstClient(ctx, req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// validate redirect URI
 	req.RedirectURI, err = a.policy.RedirectURIValidator(ctx, client, req.RedirectURI)
 	if err == ErrInvalidRedirectURI {
-		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
+		xo.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// get grants
 	ctx.grants, err = a.policy.Grants(ctx, client)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	/* client is valid */
 
 	// validate response type
 	if req.ResponseType == oauth2.TokenResponseType && !ctx.grants.Implicit {
-		stack.Abort(oauth2.UnsupportedResponseType(""))
+		xo.Abort(oauth2.UnsupportedResponseType(""))
 	} else if req.ResponseType == oauth2.CodeResponseType && !ctx.grants.AuthorizationCode {
-		stack.Abort(oauth2.UnsupportedResponseType(""))
+		xo.Abort(oauth2.UnsupportedResponseType(""))
 	}
 
 	// prepare abort method
 	abort := func(err *oauth2.Error) {
-		stack.Abort(err.SetRedirect(req.RedirectURI, req.State, req.ResponseType == oauth2.TokenResponseType))
+		xo.Abort(err.SetRedirect(req.RedirectURI, req.State, req.ResponseType == oauth2.TokenResponseType))
 	}
 
 	// check request method
@@ -301,7 +299,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 		// get approval url
 		url, err := a.policy.ApprovalURL(ctx, client)
 		if err != nil {
-			stack.Abort(err)
+			xo.Abort(err)
 		} else if url == "" {
 			abort(oauth2.InvalidRequest("unsupported request method"))
 		}
@@ -313,7 +311,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 		}
 
 		// perform redirect
-		stack.AbortIf(oauth2.WriteRedirect(ctx.writer, url, params, false))
+		xo.AbortIf(oauth2.WriteRedirect(ctx.writer, url, params, false))
 
 		return
 	}
@@ -369,7 +367,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 	} else if err == ErrInvalidScope {
 		abort(oauth2.InvalidScope(""))
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// triage based on response type
@@ -380,14 +378,14 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 		res.SetRedirect(req.RedirectURI, req.State)
 
 		// write response
-		stack.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
+		xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 	case oauth2.CodeResponseType:
 		// issue authorization code
 		res := a.issueCode(ctx, scope, req.RedirectURI, client, resourceOwner)
 		res.State = req.State
 
 		// write response
-		stack.AbortIf(oauth2.WriteCodeResponse(ctx.writer, res))
+		xo.AbortIf(oauth2.WriteCodeResponse(ctx.writer, res))
 	}
 }
 
@@ -398,29 +396,29 @@ func (a *Authenticator) tokenEndpoint(ctx *Context) {
 
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(ctx.Request)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// make sure the grant type is known
 	if !oauth2.KnownGrantType(req.GrantType) {
-		stack.Abort(oauth2.InvalidRequest("unknown grant type"))
+		xo.Abort(oauth2.InvalidRequest("unknown grant type"))
 	}
 
 	// get client
 	client := a.findFirstClient(ctx, req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// get grants
 	ctx.grants, err = a.policy.Grants(ctx, client)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// handle grant type
 	switch req.GrantType {
 	case oauth2.PasswordGrantType:
 		// check availability
 		if !ctx.grants.Password {
-			stack.Abort(oauth2.UnsupportedGrantType(""))
+			xo.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
 		// handle resource owner password credentials grant
@@ -428,7 +426,7 @@ func (a *Authenticator) tokenEndpoint(ctx *Context) {
 	case oauth2.ClientCredentialsGrantType:
 		// check availability
 		if !ctx.grants.ClientCredentials {
-			stack.Abort(oauth2.UnsupportedGrantType(""))
+			xo.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
 		// handle client credentials grant
@@ -436,7 +434,7 @@ func (a *Authenticator) tokenEndpoint(ctx *Context) {
 	case oauth2.RefreshTokenGrantType:
 		// check availability
 		if !ctx.grants.RefreshToken {
-			stack.Abort(oauth2.UnsupportedGrantType(""))
+			xo.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
 		// handle refresh token grant
@@ -444,7 +442,7 @@ func (a *Authenticator) tokenEndpoint(ctx *Context) {
 	case oauth2.AuthorizationCodeGrantType:
 		// check availability
 		if !ctx.grants.AuthorizationCode {
-			stack.Abort(oauth2.UnsupportedGrantType(""))
+			xo.Abort(oauth2.UnsupportedGrantType(""))
 		}
 
 		// handle authorization code grant
@@ -459,35 +457,35 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(ctx *Context
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// get resource owner
 	resourceOwner := a.findFirstResourceOwner(ctx, client, req.Username)
 	if resourceOwner == nil {
-		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
+		xo.Abort(oauth2.AccessDenied("")) // never expose reason!
 	}
 
 	// authenticate resource owner
 	if !resourceOwner.ValidPassword(req.Password) {
-		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
+		xo.Abort(oauth2.AccessDenied("")) // never expose reason!
 	}
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(ctx, client, resourceOwner, req.Scope)
 	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied("")) // never expose reason!
+		xo.Abort(oauth2.AccessDenied("")) // never expose reason!
 	} else if err == ErrInvalidScope {
-		stack.Abort(oauth2.InvalidScope(""))
+		xo.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// issue access token
 	res := a.issueTokens(ctx, true, scope, "", client, resourceOwner)
 
 	// write response
-	stack.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
+	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 }
 
 func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
@@ -497,29 +495,29 @@ func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.T
 
 	// check confidentiality
 	if !client.IsConfidential() {
-		stack.Abort(oauth2.InvalidClient("non confidential client"))
+		xo.Abort(oauth2.InvalidClient("non confidential client"))
 	}
 
 	// authenticate client
 	if !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(ctx, client, nil, req.Scope)
 	if err == ErrGrantRejected {
-		stack.Abort(oauth2.AccessDenied("grant rejected"))
+		xo.Abort(oauth2.AccessDenied("grant rejected"))
 	} else if err == ErrInvalidScope {
-		stack.Abort(oauth2.InvalidScope(""))
+		xo.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// issue access token
 	res := a.issueTokens(ctx, true, scope, "", client, nil)
 
 	// write response
-	stack.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
+	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 }
 
 func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
@@ -529,21 +527,21 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// parse token
 	key, err := a.policy.Verify(req.RefreshToken)
 	if err == heat.ErrExpiredToken {
-		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
+		xo.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
-		stack.Abort(oauth2.InvalidRequest("malformed refresh token"))
+		xo.Abort(oauth2.InvalidRequest("malformed refresh token"))
 	}
 
 	// get stored refresh token by signature
 	rt := a.getToken(ctx, key.Base.ID)
 	if rt == nil {
-		stack.Abort(oauth2.InvalidGrant("unknown refresh token"))
+		xo.Abort(oauth2.InvalidGrant("unknown refresh token"))
 	}
 
 	// get token data
@@ -551,17 +549,17 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 	// validate type
 	if data.Type != RefreshToken {
-		stack.Abort(oauth2.InvalidGrant("invalid refresh token type"))
+		xo.Abort(oauth2.InvalidGrant("invalid refresh token type"))
 	}
 
 	// validate expiration
 	if data.ExpiresAt.Before(time.Now()) {
-		stack.Abort(oauth2.InvalidGrant("expired refresh token"))
+		xo.Abort(oauth2.InvalidGrant("expired refresh token"))
 	}
 
 	// validate ownership
 	if data.ClientID != client.ID() {
-		stack.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
+		xo.Abort(oauth2.InvalidGrant("invalid refresh token ownership"))
 	}
 
 	// inherit scope from stored refresh token
@@ -571,7 +569,7 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 	// validate scope - a missing scope is always included
 	if !data.Scope.Includes(req.Scope) {
-		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
+		xo.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
@@ -587,7 +585,7 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 	a.deleteToken(ctx, rt.ID())
 
 	// write response
-	stack.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
+	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 }
 
 func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
@@ -597,15 +595,15 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// parse authorization code
 	key, err := a.policy.Verify(req.Code)
 	if err == heat.ErrExpiredToken {
-		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
+		xo.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
-		stack.Abort(oauth2.InvalidRequest("malformed authorization code"))
+		xo.Abort(oauth2.InvalidRequest("malformed authorization code"))
 	}
 
 	// TODO: We should revoke all descending tokens if a code is reused.
@@ -614,7 +612,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 	code := a.getToken(ctx, key.Base.ID)
 
 	if code == nil {
-		stack.Abort(oauth2.InvalidGrant("unknown authorization code"))
+		xo.Abort(oauth2.InvalidGrant("unknown authorization code"))
 	}
 
 	// get token data
@@ -622,30 +620,30 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// validate type
 	if data.Type != AuthorizationCode {
-		stack.Abort(oauth2.InvalidGrant("invalid authorization code type"))
+		xo.Abort(oauth2.InvalidGrant("invalid authorization code type"))
 	}
 
 	// validate expiration
 	if data.ExpiresAt.Before(time.Now()) {
-		stack.Abort(oauth2.InvalidGrant("expired authorization code"))
+		xo.Abort(oauth2.InvalidGrant("expired authorization code"))
 	}
 
 	// validate ownership
 	if data.ClientID != client.ID() {
-		stack.Abort(oauth2.InvalidGrant("invalid authorization code ownership"))
+		xo.Abort(oauth2.InvalidGrant("invalid authorization code ownership"))
 	}
 
 	// validate redirect URI
 	req.RedirectURI, err = a.policy.RedirectURIValidator(ctx, client, req.RedirectURI)
 	if err == ErrInvalidRedirectURI {
-		stack.Abort(oauth2.InvalidRequest("invalid redirect uri"))
+		xo.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// compare redirect URIs
 	if data.RedirectURI != req.RedirectURI {
-		stack.Abort(oauth2.InvalidGrant("redirect uri mismatch"))
+		xo.Abort(oauth2.InvalidGrant("redirect uri mismatch"))
 	}
 
 	// inherit scope from stored authorization code
@@ -655,7 +653,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// validate scope - a missing scope is always included
 	if !data.Scope.Includes(req.Scope) {
-		stack.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
+		xo.Abort(oauth2.InvalidScope("scope exceeds the originally granted scope"))
 	}
 
 	// get resource owner
@@ -671,7 +669,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 	a.deleteToken(ctx, code.ID())
 
 	// write response
-	stack.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
+	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 }
 
 func (a *Authenticator) revocationEndpoint(ctx *Context) {
@@ -681,22 +679,22 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 
 	// parse authorization request
 	req, err := oauth2.ParseRevocationRequest(ctx.Request)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check token type hint
 	if req.TokenTypeHint != "" && !oauth2.KnownTokenType(req.TokenTypeHint) {
-		stack.Abort(oauth2.UnsupportedTokenType(""))
+		xo.Abort(oauth2.UnsupportedTokenType(""))
 	}
 
 	// get client
 	client := a.findFirstClient(ctx, req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// parse token
@@ -705,7 +703,7 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 		ctx.writer.WriteHeader(http.StatusOK)
 		return
 	} else if err != nil {
-		stack.Abort(oauth2.InvalidRequest("malformed token"))
+		xo.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
 	// get token
@@ -716,7 +714,7 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 
 		// check ownership
 		if data.ClientID != client.ID() {
-			stack.Abort(oauth2.InvalidClient("wrong client"))
+			xo.Abort(oauth2.InvalidClient("wrong client"))
 			return
 		}
 
@@ -735,31 +733,31 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 
 	// parse introspection request
 	req, err := oauth2.ParseIntrospectionRequest(ctx.Request)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check token type hint
 	if req.TokenTypeHint != "" && !oauth2.KnownTokenType(req.TokenTypeHint) {
-		stack.Abort(oauth2.UnsupportedTokenType(""))
+		xo.Abort(oauth2.UnsupportedTokenType(""))
 	}
 
 	// get client
 	client := a.findFirstClient(ctx, req.ClientID)
 	if client == nil {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
-		stack.Abort(oauth2.InvalidClient("unknown client"))
+		xo.Abort(oauth2.InvalidClient("unknown client"))
 	}
 
 	// parse token
 	key, err := a.policy.Verify(req.Token)
 	if err == heat.ErrExpiredToken {
-		stack.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, &oauth2.IntrospectionResponse{}))
+		xo.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, &oauth2.IntrospectionResponse{}))
 		return
 	} else if err != nil {
-		stack.Abort(oauth2.InvalidRequest("malformed token"))
+		xo.Abort(oauth2.InvalidRequest("malformed token"))
 	}
 
 	// prepare response
@@ -773,7 +771,7 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 
 		// check ownership
 		if data.ClientID != client.ID() {
-			stack.Abort(oauth2.InvalidClient("wrong client"))
+			xo.Abort(oauth2.InvalidClient("wrong client"))
 			return
 		}
 
@@ -806,7 +804,7 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 	}
 
 	// write response
-	stack.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, res))
+	xo.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, res))
 }
 
 func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
@@ -823,7 +821,7 @@ func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2
 
 	// generate new access token
 	atSignature, err := a.policy.Issue(at, client, resourceOwner)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// prepare response
 	res := oauth2.NewBearerTokenResponse(atSignature, int(a.policy.AccessTokenLifespan/time.Second))
@@ -838,7 +836,7 @@ func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2
 
 		// generate new refresh token
 		rtSignature, err := a.policy.Issue(rt, client, resourceOwner)
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// set refresh token
 		res.RefreshToken = rtSignature
@@ -860,7 +858,7 @@ func (a *Authenticator) issueCode(ctx *Context, scope oauth2.Scope, redirectURI 
 
 	// generate new access token
 	signature, err := a.policy.Issue(code, client, resourceOwner)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// prepare response
 	res := oauth2.NewCodeResponse(signature, redirectURI, "")
@@ -904,7 +902,7 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		stack.Abort(xo.F("unable to determine client id field"))
+		xo.Abort(xo.F("unable to determine client id field"))
 	}
 
 	// add additional filter if provided
@@ -912,9 +910,9 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 		// run filter function
 		filter, err := a.policy.ClientFilter(ctx, model)
 		if err == ErrInvalidFilter {
-			stack.Abort(oauth2.InvalidRequest("invalid filter"))
+			xo.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {
-			stack.Abort(err)
+			xo.Abort(err)
 		}
 
 		// add filter if present
@@ -927,7 +925,7 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 	found, err := a.store.M(model).FindFirst(ctx, client, bson.M{
 		"$and": filters,
 	}, nil, 0, false)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 	if !found {
 		return nil
 	}
@@ -961,7 +959,7 @@ func (a *Authenticator) getClient(ctx *Context, model Client, id coal.ID) Client
 
 	// fetch client
 	found, err := a.store.M(model).Find(ctx, client, id, false)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 	if !found {
 		return nil
 	}
@@ -976,7 +974,7 @@ func (a *Authenticator) findFirstResourceOwner(ctx *Context, client Client, id s
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(ctx, client)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check all available models in order
 	for _, model := range resourceOwners {
@@ -1009,7 +1007,7 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		stack.Abort(xo.F("unable to determine resource owner id field"))
+		xo.Abort(xo.F("unable to determine resource owner id field"))
 	}
 
 	// add additional filter if provided
@@ -1017,9 +1015,9 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 		// run filter function
 		filter, err := a.policy.ResourceOwnerFilter(ctx, client, model)
 		if err == ErrInvalidFilter {
-			stack.Abort(oauth2.InvalidRequest("invalid filter"))
+			xo.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {
-			stack.Abort(err)
+			xo.Abort(err)
 		}
 
 		// add filter if present
@@ -1032,7 +1030,7 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 	found, err := a.store.M(model).FindFirst(ctx, resourceOwner, bson.M{
 		"$and": filters,
 	}, nil, 0, false)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 	if !found {
 		return nil
 	}
@@ -1047,7 +1045,7 @@ func (a *Authenticator) getFirstResourceOwner(ctx *Context, client Client, id co
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(ctx, client)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check all available models in order
 	for _, model := range resourceOwners {
@@ -1070,7 +1068,7 @@ func (a *Authenticator) getResourceOwner(ctx *Context, model ResourceOwner, id c
 
 	// fetch resource owner
 	found, err := a.store.M(model).Find(ctx, resourceOwner, id, false)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 	if !found {
 		return nil
 	}
@@ -1088,7 +1086,7 @@ func (a *Authenticator) getToken(ctx *Context, id coal.ID) GenericToken {
 
 	// fetch token
 	found, err := a.store.M(token).Find(ctx, token, id, false)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 	if !found {
 		return nil
 	}
@@ -1124,7 +1122,7 @@ func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, e
 	})
 
 	// save token
-	stack.AbortIf(a.store.M(token).Insert(ctx, token))
+	xo.AbortIf(a.store.M(token).Insert(ctx, token))
 
 	return token
 }
@@ -1136,5 +1134,5 @@ func (a *Authenticator) deleteToken(ctx *Context, id coal.ID) {
 
 	// delete token
 	_, err := a.store.M(a.policy.Token).Delete(ctx, nil, id)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 }

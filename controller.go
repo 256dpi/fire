@@ -12,7 +12,6 @@ import (
 
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
-	"github.com/256dpi/stack"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -264,7 +263,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// parse incoming JSON-API request if not yet present
 	if ctx.JSONAPIRequest == nil {
 		req, err := parser.ParseRequest(ctx.HTTPRequest)
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 		ctx.JSONAPIRequest = req
 	}
 
@@ -275,7 +274,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 		// parse document and respect document limit
 		doc, err := jsonapi.ParseDocument(ctx.HTTPRequest.Body)
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// set document
 		ctx.Request = doc
@@ -283,7 +282,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 	// validate id if present
 	if ctx.JSONAPIRequest.ResourceID != "" && !coal.IsHex(ctx.JSONAPIRequest.ResourceID) {
-		stack.Abort(jsonapi.BadRequest("invalid resource id"))
+		xo.Abort(jsonapi.BadRequest("invalid resource id"))
 	}
 
 	// set operation
@@ -310,7 +309,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 	// check if supported
 	if !c.Supported(ctx) {
-		stack.Abort(jsonapi.ErrorFromStatus(
+		xo.Abort(jsonapi.ErrorFromStatus(
 			http.StatusMethodNotAllowed,
 			"unsupported operation",
 		))
@@ -333,7 +332,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 	// run operation with transaction if not an action
 	if !ctx.Operation.Action() {
-		stack.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
+		xo.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
 			ctx.Context = tc
 			c.runOperation(ctx)
 			return nil
@@ -344,7 +343,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 
 	// write response if available
 	if write && ctx.Response != nil {
-		stack.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
+		xo.AbortIf(jsonapi.WriteResponse(ctx.ResponseWriter, ctx.ResponseCode, ctx.Response))
 	}
 }
 
@@ -462,17 +461,17 @@ func (c *Controller) createResource(ctx *Context) {
 
 	// basic input data check
 	if ctx.Request.Data == nil || ctx.Request.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("missing document"))
+		xo.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
 	if ctx.Request.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
-		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+		xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
 	// check id
 	if ctx.Request.Data.One.ID != "" {
-		stack.Abort(jsonapi.BadRequest("unnecessary resource id"))
+		xo.Abort(jsonapi.BadRequest("unnecessary resource id"))
 	}
 
 	// run authorizers
@@ -491,12 +490,12 @@ func (c *Controller) createResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -516,7 +515,7 @@ func (c *Controller) createResource(ctx *Context) {
 		// get supplied idempotent create token
 		idempotentCreateToken := stick.MustGet(ctx.Model, idempotentCreateField).(string)
 		if idempotentCreateToken == "" {
-			stack.Abort(jsonapi.BadRequest("missing idempotent create token"))
+			xo.Abort(jsonapi.BadRequest("missing idempotent create token"))
 		}
 
 		// insert model
@@ -524,21 +523,21 @@ func (c *Controller) createResource(ctx *Context) {
 			idempotentCreateField: idempotentCreateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// fail if not inserted
 		if !inserted {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with same idempotent create token"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with same idempotent create token"))
 		}
 	} else {
 		// insert model
 		err := ctx.Store.M(c.Model).Insert(ctx, ctx.Model)
 		if coal.IsDuplicate(err) {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 	}
 
 	// run decorators
@@ -573,17 +572,17 @@ func (c *Controller) updateResource(ctx *Context) {
 
 	// basic input data check
 	if ctx.Request.Data == nil || ctx.Request.Data.One == nil {
-		stack.Abort(jsonapi.BadRequest("missing document"))
+		xo.Abort(jsonapi.BadRequest("missing document"))
 	}
 
 	// check resource type
 	if ctx.Request.Data.One.Type != ctx.JSONAPIRequest.ResourceType {
-		stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+		xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
 	// check id
 	if ctx.Request.Data.One.ID != ctx.JSONAPIRequest.ResourceID {
-		stack.Abort(jsonapi.BadRequest("resource id mismatch"))
+		xo.Abort(jsonapi.BadRequest("resource id mismatch"))
 	}
 
 	// load model
@@ -613,12 +612,12 @@ func (c *Controller) updateResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -629,7 +628,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		idempotentCreateField := coal.L(ctx.Model, "fire-idempotent-create", true)
 		idempotentCreateToken := stick.MustGet(ctx.Model, idempotentCreateField).(string)
 		if storedIdempotentCreateToken != idempotentCreateToken {
-			stack.Abort(jsonapi.BadRequest("idempotent create token cannot be changed"))
+			xo.Abort(jsonapi.BadRequest("idempotent create token cannot be changed"))
 		}
 	}
 
@@ -641,7 +640,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		// get consistent update token
 		consistentUpdateToken := stick.MustGet(ctx.Model, consistentUpdateField).(string)
 		if consistentUpdateToken != storedConsistentUpdateToken {
-			stack.Abort(jsonapi.BadRequest("invalid consistent update token"))
+			xo.Abort(jsonapi.BadRequest("invalid consistent update token"))
 		}
 
 		// generate new update token
@@ -653,25 +652,25 @@ func (c *Controller) updateResource(ctx *Context) {
 			consistentUpdateField: consistentUpdateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// fail if not found
 		if !found {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with different consistent update token"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusConflict, "existing document with different consistent update token"))
 		}
 	} else {
 		// replace model
 		found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 		}
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// check if missing
 		if !found {
-			stack.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(jsonapi.NotFound("resource not found"))
 		}
 	}
 
@@ -717,12 +716,12 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -739,20 +738,20 @@ func (c *Controller) deleteResource(ctx *Context) {
 				softDeleteField: time.Now(),
 			},
 		}, false)
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// check if missing
 		if !found {
-			stack.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(jsonapi.NotFound("resource not found"))
 		}
 	} else {
 		// delete model
 		found, err := ctx.Store.M(c.Model).Delete(ctx, nil, ctx.Model.ID())
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// check if missing
 		if !found {
-			stack.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(jsonapi.NotFound("resource not found"))
 		}
 	}
 
@@ -778,7 +777,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	// find relationship
 	rel := c.meta.Relationships[ctx.JSONAPIRequest.RelatedResource]
 	if rel == nil {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		xo.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// load model
@@ -786,13 +785,13 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// check if relationship is readable
 	if !stick.Contains(ctx.ReadableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
+		xo.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
 	// get related controller
 	rc := ctx.Group.controllers[rel.RelType]
 	if rc == nil {
-		stack.Abort(xo.F("missing related controller for %s", rel.RelType))
+		xo.Abort(xo.F("missing related controller for %s", rel.RelType))
 	}
 
 	// prepare sub context
@@ -840,7 +839,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// check response
 		if len(subCtx.Response.Data.Many) > 1 {
-			stack.Abort(xo.F("to one relationship returned more than one result"))
+			xo.Abort(xo.F("to one relationship returned more than one result"))
 		}
 
 		// pull out resource
@@ -871,7 +870,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			stack.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			xo.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
 		// prepare selector
@@ -884,7 +883,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// check response
 		if len(subCtx.Response.Data.Many) > 1 {
-			stack.Abort(xo.F("has one relationship returned more than one result"))
+			xo.Abort(xo.F("has one relationship returned more than one result"))
 		}
 
 		// pull out resource
@@ -901,7 +900,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			stack.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			xo.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
 		}
 
 		// prepare selector
@@ -944,7 +943,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	// get relationship
 	field := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if field == nil {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		xo.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// load model
@@ -952,7 +951,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 
 	// check if relationship is readable
 	if !stick.Contains(ctx.ReadableFields, field.Name) {
-		stack.Abort(jsonapi.BadRequest("relationship is not readable"))
+		xo.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
 	// run decorators
@@ -986,13 +985,13 @@ func (c *Controller) setRelationship(ctx *Context) {
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
 	}
 
 	// get relationship
 	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || (!rel.ToOne && !rel.ToMany) {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		xo.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// load model
@@ -1000,7 +999,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 
 	// check if relationship is writable
 	if !stick.Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// assign relationship
@@ -1012,12 +1011,12 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -1026,13 +1025,13 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check if missing
 	if !found {
-		stack.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(jsonapi.NotFound("resource not found"))
 	}
 
 	// run decorators
@@ -1066,13 +1065,13 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
 	}
 
 	// get relationship
 	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || !rel.ToMany {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		xo.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// load model
@@ -1080,20 +1079,20 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 	// check if relationship is writable
 	if !stick.Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// process all references
 	for _, ref := range ctx.Request.Data.Many {
 		// check type
 		if ref.Type != rel.RelType {
-			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+			xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
 		// get id
 		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
-			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+			xo.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
 		// get current ids
@@ -1115,12 +1114,12 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -1129,13 +1128,13 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check if missing
 	if !found {
-		stack.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(jsonapi.NotFound("resource not found"))
 	}
 
 	// run decorators
@@ -1169,13 +1168,13 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 
 	// abort if consistent update is enabled
 	if c.ConsistentUpdate {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusMethodNotAllowed, "partial updates not allowed with consistent updates"))
 	}
 
 	// get relationship
 	rel := c.meta.Relationships[ctx.JSONAPIRequest.Relationship]
 	if rel == nil || !rel.ToMany {
-		stack.Abort(jsonapi.BadRequest("invalid relationship"))
+		xo.Abort(jsonapi.BadRequest("invalid relationship"))
 	}
 
 	// load model
@@ -1183,20 +1182,20 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 
 	// check if relationship is writable
 	if !stick.Contains(ctx.WritableFields, rel.Name) {
-		stack.Abort(jsonapi.BadRequest("relationship is not writable"))
+		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
 	// process all references
 	for _, ref := range ctx.Request.Data.Many {
 		// check type
 		if ref.Type != rel.RelType {
-			stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+			xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
 		// get id
 		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
-			stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+			xo.Abort(jsonapi.BadRequest("invalid relationship id"))
 		}
 
 		// prepare mark
@@ -1225,12 +1224,12 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 
 	// run validators
@@ -1239,13 +1238,13 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		stack.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
 	}
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check if missing
 	if !found {
-		stack.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(jsonapi.NotFound("resource not found"))
 	}
 
 	// run decorators
@@ -1273,7 +1272,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	// get action
 	action, ok := c.CollectionActions[ctx.JSONAPIRequest.CollectionAction]
 	if !ok {
-		stack.Abort(xo.F("missing collection action callback"))
+		xo.Abort(xo.F("missing collection action callback"))
 	}
 
 	// limit request body size
@@ -1301,7 +1300,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	// get action
 	action, ok := c.ResourceActions[ctx.JSONAPIRequest.ResourceAction]
 	if !ok {
-		stack.Abort(xo.F("missing resource action callback"))
+		xo.Abort(xo.F("missing resource action callback"))
 	}
 
 	// limit request body size
@@ -1355,7 +1354,7 @@ func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
 			}
 
 			// raise error
-			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sparse field "%s"`, field)))
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sparse field "%s"`, field)))
 		}
 
 		// whitelist requested fields
@@ -1394,11 +1393,11 @@ func (c *Controller) loadModel(ctx *Context) {
 	// find model
 	model := c.meta.Make()
 	found, err := ctx.Store.M(c.Model).FindFirst(ctx, model, ctx.Query(), nil, 0, lock)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// check if missing
 	if !found {
-		stack.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(jsonapi.NotFound("resource not found"))
 	}
 
 	// set model
@@ -1407,7 +1406,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// set original on update operations
 	if ctx.Operation == Update {
 		original := c.meta.Make()
-		stack.AbortIf(stick.BSON.Transfer(model, original))
+		xo.AbortIf(stick.BSON.Transfer(model, original))
 		ctx.Original = original
 	}
 }
@@ -1432,7 +1431,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		if field := c.meta.Attributes[name]; field != nil {
 			// check whitelist
 			if !stick.Contains(c.Filters, field.Name) {
-				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
 			// handle boolean values
@@ -1450,7 +1449,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		if field := c.meta.Relationships[name]; field != nil {
 			// check whitelist
 			if !field.ToOne && !field.ToMany || !stick.Contains(c.Filters, field.Name) {
-				stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
 			// convert to object ids
@@ -1458,7 +1457,7 @@ func (c *Controller) loadModels(ctx *Context) {
 			for _, str := range values {
 				refID, err := coal.FromHex(str)
 				if err != nil {
-					stack.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
+					xo.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
 				}
 				ids = append(ids, refID)
 			}
@@ -1469,7 +1468,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 
 		// raise an error on a unsupported filter
-		stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+		xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 	}
 
 	// add sorting
@@ -1483,12 +1482,12 @@ func (c *Controller) loadModels(ctx *Context) {
 		// find field
 		field := c.meta.Attributes[normalizedSorter]
 		if field == nil {
-			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
 		}
 
 		// check whitelist
 		if !stick.Contains(c.Sorters, field.Name) {
-			stack.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
 		}
 
 		// add sorter
@@ -1522,7 +1521,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// load documents
 	models := c.meta.MakeSlice()
-	stack.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false))
+	xo.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false))
 
 	// set models
 	ctx.Models = coal.Slice(models)
@@ -1541,7 +1540,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(xo.F("unknown writable field %s", field))
+			xo.Abort(xo.F("unknown writable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1562,7 +1561,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		field := c.meta.Attributes[name]
 		if field == nil {
 			pointer := fmt.Sprintf("/data/attributes/%s", name)
-			stack.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
+			xo.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
 		}
 
 		// check whitelist
@@ -1580,7 +1579,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	}
 
 	// map attributes to struct
-	stack.AbortIf(attributes.Assign(ctx.Model))
+	xo.AbortIf(attributes.Assign(ctx.Model))
 
 	// iterate relationships
 	for name, rel := range res.Relationships {
@@ -1588,7 +1587,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		field := c.meta.Relationships[name]
 		if field == nil {
 			pointer := fmt.Sprintf("/data/relationships/%s", name)
-			stack.Abort(jsonapi.BadRequestPointer("invalid relationship", pointer))
+			xo.Abort(jsonapi.BadRequestPointer("invalid relationship", pointer))
 		}
 
 		// check whitelist
@@ -1608,7 +1607,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// verify read only fields
 	for _, field := range verifyReadOnly {
 		if ctx.Modified(field) {
-			stack.Abort(jsonapi.BadRequestPointer("field is not writable", field))
+			xo.Abort(jsonapi.BadRequestPointer("field is not writable", field))
 		}
 	}
 }
@@ -1627,13 +1626,13 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 		if rel.Data != nil && rel.Data.One != nil {
 			// check type
 			if rel.Data.One.Type != field.RelType {
-				stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+				xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
 			// get id
 			relID, err := coal.FromHex(rel.Data.One.ID)
 			if err != nil {
-				stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+				xo.Abort(jsonapi.BadRequest("invalid relationship id"))
 			}
 
 			// extract id
@@ -1666,13 +1665,13 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 			for i, r := range rel.Data.Many {
 				// check type
 				if r.Type != field.RelType {
-					stack.Abort(jsonapi.BadRequest("resource type mismatch"))
+					xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 				}
 
 				// get id
 				relID, err := coal.FromHex(r.ID)
 				if err != nil {
-					stack.Abort(jsonapi.BadRequest("invalid relationship id"))
+					xo.Abort(jsonapi.BadRequest("invalid relationship id"))
 				}
 
 				// set id
@@ -1701,7 +1700,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(xo.F("unknown readable field %s", field))
+			xo.Abort(xo.F("unknown readable field %s", field))
 		}
 
 		// add relationships
@@ -1725,13 +1724,13 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// get related controller
 		rc := ctx.Group.controllers[field.RelType]
 		if rc == nil {
-			stack.Abort(xo.F("missing related controller %s", field.RelType))
+			xo.Abort(xo.F("missing related controller %s", field.RelType))
 		}
 
 		// find relationship
 		rel := rc.meta.Relationships[field.RelInverse]
 		if rel == nil {
-			stack.Abort(xo.F("no relationship matching the inverse name %s", field.RelInverse))
+			xo.Abort(xo.F("no relationship matching the inverse name %s", field.RelInverse))
 		}
 
 		// collect model ids
@@ -1766,11 +1765,11 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		queryDoc, err := ctx.Store.M(rc.Model).T().Document(bson.M{
 			"$and": filters,
 		})
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// load all references
 		var references []bson.M
-		stack.AbortIf(ctx.Store.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
+		xo.AbortIf(ctx.Store.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
 			"_id":       1,
 			rel.BSONKey: 1,
 		})))
@@ -1854,7 +1853,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
-			stack.Abort(xo.F("unknown readable field %s", field))
+			xo.Abort(xo.F("unknown readable field %s", field))
 		}
 
 		// add attributes and relationships
@@ -1867,7 +1866,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 	// create map from model
 	m, err := jsonapi.StructToMap(model, whitelist)
-	stack.AbortIf(err)
+	xo.AbortIf(err)
 
 	// prepare resource
 	resource := &jsonapi.Resource{
@@ -1968,7 +1967,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			// check length
 			if len(refs) > 1 {
-				stack.Abort(xo.F("has one relationship returned more than one result"))
+				xo.Abort(xo.F("has one relationship returned more than one result"))
 			}
 
 			// prepare reference
@@ -2044,7 +2043,7 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
 		// count resources
 		count, err := ctx.Store.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
-		stack.AbortIf(err)
+		xo.AbortIf(err)
 
 		// calculate last page
 		lastPage := int64(math.Ceil(float64(count) / float64(ctx.JSONAPIRequest.PageSize)))
@@ -2088,12 +2087,12 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 		// call callback
 		err := xo.W(cb.Handler(ctx))
 		if xo.IsSafe(err) {
-			stack.Abort(&jsonapi.Error{
+			xo.Abort(&jsonapi.Error{
 				Status: errorStatus,
 				Detail: err.Error(),
 			})
 		} else if err != nil {
-			stack.Abort(err)
+			xo.Abort(err)
 		}
 	}
 }
@@ -2106,11 +2105,11 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// call action
 	err := xo.W(a.Handler(ctx))
 	if xo.IsSafe(err) {
-		stack.Abort(&jsonapi.Error{
+		xo.Abort(&jsonapi.Error{
 			Status: errorStatus,
 			Detail: err.Error(),
 		})
 	} else if err != nil {
-		stack.Abort(err)
+		xo.Abort(err)
 	}
 }

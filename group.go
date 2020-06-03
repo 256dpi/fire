@@ -4,6 +4,7 @@ package fire
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
-	"github.com/256dpi/stack"
 	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire/coal"
@@ -106,21 +106,20 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		r = r.WithContext(tc)
 
 		// continue any previous aborts
-		defer stack.Resume(func(err error) {
+		defer xo.Resume(func(err error) {
 			// directly write jsonapi errors
-			if jsonapiError, ok := err.(*jsonapi.Error); ok {
+			var jsonapiError *jsonapi.Error
+			if errors.As(err, &jsonapiError) {
 				_ = jsonapi.WriteError(w, jsonapiError)
 				return
 			}
 
-			// set critical error on last span
-			trace.Tag("error", true)
-			trace.Tag("error", err.Error())
-			trace.Tag("stack", stack.Trace())
+			// record error
+			trace.Record(err)
 
 			// report critical errors if possible
 			if g.reporter != nil {
-				g.reporter(xo.W(err))
+				g.reporter(err)
 			}
 
 			// ignore errors caused by writing critical errors
@@ -134,7 +133,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 		// check path
 		if path == "" {
-			stack.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(jsonapi.NotFound("resource not found"))
 		}
 
 		// split path
@@ -177,12 +176,12 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 					// call callback
 					err := cb.Handler(ctx)
 					if xo.IsSafe(err) {
-						stack.Abort(&jsonapi.Error{
+						xo.Abort(&jsonapi.Error{
 							Status: http.StatusUnauthorized,
 							Detail: err.Error(),
 						})
 					} else if err != nil {
-						stack.Abort(err)
+						xo.Abort(err)
 					}
 				}
 
@@ -197,13 +196,13 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				ctx.Context = ct
 
 				// call action with context
-				stack.AbortIf(action.Action.Handler(ctx))
+				xo.AbortIf(action.Action.Handler(ctx))
 
 				return
 			}
 		}
 
 		// otherwise return error
-		stack.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(jsonapi.NotFound("resource not found"))
 	})
 }

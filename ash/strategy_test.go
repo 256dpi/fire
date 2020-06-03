@@ -1,6 +1,7 @@
 package ash
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/256dpi/jsonapi/v2"
@@ -24,7 +25,7 @@ func TestCallback1(t *testing.T) {
 	assert.Error(t, err)
 
 	err = tester.RunCallback(&fire.Context{Operation: fire.Update}, cb)
-	assert.Equal(t, fire.ErrAccessDenied, err)
+	assert.True(t, errors.Is(err, fire.ErrAccessDenied))
 
 	err = tester.RunCallback(&fire.Context{Operation: fire.Create}, cb)
 	assert.Error(t, err)
@@ -53,7 +54,7 @@ func TestCallbackEmpty(t *testing.T) {
 	cb := C(&Strategy{})
 
 	err := tester.RunCallback(&fire.Context{Operation: fire.Delete}, cb)
-	assert.Equal(t, fire.ErrAccessDenied, err)
+	assert.True(t, errors.Is(err, fire.ErrAccessDenied))
 }
 
 func TestActions(t *testing.T) {

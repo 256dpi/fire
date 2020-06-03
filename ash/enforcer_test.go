@@ -1,6 +1,7 @@
 package ash
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,8 @@ func TestGrantAccess(t *testing.T) {
 }
 
 func TestDenyAccess(t *testing.T) {
-	assert.Equal(t, fire.ErrAccessDenied, tester.RunCallback(nil, DenyAccess()))
+	err := tester.RunCallback(nil, DenyAccess())
+	assert.True(t, errors.Is(err, fire.ErrAccessDenied))
 }
 
 func TestAddFilter(t *testing.T) {
