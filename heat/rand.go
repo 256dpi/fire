@@ -3,6 +3,8 @@ package heat
 import (
 	"crypto/rand"
 	"io"
+
+	"github.com/256dpi/xo"
 )
 
 // Rand will return n secure random bytes.
@@ -11,7 +13,7 @@ func Rand(n int) ([]byte, error) {
 	bytes := make([]byte, n)
 	_, err := io.ReadFull(rand.Reader, bytes)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return bytes, nil

@@ -1,6 +1,9 @@
 package heat
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"github.com/256dpi/xo"
+	"golang.org/x/crypto/bcrypt"
+)
 
 // Hash uses bcrypt to safely compute a hash. The returned hash can be converted
 // to readable string.
@@ -8,7 +11,7 @@ func Hash(str string) ([]byte, error) {
 	// generate hash from password
 	hash, err := HashBytes([]byte(str))
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return hash, nil
@@ -17,7 +20,8 @@ func Hash(str string) ([]byte, error) {
 // HashBytes uses bcrypt to safely compute a hash. The returned hash can be
 // converted to readable string.
 func HashBytes(bytes []byte) ([]byte, error) {
-	return bcrypt.GenerateFromPassword(bytes, bcrypt.DefaultCost)
+	buf, err := bcrypt.GenerateFromPassword(bytes, bcrypt.DefaultCost)
+	return buf, xo.W(err)
 }
 
 // MustHash will call Hash and panic on errors.
@@ -51,5 +55,5 @@ func Compare(hash []byte, str string) error {
 // CompareBytes will safely compare the specified hash to its unhashed version
 // and return nil if they match.
 func CompareBytes(hash, bytes []byte) error {
-	return bcrypt.CompareHashAndPassword(hash, bytes)
+	return xo.W(bcrypt.CompareHashAndPassword(hash, bytes))
 }

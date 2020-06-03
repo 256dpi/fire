@@ -79,6 +79,8 @@ func (c jwtClaims) Valid() error {
 	return err
 }
 
+// TODO: Wrap all uses of sentinel errors?
+
 // ErrInvalidToken is returned if a token is in some way invalid.
 var ErrInvalidToken = xo.F("invalid token")
 
@@ -137,7 +139,7 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 	// compute signature
 	sig, err := token.SignedString(secret)
 	if err != nil {
-		return "", err
+		return "", xo.W(err)
 	}
 
 	return sig, nil
@@ -171,7 +173,7 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 		}
 		return nil, ErrInvalidToken
 	} else if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	} else if !tkn.Valid {
 		return nil, ErrInvalidToken
 	}
