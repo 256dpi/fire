@@ -80,10 +80,10 @@ func (c jwtClaims) Valid() error {
 }
 
 // ErrInvalidToken is returned if a token is in some way invalid.
-var ErrInvalidToken = xo.F("invalid token")
+var ErrInvalidToken = xo.BF("invalid token")
 
 // ErrExpiredToken is returned if a token is expired but otherwise valid.
-var ErrExpiredToken = xo.F("expired token")
+var ErrExpiredToken = xo.BF("expired token")
 
 // RawKey represents a raw key.
 type RawKey struct {
@@ -167,23 +167,23 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	})
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr != nil {
 		if valErr.Errors == jwt.ValidationErrorExpired {
-			return nil, xo.W(ErrExpiredToken)
+			return nil, ErrExpiredToken.Wrap()
 		}
-		return nil, xo.W(ErrInvalidToken)
+		return nil, ErrInvalidToken.Wrap()
 	} else if err != nil {
 		return nil, xo.W(err)
 	} else if !tkn.Valid {
-		return nil, xo.W(ErrInvalidToken)
+		return nil, ErrInvalidToken.Wrap()
 	}
 
 	// check issuer
 	if claims.Issuer != issuer {
-		return nil, xo.W(ErrInvalidToken)
+		return nil, ErrInvalidToken.Wrap()
 	}
 
 	// check name
 	if claims.Audience != name {
-		return nil, xo.W(ErrInvalidToken)
+		return nil, ErrInvalidToken.Wrap()
 	}
 
 	// get expiry

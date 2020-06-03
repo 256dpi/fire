@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/xo"
 )
 
-var errStreamClosed = xo.F("stream closed")
+var errStreamClosed = xo.BF("stream closed")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {
@@ -51,13 +51,13 @@ func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string) (Upl
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return nil, xo.W(ErrInvalidHandle)
+		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// check blob
 	_, ok := m.Blobs[id]
 	if ok {
-		return nil, xo.W(ErrUsedHandle)
+		return nil, ErrUsedHandle.Wrap()
 	}
 
 	// prepare blob
@@ -78,13 +78,13 @@ func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return nil, xo.W(ErrInvalidHandle)
+		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// get blob
 	blob, ok := m.Blobs[id]
 	if !ok {
-		return nil, xo.W(ErrNotFound)
+		return nil, ErrNotFound.Wrap()
 	}
 
 	return &memoryDownload{
@@ -97,12 +97,12 @@ func (m *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return false, xo.W(ErrInvalidHandle)
+		return false, ErrInvalidHandle.Wrap()
 	}
 
 	// check blob
 	if _, ok := m.Blobs[id]; !ok {
-		return false, xo.W(ErrNotFound)
+		return false, ErrNotFound.Wrap()
 	}
 
 	// delete blob
@@ -133,7 +133,7 @@ func (u *memoryUpload) Write(data []byte) (int, error) {
 
 	// check flag
 	if u.closed {
-		return 0, xo.W(errStreamClosed)
+		return 0, errStreamClosed.Wrap()
 	}
 
 	// append data
@@ -153,7 +153,7 @@ func (u *memoryUpload) Abort() error {
 
 	// check flag
 	if u.closed {
-		return xo.W(errStreamClosed)
+		return errStreamClosed.Wrap()
 	}
 
 	return nil
@@ -166,7 +166,7 @@ func (u *memoryUpload) Close() error {
 
 	// check flag
 	if u.closed {
-		return xo.W(errStreamClosed)
+		return errStreamClosed.Wrap()
 	}
 
 	return nil
@@ -186,7 +186,7 @@ func (d *memoryDownload) Seek(offset int64, whence int) (int64, error) {
 
 	// check flag
 	if d.closed {
-		return 0, xo.W(errStreamClosed)
+		return 0, errStreamClosed.Wrap()
 	}
 
 	// get position
@@ -204,7 +204,7 @@ func (d *memoryDownload) Seek(offset int64, whence int) (int64, error) {
 
 	// check position
 	if position < 0 {
-		return 0, xo.W(ErrInvalidPosition)
+		return 0, ErrInvalidPosition.Wrap()
 	}
 
 	// update position
@@ -220,7 +220,7 @@ func (d *memoryDownload) Read(buf []byte) (int, error) {
 
 	// check flag
 	if d.closed {
-		return 0, xo.W(errStreamClosed)
+		return 0, errStreamClosed.Wrap()
 	}
 
 	// check EOF
@@ -242,7 +242,7 @@ func (d *memoryDownload) Close() error {
 
 	// check flag
 	if d.closed {
-		return xo.W(errStreamClosed)
+		return errStreamClosed.Wrap()
 	}
 
 	// set flag

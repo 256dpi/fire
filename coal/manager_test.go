@@ -2,7 +2,6 @@ package coal
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ func TestManagerFind(t *testing.T) {
 		found, err = m.Find(nil, &post2, post1.ID(), true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -103,7 +102,7 @@ func TestManagerFindFirst(t *testing.T) {
 		}, nil, 0, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -147,7 +146,7 @@ func TestManagerFindAll(t *testing.T) {
 		var list []postModel
 		err := m.FindAll(nil, &list, nil, nil, 0, 0, false)
 		assert.Error(t, err)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
 		err = m.FindAll(nil, &list, nil, nil, 0, 0, false, Unsafe)
@@ -232,7 +231,7 @@ func TestManagerFindEach(t *testing.T) {
 		iter, err := m.FindEach(nil, nil, nil, 0, 0, false)
 		assert.Error(t, err)
 		assert.Nil(t, iter)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
 		iter, err = m.FindEach(nil, nil, nil, 0, 0, false, Unsafe)
@@ -311,7 +310,7 @@ func TestManagerCount(t *testing.T) {
 		count, err := m.Count(nil, nil, 0, 0, false)
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), count)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
 		count, err = m.Count(nil, nil, 0, 0, false, Unsafe)
@@ -390,7 +389,7 @@ func TestManagerDistinct(t *testing.T) {
 		// error
 		titles, err := m.Distinct(nil, "Title", nil, false)
 		assert.Error(t, err)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
 		titles, err = m.Distinct(nil, "Title", nil, false, Unsafe)
@@ -477,7 +476,7 @@ func TestManagerInsertIfMissing(t *testing.T) {
 		}, true)
 		assert.Error(t, err)
 		assert.False(t, inserted)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -519,7 +518,7 @@ func TestManagerReplace(t *testing.T) {
 		found, err = m.Replace(nil, post, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -564,7 +563,7 @@ func TestManagerReplaceFirst(t *testing.T) {
 		}, post, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -637,7 +636,7 @@ func TestManagerUpdate(t *testing.T) {
 		}, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -727,7 +726,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 		}, nil, true)
 		assert.Error(t, err)
 		assert.False(t, found)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -795,7 +794,7 @@ func TestManagerUpdateAll(t *testing.T) {
 		}, true)
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), matched)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {
@@ -882,7 +881,7 @@ func TestManagerUpsert(t *testing.T) {
 		}, nil, true)
 		assert.Error(t, err)
 		assert.False(t, inserted)
-		assert.True(t, errors.Is(err, ErrTransactionRequired))
+		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
 		_ = tester.Store.T(nil, func(ctx context.Context) error {

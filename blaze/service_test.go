@@ -2,7 +2,6 @@ package blaze
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -21,11 +20,11 @@ func abstractServiceTest(t *testing.T, svc Service) {
 
 	length, err = uploadFrom(svc, handle, "foo/bar", strings.NewReader("Hello World!"))
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrUsedHandle))
+	assert.True(t, ErrUsedHandle.Is(err))
 
 	err = downloadTo(svc, nil, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrInvalidHandle))
+	assert.True(t, ErrInvalidHandle.Is(err))
 
 	var buf bytes.Buffer
 	err = downloadTo(svc, handle, &buf)
@@ -38,7 +37,7 @@ func abstractServiceTest(t *testing.T, svc Service) {
 
 	err = downloadTo(svc, handle, &buf)
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrNotFound))
+	assert.True(t, ErrNotFound.Is(err))
 
 	err = svc.Cleanup(nil)
 	assert.NoError(t, err)
@@ -112,7 +111,7 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 
 	pos, err = dl.Seek(-2, io.SeekStart)
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrInvalidPosition))
+	assert.True(t, ErrInvalidPosition.Is(err))
 
 	// overflow
 

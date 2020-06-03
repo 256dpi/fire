@@ -47,7 +47,7 @@ func TestStream(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, token)
 
-				return ErrStop
+				return ErrStop.Wrap()
 			case 5:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)
@@ -225,7 +225,7 @@ func TestStreamManualResumption(t *testing.T) {
 
 				resumeToken = token
 
-				return ErrStop
+				return ErrStop.Wrap()
 			case 3:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)
@@ -279,7 +279,7 @@ func TestStreamManualResumption(t *testing.T) {
 				assert.Nil(t, model)
 				assert.NotNil(t, token)
 
-				return ErrStop
+				return ErrStop.Wrap()
 			case 4:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)
@@ -328,7 +328,7 @@ func TestStreamError(t *testing.T) {
 				assert.Error(t, err)
 				assert.NotNil(t, token)
 
-				return ErrStop
+				return ErrStop.Wrap()
 			case 3:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)
@@ -379,10 +379,10 @@ func TestStreamInvalidation(t *testing.T) {
 				assert.Equal(t, Errored, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
-				assert.True(t, errors.Is(err, ErrInvalidated))
+				assert.True(t, ErrInvalidated.Is(err))
 				assert.NotNil(t, token)
 
-				return ErrStop
+				return ErrStop.Wrap()
 			case 4:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)

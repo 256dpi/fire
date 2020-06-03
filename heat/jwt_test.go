@@ -1,7 +1,6 @@
 package heat
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -77,7 +76,7 @@ func TestVerifyExpired(t *testing.T) {
 	key2, err := Verify(testSecret, "issuer", "name", token)
 	assert.Error(t, err)
 	assert.Nil(t, key2)
-	assert.True(t, errors.Is(err, ErrExpiredToken))
+	assert.True(t, ErrExpiredToken.Is(err))
 }
 
 func TestVerifyInvalid(t *testing.T) {
@@ -94,7 +93,7 @@ func TestVerifyInvalid(t *testing.T) {
 	key2, err := Verify(secret2, "issuer", "name", token)
 	assert.Error(t, err)
 	assert.Nil(t, key2)
-	assert.True(t, errors.Is(err, ErrInvalidToken))
+	assert.True(t, ErrInvalidToken.Is(err))
 }
 
 func TestVerifyExpiredAndInvalid(t *testing.T) {
@@ -111,7 +110,7 @@ func TestVerifyExpiredAndInvalid(t *testing.T) {
 	key2, err := Verify(secret2, "issuer", "name", token)
 	assert.Error(t, err)
 	assert.Nil(t, key2)
-	assert.True(t, errors.Is(err, ErrInvalidToken))
+	assert.True(t, ErrInvalidToken.Is(err))
 }
 
 func TestVerifyErrors(t *testing.T) {

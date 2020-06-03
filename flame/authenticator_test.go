@@ -40,11 +40,11 @@ func TestIntegration(t *testing.T) {
 
 		policy.GrantStrategy = func(_ *Context, _ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
-				return nil, ErrInvalidScope
+				return nil, ErrInvalidScope.Wrap()
 			}
 
 			if !scope.Includes(requiredScope) {
-				return nil, ErrInvalidScope
+				return nil, ErrInvalidScope.Wrap()
 			}
 
 			return scope, nil
@@ -52,11 +52,11 @@ func TestIntegration(t *testing.T) {
 
 		policy.ApproveStrategy = func(_ *Context, _ Client, _ ResourceOwner, _ GenericToken, scope oauth2.Scope) (oauth2.Scope, error) {
 			if !allowedScope.Includes(scope) {
-				return nil, ErrInvalidScope
+				return nil, ErrInvalidScope.Wrap()
 			}
 
 			if !scope.Includes(requiredScope) {
-				return nil, ErrInvalidScope
+				return nil, ErrInvalidScope.Wrap()
 			}
 
 			return scope, nil
@@ -318,7 +318,7 @@ func TestInvalidClientFilter(t *testing.T) {
 		}).(*Application)
 
 		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
-			return nil, ErrInvalidFilter
+			return nil, ErrInvalidFilter.Wrap()
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{
@@ -385,7 +385,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 		}).(*Application)
 
 		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
-			return nil, ErrInvalidFilter
+			return nil, ErrInvalidFilter.Wrap()
 		}
 
 		oauth2test.Do(handler, &oauth2test.Request{

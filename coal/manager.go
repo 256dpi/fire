@@ -49,7 +49,7 @@ func max(levels []Level) Level {
 
 // ErrTransactionRequired is returned if an operation would be unsafe to perform
 // without a transaction.
-var ErrTransactionRequired = xo.F("operation requires a transaction")
+var ErrTransactionRequired = xo.BF("operation requires a transaction")
 
 var incrementLock = bson.M{
 	"$inc": bson.M{
@@ -89,7 +89,7 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 
 	// check lock
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// check model
@@ -137,7 +137,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 
 	// check lock
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// check lock
@@ -216,7 +216,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
-		return xo.W(ErrTransactionRequired)
+		return ErrTransactionRequired.Wrap()
 	}
 
 	// check lock
@@ -296,7 +296,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
-		return nil, xo.W(ErrTransactionRequired)
+		return nil, ErrTransactionRequired.Wrap()
 	}
 
 	// check lock
@@ -371,7 +371,7 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
-		return 0, xo.W(ErrTransactionRequired)
+		return 0, ErrTransactionRequired.Wrap()
 	}
 
 	// check lock
@@ -432,7 +432,7 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 
 	// require transaction if locked or not unsafe
 	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
-		return nil, xo.W(ErrTransactionRequired)
+		return nil, ErrTransactionRequired.Wrap()
 	}
 
 	// translate field
@@ -513,7 +513,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// translate filter
@@ -569,7 +569,7 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// increment lock manually
@@ -605,7 +605,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// increment lock manually
@@ -643,7 +643,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// translate update
@@ -704,7 +704,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// check model
@@ -774,7 +774,7 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return 0, xo.W(ErrTransactionRequired)
+		return 0, ErrTransactionRequired.Wrap()
 	}
 
 	// translate filter
@@ -825,7 +825,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
-		return false, xo.W(ErrTransactionRequired)
+		return false, ErrTransactionRequired.Wrap()
 	}
 
 	// check model

@@ -126,5 +126,5 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 		}
 	}
 
-	return xo.W(fire.ErrAccessDenied)
+	return fire.ErrAccessDenied.Wrap()
 }

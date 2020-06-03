@@ -1,7 +1,6 @@
 package ash
 
 import (
-	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
@@ -42,7 +41,7 @@ func GrantAccess() *Enforcer {
 // other enforcers from authorizing the operation.
 func DenyAccess() *Enforcer {
 	return E("ash/DenyAccess", fire.All(), func(_ *fire.Context) error {
-		return xo.W(fire.ErrAccessDenied)
+		return fire.ErrAccessDenied.Wrap()
 	})
 }
 

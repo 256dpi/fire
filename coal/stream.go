@@ -1,8 +1,6 @@
 package coal
 
 import (
-	"errors"
-
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -11,11 +9,11 @@ import (
 )
 
 // ErrStop may be returned by a receiver to stop the stream.
-var ErrStop = xo.F("stop")
+var ErrStop = xo.BF("stop")
 
 // ErrInvalidated may be returned to the receiver if the underlying collection
 // or database has been invalidated due to a drop or rename.
-var ErrInvalidated = xo.F("invalidated")
+var ErrInvalidated = xo.BF("invalidated")
 
 // Event defines the event type.
 type Event string
@@ -99,13 +97,13 @@ func (s *Stream) open() error {
 
 		// tail stream
 		err := s.tail()
-		if errors.Is(err, ErrStop) {
+		if ErrStop.Is(err) {
 			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
 		}
 
 		// emit error
 		err = xo.W(s.receiver(Errored, Z(), nil, err, s.token))
-		if errors.Is(err, ErrStop) {
+		if ErrStop.Is(err) {
 			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
 		}
 	}
@@ -170,7 +168,7 @@ func (s *Stream) tail() error {
 		case "delete":
 			event = Deleted
 		case "drop", "renamed", "dropDatabase", "invalidate":
-			return xo.W(ErrInvalidated)
+			return ErrInvalidated.Wrap()
 		}
 
 		// unmarshal document for created and updated events
@@ -199,7 +197,7 @@ func (s *Stream) tail() error {
 		return xo.W(err)
 	}
 
-	return xo.W(ErrStop)
+	return ErrStop.Wrap()
 }
 
 type change struct {

@@ -15,7 +15,7 @@ import (
 )
 
 // ErrAccessDenied can be returned by any callback to deny access.
-var ErrAccessDenied = jsonapi.ErrorFromStatus(http.StatusUnauthorized, "access denied")
+var ErrAccessDenied = xo.BW(jsonapi.ErrorFromStatus(http.StatusUnauthorized, "access denied"))
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
@@ -23,12 +23,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {
-			return xo.W(ErrAccessDenied)
+			return ErrAccessDenied.Wrap()
 		}
 
 		// check if credentials match
 		if val, ok := credentials[user]; !ok || val != password {
-			return xo.W(ErrAccessDenied)
+			return ErrAccessDenied.Wrap()
 		}
 
 		return nil

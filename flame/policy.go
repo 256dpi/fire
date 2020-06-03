@@ -15,23 +15,23 @@ import (
 
 // ErrInvalidFilter should be returned by the ResourceOwnerFilter to indicate
 // that the request includes invalid filter parameters.
-var ErrInvalidFilter = xo.F("invalid filter")
+var ErrInvalidFilter = xo.BF("invalid filter")
 
 // ErrInvalidRedirectURI should be returned by the RedirectURIValidator to
 // indicate that the redirect URI is invalid.
-var ErrInvalidRedirectURI = xo.F("invalid redirect uri")
+var ErrInvalidRedirectURI = xo.BF("invalid redirect uri")
 
 // ErrGrantRejected should be returned by the GrantStrategy to indicate a rejection
 // of the grant based on the provided conditions.
-var ErrGrantRejected = xo.F("grant rejected")
+var ErrGrantRejected = xo.BF("grant rejected")
 
 // ErrApprovalRejected should be returned by the ApproveStrategy to indicate a
 // rejection of the approval based on the provided conditions.
-var ErrApprovalRejected = xo.F("approval rejected")
+var ErrApprovalRejected = xo.BF("approval rejected")
 
 // ErrInvalidScope should be returned by the GrantStrategy to indicate that the
 // requested scope exceeds the grantable scope.
-var ErrInvalidScope = xo.F("invalid scope")
+var ErrInvalidScope = xo.BF("invalid scope")
 
 // Key is they key used to issue and verify tokens and codes.
 type Key struct {
@@ -166,14 +166,14 @@ func DefaultRedirectURIValidator(_ *Context, client Client, uri string) (string,
 		return uri, nil
 	}
 
-	return "", xo.W(ErrInvalidRedirectURI)
+	return "", ErrInvalidRedirectURI.Wrap()
 }
 
 // DefaultGrantStrategy grants only empty scopes.
 func DefaultGrantStrategy(_ *Context, _ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 	// check scope
 	if !scope.Empty() {
-		return nil, xo.W(ErrInvalidScope)
+		return nil, ErrInvalidScope.Wrap()
 	}
 
 	return scope, nil
@@ -188,7 +188,7 @@ func StaticApprovalURL(url string) func(*Context, Client) (string, error) {
 
 // DefaultApproveStrategy rejects all approvals.
 func DefaultApproveStrategy(*Context, Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error) {
-	return nil, xo.W(ErrApprovalRejected)
+	return nil, ErrApprovalRejected.Wrap()
 }
 
 // DefaultTokenData adds the user's id to the token data claim.

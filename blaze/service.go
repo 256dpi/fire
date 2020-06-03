@@ -7,16 +7,16 @@ import (
 )
 
 // ErrInvalidHandle is returned if the provided handle is invalid.
-var ErrInvalidHandle = xo.F("invalid handle")
+var ErrInvalidHandle = xo.BF("invalid handle")
 
 // ErrUsedHandle is returned if the provided handle has already been used.
-var ErrUsedHandle = xo.F("used handle")
+var ErrUsedHandle = xo.BF("used handle")
 
 // ErrNotFound is returned if there is no blob for the provided handle.
-var ErrNotFound = xo.F("not found")
+var ErrNotFound = xo.BF("not found")
 
 // ErrInvalidPosition is returned if a seek resulted in an invalid position.
-var ErrInvalidPosition = xo.F("invalid position")
+var ErrInvalidPosition = xo.BF("invalid position")
 
 // Handle is a reference to a blob stored in a service.
 type Handle map[string]interface{}

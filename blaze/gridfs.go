@@ -49,7 +49,7 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string) (Upload, e
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return nil, xo.W(ErrInvalidHandle)
+		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// open stream
@@ -68,13 +68,13 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return nil, xo.W(ErrInvalidHandle)
+		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
 	if err == lungo.ErrFileNotFound {
-		return nil, xo.W(ErrNotFound)
+		return nil, ErrNotFound.Wrap()
 	} else if err != nil {
 		return nil, xo.W(err)
 	}
@@ -89,13 +89,13 @@ func (g *GridFS) Delete(ctx context.Context, handle Handle) (bool, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return false, xo.W(ErrInvalidHandle)
+		return false, ErrInvalidHandle.Wrap()
 	}
 
 	// delete file
 	err := g.bucket.Delete(ctx, id)
 	if err == lungo.ErrFileNotFound {
-		return false, xo.W(ErrNotFound)
+		return false, ErrNotFound.Wrap()
 	} else if err != nil {
 		return false, xo.W(err)
 	}
@@ -120,7 +120,7 @@ func (u *gridFSUpload) Write(data []byte) (int, error) {
 	// write stream
 	n, err := u.stream.Write(data)
 	if coal.IsDuplicate(err) {
-		return 0, xo.W(ErrUsedHandle)
+		return 0, ErrUsedHandle.Wrap()
 	} else if err != nil {
 		return 0, xo.W(err)
 	}
@@ -140,7 +140,7 @@ func (u *gridFSUpload) Close() error {
 	// close stream
 	err := u.stream.Close()
 	if coal.IsDuplicate(err) {
-		return xo.W(ErrUsedHandle)
+		return ErrUsedHandle.Wrap()
 	} else if err != nil {
 		return xo.W(err)
 	}
@@ -156,9 +156,9 @@ func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	// seek stream
 	n, err := d.stream.Seek(offset, whence)
 	if err == lungo.ErrFileNotFound {
-		return 0, xo.W(ErrNotFound)
+		return 0, ErrNotFound.Wrap()
 	} else if err == lungo.ErrInvalidPosition {
-		return 0, xo.W(ErrInvalidPosition)
+		return 0, ErrInvalidPosition.Wrap()
 	} else if err != nil {
 		return 0, xo.W(err)
 	}
@@ -170,7 +170,7 @@ func (d *gridFSDownload) Read(buf []byte) (int, error) {
 	// read stream
 	n, err := d.stream.Read(buf)
 	if err == lungo.ErrFileNotFound {
-		return 0, xo.W(ErrNotFound)
+		return 0, ErrNotFound.Wrap()
 	} else if err == io.EOF {
 		return 0, io.EOF
 	} else if err != nil {
@@ -184,7 +184,7 @@ func (d *gridFSDownload) Close() error {
 	// close stream
 	err := d.stream.Close()
 	if err == lungo.ErrFileNotFound {
-		return xo.W(ErrNotFound)
+		return ErrNotFound.Wrap()
 	} else if err != nil {
 		return xo.W(err)
 	}

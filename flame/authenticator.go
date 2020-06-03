@@ -166,7 +166,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 			// parse token
 			key, err := a.policy.Verify(tk)
-			if errors.Is(err, heat.ErrExpiredToken) {
+			if heat.ErrExpiredToken.Is(err) {
 				xo.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
 				xo.Abort(oauth2.InvalidToken("malformed bearer token"))
@@ -270,7 +270,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 
 	// validate redirect URI
 	req.RedirectURI, err = a.policy.RedirectURIValidator(ctx, client, req.RedirectURI)
-	if errors.Is(err, ErrInvalidRedirectURI) {
+	if ErrInvalidRedirectURI.Is(err) {
 		xo.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	} else if err != nil {
 		xo.Abort(err)
@@ -324,7 +324,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 
 	// parse token
 	key, err := a.policy.Verify(token)
-	if errors.Is(err, heat.ErrExpiredToken) {
+	if heat.ErrExpiredToken.Is(err) {
 		abort(oauth2.AccessDenied("expired access token"))
 	} else if err != nil {
 		abort(oauth2.AccessDenied("invalid access token"))
@@ -362,9 +362,9 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 
 	// validate & grant scope
 	scope, err := a.policy.ApproveStrategy(ctx, client, resourceOwner, accessToken, req.Scope)
-	if errors.Is(err, ErrApprovalRejected) {
+	if ErrApprovalRejected.Is(err) {
 		abort(oauth2.AccessDenied("approval rejected"))
-	} else if errors.Is(err, ErrInvalidScope) {
+	} else if ErrInvalidScope.Is(err) {
 		abort(oauth2.InvalidScope(""))
 	} else if err != nil {
 		xo.Abort(err)
@@ -473,9 +473,9 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(ctx *Context
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(ctx, client, resourceOwner, req.Scope)
-	if errors.Is(err, ErrGrantRejected) {
+	if ErrGrantRejected.Is(err) {
 		xo.Abort(oauth2.AccessDenied("")) // never expose reason!
-	} else if errors.Is(err, ErrInvalidScope) {
+	} else if ErrInvalidScope.Is(err) {
 		xo.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
 		xo.Abort(err)
@@ -505,9 +505,9 @@ func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.T
 
 	// validate & grant scope
 	scope, err := a.policy.GrantStrategy(ctx, client, nil, req.Scope)
-	if errors.Is(err, ErrGrantRejected) {
+	if ErrGrantRejected.Is(err) {
 		xo.Abort(oauth2.AccessDenied("grant rejected"))
-	} else if errors.Is(err, ErrInvalidScope) {
+	} else if ErrInvalidScope.Is(err) {
 		xo.Abort(oauth2.InvalidScope(""))
 	} else if err != nil {
 		xo.Abort(err)
@@ -532,7 +532,7 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 	// parse token
 	key, err := a.policy.Verify(req.RefreshToken)
-	if errors.Is(err, heat.ErrExpiredToken) {
+	if heat.ErrExpiredToken.Is(err) {
 		xo.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
 		xo.Abort(oauth2.InvalidRequest("malformed refresh token"))
@@ -600,7 +600,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// parse authorization code
 	key, err := a.policy.Verify(req.Code)
-	if errors.Is(err, heat.ErrExpiredToken) {
+	if heat.ErrExpiredToken.Is(err) {
 		xo.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
 		xo.Abort(oauth2.InvalidRequest("malformed authorization code"))
@@ -635,7 +635,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// validate redirect URI
 	req.RedirectURI, err = a.policy.RedirectURIValidator(ctx, client, req.RedirectURI)
-	if errors.Is(err, ErrInvalidRedirectURI) {
+	if ErrInvalidRedirectURI.Is(err) {
 		xo.Abort(oauth2.InvalidRequest("invalid redirect uri"))
 	} else if err != nil {
 		xo.Abort(err)
@@ -699,7 +699,7 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 
 	// parse token
 	key, err := a.policy.Verify(req.Token)
-	if errors.Is(err, heat.ErrExpiredToken) {
+	if heat.ErrExpiredToken.Is(err) {
 		ctx.writer.WriteHeader(http.StatusOK)
 		return
 	} else if err != nil {
@@ -753,7 +753,7 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 
 	// parse token
 	key, err := a.policy.Verify(req.Token)
-	if errors.Is(err, heat.ErrExpiredToken) {
+	if heat.ErrExpiredToken.Is(err) {
 		xo.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, &oauth2.IntrospectionResponse{}))
 		return
 	} else if err != nil {
@@ -909,7 +909,7 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 	if a.policy.ClientFilter != nil {
 		// run filter function
 		filter, err := a.policy.ClientFilter(ctx, model)
-		if errors.Is(err, ErrInvalidFilter) {
+		if ErrInvalidFilter.Is(err) {
 			xo.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {
 			xo.Abort(err)
@@ -1014,7 +1014,7 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 	if a.policy.ResourceOwnerFilter != nil {
 		// run filter function
 		filter, err := a.policy.ResourceOwnerFilter(ctx, client, model)
-		if errors.Is(err, ErrInvalidFilter) {
+		if ErrInvalidFilter.Is(err) {
 			xo.Abort(oauth2.InvalidRequest("invalid filter"))
 		} else if err != nil {
 			xo.Abort(err)
