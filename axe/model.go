@@ -85,12 +85,12 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check name
 	if m.Name == "" {
-		return xo.F("missing name")
+		return xo.SF("missing name")
 	}
 
 	// check state
 	if !m.State.Valid() {
-		return xo.F("invalid state")
+		return xo.SF("invalid state")
 	}
 
 	return nil
