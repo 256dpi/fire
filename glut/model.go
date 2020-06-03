@@ -33,7 +33,7 @@ type Model struct {
 func (m *Model) Validate() error {
 	// check key
 	if m.Key == "" {
-		return xo.F("missing key")
+		return xo.SF("missing key")
 	}
 
 	return nil
