@@ -2,6 +2,7 @@ package flame
 
 import (
 	"github.com/256dpi/oauth2/v2"
+	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire"
 )
@@ -33,7 +34,7 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		if accessToken == nil {
 			// return error if authentication is required
 			if force {
-				return fire.ErrAccessDenied
+				return xo.W(fire.ErrAccessDenied)
 			}
 
 			return nil
@@ -42,7 +43,7 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		// validate scope
 		data := accessToken.GetTokenData()
 		if !data.Scope.Includes(requiredScope) {
-			return fire.ErrAccessDenied
+			return xo.W(fire.ErrAccessDenied)
 		}
 
 		// get client

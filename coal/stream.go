@@ -199,7 +199,7 @@ func (s *Stream) tail() error {
 		return xo.W(err)
 	}
 
-	return ErrStop
+	return xo.W(ErrStop)
 }
 
 type change struct {

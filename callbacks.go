@@ -23,12 +23,12 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 		// check for credentials
 		user, password, ok := ctx.HTTPRequest.BasicAuth()
 		if !ok {
-			return ErrAccessDenied
+			return xo.W(ErrAccessDenied)
 		}
 
 		// check if credentials match
 		if val, ok := credentials[user]; !ok || val != password {
-			return ErrAccessDenied
+			return xo.W(ErrAccessDenied)
 		}
 
 		return nil

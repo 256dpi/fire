@@ -79,8 +79,6 @@ func (c jwtClaims) Valid() error {
 	return err
 }
 
-// TODO: Wrap all uses of sentinel errors?
-
 // ErrInvalidToken is returned if a token is in some way invalid.
 var ErrInvalidToken = xo.F("invalid token")
 
@@ -169,23 +167,23 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 	})
 	if valErr, ok := err.(*jwt.ValidationError); ok && valErr != nil {
 		if valErr.Errors == jwt.ValidationErrorExpired {
-			return nil, ErrExpiredToken
+			return nil, xo.W(ErrExpiredToken)
 		}
-		return nil, ErrInvalidToken
+		return nil, xo.W(ErrInvalidToken)
 	} else if err != nil {
 		return nil, xo.W(err)
 	} else if !tkn.Valid {
-		return nil, ErrInvalidToken
+		return nil, xo.W(ErrInvalidToken)
 	}
 
 	// check issuer
 	if claims.Issuer != issuer {
-		return nil, ErrInvalidToken
+		return nil, xo.W(ErrInvalidToken)
 	}
 
 	// check name
 	if claims.Audience != name {
-		return nil, ErrInvalidToken
+		return nil, xo.W(ErrInvalidToken)
 	}
 
 	// get expiry

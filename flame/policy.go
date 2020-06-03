@@ -166,14 +166,14 @@ func DefaultRedirectURIValidator(_ *Context, client Client, uri string) (string,
 		return uri, nil
 	}
 
-	return "", ErrInvalidRedirectURI
+	return "", xo.W(ErrInvalidRedirectURI)
 }
 
 // DefaultGrantStrategy grants only empty scopes.
 func DefaultGrantStrategy(_ *Context, _ Client, _ ResourceOwner, scope oauth2.Scope) (oauth2.Scope, error) {
 	// check scope
 	if !scope.Empty() {
-		return nil, ErrInvalidScope
+		return nil, xo.W(ErrInvalidScope)
 	}
 
 	return scope, nil
@@ -188,7 +188,7 @@ func StaticApprovalURL(url string) func(*Context, Client) (string, error) {
 
 // DefaultApproveStrategy rejects all approvals.
 func DefaultApproveStrategy(*Context, Client, ResourceOwner, GenericToken, oauth2.Scope) (oauth2.Scope, error) {
-	return nil, ErrApprovalRejected
+	return nil, xo.W(ErrApprovalRejected)
 }
 
 // DefaultTokenData adds the user's id to the token data claim.
