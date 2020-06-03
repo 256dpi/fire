@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -22,9 +23,11 @@ const (
 func (c Coding) Marshal(in interface{}) ([]byte, error) {
 	switch c {
 	case JSON:
-		return json.Marshal(in)
+		buf, err := json.Marshal(in)
+		return buf, xo.W(err)
 	case BSON:
-		return bson.Marshal(in)
+		buf, err := bson.Marshal(in)
+		return buf, xo.W(err)
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))
 	}
@@ -34,9 +37,9 @@ func (c Coding) Marshal(in interface{}) ([]byte, error) {
 func (c Coding) Unmarshal(in []byte, out interface{}) error {
 	switch c {
 	case JSON:
-		return json.Unmarshal(in, out)
+		return xo.W(json.Unmarshal(in, out))
 	case BSON:
-		return bson.Unmarshal(in, out)
+		return xo.W(bson.Unmarshal(in, out))
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))
 	}
