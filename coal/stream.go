@@ -125,7 +125,7 @@ func (s *Stream) tail() error {
 	// open change stream
 	cs, err := coll.Watch(ctx, []bson.M{}, opts)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// ensure stream is closed
@@ -155,7 +155,7 @@ func (s *Stream) tail() error {
 		var ch change
 		err = cs.Decode(&ch)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 
 		// prepare type
@@ -168,7 +168,7 @@ func (s *Stream) tail() error {
 		case "delete":
 			event = Deleted
 		case "drop", "renamed", "dropDatabase", "invalidate":
-			return ErrInvalidated
+			return xo.W(ErrInvalidated)
 		}
 
 		// unmarshal document for created and updated events
@@ -177,7 +177,7 @@ func (s *Stream) tail() error {
 			doc = GetMeta(s.model).Make()
 			err = bson.Unmarshal(ch.FullDocument, doc)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 		}
 
@@ -194,7 +194,7 @@ func (s *Stream) tail() error {
 	// close stream and check error
 	err = cs.Close(ctx)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return ErrStop

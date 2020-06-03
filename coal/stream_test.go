@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -378,7 +379,7 @@ func TestStreamInvalidation(t *testing.T) {
 				assert.Equal(t, Errored, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
-				assert.Equal(t, ErrInvalidated, err)
+				assert.True(t, errors.Is(err, ErrInvalidated))
 				assert.NotNil(t, token)
 
 				return ErrStop

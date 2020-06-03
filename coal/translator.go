@@ -158,13 +158,13 @@ func (t *Translator) convert(in bson.M) (bson.D, error) {
 	// attempt fast conversion
 	doc, err := bsonkit.Convert(in)
 	if err == nil {
-		return *doc, err
+		return *doc, xo.W(err)
 	}
 
 	// otherwise convert safely
 	doc, err = bsonkit.Transform(in)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return *doc, nil

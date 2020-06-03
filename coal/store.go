@@ -37,7 +37,7 @@ func Connect(uri string) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// get default db
@@ -51,13 +51,13 @@ func Connect(uri string) (*Store, error) {
 	// create client
 	client, err := lungo.Connect(nil, opts)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// ping server
 	err = client.Ping(nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return NewStore(client, defaultDB, nil), nil
@@ -89,7 +89,7 @@ func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, er
 		ExpireErrors:   reporter,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return NewStore(client, defaultDB, engine), nil
@@ -214,20 +214,20 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		// start transaction
 		err := sc.StartTransaction()
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 
 		// call function
 		err = fn(withKey(sc, hasTransaction))
 		if err != nil {
 			_ = sc.AbortTransaction(sc)
-			return err
+			return xo.W(err)
 		}
 
 		// commit transaction
 		err = sc.CommitTransaction(sc)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 
 		return nil
@@ -239,7 +239,7 @@ func (s *Store) Close() error {
 	// disconnect client
 	err := s.client.Disconnect(nil)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// close engine

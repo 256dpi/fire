@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -167,7 +168,7 @@ func (c *Catalog) EnsureIndexes(store *Store) error {
 		for _, index := range list {
 			_, err := store.DB().Collection(coll).Indexes().CreateOne(ctx, index.Compile())
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 		}
 	}
@@ -188,7 +189,7 @@ func (c *Catalog) Visualize(title, file string) error {
 	// write visualization dot
 	err = ioutil.WriteFile(file, pdf, 0644)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil
@@ -212,7 +213,7 @@ func (c *Catalog) VisualizePDF(title string) ([]byte, error) {
 	// run commands
 	err := cmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return buf.Bytes(), nil

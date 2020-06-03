@@ -7,6 +7,7 @@ import (
 
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/xo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -43,7 +44,7 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		span.End()
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// create iterator
@@ -64,14 +65,14 @@ func (c *Collection) AggregateAll(ctx context.Context, list interface{}, pipelin
 	// aggregate
 	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// decode all documents
 	err = csr.All(ctx, list)
 	if err != nil {
 		_ = csr.Close(ctx)
-		return err
+		return xo.W(err)
 	}
 
 	// log result
@@ -90,7 +91,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 	// bulk write
 	res, err := c.coll.BulkWrite(ctx, models, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -114,7 +115,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	// count documents
 	count, err := c.coll.CountDocuments(ctx, filter, opts...)
 	if err != nil {
-		return 0, err
+		return 0, xo.W(err)
 	}
 
 	// log result
@@ -134,7 +135,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	// delete many
 	res, err := c.coll.DeleteMany(ctx, filter, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -154,7 +155,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	// delete one
 	res, err := c.coll.DeleteOne(ctx, filter, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -175,7 +176,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	// distinct
 	list, err := c.coll.Distinct(ctx, field, filter, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -194,7 +195,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	// estimate count
 	count, err := c.coll.EstimatedDocumentCount(ctx, opts...)
 	if err != nil {
-		return 0, err
+		return 0, xo.W(err)
 	}
 
 	// log result
@@ -214,7 +215,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	csr, err := c.coll.Find(ctx, filter, opts...)
 	if err != nil {
 		span.End()
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// create iterator
@@ -235,14 +236,14 @@ func (c *Collection) FindAll(ctx context.Context, list interface{}, filter inter
 	// find
 	csr, err := c.coll.Find(ctx, filter, opts...)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// decode all documents
 	err = csr.All(ctx, list)
 	if err != nil {
 		_ = csr.Close(ctx)
-		return err
+		return xo.W(err)
 	}
 
 	// log result
@@ -262,7 +263,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	// find one
 	res := c.coll.FindOne(ctx, filter, opts...)
 
-	return res
+	return &SingleResult{res: res}
 }
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
@@ -276,7 +277,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	// find one and delete
 	res := c.coll.FindOneAndDelete(ctx, filter, opts...)
 
-	return res
+	return &SingleResult{res: res}
 }
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
@@ -290,7 +291,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 	// find and replace one
 	res := c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
 
-	return res
+	return &SingleResult{res: res}
 }
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
@@ -304,7 +305,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 	// find one and update
 	res := c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
 
-	return res
+	return &SingleResult{res: res}
 }
 
 // InsertMany wraps the native InsertMany collection method.
@@ -318,7 +319,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	// insert many
 	res, err := c.coll.InsertMany(ctx, documents, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return res, nil
@@ -334,7 +335,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	// insert one
 	res, err := c.coll.InsertOne(ctx, document, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return res, nil
@@ -351,7 +352,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 	// replace one
 	res, err := c.coll.ReplaceOne(ctx, filter, replacement, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	return res, nil
@@ -368,7 +369,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 	// update many
 	res, err := c.coll.UpdateMany(ctx, filter, update, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -390,7 +391,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 	// update one
 	res, err := c.coll.UpdateOne(ctx, filter, update, opts...)
 	if err != nil {
-		return nil, err
+		return nil, xo.W(err)
 	}
 
 	// log result
@@ -442,13 +443,13 @@ func (i *Iterator) Next() bool {
 
 // Decode will decode the loaded document to the specified value.
 func (i *Iterator) Decode(v interface{}) error {
-	return i.cursor.Decode(v)
+	return xo.W(i.cursor.Decode(v))
 }
 
 // Error return the first error encountered during iteration. It should always
 // be checked after an iteration has finished to ensure there where no errors.
 func (i *Iterator) Error() error {
-	return i.error
+	return xo.W(i.error)
 }
 
 // Close will close the underlying cursor. A call to it should be deferred right
@@ -468,4 +469,25 @@ func (i *Iterator) Close() {
 
 	// unset spans
 	i.spans = nil
+}
+
+// SingleResult wraps a single operation result.
+type SingleResult struct {
+	res lungo.ISingleResult
+}
+
+// Decode will decode the document to the specified value.
+func (r *SingleResult) Decode(i interface{}) error {
+	return xo.W(r.res.Decode(i))
+}
+
+// DecodeBytes will return the raw document bytes.s
+func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
+	raw, err := r.res.DecodeBytes()
+	return raw, xo.W(err)
+}
+
+// Err return will return the operations error.
+func (r *SingleResult) Err() error {
+	return xo.W(r.res.Err())
 }

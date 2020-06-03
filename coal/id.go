@@ -3,6 +3,7 @@ package coal
 import (
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -43,7 +44,8 @@ func IsHex(str string) bool {
 
 // FromHex will convert the provided string to a object id.
 func FromHex(str string) (ID, error) {
-	return primitive.ObjectIDFromHex(str)
+	id, err := primitive.ObjectIDFromHex(str)
+	return id, xo.W(err)
 }
 
 // MustFromHex will convert the provided string to a object id and panic if
