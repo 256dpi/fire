@@ -120,7 +120,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 			// report critical errors if possible
 			if g.reporter != nil {
-				g.reporter(err)
+				g.reporter(xo.W(err))
 			}
 
 			// ignore errors caused by writing critical errors

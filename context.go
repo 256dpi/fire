@@ -298,7 +298,7 @@ func (c *Context) Parse(obj interface{}) error {
 	if err == io.EOF {
 		return xo.SF("incomplete request body")
 	} else if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil
@@ -309,13 +309,13 @@ func (c *Context) Respond(value interface{}) error {
 	// encode response
 	bytes, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// write token
 	_, err = c.ResponseWriter.Write(bytes)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil
