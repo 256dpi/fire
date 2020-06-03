@@ -118,7 +118,7 @@ func TestStreamAutoResumption(t *testing.T) {
 				assert.Equal(t, Errored, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
-				assert.Equal(t, io.EOF, err)
+				assert.True(t, errors.Is(err, io.EOF))
 				assert.NotNil(t, token)
 			case 5:
 				assert.Equal(t, Resumed, e)
@@ -144,7 +144,7 @@ func TestStreamAutoResumption(t *testing.T) {
 				assert.Equal(t, Errored, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
-				assert.Equal(t, io.EOF, err)
+				assert.True(t, errors.Is(err, io.EOF))
 				assert.NotNil(t, token)
 			case 9:
 				assert.Equal(t, Resumed, e)

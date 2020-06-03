@@ -1,6 +1,10 @@
 package ash
 
-import "github.com/256dpi/fire"
+import (
+	"github.com/256dpi/xo"
+
+	"github.com/256dpi/fire"
+)
 
 // A is a short-hand function to construct an authorizer. It will also add tracing
 // code around the execution of the authorizer.
@@ -21,7 +25,7 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 			// call handler
 			enforcers, err := h(ctx)
 			if err != nil {
-				return nil, err
+				return nil, xo.W(err)
 			}
 
 			return enforcers, nil
@@ -58,7 +62,7 @@ func And(a, b *Authorizer) *Authorizer {
 		// run first callback
 		enforcers1, err := a.Handler(ctx)
 		if err != nil {
-			return nil, err
+			return nil, xo.W(err)
 		} else if len(enforcers1) == 0 {
 			return nil, nil
 		}
@@ -66,7 +70,7 @@ func And(a, b *Authorizer) *Authorizer {
 		// run second callback
 		enforcers2, err := b.Handler(ctx)
 		if err != nil {
-			return nil, err
+			return nil, xo.W(err)
 		} else if len(enforcers2) == 0 {
 			return nil, nil
 		}
@@ -97,7 +101,7 @@ func Or(a, b *Authorizer) *Authorizer {
 			// run callback
 			enforcers, err := a.Handler(ctx)
 			if err != nil {
-				return nil, err
+				return nil, xo.W(err)
 			}
 
 			// return on success
@@ -111,7 +115,7 @@ func Or(a, b *Authorizer) *Authorizer {
 			// run callback
 			enforcers, err := b.Handler(ctx)
 			if err != nil {
-				return nil, err
+				return nil, xo.W(err)
 			}
 
 			// return on success

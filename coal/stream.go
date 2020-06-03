@@ -1,6 +1,8 @@
 package coal
 
 import (
+	"errors"
+
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -92,19 +94,19 @@ func (s *Stream) open() error {
 	for {
 		// check if alive
 		if !s.tomb.Alive() {
-			return s.receiver(Stopped, Z(), nil, nil, s.token)
+			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
 		}
 
 		// tail stream
 		err := s.tail()
-		if err == ErrStop {
-			return s.receiver(Stopped, Z(), nil, nil, s.token)
+		if errors.Is(err, ErrStop) {
+			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
 		}
 
 		// emit error
-		err = s.receiver(Errored, Z(), nil, err, s.token)
-		if err == ErrStop {
-			return s.receiver(Stopped, Z(), nil, nil, s.token)
+		err = xo.W(s.receiver(Errored, Z(), nil, err, s.token))
+		if errors.Is(err, ErrStop) {
+			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
 		}
 	}
 }
@@ -136,13 +138,13 @@ func (s *Stream) tail() error {
 		// signal opened
 		err = s.receiver(Opened, Z(), nil, nil, s.token)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 	} else {
 		// signal resumed
 		err = s.receiver(Resumed, Z(), nil, nil, s.token)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 	}
 
@@ -184,7 +186,7 @@ func (s *Stream) tail() error {
 		// call receiver
 		err = s.receiver(event, ch.DocumentKey.ID, doc, nil, ch.ResumeToken)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 
 		// save token

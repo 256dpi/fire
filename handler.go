@@ -1,6 +1,10 @@
 package fire
 
-import "time"
+import (
+	"time"
+
+	"github.com/256dpi/xo"
+)
 
 // A Callback is called during the request processing flow of a controller.
 type Callback struct {
@@ -35,7 +39,7 @@ func C(name string, m Matcher, h Handler) *Callback {
 			// call handler
 			err := h(ctx)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			return nil
@@ -88,7 +92,7 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 			// call handler
 			err := h(ctx)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			return nil
@@ -156,7 +160,7 @@ func Combine(name string, cbs ...*Callback) *Callback {
 			if cb.Matcher(ctx) {
 				err := cb.Handler(ctx)
 				if err != nil {
-					return err
+					return xo.W(err)
 				}
 			}
 		}

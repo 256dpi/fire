@@ -210,7 +210,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		SetDefaultReadConcern(readconcern.Snapshot())
 
 	// start transaction
-	return s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
+	return xo.W(s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
 		// start transaction
 		err := sc.StartTransaction()
 		if err != nil {
@@ -231,7 +231,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		}
 
 		return nil
-	})
+	}))
 }
 
 // Close will close the store and its associated client.

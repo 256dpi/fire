@@ -2,6 +2,7 @@ package fire
 
 import (
 	"encoding/base64"
+	"errors"
 	"testing"
 	"time"
 
@@ -42,13 +43,13 @@ func TestBasicAuthorizer(t *testing.T) {
 
 		err = tester.RunCallback(nil, authorizer)
 		assert.Error(t, err)
-		assert.Equal(t, ErrAccessDenied, err)
+		assert.True(t, errors.Is(err, ErrAccessDenied))
 
 		tester.Header["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte("foo:foo"))
 
 		err = tester.RunCallback(nil, authorizer)
 		assert.Error(t, err)
-		assert.Equal(t, ErrAccessDenied, err)
+		assert.True(t, errors.Is(err, ErrAccessDenied))
 	})
 }
 

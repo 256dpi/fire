@@ -2,7 +2,11 @@
 // be used to authorize controller operations in a declarative way.
 package ash
 
-import "github.com/256dpi/fire"
+import (
+	"github.com/256dpi/xo"
+
+	"github.com/256dpi/fire"
+)
 
 // L is a short-hand type to create a list of authorizers.
 type L = []*Authorizer
@@ -96,7 +100,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 			// run callback and return on error
 			enforcers, err := authorizer.Handler(ctx)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 
 			// run enforcers if provided
@@ -112,7 +116,7 @@ func (s *Strategy) call(ctx *fire.Context, lists ...[]*Authorizer) error {
 					// run enforcer
 					err = enforcer.Handler(ctx)
 					if err != nil {
-						return err
+						return xo.W(err)
 					}
 				}
 

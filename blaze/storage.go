@@ -62,7 +62,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	// create handle
 	handle, err := s.service.Prepare(ctx)
 	if err != nil {
-		return "", nil, err
+		return "", nil, xo.W(err)
 	}
 
 	// prepare file
@@ -89,13 +89,13 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	// begin upload
 	upload, err := s.service.Upload(ctx, handle, mediaType)
 	if err != nil {
-		return "", nil, err
+		return "", nil, xo.W(err)
 	}
 
 	// perform upload
 	size, err := cb(upload)
 	if err != nil {
-		return "", nil, err
+		return "", nil, xo.W(err)
 	}
 
 	// get time
@@ -677,7 +677,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 	// begin download
 	download, err := s.service.Download(ctx, file.Handle)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xo.W(err)
 	}
 
 	return download, &file, nil
@@ -831,7 +831,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		// delete blob
 		deleted, err := s.service.Delete(ctx, file.Handle)
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 
 		// delete file if blob has been deleted
@@ -852,7 +852,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	// cleanup service
 	err = s.service.Cleanup(ctx)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	return nil

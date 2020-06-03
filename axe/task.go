@@ -352,7 +352,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		if t.Notifier != nil {
 			err = t.Notifier(ctx, true, anError.Reason)
 			if err != nil {
-				return err
+				return xo.W(err)
 			}
 		}
 
@@ -391,7 +391,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	if t.Notifier != nil {
 		err = t.Notifier(ctx, false, "")
 		if err != nil {
-			return err
+			return xo.W(err)
 		}
 	}
 

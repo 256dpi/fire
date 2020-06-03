@@ -2086,7 +2086,7 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 		}
 
 		// call callback
-		err := cb.Handler(ctx)
+		err := xo.W(cb.Handler(ctx))
 		if xo.IsSafe(err) {
 			stack.Abort(&jsonapi.Error{
 				Status: errorStatus,
@@ -2104,7 +2104,7 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	defer ctx.Trace.Pop()
 
 	// call action
-	err := a.Handler(ctx)
+	err := xo.W(a.Handler(ctx))
 	if xo.IsSafe(err) {
 		stack.Abort(&jsonapi.Error{
 			Status: errorStatus,
