@@ -260,7 +260,7 @@ func (c *Context) With(ctx context.Context, fn func()) {
 
 	// swap tracer and context
 	if c.Tracer != nil {
-		c.Tracer, c.Context = xo.NewTracer(ctx, c.Tracer.Tail())
+		c.Tracer, c.Context = xo.NewTracer(ctx)
 	} else {
 		c.Context = ctx
 	}
