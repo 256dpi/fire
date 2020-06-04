@@ -17,8 +17,8 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// get meta
 	meta := GetMeta(value)
 
-	// track
-	ctx, span := xo.Track(ctx, "glut/Get")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Get")
 	defer span.End()
 
 	// get key
@@ -60,8 +60,8 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
 func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/Set")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Set")
 	defer span.End()
 
 	// get meta
@@ -115,8 +115,8 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // Del will remove the specified value from the store. This method will ignore
 // any locks held on the value.
 func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/Del")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Del")
 	defer span.End()
 
 	// get key
@@ -142,8 +142,8 @@ func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 // Mut will load the specified value, run the callback and on success write the
 // value back. This method will ignore any locks held on the value.
 func Mut(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
-	// track
-	ctx, span := xo.Track(ctx, "glut/Mut")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Mut")
 	defer span.End()
 
 	// get value

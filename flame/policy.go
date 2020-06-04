@@ -57,7 +57,7 @@ type Context struct {
 	// The context that is cancelled when the underlying connection transport
 	// has been closed.
 	//
-	// Values: opentracing.Span, *xo.Trace
+	// Values: opentracing.Span, *xo.Tracer
 	context.Context
 
 	// The underlying HTTP request.
@@ -65,10 +65,10 @@ type Context struct {
 	// Usage: Read Only
 	Request *http.Request
 
-	// The current trace.
+	// The current tracer.
 	//
 	// Usage: Read Only
-	Trace *xo.Trace
+	Tracer *xo.Tracer
 
 	writer http.ResponseWriter
 	grants Grants

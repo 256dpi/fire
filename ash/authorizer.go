@@ -19,8 +19,8 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 		Matcher: m,
 		Handler: func(ctx *fire.Context) ([]*Enforcer, error) {
 			// trace
-			ctx.Trace.Push(name)
-			defer ctx.Trace.Pop()
+			ctx.Tracer.Push(name)
+			defer ctx.Tracer.Pop()
 
 			// call handler
 			enforcers, err := h(ctx)

@@ -201,7 +201,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 	}
 
 	// trace
-	ctx, span := xo.Track(ctx, "coal/Store.T")
+	ctx, span := xo.Trace(ctx, "coal/Store.T")
 	defer span.End()
 
 	// prepare options

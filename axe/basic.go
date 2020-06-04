@@ -23,8 +23,8 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		base.DocID = coal.New()
 	}
 
-	// track
-	ctx, span := xo.Track(ctx, "axe/Enqueue")
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Enqueue")
 	span.Tag("name", meta.Name)
 	span.Tag("label", base.Label)
 	span.Tag("id", job.ID().Hex())
@@ -127,8 +127,8 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	// get meta
 	meta := GetMeta(job)
 
-	// track
-	ctx, span := xo.Track(ctx, "axe/Dequeue")
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Dequeue")
 	span.Tag("name", meta.Name)
 	span.Tag("id", job.ID().Hex())
 	span.Tag("timeout", timeout.String())
@@ -201,8 +201,8 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	meta := GetMeta(job)
 	base := job.GetBase()
 
-	// track
-	ctx, span := xo.Track(ctx, "axe/Complete")
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Complete")
 	span.Tag("name", meta.Name)
 	span.Tag("label", base.Label)
 	span.Tag("id", job.ID().Hex())
@@ -258,8 +258,8 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	meta := GetMeta(job)
 	base := job.GetBase()
 
-	// track
-	ctx, span := xo.Track(ctx, "axe/Fail")
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Fail")
 	span.Tag("name", meta.Name)
 	span.Tag("label", base.Label)
 	span.Tag("id", job.ID().Hex())
@@ -304,8 +304,8 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	meta := GetMeta(job)
 	base := job.GetBase()
 
-	// track
-	ctx, span := xo.Track(ctx, "axe/Cancel")
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Cancel")
 	span.Tag("name", meta.Name)
 	span.Tag("label", base.Label)
 	span.Tag("id", job.ID().Hex())

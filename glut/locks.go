@@ -15,8 +15,8 @@ import (
 // the process and lock it right away. It will also update the deadline of the
 // value if a time to live is set.
 func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Duration) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/Lock")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Lock")
 	span.Tag("timeout", timeout.String())
 	defer span.End()
 
@@ -137,8 +137,8 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 // SetLocked will update the specified value only if it is locked. It will als
 // update the deadline of the value if a time to live is set.
 func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/SetLocked")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/SetLocked")
 	defer span.End()
 
 	// get meta
@@ -204,8 +204,8 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // GetLocked will load the contents of the specified value only if it is locked.
 func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/GetLocked")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/GetLocked")
 	defer span.End()
 
 	// get meta and base
@@ -259,8 +259,8 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 
 // DelLocked will delete the specified value only if it is locked.
 func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/DelLocked")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/DelLocked")
 	defer span.End()
 
 	// get base
@@ -299,8 +299,8 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 // MutLocked will load the specified value, run the callback and on success
 // write the value back.
 func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
-	// track
-	ctx, span := xo.Track(ctx, "glut/MutLocked")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/MutLocked")
 	defer span.End()
 
 	// get value
@@ -327,8 +327,8 @@ func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool
 // Unlock will unlock the specified value only if it is locked. It will also
 // update the deadline of the value if a time to live is set.
 func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "glut/Unlock")
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Unlock")
 	defer span.End()
 
 	// get meta

@@ -35,8 +35,8 @@ func (c *Collection) Native() lungo.ICollection {
 // Aggregate wraps the native Aggregate collection method and yields the
 // returned cursor.
 func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (*Iterator, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.Aggregate")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.Aggregate")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("pipeline", pipeline)
 
@@ -56,8 +56,8 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 // AggregateAll wraps the native Aggregate collection method and decodes all
 // documents to the provided slice.
 func (c *Collection) AggregateAll(ctx context.Context, list interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.AggregateAll")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.AggregateAll")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("pipeline", pipeline)
 	defer span.End()
@@ -83,8 +83,8 @@ func (c *Collection) AggregateAll(ctx context.Context, list interface{}, pipelin
 
 // BulkWrite wraps the native BulkWrite collection method.
 func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.BulkWrite")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.BulkWrite")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
@@ -106,8 +106,8 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 
 // CountDocuments wraps the native CountDocuments collection method.
 func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.CountDocuments")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.CountDocuments")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -126,8 +126,8 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 // DeleteMany wraps the native DeleteMany collection method.
 func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.DeleteMany")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.DeleteMany")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -146,8 +146,8 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 
 // DeleteOne wraps the native DeleteOne collection method.
 func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.DeleteOne")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.DeleteOne")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -166,8 +166,8 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 
 // Distinct wraps the native Distinct collection method.
 func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.Distinct")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.Distinct")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("field", field)
 	span.Tag("filter", filter)
@@ -187,8 +187,8 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 // EstimatedDocumentCount wraps the native EstimatedDocumentCount collection method.
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.EstimatedDocumentCount")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.EstimatedDocumentCount")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
@@ -206,8 +206,8 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 
 // Find wraps the native Find collection method and yields the returned cursor.
 func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*Iterator, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.Find")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.Find")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 
@@ -227,8 +227,8 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 // FindAll wraps the native Find collection method and decodes all documents to
 // the provided slice.
 func (c *Collection) FindAll(ctx context.Context, list interface{}, filter interface{}, opts ...*options.FindOptions) error {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.FindAll")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.FindAll")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -254,8 +254,8 @@ func (c *Collection) FindAll(ctx context.Context, list interface{}, filter inter
 
 // FindOne wraps the native FindOne collection method.
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) lungo.ISingleResult {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.FindOne")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.FindOne")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -268,8 +268,8 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 // FindOneAndDelete wraps the native FindOneAndDelete collection method.
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) lungo.ISingleResult {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.FindOneAndDelete")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndDelete")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -282,8 +282,8 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 // FindOneAndReplace wraps the native FindOneAndReplace collection method.
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) lungo.ISingleResult {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.FindOneAndReplace")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndReplace")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -296,8 +296,8 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 
 // FindOneAndUpdate wraps the native FindOneAndUpdate collection method.
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) lungo.ISingleResult {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.FindOneAndUpdate")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndUpdate")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -310,8 +310,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 
 // InsertMany wraps the native InsertMany collection method.
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.InsertMany")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.InsertMany")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("count", len(documents))
 	defer span.End()
@@ -327,8 +327,8 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 // InsertOne wraps the native InsertOne collection method.
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.InsertOne")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.InsertOne")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
@@ -343,8 +343,8 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 
 // ReplaceOne wraps the native ReplaceOne collection method.
 func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.ReplaceOne")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.ReplaceOne")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -360,8 +360,8 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 
 // UpdateMany wraps the native UpdateMany collection method.
 func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.UpdateMany")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateMany")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()
@@ -382,8 +382,8 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 
 // UpdateOne wraps the native UpdateOne collection method.
 func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Collection.UpdateOne")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateOne")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("filter", filter)
 	defer span.End()

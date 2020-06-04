@@ -37,7 +37,7 @@ func (c *Error) Error() string {
 type Context struct {
 	// The context that is cancelled when the task timeout has been reached.
 	//
-	// Values: opentracing.Span, *xo.Trace
+	// Values: opentracing.Span, *xo.Tracer
 	context.Context
 
 	// The executed job.
@@ -58,10 +58,10 @@ type Context struct {
 	// Usage: Read Only
 	Queue *Queue
 
-	// The current trace.
+	// The current tracer.
 	//
 	// Usage: Read Only
-	Trace *xo.Trace
+	Tracer *xo.Tracer
 }
 
 // Task describes work that is managed using a job queue.
@@ -283,9 +283,9 @@ func (t *Task) enqueuer(queue *Queue) error {
 }
 
 func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
-	// create trace
-	trace, outerContext := xo.CreateTrace(context.Background(), "TASK "+name)
-	defer trace.End()
+	// create tracer
+	tracer, outerContext := xo.CreateTracer(context.Background(), "TASK "+name)
+	defer tracer.End()
 
 	// prepare job
 	job := GetMeta(t.Job).Make()
@@ -316,7 +316,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		Attempt: attempt,
 		Task:    t,
 		Queue:   queue,
-		Trace:   trace,
+		Tracer:  tracer,
 	}
 
 	// run handler

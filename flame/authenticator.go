@@ -55,10 +55,10 @@ func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *
 // Endpoint returns a handler for the common token and authorize endpoint.
 func (a *Authenticator) Endpoint(prefix string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// create trace
-		trace, rcx := xo.CreateTrace(r.Context(), "flame/Authenticator.Endpoint")
-		trace.Tag("prefix", prefix)
-		defer trace.End()
+		// create tracer
+		tracer, rcx := xo.CreateTracer(r.Context(), "flame/Authenticator.Endpoint")
+		tracer.Tag("prefix", prefix)
+		defer tracer.End()
 		r = r.WithContext(rcx)
 
 		// continue any previous aborts
@@ -71,7 +71,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			}
 
 			// record error
-			trace.Record(err)
+			tracer.Record(err)
 
 			// otherwise report critical errors
 			if a.reporter != nil {
@@ -94,7 +94,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			Context: rcx,
 			Request: r,
 			writer:  w,
-			Trace:   trace,
+			Tracer:  tracer,
 		}
 
 		// call endpoints
@@ -118,13 +118,13 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// create trace
-			trace, rcx := xo.CreateTrace(r.Context(), "flame/Authenticator.Authorizer")
-			trace.Tag("scope", scope)
-			trace.Tag("force", force)
-			trace.Tag("loadClient", loadClient)
-			trace.Tag("loadResourceOwner", loadResourceOwner)
-			defer trace.End()
+			// create tracer
+			tracer, rcx := xo.CreateTracer(r.Context(), "flame/Authenticator.Authorizer")
+			tracer.Tag("scope", scope)
+			tracer.Tag("force", force)
+			tracer.Tag("loadClient", loadClient)
+			tracer.Tag("loadResourceOwner", loadResourceOwner)
+			defer tracer.End()
 			r = r.WithContext(rcx)
 
 			// immediately pass on request if force is not set and there is
@@ -146,7 +146,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				}
 
 				// record error
-				trace.Record(err)
+				tracer.Record(err)
 
 				// otherwise report critical errors
 				if a.reporter != nil {
@@ -177,7 +177,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				Context: rcx,
 				Request: r,
 				writer:  w,
-				Trace:   trace,
+				Tracer:  tracer,
 			}
 
 			// get token
@@ -250,8 +250,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 
 func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.authorizationEndpoint")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.authorizationEndpoint")
+	defer ctx.Tracer.Pop()
 
 	// parse authorization request
 	req, err := oauth2.ParseAuthorizationRequest(ctx.Request)
@@ -391,8 +391,8 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 
 func (a *Authenticator) tokenEndpoint(ctx *Context) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.tokenEndpoint")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.tokenEndpoint")
+	defer ctx.Tracer.Pop()
 
 	// parse token request
 	req, err := oauth2.ParseTokenRequest(ctx.Request)
@@ -452,8 +452,8 @@ func (a *Authenticator) tokenEndpoint(ctx *Context) {
 
 func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.handleResourceOwnerPasswordCredentialsGrant")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.handleResourceOwnerPasswordCredentialsGrant")
+	defer ctx.Tracer.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -490,8 +490,8 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(ctx *Context
 
 func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.handleClientCredentialsGrant")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.handleClientCredentialsGrant")
+	defer ctx.Tracer.Pop()
 
 	// check confidentiality
 	if !client.IsConfidential() {
@@ -522,8 +522,8 @@ func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.T
 
 func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.handleRefreshTokenGrant")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.handleRefreshTokenGrant")
+	defer ctx.Tracer.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -590,8 +590,8 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.TokenRequest, client Client) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.handleAuthorizationCodeGrant")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.handleAuthorizationCodeGrant")
+	defer ctx.Tracer.Pop()
 
 	// authenticate client if confidential
 	if client.IsConfidential() && !client.ValidSecret(req.ClientSecret) {
@@ -674,8 +674,8 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 func (a *Authenticator) revocationEndpoint(ctx *Context) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.revocationEndpoint")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.revocationEndpoint")
+	defer ctx.Tracer.Pop()
 
 	// parse authorization request
 	req, err := oauth2.ParseRevocationRequest(ctx.Request)
@@ -728,8 +728,8 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 
 func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.introspectionEndpoint")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.introspectionEndpoint")
+	defer ctx.Tracer.Pop()
 
 	// parse introspection request
 	req, err := oauth2.ParseIntrospectionRequest(ctx.Request)
@@ -809,8 +809,8 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 
 func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.TokenResponse {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.issueTokens")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.issueTokens")
+	defer ctx.Tracer.Pop()
 
 	// prepare expiration
 	atExpiry := time.Now().Add(a.policy.AccessTokenLifespan)
@@ -847,8 +847,8 @@ func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2
 
 func (a *Authenticator) issueCode(ctx *Context, scope oauth2.Scope, redirectURI string, client Client, resourceOwner ResourceOwner) *oauth2.CodeResponse {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.issueCode")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.issueCode")
+	defer ctx.Tracer.Pop()
 
 	// prepare expiration
 	expiry := time.Now().Add(a.policy.AuthorizationCodeLifespan)
@@ -868,8 +868,8 @@ func (a *Authenticator) issueCode(ctx *Context, scope oauth2.Scope, redirectURI 
 
 func (a *Authenticator) findFirstClient(ctx *Context, id string) Client {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.findFirstClient")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.findFirstClient")
+	defer ctx.Tracer.Pop()
 
 	// check all available models in order
 	for _, model := range a.policy.Clients {
@@ -884,8 +884,8 @@ func (a *Authenticator) findFirstClient(ctx *Context, id string) Client {
 
 func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.findClient")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.findClient")
+	defer ctx.Tracer.Pop()
 
 	// prepare client
 	client := coal.GetMeta(model).Make().(Client)
@@ -935,8 +935,8 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 
 func (a *Authenticator) getFirstClient(ctx *Context, id coal.ID) Client {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.getFirstClient")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.getFirstClient")
+	defer ctx.Tracer.Pop()
 
 	// check all available models in order
 	for _, model := range a.policy.Clients {
@@ -951,8 +951,8 @@ func (a *Authenticator) getFirstClient(ctx *Context, id coal.ID) Client {
 
 func (a *Authenticator) getClient(ctx *Context, model Client, id coal.ID) Client {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.getClient")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.getClient")
+	defer ctx.Tracer.Pop()
 
 	// prepare client
 	client := coal.GetMeta(model).Make().(Client)
@@ -969,8 +969,8 @@ func (a *Authenticator) getClient(ctx *Context, model Client, id coal.ID) Client
 
 func (a *Authenticator) findFirstResourceOwner(ctx *Context, client Client, id string) ResourceOwner {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.findFirstResourceOwner")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.findFirstResourceOwner")
+	defer ctx.Tracer.Pop()
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(ctx, client)
@@ -989,8 +989,8 @@ func (a *Authenticator) findFirstResourceOwner(ctx *Context, client Client, id s
 
 func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model ResourceOwner, id string) ResourceOwner {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.findResourceOwner")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.findResourceOwner")
+	defer ctx.Tracer.Pop()
 
 	// prepare resource owner
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
@@ -1040,8 +1040,8 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 
 func (a *Authenticator) getFirstResourceOwner(ctx *Context, client Client, id coal.ID) ResourceOwner {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.getFirstResourceOwner")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.getFirstResourceOwner")
+	defer ctx.Tracer.Pop()
 
 	// get resource owners
 	resourceOwners, err := a.policy.ResourceOwners(ctx, client)
@@ -1060,8 +1060,8 @@ func (a *Authenticator) getFirstResourceOwner(ctx *Context, client Client, id co
 
 func (a *Authenticator) getResourceOwner(ctx *Context, model ResourceOwner, id coal.ID) ResourceOwner {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.getResourceOwner")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.getResourceOwner")
+	defer ctx.Tracer.Pop()
 
 	// prepare object
 	resourceOwner := coal.GetMeta(model).Make().(ResourceOwner)
@@ -1078,8 +1078,8 @@ func (a *Authenticator) getResourceOwner(ctx *Context, model ResourceOwner, id c
 
 func (a *Authenticator) getToken(ctx *Context, id coal.ID) GenericToken {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.getToken")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.getToken")
+	defer ctx.Tracer.Pop()
 
 	// prepare object
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
@@ -1096,8 +1096,8 @@ func (a *Authenticator) getToken(ctx *Context, id coal.ID) GenericToken {
 
 func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.saveToken")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.saveToken")
+	defer ctx.Tracer.Pop()
 
 	// create token with id
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
@@ -1129,8 +1129,8 @@ func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, e
 
 func (a *Authenticator) deleteToken(ctx *Context, id coal.ID) {
 	// trace
-	ctx.Trace.Push("flame/Authenticator.deleteToken")
-	defer ctx.Trace.Pop()
+	ctx.Tracer.Push("flame/Authenticator.deleteToken")
+	defer ctx.Tracer.Pop()
 
 	// delete token
 	_, err := a.store.M(a.policy.Token).Delete(ctx, nil, id)

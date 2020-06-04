@@ -202,8 +202,8 @@ func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 	}
 
 	// create trace
-	ctx.Trace, ctx.Context = xo.CreateTrace(ctx.Context, "fire/Tester.WithContext")
-	defer ctx.Trace.End()
+	ctx.Tracer, ctx.Context = xo.CreateTracer(ctx.Context, "fire/Tester.WithContext")
+	defer ctx.Tracer.End()
 
 	// yield context
 	if !ctx.Operation.Action() && ctx.Store != nil {

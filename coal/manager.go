@@ -82,8 +82,8 @@ func (m *Manager) T() *Translator {
 //
 // A transaction is required for locking.
 func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Find")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Find")
 	span.Tag("id", id.Hex())
 	defer span.End()
 
@@ -128,8 +128,8 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run during a transaction.
 func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.FindFirst")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.FindFirst")
 	span.Tag("filter", filter)
 	span.Tag("sort", sort)
 	span.Tag("skip", skip)
@@ -206,8 +206,8 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
 func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.FindAll")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.FindAll")
 	span.Tag("filter", filter)
 	span.Tag("sort", sort)
 	span.Tag("skip", skip)
@@ -279,8 +279,8 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
 func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.FindEach")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.FindEach")
 	span.Tag("filter", filter)
 	span.Tag("sort", sort)
 	span.Tag("skip", skip)
@@ -362,8 +362,8 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 // Unsafe: The count may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
 func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Count")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Count")
 	span.Tag("filter", filter)
 	span.Tag("skip", skip)
 	span.Tag("limit", limit)
@@ -426,8 +426,8 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 // Unsafe: The result may miss documents or include them multiple times if
 // interleaving operations move the documents in the used index.
 func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, level ...Level) ([]interface{}, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Distinct")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Distinct")
 	defer span.End()
 
 	// require transaction if locked or not unsafe
@@ -468,8 +468,8 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 // id will be generated and assigned. The documents are inserted in order until
 // an error is encountered.
 func (m *Manager) Insert(ctx context.Context, models ...Model) error {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Insert")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Insert")
 	defer span.End()
 
 	// ensure ids
@@ -506,8 +506,8 @@ func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
 func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.InsertIfMissing")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.InsertIfMissing")
 	span.Tag("filter", filter)
 	defer span.End()
 
@@ -558,8 +558,8 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 //
 // A transaction is required for locking.
 func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Replace")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Replace")
 	defer span.End()
 
 	// check id
@@ -598,8 +598,8 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.ReplaceFirst")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.ReplaceFirst")
 	span.Tag("filter", filter)
 	defer span.End()
 
@@ -635,8 +635,8 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 //
 // A transaction is required for locking.
 func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Update")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Update")
 	span.Tag("id", id.Hex())
 	span.Tag("update", update)
 	defer span.End()
@@ -696,8 +696,8 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.UpdateFirst")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateFirst")
 	span.Tag("filter", filter)
 	span.Tag("update", update)
 	defer span.End()
@@ -766,8 +766,8 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.UpdateAll")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateAll")
 	span.Tag("filter", filter)
 	span.Tag("update", update)
 	defer span.End()
@@ -817,8 +817,8 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
 func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Upsert")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Upsert")
 	span.Tag("filter", filter)
 	span.Tag("update", update)
 	defer span.End()
@@ -887,8 +887,8 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 // Delete will remove the document with the specified id. It will return
 // whether a document has been found and deleted.
 func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.Delete")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Delete")
 	span.Tag("id", id.Hex())
 	defer span.End()
 
@@ -923,8 +923,8 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.DeleteAll")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteAll")
 	span.Tag("filter", filter)
 	defer span.End()
 
@@ -949,8 +949,8 @@ func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
 func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, sort []string) (bool, error) {
-	// track
-	ctx, span := xo.Track(ctx, "coal/Manager.DeleteFirst")
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteFirst")
 	span.Tag("filter", filter)
 	defer span.End()
 

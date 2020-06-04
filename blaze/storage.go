@@ -44,8 +44,8 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service, registe
 // return a claim key and the uploaded file. Upload must be called outside of a
 // transaction to ensure the uploaded file is tracked in case of errors.
 func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
-	// track
-	ctx, span := xo.Track(ctx, "blaze/Storage.Upload")
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Storage.Upload")
 	span.Tag("type", mediaType)
 	defer span.End()
 
@@ -320,8 +320,8 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 // ClaimFile will claim the file referenced by the provided claim key using the
 // specified binding and owner.
 func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
-	// track
-	ctx, span := xo.Track(ctx, "blaze/Storage.ClaimFile")
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Storage.ClaimFile")
 	defer span.End()
 
 	// get binding
@@ -432,8 +432,8 @@ func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 
 // ReleaseFile will release the file with the provided id.
 func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
-	// track
-	ctx, span := xo.Track(ctx, "blaze/Storage.ReleaseFile")
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Storage.ReleaseFile")
 	defer span.End()
 
 	// release file
@@ -651,8 +651,8 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 // Download will initiate a download for the file referenced by the provided
 // view key.
 func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
-	// track
-	ctx, span := xo.Track(ctx, "blaze/Storage.Download")
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Storage.Download")
 	defer span.End()
 
 	// verify key
@@ -773,8 +773,8 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		retention = time.Hour
 	}
 
-	// track
-	ctx, span := xo.Track(ctx, "blaze/Storage.Cleanup")
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Storage.Cleanup")
 	span.Tag("retention", retention.String())
 	defer span.End()
 

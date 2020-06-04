@@ -100,9 +100,9 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 	prefix = strings.Trim(prefix, "/")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// create trace
-		trace, tc := xo.CreateTrace(r.Context(), "fire/Group.Endpoint")
-		defer trace.End()
+		// create tracer
+		tracer, tc := xo.CreateTracer(r.Context(), "fire/Group.Endpoint")
+		defer tracer.End()
 		r = r.WithContext(tc)
 
 		// continue any previous aborts
@@ -115,7 +115,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			}
 
 			// record error
-			trace.Record(err)
+			tracer.Record(err)
 
 			// report critical errors if possible
 			if g.reporter != nil {
@@ -146,7 +146,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			HTTPRequest:    r,
 			ResponseWriter: w,
 			Group:          g,
-			Trace:          trace,
+			Tracer:         tracer,
 		}
 
 		// get controller

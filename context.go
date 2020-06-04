@@ -102,7 +102,7 @@ type Context struct {
 	// underlying connection transport has been closed. It may also carry the
 	// database session if transactions have been enabled.
 	//
-	// Values: lungo.ISessionContext?, opentracing.Span, *xo.Trace
+	// Values: lungo.ISessionContext?, opentracing.Span, *xo.Tracer
 	context.Context
 
 	// The custom data map.
@@ -245,10 +245,10 @@ type Context struct {
 	// Usage: Read Only
 	Group *Group
 
-	// The current trace.
+	// The current tracer.
 	//
 	// Usage: Read Only
-	Trace *xo.Trace
+	Tracer *xo.Tracer
 }
 
 // Query returns the composite query of Selector and Filter.
