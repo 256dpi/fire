@@ -333,8 +333,9 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// run operation with transaction if not an action
 	if !ctx.Operation.Action() {
 		xo.AbortIf(c.Store.T(ctx.Context, func(tc context.Context) error {
-			ctx.Context = tc
-			c.runOperation(ctx)
+			ctx.With(tc, func() {
+				c.runOperation(ctx)
+			})
 			return nil
 		}))
 	} else {

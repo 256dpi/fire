@@ -251,6 +251,28 @@ type Context struct {
 	Tracer *xo.Tracer
 }
 
+// With will run the provided function with the specified context temporarily
+// set on the context. This is especially useful together with transactions.
+func (c *Context) With(ctx context.Context, fn func()) {
+	// retain current context and tracer
+	oc := c.Context
+	ot := c.Tracer
+
+	// swap tracer and context
+	if c.Tracer != nil {
+		c.Tracer, c.Context = xo.NewTracer(ctx, c.Tracer.Tail())
+	} else {
+		c.Context = ctx
+	}
+
+	// yield
+	fn()
+
+	// switchback
+	c.Context = oc
+	c.Tracer = ot
+}
+
 // Query returns the composite query of Selector and Filter.
 func (c *Context) Query() bson.M {
 	// prepare sub queries

@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,6 +9,15 @@ import (
 
 	"github.com/256dpi/fire/coal"
 )
+
+func TestContextWith(t *testing.T) {
+	c := context.WithValue(context.Background(), 1, 2)
+	ctx := &Context{Operation: List}
+	ctx.With(c, func() {
+		assert.True(t, ctx.Context == c)
+	})
+	assert.True(t, ctx.Context != c)
+}
 
 func TestOperation(t *testing.T) {
 	table := []struct {

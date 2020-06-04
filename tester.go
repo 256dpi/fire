@@ -208,8 +208,9 @@ func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 	// yield context
 	if !ctx.Operation.Action() && ctx.Store != nil {
 		_ = ctx.Store.T(ctx.Context, func(tc context.Context) error {
-			ctx.Context = tc
-			fn(ctx)
+			ctx.With(tc, func() {
+				fn(ctx)
+			})
 			return nil
 		})
 	} else {
