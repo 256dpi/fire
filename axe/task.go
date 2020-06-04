@@ -320,7 +320,9 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// run handler
+	tracer.Push("axe/Task.execute")
 	err = t.Handler(ctx)
+	tracer.Pop()
 
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job
