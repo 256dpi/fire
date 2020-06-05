@@ -13,6 +13,29 @@ func panicReporter(err error) {
 	panic(err)
 }
 
+func TestGroupAdd(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		group := NewGroup(panicReporter)
+
+		group.Add(&Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("Panic", All(), func(*Context) error {
+					xo.Abort(xo.F("foo"))
+					return nil
+				}),
+			},
+		})
+
+		assert.PanicsWithValue(t, `fire: controller with name "posts" already exists`, func() {
+			group.Add(&Controller{
+				Model: &postModel{},
+			})
+		})
+	})
+}
+
 func TestGroupEndpointMissingResource(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Handler = NewGroup(panicReporter).Endpoint("api")
@@ -27,7 +50,7 @@ func TestGroupEndpointMissingResource(t *testing.T) {
 	})
 }
 
-func TestGroupStackAbort(t *testing.T) {
+func TestGroupAbort(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		var lastErr error
 
@@ -47,10 +70,40 @@ func TestGroupStackAbort(t *testing.T) {
 			},
 		})
 
-		assert.PanicsWithValue(t, `fire: controller with name "posts" already exists`, func() {
-			group.Add(&Controller{
-				Model: &postModel{},
-			})
+		tester.Handler = group.Endpoint("")
+
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode)
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "500",
+					"title": "internal server error"
+				}]
+			}`, r.Body.String())
+		})
+
+		assert.Error(t, lastErr)
+	})
+}
+
+func TestGroupPanic(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		var lastErr error
+
+		group := NewGroup(func(err error) {
+			assert.Equal(t, "PANIC: foo", err.Error())
+			lastErr = err
+		})
+
+		group.Add(&Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("Panic", All(), func(*Context) error {
+					panic("foo")
+					return nil
+				}),
+			},
 		})
 
 		tester.Handler = group.Endpoint("")

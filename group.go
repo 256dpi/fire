@@ -105,6 +105,34 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		defer tracer.End()
 		r = r.WithContext(tc)
 
+		// recover any panic
+		defer func() {
+			val := recover()
+			if val != nil {
+				// get error
+				var err error
+				switch val := val.(type) {
+				case error:
+					err = xo.WF(val, "PANIC")
+				case string:
+					err = xo.F("PANIC: %s", val)
+				default:
+					err = xo.F("PANIC: %v", val)
+				}
+
+				// record error
+				tracer.Record(err)
+
+				// report critical errors if possible
+				if g.reporter != nil {
+					g.reporter(err)
+				}
+
+				// ignore errors caused by writing critical errors
+				_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
+			}
+		}()
+
 		// continue any previous aborts
 		defer xo.Resume(func(err error) {
 			// directly write jsonapi errors
