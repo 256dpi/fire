@@ -320,9 +320,29 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// run handler
-	tracer.Push("axe/Task.execute")
-	err = t.Handler(ctx)
-	tracer.Pop()
+	func(){
+		// trace
+		tracer.Push("axe/Task.execute")
+		defer tracer.Pop()
+
+		// recover
+		defer func() {
+			val := recover()
+			if val != nil {
+				switch val := val.(type) {
+				case error:
+					err = xo.WF(val, "PANIC")
+				case string:
+					err = xo.F("PANIC: %s", val)
+				default:
+					err = xo.F("PANIC: %v", val)
+				}
+			}
+		}()
+
+		// call handler
+		err = t.Handler(ctx)
+	}()
 
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job

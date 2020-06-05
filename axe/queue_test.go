@@ -303,6 +303,90 @@ func TestQueueCrashed(t *testing.T) {
 	})
 }
 
+func TestQueuePanic(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		done := make(chan struct{})
+		errs := make(chan error, 1)
+
+		queue := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				errs <- err
+			},
+		})
+
+		queue.Add(&Task{
+			Job: &testJob{},
+			Handler: func(ctx *Context) error {
+				if ctx.Attempt == 1 {
+					panic("foo")
+				}
+
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
+				return nil
+			},
+			MinDelay: 10 * time.Millisecond,
+		})
+
+		<-queue.Run()
+
+		job := testJob{
+			Data: "Hello!",
+		}
+
+		enqueued, err := queue.Enqueue(&job, 0, 0)
+		assert.NoError(t, err)
+		assert.True(t, enqueued)
+
+		<-done
+		err = <-errs
+		assert.Error(t, err)
+		assert.Equal(t, "PANIC: foo", err.Error())
+
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, "test", model.Name)
+		assert.Empty(t, model.Label)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, Completed, model.State)
+		assert.NotZero(t, model.Created)
+		assert.NotZero(t, model.Available)
+		assert.NotZero(t, model.Started)
+		assert.NotZero(t, model.Ended)
+		assert.NotZero(t, model.Finished)
+		assert.Equal(t, 2, model.Attempts)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.NotZero(t, model.Events[2].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				State:     Enqueued,
+			},
+			{
+				Timestamp: model.Events[1].Timestamp,
+				State:     Dequeued,
+			},
+			{
+				Timestamp: model.Events[2].Timestamp,
+				State:     Failed,
+				Reason:    "PANIC: foo",
+			},
+			{
+				Timestamp: *model.Started,
+				State:     Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				State:     Completed,
+			},
+		}, model.Events)
+
+		queue.Close()
+	})
+}
+
 func TestQueueCancelNoRetry(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		done := make(chan struct{})
