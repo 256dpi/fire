@@ -106,32 +106,18 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 		r = r.WithContext(tc)
 
 		// recover any panic
-		defer func() {
-			val := recover()
-			if val != nil {
-				// get error
-				var err error
-				switch val := val.(type) {
-				case error:
-					err = xo.WF(val, "PANIC")
-				case string:
-					err = xo.F("PANIC: %s", val)
-				default:
-					err = xo.F("PANIC: %v", val)
-				}
+		defer xo.Recover(func(err error) {
+			// record error
+			tracer.Record(err)
 
-				// record error
-				tracer.Record(err)
-
-				// report error if possible or rethrow
-				if g.reporter != nil {
-					g.reporter(err)
-				}
-
-				// write internal server error
-				_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
+			// report error if possible or rethrow
+			if g.reporter != nil {
+				g.reporter(err)
 			}
-		}()
+
+			// write internal server error
+			_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
+		})
 
 		// continue any previous aborts
 		defer xo.Resume(func(err error) {

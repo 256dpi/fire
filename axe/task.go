@@ -320,25 +320,15 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// run handler
-	func(){
+	func() {
 		// trace
 		tracer.Push("axe/Task.execute")
 		defer tracer.Pop()
 
 		// recover
-		defer func() {
-			val := recover()
-			if val != nil {
-				switch val := val.(type) {
-				case error:
-					err = xo.WF(val, "PANIC")
-				case string:
-					err = xo.F("PANIC: %s", val)
-				default:
-					err = xo.F("PANIC: %v", val)
-				}
-			}
-		}()
+		defer xo.Recover(func(e error) {
+			err = e
+		})
 
 		// call handler
 		err = t.Handler(ctx)
