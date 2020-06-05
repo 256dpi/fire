@@ -123,12 +123,12 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				// record error
 				tracer.Record(err)
 
-				// report critical errors if possible
+				// report error if possible or rethrow
 				if g.reporter != nil {
 					g.reporter(err)
 				}
 
-				// ignore errors caused by writing critical errors
+				// write internal server error
 				_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
 			}
 		}()
@@ -145,12 +145,12 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			// record error
 			tracer.Record(err)
 
-			// report critical errors if possible
+			// report error if possible
 			if g.reporter != nil {
 				g.reporter(err)
 			}
 
-			// ignore errors caused by writing critical errors
+			// write internal server error
 			_ = jsonapi.WriteError(w, jsonapi.InternalServerError(""))
 		})
 
