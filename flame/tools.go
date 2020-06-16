@@ -49,7 +49,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 	var apps []Application
 	err := store.M(&Application{}).FindAll(nil, &apps, bson.M{
 		"Name": name,
-	}, nil, 0, 0, false, coal.Unsafe)
+	}, nil, 0, 0, false, coal.NoTransaction)
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +90,7 @@ func EnsureApplication(store *coal.Store, name, key, secret string, redirectURIs
 // created.
 func EnsureFirstUser(store *coal.Store, name, email, password string) error {
 	// check existence
-	count, err := store.M(&User{}).Count(nil, bson.M{}, 0, 0, false, coal.Unsafe)
+	count, err := store.M(&User{}).Count(nil, bson.M{}, 0, 0, false, coal.NoTransaction)
 	if err != nil {
 		return err
 	} else if count > 0 {

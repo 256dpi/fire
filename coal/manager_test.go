@@ -8,6 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func TestFlags(t *testing.T) {
+	var f Flags
+	assert.False(t, f.Has(NoTransaction))
+
+	f = NoTransaction
+	assert.True(t, f.Has(NoTransaction))
+}
+
 func TestManagerFind(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		post1 := *tester.Insert(&postModel{
@@ -149,7 +157,7 @@ func TestManagerFindAll(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
-		err = m.FindAll(nil, &list, nil, nil, 0, 0, false, Unsafe)
+		err = m.FindAll(nil, &list, nil, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, []postModel{post1, post2}, list)
 
@@ -234,7 +242,7 @@ func TestManagerFindEach(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
-		iter, err = m.FindEach(nil, nil, nil, 0, 0, false, Unsafe)
+		iter, err = m.FindEach(nil, nil, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
 
@@ -313,7 +321,7 @@ func TestManagerCount(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
-		count, err = m.Count(nil, nil, 0, 0, false, Unsafe)
+		count, err = m.Count(nil, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(2), count)
 
@@ -392,7 +400,7 @@ func TestManagerDistinct(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// unsafe
-		titles, err = m.Distinct(nil, "Title", nil, false, Unsafe)
+		titles, err = m.Distinct(nil, "Title", nil, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
 

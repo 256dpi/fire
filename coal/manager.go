@@ -7,44 +7,34 @@ import (
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/256dpi/fire/stick"
 )
 
-// TODO: Validate model after loading and before writing?
+// TODO: Validate updates before writing.
 
-type empty struct {
-	Base `bson:",inline"`
-	stick.NoValidation
-}
-
-// Level describes the safety level under which an operation should be executed.
-type Level int
+// Flags can be used to change the behaviour of operations.
+type Flags int
 
 const (
-	// Unsafe will allow running operations without a transaction that by
+	// NoTransaction will allow running operations without a transaction that by
 	// default require a transaction.
-	Unsafe Level = -1
+	NoTransaction Flags = 1 << iota
 
-	// Default is the default level.
-	Default Level = 0
+	// NoValidation will allow storing and retrieving invalid models.
+	NoValidation
 )
 
-func max(levels []Level) Level {
-	// use default if none specified
-	if len(levels) == 0 {
-		return Default
-	}
+// Has returns whether the receiver has set all provided flags.
+func (f Flags) Has(flags Flags) bool {
+	return f&flags == flags
+}
 
-	// get highest level
-	level := levels[0]
-	for i := 1; i < len(levels); i++ {
-		if levels[i] > level {
-			level = levels[i]
-		}
+// Merge will combine the provided flags.
+func Merge(flags []Flags) Flags {
+	var f Flags
+	for _, l := range flags {
+		f |= l
 	}
-
-	return level
+	return f
 }
 
 // ErrTransactionRequired is returned if an operation would be unsafe to perform
@@ -62,6 +52,7 @@ var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.Aft
 // Manager manages operations on collection of documents. It will validate
 // operations and ensure that they are safe under the MongoDB guarantees.
 type Manager struct {
+	meta  *Meta
 	coll  *Collection
 	trans *Translator
 }
@@ -81,7 +72,7 @@ func (m *Manager) T() *Translator {
 // the document and prevent a stale read during a transaction.
 //
 // A transaction is required for locking.
-func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool, error) {
+func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Find")
 	span.Tag("id", id.Hex())
@@ -92,9 +83,9 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 		return false, ErrTransactionRequired.Wrap()
 	}
 
-	// check model
+	// ensure model
 	if model == nil {
-		model = &empty{}
+		model = m.meta.Make()
 	}
 
 	// prepare filter
@@ -115,6 +106,14 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 		return false, err
 	}
 
+	// validate model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
+	}
+
 	return true, nil
 }
 
@@ -127,7 +126,7 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool) (bool
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run during a transaction.
-func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool) (bool, error) {
+func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindFirst")
 	span.Tag("filter", filter)
@@ -147,7 +146,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 
 	// check model
 	if model == nil {
-		model = &empty{}
+		model = m.meta.Make()
 	}
 
 	// translate filter
@@ -194,6 +193,14 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 		return false, err
 	}
 
+	// validate model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
+	}
+
 	return true, nil
 }
 
@@ -203,9 +210,9 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 //
 // A transaction is required to ensure isolation.
 //
-// Unsafe: The result may miss documents or include them multiple times if
-// interleaving operations move the documents in the used index.
-func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) error {
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindAll")
 	span.Tag("filter", filter)
@@ -215,7 +222,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 	defer span.End()
 
 	// require transaction if locked or not unsafe
-	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
+	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
 		return ErrTransactionRequired.Wrap()
 	}
 
@@ -267,6 +274,16 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 		return err
 	}
 
+	// validate models
+	if !Merge(flags).Has(NoValidation) {
+		for _, model := range Slice(list) {
+			err = model.Validate()
+			if err != nil {
+				return xo.W(err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -274,11 +291,11 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
-// A transaction is always required to ensure isolation.
+// A transaction is required to ensure isolation.
 //
-// Unsafe: The result may miss documents or include them multiple times if
-// interleaving operations move the documents in the used index.
-func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, level ...Level) (*Iterator, error) {
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*Iterator, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindEach")
 	span.Tag("filter", filter)
@@ -295,7 +312,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	}()
 
 	// require transaction if locked or not unsafe
-	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
+	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
 		return nil, ErrTransactionRequired.Wrap()
 	}
 
@@ -350,6 +367,9 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	// attach span
 	iter.spans = append(iter.spans, span)
 
+	// enforce validation
+	iter.validate = !Merge(flags).Has(NoValidation)
+
 	return iter, nil
 }
 
@@ -357,11 +377,11 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.
 //
-// A transaction is always required to ensure isolation.
+// A transaction is required to ensure isolation.
 //
-// Unsafe: The count may miss documents or include them multiple times if
-// interleaving operations move the documents in the used index.
-func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, level ...Level) (int64, error) {
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, flags ...Flags) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Count")
 	span.Tag("filter", filter)
@@ -370,7 +390,7 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 	defer span.End()
 
 	// require transaction if locked or not unsafe
-	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
+	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
 		return 0, ErrTransactionRequired.Wrap()
 	}
 
@@ -423,15 +443,15 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 //
 // A transaction is required to ensure isolation.
 //
-// Unsafe: The result may miss documents or include them multiple times if
-// interleaving operations move the documents in the used index.
-func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, level ...Level) ([]interface{}, error) {
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, flags ...Flags) ([]interface{}, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Distinct")
 	defer span.End()
 
 	// require transaction if locked or not unsafe
-	if (lock || max(level) > Unsafe) && !HasTransaction(ctx) {
+	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
 		return nil, ErrTransactionRequired.Wrap()
 	}
 
@@ -464,18 +484,47 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 	return result, nil
 }
 
-// Insert will insert the provided documents. If a document has a zero id a new
-// id will be generated and assigned. The documents are inserted in order until
-// an error is encountered.
-func (m *Manager) Insert(ctx context.Context, models ...Model) error {
+// Insert will insert the provided document. If the document has a zero id a new
+// id will be generated and assigned.
+func (m *Manager) Insert(ctx context.Context, models Model, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Insert")
 	defer span.End()
+
+	return m.insert(ctx, []Model{models}, flags...)
+}
+
+// InsertAll will insert the provided documents. If a document has a zero id a
+// new id will be generated and assigned. The documents are inserted in order
+// until an error is encountered.
+func (m *Manager) InsertAll(ctx context.Context, models []Model, flags ...Flags) error {
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.InsertAll")
+	defer span.End()
+
+	return m.insert(ctx, models, flags...)
+}
+
+func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) error {
+	// check length
+	if len(models) == 0 {
+		return nil
+	}
 
 	// ensure ids
 	for _, model := range models {
 		if model.ID().IsZero() {
 			model.GetBase().DocID = New()
+		}
+	}
+
+	// validate models
+	if !Merge(flags).Has(NoValidation) {
+		for _, model := range models {
+			err := model.Validate()
+			if err != nil {
+				return xo.W(err)
+			}
 		}
 	}
 
@@ -485,10 +534,17 @@ func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 		docs = append(docs, model)
 	}
 
-	// insert documents
-	_, err := m.coll.InsertMany(ctx, docs, options.InsertMany().SetOrdered(true))
-	if err != nil {
-		return err
+	// insert documents or document
+	if len(docs) > 1 {
+		_, err := m.coll.InsertMany(ctx, docs, options.InsertMany().SetOrdered(true))
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := m.coll.InsertOne(ctx, docs[0])
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -497,7 +553,7 @@ func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 // InsertIfMissing will insert the provided document if no document matched the
 // provided filter. If the document has a zero id a new id will be generated and
 // assigned. It will return whether a document has been inserted. The underlying
-// upsert operation will merge the filter with the model fields. Lock can be set
+// upsert operation will Merge the filter with the model fields. Lock can be set
 // to true to force a write lock on the existing document and prevent a stale
 // read during a transaction.
 //
@@ -505,7 +561,7 @@ func (m *Manager) Insert(ctx context.Context, models ...Model) error {
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
-func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
+func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.InsertIfMissing")
 	span.Tag("filter", filter)
@@ -525,6 +581,14 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 	// ensure id
 	if model.ID().IsZero() {
 		model.GetBase().DocID = New()
+	}
+
+	// validate model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
 	}
 
 	// prepare options
@@ -557,7 +621,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 // case the replace did not change the document.
 //
 // A transaction is required for locking.
-func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, error) {
+func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Replace")
 	defer span.End()
@@ -570,6 +634,14 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 	// require transaction
 	if lock && !HasTransaction(ctx) {
 		return false, ErrTransactionRequired.Wrap()
+	}
+
+	// validate model
+	if !Merge(flags).Has(NoValidation) {
+		err := model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
 	}
 
 	// increment lock manually
@@ -597,7 +669,7 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool) (bool, er
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool) (bool, error) {
+func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ReplaceFirst")
 	span.Tag("filter", filter)
@@ -606,6 +678,14 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
 		return false, ErrTransactionRequired.Wrap()
+	}
+
+	// validate model
+	if !Merge(flags).Has(NoValidation) {
+		err := model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
 	}
 
 	// increment lock manually
@@ -646,6 +726,11 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 		return false, ErrTransactionRequired.Wrap()
 	}
 
+	// check model
+	if model == nil {
+		model = m.meta.Make()
+	}
+
 	// translate update
 	updateDoc, err := m.trans.Document(update)
 	if err != nil {
@@ -658,18 +743,6 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 		if err != nil {
 			return false, xo.WF(err, "unable to add lock")
 		}
-	}
-
-	// update document
-	if model == nil {
-		res, err := m.coll.UpdateOne(ctx, bson.M{
-			"_id": id,
-		}, updateDoc)
-		if err != nil {
-			return false, err
-		}
-
-		return res.MatchedCount == 1, nil
 	}
 
 	// find and update document
@@ -709,7 +782,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 
 	// check model
 	if model == nil {
-		model = &empty{}
+		model = m.meta.Make()
 	}
 
 	// translate filter
@@ -808,9 +881,9 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 
 // Upsert will update the first document that matches the specified filter. If
 // no document has been found, the update document is applied to the filter and
-// inserted. It will return whether a document has been inserted. Lock can be set
-// to true to force a write lock on the existing document and prevent a stale
-// read during a transaction.
+// inserted. It will return whether a document has been inserted. Lock can be
+// set to true to force a write lock on the existing document and prevent a
+// stale read during a transaction.
 //
 // A transaction is required for locking.
 //
@@ -830,7 +903,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 	// check model
 	if model == nil {
-		model = &empty{}
+		model = m.meta.Make()
 	}
 
 	// translate filter
@@ -962,7 +1035,7 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 
 	// check model
 	if model == nil {
-		model = &empty{}
+		model = m.meta.Make()
 	}
 
 	// prepare options

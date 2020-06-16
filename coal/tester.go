@@ -2,7 +2,6 @@ package coal
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Tester provides facilities to work with coal models in tests.
@@ -35,13 +34,8 @@ func NewTester(store *Store, models ...Model) *Tester {
 
 // Insert will insert the specified model.
 func (t *Tester) Insert(model Model) Model {
-	// ensure id
-	if model.ID().IsZero() {
-		model.GetBase().DocID = New()
-	}
-
 	// insert to collection
-	_, err := t.Store.C(model).InsertOne(nil, model)
+	err := t.Store.M(model).Insert(nil, model)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +53,7 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 
 	// find all documents
 	list := GetMeta(model).MakeSlice()
-	err := t.Store.C(model).FindAll(nil, list, qry, options.Find().SetSort(Sort("_id")))
+	err := t.Store.M(model).FindAll(nil, list, qry, []string{"_id"}, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -76,9 +70,11 @@ func (t *Tester) FindLast(model Model, query ...bson.M) Model {
 	}
 
 	// find last document
-	err := t.Store.C(model).FindOne(nil, qry, options.FindOne().SetSort(Sort("-_id"))).Decode(model)
+	found, err := t.Store.M(model).FindFirst(nil, model, qry, []string{"-_id"}, 0, false)
 	if err != nil {
 		panic(err)
+	} else if !found {
+		panic("not found")
 	}
 
 	return model
@@ -93,7 +89,7 @@ func (t *Tester) Count(model Model, query ...bson.M) int {
 	}
 
 	// count all documents
-	n, err := t.Store.C(model).CountDocuments(nil, qry)
+	n, err := t.Store.M(model).Count(nil, qry, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -104,11 +100,11 @@ func (t *Tester) Count(model Model, query ...bson.M) int {
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id ID) Model {
 	// find model
-	err := t.Store.C(model).FindOne(nil, bson.M{
-		"_id": id,
-	}).Decode(model)
+	found, err := t.Store.M(model).Find(nil, model, id, false)
 	if err != nil {
 		panic(err)
+	} else if !found {
+		panic("not found")
 	}
 
 	return model
@@ -117,11 +113,11 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 // Replace will replace the specified model.
 func (t *Tester) Replace(model Model) Model {
 	// replace model
-	_, err := t.Store.C(model).ReplaceOne(nil, bson.M{
-		"_id": model.ID(),
-	}, model)
+	found, err := t.Store.M(model).Replace(nil, model, false)
 	if err != nil {
 		panic(err)
+	} else if !found {
+		panic("not found")
 	}
 
 	return model
@@ -130,11 +126,11 @@ func (t *Tester) Replace(model Model) Model {
 // Update will update the specified model.
 func (t *Tester) Update(model Model, update bson.M) Model {
 	// replace model
-	_, err := t.Store.C(model).UpdateOne(nil, bson.M{
-		"_id": model.ID(),
-	}, update)
+	found, err := t.Store.M(model).Update(nil, model, model.ID(), update, false)
 	if err != nil {
 		panic(err)
+	} else if !found {
+		panic("not found")
 	}
 
 	return model
@@ -143,11 +139,11 @@ func (t *Tester) Update(model Model, update bson.M) Model {
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
 	// delete model
-	_, err := t.Store.C(model).DeleteOne(nil, bson.M{
-		"_id": model.ID(),
-	})
+	found, err := t.Store.M(model).Delete(nil, nil, model.ID())
 	if err != nil {
 		panic(err)
+	} else if !found {
+		panic("not found")
 	}
 }
 
@@ -156,7 +152,7 @@ func (t *Tester) Delete(model Model) {
 func (t *Tester) Clean() {
 	for _, model := range t.Models {
 		// remove all is faster than dropping the collection
-		_, err := t.Store.C(model).DeleteMany(nil, bson.M{})
+		_, err := t.Store.M(model).DeleteAll(nil, bson.M{})
 		if err != nil {
 			panic(err)
 		}

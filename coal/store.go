@@ -153,23 +153,24 @@ func (s *Store) C(model Model) *Collection {
 // query and update documents as well as perform extensive checks before running
 // operations to ensure they are as safe as possible.
 func (s *Store) M(model Model) *Manager {
-	// get name
-	name := GetMeta(model).Collection
+	// get meta
+	meta := GetMeta(model)
 
 	// check cache
-	val, ok := s.managers.Load(name)
+	val, ok := s.managers.Load(meta)
 	if ok {
 		return val.(*Manager)
 	}
 
 	// create manager
 	manager := &Manager{
+		meta:  meta,
 		coll:  s.C(model),
 		trans: NewTranslator(model),
 	}
 
 	// cache collection
-	s.managers.Store(name, manager)
+	s.managers.Store(meta, manager)
 
 	return manager
 }

@@ -42,7 +42,7 @@ func TestReferences(t *testing.T) {
 		var res []*polyModel
 		err := tester.Store.M(&polyModel{}).FindAll(nil, &res, bson.M{
 			"Ref1": R(post),
-		}, nil, 0, 0, false, Unsafe)
+		}, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, []*polyModel{
 			poly1,
@@ -51,7 +51,7 @@ func TestReferences(t *testing.T) {
 		res = nil
 		err = tester.Store.M(&polyModel{}).FindAll(nil, &res, bson.M{
 			"Ref1": R(note1),
-		}, nil, 0, 0, false, Unsafe)
+		}, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, []*polyModel{
 			poly2,
@@ -60,7 +60,7 @@ func TestReferences(t *testing.T) {
 		res = nil
 		err = tester.Store.M(&polyModel{}).FindAll(nil, &res, bson.M{
 			"Ref1": AnyRef(&noteModel{}),
-		}, nil, 0, 0, false, Unsafe)
+		}, nil, 0, 0, false, NoTransaction)
 		assert.NoError(t, err)
 		assert.Equal(t, []*polyModel{
 			poly2,

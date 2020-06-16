@@ -404,11 +404,12 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 
 // Iterator manages the iteration over a cursor.
 type Iterator struct {
-	ctx     context.Context
-	cursor  lungo.ICursor
-	spans   []xo.Span
-	counter int64
-	error   error
+	ctx      context.Context
+	cursor   lungo.ICursor
+	spans    []xo.Span
+	counter  int64
+	error    error
+	validate bool
 }
 
 func newIterator(ctx context.Context, cursor lungo.ICursor, span xo.Span) *Iterator {
@@ -443,7 +444,21 @@ func (i *Iterator) Next() bool {
 
 // Decode will decode the loaded document to the specified value.
 func (i *Iterator) Decode(v interface{}) error {
-	return xo.W(i.cursor.Decode(v))
+	// decode object
+	err := i.cursor.Decode(v)
+	if err != nil {
+		return xo.W(err)
+	}
+
+	// validate if requested
+	if i.validate {
+		err := v.(Model).Validate()
+		if err != nil {
+			return xo.W(err)
+		}
+	}
+
+	return nil
 }
 
 // Error return the first error encountered during iteration. It should always

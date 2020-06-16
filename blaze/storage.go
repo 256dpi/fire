@@ -795,7 +795,7 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 				},
 			},
 		},
-	}, nil, 0, 0, false, coal.Unsafe)
+	}, nil, 0, 0, false, coal.NoTransaction)
 	if err != nil {
 		return err
 	}
