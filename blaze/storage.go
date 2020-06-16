@@ -665,13 +665,20 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 		var err error
 		switch value := value.(type) {
 		case Link:
+			// decorate link
 			err = s.Decorate(&value)
+			if err != nil {
+				return err
+			}
+
+			// update link
 			stick.MustSet(model, field, value)
 		case *Link:
+			// decorate link
 			err = s.Decorate(value)
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
