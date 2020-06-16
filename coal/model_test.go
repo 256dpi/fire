@@ -37,3 +37,19 @@ func TestDynamicAccess(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "foo", post.Title)
 }
+
+func TestSlice(t *testing.T) {
+	list1 := []postModel{{Title: "foo"}}
+	slice1a := Slice(list1)
+	slice1b := Slice(&list1)
+	list1[0].Title = "bar"
+	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice1a)
+	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice1b)
+
+	list2 := []*postModel{{Title: "foo"}}
+	slice2a := Slice(list2)
+	slice2b := Slice(&list2)
+	list2[0].Title = "bar"
+	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice2a)
+	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice2b)
+}

@@ -58,16 +58,23 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Model)).Accessor
 }
 
-// Slice takes a slice of the form *[]*Post and returns a new slice that
-// contains all models.
-func Slice(ptr interface{}) []Model {
+// Slice takes a slice of the form []Post, []*Post, *[]Post or *[]*Post and
+// returns a new slice that contains all models.
+func Slice(val interface{}) []Model {
 	// get slice
-	slice := reflect.ValueOf(ptr).Elem()
+	slice := reflect.ValueOf(val)
+	if slice.Kind() == reflect.Ptr {
+		slice = slice.Elem()
+	}
 
 	// collect models
 	models := make([]Model, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
-		models[i] = slice.Index(i).Interface().(Model)
+		model := slice.Index(i)
+		if model.Kind() == reflect.Struct {
+			model = model.Addr()
+		}
+		models[i] = model.Interface().(Model)
 	}
 
 	return models
