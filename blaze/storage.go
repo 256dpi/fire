@@ -787,10 +787,21 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 		return nil, nil, err
 	}
 
+	// download file
+	download, file, err := s.DownloadFile(ctx, key.File)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return download, file, nil
+}
+
+// DownloadFile will initiate a download for the specified file.
+func (s *Storage) DownloadFile(ctx context.Context, id coal.ID) (Download, *File, error) {
 	// find file
 	var file File
 	found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
-		"_id":   key.File,
+		"_id":   id,
 		"State": Claimed,
 	}, nil, 0, false)
 	if err != nil {
