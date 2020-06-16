@@ -101,7 +101,6 @@ func TestGroupPanic(t *testing.T) {
 			Authorizers: L{
 				C("Panic", All(), func(*Context) error {
 					panic("foo")
-					return nil
 				}),
 			},
 		})
