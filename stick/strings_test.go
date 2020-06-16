@@ -28,7 +28,7 @@ func TestIncludes(t *testing.T) {
 }
 
 func TestUnion(t *testing.T) {
-	assert.Equal(t, []string{"b", "a", "c", "d"}, Union([]string{"b", "a", "c"}, []string{"d", "a", "b"}))
+	assert.Equal(t, []string{"b", "a", "c", "d", "e"}, Union([]string{"b", "a", "c"}, []string{"d", "a", "b"}, []string{"e"}))
 }
 
 func TestIntersect(t *testing.T) {

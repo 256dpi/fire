@@ -61,18 +61,19 @@ func MustFromHex(str string) ID {
 
 // Unique is a helper to get a unique list of object ids.
 func Unique(ids []ID) []ID {
-	// prepare map
-	m := make(map[ID]bool)
-	l := make([]ID, 0, len(ids))
+	// prepare table and result
+	table := make(map[ID]bool)
+	res := make([]ID, 0, len(ids))
 
+	// add ids not in table
 	for _, id := range ids {
-		if _, ok := m[id]; !ok {
-			m[id] = true
-			l = append(l, id)
+		if _, ok := table[id]; !ok {
+			table[id] = true
+			res = append(res, id)
 		}
 	}
 
-	return l
+	return res
 }
 
 // Contains returns true if a list of object ids contains the specified id.

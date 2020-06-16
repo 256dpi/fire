@@ -2,19 +2,19 @@ package stick
 
 // Unique will return a new list with unique strings.
 func Unique(list []string) []string {
-	// prepare map and list
-	m := make(map[string]bool)
-	l := make([]string, 0, len(list))
+	// prepare table and result
+	table := make(map[string]bool)
+	res := make([]string, 0, len(list))
 
-	// add items not present in map
-	for _, id := range list {
-		if _, ok := m[id]; !ok {
-			m[id] = true
-			l = append(l, id)
+	// add items not in table
+	for _, item := range list {
+		if _, ok := table[item]; !ok {
+			table[item] = true
+			res = append(res, item)
 		}
 	}
 
-	return l
+	return res
 }
 
 // Contains return whether the list contains the item.
@@ -39,15 +39,29 @@ func Includes(all, subset []string) bool {
 	return true
 }
 
-// Union will will merge two lists and remove duplicates.
-func Union(listA, listB []string) []string {
-	// prepare new list
-	list := make([]string, 0, len(listA)+len(listB))
-	list = append(list, listA...)
-	list = append(list, listB...)
+// Union will will merge all list and remove duplicates.
+func Union(lists ...[]string) []string {
+	// sum length
+	var sum int
+	for _, l := range lists {
+		sum += len(l)
+	}
 
-	// return unique list
-	return Unique(list)
+	// prepare table and result
+	table := make(map[string]bool)
+	res := make([]string, 0, sum)
+
+	// add items not present in table
+	for _, list := range lists {
+		for _, item := range list {
+			if _, ok := table[item]; !ok {
+				table[item] = true
+				res = append(res, item)
+			}
+		}
+	}
+
+	return res
 }
 
 // Intersect will return the intersection of two lists.
