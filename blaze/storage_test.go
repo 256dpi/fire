@@ -310,6 +310,7 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 			return storage.Claim(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
+		assert.Equal(t, "missing claim key", err.Error())
 
 		/* claim with key */
 
@@ -347,6 +348,80 @@ func TestStorageClaimDecorateRelease(t *testing.T) {
 			return storage.Release(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
+		assert.Equal(t, "invalid file id", err.Error())
+	})
+}
+
+func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+
+		/* upload */
+
+		key, _, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		model := &testModel{
+			Base: coal.B(),
+		}
+
+		/* claim without link */
+
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Claim(ctx, model, "OptionalFile")
+		})
+		assert.Error(t, err)
+		assert.Equal(t, "missing link", err.Error())
+
+		/* claim without key */
+
+		model.OptionalFile = &Link{}
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Claim(ctx, model, "OptionalFile")
+		})
+		assert.Error(t, err)
+		assert.Equal(t, "missing claim key", err.Error())
+
+		/* claim with key */
+
+		model.OptionalFile.ClaimKey = key
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Claim(ctx, model, "OptionalFile")
+		})
+		assert.NoError(t, err)
+
+		/* decorate */
+
+		err = storage.Decorate(model.OptionalFile)
+		assert.NoError(t, err)
+
+		/* download */
+
+		download, _, err := storage.Download(nil, model.OptionalFile.ViewKey)
+		assert.NoError(t, err)
+
+		var buffer bytes.Buffer
+		err = DownloadTo(download, &buffer)
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World!", buffer.String())
+
+		/* release */
+
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Release(ctx, model, "OptionalFile")
+		})
+		assert.NoError(t, err)
+
+		/* release again */
+
+		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+			return storage.Release(ctx, model, "OptionalFile")
+		})
+		assert.Error(t, err)
+		assert.Equal(t, "missing link", err.Error())
 	})
 }
 

@@ -257,16 +257,21 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 	}
 
 	// get link
-	var link Link
+	var link *Link
 	switch value := value.(type) {
 	case Link:
-		link = value
+		link = &value
 	case *Link:
-		link = *value
+		link = value
+	}
+
+	// check link
+	if link == nil {
+		return xo.F("missing link")
 	}
 
 	// claim file
-	err := s.ClaimLink(ctx, &link, binding.Name, model.ID())
+	err := s.ClaimLink(ctx, link, binding.Name, model.ID())
 	if err != nil {
 		return err
 	}
@@ -274,9 +279,9 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 	// set link
 	switch value.(type) {
 	case Link:
-		stick.MustSet(model, field, link)
+		stick.MustSet(model, field, *link)
 	case *Link:
-		stick.MustSet(model, field, &link)
+		stick.MustSet(model, field, link)
 	}
 
 	return nil
@@ -382,16 +387,21 @@ func (s *Storage) Release(ctx context.Context, model coal.Model, field string) e
 	value := stick.MustGet(model, field)
 
 	// get link
-	var link Link
+	var link *Link
 	switch value := value.(type) {
 	case Link:
-		link = value
+		link = &value
 	case *Link:
-		link = *value
+		link = value
+	}
+
+	// check link
+	if link == nil {
+		return xo.F("missing link")
 	}
 
 	// release link
-	err := s.ReleaseLink(ctx, &link)
+	err := s.ReleaseLink(ctx, link)
 	if err != nil {
 		return err
 	}
