@@ -64,7 +64,22 @@ func Union(lists ...[]string) []string {
 	return res
 }
 
-// Intersect will return the intersection of two lists.
+// Subtract will return a list with items that are only part of the first list.
+func Subtract(listA, listB []string) []string {
+	// prepare new list
+	list := make([]string, 0, len(listA))
+
+	// add items that are not in second list
+	for _, item := range listA {
+		if !Contains(listB, item) {
+			list = append(list, item)
+		}
+	}
+
+	return list
+}
+
+// Intersect will return a list with items that are not part of both lists.
 func Intersect(listA, listB []string) []string {
 	// prepare new list
 	list := make([]string, 0, len(listA))

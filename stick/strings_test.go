@@ -31,6 +31,10 @@ func TestUnion(t *testing.T) {
 	assert.Equal(t, []string{"b", "a", "c", "d", "e"}, Union([]string{"b", "a", "c"}, []string{"d", "a", "b"}, []string{"e"}))
 }
 
+func TestSubtract(t *testing.T) {
+	assert.Equal(t, []string{"a"}, Subtract([]string{"a", "b"}, []string{"b", "c"}))
+}
+
 func TestIntersect(t *testing.T) {
 	assert.Equal(t, []string{"b"}, Intersect([]string{"a", "b"}, []string{"b", "c"}))
 }
