@@ -12,6 +12,9 @@ import (
 
 // Link is used to link a file to a model.
 type Link struct {
+	// The user definable reference of the link.
+	Ref string `json:"ref"`
+
 	// The media type of the linked file.
 	Type string `json:"type" bson:"-"`
 
@@ -34,6 +37,11 @@ type Link struct {
 
 // Validate will validate the link.
 func (l *Link) Validate(name string, whitelist ...string) error {
+	// ensure reference
+	if l.Ref == "" {
+		l.Ref = coal.New().Hex()
+	}
+
 	// check file
 	if l.File == nil || l.File.IsZero() {
 		return xo.SF("%s invalid file", name)
@@ -48,6 +56,32 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 	// check file size
 	if l.FileSize <= 0 {
 		return xo.SF("%s zero size", name)
+	}
+
+	return nil
+}
+
+// Links is a set of links.
+type Links []Link
+
+// Validate will validate the links.
+func (l Links) Validate(name string, whitelist ...string) error {
+	// validate all links
+	refs := make(map[string]bool, len(l))
+	for _, link := range l {
+		// validate link
+		err := link.Validate(name, whitelist...)
+		if err != nil {
+			return err
+		}
+
+		// check uniqueness
+		if refs[link.Ref] {
+			return xo.SF("non-unique link reference")
+		}
+
+		// add reference
+		refs[link.Ref] = true
 	}
 
 	return nil

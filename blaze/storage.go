@@ -314,6 +314,7 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 
 	// update link
 	*link = Link{
+		Ref:      link.Ref,
 		File:     coal.P(file.ID()),
 		FileType: file.Type,
 		FileSize: file.Size,
@@ -552,6 +553,28 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 
 				// update link
 				stick.MustSet(ctx.Model, field, value)
+			case Links:
+				// get old links
+				var oldLinks Links
+				if oldValue != nil {
+					oldLinks = oldValue.(Links)
+				}
+
+				// get new links
+				newLinks := value
+				if ctx.Operation == fire.Delete {
+					oldLinks = newLinks
+					newLinks = nil
+				}
+
+				// modify links
+				err := s.modifyLinks(ctx, newLinks, oldLinks, binding.Name, owner)
+				if err != nil {
+					return xo.WF(err, field)
+				}
+
+				// update links
+				stick.MustSet(ctx.Model, field, value)
 			default:
 				return xo.F("%s: unsupported type: %T", field, value)
 			}
@@ -566,11 +589,6 @@ func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, bindin
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
 	deleted := oldLink != nil && newLink == nil
-
-	// check if changed
-	if !added && !updated && !deleted {
-		return nil
-	}
 
 	// release old file
 	if updated || deleted {
@@ -587,6 +605,68 @@ func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, bindin
 
 		// claim
 		err := s.ClaimLink(ctx, newLink, binding, owner)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) modifyLinks(ctx context.Context, newLinks, oldLinks Links, binding string, owner coal.ID) error {
+	// build map of new links
+	newMap := make(map[string]*Link, len(newLinks))
+	newRefs := make([]string, 0, len(newLinks))
+	for i, link := range newLinks {
+		if link.Ref == "" {
+			return xo.F("missing reference")
+		}
+		newMap[link.Ref] = &newLinks[i]
+		newRefs = append(newRefs, link.Ref)
+	}
+
+	// build map of old links
+	oldMap := make(map[string]*Link, len(oldLinks))
+	oldRefs := make([]string, 0, len(oldLinks))
+	for i, link := range oldLinks {
+		if link.Ref == "" {
+			return xo.F("missing reference")
+		}
+		oldMap[link.Ref] = &oldLinks[i]
+		oldRefs = append(oldRefs, link.Ref)
+	}
+
+	// determine added, kept and deleted links
+	added := stick.Subtract(newRefs, oldRefs)
+	kept := stick.Intersect(newRefs, oldRefs)
+	deleted := stick.Subtract(oldRefs, newRefs)
+
+	// determine updated links
+	updated := make([]string, 0, len(kept))
+	for _, ref := range kept {
+		if newMap[ref].ClaimKey != "" {
+			updated = append(updated, ref)
+		}
+	}
+
+	// release old files
+	for _, ref := range stick.Union(updated, deleted) {
+		err := s.ReleaseLink(ctx, oldMap[ref])
+		if err != nil {
+			return err
+		}
+	}
+
+	// claim new files
+	for _, ref := range stick.Union(added, updated) {
+		// get link
+		link := newMap[ref]
+
+		// unset file
+		link.File = nil
+
+		// claim
+		err := s.ClaimLink(ctx, link, binding, owner)
 		if err != nil {
 			return err
 		}
@@ -678,6 +758,14 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 			err = s.Decorate(value)
 			if err != nil {
 				return err
+			}
+		case Links:
+			// decorate links
+			for i, _ := range value {
+				err = s.Decorate(&value[i])
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

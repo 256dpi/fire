@@ -288,7 +288,7 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 	})
 }
 
-func TestStorageClaimDecorateRelease(t *testing.T) {
+func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
@@ -594,6 +594,200 @@ func TestStorageModifierOptional(t *testing.T) {
 	})
 }
 
+func TestStorageModifierMultiple(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+
+		modifier := storage.Modifier()
+
+		model := &testModel{
+			Base: coal.B(),
+			RequiredFile: Link{
+				File: coal.P(coal.New()),
+			},
+		}
+
+		/* add first */
+
+		file1 := tester.Insert(&File{
+			State: Uploaded,
+			Size:  42,
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
+		}).(*File)
+
+		claimKey1, err := storage.notary.Issue(&ClaimKey{
+			File: file1.ID(),
+			Size: file1.Size,
+			Type: file1.Type,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, claimKey1)
+
+		model.MultipleFiles = Links{
+			{Ref: "1", ClaimKey: claimKey1},
+		}
+
+		original := &testModel{
+			Base:         model.Base,
+			RequiredFile: model.RequiredFile,
+		}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+		assert.Equal(t, file1.ID(), *model.MultipleFiles[0].File)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Claimed, file1.State)
+
+		/* add second */
+
+		file2 := tester.Insert(&File{
+			State: Uploaded,
+			Size:  42,
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
+		}).(*File)
+
+		claimKey2, err := storage.notary.Issue(&ClaimKey{
+			File: file2.ID(),
+			Size: file2.Size,
+			Type: file2.Type,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, claimKey2)
+
+		original.MultipleFiles = model.MultipleFiles
+		model.MultipleFiles = Links{
+			model.MultipleFiles[0],
+			{Ref: "2", ClaimKey: claimKey2},
+		}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+		assert.Equal(t, file2.ID(), *model.MultipleFiles[1].File)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Claimed, file1.State)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Claimed, file2.State)
+
+		/* update first */
+
+		file3 := tester.Insert(&File{
+			State: Uploaded,
+			Size:  42,
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
+		}).(*File)
+
+		claimKey3, err := storage.notary.Issue(&ClaimKey{
+			File: file3.ID(),
+			Size: file3.Size,
+			Type: file3.Type,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, claimKey3)
+
+		original.MultipleFiles = model.MultipleFiles
+		model.MultipleFiles = Links{
+			{Ref: "1", ClaimKey: claimKey3},
+			model.MultipleFiles[1],
+		}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+		assert.Equal(t, file2.ID(), *model.MultipleFiles[1].File)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Released, file1.State)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Claimed, file2.State)
+
+		file3 = tester.Fetch(&File{}, file3.ID()).(*File)
+		assert.Equal(t, Claimed, file3.State)
+
+		/* remove second */
+
+		original.MultipleFiles = model.MultipleFiles
+		model.MultipleFiles = Links{
+			model.MultipleFiles[0],
+		}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Released, file1.State)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Released, file2.State)
+
+		file3 = tester.Fetch(&File{}, file3.ID()).(*File)
+		assert.Equal(t, Claimed, file3.State)
+
+		/* remove first */
+
+		original.MultipleFiles = model.MultipleFiles
+		model.MultipleFiles = Links{}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Released, file1.State)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Released, file2.State)
+
+		file3 = tester.Fetch(&File{}, file3.ID()).(*File)
+		assert.Equal(t, Released, file3.State)
+	})
+}
+
 func TestStorageDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
@@ -602,6 +796,8 @@ func TestStorageDecorator(t *testing.T) {
 
 		file1 := coal.New()
 		file2 := coal.New()
+		file3 := coal.New()
+		file4 := coal.New()
 
 		model := &testModel{
 			RequiredFile: Link{
@@ -609,6 +805,10 @@ func TestStorageDecorator(t *testing.T) {
 			},
 			OptionalFile: &Link{
 				File: coal.P(file2),
+			},
+			MultipleFiles: Links{
+				{File: coal.P(file3)},
+				{File: coal.P(file4)},
 			},
 		}
 		err := tester.RunCallback(&fire.Context{
@@ -621,6 +821,8 @@ func TestStorageDecorator(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, model.RequiredFile.ViewKey)
 		assert.NotEmpty(t, model.OptionalFile.ViewKey)
+		assert.NotEmpty(t, model.MultipleFiles[0].ViewKey)
+		assert.NotEmpty(t, model.MultipleFiles[1].ViewKey)
 
 		var viewKey1 ViewKey
 		err = storage.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
@@ -631,6 +833,16 @@ func TestStorageDecorator(t *testing.T) {
 		err = storage.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file2, viewKey2.File)
+
+		var viewKey3 ViewKey
+		err = storage.notary.Verify(&viewKey3, model.MultipleFiles[0].ViewKey)
+		assert.NoError(t, err)
+		assert.Equal(t, file3, viewKey3.File)
+
+		var viewKey4 ViewKey
+		err = storage.notary.Verify(&viewKey4, model.MultipleFiles[1].ViewKey)
+		assert.NoError(t, err)
+		assert.Equal(t, file4, viewKey4.File)
 	})
 }
 
