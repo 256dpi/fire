@@ -492,38 +492,58 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 			}
 
 			// inspect type
-			var err error
 			switch value := value.(type) {
 			case Link:
+				// get old link
 				var oldLink *Link
 				if oldValue != nil {
 					l := oldValue.(Link)
 					oldLink = &l
 				}
+
+				// get new link
 				newLink := &value
+
+				// swap on delete
 				if ctx.Operation == fire.Delete {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
+
+				// modify link
+				err := s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
+				if err != nil {
+					return xo.WF(err, field)
+				}
+
+				// update link
 				stick.MustSet(ctx.Model, field, value)
 			case *Link:
+				// get old link
 				var oldLink *Link
 				if oldValue != nil {
 					oldLink = oldValue.(*Link)
 				}
+
+				// get new link
 				newLink := value
+
+				// swap on delete
 				if ctx.Operation == fire.Delete {
 					oldLink = newLink
 					newLink = nil
 				}
-				err = s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
-				stick.MustSet(ctx.Model, field, newLink)
+
+				// modify link
+				err := s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
+				if err != nil {
+					return xo.WF(err, field)
+				}
+
+				// update link
+				stick.MustSet(ctx.Model, field, value)
 			default:
-				err = xo.F("%s: unsupported type: %T", field, value)
-			}
-			if err != nil {
-				return xo.WF(err, field)
+				return xo.F("%s: unsupported type: %T", field, value)
 			}
 		}
 
