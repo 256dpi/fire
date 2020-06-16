@@ -376,7 +376,10 @@ func TestStorageValidator(t *testing.T) {
 		file1 := tester.Insert(&File{
 			State: Uploaded,
 			Size:  42,
-			Type:  "image/png",
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
 		}).(*File)
 
 		claimKey1, err := storage.notary.Issue(&ClaimKey{
@@ -459,6 +462,8 @@ func TestStorageDownload(t *testing.T) {
 		assert.NotNil(t, file)
 
 		file.State = Claimed
+		file.Binding = "foo"
+		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
 		key, err := storage.notary.Issue(&ViewKey{

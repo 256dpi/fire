@@ -199,12 +199,14 @@ func TestContextKeys(t *testing.T) {
 		tester.Handler = newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
-			Key: "application",
+			Name: "App",
+			Key:  "application",
 		}).(*Application).ID()
 
 		user := tester.Insert(&User{
-			Name:  "User",
-			Email: "email@example.com",
+			Name:     "User",
+			Email:    "email@example.com",
+			Password: "foo",
 		}).(*User).ID()
 
 		accessToken := tester.Insert(&Token{
@@ -239,7 +241,8 @@ func TestInvalidGrantType(t *testing.T) {
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
-			Key: "application",
+			Name: "App",
+			Key:  "application",
 		}).(*Application)
 
 		for _, gt := range []string{"password", "client_credentials", "authorization_code"} {
@@ -273,6 +276,7 @@ func TestInvalidResponseType(t *testing.T) {
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
+			Name:         "App",
 			Key:          "application",
 			RedirectURIs: []string{"https://example.com/"},
 		}).(*Application)
@@ -314,7 +318,8 @@ func TestInvalidClientFilter(t *testing.T) {
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
-			Key: "application",
+			Name: "App",
+			Key:  "application",
 		}).(*Application)
 
 		policy.ClientFilter = func(*Context, Client) (bson.M, error) {
@@ -381,7 +386,8 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
-			Key: "application",
+			Name: "App",
+			Key:  "application",
 		}).(*Application)
 
 		policy.ResourceOwnerFilter = func(*Context, Client, ResourceOwner) (bson.M, error) {
