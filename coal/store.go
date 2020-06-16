@@ -129,22 +129,22 @@ func (s *Store) DB() lungo.IDatabase {
 // it does not perform any checks, it is recommended to use the manager to
 // perform safe CRUD operations.
 func (s *Store) C(model Model) *Collection {
-	// get name
-	name := GetMeta(model).Collection
+	// get meta
+	meta := GetMeta(model)
 
 	// check cache
-	val, ok := s.colls.Load(name)
+	val, ok := s.colls.Load(meta)
 	if ok {
 		return val.(*Collection)
 	}
 
 	// create collection
 	coll := &Collection{
-		coll: s.DB().Collection(name),
+		coll: s.DB().Collection(meta.Collection),
 	}
 
 	// cache collection
-	s.colls.Store(name, coll)
+	s.colls.Store(meta, coll)
 
 	return coll
 }
