@@ -425,11 +425,11 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 	})
 }
 
-func TestStorageValidator(t *testing.T) {
+func TestStorageModifierRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
-		validator := storage.Modifier()
+		modifier := storage.Modifier()
 
 		/* missing */
 
@@ -442,11 +442,60 @@ func TestStorageValidator(t *testing.T) {
 			Controller: &fire.Controller{
 				Model: &testModel{},
 			},
-		}, validator)
+		}, modifier)
 		assert.Error(t, err)
 		assert.Equal(t, "RequiredFile: missing claim key", err.Error())
 
 		/* required */
+
+		file := tester.Insert(&File{
+			State: Uploaded,
+			Size:  42,
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
+		}).(*File)
+
+		claimKey, err := storage.notary.Issue(&ClaimKey{
+			File: file.ID(),
+			Size: file.Size,
+			Type: file.Type,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, claimKey)
+
+		model.RequiredFile.ClaimKey = claimKey
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Create,
+			Model:     model,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+		assert.Equal(t, file.ID(), *model.RequiredFile.File)
+
+		file = tester.Fetch(&File{}, file.ID()).(*File)
+		assert.Equal(t, Claimed, file.State)
+	})
+}
+
+func TestStorageModifierOptional(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+
+		modifier := storage.Modifier()
+
+		model := &testModel{
+			Base: coal.B(),
+			RequiredFile: Link{
+				File: coal.P(coal.New()),
+			},
+		}
+
+		/* add */
 
 		file1 := tester.Insert(&File{
 			State: Uploaded,
@@ -465,24 +514,83 @@ func TestStorageValidator(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, claimKey1)
 
-		model = &testModel{
-			Base: coal.B(),
-			RequiredFile: Link{
-				ClaimKey: claimKey1,
-			},
+		model.OptionalFile = &Link{ClaimKey: claimKey1}
+
+		original := &testModel{
+			Base:         model.Base,
+			RequiredFile: model.RequiredFile,
 		}
+
 		err = tester.RunCallback(&fire.Context{
-			Operation: fire.Create,
+			Operation: fire.Update,
 			Model:     model,
+			Original:  original,
 			Controller: &fire.Controller{
 				Model: &testModel{},
 			},
-		}, validator)
+		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file1.ID(), *model.RequiredFile.File)
+		assert.Equal(t, file1.ID(), *model.OptionalFile.File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
+
+		/* update */
+
+		file2 := tester.Insert(&File{
+			State: Uploaded,
+			Size:  42,
+			Handle: Handle{
+				"foo": "bar",
+			},
+			Type: "image/png",
+		}).(*File)
+
+		claimKey2, err := storage.notary.Issue(&ClaimKey{
+			File: file2.ID(),
+			Size: file2.Size,
+			Type: file2.Type,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, claimKey2)
+
+		original.OptionalFile = model.OptionalFile
+		model.OptionalFile = &Link{ClaimKey: claimKey2}
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+		assert.Equal(t, file2.ID(), *model.OptionalFile.File)
+
+		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
+		assert.Equal(t, Released, file1.State)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Claimed, file2.State)
+
+		/* remove */
+
+		original.OptionalFile = model.OptionalFile
+		model.OptionalFile = nil
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model:     model,
+			Original:  original,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.NoError(t, err)
+
+		file2 = tester.Fetch(&File{}, file2.ID()).(*File)
+		assert.Equal(t, Released, file2.State)
 	})
 }
 
