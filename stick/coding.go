@@ -78,10 +78,10 @@ func (c Coding) Transfer(in, out interface{}) error {
 	return nil
 }
 
-// GetJSONKey will return the JSON key for the specified struct field.
-func GetJSONKey(field *reflect.StructField) string {
+// GetKey will return the coding key for the specified struct field.
+func (c Coding) GetKey(field reflect.StructField) string {
 	// get tag
-	tag := field.Tag.Get("json")
+	tag := field.Tag.Get(string(c))
 
 	// check for "-"
 	if tag == "-" {
@@ -96,26 +96,11 @@ func GetJSONKey(field *reflect.StructField) string {
 		return values[0]
 	}
 
-	return field.Name
-}
-
-// GetBSONKey will return the BSON key for the specified struct field.
-func GetBSONKey(field *reflect.StructField) string {
-	// get tag
-	tag := field.Tag.Get("bson")
-
-	// check for "-"
-	if tag == "-" {
-		return ""
+	// prepare name
+	name := field.Name
+	if c == BSON {
+		name = strings.ToLower(name)
 	}
 
-	// split
-	values := strings.Split(tag, ",")
-
-	// check first value
-	if len(values) > 0 && len(values[0]) > 0 {
-		return values[0]
-	}
-
-	return strings.ToLower(field.Name)
+	return name
 }

@@ -201,8 +201,8 @@ func GetMeta(model Model) *Meta {
 			Name:     field.Name,
 			Type:     field.Type,
 			Kind:     fieldKind,
-			JSONKey:  stick.GetJSONKey(&field),
-			BSONKey:  stick.GetBSONKey(&field),
+			JSONKey:  stick.JSON.GetKey(field),
+			BSONKey:  stick.BSON.GetKey(field),
 			Optional: field.Type.Kind() == reflect.Ptr,
 		}
 

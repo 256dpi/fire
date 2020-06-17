@@ -43,7 +43,7 @@ func TestParseJSONTag(t *testing.T) {
 	}
 
 	for _, item := range table {
-		name := GetJSONKey(&reflect.StructField{
+		name := JSON.GetKey(reflect.StructField{
 			Name: "Field",
 			Tag:  reflect.StructTag(item.tag),
 		})
@@ -87,7 +87,7 @@ func TestParseBSONTag(t *testing.T) {
 	}
 
 	for _, item := range table {
-		name := GetBSONKey(&reflect.StructField{
+		name := BSON.GetKey(reflect.StructField{
 			Name: "Field",
 			Tag:  reflect.StructTag(item.tag),
 		})
