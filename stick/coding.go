@@ -104,3 +104,84 @@ func (c Coding) GetKey(field reflect.StructField) string {
 
 	return name
 }
+
+// UnmarshalKeyedList will unmarshal a list and match objects by comparing
+// the key in the specified field instead of their position in the list.
+func (c Coding) UnmarshalKeyedList(data []byte, list interface{}, field string) error {
+	// get existing list
+	existingList := reflect.ValueOf(list).Elem()
+
+	// get item type
+	itemType := existingList.Type().Elem()
+
+	// create index
+	indexType := reflect.MapOf(reflect.TypeOf(""), itemType)
+	index := reflect.MakeMapWithSize(indexType, existingList.Len())
+
+	// determine coding key
+	codingKey := field
+	if itemType.Kind() == reflect.Struct {
+		structField, ok := itemType.FieldByName(field)
+		if ok {
+			codingKey = c.GetKey(structField)
+		}
+	}
+
+	// fill index
+	for i := 0; i < existingList.Len(); i++ {
+		// get item
+		item := existingList.Index(i)
+
+		// get key
+		var key string
+		if item.Type().Kind() == reflect.Map {
+			key = item.MapIndex(reflect.ValueOf(codingKey)).Interface().(string)
+		} else {
+			key = item.FieldByName(field).Interface().(string)
+		}
+
+		// store item
+		index.SetMapIndex(reflect.ValueOf(key), item)
+	}
+
+	// unmarshal into dynamic slice
+	var temp []map[string]interface{}
+	err := c.SafeUnmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+
+	// create new list
+	newList := reflect.MakeSlice(existingList.Type(), 0, len(temp))
+
+	// merge links
+	for _, obj := range temp {
+		// match existing item
+		item := index.MapIndex(reflect.ValueOf(obj[codingKey].(string)))
+
+		// ensure item if not found
+		if !item.IsValid() {
+			if itemType.Kind() == reflect.Map {
+				item = reflect.MakeMap(itemType)
+			} else {
+				item = reflect.Zero(itemType)
+			}
+		}
+
+		// transfer to item
+		pointer := reflect.New(item.Type())
+		pointer.Elem().Set(item)
+		err = c.Transfer(obj, pointer.Interface())
+		if err != nil {
+			return err
+		}
+
+		// add item
+		newList = reflect.Append(newList, pointer.Elem())
+	}
+
+	// set list
+	reflect.ValueOf(list).Elem().Set(newList)
+
+	return nil
+}
