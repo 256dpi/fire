@@ -1,6 +1,7 @@
 package stick
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -45,16 +46,31 @@ func (c Coding) Unmarshal(in []byte, out interface{}) error {
 	}
 }
 
+// SafeUnmarshal will decode the specified value from the provided byte sequence.
+// It will preserve JSON numbers when decoded into an interface{} value.
+func (c Coding) SafeUnmarshal(in []byte, out interface{}) error {
+	switch c {
+	case JSON:
+		dec := json.NewDecoder(bytes.NewReader(in))
+		dec.UseNumber()
+		return xo.W(dec.Decode(out))
+	case BSON:
+		return xo.W(bson.Unmarshal(in, out))
+	default:
+		panic(fmt.Sprintf("coal: unknown coding %q", c))
+	}
+}
+
 // Transfer will transfer data from one value to another using.
 func (c Coding) Transfer(in, out interface{}) error {
 	// marshal
-	bytes, err := c.Marshal(in)
+	data, err := c.Marshal(in)
 	if err != nil {
 		return err
 	}
 
 	// unmarshal
-	err = c.Unmarshal(bytes, out)
+	err = c.Unmarshal(data, out)
 	if err != nil {
 		return err
 	}
