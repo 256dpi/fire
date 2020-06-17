@@ -761,7 +761,7 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 			}
 		case Links:
 			// decorate links
-			for i, _ := range value {
+			for i := range value {
 				err = s.Decorate(&value[i])
 				if err != nil {
 					return err
