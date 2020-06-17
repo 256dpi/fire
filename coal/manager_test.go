@@ -150,9 +150,25 @@ func TestManagerFindAll(t *testing.T) {
 
 		m := tester.Store.M(&postModel{})
 
-		// error
+		// invalid list
+		err := m.FindAll(nil, nil, nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Equal(t, "missing list", err.Error())
+
+		// expected slice pointer
+		err = m.FindAll(nil, m, nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Equal(t, "expected slice pointer", err.Error())
+
+		// expected slice pointer
+		var wrongList []noteModel
+		err = m.FindAll(nil, &wrongList, nil, nil, 0, 0, false)
+		assert.Error(t, err)
+		assert.Equal(t, "expected slice of matching models", err.Error())
+
+		// transaction required
 		var list []postModel
-		err := m.FindAll(nil, &list, nil, nil, 0, 0, false)
+		err = m.FindAll(nil, &list, nil, nil, 0, 0, false)
 		assert.Error(t, err)
 		assert.True(t, ErrTransactionRequired.Is(err))
 

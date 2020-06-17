@@ -2,6 +2,7 @@ package coal
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/xo"
@@ -234,6 +235,19 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 	span.Tag("skip", skip)
 	span.Tag("limit", limit)
 	defer span.End()
+
+	// check list
+	if list == nil {
+		return xo.F("missing list")
+	}
+	lt := reflect.TypeOf(list)
+	if lt.Kind() != reflect.Ptr || lt.Elem().Kind() != reflect.Slice {
+		return xo.F("expected slice pointer")
+	}
+	et := lt.Elem().Elem()
+	if (et.Kind() == reflect.Struct && et != m.meta.Type) || (et.Kind() == reflect.Ptr && et.Elem() != m.meta.Type) {
+		return xo.F("expected slice of matching models")
+	}
 
 	// require transaction if locked or not unsafe
 	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
