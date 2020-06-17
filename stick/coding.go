@@ -27,6 +27,10 @@ func (c Coding) Marshal(in interface{}) ([]byte, error) {
 		buf, err := json.Marshal(in)
 		return buf, xo.W(err)
 	case BSON:
+		if reflect.TypeOf(in).Kind() == reflect.Slice {
+			_, buf, err := bson.MarshalValue(in)
+			return buf, xo.W(err)
+		}
 		buf, err := bson.Marshal(in)
 		return buf, xo.W(err)
 	default:
@@ -40,6 +44,10 @@ func (c Coding) Unmarshal(in []byte, out interface{}) error {
 	case JSON:
 		return xo.W(json.Unmarshal(in, out))
 	case BSON:
+		if reflect.TypeOf(out).Elem().Kind() == reflect.Slice {
+			raw := bson.RawValue{Value: in, Type: bson.TypeArray}
+			return xo.W(raw.Unmarshal(out))
+		}
 		return xo.W(bson.Unmarshal(in, out))
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))
@@ -55,6 +63,10 @@ func (c Coding) SafeUnmarshal(in []byte, out interface{}) error {
 		dec.UseNumber()
 		return xo.W(dec.Decode(out))
 	case BSON:
+		if reflect.TypeOf(out).Elem().Kind() == reflect.Slice {
+			raw := bson.RawValue{Value: in, Type: bson.TypeArray}
+			return xo.W(raw.Unmarshal(out))
+		}
 		return xo.W(bson.Unmarshal(in, out))
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))

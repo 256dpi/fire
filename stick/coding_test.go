@@ -8,6 +8,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testCodings = []Coding{JSON, BSON}
+
+func TestCodingTransfer(t *testing.T) {
+	for _, coding := range testCodings {
+		inObj := map[string]interface{}{
+			"foo": "bar",
+		}
+		var outObj map[string]interface{}
+		err := coding.Transfer(inObj, &outObj)
+		assert.NoError(t, err)
+		assert.Equal(t, inObj, outObj)
+
+		inArr := []interface{}{"foo"}
+		var outArr []interface{}
+		err = coding.Transfer(inArr, &outArr)
+		assert.NoError(t, err)
+		assert.Equal(t, inArr, outArr)
+	}
+}
+
 func TestParseJSONTag(t *testing.T) {
 	table := []struct {
 		tag  string
