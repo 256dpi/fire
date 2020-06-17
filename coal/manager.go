@@ -295,7 +295,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*Iterator, error) {
+func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*ManagedIterator, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindEach")
 	span.Tag("filter", filter)
@@ -370,7 +370,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	// enforce validation
 	iter.validate = !Merge(flags).Has(NoValidation)
 
-	return iter, nil
+	return &ManagedIterator{iter: iter}, nil
 }
 
 // Count will count the documents that match the specified filter. Lock can be
@@ -1060,4 +1060,34 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 	}
 
 	return true, nil
+}
+
+// ManagedIterator wraps an iterator to enforce decoding to a model.
+type ManagedIterator struct {
+	iter *Iterator
+}
+
+// Next will load the next document from the cursor and if available return true.
+// If it returns false the iteration must be stopped due to the cursor being
+// exhausted or an error.
+func (i *ManagedIterator) Next() bool {
+	return i.iter.Next()
+}
+
+// Decode will decode the loaded document to the specified model.
+func (i *ManagedIterator) Decode(model Model) error {
+	return i.iter.Decode(model)
+}
+
+// Error returns the first error encountered during iteration. It should always
+// be checked when finished to ensure there have been no errors.
+func (i *ManagedIterator) Error() error {
+	return i.iter.Error()
+}
+
+// Close will close the underlying cursor. A call to it should be deferred right
+// after obtaining an iterator. Close should be called also if the iterator is
+// still valid but no longer used by the application.
+func (i *ManagedIterator) Close() {
+	i.iter.Close()
 }

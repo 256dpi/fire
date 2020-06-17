@@ -461,8 +461,8 @@ func (i *Iterator) Decode(v interface{}) error {
 	return nil
 }
 
-// Error return the first error encountered during iteration. It should always
-// be checked after an iteration has finished to ensure there where no errors.
+// Error returns the first error encountered during iteration. It should always
+// be checked when finished to ensure there have been no errors.
 func (i *Iterator) Error() error {
 	return xo.W(i.error)
 }

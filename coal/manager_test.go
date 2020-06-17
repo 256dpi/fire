@@ -1037,7 +1037,7 @@ func BenchmarkManagerFind(b *testing.B) {
 	}
 }
 
-func readPosts(t *testing.T, iter *Iterator) []postModel {
+func readPosts(t *testing.T, iter *ManagedIterator) []postModel {
 	defer iter.Close()
 	var list []postModel
 	for iter.Next() {
