@@ -41,6 +41,10 @@ func Merge(flags []Flags) Flags {
 // without a transaction.
 var ErrTransactionRequired = xo.BF("operation requires a transaction")
 
+// ErrMetaMismatch is returned if the provided model does not match the model
+// that is manged by the manager.
+var ErrMetaMismatch = xo.BF("provided model does not match managed model")
+
 var incrementLock = bson.M{
 	"$inc": bson.M{
 		"_lk": 1,
@@ -86,6 +90,11 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags
 	// ensure model
 	if model == nil {
 		model = m.meta.Make()
+	}
+
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
 	}
 
 	// prepare filter
@@ -147,6 +156,11 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 	// check model
 	if model == nil {
 		model = m.meta.Make()
+	}
+
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
 	}
 
 	// translate filter
@@ -370,7 +384,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	// enforce validation
 	iter.validate = !Merge(flags).Has(NoValidation)
 
-	return &ManagedIterator{iter: iter}, nil
+	return &ManagedIterator{iter: iter, meta: m.meta}, nil
 }
 
 // Count will count the documents that match the specified filter. Lock can be
@@ -511,8 +525,14 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 		return nil
 	}
 
-	// ensure ids
+	// check models and ensure ids
 	for _, model := range models {
+		// check model
+		if GetMeta(model) != m.meta {
+			return ErrMetaMismatch.Wrap()
+		}
+
+		// ensure id
 		if model.ID().IsZero() {
 			model.GetBase().DocID = New()
 		}
@@ -578,6 +598,11 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 		return false, err
 	}
 
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
+
 	// ensure id
 	if model.ID().IsZero() {
 		model.GetBase().DocID = New()
@@ -625,6 +650,11 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Replace")
 	defer span.End()
+
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
 
 	// check id
 	if model.ID().IsZero() {
@@ -674,6 +704,11 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 	ctx, span := xo.Trace(ctx, "coal/Manager.ReplaceFirst")
 	span.Tag("filter", filter)
 	defer span.End()
+
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -731,6 +766,11 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 		model = m.meta.Make()
 	}
 
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
+
 	// translate update
 	updateDoc, err := m.trans.Document(update)
 	if err != nil {
@@ -783,6 +823,11 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 	// check model
 	if model == nil {
 		model = m.meta.Make()
+	}
+
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
 	}
 
 	// translate filter
@@ -906,6 +951,11 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 		model = m.meta.Make()
 	}
 
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
+
 	// translate filter
 	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
@@ -977,6 +1027,11 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 		return res.DeletedCount == 1, nil
 	}
 
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
+
 	// find and delete document
 	err := m.coll.FindOneAndDelete(ctx, bson.M{
 		"_id": id,
@@ -1038,6 +1093,11 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 		model = m.meta.Make()
 	}
 
+	// check model
+	if GetMeta(model) != m.meta {
+		return false, ErrMetaMismatch.Wrap()
+	}
+
 	// prepare options
 	opts := options.FindOneAndDelete()
 
@@ -1064,6 +1124,7 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 
 // ManagedIterator wraps an iterator to enforce decoding to a model.
 type ManagedIterator struct {
+	meta *Meta
 	iter *Iterator
 }
 
@@ -1076,6 +1137,11 @@ func (i *ManagedIterator) Next() bool {
 
 // Decode will decode the loaded document to the specified model.
 func (i *ManagedIterator) Decode(model Model) error {
+	// check model
+	if GetMeta(model) != i.meta {
+		return ErrMetaMismatch.Wrap()
+	}
+
 	return i.iter.Decode(model)
 }
 
