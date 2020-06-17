@@ -1,6 +1,7 @@
 package blaze
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,4 +67,24 @@ func TestLinkValidate(t *testing.T) {
 
 	err = link.Validate("foo")
 	assert.NoError(t, err)
+}
+
+func TestLinksUnmarshal(t *testing.T) {
+	links := Links{
+		{Ref: "1", Size: 1},
+		{Ref: "2", Size: 2},
+		{Ref: "3", Size: 3},
+	}
+
+	err := json.Unmarshal([]byte(`[
+		{ "ref": "2" },
+		{ "ref": "3" },
+		{ "ref": "1" }
+	]`), &links)
+	assert.NoError(t, err)
+	assert.Equal(t, Links{
+		{Ref: "2", Size: 2},
+		{Ref: "3", Size: 3},
+		{Ref: "1", Size: 1},
+	}, links)
 }

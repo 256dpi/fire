@@ -64,6 +64,16 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 // Links is a set of links.
 type Links []Link
 
+// UnmarshalBSON implements the bson.Unmarshaler interface.
+func (l *Links) UnmarshalBSON(bytes []byte) error {
+	return stick.BSON.UnmarshalKeyedList(bytes, l, "Ref")
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (l *Links) UnmarshalJSON(bytes []byte) error {
+	return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
+}
+
 // Validate will validate the links.
 func (l Links) Validate(name string, whitelist ...string) error {
 	// validate all links
