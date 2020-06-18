@@ -401,6 +401,197 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	return &ManagedIterator{iter: iter, meta: m.meta}, nil
 }
 
+// Project will return the field of the specified document. It will also return
+// whether a document has been found at all.
+//
+// A transaction is required for locking.
+func (m *Manager) Project(ctx context.Context, id ID, field string, lock bool) (interface{}, bool, error) {
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.Project")
+	span.Tag("id", id)
+	span.Tag("field", field)
+
+	// project
+	var res interface{}
+	var found bool
+	err := m.project(ctx, bson.M{
+		"_id": id,
+	}, field, nil, 0, 1, lock, func(id ID, val interface{}) bool {
+		res = val
+		found = true
+		return false
+	}, NoTransaction)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return res, found, nil
+}
+
+// ProjectFirst will return the field of the first matching document. It will
+// also return whether a document has been found at all.
+//
+// A transaction is required for locking.
+//
+// Warning: If the operation depends on interleaving writes to not include or
+// exclude documents from the filter it should be run during a transaction.
+func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string, sort []string, skip int64, lock bool) (interface{}, bool, error) {
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectFirst")
+	span.Tag("filter", filter)
+	span.Tag("field", field)
+
+	// project
+	var res interface{}
+	var found bool
+	err := m.project(ctx, filter, field, sort, skip, 1, lock, func(id ID, val interface{}) bool {
+		res = val
+		found = true
+		return false
+	}, NoTransaction)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return res, found, nil
+}
+
+// ProjectAll will lookup the specified field for all matching documents and
+// return a map with their ids and field values.
+//
+// A transaction is required to ensure isolation.
+//
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, flags ...Flags) (map[ID]interface{}, error) {
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectAll")
+	span.Tag("filter", filter)
+	span.Tag("field", field)
+
+	// project
+	res := make(map[ID]interface{})
+	err := m.project(ctx, filter, field, sort, skip, limit, lock, func(id ID, val interface{}) bool {
+		res[id] = val
+		return true
+	}, flags...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// ProjectEach will lookup the specified field for all documents matching the
+// specified filter and yield them to the provided function until all have been
+// found or false has been returned.
+//
+// A transaction is required to ensure isolation.
+//
+// NoTransaction: The result may miss documents or include them multiple times
+// if interleaving operations move the documents in the used index.
+func (m *Manager) ProjectEach(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectEach")
+	span.Tag("filter", filter)
+	span.Tag("field", field)
+	span.Tag("sort", sort)
+	span.Tag("skip", skip)
+	span.Tag("limit", limit)
+
+	return m.project(ctx, filter, field, sort, skip, limit, lock, fn, flags...)
+}
+
+func (m *Manager) project(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
+	// require transaction if locked or not unsafe
+	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
+		return ErrTransactionRequired.Wrap()
+	}
+
+	// check lock
+	if lock && (skip > 0 || limit > 0) {
+		return xo.F("cannot lock with skip and limit")
+	}
+
+	// translate filter
+	filterDoc, err := m.trans.Document(filter)
+	if err != nil {
+		return err
+	}
+
+	// translate field
+	field, err = m.trans.Field(field)
+	if err != nil {
+		return err
+	}
+
+	// prepare options
+	opts := options.Find()
+
+	// set sort
+	if len(sort) > 0 {
+		opts.Sort, err = m.trans.Sort(sort)
+		if err != nil {
+			return err
+		}
+	}
+
+	// set skip
+	if skip > 0 {
+		opts.SetSkip(skip)
+	}
+
+	// set limit
+	if limit > 0 {
+		opts.SetLimit(limit)
+	}
+
+	// set projection
+	opts.SetProjection(bson.M{
+		field: 1,
+	})
+
+	// lock documents
+	if lock {
+		_, err = m.coll.UpdateMany(ctx, filterDoc, incrementLock)
+		if err != nil {
+			return err
+		}
+	}
+
+	// find documents
+	iter, err := m.coll.Find(ctx, filterDoc, opts)
+	if err != nil {
+		return err
+	}
+
+	// ensure close
+	defer iter.Close()
+
+	// iterate
+	for iter.Next() {
+		// decode item
+		item := make(map[string]interface{})
+		err = iter.Decode(&item)
+		if err != nil {
+			return err
+		}
+
+		// yield pair
+		if !fn(item["_id"].(ID), item[field]) {
+			break
+		}
+	}
+
+	// check error
+	err = iter.Error()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Count will count the documents that match the specified filter. Lock can be
 // set to true to force a write lock on the documents and prevent a stale read
 // during a transaction.

@@ -318,6 +318,55 @@ func TestManagerFindEach(t *testing.T) {
 	})
 }
 
+func TestManagerProject(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title:     "Hello Space!",
+			Published: true,
+		}).(*postModel)
+
+		m := tester.Store.M(&postModel{})
+
+		// unsafe single
+		value, found, err := m.Project(nil, post1.ID(), "Title", false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+		assert.Equal(t, "Hello World!", value)
+
+		// unsafe first
+		value, found, err = m.ProjectFirst(nil, bson.M{
+			"Published": true,
+		}, "Title", nil, 0, false)
+		assert.NoError(t, err)
+		assert.True(t, found)
+		assert.Equal(t, "Hello Space!", value)
+
+		// unsafe all
+		values, err := m.ProjectAll(nil, bson.M{}, "Title", nil, 0, 0, false, NoTransaction)
+		assert.NoError(t, err)
+		assert.Equal(t, map[ID]interface{}{
+			post1.ID(): "Hello World!",
+			post2.ID(): "Hello Space!",
+		}, values)
+
+		// unsafe each
+		var titles []string
+		err = m.ProjectEach(nil, bson.M{}, "Title", nil, 0, 0, false, func(id ID, val interface{}) bool {
+			titles = append(titles, val.(string))
+			return true
+		}, NoTransaction)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{
+			"Hello World!",
+			"Hello Space!",
+		}, titles)
+	})
+}
+
 func TestManagerCount(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		post1 := *tester.Insert(&postModel{
