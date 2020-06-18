@@ -48,12 +48,12 @@ func (t *Translator) Field(field string) (string, error) {
 	return field, nil
 }
 
-// Document will convert the provided query or update document and translate
+// Document will convert the provided filter or update document and translate
 // all field names to refer to known database fields. It will also validate the
-// query or update and return an error if an unsafe operator is used.
-func (t *Translator) Document(queryOrUpdate bson.M) (bson.D, error) {
+// query or update and return an error for unsafe expressions or operators.
+func (t *Translator) Document(query bson.M) (bson.D, error) {
 	// convert
-	doc, err := t.convert(queryOrUpdate)
+	doc, err := t.convert(query)
 	if err != nil {
 		return nil, err
 	}

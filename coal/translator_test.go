@@ -11,8 +11,13 @@ import (
 func TestTranslatorDocument(t *testing.T) {
 	trans := NewTranslator(&postModel{})
 
+	// nil
+	doc, err := trans.Document(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{}, doc)
+
 	// unknown
-	doc, err := trans.Document(bson.M{
+	doc, err = trans.Document(bson.M{
 		"foo": "bar",
 	})
 	assert.Error(t, err)
@@ -200,8 +205,13 @@ func TestTranslatorDocument(t *testing.T) {
 func TestTranslatorSort(t *testing.T) {
 	trans := NewTranslator(&postModel{})
 
+	// nil
+	doc, err := trans.Sort(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, doc)
+
 	// unknown
-	doc, err := trans.Sort([]string{"foo", "-bar"})
+	doc, err = trans.Sort([]string{"foo", "-bar"})
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 	assert.Equal(t, `unknown field "foo"`, err.Error())
