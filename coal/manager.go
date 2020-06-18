@@ -270,12 +270,10 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 
 	// set sort
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
-		if err != nil {
+		opts.Sort, err = m.trans.Sort(sort)
+		if opts.Sort != nil {
 			return err
 		}
-
-		opts.SetSort(sortDoc)
 	}
 
 	// set skip
@@ -360,12 +358,10 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 
 	// set sort
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
+		opts.Sort, err = m.trans.Sort(sort)
 		if err != nil {
 			return nil, err
 		}
-
-		opts.SetSort(sortDoc)
 	}
 
 	// set skip
@@ -1052,12 +1048,10 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 
 	// set sort
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
+		opts.Sort, err = m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
-
-		opts.SetSort(sortDoc)
 	}
 
 	// increment lock
@@ -1186,12 +1180,10 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 	// set sort
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
+		opts.Sort, err = m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
-
-		opts.SetSort(sortDoc)
 	}
 
 	// set token (to determine insert vs. update)
@@ -1308,12 +1300,10 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 
 	// set sort
 	if len(sort) > 0 {
-		sortDoc, err := m.trans.Sort(sort)
+		opts.Sort, err = m.trans.Sort(sort)
 		if err != nil {
 			return false, err
 		}
-
-		opts.SetSort(sortDoc)
 	}
 
 	// find and delete document
