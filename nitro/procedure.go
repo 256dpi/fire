@@ -20,7 +20,7 @@ type Procedure interface {
 	GetAccessor(interface{}) *stick.Accessor
 }
 
-// base can be embedded in a struct to turn it into a procedure.
+// Base can be embedded in a struct to turn it into a procedure.
 type Base struct{}
 
 // GetBase implements the Key interface.
