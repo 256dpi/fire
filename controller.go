@@ -14,7 +14,6 @@ import (
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -1762,18 +1761,11 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// add relationship filters
 		filters = append(filters, ctx.RelationshipFilters[field.Name]...)
 
-		// translate filters
-		queryDoc, err := ctx.Store.M(rc.Model).T().Document(bson.M{
+		// project references
+		references, err := ctx.Store.M(rc.Model).ProjectAll(ctx, bson.M{
 			"$and": filters,
-		})
+		}, rel.Name, nil, 0, 0, false)
 		xo.AbortIf(err)
-
-		// load all references
-		var references []bson.M
-		xo.AbortIf(ctx.Store.C(rc.Model).FindAll(ctx, &references, queryDoc, options.Find().SetProjection(bson.M{
-			"_id":       1,
-			rel.BSONKey: 1,
-		})))
 
 		// prepare entry
 		entry := make(map[coal.ID][]coal.ID)
@@ -1781,27 +1773,27 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 		// collect references
 		for _, modelID := range modelIDs {
 			// go through all related documents
-			for _, reference := range references {
+			for id, value := range references {
 				// handle to one references
 				if rel.ToOne {
 					// get reference id
-					rid, _ := reference[rel.BSONKey].(coal.ID)
+					rid, _ := value.(coal.ID)
 					if !rid.IsZero() && rid == modelID {
 						// add reference
-						entry[modelID] = append(entry[modelID], reference["_id"].(coal.ID))
+						entry[modelID] = append(entry[modelID], id)
 					}
 				}
 
 				// handle to many references
 				if rel.ToMany {
 					// get reference ids
-					rids, _ := reference[rel.BSONKey].(bson.A)
+					rids, _ := value.(bson.A)
 					for _, _rid := range rids {
 						// get reference id
 						rid, _ := _rid.(coal.ID)
 						if !rid.IsZero() && rid == modelID {
 							// add reference
-							entry[modelID] = append(entry[modelID], reference["_id"].(coal.ID))
+							entry[modelID] = append(entry[modelID], id)
 						}
 					}
 				}
