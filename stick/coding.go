@@ -148,11 +148,11 @@ func (c Coding) GetKey(field reflect.StructField) string {
 // When using with custom types the type should implement the following methods:
 //
 // 	func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-//		return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
+// 		return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
 // 	}
 //
 // 	func (l *Links) UnmarshalJSON(bytes []byte) error {
-//		return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
+// 		return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
 // 	}
 //
 func (c Coding) UnmarshalKeyedList(data []byte, list interface{}, field string) error {
