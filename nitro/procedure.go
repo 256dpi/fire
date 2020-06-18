@@ -15,8 +15,9 @@ var mimeTypes = map[stick.Coding]string{
 
 // Procedure denotes types that can be processed by the BSON-RPC system.
 type Procedure interface {
-	// Validate() error
+	Validate() error
 	GetBase() *Base
+	GetAccessor(interface{}) *stick.Accessor
 }
 
 // base can be embedded in a struct to turn it into a procedure.

@@ -1,7 +1,6 @@
 package nitro
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -12,31 +11,19 @@ import (
 
 type jsonProcedure struct {
 	Base `json:"-" nitro:"test"`
-
-	Foo string `json:"foo"`
+	Foo  string `json:"foo"`
 }
 
 func (t *jsonProcedure) Validate() error {
-	// check foo
-	if t.Foo == "" {
-		return fmt.Errorf("missing foo")
-	}
-
 	return nil
 }
 
 type bsonProcedure struct {
 	Base `bson:"-" nitro:"test"`
-
-	Foo string
+	Foo  string
 }
 
 func (t *bsonProcedure) Validate() error {
-	// check foo
-	if t.Foo == "" {
-		return fmt.Errorf("missing foo")
-	}
-
 	return nil
 }
 

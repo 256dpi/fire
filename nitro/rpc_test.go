@@ -7,15 +7,25 @@ import (
 	"time"
 
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRPC(t *testing.T) {
-	type procedure struct {
-		Base `json:"-" nitro:"proc"`
-		Foo  string `json:"foo"`
+type procedure struct {
+	Base `json:"-" nitro:"proc"`
+	Foo  string `json:"foo"`
+}
+
+func (p *procedure) Validate() error {
+	// check foo
+	if p.Foo == "invalid" {
+		return xo.SF("invalid foo")
 	}
 
+	return nil
+}
+
+func TestRPC(t *testing.T) {
 	errs := make(chan error, 1)
 	endpoint := NewEndpoint(func(err error) {
 		errs <- err
@@ -71,11 +81,18 @@ func TestRPC(t *testing.T) {
 	assert.Equal(t, &Error{
 		Status: 404,
 		Title:  "not found",
-	}, err)
+	}, AsError(err))
+
+	/* validation error */
+
+	proc := &procedure{Foo: "invalid"}
+	err = client.Call(nil, proc)
+	assert.Error(t, err)
+	assert.Equal(t, "invalid foo", err.Error())
 
 	/* normal behaviour */
 
-	proc := &procedure{}
+	proc = &procedure{}
 	err = client.Call(nil, proc)
 	assert.NoError(t, err)
 	assert.Equal(t, &procedure{Foo: "bar"}, proc)
@@ -87,7 +104,7 @@ func TestRPC(t *testing.T) {
 	assert.Equal(t, &Error{
 		Status: 500,
 		Title:  "internal server error",
-	}, err)
+	}, AsError(err))
 	assert.Equal(t, &procedure{Foo: "fail"}, proc)
 	assert.Equal(t, "some error", (<-errs).Error())
 
@@ -100,7 +117,7 @@ func TestRPC(t *testing.T) {
 		Title:  "bad request",
 		Detail: "just bad",
 		Source: "param.foo",
-	}, err)
+	}, AsError(err))
 	assert.Equal(t, &procedure{Foo: "error"}, proc)
 
 	/* invalid method */

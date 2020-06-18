@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 )
 
 // Context allows handlers to interact with the request.
@@ -113,7 +114,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 	// read body
 	body, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// unmarshal body
@@ -122,33 +123,45 @@ func (s *Endpoint) Process(ctx *Context) error {
 		return err
 	}
 
+	// pre validate
+	err = ctx.Procedure.Validate()
+	if err != nil {
+		return xo.W(err)
+	}
+
 	// run callback
-	err = ctx.Handler.Callback(ctx)
+	err = xo.W(ctx.Handler.Callback(ctx))
 	if err != nil {
 		// check if rich error
-		rpcError, ok := err.(*Error)
-		if ok {
+		anError := AsError(err)
+		if anError != nil {
 			// unset original error
 			err = nil
 		} else {
 			// create internal server error
-			rpcError = ErrorFromStatus(http.StatusInternalServerError, "")
+			anError = ErrorFromStatus(http.StatusInternalServerError, "")
 		}
 
 		// set fallback status
-		if http.StatusText(rpcError.Status) == "" {
-			rpcError.Status = http.StatusInternalServerError
+		if http.StatusText(anError.Status) == "" {
+			anError.Status = http.StatusInternalServerError
 		}
 
 		// write header
 		ctx.Writer.Header().Set("Content-Type", mimeTypes[meta.Coding])
-		ctx.Writer.WriteHeader(rpcError.Status)
+		ctx.Writer.WriteHeader(anError.Status)
 
 		// write body
-		body, _ := meta.Coding.Marshal(rpcError)
+		body, _ := meta.Coding.Marshal(anError)
 		_, _ = ctx.Writer.Write(body)
 
 		return err
+	}
+
+	// post validate
+	err = ctx.Procedure.Validate()
+	if err != nil {
+		return xo.W(err)
 	}
 
 	// write header

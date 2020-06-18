@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/256dpi/xo"
 )
 
 // Client is a reusable client for accessing procedure endpoints.
@@ -30,6 +32,12 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 		ctx = context.Background()
 	}
 
+	// pre validate
+	err := proc.Validate()
+	if err != nil {
+		return xo.W(err)
+	}
+
 	// get meta
 	meta := GetMeta(proc)
 
@@ -45,7 +53,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	// create request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(buf))
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// set content type
@@ -54,7 +62,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	// perform request
 	res, err := c.http.Do(req)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// ensure body is closed
@@ -63,7 +71,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	// read body
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return xo.W(err)
 	}
 
 	// check code
@@ -72,16 +80,22 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 		var rpcError Error
 		err = meta.Coding.Unmarshal(body, &rpcError)
 		if err != nil {
-			return ErrorFromStatus(res.StatusCode, "")
+			return xo.W(ErrorFromStatus(res.StatusCode, ""))
 		}
 
-		return &rpcError
+		return xo.W(&rpcError)
 	}
 
 	// decode response
 	err = meta.Coding.Unmarshal(body, proc)
 	if err != nil {
 		return err
+	}
+
+	// post validate
+	err = proc.Validate()
+	if err != nil {
+		return xo.W(err)
 	}
 
 	return nil

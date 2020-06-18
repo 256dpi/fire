@@ -1,10 +1,20 @@
 package nitro
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 )
+
+// AsError will try to unwrap an Error from err.
+func AsError(err error) *Error {
+	var anError *Error
+	if errors.As(err, &anError) {
+		return anError
+	}
+	return nil
+}
 
 // Error objects provide additional information about problems encountered
 // while performing an RPC operation.
