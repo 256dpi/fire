@@ -14,7 +14,7 @@ import (
 type Value interface {
 	Validate() error
 	GetBase() *Base
-	GetAccessor(v interface{}) *stick.Accessor
+	GetAccessor(interface{}) *stick.Accessor
 }
 
 // ExtendedValue is a value that can extends its key.

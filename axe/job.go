@@ -14,7 +14,7 @@ type Job interface {
 	ID() coal.ID
 	Validate() error
 	GetBase() *Base
-	GetAccessor(v interface{}) *stick.Accessor
+	GetAccessor(interface{}) *stick.Accessor
 }
 
 // Base can be embedded in a struct to turn it into a job.
