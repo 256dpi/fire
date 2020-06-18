@@ -12,7 +12,7 @@ import (
 
 func TestRPC(t *testing.T) {
 	type procedure struct {
-		Base `json:"-" nitro:"/proc"`
+		Base `json:"-" nitro:"proc"`
 		Foo  string `json:"foo"`
 	}
 
@@ -52,10 +52,31 @@ func TestRPC(t *testing.T) {
 
 	client := NewClient("http://0.0.0.0:1337")
 
+	/* wrong method */
+
+	res := serve.Record(endpoint, "GET", "/foo", nil, "")
+	assert.Equal(t, http.StatusMethodNotAllowed, res.Code)
+	assert.Equal(t, "", res.Body.String())
+
+	/* not found */
+
+	res = serve.Record(endpoint, "POST", "/foo", nil, "")
+	assert.Equal(t, http.StatusNotFound, res.Code)
+	assert.Equal(t, "", res.Body.String())
+
+	/* unregistered */
+
+	err := client.Call(nil, &jsonProcedure{})
+	assert.Error(t, err)
+	assert.Equal(t, &Error{
+		Status: 404,
+		Title:  "not found",
+	}, err)
+
 	/* normal behaviour */
 
 	proc := &procedure{}
-	err := client.Call(nil, proc)
+	err = client.Call(nil, proc)
 	assert.NoError(t, err)
 	assert.Equal(t, &procedure{Foo: "bar"}, proc)
 

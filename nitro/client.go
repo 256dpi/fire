@@ -34,7 +34,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	meta := GetMeta(proc)
 
 	// prepare url
-	url := fmt.Sprintf("%s/%s", strings.TrimRight(c.base, "/"), meta.URL)
+	url := fmt.Sprintf("%s/%s", strings.TrimRight(c.base, "/"), meta.Name)
 
 	// encode procedure
 	buf, err := meta.Coding.Marshal(proc)
@@ -49,7 +49,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	}
 
 	// set content type
-	req.Header.Set("Content-Type", "application/bson")
+	req.Header.Set("Content-Type", mimeTypes[meta.Coding])
 
 	// perform request
 	res, err := c.http.Do(req)
@@ -72,7 +72,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 		var rpcError Error
 		err = meta.Coding.Unmarshal(body, &rpcError)
 		if err != nil {
-			return err
+			return ErrorFromStatus(res.StatusCode, "")
 		}
 
 		return &rpcError

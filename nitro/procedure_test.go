@@ -10,42 +10,63 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-type testProcedure struct {
+type jsonProcedure struct {
 	Base `json:"-" nitro:"test"`
 
-	User string `json:"user"`
-	Role string `json:"role"`
+	Foo string `json:"foo"`
 }
 
-func (t *testProcedure) Validate() error {
-	// check user
-	if t.User == "" {
-		return fmt.Errorf("missing user")
+func (t *jsonProcedure) Validate() error {
+	// check foo
+	if t.Foo == "" {
+		return fmt.Errorf("missing foo")
 	}
 
-	// check role
-	if t.Role == "" {
-		return fmt.Errorf("missing role")
+	return nil
+}
+
+type bsonProcedure struct {
+	Base `bson:"-" nitro:"test"`
+
+	Foo string
+}
+
+func (t *bsonProcedure) Validate() error {
+	// check foo
+	if t.Foo == "" {
+		return fmt.Errorf("missing foo")
 	}
 
 	return nil
 }
 
 func TestGetMeta(t *testing.T) {
-	meta := GetMeta(&testProcedure{})
+	meta := GetMeta(&jsonProcedure{})
 	assert.Equal(t, &Meta{
-		Type:   reflect.TypeOf(testProcedure{}),
-		URL:    "test",
+		Type:   reflect.TypeOf(jsonProcedure{}),
+		Name:   "test",
 		Coding: stick.JSON,
 		Accessor: &stick.Accessor{
-			Name: "nitro.testProcedure",
+			Name: "nitro.jsonProcedure",
 			Fields: map[string]*stick.Field{
-				"User": {
+				"Foo": {
 					Index: 1,
 					Type:  reflect.TypeOf(""),
 				},
-				"Role": {
-					Index: 2,
+			},
+		},
+	}, meta)
+
+	meta = GetMeta(&bsonProcedure{})
+	assert.Equal(t, &Meta{
+		Type:   reflect.TypeOf(bsonProcedure{}),
+		Name:   "test",
+		Coding: stick.BSON,
+		Accessor: &stick.Accessor{
+			Name: "nitro.bsonProcedure",
+			Fields: map[string]*stick.Field{
+				"Foo": {
+					Index: 1,
 					Type:  reflect.TypeOf(""),
 				},
 			},
@@ -84,23 +105,23 @@ func TestGetMeta(t *testing.T) {
 }
 
 func TestDynamicAccess(t *testing.T) {
-	proc := &testProcedure{
-		User: "user",
+	proc := &jsonProcedure{
+		Foo: "foo",
 	}
 
-	val, ok := stick.Get(proc, "user")
+	val, ok := stick.Get(proc, "foo")
 	assert.False(t, ok)
 	assert.Nil(t, val)
 
-	val, ok = stick.Get(proc, "User")
+	val, ok = stick.Get(proc, "Foo")
 	assert.True(t, ok)
-	assert.Equal(t, "user", val)
+	assert.Equal(t, "foo", val)
 
-	ok = stick.Set(proc, "user", "foo")
+	ok = stick.Set(proc, "foo", "bar")
 	assert.False(t, ok)
-	assert.Equal(t, "user", proc.User)
+	assert.Equal(t, "foo", proc.Foo)
 
-	ok = stick.Set(proc, "User", "foo")
+	ok = stick.Set(proc, "Foo", "bar")
 	assert.True(t, ok)
-	assert.Equal(t, "foo", proc.User)
+	assert.Equal(t, "bar", proc.Foo)
 }

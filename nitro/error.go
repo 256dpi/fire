@@ -63,11 +63,6 @@ func ErrorFromStatus(status int, detail string) *Error {
 	}
 }
 
-// NotFound returns a new not found error.
-func NotFound(detail string) *Error {
-	return ErrorFromStatus(http.StatusNotFound, detail)
-}
-
 // BadRequest returns a new bad request error with a source.
 func BadRequest(detail, source string) *Error {
 	err := ErrorFromStatus(http.StatusBadRequest, detail)

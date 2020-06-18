@@ -8,6 +8,11 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+var mimeTypes = map[stick.Coding]string{
+	stick.JSON: "application/json",
+	stick.BSON: "application/bson",
+}
+
 // Procedure denotes types that can be processed by the BSON-RPC system.
 type Procedure interface {
 	// Validate() error
@@ -31,10 +36,13 @@ var baseType = reflect.TypeOf(Base{})
 
 // Meta contains meta information about a procedure.
 type Meta struct {
+	// The values type.
 	Type reflect.Type
 
-	URL string
+	// The name.
+	Name string
 
+	// The used transfer coding.
 	Coding stick.Coding
 
 	// The accessor.
@@ -83,11 +91,6 @@ func GetMeta(proc Procedure) *Meta {
 		coding = stick.BSON
 	}
 
-	// check json tag
-	if field.Tag.Get("json") != "-" {
-		panic(`nitro: expected to find a tag of the form 'json:"-"' on "nitro.Base"`)
-	}
-
 	// split tag
 	tag := strings.Split(field.Tag.Get("nitro"), ",")
 
@@ -96,13 +99,13 @@ func GetMeta(proc Procedure) *Meta {
 		panic(`nitro: expected to find a tag of the form 'nitro:"name"' on "nitro.Base"`)
 	}
 
-	// get name
-	url := strings.Trim(tag[0], "/")
+	// get names
+	name := strings.Trim(tag[0], "/")
 
 	// prepare meta
 	meta = &Meta{
 		Type:     typ,
-		URL:      url,
+		Name:     name,
 		Coding:   coding,
 		Accessor: stick.BuildAccessor(proc, "Base"),
 	}

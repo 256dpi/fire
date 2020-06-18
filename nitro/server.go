@@ -13,10 +13,17 @@ import (
 type Context struct {
 	context.Context
 
+	// The received procedure.
 	Procedure Procedure
-	Handler   *Handler
-	Request   *http.Request
-	Writer    http.ResponseWriter
+
+	// The current handler.
+	Handler *Handler
+
+	// The underlying request.
+	Request *http.Request
+
+	// The underlying writer.
+	Writer http.ResponseWriter
 }
 
 // Handler defines a procedure handler.
@@ -54,11 +61,11 @@ func (s *Endpoint) Add(handler *Handler) {
 		handler.Limit = serve.MustByteSize("4K")
 	}
 
-	// get url
-	url := GetMeta(handler.Procedure).URL
+	// get name
+	name := GetMeta(handler.Procedure).Name
 
 	// add handler
-	s.handlers[url] = handler
+	s.handlers[name] = handler
 }
 
 // ServerHTTP implements the http.Handler interface.
@@ -134,7 +141,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 		}
 
 		// write header
-		ctx.Writer.Header().Set("Content-Type", "application/json")
+		ctx.Writer.Header().Set("Content-Type", mimeTypes[meta.Coding])
 		ctx.Writer.WriteHeader(rpcError.Status)
 
 		// write body
@@ -145,7 +152,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 	}
 
 	// write header
-	ctx.Writer.Header().Set("Content-Type", "application/bson")
+	ctx.Writer.Header().Set("Content-Type", mimeTypes[meta.Coding])
 	ctx.Writer.WriteHeader(http.StatusOK)
 
 	// write response
