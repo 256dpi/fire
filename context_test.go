@@ -11,7 +11,8 @@ import (
 )
 
 func TestContextWith(t *testing.T) {
-	c := context.WithValue(context.Background(), 1, 2)
+	type key int
+	c := context.WithValue(context.Background(), key(1), 2)
 	ctx := &Context{Operation: List}
 	ctx.With(c, func() {
 		assert.True(t, ctx.Context == c)
