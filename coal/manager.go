@@ -271,7 +271,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 	// set sort
 	if len(sort) > 0 {
 		opts.Sort, err = m.trans.Sort(sort)
-		if opts.Sort != nil {
+		if err != nil {
 			return err
 		}
 	}
