@@ -213,7 +213,7 @@ func (t *testListStruct) UnmarshalJSON(bytes []byte) error {
 }
 
 func (t *testListStruct) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-	return BSON.UnmarshalKeyedList(BSONValue(typ, bytes), t, "ID")
+	return BSON.UnmarshalKeyedList(InternalBSONValue(typ, bytes), t, "ID")
 }
 
 func TestCodingUnmarshalKeyedListStructJSON(t *testing.T) {

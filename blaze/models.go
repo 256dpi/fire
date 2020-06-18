@@ -67,7 +67,7 @@ type Links []Link
 
 // UnmarshalBSONValue implements the bson.ValueUnmarshaler interface.
 func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-	return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
+	return stick.BSON.UnmarshalKeyedList(stick.InternalBSONValue(typ, bytes), l, "Ref")
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

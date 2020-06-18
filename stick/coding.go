@@ -24,8 +24,8 @@ const (
 
 var bsonMagic = []byte("STICK")
 
-// BSONValue will return a byte sequence for the encoded bson value.
-func BSONValue(typ bsontype.Type, bytes []byte) []byte {
+// InternalBSONValue will return a byte sequence for an internal BSON value.
+func InternalBSONValue(typ bsontype.Type, bytes []byte) []byte {
 	buf := make([]byte, 0, len(bsonMagic)+1+len(bytes))
 	buf = append(buf, bsonMagic...)
 	buf = append(buf, byte(typ))
@@ -53,10 +53,10 @@ func (c Coding) Marshal(in interface{}) ([]byte, error) {
 			return buf, nil
 		}
 
-		// otherwise encode as value
+		// otherwise encode as internal value
 		typ, buf, err := bson.MarshalValue(in)
 		if err == nil {
-			return BSONValue(typ, buf), nil
+			return InternalBSONValue(typ, buf), nil
 		}
 
 		return nil, xo.W(err)
@@ -148,7 +148,7 @@ func (c Coding) GetKey(field reflect.StructField) string {
 // When using with custom types the type should implement the following methods:
 //
 // 	func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-// 		return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
+// 		return stick.BSON.UnmarshalKeyedList(stick.InternalBSONValue(typ, bytes), l, "Ref")
 // 	}
 //
 // 	func (l *Links) UnmarshalJSON(bytes []byte) error {
