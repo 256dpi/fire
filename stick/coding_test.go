@@ -6,9 +6,68 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 var testCodings = []Coding{JSON, BSON}
+
+func TestCoding(t *testing.T) {
+	for _, coding := range testCodings {
+		/* primitive */
+
+		str, err := coding.Marshal("Hello world!")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, str)
+
+		var wrongStr int
+		err = coding.Unmarshal(str, &wrongStr)
+		assert.Error(t, err)
+
+		var correctStr string
+		err = coding.Unmarshal(str, &correctStr)
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello world!", correctStr)
+
+		/* list */
+
+		list, err := coding.Marshal([]interface{}{"1", true, 2.2})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, list)
+
+		var wrongList map[string]interface{}
+		err = coding.Unmarshal(list, &wrongList)
+		assert.Error(t, err)
+
+		var correctList []interface{}
+		err = coding.Unmarshal(list, &correctList)
+		assert.NoError(t, err)
+		assert.Equal(t, []interface{}{"1", true, 2.2}, correctList)
+
+		/* map */
+
+		object, err := coding.Marshal(map[string]interface{}{
+			"a": "1",
+			"b": true,
+			"c": 2.2,
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, object)
+
+		var wrongObject []interface{}
+		err = coding.Unmarshal(object, &wrongObject)
+		assert.Error(t, err)
+
+		var correctObject map[string]interface{}
+		err = coding.Unmarshal(object, &correctObject)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]interface{}{
+			"a": "1",
+			"b": true,
+			"c": 2.2,
+		}, correctObject)
+	}
+}
 
 func TestCodingTransfer(t *testing.T) {
 	for _, coding := range testCodings {
@@ -153,7 +212,11 @@ func (t *testListStruct) UnmarshalJSON(bytes []byte) error {
 	return JSON.UnmarshalKeyedList(bytes, t, "ID")
 }
 
-func TestCodingUnmarshalKeyedListStruct(t *testing.T) {
+func (t *testListStruct) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+	return BSON.UnmarshalKeyedList(BSONValue(typ, bytes), t, "ID")
+}
+
+func TestCodingUnmarshalKeyedListStructJSON(t *testing.T) {
 	list := testListStruct{
 		{ID: "a", Val: 1},
 		{ID: "b", Val: 2},
@@ -171,6 +234,42 @@ func TestCodingUnmarshalKeyedListStruct(t *testing.T) {
 		{ID: "d", Val: 5},
 		{ID: "a", Val: 1},
 	}, list)
+
+	err = json.Unmarshal([]byte(`[]`), &list)
+	assert.NoError(t, err)
+	assert.Equal(t, testListStruct{}, list)
+
+	err = json.Unmarshal([]byte(`null`), &list)
+	assert.NoError(t, err)
+	assert.Equal(t, testListStruct(nil), list)
+}
+
+func TestCodingUnmarshalKeyedListStructBSON(t *testing.T) {
+	list := testListStruct{
+		{ID: "a", Val: 1},
+		{ID: "b", Val: 2},
+		{ID: "c", Val: 3},
+	}
+
+	err := BSON.Unmarshal(asBSON(bson.A{
+		bson.M{"id": "c", "val": 4},
+		bson.M{"id": "d", "val": 5},
+		bson.M{"id": "a"},
+	}), &list)
+	assert.NoError(t, err)
+	assert.Equal(t, testListStruct{
+		{ID: "c", Val: 4},
+		{ID: "d", Val: 5},
+		{ID: "a", Val: 1},
+	}, list)
+
+	err = BSON.Unmarshal(asBSON(bson.A{}), &list)
+	assert.NoError(t, err)
+	assert.Equal(t, testListStruct{}, list)
+
+	err = BSON.Unmarshal(asBSON(nil), &list)
+	assert.NoError(t, err)
+	assert.Equal(t, testListStruct(nil), list)
 }
 
 func BenchmarkCodingUnmarshalKeyedListStruct(b *testing.B) {
@@ -193,4 +292,13 @@ func BenchmarkCodingUnmarshalKeyedListStruct(b *testing.B) {
 			panic(err)
 		}
 	}
+}
+
+func asBSON(v interface{}) []byte {
+	bytes, err := BSON.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }

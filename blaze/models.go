@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/256dpi/xo"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -64,9 +65,9 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 // Links is a set of links.
 type Links []Link
 
-// UnmarshalBSON implements the bson.Unmarshaler interface.
-func (l *Links) UnmarshalBSON(bytes []byte) error {
-	return stick.BSON.UnmarshalKeyedList(bytes, l, "Ref")
+// UnmarshalBSONValue implements the bson.ValueUnmarshaler interface.
+func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+	return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

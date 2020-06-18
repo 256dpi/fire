@@ -9,6 +9,8 @@ import (
 
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Coding defines an encoding, decoding and transfer scheme.
@@ -20,19 +22,44 @@ const (
 	BSON Coding = "bson"
 )
 
+var bsonMagic = []byte("STICK")
+
+// BSONValue will return a byte sequence for the encoded bson value.
+func BSONValue(typ bsontype.Type, bytes []byte) []byte {
+	buf := make([]byte, 0, len(bsonMagic)+1+len(bytes))
+	buf = append(buf, bsonMagic...)
+	buf = append(buf, byte(typ))
+	return append(buf, bytes...)
+}
+
 // Marshal will encode the specified value into a byte sequence.
+//
+// Note: When marshalling a non document compatible type to BSON the result is a
+// custom byte sequence that can only be unmarshalled by this codec.
 func (c Coding) Marshal(in interface{}) ([]byte, error) {
 	switch c {
 	case JSON:
 		buf, err := json.Marshal(in)
 		return buf, xo.W(err)
 	case BSON:
-		if reflect.TypeOf(in).Kind() == reflect.Slice {
-			_, buf, err := bson.MarshalValue(in)
-			return buf, xo.W(err)
+		// replace nil with null
+		if in == nil {
+			in = primitive.Null{}
 		}
+
+		// encode as document
 		buf, err := bson.Marshal(in)
-		return buf, xo.W(err)
+		if err == nil {
+			return buf, nil
+		}
+
+		// otherwise encode as value
+		typ, buf, err := bson.MarshalValue(in)
+		if err == nil {
+			return BSONValue(typ, buf), nil
+		}
+
+		return nil, xo.W(err)
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))
 	}
@@ -44,10 +71,13 @@ func (c Coding) Unmarshal(in []byte, out interface{}) error {
 	case JSON:
 		return xo.W(json.Unmarshal(in, out))
 	case BSON:
-		if reflect.TypeOf(out).Elem().Kind() == reflect.Slice {
-			raw := bson.RawValue{Value: in, Type: bson.TypeArray}
-			return xo.W(raw.Unmarshal(out))
+		// check if internal value
+		if bytes.HasPrefix(in, bsonMagic) {
+			raw := bson.RawValue{Value: in[len(bsonMagic)+1:], Type: bsontype.Type(in[len(bsonMagic)])}
+			err := raw.Unmarshal(out)
+			return xo.W(err)
 		}
+
 		return xo.W(bson.Unmarshal(in, out))
 	default:
 		panic(fmt.Sprintf("coal: unknown coding %q", c))
@@ -59,17 +89,12 @@ func (c Coding) Unmarshal(in []byte, out interface{}) error {
 func (c Coding) SafeUnmarshal(in []byte, out interface{}) error {
 	switch c {
 	case JSON:
+		// use number mode
 		dec := json.NewDecoder(bytes.NewReader(in))
 		dec.UseNumber()
 		return xo.W(dec.Decode(out))
-	case BSON:
-		if reflect.TypeOf(out).Elem().Kind() == reflect.Slice {
-			raw := bson.RawValue{Value: in, Type: bson.TypeArray}
-			return xo.W(raw.Unmarshal(out))
-		}
-		return xo.W(bson.Unmarshal(in, out))
 	default:
-		panic(fmt.Sprintf("coal: unknown coding %q", c))
+		return c.Unmarshal(in, out)
 	}
 }
 
@@ -119,6 +144,17 @@ func (c Coding) GetKey(field reflect.StructField) string {
 
 // UnmarshalKeyedList will unmarshal a list and match objects by comparing
 // the key in the specified field instead of their position in the list.
+//
+// When using with custom types the type should implement the following methods:
+//
+// 	func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+//		return stick.BSON.UnmarshalKeyedList(stick.BSONValue(typ, bytes), l, "Ref")
+// 	}
+//
+// 	func (l *Links) UnmarshalJSON(bytes []byte) error {
+//		return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
+// 	}
+//
 func (c Coding) UnmarshalKeyedList(data []byte, list interface{}, field string) error {
 	// get existing list
 	existingList := reflect.ValueOf(list).Elem()
@@ -161,6 +197,12 @@ func (c Coding) UnmarshalKeyedList(data []byte, list interface{}, field string) 
 	err := c.SafeUnmarshal(data, &temp)
 	if err != nil {
 		return err
+	}
+
+	// check nil
+	if temp == nil {
+		reflect.ValueOf(list).Elem().Set(reflect.Zero(existingList.Type()))
+		return nil
 	}
 
 	// create new list
