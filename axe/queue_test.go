@@ -260,7 +260,7 @@ func TestQueueCrashed(t *testing.T) {
 		assert.True(t, enqueued)
 
 		<-done
-		assert.Equal(t, io.EOF, <-errs)
+		assert.Equal(t, "EOF", (<-errs).Error())
 
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, "test", model.Name)

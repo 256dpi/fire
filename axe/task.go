@@ -2,6 +2,7 @@ package axe
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -319,20 +320,13 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		Tracer:  tracer,
 	}
 
-	// run handler
-	func() {
-		// trace
+	// call handler
+	err = xo.Catch(func() error {
 		tracer.Push("axe/Task.execute")
 		defer tracer.Pop()
 
-		// recover
-		defer xo.Recover(func(e error) {
-			err = e
-		})
-
-		// call handler
-		err = t.Handler(ctx)
-	}()
+		return t.Handler(ctx)
+	})
 
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job
@@ -341,7 +335,8 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// check error
-	if anError, ok := err.(*Error); ok {
+	var anError *Error
+	if errors.As(err, &anError) {
 		// check retry
 		if anError.Retry {
 			// fail job
