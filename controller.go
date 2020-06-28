@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -1798,6 +1799,13 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 					}
 				}
 			}
+		}
+
+		// sort references
+		for _, refs := range entry {
+			sort.Slice(refs, func(i, j int) bool {
+				return bytes.Compare(refs[i][:], refs[j][:]) < 0
+			})
 		}
 
 		// set references
