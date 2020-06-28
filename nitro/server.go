@@ -134,6 +134,11 @@ func (s *Endpoint) Process(ctx *Context) error {
 		return ctx.Handler.Callback(ctx)
 	})
 	if err != nil {
+		// check if safe error
+		if xo.IsSafe(err) {
+			err = BadRequest(xo.AsSafe(err).Msg, "")
+		}
+
 		// check if rich error
 		anError := AsError(err)
 		if anError != nil {

@@ -42,6 +42,8 @@ func TestRPC(t *testing.T) {
 				panic("crash")
 			} else if proc.Foo == "fail" {
 				return fmt.Errorf("some error")
+			} else if proc.Foo == "bad" {
+				return xo.SF("not good")
 			} else if proc.Foo == "error" {
 				return BadRequest("just bad", "param.foo")
 			}
@@ -120,6 +122,17 @@ func TestRPC(t *testing.T) {
 	}, AsError(err))
 	assert.Equal(t, &procedure{Foo: "fail"}, proc)
 	assert.Equal(t, "some error", (<-errs).Error())
+
+	/* safe errors */
+
+	proc = &procedure{Foo: "bad"}
+	err = client.Call(nil, proc)
+	assert.Equal(t, &Error{
+		Status: 400,
+		Title:  "bad request",
+		Detail: "not good",
+	}, AsError(err))
+	assert.Equal(t, &procedure{Foo: "bad"}, proc)
 
 	/* extended errors */
 
