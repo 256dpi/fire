@@ -130,7 +130,9 @@ func (s *Endpoint) Process(ctx *Context) error {
 	}
 
 	// run callback
-	err = xo.W(ctx.Handler.Callback(ctx))
+	err = xo.Catch(func() error {
+		return ctx.Handler.Callback(ctx)
+	})
 	if err != nil {
 		// check if rich error
 		anError := AsError(err)

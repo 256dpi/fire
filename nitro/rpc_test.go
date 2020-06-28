@@ -38,7 +38,9 @@ func TestRPC(t *testing.T) {
 			proc := ctx.Procedure.(*procedure)
 
 			// check foo
-			if proc.Foo == "fail" {
+			if proc.Foo == "panic" {
+				panic("crash")
+			} else if proc.Foo == "fail" {
 				return fmt.Errorf("some error")
 			} else if proc.Foo == "error" {
 				return BadRequest("just bad", "param.foo")
@@ -96,6 +98,17 @@ func TestRPC(t *testing.T) {
 	err = client.Call(nil, proc)
 	assert.NoError(t, err)
 	assert.Equal(t, &procedure{Foo: "bar"}, proc)
+
+	/* panic */
+
+	proc = &procedure{Foo: "panic"}
+	err = client.Call(nil, proc)
+	assert.Equal(t, &Error{
+		Status: 500,
+		Title:  "internal server error",
+	}, AsError(err))
+	assert.Equal(t, &procedure{Foo: "panic"}, proc)
+	assert.Equal(t, "PANIC: crash", (<-errs).Error())
 
 	/* raw errors */
 
