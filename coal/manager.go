@@ -391,10 +391,14 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	// attach span
 	iter.spans = append(iter.spans, span)
 
-	// enforce validation
-	iter.validate = !Merge(flags).Has(NoValidation)
+	// determine validation
+	validate := !Merge(flags).Has(NoValidation)
 
-	return &ManagedIterator{iter: iter, meta: m.meta}, nil
+	return &ManagedIterator{
+		meta:     m.meta,
+		iterator: iter,
+		validate: validate,
+	}, nil
 }
 
 // Project will return the field of the specified document. It will also return
@@ -1319,15 +1323,16 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 
 // ManagedIterator wraps an iterator to enforce decoding to a model.
 type ManagedIterator struct {
-	meta *Meta
-	iter *Iterator
+	meta     *Meta
+	iterator *Iterator
+	validate bool
 }
 
 // Next will load the next document from the cursor and if available return true.
 // If it returns false the iteration must be stopped due to the cursor being
 // exhausted or an error.
 func (i *ManagedIterator) Next() bool {
-	return i.iter.Next()
+	return i.iterator.Next()
 }
 
 // Decode will decode the loaded document to the specified model.
@@ -1337,18 +1342,32 @@ func (i *ManagedIterator) Decode(model Model) error {
 		return ErrMetaMismatch.Wrap()
 	}
 
-	return i.iter.Decode(model)
+	// decode
+	err := i.iterator.Decode(model)
+	if err != nil {
+		return err
+	}
+
+	// validate if requested
+	if i.validate {
+		err = model.Validate()
+		if err != nil {
+			return xo.W(err)
+		}
+	}
+
+	return nil
 }
 
 // Error returns the first error encountered during iteration. It should always
 // be checked when finished to ensure there have been no errors.
 func (i *ManagedIterator) Error() error {
-	return i.iter.Error()
+	return i.iterator.Error()
 }
 
 // Close will close the underlying cursor. A call to it should be deferred right
 // after obtaining an iterator. Close should be called also if the iterator is
 // still valid but no longer used by the application.
 func (i *ManagedIterator) Close() {
-	i.iter.Close()
+	i.iterator.Close()
 }
