@@ -259,7 +259,7 @@ func (t *Task) enqueuer(queue *Queue) error {
 		job.GetBase().DocID = coal.New()
 
 		// enqueue task
-		_, err := queue.Enqueue(job, delay, isolation)
+		_, err := queue.Enqueue(nil, job, delay, isolation)
 		if err != nil && queue.options.Reporter != nil {
 			// report error
 			queue.options.Reporter(err)

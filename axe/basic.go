@@ -12,7 +12,8 @@ import (
 )
 
 // Enqueue will enqueue the specified job with the provided delay and isolation.
-// It will return whether a job has been enqueued.
+// It will return whether a job has been enqueued. If the context carries a
+// transaction it must be associated with the specified store.
 func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation time.Duration) (bool, error) {
 	// get meta and base
 	meta := GetMeta(job)
@@ -31,6 +32,12 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	span.Tag("delay", delay.String())
 	span.Tag("isolation", isolation.String())
 	defer span.End()
+
+	// check transaction
+	ok, ts := coal.GetTransaction(ctx)
+	if ok && ts != store {
+		return false, xo.F("transaction store does not match queue store")
+	}
 
 	// validate job
 	err := job.Validate()

@@ -40,7 +40,7 @@ func TestQueue(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -104,7 +104,7 @@ func TestQueueDelayed(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 100*time.Millisecond, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 100*time.Millisecond, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -174,7 +174,7 @@ func TestQueueFailed(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -255,7 +255,7 @@ func TestQueueCrashed(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -337,7 +337,7 @@ func TestQueuePanic(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -413,7 +413,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -477,7 +477,7 @@ func TestQueueCancelRetry(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -556,7 +556,7 @@ func TestQueueCancelCrash(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 
@@ -641,7 +641,7 @@ func TestQueueTimeout(t *testing.T) {
 			Data: "Hello!",
 		}
 
-		enqueued, err := queue.Enqueue(&job, 0, 0)
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 		assert.True(t, enqueued)
 

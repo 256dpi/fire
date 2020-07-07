@@ -1,6 +1,7 @@
 package axe
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -109,9 +110,10 @@ func (q *Queue) Add(task *Task) {
 	q.tasks[name] = task
 }
 
-// Enqueue will enqueue a job.
-func (q *Queue) Enqueue(job Job, delay, isolation time.Duration) (bool, error) {
-	return Enqueue(nil, q.options.Store, job, delay, isolation)
+// Enqueue will enqueue a job. If the context carries a transaction it must be
+// associated with the store that is also used by the queue.
+func (q *Queue) Enqueue(ctx context.Context, job Job, delay, isolation time.Duration) (bool, error) {
+	return Enqueue(ctx, q.options.Store, job, delay, isolation)
 }
 
 // Callback is a factory to create callbacks that can be used to enqueue jobs
@@ -121,16 +123,19 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		// get blueprint
 		bp := cb(ctx)
 
-		// check if controller uses same store
-		if q.options.Store == ctx.Controller.Store {
-			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Isolation)
+		// check transaction
+		ok, ts := coal.GetTransaction(ctx)
+
+		// check if transaction store is different
+		if ok && ts != q.options.Store {
+			// enqueue job outside of transaction
+			_, err := q.Enqueue(nil, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
 		} else {
-			// enqueue job using queue store
-			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Isolation)
+			// otherwise enqueue with potential transaction
+			_, err := q.Enqueue(ctx, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
@@ -146,16 +151,19 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		// get blueprint
 		bp := cb(ctx)
 
-		// check if controller uses same store
-		if q.options.Store == ctx.Controller.Store {
-			// enqueue job using context store
-			_, err := Enqueue(ctx, ctx.Store, bp.Job, bp.Delay, bp.Isolation)
+		// check transaction
+		ok, ts := coal.GetTransaction(ctx)
+
+		// check if transaction store is different
+		if ok && ts != q.options.Store {
+			// enqueue job outside of transaction
+			_, err := q.Enqueue(nil, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
 		} else {
-			// enqueue job using queue store
-			_, err := q.Enqueue(bp.Job, bp.Delay, bp.Isolation)
+			// otherwise enqueue with potential transaction
+			_, err := q.Enqueue(ctx, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
 				return err
 			}
