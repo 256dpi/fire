@@ -219,7 +219,7 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 		}
 
 		// call function
-		err = fn(withKey(sc, hasTransaction))
+		err = fn(context.WithValue(sc, hasTransaction, s))
 		if err != nil {
 			_ = sc.AbortTransaction(sc)
 			return xo.W(err)
@@ -255,20 +255,25 @@ type contextKey struct{}
 
 var hasTransaction = contextKey{}
 
-func withKey(ctx context.Context, key interface{}) context.Context {
-	return context.WithValue(ctx, key, true)
-}
-
-func getKey(ctx context.Context, key interface{}) bool {
-	if ctx != nil {
-		ok, _ := ctx.Value(key).(bool)
-		return ok
+// GetTransaction will return whether the context carries a transaction and thes
+// store used to create the transaction.
+func GetTransaction(ctx context.Context) (bool, *Store) {
+	// check context
+	if ctx == nil {
+		return false, nil
 	}
 
-	return false
+	// get value
+	val, ok := ctx.Value(hasTransaction).(*Store)
+	if !ok {
+		return false, nil
+	}
+
+	return true, val
 }
 
 // HasTransaction will return whether the context carries a transaction.
 func HasTransaction(ctx context.Context) bool {
-	return getKey(ctx, hasTransaction)
+	ok, _ := GetTransaction(ctx)
+	return ok
 }

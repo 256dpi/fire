@@ -34,11 +34,29 @@ func TestOpen(t *testing.T) {
 
 func TestStoreT(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
+		assert.False(t, HasTransaction(nil))
+
+		ok, store := GetTransaction(nil)
+		assert.False(t, ok)
+		assert.Nil(t, store)
+
 		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, store := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, store)
+
 			return nil
 		}))
 
 		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, store := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, store)
+
 			return io.EOF
 		}))
 
@@ -47,6 +65,12 @@ func TestStoreT(t *testing.T) {
 		assert.Equal(t, 1, tester.Count(&postModel{}))
 
 		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, store := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, store)
+
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
 				Title: "foo",
@@ -57,6 +81,12 @@ func TestStoreT(t *testing.T) {
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 
 		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, store := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, store)
+
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
 				Title: "bar",
@@ -70,14 +100,4 @@ func TestStoreT(t *testing.T) {
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 	})
-}
-
-func TestKeys(t *testing.T) {
-	ctx := context.Background()
-	assert.False(t, getKey(ctx, hasTransaction))
-	assert.False(t, HasTransaction(ctx))
-
-	ctx = withKey(ctx, hasTransaction)
-	assert.True(t, getKey(ctx, hasTransaction))
-	assert.True(t, HasTransaction(ctx))
 }
