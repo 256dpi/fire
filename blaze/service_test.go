@@ -31,9 +31,8 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Hello World!", buf.String())
 
-	ok, err := svc.Delete(nil, handle)
+	err = svc.Delete(nil, handle)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	err = downloadTo(svc, handle, &buf)
 	assert.Error(t, err)

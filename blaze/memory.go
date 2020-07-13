@@ -93,22 +93,17 @@ func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 }
 
 // Delete implements the Service interface.
-func (m *Memory) Delete(_ context.Context, handle Handle) (bool, error) {
+func (m *Memory) Delete(_ context.Context, handle Handle) error {
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
-		return false, ErrInvalidHandle.Wrap()
-	}
-
-	// check blob
-	if _, ok := m.Blobs[id]; !ok {
-		return false, ErrNotFound.Wrap()
+		return ErrInvalidHandle.Wrap()
 	}
 
 	// delete blob
 	delete(m.Blobs, id)
 
-	return true, nil
+	return nil
 }
 
 // Cleanup implements the Service interface.

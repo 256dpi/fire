@@ -49,7 +49,7 @@ type Service interface {
 	Download(ctx context.Context, handle Handle) (Download, error)
 
 	// Delete should delete the blob.
-	Delete(ctx context.Context, handle Handle) (bool, error)
+	Delete(ctx context.Context, handle Handle) error
 
 	// Cleanup is called periodically and allows the service to cleanup its
 	// storage until the context is cancelled.

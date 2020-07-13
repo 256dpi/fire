@@ -965,17 +965,15 @@ func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 		}
 
 		// delete blob
-		deleted, err := s.service.Delete(ctx, file.Handle)
+		err = s.service.Delete(ctx, file.Handle)
 		if err != nil {
 			return xo.W(err)
 		}
 
-		// delete file if blob has been deleted
-		if deleted {
-			_, err = s.store.M(&File{}).Delete(ctx, nil, file.ID())
-			if err != nil {
-				return err
-			}
+		// delete file
+		_, err = s.store.M(&File{}).Delete(ctx, nil, file.ID())
+		if err != nil {
+			return err
 		}
 	}
 

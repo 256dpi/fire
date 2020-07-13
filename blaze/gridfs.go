@@ -85,22 +85,20 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 }
 
 // Delete implements the Service interface.
-func (g *GridFS) Delete(ctx context.Context, handle Handle) (bool, error) {
+func (g *GridFS) Delete(ctx context.Context, handle Handle) error {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {
-		return false, ErrInvalidHandle.Wrap()
+		return ErrInvalidHandle.Wrap()
 	}
 
 	// delete file
 	err := g.bucket.Delete(ctx, id)
-	if err == lungo.ErrFileNotFound {
-		return false, ErrNotFound.Wrap()
-	} else if err != nil {
-		return false, xo.W(err)
+	if err != nil && err != lungo.ErrFileNotFound {
+		return xo.W(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 // Cleanup implements the Service interface.
