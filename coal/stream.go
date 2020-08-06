@@ -99,12 +99,11 @@ func (s *Stream) open() error {
 		err := s.tail()
 		if ErrStop.Is(err) {
 			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
-		}
-
-		// emit error
-		err = xo.W(s.receiver(Errored, Z(), nil, err, s.token))
-		if ErrStop.Is(err) {
-			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
+		} else if err != nil {
+			err = xo.W(s.receiver(Errored, Z(), nil, err, s.token))
+			if ErrStop.Is(err) {
+				return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
+			}
 		}
 	}
 }
@@ -197,7 +196,7 @@ func (s *Stream) tail() error {
 		return xo.W(err)
 	}
 
-	return ErrStop.Wrap()
+	return nil
 }
 
 type change struct {
