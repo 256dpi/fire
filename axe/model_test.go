@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func TestAddJobIndexes(t *testing.T) {
+func TestAddModelIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		idx := coal.NewCatalog()
 		AddModelIndexes(idx, time.Hour)
