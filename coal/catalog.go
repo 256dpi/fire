@@ -270,7 +270,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 				if index.Filter != nil {
 					indexedInfo[field] += "◌"
 				} else {
-					if i == len(index.Fields)-1 {
+					if i == 0 {
 						indexedInfo[field] += "●"
 					} else {
 						indexedInfo[field] += "○"
