@@ -291,6 +291,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		// write attributes
 		for _, field := range GetMeta(model).OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
+			typ = dotEscape(typ)
 			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, field.Name, field.Name, typ, indexedInfo[field.Name]))
 		}
 
@@ -375,4 +376,12 @@ func (c *Catalog) VisualizeDOT(title string) string {
 	out.WriteString("}\n")
 
 	return out.String()
+}
+
+func dotEscape(str string) string {
+	str = strings.ReplaceAll(str, "[", "&#91;")
+	str = strings.ReplaceAll(str, "]", "&#93;")
+	str = strings.ReplaceAll(str, "{", "&#123;")
+	str = strings.ReplaceAll(str, "}", "&#125;")
+	return str
 }
