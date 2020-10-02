@@ -58,3 +58,17 @@ func TestMap(t *testing.T) {
 	output2.Data.MustUnmarshal(&ch2, JSON)
 	assert.Equal(t, child{Body: "body"}, ch2)
 }
+
+func TestMapFlat(t *testing.T) {
+	m := Map{
+		"foo": "bar",
+		"bar": Map{
+			"foo": "bar",
+		},
+	}
+
+	assert.Equal(t, Map{
+		"foo":     "bar",
+		"bar_foo": "bar",
+	}, m.Flat("_"))
+}

@@ -38,3 +38,29 @@ func (m *Map) MustMarshal(from interface{}, coding Coding) {
 		panic(err)
 	}
 }
+
+// Flat will return a flattened map by separator.
+func (m Map) Flat(separator string) Map {
+	// prepare
+	ret := Map{}
+
+	// flatten maps
+	for key, value := range m {
+		switch value := value.(type) {
+		case Map:
+			f := value.Flat(separator)
+			for k, v := range f {
+				ret[key+separator+k] = v
+			}
+		case map[string]interface{}:
+			f := Map(value).Flat(separator)
+			for k, v := range f {
+				ret[key+separator+k] = v
+			}
+		default:
+			ret[key] = value
+		}
+	}
+
+	return ret
+}
