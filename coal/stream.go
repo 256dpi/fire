@@ -173,9 +173,15 @@ func (s *Stream) tail() error {
 		// unmarshal document for created and updated events
 		var doc Model
 		if event == Created || event == Updated {
-			// continue if document is unavailable due to a following a delete
-			// or drop event
-			if len(ch.FullDocument) == 0 {
+			// determined if just locked
+			locked := event == Updated &&
+				len(ch.UpdateDescription.RemovedFields) == 0 &&
+				len(ch.UpdateDescription.UpdatedFields) == 1 &&
+				ch.UpdateDescription.UpdatedFields["_lk"] != nil
+
+			// continue if document hast just been locked or is unavailable due
+			// to a following a delete or drop event
+			if locked || len(ch.FullDocument) == 0 {
 				// save token
 				s.token = ch.ResumeToken
 
@@ -215,5 +221,9 @@ type change struct {
 	DocumentKey   struct {
 		ID ID `bson:"_id"`
 	} `bson:"documentKey"`
-	FullDocument bson.Raw `bson:"fullDocument"`
+	FullDocument      bson.Raw `bson:"fullDocument"`
+	UpdateDescription struct {
+		UpdatedFields bson.M   `bson:"updatedFields"`
+		RemovedFields []string `bson:"removedFields"`
+	} `bson:"updateDescription"`
 }

@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"context"
 	"errors"
 	"io"
 	"testing"
@@ -71,6 +72,73 @@ func TestStream(t *testing.T) {
 
 		post.Title = "bar"
 		tester.Replace(post)
+		tester.Delete(post)
+
+		<-done
+
+		stream.Close()
+	})
+}
+
+func TestStreamIgnoreLock(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		time.Sleep(100 * time.Millisecond)
+
+		open := make(chan struct{})
+		done := make(chan struct{})
+
+		i := 0
+		stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
+			i++
+
+			switch i {
+			case 1:
+				assert.Zero(t, id)
+				assert.Nil(t, model)
+				assert.Nil(t, token)
+
+				close(open)
+			case 2:
+				assert.Equal(t, Created, e)
+				assert.NotZero(t, id)
+				assert.NotNil(t, model)
+				assert.NoError(t, err)
+				assert.NotNil(t, token)
+			case 3:
+				assert.Equal(t, Deleted, e)
+				assert.NotZero(t, id)
+				assert.Nil(t, model)
+				assert.NoError(t, err)
+				assert.NotNil(t, token)
+
+				return ErrStop.Wrap()
+			case 4:
+				assert.Equal(t, Stopped, e)
+				assert.Zero(t, id)
+				assert.Nil(t, model)
+				assert.NoError(t, err)
+				assert.NotNil(t, token)
+
+				close(done)
+			default:
+				panic(e)
+			}
+
+			return nil
+		})
+
+		<-open
+
+		post := tester.Insert(&postModel{
+			Title: "foo",
+		}).(*postModel)
+
+		err := tester.Store.T(nil, func(ctx context.Context) error {
+			_, err := tester.Store.M(&postModel{}).Find(ctx, post, post.ID(), true)
+			return err
+		})
+		assert.NoError(t, err)
+
 		tester.Delete(post)
 
 		<-done
