@@ -9,7 +9,7 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	store := MustConnect("mongodb://0.0.0.0/test-fire-coal")
+	store := MustConnect("mongodb://0.0.0.0/test-fire-coal", panicReporter)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
@@ -18,12 +18,12 @@ func TestConnect(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Panics(t, func() {
-		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail")
+		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail", panicReporter)
 	})
 }
 
 func TestOpen(t *testing.T) {
-	store := MustOpen(nil, "test-fire-coal", nil)
+	store := MustOpen(nil, "test-fire-coal", panicReporter)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())

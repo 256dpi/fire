@@ -17,10 +17,6 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-func panicReporter(err error) {
-	panic(err)
-}
-
 func TestIntegration(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		var testPassword = "foo"

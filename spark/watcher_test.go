@@ -16,10 +16,6 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-func panicReporter(err error) {
-	panic(err)
-}
-
 func TestWatcherWebSockets(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		watcher := NewWatcher(panicReporter)

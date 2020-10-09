@@ -9,8 +9,8 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame")
-var lungoStore = coal.MustOpen(nil, "test-fire-flame", nil)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame", panicReporter)
+var lungoStore = coal.MustOpen(nil, "test-fire-flame", panicReporter)
 
 var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
 
@@ -40,4 +40,8 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 	})))
 
 	return router
+}
+
+func panicReporter(err error) {
+	panic(err)
 }

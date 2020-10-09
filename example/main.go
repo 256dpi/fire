@@ -42,7 +42,9 @@ func main() {
 	// create store
 	var store *coal.Store
 	if mongoURI != "" {
-		store = coal.MustConnect(mongoURI)
+		store = coal.MustConnect(mongoURI, func(err error) {
+			panic(err)
+		})
 	} else {
 		store = coal.MustOpen(nil, "example", func(err error) {
 			panic(err)

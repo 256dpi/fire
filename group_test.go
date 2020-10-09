@@ -9,10 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func panicReporter(err error) {
-	panic(err)
-}
-
 func TestGroupAdd(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		group := NewGroup(panicReporter)

@@ -9,8 +9,8 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-blaze")
-var lungoStore = coal.MustOpen(nil, "test-fire-blaze", nil)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-blaze", panicReporter)
+var lungoStore = coal.MustOpen(nil, "test-fire-blaze", panicReporter)
 
 var modelList = []coal.Model{&File{}, &testModel{}}
 
@@ -59,4 +59,8 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
+}
+
+func panicReporter(err error) {
+	panic(err)
 }

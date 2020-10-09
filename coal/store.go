@@ -15,9 +15,9 @@ import (
 )
 
 // MustConnect will call Connect and panic on errors.
-func MustConnect(uri string) *Store {
+func MustConnect(uri string, reporter func(error)) *Store {
 	// connect store
-	store, err := Connect(uri)
+	store, err := Connect(uri, reporter)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func MustConnect(uri string) *Store {
 // fields may return duplicate or missing documents due to the documents moving
 // within the index. For operations involving multiple documents a transaction
 // must be used to ensure atomicity, consistency and isolation.
-func Connect(uri string) (*Store, error) {
+func Connect(uri string, reporter func(error)) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
@@ -60,7 +60,7 @@ func Connect(uri string) (*Store, error) {
 		return nil, xo.W(err)
 	}
 
-	return NewStore(client, defaultDB, nil), nil
+	return NewStore(client, defaultDB, nil, reporter), nil
 }
 
 // MustOpen will call Open and panic on errors.
@@ -92,16 +92,17 @@ func Open(store lungo.Store, defaultDB string, reporter func(error)) (*Store, er
 		return nil, xo.W(err)
 	}
 
-	return NewStore(client, defaultDB, engine), nil
+	return NewStore(client, defaultDB, engine, reporter), nil
 }
 
 // NewStore creates a store that uses the specified client, default database and
 // engine. The engine may be nil if no lungo database is used.
-func NewStore(client lungo.IClient, defaultDB string, engine *lungo.Engine) *Store {
+func NewStore(client lungo.IClient, defaultDB string, engine *lungo.Engine, reporter func(error)) *Store {
 	return &Store{
-		client: client,
-		defDB:  defaultDB,
-		engine: engine,
+		client:   client,
+		defDB:    defaultDB,
+		engine:   engine,
+		reporter: reporter,
 	}
 }
 
@@ -110,6 +111,7 @@ type Store struct {
 	client   lungo.IClient
 	defDB    string
 	engine   *lungo.Engine
+	reporter func(error)
 	colls    sync.Map
 	managers sync.Map
 }

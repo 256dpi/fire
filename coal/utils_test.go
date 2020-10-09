@@ -63,8 +63,8 @@ func (m *polyModel) Validate() error {
 	return nil
 }
 
-var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal")
-var lungoStore = MustOpen(nil, "test-fire-coal", nil)
+var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", panicReporter)
+var lungoStore = MustOpen(nil, "test-fire-coal", panicReporter)
 
 var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &polyModel{}}
 
@@ -80,4 +80,8 @@ func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
+}
+
+func panicReporter(err error) {
+	panic(err)
 }

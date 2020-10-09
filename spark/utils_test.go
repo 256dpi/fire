@@ -15,8 +15,8 @@ type itemModel struct {
 	stick.NoValidation
 }
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark")
-var lungoStore = coal.MustOpen(nil, "test-fire-spark", nil)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark", panicReporter)
+var lungoStore = coal.MustOpen(nil, "test-fire-spark", panicReporter)
 
 var modelList = []coal.Model{&itemModel{}}
 
@@ -32,4 +32,8 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
+}
+
+func panicReporter(err error) {
+	panic(err)
 }
