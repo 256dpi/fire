@@ -99,6 +99,17 @@ func (c *Catalog) FindIndexes(pluralName string) []Index {
 	return c.indexes[pluralName]
 }
 
+// Models returns a list of all registered models.
+func (c *Catalog) Models() []Model {
+	// collect models
+	models := make([]Model, 0, len(c.models))
+	for _, model := range c.models {
+		models = append(models, model)
+	}
+
+	return models
+}
+
 // All returns a list of all registered models.
 func (c *Catalog) All() map[Model][]Index {
 	// prepare map

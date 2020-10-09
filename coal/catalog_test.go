@@ -20,6 +20,7 @@ func TestCatalog(t *testing.T) {
 		c.Add(&postModel{})
 	})
 
+	assert.Equal(t, []Model{m}, c.Models())
 	assert.Equal(t, map[Model][]Index{
 		m: {},
 	}, c.All())
@@ -32,6 +33,7 @@ func TestCatalog(t *testing.T) {
 
 	assert.NotNil(t, c.FindIndexes("posts"))
 
+	assert.Equal(t, []Model{m}, c.Models())
 	assert.Equal(t, map[Model][]Index{
 		m: {
 			{
