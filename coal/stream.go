@@ -173,6 +173,16 @@ func (s *Stream) tail() error {
 		// unmarshal document for created and updated events
 		var doc Model
 		if event == Created || event == Updated {
+			// continue if document is unavailable due to a following a delete
+			// or drop event
+			if len(ch.FullDocument) == 0 {
+				// save token
+				s.token = ch.ResumeToken
+
+				continue
+			}
+
+			// decode document
 			doc = GetMeta(s.model).Make()
 			err = bson.Unmarshal(ch.FullDocument, doc)
 			if err != nil {
