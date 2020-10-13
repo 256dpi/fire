@@ -419,6 +419,24 @@ func newIterator(ctx context.Context, cursor lungo.ICursor, span xo.Span) *Itera
 	}
 }
 
+// All will load all documents from the cursor and add them to the provided list.
+// If the cursor is exhausted or an error occurred the cursor is closed.
+func (i *Iterator) All(list interface{}) error {
+	// decode all documents
+	err := i.cursor.All(i.ctx, list)
+
+	// set counter
+	i.counter = int64(reflect.ValueOf(list).Elem().Len())
+
+	// finish spans
+	for _, span := range i.spans {
+		span.Tag("loaded", i.counter)
+		span.End()
+	}
+
+	return xo.W(err)
+}
+
 // Next will load the next document from the cursor and if available return true.
 // If it returns false the iteration must be stopped due to the cursor being
 // exhausted or an error.
