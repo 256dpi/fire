@@ -3,6 +3,8 @@ package spark
 import (
 	"testing"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -15,8 +17,8 @@ type itemModel struct {
 	stick.NoValidation
 }
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark", panicReporter)
-var lungoStore = coal.MustOpen(nil, "test-fire-spark", panicReporter)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-spark", xo.Panic)
+var lungoStore = coal.MustOpen(nil, "test-fire-spark", xo.Panic)
 
 var modelList = []coal.Model{&itemModel{}}
 
@@ -32,8 +34,4 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func panicReporter(err error) {
-	panic(err)
 }

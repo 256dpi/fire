@@ -4,13 +4,15 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame", panicReporter)
-var lungoStore = coal.MustOpen(nil, "test-fire-flame", panicReporter)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-flame", xo.Panic)
+var lungoStore = coal.MustOpen(nil, "test-fire-flame", xo.Panic)
 
 var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
 
@@ -40,8 +42,4 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 	})))
 
 	return router
-}
-
-func panicReporter(err error) {
-	panic(err)
 }

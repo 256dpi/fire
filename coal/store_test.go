@@ -5,11 +5,12 @@ import (
 	"io"
 	"testing"
 
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
-	store := MustConnect("mongodb://0.0.0.0/test-fire-coal", panicReporter)
+	store := MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
@@ -18,12 +19,12 @@ func TestConnect(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Panics(t, func() {
-		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail", panicReporter)
+		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail", xo.Panic)
 	})
 }
 
 func TestOpen(t *testing.T) {
-	store := MustOpen(nil, "test-fire-coal", panicReporter)
+	store := MustOpen(nil, "test-fire-coal", xo.Panic)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())

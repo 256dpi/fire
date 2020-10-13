@@ -18,7 +18,7 @@ func TestQueue(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -82,7 +82,7 @@ func TestQueueDelayed(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -146,7 +146,7 @@ func TestQueueFailed(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -393,7 +393,7 @@ func TestQueueCancelNoRetry(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -456,7 +456,7 @@ func TestQueueCancelRetry(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -699,7 +699,7 @@ func TestQueueExisting(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{
@@ -755,7 +755,7 @@ func TestQueuePeriodically(t *testing.T) {
 
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: panicReporter,
+			Reporter: xo.Panic,
 		})
 
 		queue.Add(&Task{

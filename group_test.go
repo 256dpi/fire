@@ -11,7 +11,7 @@ import (
 
 func TestGroupAdd(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		group := NewGroup(panicReporter)
+		group := NewGroup(xo.Panic)
 
 		group.Add(&Controller{
 			Model: &postModel{},
@@ -34,7 +34,7 @@ func TestGroupAdd(t *testing.T) {
 
 func TestGroupEndpointMissingResource(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		tester.Handler = NewGroup(panicReporter).Endpoint("api")
+		tester.Handler = NewGroup(xo.Panic).Endpoint("api")
 
 		tester.Request("GET", "api/", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
@@ -119,7 +119,7 @@ func TestGroupPanic(t *testing.T) {
 
 func TestGroupAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		group := NewGroup(panicReporter)
+		group := NewGroup(xo.Panic)
 
 		group.Handle("foo", &GroupAction{
 			Authorizers: L{

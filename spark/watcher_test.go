@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 
@@ -18,7 +19,7 @@ import (
 
 func TestWatcherWebSockets(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		watcher := NewWatcher(panicReporter)
+		watcher := NewWatcher(xo.Panic)
 		watcher.Add(&Stream{
 			Model: &itemModel{},
 			Store: tester.Store,
@@ -108,7 +109,7 @@ func TestWatcherWebSockets(t *testing.T) {
 
 func TestWatcherSSE(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		watcher := NewWatcher(panicReporter)
+		watcher := NewWatcher(xo.Panic)
 		watcher.Add(&Stream{
 			Model: &itemModel{},
 			Store: tester.Store,

@@ -3,14 +3,16 @@ package blaze
 import (
 	"testing"
 
+	"github.com/256dpi/xo"
+
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-blaze", panicReporter)
-var lungoStore = coal.MustOpen(nil, "test-fire-blaze", panicReporter)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-blaze", xo.Panic)
+var lungoStore = coal.MustOpen(nil, "test-fire-blaze", xo.Panic)
 
 var modelList = []coal.Model{&File{}, &testModel{}}
 
@@ -59,8 +61,4 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func panicReporter(err error) {
-	panic(err)
 }

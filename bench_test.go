@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/256dpi/serve"
+	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -16,7 +17,7 @@ const benchListItems = 20
 
 // TODO: Increase concurrency.
 
-var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal?maxPoolSize=100", panicReporter)
+var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal?maxPoolSize=100", xo.Panic)
 
 var benchThrottle = 100
 

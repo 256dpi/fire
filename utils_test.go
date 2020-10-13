@@ -71,8 +71,8 @@ type barModel struct {
 	stick.NoValidation
 }
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire", panicReporter)
-var lungoStore = coal.MustOpen(nil, "test-fire", panicReporter)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire", xo.Panic)
+var lungoStore = coal.MustOpen(nil, "test-fire", xo.Panic)
 
 var modelList = []coal.Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}, &barModel{}}
 
@@ -88,8 +88,4 @@ func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func panicReporter(err error) {
-	panic(err)
 }
