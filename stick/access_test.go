@@ -10,14 +10,12 @@ import (
 type accessible struct {
 	String    string
 	OptString *string
-}
-
-func (a *accessible) GetAccessor(v interface{}) *Accessor {
-	return BuildAccessor(v)
+	BasicAccess
 }
 
 func TestBuildAccessor(t *testing.T) {
-	accessor := BuildAccessor(accessible{})
+	acc := &accessible{}
+
 	assert.Equal(t, &Accessor{
 		Name: "stick.accessible",
 		Fields: map[string]*Field{
@@ -30,74 +28,82 @@ func TestBuildAccessor(t *testing.T) {
 				Type:  reflect.PtrTo(reflect.TypeOf("")),
 			},
 		},
-	}, accessor)
+	}, acc.GetAccessor(acc))
 }
 
 func TestGet(t *testing.T) {
-	post := &accessible{}
+	acc := &accessible{}
 
-	value, ok := Get(post, "String")
+	value, ok := Get(acc, "String")
 	assert.Equal(t, "", value)
 	assert.True(t, ok)
 
-	post.String = "hello"
+	acc.String = "hello"
 
-	value, ok = Get(post, "String")
+	value, ok = Get(acc, "String")
 	assert.Equal(t, "hello", value)
 	assert.True(t, ok)
 
-	value, ok = Get(post, "missing")
+	value, ok = Get(acc, "missing")
 	assert.Nil(t, value)
 	assert.False(t, ok)
 }
 
 func TestMustGet(t *testing.T) {
-	post := &accessible{}
-	assert.Equal(t, "", MustGet(post, "String"))
+	acc := &accessible{}
+	assert.Equal(t, "", MustGet(acc, "String"))
 
-	post.String = "hello"
-	assert.Equal(t, "hello", MustGet(post, "String"))
+	acc.String = "hello"
+	assert.Equal(t, "hello", MustGet(acc, "String"))
 
 	assert.PanicsWithValue(t, `stick: could not get field "missing" on "stick.accessible"`, func() {
-		MustGet(post, "missing")
+		MustGet(acc, "missing")
 	})
 }
 
 func TestSet(t *testing.T) {
-	post := &accessible{}
+	acc := &accessible{}
 
-	ok := Set(post, "String", "3")
+	ok := Set(acc, "String", "3")
 	assert.True(t, ok)
-	assert.Equal(t, "3", post.String)
+	assert.Equal(t, "3", acc.String)
 
-	ok = Set(post, "missing", "-")
+	ok = Set(acc, "missing", "-")
 	assert.False(t, ok)
 
-	ok = Set(post, "String", 1)
+	ok = Set(acc, "String", 1)
 	assert.False(t, ok)
 }
 
 func TestSetNil(t *testing.T) {
-	post := &accessible{}
+	acc := &accessible{}
 
-	ok := Set(post, "OptString", nil)
+	ok := Set(acc, "OptString", nil)
 	assert.True(t, ok)
 
-	ok = Set(post, "OptString", (*string)(nil))
+	ok = Set(acc, "OptString", (*string)(nil))
 	assert.True(t, ok)
 }
 
 func TestMustSet(t *testing.T) {
-	post := &accessible{}
+	acc := &accessible{}
 
-	MustSet(post, "String", "3")
-	assert.Equal(t, "3", post.String)
+	MustSet(acc, "String", "3")
+	assert.Equal(t, "3", acc.String)
 
 	assert.PanicsWithValue(t, `stick: could not set "missing" on "stick.accessible"`, func() {
-		MustSet(post, "missing", "-")
+		MustSet(acc, "missing", "-")
 	})
 
 	assert.PanicsWithValue(t, `stick: could not set "String" on "stick.accessible"`, func() {
-		MustSet(post, "String", 1)
+		MustSet(acc, "String", 1)
 	})
+}
+
+func BenchmarkBuildAccessor(b *testing.B) {
+	acc := &accessible{}
+
+	for i := 0; i < b.N; i++ {
+		BuildAccessor(acc)
+	}
 }

@@ -3,6 +3,7 @@ package stick
 import (
 	"fmt"
 	"reflect"
+	"sync"
 )
 
 // Field is dynamically accessible field.
@@ -22,15 +23,45 @@ type Accessible interface {
 	GetAccessor(interface{}) *Accessor
 }
 
+// GetAccessor is a short-hand to retrieve the accessor of an accessible.
+func GetAccessor(acc Accessible) *Accessor {
+	return acc.GetAccessor(acc)
+}
+
+var accessMutex sync.Mutex
+var accessCache = map[reflect.Type]*Accessor{}
+
+// BasicAccess may be embedded in a struct to provide basic accessibility.
+type BasicAccess struct{}
+
+// GetAccessor implements the Accessible interface.
+func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
+	// acquire mutex
+	accessMutex.Lock()
+	defer accessMutex.Unlock()
+
+	// get type
+	typ := GetType(v)
+
+	// check if accessor has already been cached
+	accessor, ok := accessCache[typ]
+	if ok {
+		return accessor
+	}
+
+	// build accessor
+	accessor = BuildAccessor(v, "BasicAccess")
+
+	// cache accessor
+	accessCache[typ] = accessor
+
+	return accessor
+}
+
 // BuildAccessor will build an accessor for the provided type.
 func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	// get type
-	typ := reflect.TypeOf(v)
-
-	// unwrap pointer
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
+	typ := GetType(v)
 
 	// prepare accessor
 	accessor := &Accessor{
@@ -38,7 +69,6 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 		Fields: map[string]*Field{},
 	}
 
-	// add fields
 	// iterate through all fields
 	for i := 0; i < typ.NumField(); i++ {
 		// get field
@@ -46,8 +76,8 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 
 		// check field
 		var skip bool
-		for _, ign := range ignore {
-			if ign == field.Name {
+		for _, item := range ignore {
+			if item == field.Name {
 				skip = true
 			}
 		}
@@ -69,7 +99,7 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 // and whether the field was found at all.
 func Get(acc Accessible, name string) (interface{}, bool) {
 	// find field
-	field := acc.GetAccessor(acc).Fields[name]
+	field := GetAccessor(acc).Fields[name]
 	if field == nil {
 		return nil, false
 	}
@@ -84,7 +114,7 @@ func Get(acc Accessible, name string) (interface{}, bool) {
 // and return whether the field has been found and the value has been set.
 func Set(acc Accessible, name string, value interface{}) bool {
 	// find field
-	field := acc.GetAccessor(acc).Fields[name]
+	field := GetAccessor(acc).Fields[name]
 	if field == nil {
 		return false
 	}
@@ -116,7 +146,7 @@ func MustGet(acc Accessible, name string) interface{} {
 	// get value
 	value, ok := Get(acc, name)
 	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, acc.GetAccessor(acc).Name))
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
 	}
 
 	return value
@@ -127,6 +157,6 @@ func MustSet(acc Accessible, name string, value interface{}) {
 	// get value
 	ok := Set(acc, name, value)
 	if !ok {
-		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, acc.GetAccessor(acc).Name))
+		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, GetAccessor(acc).Name))
 	}
 }
