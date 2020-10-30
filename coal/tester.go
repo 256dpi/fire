@@ -38,17 +38,6 @@ func NewTester(store *Store, models ...Model) *Tester {
 	return tester
 }
 
-// Insert will insert the specified model.
-func (t *Tester) Insert(model Model) Model {
-	// insert to collection
-	err := t.Store.M(model).Insert(nil, model)
-	if err != nil {
-		panic(err)
-	}
-
-	return model
-}
-
 // FindAll will return all saved models.
 func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 	// prepare query
@@ -117,6 +106,17 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 		panic(err)
 	} else if !found {
 		panic("not found")
+	}
+
+	return model
+}
+
+// Insert will insert the specified model.
+func (t *Tester) Insert(model Model) Model {
+	// insert to collection
+	err := t.Store.M(model).Insert(nil, model)
+	if err != nil {
+		panic(err)
 	}
 
 	return model
