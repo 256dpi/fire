@@ -103,6 +103,12 @@ func (t *Tester) Count(model Model, query ...bson.M) int {
 	return int(n)
 }
 
+// Refresh will refresh the provided model.
+func (t *Tester) Refresh(model Model) {
+	// refresh model
+	t.Fetch(model, model.ID())
+}
+
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id ID) Model {
 	// find model
