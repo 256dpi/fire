@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -13,8 +14,13 @@ type Tester struct {
 	Models []Model
 }
 
-// NewTester returns a new tester.
+// NewTester returns a new tester. If no store is provided one will be created.
 func NewTester(store *Store, models ...Model) *Tester {
+	// ensure store
+	if store == nil {
+		store = MustOpen(nil, "test", xo.Panic)
+	}
+
 	// create tester
 	tester := &Tester{
 		Store:  store,
