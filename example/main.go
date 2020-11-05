@@ -28,10 +28,8 @@ var mainKey = getEnv("MAIN_KEY", "main-key")
 var subKey = getEnv("SUB_KEY", "sub-key")
 
 func main() {
-	// install xo
-	xo.Debug(xo.Config{
-		NoTraceAttributes: true,
-	})
+	// enable xo
+	xo.Debug(xo.DebugConfig{})
 
 	// visualize models
 	err := catalog.Visualize("Example", "models.pdf")
