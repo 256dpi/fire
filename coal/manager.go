@@ -295,7 +295,13 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 	}
 
 	// find documents
-	err = m.coll.FindAll(ctx, list, filterDoc, opts)
+	iter, err := m.coll.Find(ctx, filterDoc, opts)
+	if err != nil {
+		return err
+	}
+
+	// decode all
+	err = iter.All(list)
 	if err != nil {
 		return err
 	}

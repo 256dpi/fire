@@ -53,34 +53,6 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 	return iterator, nil
 }
 
-// AggregateAll wraps the native Aggregate collection method and decodes all
-// documents to the provided slice.
-func (c *Collection) AggregateAll(ctx context.Context, list interface{}, pipeline interface{}, opts ...*options.AggregateOptions) error {
-	// trace
-	ctx, span := xo.Trace(ctx, "coal/Collection.AggregateAll")
-	span.Tag("collection", c.coll.Name())
-	span.Tag("pipeline", pipeline)
-	defer span.End()
-
-	// aggregate
-	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
-	if err != nil {
-		return xo.W(err)
-	}
-
-	// decode all documents
-	err = csr.All(ctx, list)
-	if err != nil {
-		_ = csr.Close(ctx)
-		return xo.W(err)
-	}
-
-	// log result
-	span.Tag("loaded", reflect.ValueOf(list).Elem().Len())
-
-	return nil
-}
-
 // BulkWrite wraps the native BulkWrite collection method.
 func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// trace
@@ -222,34 +194,6 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	iterator := newIterator(ctx, csr, span)
 
 	return iterator, nil
-}
-
-// FindAll wraps the native Find collection method and decodes all documents to
-// the provided slice.
-func (c *Collection) FindAll(ctx context.Context, list interface{}, filter interface{}, opts ...*options.FindOptions) error {
-	// trace
-	ctx, span := xo.Trace(ctx, "coal/Collection.FindAll")
-	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
-	defer span.End()
-
-	// find
-	csr, err := c.coll.Find(ctx, filter, opts...)
-	if err != nil {
-		return xo.W(err)
-	}
-
-	// decode all documents
-	err = csr.All(ctx, list)
-	if err != nil {
-		_ = csr.Close(ctx)
-		return xo.W(err)
-	}
-
-	// log result
-	span.Tag("loaded", reflect.ValueOf(list).Elem().Len())
-
-	return nil
 }
 
 // FindOne wraps the native FindOne collection method.
