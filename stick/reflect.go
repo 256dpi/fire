@@ -14,3 +14,21 @@ func Unwrap(v interface{}) interface{} {
 
 	return val.Interface()
 }
+
+// IsNil returns whether the provided value is nil while correctly handling typed
+// nils.
+func IsNil(v interface{}) bool {
+	// check plain nil
+	if v == nil {
+		return true
+	}
+
+	// check typed nils
+	value := reflect.ValueOf(v)
+	switch value.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+		return value.IsNil()
+	}
+
+	return false
+}
