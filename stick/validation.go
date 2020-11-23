@@ -200,6 +200,7 @@ func (c *RuleContext) Unwrap() bool {
 	return unwrapped
 }
 
+// Guard will run the provided function if a concrete value can be unwrapped.
 func (c *RuleContext) Guard(fn func() error) error {
 	// check nil
 	if c.IsNil() {
@@ -344,14 +345,15 @@ func IsMaxLen(max int) Rule {
 func IsMinInt(min int64) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
-			// get number
-			n, ok := GetInt(ctx.IValue)
-			if !ok {
+			// check value
+			switch ctx.RValue.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			default:
 				panic("stick: expected int value")
 			}
 
 			// check min
-			if n < min {
+			if ctx.RValue.Int() < min {
 				return xo.SF("too small")
 			}
 
@@ -364,14 +366,15 @@ func IsMinInt(min int64) Rule {
 func IsMaxInt(max int64) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
-			// get number
-			n, ok := GetInt(ctx.IValue)
-			if !ok {
+			// check value
+			switch ctx.RValue.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			default:
 				panic("stick: expected int value")
 			}
 
 			// check min
-			if n > max {
+			if ctx.RValue.Int() > max {
 				return xo.SF("too big")
 			}
 
@@ -384,14 +387,15 @@ func IsMaxInt(max int64) Rule {
 func IsMinUint(min uint64) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
-			// get number
-			n, ok := GetUint(ctx.IValue)
-			if !ok {
+			// check value
+			switch ctx.RValue.Kind() {
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			default:
 				panic("stick: expected uint value")
 			}
 
 			// check range
-			if n < min {
+			if ctx.RValue.Uint() < min {
 				return xo.SF("too small")
 			}
 
@@ -404,14 +408,15 @@ func IsMinUint(min uint64) Rule {
 func IsMaxUint(max uint64) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
-			// get number
-			n, ok := GetUint(ctx.IValue)
-			if !ok {
+			// check value
+			switch ctx.RValue.Kind() {
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			default:
 				panic("stick: expected uint value")
 			}
 
 			// check max
-			if n > max {
+			if ctx.RValue.Uint() > max {
 				return xo.SF("too big")
 			}
 
@@ -423,14 +428,15 @@ func IsMaxUint(max uint64) Rule {
 // IsMinFloat checks whether the value satisfies the provided minimum.
 func IsMinFloat(min float64) Rule {
 	return func(ctx RuleContext) error {
-		// get number
-		n, ok := GetFloat(ctx.IValue)
-		if !ok {
+		// check value
+		switch ctx.RValue.Kind() {
+		case reflect.Float32, reflect.Float64:
+		default:
 			panic("stick: expected float value")
 		}
 
 		// check min
-		if n < min {
+		if ctx.RValue.Float() < min {
 			return xo.SF("too small")
 		}
 
@@ -442,14 +448,15 @@ func IsMinFloat(min float64) Rule {
 func IsMaxFloat(max float64) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
-			// get number
-			n, ok := GetFloat(ctx.IValue)
-			if !ok {
+			// check value
+			switch ctx.RValue.Kind() {
+			case reflect.Float32, reflect.Float64:
+			default:
 				panic("stick: expected float value")
 			}
 
 			// check max
-			if n > max {
+			if ctx.RValue.Float() > max {
 				return xo.SF("too big")
 			}
 
@@ -463,8 +470,13 @@ func IsMaxFloat(max float64) Rule {
 func IsFormat(fn func(string) bool) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
+			// check value
+			if ctx.RValue.Kind() != reflect.String {
+				panic("stick: expected string value")
+			}
+
 			// get string
-			str := ctx.IValue.(string)
+			str := ctx.RValue.String()
 
 			// check zero
 			if str == "" {
