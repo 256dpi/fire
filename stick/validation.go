@@ -81,21 +81,33 @@ func (v *Validator) Nest(field string, fn func()) {
 // If the value is optional it will be skipped if nil or unwrapped if present.
 func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// get value
-	val := MustGet(v.obj, name)
+	value := MustGet(v.obj, name)
+
+	// prepare context
+	ctx := RuleContext{
+		IValue: value,
+		RValue: reflect.ValueOf(value),
+	}
 
 	// handle optionals
 	if optional {
 		// skip if nil
-		if IsNil(val) {
+		if ctx.IsNil() {
 			return
 		}
 
 		// otherwise unwrap pointer once
-		val = reflect.ValueOf(val).Elem().Interface()
+		ctx.RValue = ctx.RValue.Elem()
+		ctx.IValue = ctx.RValue.Interface()
 	}
 
 	// execute rules
-	v.execute(name, val, rules...)
+	for _, rule := range rules {
+		err := rule(ctx)
+		if err != nil {
+			v.Report(name, err)
+		}
+	}
 }
 
 // Items will validate each item of the slice at the named field using the
@@ -107,19 +119,24 @@ func (v *Validator) Items(name string, rules ...Rule) {
 	// execute rules for each item
 	v.Nest(name, func() {
 		for i := 0; i < slice.Len(); i++ {
-			v.execute(strconv.Itoa(i), slice.Index(i).Interface(), rules...)
+			// get item
+			item := slice.Index(i)
+
+			// prepare context
+			ctx := RuleContext{
+				IValue: item.Interface(),
+				RValue: item,
+			}
+
+			// execute rules
+			for _, rule := range rules {
+				err := rule(ctx)
+				if err != nil {
+					v.Report(strconv.Itoa(i), err)
+				}
+			}
 		}
 	})
-}
-
-func (v *Validator) execute(name string, val interface{}, rules ...Rule) {
-	// evaluate all rules
-	for _, rule := range rules {
-		err := rule(val)
-		if err != nil {
-			v.Report(name, err)
-		}
-	}
 }
 
 // Report will report a validation error.
@@ -146,12 +163,61 @@ func (v *Validator) Error() error {
 	return nil
 }
 
+// RuleContext carries the to be checked value.
+type RuleContext struct {
+	IValue interface{}
+	RValue reflect.Value
+}
+
+// IsNil returns whether the value is nil.
+func (c *RuleContext) IsNil() bool {
+	// check plain nil
+	if c.IValue == nil {
+		return true
+	}
+
+	// check typed nils
+	switch c.RValue.Kind() {
+	case reflect.Ptr, reflect.Slice, reflect.Map:
+		return c.RValue.IsNil()
+	}
+
+	return false
+}
+
+// Unwrap will unwrap all pointers.
+func (c *RuleContext) Unwrap() bool {
+	// unwrap pointers
+	var unwrapped bool
+	for c.RValue.Kind() == reflect.Ptr {
+		c.RValue = c.RValue.Elem()
+		unwrapped = true
+	}
+	if unwrapped {
+		c.IValue = c.RValue.Interface()
+	}
+
+	return unwrapped
+}
+
+func (c *RuleContext) Guard(fn func() error) error {
+	// check nil
+	if c.IsNil() {
+		return nil
+	}
+
+	// unwrap
+	c.Unwrap()
+
+	return fn()
+}
+
 // Rule is a single validation rule.
-type Rule func(val interface{}) error
+type Rule func(ctx RuleContext) error
 
 // Use will run the provided validation function.
 func Use(fn func() error) Rule {
-	return func(val interface{}) error {
+	return func(RuleContext) error {
 		return fn()
 	}
 }
@@ -159,22 +225,17 @@ func Use(fn func() error) Rule {
 // IsNotZero will check if the provided value is not zero. It will determine
 // zeroness using IsZero() or Zero() if implemented and default back to reflect.
 // A nil pointer, slice, array or maps is also considered as zero.
-func IsNotZero(val interface{}) error {
+func IsNotZero(ctx RuleContext) error {
 	// check nil
-	if IsNil(val) {
+	if ctx.IsNil() {
 		return xo.SF("zero")
 	}
-
-	// TODO: Unwrap pointer?
-
-	// get value
-	value := reflect.ValueOf(val)
 
 	// check using IsValid method
 	type isZero interface {
 		IsZero() bool
 	}
-	if v, ok := val.(isZero); ok {
+	if v, ok := ctx.IValue.(isZero); ok {
 		// check zeroness
 		if v.IsZero() {
 			return xo.SF("zero")
@@ -187,7 +248,7 @@ func IsNotZero(val interface{}) error {
 	type zero interface {
 		Zero() bool
 	}
-	if v, ok := val.(zero); ok {
+	if v, ok := ctx.IValue.(zero); ok {
 		// check zeroness
 		if v.Zero() {
 			return xo.SF("zero")
@@ -197,7 +258,7 @@ func IsNotZero(val interface{}) error {
 	}
 
 	// check zeroness
-	if value.IsZero() {
+	if ctx.RValue.IsZero() {
 		return xo.SF("zero")
 	}
 
@@ -206,34 +267,29 @@ func IsNotZero(val interface{}) error {
 
 // IsNotEmpty will check if the provided value is not empty. Emptiness can only
 // be checked for strings, arrays, slices and maps.
-func IsNotEmpty(val interface{}) error {
-	// TODO: Unwrap pointer?
-
-	// get value
-	value := reflect.ValueOf(val)
-
-	// check array, slice, map and string length
-	switch value.Kind() {
-	case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
-		if value.Len() == 0 {
-			return xo.SF("empty")
+func IsNotEmpty(ctx RuleContext) error {
+	return ctx.Guard(func() error {
+		// check array, slice, map and string length
+		switch ctx.RValue.Kind() {
+		case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
+			if ctx.RValue.Len() == 0 {
+				return xo.SF("empty")
+			}
 		}
-	}
 
-	// TODO: Check if string contains only whitespace?
+		// TODO: Check if string contains only whitespace?
 
-	return nil
+		return nil
+	})
 }
 
 // IsValid will check if the value is valid by calling IsValid() or Valid().
-func IsValid(val interface{}) error {
-	// TODO: Unwrap pointer?
-
+func IsValid(ctx RuleContext) error {
 	// check using IsValid method
 	type isValid interface {
 		IsValid() bool
 	}
-	if v, ok := val.(isValid); ok {
+	if v, ok := ctx.IValue.(isValid); ok {
 		// check validity
 		if !v.IsValid() {
 			return xo.SF("invalid")
@@ -246,7 +302,7 @@ func IsValid(val interface{}) error {
 	type valid interface {
 		Valid() bool
 	}
-	if v, ok := val.(valid); ok {
+	if v, ok := ctx.IValue.(valid); ok {
 		// check validity
 		if !v.Valid() {
 			return xo.SF("invalid")
@@ -255,28 +311,28 @@ func IsValid(val interface{}) error {
 		return nil
 	}
 
-	panic(fmt.Sprintf("stick: cannot check validity of %T", val))
+	panic(fmt.Sprintf("stick: cannot check validity of %T", ctx.IValue))
 }
-
-// TODO: Unwrap pointers?
 
 // IsMinLen checks whether the value has at least the specified length.
 func IsMinLen(min int) Rule {
-	return func(val interface{}) error {
-		// check length
-		if reflect.ValueOf(val).Len() < min {
-			return xo.SF("too short")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// check length
+			if ctx.RValue.Len() < min {
+				return xo.SF("too short")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsMaxLen checks whether the value does not exceed the specified length.
 func IsMaxLen(max int) Rule {
-	return func(val interface{}) error {
+	return func(ctx RuleContext) error {
 		// check length
-		if reflect.ValueOf(val).Len() > max {
+		if ctx.RValue.Len() > max {
 			return xo.SF("too long")
 		}
 
@@ -286,81 +342,89 @@ func IsMaxLen(max int) Rule {
 
 // IsMinInt checks whether the value satisfies the provided minimum.
 func IsMinInt(min int64) Rule {
-	return func(val interface{}) error {
-		// get number
-		n, ok := GetInt(val)
-		if !ok {
-			panic("stick: expected int value")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get number
+			n, ok := GetInt(ctx.IValue)
+			if !ok {
+				panic("stick: expected int value")
+			}
 
-		// check min
-		if n < min {
-			return xo.SF("too small")
-		}
+			// check min
+			if n < min {
+				return xo.SF("too small")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsMaxInt checks whether the value satisfies the provided maximum.
 func IsMaxInt(max int64) Rule {
-	return func(val interface{}) error {
-		// get number
-		n, ok := GetInt(val)
-		if !ok {
-			panic("stick: expected int value")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get number
+			n, ok := GetInt(ctx.IValue)
+			if !ok {
+				panic("stick: expected int value")
+			}
 
-		// check min
-		if n > max {
-			return xo.SF("too big")
-		}
+			// check min
+			if n > max {
+				return xo.SF("too big")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsMinUint checks whether the value satisfies the provided minimum.
 func IsMinUint(min uint64) Rule {
-	return func(val interface{}) error {
-		// get number
-		n, ok := GetUint(val)
-		if !ok {
-			panic("stick: expected uint value")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get number
+			n, ok := GetUint(ctx.IValue)
+			if !ok {
+				panic("stick: expected uint value")
+			}
 
-		// check range
-		if n < min {
-			return xo.SF("too small")
-		}
+			// check range
+			if n < min {
+				return xo.SF("too small")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsMaxUint checks whether the value satisfies the provided maximum.
 func IsMaxUint(max uint64) Rule {
-	return func(val interface{}) error {
-		// get number
-		n, ok := GetUint(val)
-		if !ok {
-			panic("stick: expected uint value")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get number
+			n, ok := GetUint(ctx.IValue)
+			if !ok {
+				panic("stick: expected uint value")
+			}
 
-		// check max
-		if n > max {
-			return xo.SF("too big")
-		}
+			// check max
+			if n > max {
+				return xo.SF("too big")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsMinFloat checks whether the value satisfies the provided minimum.
 func IsMinFloat(min float64) Rule {
-	return func(val interface{}) error {
+	return func(ctx RuleContext) error {
 		// get number
-		n, ok := GetFloat(val)
+		n, ok := GetFloat(ctx.IValue)
 		if !ok {
 			panic("stick: expected float value")
 		}
@@ -376,42 +440,44 @@ func IsMinFloat(min float64) Rule {
 
 // IsMaxFloat checks whether the value satisfies the provided maximum.
 func IsMaxFloat(max float64) Rule {
-	return func(val interface{}) error {
-		// get number
-		n, ok := GetFloat(val)
-		if !ok {
-			panic("stick: expected float value")
-		}
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get number
+			n, ok := GetFloat(ctx.IValue)
+			if !ok {
+				panic("stick: expected float value")
+			}
 
-		// check max
-		if n > max {
-			return xo.SF("too big")
-		}
+			// check max
+			if n > max {
+				return xo.SF("too big")
+			}
 
-		return nil
+			return nil
+		})
 	}
 }
 
 // IsFormat will check of the value corresponds to the format determined by the
 // provided string format checker.
 func IsFormat(fn func(string) bool) Rule {
-	return func(val interface{}) error {
-		// TODO: Unwrap pointer?
+	return func(ctx RuleContext) error {
+		return ctx.Guard(func() error {
+			// get string
+			str := ctx.IValue.(string)
 
-		// get string
-		str := val.(string)
+			// check zero
+			if str == "" {
+				return nil
+			}
 
-		// check zero
-		if str == "" {
+			// check validity
+			if !fn(str) {
+				return xo.SF("invalid format")
+			}
+
 			return nil
-		}
-
-		// check validity
-		if !fn(str) {
-			return xo.SF("invalid format")
-		}
-
-		return nil
+		})
 	}
 }
 

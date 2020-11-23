@@ -1,6 +1,7 @@
 package stick
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -80,7 +81,12 @@ func TestValidate(t *testing.T) {
 }
 
 func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {
-	err := rule(val)
+	ctx := RuleContext{
+		IValue: val,
+		RValue: reflect.ValueOf(val),
+	}
+
+	err := rule(ctx)
 	if msg == "" {
 		assert.NoError(t, err)
 	} else {
@@ -178,19 +184,19 @@ func TestIsMaxLen(t *testing.T) {
 
 func TestIsMin(t *testing.T) {
 	assert.PanicsWithValue(t, "stick: expected int value", func() {
-		_ = IsMinInt(1)(uint(1))
+		ruleTest(t, uint(1), IsMinInt(1), "")
 	})
 	ruleTest(t, 7, IsMinInt(5), "")
 	ruleTest(t, int16(1), IsMinInt(5), "too small")
 
 	assert.PanicsWithValue(t, "stick: expected uint value", func() {
-		_ = IsMinUint(1)(1)
+		ruleTest(t, 1, IsMinUint(1), "")
 	})
 	ruleTest(t, uint(7), IsMinUint(5), "")
 	ruleTest(t, uint16(1), IsMinUint(5), "too small")
 
 	assert.PanicsWithValue(t, "stick: expected float value", func() {
-		_ = IsMinFloat(1)(1)
+		ruleTest(t, 1, IsMinFloat(1), "")
 	})
 	ruleTest(t, 7., IsMinFloat(5), "")
 	ruleTest(t, float32(1), IsMinFloat(5), "too small")
@@ -198,19 +204,19 @@ func TestIsMin(t *testing.T) {
 
 func TestIsMax(t *testing.T) {
 	assert.PanicsWithValue(t, "stick: expected int value", func() {
-		_ = IsMaxInt(1)(uint(1))
+		ruleTest(t, uint(1), IsMaxInt(1), "")
 	})
 	ruleTest(t, 1, IsMaxInt(5), "")
 	ruleTest(t, int16(7), IsMaxInt(5), "too big")
 
 	assert.PanicsWithValue(t, "stick: expected uint value", func() {
-		_ = IsMaxUint(1)(1)
+		ruleTest(t, 1, IsMaxUint(1), "")
 	})
 	ruleTest(t, uint(1), IsMaxUint(5), "")
 	ruleTest(t, uint16(7), IsMaxUint(5), "too big")
 
 	assert.PanicsWithValue(t, "stick: expected float value", func() {
-		_ = IsMaxFloat(1)(1)
+		ruleTest(t, 1, IsMaxFloat(1), "")
 	})
 	ruleTest(t, 1., IsMaxFloat(5), "")
 	ruleTest(t, float32(7), IsMaxFloat(5), "too big")
@@ -244,6 +250,14 @@ func TestIsFormat(t *testing.T) {
 	ruleTest(t, "", IsValidUTF8, "")
 	ruleTest(t, string([]byte{66, 250}), IsValidUTF8, "invalid format")
 	ruleTest(t, "Ж", IsValidUTF8, "")
+}
+
+func TestRuleContextGuard(t *testing.T) {
+	i1 := 1
+	ruleTest(t, &i1, IsMaxInt(5), "")
+
+	var i2 *int
+	ruleTest(t, i2, IsMaxInt(5), "")
 }
 
 func BenchmarkValidate(b *testing.B) {
