@@ -26,7 +26,7 @@ func IsNil(v interface{}) bool {
 	// check typed nils
 	value := reflect.ValueOf(v)
 	switch value.Kind() {
-	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+	case reflect.Ptr, reflect.Slice, reflect.Map:
 		return value.IsNil()
 	}
 
