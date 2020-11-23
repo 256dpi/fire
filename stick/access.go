@@ -37,7 +37,7 @@ type BasicAccess struct{}
 // GetAccessor implements the Accessible interface.
 func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 	// get type
-	typ := reflect.TypeOf(Unwrap(v))
+	typ := reflect.TypeOf(v).Elem()
 
 	// acquire mutex
 	accessMutex.Lock()
@@ -50,7 +50,7 @@ func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 	}
 
 	// build accessor
-	accessor = BuildAccessor(v, "BasicAccess")
+	accessor = BuildAccessor(v.(Accessible), "BasicAccess")
 
 	// cache accessor
 	accessCache[typ] = accessor
@@ -59,9 +59,9 @@ func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 }
 
 // BuildAccessor will build an accessor for the provided type.
-func BuildAccessor(v interface{}, ignore ...string) *Accessor {
+func BuildAccessor(v Accessible, ignore ...string) *Accessor {
 	// get type
-	typ := reflect.TypeOf(Unwrap(v))
+	typ := reflect.TypeOf(v).Elem()
 
 	// prepare accessor
 	accessor := &Accessor{
