@@ -257,11 +257,8 @@ func isZero(ctx RuleContext) bool {
 		return true
 	}
 
-	// unwrap pointer
-	ctx.Unwrap()
-
-	// check nil again
-	if ctx.IsNil() {
+	// unwrap pointer and check nil again if unwrapped
+	if ctx.Unwrap() && ctx.IsNil() {
 		return true
 	}
 
