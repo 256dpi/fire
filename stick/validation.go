@@ -64,7 +64,7 @@ func Validate(obj Accessible, fn func(v *Validator)) error {
 	// run validator
 	fn(val)
 
-	return val.Error()
+	return xo.SW(val.Error())
 }
 
 // Nest nest validation under the specified field.
