@@ -296,12 +296,13 @@ func TestIsFormat(t *testing.T) {
 	ruleTest(t, "foo", IsVisible, "")
 }
 
-func TestRuleContextGuard(t *testing.T) {
+func TestSubjectUnwrap(t *testing.T) {
 	i1 := 1
 	ruleTest(t, &i1, IsMaxInt(5), "")
 
 	var i2 *int
 	ruleTest(t, i2, IsMaxInt(5), "")
+	ruleTest(t, &i2, IsMaxInt(5), "")
 }
 
 func BenchmarkValidate(b *testing.B) {

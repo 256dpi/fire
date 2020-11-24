@@ -179,7 +179,7 @@ type Subject struct {
 	RValue reflect.Value
 }
 
-// IsNil returns whether the value is nil.
+// IsNil returns true if the value is nil or a typed nil (zero pointer).
 func (s *Subject) IsNil() bool {
 	// check plain nil
 	if s.IValue == nil {
@@ -188,18 +188,23 @@ func (s *Subject) IsNil() bool {
 
 	// check typed nils
 	switch s.RValue.Kind() {
-	case reflect.Ptr, reflect.Slice, reflect.Map:
+	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Interface:
 		return s.RValue.IsNil()
 	}
 
 	return false
 }
 
-// Unwrap will unwrap all pointers.
+// Unwrap will unwrap all pointers and return whether a value is available.
 func (s *Subject) Unwrap() bool {
+	// check nil
+	if s.IsNil() {
+		return false
+	}
+
 	// unwrap pointers
 	var unwrapped bool
-	for s.RValue.Kind() == reflect.Ptr {
+	for s.RValue.Kind() == reflect.Ptr && !s.RValue.IsNil() {
 		s.RValue = s.RValue.Elem()
 		unwrapped = true
 	}
@@ -207,20 +212,7 @@ func (s *Subject) Unwrap() bool {
 		s.IValue = s.RValue.Interface()
 	}
 
-	return unwrapped
-}
-
-// Guard will run the provided function if a concrete value can be unwrapped.
-func (s *Subject) Guard(fn func() error) error {
-	// check nil
-	if s.IsNil() {
-		return nil
-	}
-
-	// unwrap
-	s.Unwrap()
-
-	return fn()
+	return !s.IsNil()
 }
 
 // Rule is a single validation rule.
@@ -258,8 +250,8 @@ func isZero(sub Subject) bool {
 		return true
 	}
 
-	// unwrap pointer and check nil again if unwrapped
-	if sub.Unwrap() && sub.IsNil() {
+	// unwrap
+	if !sub.Unwrap() {
 		return true
 	}
 
@@ -272,8 +264,8 @@ func isZero(sub Subject) bool {
 }
 
 // IsZero will check if the provided value is zero. It will determine zeroness
-// using IsZero() or Zero() if implemented and default back to reflect. A nil
-// pointer, slice, array or map is also considered as zero.
+// using IsZero() or Zero() if implemented. A nil pointer, slice, array or map
+// is also considered as zero.
 func IsZero(sub Subject) error {
 	// check zeroness
 	if !isZero(sub) {
@@ -284,8 +276,8 @@ func IsZero(sub Subject) error {
 }
 
 // IsNotZero will check if the provided value is not zero. It will determine
-// zeroness using IsZero() or Zero() if implemented and default back to reflect.
-// A nil pointer, slice, array or map is also considered as zero.
+// zeroness using IsZero() or Zero() if implemented. A nil pointer, slice, array
+// or map is also considered as zero.
 func IsNotZero(sub Subject) error {
 	// check zeroness
 	if isZero(sub) {
@@ -296,15 +288,12 @@ func IsNotZero(sub Subject) error {
 }
 
 func isEmpty(sub Subject) bool {
-	// check nil
-	if sub.IsNil() {
+	// unwrap
+	if !sub.Unwrap() {
 		return true
 	}
 
-	// unwrap
-	sub.Unwrap()
-
-	// check array, slice, map and string length
+	// check slice and map length
 	switch sub.RValue.Kind() {
 	case reflect.Slice, reflect.Map:
 		return sub.RValue.Len() == 0
@@ -375,14 +364,17 @@ func IsValid(sub Subject) error {
 // IsMinLen checks whether the value has at least the specified length.
 func IsMinLen(min int) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check length
-			if sub.RValue.Len() < min {
-				return xo.SF("too short")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check length
+		if sub.RValue.Len() < min {
+			return xo.SF("too short")
+		}
+
+		return nil
 	}
 }
 
@@ -401,90 +393,107 @@ func IsMaxLen(max int) Rule {
 // IsMinInt checks whether the value satisfies the provided minimum.
 func IsMinInt(min int64) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			switch sub.RValue.Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			default:
-				panic("stick: expected int value")
-			}
-
-			// check min
-			if sub.RValue.Int() < min {
-				return xo.SF("too small")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		default:
+			panic("stick: expected int value")
+		}
+
+		// check min
+		if sub.RValue.Int() < min {
+			return xo.SF("too small")
+		}
+
+		return nil
 	}
 }
 
 // IsMaxInt checks whether the value satisfies the provided maximum.
 func IsMaxInt(max int64) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			switch sub.RValue.Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			default:
-				panic("stick: expected int value")
-			}
-
-			// check min
-			if sub.RValue.Int() > max {
-				return xo.SF("too big")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		default:
+			panic("stick: expected int value")
+		}
+
+		// check min
+		if sub.RValue.Int() > max {
+			return xo.SF("too big")
+		}
+
+		return nil
 	}
 }
 
 // IsMinUint checks whether the value satisfies the provided minimum.
 func IsMinUint(min uint64) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			switch sub.RValue.Kind() {
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			default:
-				panic("stick: expected uint value")
-			}
-
-			// check range
-			if sub.RValue.Uint() < min {
-				return xo.SF("too small")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		default:
+			panic("stick: expected uint value")
+		}
+
+		// check range
+		if sub.RValue.Uint() < min {
+			return xo.SF("too small")
+		}
+
+		return nil
 	}
 }
 
 // IsMaxUint checks whether the value satisfies the provided maximum.
 func IsMaxUint(max uint64) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			switch sub.RValue.Kind() {
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			default:
-				panic("stick: expected uint value")
-			}
-
-			// check max
-			if sub.RValue.Uint() > max {
-				return xo.SF("too big")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		default:
+			panic("stick: expected uint value")
+		}
+
+		// check max
+		if sub.RValue.Uint() > max {
+			return xo.SF("too big")
+		}
+
+		return nil
 	}
 }
 
 // IsMinFloat checks whether the value satisfies the provided minimum.
 func IsMinFloat(min float64) Rule {
 	return func(sub Subject) error {
+		// unwrap
+		if !sub.Unwrap() {
+			return nil
+		}
+
 		// check value
 		switch sub.RValue.Kind() {
 		case reflect.Float32, reflect.Float64:
@@ -504,21 +513,24 @@ func IsMinFloat(min float64) Rule {
 // IsMaxFloat checks whether the value satisfies the provided maximum.
 func IsMaxFloat(max float64) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			switch sub.RValue.Kind() {
-			case reflect.Float32, reflect.Float64:
-			default:
-				panic("stick: expected float value")
-			}
-
-			// check max
-			if sub.RValue.Float() > max {
-				return xo.SF("too big")
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Float32, reflect.Float64:
+		default:
+			panic("stick: expected float value")
+		}
+
+		// check max
+		if sub.RValue.Float() > max {
+			return xo.SF("too big")
+		}
+
+		return nil
 	}
 }
 
@@ -526,29 +538,32 @@ func IsMaxFloat(max float64) Rule {
 // provided string format checker.
 func IsFormat(fns ...func(string) bool) Rule {
 	return func(sub Subject) error {
-		return sub.Guard(func() error {
-			// check value
-			if sub.RValue.Kind() != reflect.String {
-				panic("stick: expected string value")
-			}
-
-			// get string
-			str := sub.RValue.String()
-
-			// check zero
-			if str == "" {
-				return nil
-			}
-
-			// check validity
-			for _, fn := range fns {
-				if !fn(str) {
-					return xo.SF("invalid format")
-				}
-			}
-
+		// unwrap
+		if !sub.Unwrap() {
 			return nil
-		})
+		}
+
+		// check value
+		if sub.RValue.Kind() != reflect.String {
+			panic("stick: expected string value")
+		}
+
+		// get string
+		str := sub.RValue.String()
+
+		// check zero
+		if str == "" {
+			return nil
+		}
+
+		// check validity
+		for _, fn := range fns {
+			if !fn(str) {
+				return xo.SF("invalid format")
+			}
+		}
+
+		return nil
 	}
 }
 
