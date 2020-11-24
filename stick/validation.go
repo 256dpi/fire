@@ -239,7 +239,7 @@ func IsNot(msg string, rule Rule) Rule {
 
 // IsZero will check if the provided value is zero. It will determine zeroness
 // using IsZero() or Zero() if implemented and default back to reflect. A nil
-// pointer, slice, array or maps is also considered as zero.
+// pointer, slice, array or map is also considered as zero.
 func IsZero(ctx RuleContext) error {
 	// check nil
 	if ctx.IsNil() {
