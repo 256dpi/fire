@@ -291,15 +291,15 @@ func IsZero(ctx RuleContext) error {
 // IsNotZero inverts the IsZero rule.
 var IsNotZero = IsNot("zero", IsZero)
 
-// IsNotEmpty will check if the provided value is not empty. Emptiness can only
-// be checked for strings, arrays, slices and maps.
-func IsNotEmpty(ctx RuleContext) error {
+// IsEmpty will check if the provided value is empty. Emptiness can only be
+// checked for strings, arrays, slices and maps.
+func IsEmpty(ctx RuleContext) error {
 	return ctx.Guard(func() error {
 		// check array, slice, map and string length
 		switch ctx.RValue.Kind() {
 		case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
-			if ctx.RValue.Len() == 0 {
-				return xo.SF("empty")
+			if ctx.RValue.Len() != 0 {
+				return xo.SF("not empty")
 			}
 		}
 
@@ -308,6 +308,9 @@ func IsNotEmpty(ctx RuleContext) error {
 		return nil
 	})
 }
+
+// IsNotEmpty inverts the IsEmpty rule.
+var IsNotEmpty = IsNot("empty", IsEmpty)
 
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
