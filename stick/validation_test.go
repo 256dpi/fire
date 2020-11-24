@@ -126,7 +126,7 @@ func TestIsZero(t *testing.T) {
 	ruleTest(t, empty, IsZero, "")
 	ruleTest(t, nil, IsZero, "")
 	ruleTest(t, &foo, IsZero, "not zero")
-	ruleTest(t, &empty, IsZero, "not zero")
+	ruleTest(t, &empty, IsZero, "")
 
 	now := time.Now()
 	var nilTime *time.Time
@@ -149,7 +149,7 @@ func TestIsNotZero(t *testing.T) {
 	ruleTest(t, empty, IsNotZero, "zero")
 	ruleTest(t, nil, IsNotZero, "zero")
 	ruleTest(t, &foo, IsNotZero, "")
-	ruleTest(t, &empty, IsNotZero, "")
+	ruleTest(t, &empty, IsNotZero, "zero")
 
 	now := time.Now()
 	var nilTime *time.Time

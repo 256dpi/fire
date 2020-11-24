@@ -224,6 +224,19 @@ func Use(fn func() error) Rule {
 	}
 }
 
+// IsNot will return an error with the provided message if the specified rules
+// passes.
+func IsNot(msg string, rule Rule) Rule {
+	return func(ctx RuleContext) error {
+		// check rule
+		if rule(ctx) == nil {
+			return xo.SF(msg)
+		}
+
+		return nil
+	}
+}
+
 // IsZero will check if the provided value is zero. It will determine zeroness
 // using IsZero() or Zero() if implemented and default back to reflect. A nil
 // pointer, slice, array or maps is also considered as zero.
@@ -259,6 +272,14 @@ func IsZero(ctx RuleContext) error {
 		return nil
 	}
 
+	// unwrap pointer
+	ctx.Unwrap()
+
+	// check nil again
+	if ctx.IsNil() {
+		return nil
+	}
+
 	// check zeroness
 	if !ctx.RValue.IsZero() {
 		return xo.SF("not zero")
@@ -267,48 +288,8 @@ func IsZero(ctx RuleContext) error {
 	return nil
 }
 
-// IsNotZero will check if the provided value is not zero. It will determine
-// zeroness using IsZero() or Zero() if implemented and default back to reflect.
-// A nil pointer, slice, array or maps is also considered as zero.
-func IsNotZero(ctx RuleContext) error {
-	// check nil
-	if ctx.IsNil() {
-		return xo.SF("zero")
-	}
-
-	// check using IsZero method
-	type isZero interface {
-		IsZero() bool
-	}
-	if v, ok := ctx.IValue.(isZero); ok {
-		// check zeroness
-		if v.IsZero() {
-			return xo.SF("zero")
-		}
-
-		return nil
-	}
-
-	// check using Zero method
-	type zero interface {
-		Zero() bool
-	}
-	if v, ok := ctx.IValue.(zero); ok {
-		// check zeroness
-		if v.Zero() {
-			return xo.SF("zero")
-		}
-
-		return nil
-	}
-
-	// check zeroness
-	if ctx.RValue.IsZero() {
-		return xo.SF("zero")
-	}
-
-	return nil
-}
+// IsNotZero inverts the IsZero rule.
+var IsNotZero = IsNot("zero", IsZero)
 
 // IsNotEmpty will check if the provided value is not empty. Emptiness can only
 // be checked for strings, arrays, slices and maps.
