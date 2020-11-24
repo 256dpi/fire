@@ -39,33 +39,33 @@ func TestValidateType(t *testing.T) {
 func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 
-	err := link.Validate("foo")
-	assert.Equal(t, "foo invalid file", err.Error())
+	err := link.Validate()
+	assert.Equal(t, "invalid file", err.Error())
 
 	link.File = coal.P(coal.ID{})
 
-	err = link.Validate("foo")
-	assert.Equal(t, "foo invalid file", err.Error())
+	err = link.Validate()
+	assert.Equal(t, "invalid file", err.Error())
 
 	link.File = coal.P(coal.New())
 
-	err = link.Validate("foo")
+	err = link.Validate()
 	assert.Error(t, err)
-	assert.Equal(t, "foo type invalid", err.Error())
+	assert.Equal(t, "type invalid", err.Error())
 
 	link.FileType = "foo/bar"
 
-	err = link.Validate("foo")
+	err = link.Validate()
 	assert.Error(t, err)
-	assert.Equal(t, "foo zero size", err.Error())
+	assert.Equal(t, "zero size", err.Error())
 
-	err = link.Validate("foo", "bar/foo")
+	err = link.Validate("bar/foo")
 	assert.Error(t, err)
-	assert.Equal(t, "foo type unallowed", err.Error())
+	assert.Equal(t, "type unallowed", err.Error())
 
 	link.FileSize = 12
 
-	err = link.Validate("foo")
+	err = link.Validate()
 	assert.NoError(t, err)
 }
 

@@ -37,7 +37,7 @@ type Link struct {
 }
 
 // Validate will validate the link.
-func (l *Link) Validate(name string, whitelist ...string) error {
+func (l *Link) Validate(whitelist ...string) error {
 	// ensure reference
 	if l.Ref == "" {
 		l.Ref = coal.New().Hex()
@@ -45,18 +45,18 @@ func (l *Link) Validate(name string, whitelist ...string) error {
 
 	// check file
 	if l.File == nil || l.File.IsZero() {
-		return xo.SF("%s invalid file", name)
+		return xo.SF("invalid file")
 	}
 
 	// check file type
 	err := ValidateType(l.FileType, whitelist...)
 	if err != nil {
-		return xo.SF("%s %s", name, err.Error())
+		return err
 	}
 
 	// check file size
 	if l.FileSize <= 0 {
-		return xo.SF("%s zero size", name)
+		return xo.SF("zero size")
 	}
 
 	return nil
@@ -76,12 +76,12 @@ func (l *Links) UnmarshalJSON(bytes []byte) error {
 }
 
 // Validate will validate the links.
-func (l Links) Validate(name string, whitelist ...string) error {
+func (l Links) Validate(whitelist ...string) error {
 	// validate all links
 	refs := make(map[string]bool, len(l))
 	for _, link := range l {
 		// validate link
-		err := link.Validate(name, whitelist...)
+		err := link.Validate(whitelist...)
 		if err != nil {
 			return err
 		}
