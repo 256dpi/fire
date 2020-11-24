@@ -119,6 +119,29 @@ func (s zeroStr) Zero() bool {
 	return s == "zero"
 }
 
+func TestIsZero(t *testing.T) {
+	foo := "foo"
+	empty := ""
+	ruleTest(t, foo, IsZero, "not zero")
+	ruleTest(t, empty, IsZero, "")
+	ruleTest(t, nil, IsZero, "")
+	ruleTest(t, &foo, IsZero, "not zero")
+	ruleTest(t, &empty, IsZero, "not zero")
+
+	now := time.Now()
+	var nilTime *time.Time
+	ruleTest(t, now, IsZero, "not zero")
+	ruleTest(t, &now, IsZero, "not zero")
+	ruleTest(t, nilTime, IsZero, "")
+	ruleTest(t, time.Time{}, IsZero, "")
+	ruleTest(t, &time.Time{}, IsZero, "")
+
+	zero := zeroStr("zero")
+	ruleTest(t, zero, IsZero, "")
+	ruleTest(t, &zero, IsZero, "")
+	ruleTest(t, zeroStr(""), IsZero, "not zero")
+}
+
 func TestIsNotZero(t *testing.T) {
 	foo := "foo"
 	empty := ""
@@ -234,6 +257,10 @@ func TestIsMax(t *testing.T) {
 }
 
 func TestIsFormat(t *testing.T) {
+	assert.PanicsWithValue(t, `stick: expected string value`, func() {
+		ruleTest(t, 1, IsEmail, "")
+	})
+
 	ruleTest(t, "", IsPatternMatch("\\d+"), "")
 	ruleTest(t, "-", IsPatternMatch("\\d+"), "invalid format")
 	ruleTest(t, "7", IsPatternMatch("\\d+"), "")

@@ -224,6 +224,49 @@ func Use(fn func() error) Rule {
 	}
 }
 
+// IsZero will check if the provided value is zero. It will determine zeroness
+// using IsZero() or Zero() if implemented and default back to reflect. A nil
+// pointer, slice, array or maps is also considered as zero.
+func IsZero(ctx RuleContext) error {
+	// check nil
+	if ctx.IsNil() {
+		return nil
+	}
+
+	// check using IsZero method
+	type isZero interface {
+		IsZero() bool
+	}
+	if v, ok := ctx.IValue.(isZero); ok {
+		// check zeroness
+		if !v.IsZero() {
+			return xo.SF("not zero")
+		}
+
+		return nil
+	}
+
+	// check using Zero method
+	type zero interface {
+		Zero() bool
+	}
+	if v, ok := ctx.IValue.(zero); ok {
+		// check zeroness
+		if !v.Zero() {
+			return xo.SF("not zero")
+		}
+
+		return nil
+	}
+
+	// check zeroness
+	if !ctx.RValue.IsZero() {
+		return xo.SF("not zero")
+	}
+
+	return nil
+}
+
 // IsNotZero will check if the provided value is not zero. It will determine
 // zeroness using IsZero() or Zero() if implemented and default back to reflect.
 // A nil pointer, slice, array or maps is also considered as zero.
@@ -233,7 +276,7 @@ func IsNotZero(ctx RuleContext) error {
 		return xo.SF("zero")
 	}
 
-	// check using IsValid method
+	// check using IsZero method
 	type isZero interface {
 		IsZero() bool
 	}
@@ -246,7 +289,7 @@ func IsNotZero(ctx RuleContext) error {
 		return nil
 	}
 
-	// check using Valid method
+	// check using Zero method
 	type zero interface {
 		Zero() bool
 	}
