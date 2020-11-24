@@ -294,6 +294,10 @@ func TestIsFormat(t *testing.T) {
 	ruleTest(t, "", IsValidUTF8, "")
 	ruleTest(t, string([]byte{66, 250}), IsValidUTF8, "invalid format")
 	ruleTest(t, "Ж", IsValidUTF8, "")
+
+	ruleTest(t, "", IsVisible, "")
+	ruleTest(t, " ", IsVisible, "invalid format")
+	ruleTest(t, "foo", IsVisible, "")
 }
 
 func TestRuleContextGuard(t *testing.T) {

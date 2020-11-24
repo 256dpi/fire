@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/256dpi/xo"
@@ -499,7 +500,7 @@ func IsMaxFloat(max float64) Rule {
 
 // IsFormat will check of the value corresponds to the format determined by the
 // provided string format checker.
-func IsFormat(fn func(string) bool) Rule {
+func IsFormat(fns ...func(string) bool) Rule {
 	return func(ctx RuleContext) error {
 		return ctx.Guard(func() error {
 			// check value
@@ -516,8 +517,10 @@ func IsFormat(fn func(string) bool) Rule {
 			}
 
 			// check validity
-			if !fn(str) {
-				return xo.SF("invalid format")
+			for _, fn := range fns {
+				if !fn(str) {
+					return xo.SF("invalid format")
+				}
 			}
 
 			return nil
@@ -555,3 +558,18 @@ var IsNumeric = IsFormat(govalidator.IsNumeric)
 
 // IsValidUTF8 will check if a string is valid utf8.
 var IsValidUTF8 = IsFormat(utf8.ValidString)
+
+// IsVisible will check if a string is visible.
+var IsVisible = IsFormat(utf8.ValidString, func(s string) bool {
+	// count characters and whitespace
+	c := 0
+	w := 0
+	for _, r := range s {
+		c++
+		if unicode.IsSpace(r) {
+			w++
+		}
+	}
+
+	return w < c
+})
