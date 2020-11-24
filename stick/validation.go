@@ -225,26 +225,10 @@ func IsOK(fn func() error) Rule {
 	}
 }
 
-// IsNot will return an error with the provided message if the specified rules
-// passes.
-func IsNot(msg string, rule Rule) Rule {
-	return func(ctx RuleContext) error {
-		// check rule
-		if rule(ctx) == nil {
-			return xo.SF(msg)
-		}
-
-		return nil
-	}
-}
-
-// IsZero will check if the provided value is zero. It will determine zeroness
-// using IsZero() or Zero() if implemented and default back to reflect. A nil
-// pointer, slice, array or map is also considered as zero.
-func IsZero(ctx RuleContext) error {
+func isZero(ctx RuleContext) bool {
 	// check nil
 	if ctx.IsNil() {
-		return nil
+		return true
 	}
 
 	// check using IsZero method
@@ -254,10 +238,10 @@ func IsZero(ctx RuleContext) error {
 	if v, ok := ctx.IValue.(isZero); ok {
 		// check zeroness
 		if !v.IsZero() {
-			return xo.SF("not zero")
+			return false
 		}
 
-		return nil
+		return true
 	}
 
 	// check using Zero method
@@ -267,10 +251,10 @@ func IsZero(ctx RuleContext) error {
 	if v, ok := ctx.IValue.(zero); ok {
 		// check zeroness
 		if !v.Zero() {
-			return xo.SF("not zero")
+			return false
 		}
 
-		return nil
+		return true
 	}
 
 	// unwrap pointer
@@ -278,38 +262,80 @@ func IsZero(ctx RuleContext) error {
 
 	// check nil again
 	if ctx.IsNil() {
-		return nil
+		return true
 	}
 
 	// check zeroness
 	if !ctx.RValue.IsZero() {
+		return false
+	}
+
+	return true
+}
+
+// IsZero will check if the provided value is zero. It will determine zeroness
+// using IsZero() or Zero() if implemented and default back to reflect. A nil
+// pointer, slice, array or map is also considered as zero.
+func IsZero(ctx RuleContext) error {
+	// check zeroness
+	if !isZero(ctx) {
 		return xo.SF("not zero")
 	}
 
 	return nil
 }
 
-// IsNotZero inverts the IsZero rule.
-var IsNotZero = IsNot("zero", IsZero)
+// IsNotZero will check if the provided value is not zero. It will determine
+// zeroness using IsZero() or Zero() if implemented and default back to reflect.
+// A nil pointer, slice, array or map is also considered as zero.
+func IsNotZero(ctx RuleContext) error {
+	// check zeroness
+	if isZero(ctx) {
+		return xo.SF("zero")
+	}
+
+	return nil
+}
+
+func isEmpty(ctx RuleContext) bool {
+	// check nil
+	if ctx.IsNil() {
+		return true
+	}
+
+	// unwrap
+	ctx.Unwrap()
+
+	// check array, slice, map and string length
+	switch ctx.RValue.Kind() {
+	case reflect.Slice, reflect.Map:
+		return ctx.RValue.Len() == 0
+	}
+
+	panic(fmt.Sprintf("stick: cannot check length of %T", ctx.IValue))
+}
 
 // IsEmpty will check if the provided value is empty. Emptiness can only be
 // checked for slices and maps.
 func IsEmpty(ctx RuleContext) error {
-	return ctx.Guard(func() error {
-		// check array, slice, map and string length
-		switch ctx.RValue.Kind() {
-		case reflect.Slice, reflect.Map:
-			if ctx.RValue.Len() != 0 {
-				return xo.SF("not empty")
-			}
-		}
+	// check emptiness
+	if !isEmpty(ctx) {
+		return xo.SF("not empty")
+	}
 
-		return nil
-	})
+	return nil
 }
 
-// IsNotEmpty inverts the IsEmpty rule.
-var IsNotEmpty = IsNot("empty", IsEmpty)
+// IsNotEmpty will check if the provided value is not empty. Emptiness can only
+// be checked for slices and maps.
+func IsNotEmpty(ctx RuleContext) error {
+	// check emptiness
+	if isEmpty(ctx) {
+		return xo.SF("empty")
+	}
+
+	return nil
+}
 
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
