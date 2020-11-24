@@ -159,7 +159,7 @@ func (v *Validator) Report(name string, err error) {
 	path = append(path, name)
 
 	// add error
-	v.error[err] = path
+	v.error[xo.W(err)] = path
 }
 
 // Error will return the validation error or nil of no errors have yet been

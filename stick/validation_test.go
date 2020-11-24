@@ -1,6 +1,7 @@
 package stick
 
 import (
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -92,6 +93,24 @@ func TestValidate(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "Foo: error", err.Error())
+}
+
+func TestValidateErrorIsolation(t *testing.T) {
+	err := Validate(nil, func(v *Validator) {
+		v.Report("Foo", io.EOF)
+		v.Report("Bar", io.EOF)
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "Bar: error; Foo: error", err.Error())
+}
+
+func TestSubjectUnwrap(t *testing.T) {
+	i1 := 1
+	ruleTest(t, &i1, IsMaxInt(5), "")
+
+	var i2 *int
+	ruleTest(t, i2, IsMaxInt(5), "")
+	ruleTest(t, &i2, IsMaxInt(5), "")
 }
 
 func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {
@@ -294,15 +313,6 @@ func TestIsFormat(t *testing.T) {
 	ruleTest(t, "", IsVisible, "")
 	ruleTest(t, " ", IsVisible, "invalid format")
 	ruleTest(t, "foo", IsVisible, "")
-}
-
-func TestSubjectUnwrap(t *testing.T) {
-	i1 := 1
-	ruleTest(t, &i1, IsMaxInt(5), "")
-
-	var i2 *int
-	ruleTest(t, i2, IsMaxInt(5), "")
-	ruleTest(t, &i2, IsMaxInt(5), "")
 }
 
 func BenchmarkValidate(b *testing.B) {
