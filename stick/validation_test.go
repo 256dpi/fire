@@ -223,6 +223,10 @@ func TestIsMax(t *testing.T) {
 }
 
 func TestIsFormat(t *testing.T) {
+	ruleTest(t, "", IsPatternMatch("\\d+"), "")
+	ruleTest(t, "-", IsPatternMatch("\\d+"), "invalid format")
+	ruleTest(t, "7", IsPatternMatch("\\d+"), "")
+
 	ruleTest(t, "", IsEmail, "")
 	ruleTest(t, "-", IsEmail, "invalid format")
 	ruleTest(t, "foo@bar.com", IsEmail, "")

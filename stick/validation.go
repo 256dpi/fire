@@ -3,6 +3,7 @@ package stick
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -491,6 +492,16 @@ func IsFormat(fn func(string) bool) Rule {
 			return nil
 		})
 	}
+}
+
+// IsRegexMatch will check if a string matches a regular expression.
+func IsRegexMatch(reg *regexp.Regexp) Rule {
+	return IsFormat(reg.MatchString)
+}
+
+// IsPatternMatch will check if a string matches a regular expression pattern.
+func IsPatternMatch(pattern string) Rule {
+	return IsRegexMatch(regexp.MustCompile(pattern))
 }
 
 // IsEmail will check if a string is a valid email.
