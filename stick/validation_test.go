@@ -166,12 +166,6 @@ func TestIsNotZero(t *testing.T) {
 }
 
 func TestEmpty(t *testing.T) {
-	ruleTest(t, "", IsEmpty, "")
-	ruleTest(t, "foo", IsEmpty, "not empty")
-
-	ruleTest(t, [0]int{}, IsEmpty, "")
-	ruleTest(t, [1]int{1}, IsEmpty, "not empty")
-
 	ruleTest(t, []byte{}, IsEmpty, "")
 	ruleTest(t, []byte{1}, IsEmpty, "not empty")
 
@@ -180,12 +174,6 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestNotEmpty(t *testing.T) {
-	ruleTest(t, "", IsNotEmpty, "empty")
-	ruleTest(t, "foo", IsNotEmpty, "")
-
-	ruleTest(t, [0]int{}, IsNotEmpty, "empty")
-	ruleTest(t, [1]int{1}, IsNotEmpty, "")
-
 	ruleTest(t, []byte{}, IsNotEmpty, "empty")
 	ruleTest(t, []byte{1}, IsNotEmpty, "")
 

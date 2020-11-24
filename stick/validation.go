@@ -292,18 +292,16 @@ func IsZero(ctx RuleContext) error {
 var IsNotZero = IsNot("zero", IsZero)
 
 // IsEmpty will check if the provided value is empty. Emptiness can only be
-// checked for strings, arrays, slices and maps.
+// checked for slices and maps.
 func IsEmpty(ctx RuleContext) error {
 	return ctx.Guard(func() error {
 		// check array, slice, map and string length
 		switch ctx.RValue.Kind() {
-		case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
+		case reflect.Slice, reflect.Map:
 			if ctx.RValue.Len() != 0 {
 				return xo.SF("not empty")
 			}
 		}
-
-		// TODO: Check if string contains only whitespace?
 
 		return nil
 	})
