@@ -475,7 +475,7 @@ func TestStorageModifierRequired(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file.ID(), *model.RequiredFile.File)
+		assert.Equal(t, file.ID(), model.RequiredFile.File)
 
 		file = tester.Fetch(&File{}, file.ID()).(*File)
 		assert.Equal(t, Claimed, file.State)
@@ -491,7 +491,7 @@ func TestStorageModifierOptional(t *testing.T) {
 		model := &testModel{
 			Base: coal.B(),
 			RequiredFile: Link{
-				File: coal.P(coal.New()),
+				File: coal.New(),
 			},
 		}
 
@@ -530,7 +530,7 @@ func TestStorageModifierOptional(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file1.ID(), *model.OptionalFile.File)
+		assert.Equal(t, file1.ID(), model.OptionalFile.File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -566,7 +566,7 @@ func TestStorageModifierOptional(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file2.ID(), *model.OptionalFile.File)
+		assert.Equal(t, file2.ID(), model.OptionalFile.File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)
@@ -603,7 +603,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 		model := &testModel{
 			Base: coal.B(),
 			RequiredFile: Link{
-				File: coal.P(coal.New()),
+				File: coal.New(),
 			},
 		}
 
@@ -644,7 +644,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file1.ID(), *model.MultipleFiles[0].File)
+		assert.Equal(t, file1.ID(), model.MultipleFiles[0].File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -683,7 +683,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file2.ID(), *model.MultipleFiles[1].File)
+		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -725,7 +725,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
-		assert.Equal(t, file2.ID(), *model.MultipleFiles[1].File)
+		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)
@@ -801,14 +801,14 @@ func TestStorageDecorator(t *testing.T) {
 
 		model := &testModel{
 			RequiredFile: Link{
-				File: coal.P(file1),
+				File: file1,
 			},
 			OptionalFile: &Link{
-				File: coal.P(file2),
+				File: file2,
 			},
 			MultipleFiles: Links{
-				{File: coal.P(file3)},
-				{File: coal.P(file4)},
+				{File: file3},
+				{File: file4},
 			},
 		}
 		err := tester.RunCallback(&fire.Context{

@@ -42,12 +42,7 @@ func TestLinkValidate(t *testing.T) {
 	err := link.Validate()
 	assert.Equal(t, "invalid file", err.Error())
 
-	link.File = coal.P(coal.ID{})
-
-	err = link.Validate()
-	assert.Equal(t, "invalid file", err.Error())
-
-	link.File = coal.P(coal.New())
+	link.File = coal.New()
 
 	err = link.Validate()
 	assert.Error(t, err)

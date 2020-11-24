@@ -29,7 +29,7 @@ type Link struct {
 	ViewKey string `json:"view-key" bson:"-"`
 
 	// The internal reference to the linked file.
-	File *coal.ID `json:"-" bson:"file_id"`
+	File coal.ID `json:"-" bson:"file_id"`
 
 	// The internal information about the linked file.
 	FileType string `json:"-" bson:"type"`
@@ -44,7 +44,7 @@ func (l *Link) Validate(whitelist ...string) error {
 	}
 
 	// check file
-	if l.File == nil || l.File.IsZero() {
+	if l.File.IsZero() {
 		return xo.SF("invalid file")
 	}
 

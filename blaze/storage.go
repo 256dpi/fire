@@ -297,7 +297,7 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 	}
 
 	// check file
-	if link.File != nil {
+	if !link.File.IsZero() {
 		return xo.F("existing claimed filed")
 	}
 
@@ -315,7 +315,7 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 	// update link
 	*link = Link{
 		Ref:      link.Ref,
-		File:     coal.P(file.ID()),
+		File:     file.ID(),
 		FileType: file.Type,
 		FileSize: file.Size,
 	}
@@ -423,7 +423,7 @@ func (s *Storage) Release(ctx context.Context, model coal.Model, field string) e
 func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 	// get file
 	file := link.File
-	if file == nil || file.IsZero() {
+	if file.IsZero() {
 		return xo.F("invalid file id")
 	}
 
@@ -433,7 +433,7 @@ func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 	}
 
 	// release file
-	err := s.ReleaseFile(ctx, *file)
+	err := s.ReleaseFile(ctx, file)
 	if err != nil {
 		return err
 	}
@@ -601,7 +601,7 @@ func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, bindin
 	// claim new file
 	if added || updated {
 		// unset file
-		newLink.File = nil
+		newLink.File = coal.ID{}
 
 		// claim
 		err := s.ClaimLink(ctx, newLink, binding, owner)
@@ -663,7 +663,7 @@ func (s *Storage) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bin
 		link := newMap[ref]
 
 		// unset file
-		link.File = nil
+		link.File = coal.ID{}
 
 		// claim
 		err := s.ClaimLink(ctx, link, binding, owner)
@@ -679,13 +679,13 @@ func (s *Storage) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bin
 // available.
 func (s *Storage) Decorate(link *Link) error {
 	// skip if file is missing
-	if link == nil || link.File == nil || link.File.IsZero() {
+	if link == nil || link.File.IsZero() {
 		return nil
 	}
 
 	// issue view key
 	viewKey, err := s.notary.Issue(&ViewKey{
-		File: *link.File,
+		File: link.File,
 	})
 	if err != nil {
 		return err
