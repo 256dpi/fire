@@ -70,7 +70,7 @@ func Validate(obj Accessible, fn func(v *Validator)) error {
 	// run validator
 	fn(val)
 
-	return xo.SW(val.Error())
+	return val.Error()
 }
 
 // Nest nest validation under the specified field.
@@ -167,7 +167,7 @@ func (v *Validator) Report(name string, err error) {
 func (v *Validator) Error() error {
 	// check error
 	if v.error != nil {
-		return v.error
+		return xo.SW(v.error)
 	}
 
 	return nil
