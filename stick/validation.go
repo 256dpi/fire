@@ -381,6 +381,11 @@ func IsMinLen(min int) Rule {
 // IsMaxLen checks whether the value does not exceed the specified length.
 func IsMaxLen(max int) Rule {
 	return func(sub Subject) error {
+		// unwrap
+		if !sub.Unwrap() {
+			return nil
+		}
+
 		// check length
 		if sub.RValue.Len() > max {
 			return xo.SF("too long")
