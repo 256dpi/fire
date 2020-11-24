@@ -89,12 +89,12 @@ func TestValidate(t *testing.T) {
 }
 
 func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {
-	ctx := RuleContext{
+	sub := Subject{
 		IValue: val,
 		RValue: reflect.ValueOf(val),
 	}
 
-	err := rule(ctx)
+	err := rule(sub)
 	if msg == "" {
 		assert.NoError(t, err)
 	} else {

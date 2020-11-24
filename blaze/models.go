@@ -47,7 +47,7 @@ func (l *Link) Validate(whitelist ...string) error {
 
 	return stick.Validate(l, func(v *stick.Validator) {
 		v.Value("File", false, stick.IsNotZero)
-		v.Value("FileType", false, func(ctx stick.RuleContext) error {
+		v.Value("FileType", false, func(stick.Subject) error {
 			return ValidateType(l.FileType, whitelist...)
 		})
 		v.Value("FileSize", false, stick.IsMinInt(1))
@@ -144,7 +144,7 @@ func (f *File) Validate() error {
 	return stick.Validate(f, func(v *stick.Validator) {
 		v.Value("State", false, stick.IsValid)
 		v.Value("Updated", false, stick.IsNotZero)
-		v.Value("Type", false, func(ctx stick.RuleContext) error {
+		v.Value("Type", false, func(stick.Subject) error {
 			return ValidateType(f.Type)
 		})
 

@@ -85,8 +85,8 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// get value
 	value := MustGet(v.obj, name)
 
-	// prepare context
-	ctx := RuleContext{
+	// prepare subject
+	sub := Subject{
 		IValue: value,
 		RValue: reflect.ValueOf(value),
 	}
@@ -94,18 +94,18 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// handle optionals
 	if optional {
 		// skip if nil
-		if ctx.IsNil() {
+		if sub.IsNil() {
 			return
 		}
 
 		// otherwise unwrap pointer once
-		ctx.RValue = ctx.RValue.Elem()
-		ctx.IValue = ctx.RValue.Interface()
+		sub.RValue = sub.RValue.Elem()
+		sub.IValue = sub.RValue.Interface()
 	}
 
 	// execute rules
 	for _, rule := range rules {
-		err := rule(ctx)
+		err := rule(sub)
 		if err != nil {
 			v.Report(name, err)
 		}
@@ -124,15 +124,15 @@ func (v *Validator) Items(name string, rules ...Rule) {
 			// get item
 			item := slice.Index(i)
 
-			// prepare context
-			ctx := RuleContext{
+			// prepare subject
+			sub := Subject{
 				IValue: item.Interface(),
 				RValue: item,
 			}
 
 			// execute rules
 			for _, rule := range rules {
-				err := rule(ctx)
+				err := rule(sub)
 				if err != nil {
 					v.Report(strconv.Itoa(i), err)
 				}
@@ -165,62 +165,62 @@ func (v *Validator) Error() error {
 	return nil
 }
 
-// RuleContext carries the to be checked value.
-type RuleContext struct {
+// Subject carries the to be validated value.
+type Subject struct {
 	IValue interface{}
 	RValue reflect.Value
 }
 
 // IsNil returns whether the value is nil.
-func (c *RuleContext) IsNil() bool {
+func (s *Subject) IsNil() bool {
 	// check plain nil
-	if c.IValue == nil {
+	if s.IValue == nil {
 		return true
 	}
 
 	// check typed nils
-	switch c.RValue.Kind() {
+	switch s.RValue.Kind() {
 	case reflect.Ptr, reflect.Slice, reflect.Map:
-		return c.RValue.IsNil()
+		return s.RValue.IsNil()
 	}
 
 	return false
 }
 
 // Unwrap will unwrap all pointers.
-func (c *RuleContext) Unwrap() bool {
+func (s *Subject) Unwrap() bool {
 	// unwrap pointers
 	var unwrapped bool
-	for c.RValue.Kind() == reflect.Ptr {
-		c.RValue = c.RValue.Elem()
+	for s.RValue.Kind() == reflect.Ptr {
+		s.RValue = s.RValue.Elem()
 		unwrapped = true
 	}
 	if unwrapped {
-		c.IValue = c.RValue.Interface()
+		s.IValue = s.RValue.Interface()
 	}
 
 	return unwrapped
 }
 
 // Guard will run the provided function if a concrete value can be unwrapped.
-func (c *RuleContext) Guard(fn func() error) error {
+func (s *Subject) Guard(fn func() error) error {
 	// check nil
-	if c.IsNil() {
+	if s.IsNil() {
 		return nil
 	}
 
 	// unwrap
-	c.Unwrap()
+	s.Unwrap()
 
 	return fn()
 }
 
 // Rule is a single validation rule.
-type Rule func(ctx RuleContext) error
+type Rule func(sub Subject) error
 
-func isZero(ctx RuleContext) bool {
+func isZero(sub Subject) bool {
 	// check nil
-	if ctx.IsNil() {
+	if sub.IsNil() {
 		return true
 	}
 
@@ -228,7 +228,7 @@ func isZero(ctx RuleContext) bool {
 	type isZero interface {
 		IsZero() bool
 	}
-	if v, ok := ctx.IValue.(isZero); ok {
+	if v, ok := sub.IValue.(isZero); ok {
 		// check zeroness
 		if !v.IsZero() {
 			return false
@@ -241,7 +241,7 @@ func isZero(ctx RuleContext) bool {
 	type zero interface {
 		Zero() bool
 	}
-	if v, ok := ctx.IValue.(zero); ok {
+	if v, ok := sub.IValue.(zero); ok {
 		// check zeroness
 		if !v.Zero() {
 			return false
@@ -251,12 +251,12 @@ func isZero(ctx RuleContext) bool {
 	}
 
 	// unwrap pointer and check nil again if unwrapped
-	if ctx.Unwrap() && ctx.IsNil() {
+	if sub.Unwrap() && sub.IsNil() {
 		return true
 	}
 
 	// check zeroness
-	if !ctx.RValue.IsZero() {
+	if !sub.RValue.IsZero() {
 		return false
 	}
 
@@ -266,9 +266,9 @@ func isZero(ctx RuleContext) bool {
 // IsZero will check if the provided value is zero. It will determine zeroness
 // using IsZero() or Zero() if implemented and default back to reflect. A nil
 // pointer, slice, array or map is also considered as zero.
-func IsZero(ctx RuleContext) error {
+func IsZero(sub Subject) error {
 	// check zeroness
-	if !isZero(ctx) {
+	if !isZero(sub) {
 		return xo.SF("not zero")
 	}
 
@@ -278,38 +278,38 @@ func IsZero(ctx RuleContext) error {
 // IsNotZero will check if the provided value is not zero. It will determine
 // zeroness using IsZero() or Zero() if implemented and default back to reflect.
 // A nil pointer, slice, array or map is also considered as zero.
-func IsNotZero(ctx RuleContext) error {
+func IsNotZero(sub Subject) error {
 	// check zeroness
-	if isZero(ctx) {
+	if isZero(sub) {
 		return xo.SF("zero")
 	}
 
 	return nil
 }
 
-func isEmpty(ctx RuleContext) bool {
+func isEmpty(sub Subject) bool {
 	// check nil
-	if ctx.IsNil() {
+	if sub.IsNil() {
 		return true
 	}
 
 	// unwrap
-	ctx.Unwrap()
+	sub.Unwrap()
 
 	// check array, slice, map and string length
-	switch ctx.RValue.Kind() {
+	switch sub.RValue.Kind() {
 	case reflect.Slice, reflect.Map:
-		return ctx.RValue.Len() == 0
+		return sub.RValue.Len() == 0
 	}
 
-	panic(fmt.Sprintf("stick: cannot check length of %T", ctx.IValue))
+	panic(fmt.Sprintf("stick: cannot check length of %T", sub.IValue))
 }
 
 // IsEmpty will check if the provided value is empty. Emptiness can only be
 // checked for slices and maps.
-func IsEmpty(ctx RuleContext) error {
+func IsEmpty(sub Subject) error {
 	// check emptiness
-	if !isEmpty(ctx) {
+	if !isEmpty(sub) {
 		return xo.SF("not empty")
 	}
 
@@ -318,9 +318,9 @@ func IsEmpty(ctx RuleContext) error {
 
 // IsNotEmpty will check if the provided value is not empty. Emptiness can only
 // be checked for slices and maps.
-func IsNotEmpty(ctx RuleContext) error {
+func IsNotEmpty(sub Subject) error {
 	// check emptiness
-	if isEmpty(ctx) {
+	if isEmpty(sub) {
 		return xo.SF("empty")
 	}
 
@@ -329,9 +329,9 @@ func IsNotEmpty(ctx RuleContext) error {
 
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
-func IsValid(ctx RuleContext) error {
+func IsValid(sub Subject) error {
 	// check using Validate() method
-	if v, ok := ctx.IValue.(Validatable); ok {
+	if v, ok := sub.IValue.(Validatable); ok {
 		return v.Validate()
 	}
 
@@ -339,7 +339,7 @@ func IsValid(ctx RuleContext) error {
 	type isValid interface {
 		IsValid() bool
 	}
-	if v, ok := ctx.IValue.(isValid); ok {
+	if v, ok := sub.IValue.(isValid); ok {
 		// check validity
 		if !v.IsValid() {
 			return xo.SF("invalid")
@@ -352,7 +352,7 @@ func IsValid(ctx RuleContext) error {
 	type valid interface {
 		Valid() bool
 	}
-	if v, ok := ctx.IValue.(valid); ok {
+	if v, ok := sub.IValue.(valid); ok {
 		// check validity
 		if !v.Valid() {
 			return xo.SF("invalid")
@@ -361,15 +361,15 @@ func IsValid(ctx RuleContext) error {
 		return nil
 	}
 
-	panic(fmt.Sprintf("stick: cannot check validity of %T", ctx.IValue))
+	panic(fmt.Sprintf("stick: cannot check validity of %T", sub.IValue))
 }
 
 // IsMinLen checks whether the value has at least the specified length.
 func IsMinLen(min int) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check length
-			if ctx.RValue.Len() < min {
+			if sub.RValue.Len() < min {
 				return xo.SF("too short")
 			}
 
@@ -380,9 +380,9 @@ func IsMinLen(min int) Rule {
 
 // IsMaxLen checks whether the value does not exceed the specified length.
 func IsMaxLen(max int) Rule {
-	return func(ctx RuleContext) error {
+	return func(sub Subject) error {
 		// check length
-		if ctx.RValue.Len() > max {
+		if sub.RValue.Len() > max {
 			return xo.SF("too long")
 		}
 
@@ -392,17 +392,17 @@ func IsMaxLen(max int) Rule {
 
 // IsMinInt checks whether the value satisfies the provided minimum.
 func IsMinInt(min int64) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			switch ctx.RValue.Kind() {
+			switch sub.RValue.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			default:
 				panic("stick: expected int value")
 			}
 
 			// check min
-			if ctx.RValue.Int() < min {
+			if sub.RValue.Int() < min {
 				return xo.SF("too small")
 			}
 
@@ -413,17 +413,17 @@ func IsMinInt(min int64) Rule {
 
 // IsMaxInt checks whether the value satisfies the provided maximum.
 func IsMaxInt(max int64) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			switch ctx.RValue.Kind() {
+			switch sub.RValue.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			default:
 				panic("stick: expected int value")
 			}
 
 			// check min
-			if ctx.RValue.Int() > max {
+			if sub.RValue.Int() > max {
 				return xo.SF("too big")
 			}
 
@@ -434,17 +434,17 @@ func IsMaxInt(max int64) Rule {
 
 // IsMinUint checks whether the value satisfies the provided minimum.
 func IsMinUint(min uint64) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			switch ctx.RValue.Kind() {
+			switch sub.RValue.Kind() {
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			default:
 				panic("stick: expected uint value")
 			}
 
 			// check range
-			if ctx.RValue.Uint() < min {
+			if sub.RValue.Uint() < min {
 				return xo.SF("too small")
 			}
 
@@ -455,17 +455,17 @@ func IsMinUint(min uint64) Rule {
 
 // IsMaxUint checks whether the value satisfies the provided maximum.
 func IsMaxUint(max uint64) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			switch ctx.RValue.Kind() {
+			switch sub.RValue.Kind() {
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			default:
 				panic("stick: expected uint value")
 			}
 
 			// check max
-			if ctx.RValue.Uint() > max {
+			if sub.RValue.Uint() > max {
 				return xo.SF("too big")
 			}
 
@@ -476,16 +476,16 @@ func IsMaxUint(max uint64) Rule {
 
 // IsMinFloat checks whether the value satisfies the provided minimum.
 func IsMinFloat(min float64) Rule {
-	return func(ctx RuleContext) error {
+	return func(sub Subject) error {
 		// check value
-		switch ctx.RValue.Kind() {
+		switch sub.RValue.Kind() {
 		case reflect.Float32, reflect.Float64:
 		default:
 			panic("stick: expected float value")
 		}
 
 		// check min
-		if ctx.RValue.Float() < min {
+		if sub.RValue.Float() < min {
 			return xo.SF("too small")
 		}
 
@@ -495,17 +495,17 @@ func IsMinFloat(min float64) Rule {
 
 // IsMaxFloat checks whether the value satisfies the provided maximum.
 func IsMaxFloat(max float64) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			switch ctx.RValue.Kind() {
+			switch sub.RValue.Kind() {
 			case reflect.Float32, reflect.Float64:
 			default:
 				panic("stick: expected float value")
 			}
 
 			// check max
-			if ctx.RValue.Float() > max {
+			if sub.RValue.Float() > max {
 				return xo.SF("too big")
 			}
 
@@ -517,15 +517,15 @@ func IsMaxFloat(max float64) Rule {
 // IsFormat will check of the value corresponds to the format determined by the
 // provided string format checker.
 func IsFormat(fns ...func(string) bool) Rule {
-	return func(ctx RuleContext) error {
-		return ctx.Guard(func() error {
+	return func(sub Subject) error {
+		return sub.Guard(func() error {
 			// check value
-			if ctx.RValue.Kind() != reflect.String {
+			if sub.RValue.Kind() != reflect.String {
 				panic("stick: expected string value")
 			}
 
 			// get string
-			str := ctx.RValue.String()
+			str := sub.RValue.String()
 
 			// check zero
 			if str == "" {
