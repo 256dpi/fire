@@ -449,9 +449,9 @@ func TestStorageModifierRequired(t *testing.T) {
 		/* required */
 
 		file := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
@@ -499,9 +499,9 @@ func TestStorageModifierOptional(t *testing.T) {
 		/* add */
 
 		file1 := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
@@ -540,9 +540,9 @@ func TestStorageModifierOptional(t *testing.T) {
 		/* update */
 
 		file2 := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
@@ -613,9 +613,9 @@ func TestStorageModifierMultiple(t *testing.T) {
 		/* add first */
 
 		file1 := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
@@ -656,9 +656,9 @@ func TestStorageModifierMultiple(t *testing.T) {
 		/* add second */
 
 		file2 := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
@@ -699,9 +699,9 @@ func TestStorageModifierMultiple(t *testing.T) {
 		/* update first */
 
 		file3 := tester.Insert(&File{
-			State: Uploaded,
+			State:   Uploaded,
 			Updated: time.Now(),
-			Size:  42,
+			Size:    42,
 			Handle: Handle{
 				"foo": "bar",
 			},
