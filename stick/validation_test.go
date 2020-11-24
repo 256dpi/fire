@@ -86,6 +86,12 @@ func TestValidate(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "Strings.0: too short; Strings: too short", err.Error())
+
+	err = Validate(obj, func(v *Validator) {
+		v.Report("Foo", xo.F("some error"))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "Foo: error", err.Error())
 }
 
 func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {

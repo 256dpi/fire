@@ -40,7 +40,7 @@ func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 
 	err := link.Validate()
-	assert.Equal(t, "File: zero; FileType: type invalid; FileSize: too small", err.Error())
+	assert.Equal(t, "File: zero; FileSize: too small; FileType: type invalid", err.Error())
 
 	link.File = coal.New()
 	link.FileType = "foo/bar"

@@ -32,16 +32,26 @@ type ValidationError map[error][]string
 
 // Error implements the error interface.
 func (e ValidationError) Error() string {
-	// collect errors
-	var errs []string
+	// collect messages
+	var messages []string
 	for err, path := range e {
-		errs = append(errs, fmt.Sprintf("%s: %s", strings.Join(path, "."), err.Error()))
+		// get message
+		msg := "error"
+		if xo.IsSafe(err) {
+			msg = err.Error()
+		}
+
+		// add message
+		messages = append(messages, fmt.Sprintf("%s: %s", strings.Join(path, "."), msg))
 	}
 
-	// sort errors
-	sort.Strings(errs)
+	// sort messages
+	sort.Strings(messages)
 
-	return strings.Join(errs, "; ")
+	// combine messages
+	err := strings.Join(messages, "; ")
+
+	return err
 }
 
 // Validator is used to validate an object.
