@@ -25,9 +25,9 @@ func (k *ClaimKey) Validate() error {
 	return stick.Validate(k, func(v *stick.Validator) {
 		v.Value("File", false, stick.IsNotZero)
 		v.Value("Size", false, stick.IsMinInt(1))
-		v.Value("Type", false, stick.IsOK(func() error {
+		v.Value("Type", false, func(ctx stick.RuleContext) error {
 			return ValidateType(k.Type)
-		}))
+		})
 	})
 }
 

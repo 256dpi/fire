@@ -218,13 +218,6 @@ func (c *RuleContext) Guard(fn func() error) error {
 // Rule is a single validation rule.
 type Rule func(ctx RuleContext) error
 
-// IsOK will run the provided validation function.
-func IsOK(fn func() error) Rule {
-	return func(RuleContext) error {
-		return fn()
-	}
-}
-
 func isZero(ctx RuleContext) bool {
 	// check nil
 	if ctx.IsNil() {

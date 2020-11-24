@@ -103,16 +103,6 @@ func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {
 	}
 }
 
-func TestUser(t *testing.T) {
-	ruleTest(t, 1, IsOK(func() error {
-		return nil
-	}), "")
-
-	ruleTest(t, 1, IsOK(func() error {
-		return xo.SF("foo")
-	}), "foo")
-}
-
 type zeroStr string
 
 func (s zeroStr) Zero() bool {
