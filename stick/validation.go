@@ -218,8 +218,8 @@ func (c *RuleContext) Guard(fn func() error) error {
 // Rule is a single validation rule.
 type Rule func(ctx RuleContext) error
 
-// Use will run the provided validation function.
-func Use(fn func() error) Rule {
+// IsOK will run the provided validation function.
+func IsOK(fn func() error) Rule {
 	return func(RuleContext) error {
 		return fn()
 	}
