@@ -285,9 +285,15 @@ func IsNotEmpty(ctx RuleContext) error {
 	})
 }
 
-// IsValid will check if the value is valid by calling IsValid() or Valid().
+// IsValid will check if the value is valid by calling Validate(), IsValid() or
+// Valid().
 func IsValid(ctx RuleContext) error {
-	// check using IsValid method
+	// check using Validate() method
+	if v, ok := ctx.IValue.(Validatable); ok {
+		return v.Validate()
+	}
+
+	// check using IsValid() method
 	type isValid interface {
 		IsValid() bool
 	}
@@ -300,7 +306,7 @@ func IsValid(ctx RuleContext) error {
 		return nil
 	}
 
-	// check using Valid method
+	// check using Valid() method
 	type valid interface {
 		Valid() bool
 	}

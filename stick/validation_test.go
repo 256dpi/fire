@@ -31,6 +31,14 @@ type validatable struct {
 	BasicAccess
 }
 
+func (v validatable) Validate() error {
+	if v.String != "valid" {
+		return xo.SF("invalid")
+	}
+
+	return nil
+}
+
 func TestValidate(t *testing.T) {
 	obj := &validatable{}
 
@@ -164,6 +172,9 @@ func TestIsValid(t *testing.T) {
 	assert.PanicsWithValue(t, `stick: cannot check validity of string`, func() {
 		ruleTest(t, "", IsValid, "")
 	})
+
+	ruleTest(t, validatable{}, IsValid, "invalid")
+	ruleTest(t, &validatable{String: "valid"}, IsValid, "")
 
 	ruleTest(t, validStr(""), IsValid, "invalid")
 	ruleTest(t, validStr("valid"), IsValid, "")
