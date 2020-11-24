@@ -85,7 +85,7 @@ func TestValidate(t *testing.T) {
 		v.Items("Strings", IsMinLen(5))
 	})
 	assert.Error(t, err)
-	assert.Equal(t, "Strings: too short; Strings.0: too short", err.Error())
+	assert.Equal(t, "Strings.0: too short; Strings: too short", err.Error())
 }
 
 func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {

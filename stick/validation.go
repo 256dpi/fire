@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -27,32 +28,27 @@ func (*NoValidation) Validate() error {
 }
 
 // ValidationError describes a validation error.
-type ValidationError struct {
-	Reports []ValidationReport
-}
-
-// ValidationReport is a single validation error.
-type ValidationReport struct {
-	Path  []string
-	Error error
-}
+type ValidationError map[error][]string
 
 // Error implements the error interface.
 func (e ValidationError) Error() string {
-	// prepare errors
+	// collect errors
 	var errs []string
-	for _, report := range e.Reports {
-		errs = append(errs, fmt.Sprintf("%s: %s", strings.Join(report.Path, "."), report.Error.Error()))
+	for err, path := range e {
+		errs = append(errs, fmt.Sprintf("%s: %s", strings.Join(path, "."), err.Error()))
 	}
+
+	// sort errors
+	sort.Strings(errs)
 
 	return strings.Join(errs, "; ")
 }
 
 // Validator is used to validate an object.
 type Validator struct {
-	obj     Accessible
-	path    []string
-	reports []ValidationReport
+	obj   Accessible
+	path  []string
+	error ValidationError
 }
 
 // Validate will validate the provided accessible using the specified validator
@@ -143,23 +139,25 @@ func (v *Validator) Items(name string, rules ...Rule) {
 
 // Report will report a validation error.
 func (v *Validator) Report(name string, err error) {
+	// ensure error
+	if v.error == nil {
+		v.error = ValidationError{}
+	}
+
 	// copy path
 	path := append([]string{}, v.path...)
 	path = append(path, name)
 
-	// add report
-	v.reports = append(v.reports, ValidationReport{
-		Path:  path,
-		Error: err,
-	})
+	// add error
+	v.error[err] = path
 }
 
-// Error will return the accumulated error or nil of no errors have yet been
+// Error will return the validation error or nil of no errors have yet been
 // reported.
 func (v *Validator) Error() error {
-	// check errors
-	if len(v.reports) > 0 {
-		return ValidationError{Reports: v.reports}
+	// check error
+	if v.error != nil {
+		return v.error
 	}
 
 	return nil
