@@ -3,8 +3,6 @@ package axe
 import (
 	"time"
 
-	"github.com/256dpi/xo"
-
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -83,17 +81,15 @@ type Model struct {
 
 // Validate will validate the model.
 func (m *Model) Validate() error {
-	// check name
-	if m.Name == "" {
-		return xo.SF("missing name")
-	}
-
-	// check state
-	if !m.State.Valid() {
-		return xo.SF("invalid state")
-	}
-
-	return nil
+	return stick.Validate(m, func(v *stick.Validator) {
+		v.Value("Name", false, stick.IsNotZero, stick.IsValidUTF8)
+		v.Value("State", false, stick.IsValid)
+		v.Value("Created", false, stick.IsNotZero)
+		v.Value("Available", false, stick.IsNotZero)
+		v.Value("Started", true, stick.IsNotZero)
+		v.Value("Ended", true, stick.IsNotZero)
+		v.Value("Finished", true, stick.IsNotZero)
+	})
 }
 
 // AddModelIndexes will add job indexes to the specified catalog. If a duration

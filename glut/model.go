@@ -3,8 +3,6 @@ package glut
 import (
 	"time"
 
-	"github.com/256dpi/xo"
-
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -31,12 +29,12 @@ type Model struct {
 
 // Validate will validate the model.
 func (m *Model) Validate() error {
-	// check key
-	if m.Key == "" {
-		return xo.SF("missing key")
-	}
-
-	return nil
+	return stick.Validate(m, func(v *stick.Validator) {
+		v.Value("Key", false, stick.IsNotZero)
+		v.Value("Deadline", true, stick.IsNotZero)
+		v.Value("Locked", true, stick.IsNotZero)
+		v.Value("Token", true, stick.IsNotZero)
+	})
 }
 
 // AddModelIndexes will add required indexes to the specified catalog. If remove

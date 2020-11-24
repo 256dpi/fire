@@ -2,15 +2,13 @@ package main
 
 import (
 	"time"
-	"unicode/utf8"
-
-	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/flame"
 	"github.com/256dpi/fire/glut"
+	"github.com/256dpi/fire/stick"
 )
 
 var catalog = coal.NewCatalog(
@@ -64,23 +62,15 @@ type Item struct {
 
 // Validate implements the fire.ValidatableModel interface.
 func (i *Item) Validate() error {
-	// check name
-	if utf8.RuneCountInString(i.Name) < 1 {
-		return xo.SF("missing name")
-	}
-
-	// check timestamps
-	if i.Created.IsZero() || i.Updated.IsZero() {
-		return xo.SF("missing timestamp")
-	}
-
-	// check file
-	if i.File != nil {
-		err := i.File.Validate("file")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return stick.Validate(i, func(v *stick.Validator) {
+		v.Value("Name", false, stick.IsNotZero, stick.IsVisible)
+		v.Value("File", true, stick.IsOK(func() error {
+			return i.File.Validate()
+		}))
+		v.Value("Created", false, stick.IsNotZero)
+		v.Value("Updated", false, stick.IsNotZero)
+		v.Value("Deleted", true, stick.IsNotZero)
+		v.Value("CreateToken", false, stick.IsNotZero)
+		v.Value("UpdateToken", false, stick.IsNotZero)
+	})
 }

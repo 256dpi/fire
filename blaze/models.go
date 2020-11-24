@@ -34,6 +34,8 @@ type Link struct {
 	// The internal information about the linked file.
 	FileType string `json:"-" bson:"type"`
 	FileSize int64  `json:"-" bson:"size"`
+
+	stick.BasicAccess
 }
 
 // Validate will validate the link.
@@ -43,23 +45,13 @@ func (l *Link) Validate(whitelist ...string) error {
 		l.Ref = coal.New().Hex()
 	}
 
-	// check file
-	if l.File.IsZero() {
-		return xo.SF("invalid file")
-	}
-
-	// check file type
-	err := ValidateType(l.FileType, whitelist...)
-	if err != nil {
-		return err
-	}
-
-	// check file size
-	if l.FileSize <= 0 {
-		return xo.SF("zero size")
-	}
-
-	return nil
+	return stick.Validate(l, func(v *stick.Validator) {
+		v.Value("File", false, stick.IsNotZero)
+		v.Value("FileType", false, stick.IsOK(func() error {
+			return ValidateType(l.FileType, whitelist...)
+		}))
+		v.Value("FileSize", false, stick.IsMinInt(1))
+	})
 }
 
 // Links is a set of links.
@@ -149,40 +141,27 @@ type File struct {
 
 // Validate will validate the model.
 func (f *File) Validate() error {
-	// check state
-	if !f.State.Valid() {
-		return xo.F("invalid state")
-	}
+	return stick.Validate(f, func(v *stick.Validator) {
+		v.Value("State", false, stick.IsValid)
+		v.Value("Updated", false, stick.IsNotZero)
+		v.Value("Type", false, stick.IsOK(func() error {
+			return ValidateType(f.Type)
+		}))
 
-	// check type
-	err := ValidateType(f.Type)
-	if err != nil {
-		return xo.SF("type %s", err.Error())
-	}
+		if f.State != Uploading {
+			v.Value("Size", false, stick.IsMinInt(1))
+		}
 
-	// check size
-	if f.Size <= 0 && (f.State == Uploaded || f.State == Claimed) {
-		return xo.SF("missing size")
-	}
+		v.Value("Handle", false, stick.IsNotEmpty)
 
-	// check handle
-	if len(f.Handle) == 0 {
-		return xo.SF("missing handle")
-	}
-
-	// check binding
-	if f.Binding == "" && f.State == Claimed {
-		return xo.SF("missing binding")
-	}
-
-	// check owner
-	if f.Owner != nil && f.Owner.IsZero() {
-		return xo.SF("invalid owner")
-	} else if f.Owner == nil && f.State == Claimed {
-		return xo.SF("missing owner")
-	}
-
-	return nil
+		if f.State == Claimed {
+			v.Value("Binding", false, stick.IsNotZero)
+			v.Value("Owner", false, stick.IsNotZero)
+		} else {
+			v.Value("Binding", false, stick.IsZero)
+			v.Value("Owner", false, stick.IsZero)
+		}
+	})
 }
 
 // AddFileIndexes will add files indexes to the specified catalog.

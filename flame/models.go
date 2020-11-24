@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/256dpi/oauth2/v2"
-	"github.com/256dpi/xo"
-	"github.com/asaskevich/govalidator"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
@@ -111,17 +109,14 @@ func (t *Token) SetTokenData(data TokenData) {
 
 // Validate implements the fire.ValidatableModel interface.
 func (t *Token) Validate() error {
-	// check id
-	if t.ID().IsZero() {
-		return xo.SF("invalid id")
-	}
-
-	// check expires at
-	if t.ExpiresAt.IsZero() {
-		return xo.SF("missing expiry")
-	}
-
-	return nil
+	return stick.Validate(t, func(v *stick.Validator) {
+		v.Value("Type", false, stick.IsNotZero, stick.IsValidUTF8)
+		v.Items("Scope", stick.IsNotZero, stick.IsValidUTF8)
+		v.Value("ExpiresAt", false, stick.IsNotZero)
+		v.Value("RedirectURI", false, stick.IsValidUTF8)
+		v.Value("Application", false, stick.IsNotZero)
+		v.Value("User", true, stick.IsNotZero)
+	})
 }
 
 // Client is the interface that must be implemented by clients. The field used
@@ -185,24 +180,11 @@ func (a *Application) Validate() error {
 		return err
 	}
 
-	// check name
-	if a.Name == "" {
-		return xo.SF("missing name")
-	}
-
-	// check key
-	if a.Key == "" {
-		return xo.SF("missing key")
-	}
-
-	// check redirect uri
-	for _, redirectURI := range a.RedirectURIs {
-		if redirectURI != "" && !govalidator.IsURL(redirectURI) {
-			return xo.SF("invalid redirect uri")
-		}
-	}
-
-	return nil
+	return stick.Validate(a, func(v *stick.Validator) {
+		v.Value("Name", false, stick.IsNotZero, stick.IsValidUTF8)
+		v.Value("Key", false, stick.IsNotZero, stick.IsValidUTF8)
+		v.Items("RedirectURIs", stick.IsNotZero, stick.IsValidUTF8)
+	})
 }
 
 // HashSecret will hash Secret and set SecretHash.
@@ -265,22 +247,11 @@ func (u *User) Validate() error {
 		return err
 	}
 
-	// check name
-	if u.Name == "" {
-		return xo.SF("missing name")
-	}
-
-	// check email
-	if u.Email == "" || !govalidator.IsEmail(u.Email) {
-		return xo.SF("invalid email")
-	}
-
-	// check password hash
-	if len(u.PasswordHash) == 0 {
-		return xo.SF("missing password hash")
-	}
-
-	return nil
+	return stick.Validate(u, func(v *stick.Validator) {
+		v.Value("Name", false, stick.IsNotZero, stick.IsValidUTF8)
+		v.Value("Email", false, stick.IsNotZero, stick.IsEmail)
+		v.Value("PasswordHash", false, stick.IsNotEmpty)
+	})
 }
 
 // HashPassword will hash Password and set PasswordHash.

@@ -31,12 +31,9 @@ type incrementJob struct {
 }
 
 func (j *incrementJob) Validate() error {
-	// check item
-	if j.Item.IsZero() {
-		return xo.F("missing item")
-	}
-
-	return nil
+	return stick.Validate(j, func(v *stick.Validator) {
+		v.Value("Item", false, stick.IsNotZero)
+	})
 }
 
 type generateJob struct {
@@ -47,12 +44,9 @@ type generateJob struct {
 }
 
 func (j *generateJob) Validate() error {
-	// check item
-	if j.Item.IsZero() {
-		return xo.F("missing item")
-	}
-
-	return nil
+	return stick.Validate(j, func(v *stick.Validator) {
+		v.Value("Item", false, stick.IsNotZero)
+	})
 }
 
 type periodicJob struct {

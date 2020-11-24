@@ -1,10 +1,9 @@
 package blaze
 
 import (
-	"github.com/256dpi/xo"
-
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 // ClaimKey is used to authorize file claims.
@@ -23,23 +22,13 @@ type ClaimKey struct {
 
 // Validate will validate the claim key.
 func (k *ClaimKey) Validate() error {
-	// check file
-	if k.File.IsZero() {
-		return xo.SF("missing file")
-	}
-
-	// check size
-	if k.Size <= 0 {
-		return xo.SF("missing size")
-	}
-
-	// check type
-	err := ValidateType(k.Type)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return stick.Validate(k, func(v *stick.Validator) {
+		v.Value("File", false, stick.IsNotZero)
+		v.Value("Size", false, stick.IsMinInt(1))
+		v.Value("Type", false, stick.IsOK(func() error {
+			return ValidateType(k.Type)
+		}))
+	})
 }
 
 // ViewKey is used to authorize file views.
@@ -52,10 +41,7 @@ type ViewKey struct {
 
 // Validate will validate the view key.
 func (k *ViewKey) Validate() error {
-	// check file
-	if k.File.IsZero() {
-		return xo.SF("missing file")
-	}
-
-	return nil
+	return stick.Validate(k, func(v *stick.Validator) {
+		v.Value("File", false, stick.IsNotZero)
+	})
 }
