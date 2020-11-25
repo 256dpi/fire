@@ -69,21 +69,13 @@ func main() {
 		panic("secret must be at least 16 characters")
 	}
 
-	// prepare cors options
-	corsOptions := serve.CORSPolicy{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"Origin", "Accept", "Content-Type",
-			"Authorization", "Cache-Control", "X-Requested-With"},
-		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE"},
-	}
-
 	// compose handler
 	handler := serve.Compose(
 		serve.Recover(xo.Capture),
 		serve.Throttle(100),
 		serve.Timeout(time.Minute),
 		serve.Limit(serve.MustByteSize("8M")),
-		serve.CORS(corsOptions),
+		serve.CORS(serve.CORSDefault()),
 		flame.TokenMigrator(true),
 		xo.RootHandler(),
 		createHandler(store, bucket),
