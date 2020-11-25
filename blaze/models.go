@@ -11,10 +11,15 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+const maxFileNameLength = 256
+
 // Link is used to link a file to a model.
 type Link struct {
 	// The user definable reference of the link.
 	Ref string `json:"ref"`
+
+	// The name of the linked files.
+	Name string `json:"name" bson:"-"`
 
 	// The media type of the linked file.
 	Type string `json:"type" bson:"-"`
@@ -32,6 +37,7 @@ type Link struct {
 	File coal.ID `json:"-" bson:"file_id"`
 
 	// The internal information about the linked file.
+	FileName string `json:"-" bson:"name"`
 	FileType string `json:"-" bson:"type"`
 	FileSize int64  `json:"-" bson:"size"`
 
@@ -123,6 +129,9 @@ type File struct {
 	// The last time the file was updated.
 	Updated time.Time `json:"updated-at" bson:"updated_at"`
 
+	// The name of the file e.g. "logo.png".
+	Name string `json:"name"`
+
 	// The media type of the file e.g. "image/png".
 	Type string `json:"type"`
 
@@ -144,6 +153,7 @@ func (f *File) Validate() error {
 	return stick.Validate(f, func(v *stick.Validator) {
 		v.Value("State", false, stick.IsValid)
 		v.Value("Updated", false, stick.IsNotZero)
+		v.Value("Name", false, stick.IsMaxLen(maxFileNameLength))
 		v.Value("Type", false, func(stick.Subject) error {
 			return ValidateType(f.Type)
 		})

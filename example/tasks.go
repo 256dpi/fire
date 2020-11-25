@@ -81,7 +81,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 		Job: &generateJob{},
 		Handler: func(ctx *axe.Context) error {
 			// upload random image
-			claimKey, _, err := storage.Upload(ctx, "image/png", func(upload blaze.Upload) (int64, error) {
+			claimKey, _, err := storage.Upload(ctx, "", "image/png", func(upload blaze.Upload) (int64, error) {
 				return blaze.UploadFrom(upload, randomImage())
 			})
 			if err != nil {

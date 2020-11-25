@@ -43,7 +43,7 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service, registe
 // Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside of a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
+func (s *Storage) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Storage.Upload")
 	span.Tag("type", mediaType)
@@ -52,6 +52,11 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	// check transaction
 	if coal.HasTransaction(ctx) {
 		return "", nil, xo.F("unexpected transaction for upload")
+	}
+
+	// check name
+	if len(name) > maxFileNameLength {
+		return "", nil, xo.SF("file name too long")
 	}
 
 	// set default type
@@ -70,6 +75,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 		Base:    coal.B(),
 		State:   Uploading,
 		Updated: time.Now(),
+		Name:    name,
 		Type:    mediaType,
 		Handle:  handle,
 	}
@@ -87,7 +93,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	}
 
 	// begin upload
-	upload, err := s.service.Upload(ctx, handle, mediaType)
+	upload, err := s.service.Upload(ctx, handle, name, mediaType)
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
@@ -128,6 +134,7 @@ func (s *Storage) Upload(ctx context.Context, mediaType string, cb func(Upload) 
 	claimKey, err := s.notary.Issue(&ClaimKey{
 		File: file.ID(),
 		Size: file.Size,
+		Name: file.Name,
 		Type: file.Type,
 	})
 	if err != nil {
@@ -190,8 +197,27 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 }
 
 func (s *Storage) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
+	// prepare filename
+	filename := ""
+
+	// parse content disposition
+	if ctx.HTTPRequest.Header.Get("Content-Disposition") != "" {
+		disposition, params, err := mime.ParseMediaType(ctx.HTTPRequest.Header.Get("Content-Disposition"))
+		if err != nil {
+			return nil, err
+		}
+
+		// check disposition
+		if disposition != "" && disposition != "attachment" {
+			return nil, xo.SF("expected attachment content disposition")
+		}
+
+		// get filename
+		filename = params["filename"]
+	}
+
 	// upload stream
-	claimKey, _, err := s.Upload(ctx, mediaType, func(upload Upload) (int64, error) {
+	claimKey, _, err := s.Upload(ctx, filename, mediaType, func(upload Upload) (int64, error) {
 		return UploadFrom(upload, ctx.HTTPRequest.Body)
 	})
 	if err != nil {
@@ -223,7 +249,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 		}
 
 		// upload part
-		claimKey, _, err := s.Upload(ctx, contentType, func(upload Upload) (int64, error) {
+		claimKey, _, err := s.Upload(ctx, part.FileName(), contentType, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, part)
 		})
 		if err != nil {
@@ -316,6 +342,7 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 	*link = Link{
 		Ref:      link.Ref,
 		File:     file.ID(),
+		FileName: file.Name,
 		FileType: file.Type,
 		FileSize: file.Size,
 	}
@@ -695,6 +722,7 @@ func (s *Storage) Decorate(link *Link) error {
 	link.ViewKey = viewKey
 
 	// copy info
+	link.Name = link.FileName
 	link.Type = link.FileType
 	link.Size = link.FileSize
 
@@ -853,12 +881,16 @@ func (s *Storage) DownloadAction() *fire.Action {
 		// prepare content disposition
 		contentDisposition := "inline"
 		if dl {
-			contentDisposition = "attachment"
-		}
+			// get filename
+			filename := file.Name
+			if binding.Filename != "" {
+				filename = binding.Filename
+			} else if filename == "" {
+				filename = file.ID().Hex()
+			}
 
-		// append file to disposition if present
-		if binding.Filename != "" {
-			contentDisposition = fmt.Sprintf(`%s; filename="%s"`, contentDisposition, binding.Filename)
+			// set disposition
+			contentDisposition = fmt.Sprintf(`attachment; filename="%s"`, filename)
 		}
 
 		// set content type, length and disposition

@@ -31,10 +31,12 @@ func init() {
 
 	// add item file binding
 	register.Add(&blaze.Binding{
-		Name:  "item-file",
-		Owner: &Item{},
-		Field: "File",
-		Types: []string{"image/png"},
+		Name:     "item-file",
+		Owner:    &Item{},
+		Field:    "File",
+		Limit:    0,
+		Types:    []string{"image/png"},
+		Filename: "image.png",
 	})
 
 	// add system indexes

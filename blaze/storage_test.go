@@ -23,7 +23,7 @@ func TestStorageUpload(t *testing.T) {
 		service := NewMemory()
 		storage := NewStorage(tester.Store, testNotary, service, register)
 
-		key, file, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+		key, file, err := storage.Upload(nil, "data.bin", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -34,6 +34,7 @@ func TestStorageUpload(t *testing.T) {
 		assert.Equal(t, Handle{"id": "1"}, file.Handle)
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
+				Name:  "data.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
@@ -67,6 +68,50 @@ func TestStorageUploadAction(t *testing.T) {
 		assert.NotEmpty(t, res.Body.String())
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
+				Type:  "application/octet-stream",
+				Bytes: []byte("Hello World!"),
+			},
+		}, service.Blobs)
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Len(t, files, 1)
+		assert.Equal(t, Uploaded, files[0].State)
+		assert.Equal(t, "application/octet-stream", files[0].Type)
+		assert.Equal(t, int64(12), files[0].Size)
+		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
+	})
+}
+
+func TestStorageUploadActionExtended(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		service := NewMemory()
+		storage := NewStorage(tester.Store, testNotary, service, register)
+
+		body := strings.NewReader("Hello World!")
+
+		req := httptest.NewRequest("POST", "/foo", body)
+		req.Header.Set("Content-Type", "application/octet-stream")
+		req.Header.Set("Content-Disposition", "foo; filename=data.bin")
+
+		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
+			HTTPRequest: req,
+		}, storage.UploadAction(0))
+		assert.Error(t, err)
+		assert.Equal(t, "expected attachment content disposition", err.Error())
+
+		req.Header.Set("Content-Disposition", "attachment; filename=data.bin")
+
+		res, err = tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
+			HTTPRequest: req,
+		}, storage.UploadAction(0))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.NotEmpty(t, res.Body.String())
+		assert.Equal(t, map[string]*MemoryBlob{
+			"1": {
+				Name:  "data.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
@@ -127,7 +172,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
 
-		part, err := writer.CreateFormFile("file1", "data1.bin")
+		part, err := writer.CreateFormFile("file1", "")
 		assert.NoError(t, err)
 
 		_, err = part.Write([]byte("Hello World 1!"))
@@ -159,6 +204,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 				Bytes: []byte("Hello World 1!"),
 			},
 			"2": {
+				Name:  "data2.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World 2!"),
 			},
@@ -215,7 +261,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 		writer := multipart.NewWriter(body)
 
 		part, err := writer.CreatePart(textproto.MIMEHeader{
-			"Content-Disposition": []string{`form-data; name="file1"; filename="style.css"`},
+			"Content-Disposition": []string{`form-data; name="file1"`},
 			"Content-Type":        []string{"text/css"},
 		})
 
@@ -250,6 +296,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 				Bytes: []byte("h1 { color: red; }"),
 			},
 			"2": {
+				Name:  "script.js",
 				Type:  "text/javascript",
 				Bytes: []byte("console.log('Hello World!);"),
 			},
@@ -294,7 +341,7 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 
 		/* upload */
 
-		key, _, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := storage.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -358,7 +405,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 
 		/* upload */
 
-		key, _, err := storage.Upload(nil, "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := storage.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -807,14 +854,30 @@ func TestStorageDecorator(t *testing.T) {
 
 		model := &testModel{
 			RequiredFile: Link{
-				File: file1,
+				File:     file1,
+				FileName: "file1",
+				FileType: "foo/bar",
+				FileSize: 42,
 			},
 			OptionalFile: &Link{
-				File: file2,
+				File:     file2,
+				FileName: "file2",
+				FileType: "foo/bar",
+				FileSize: 42,
 			},
 			MultipleFiles: Links{
-				{File: file3},
-				{File: file4},
+				{
+					File:     file3,
+					FileName: "file3",
+					FileType: "foo/bar",
+					FileSize: 42,
+				},
+				{
+					File:     file4,
+					FileName: "file4",
+					FileType: "foo/bar",
+					FileSize: 42,
+				},
 			},
 		}
 		err := tester.RunCallback(&fire.Context{
@@ -829,6 +892,48 @@ func TestStorageDecorator(t *testing.T) {
 		assert.NotEmpty(t, model.OptionalFile.ViewKey)
 		assert.NotEmpty(t, model.MultipleFiles[0].ViewKey)
 		assert.NotEmpty(t, model.MultipleFiles[1].ViewKey)
+		assert.Equal(t, Link{
+			Name:     "file1",
+			Type:     "foo/bar",
+			Size:     42,
+			ViewKey:  model.RequiredFile.ViewKey,
+			File:     file1,
+			FileName: "file1",
+			FileType: "foo/bar",
+			FileSize: 42,
+		}, model.RequiredFile)
+		assert.Equal(t, &Link{
+			Name:     "file2",
+			Type:     "foo/bar",
+			Size:     42,
+			ViewKey:  model.OptionalFile.ViewKey,
+			File:     file2,
+			FileName: "file2",
+			FileType: "foo/bar",
+			FileSize: 42,
+		}, model.OptionalFile)
+		assert.Equal(t, Links{
+			{
+				Name:     "file3",
+				Type:     "foo/bar",
+				Size:     42,
+				ViewKey:  model.MultipleFiles[0].ViewKey,
+				File:     file3,
+				FileName: "file3",
+				FileType: "foo/bar",
+				FileSize: 42,
+			},
+			{
+				Name:     "file4",
+				Type:     "foo/bar",
+				Size:     42,
+				ViewKey:  model.MultipleFiles[1].ViewKey,
+				File:     file4,
+				FileName: "file4",
+				FileType: "foo/bar",
+				FileSize: 42,
+			},
+		}, model.MultipleFiles)
 
 		var viewKey1 ViewKey
 		err = storage.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
@@ -856,7 +961,7 @@ func TestStorageDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -904,7 +1009,7 @@ func TestStorageDownloadAction(t *testing.T) {
 
 		/* with key */
 
-		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -933,7 +1038,7 @@ func TestStorageDownloadAction(t *testing.T) {
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
-			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Content-Disposition": []string{`inline`},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
@@ -950,7 +1055,7 @@ func TestStorageDownloadAction(t *testing.T) {
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
-			"Content-Disposition": []string{`attachment; filename="foo"`},
+			"Content-Disposition": []string{`attachment; filename="forced"`},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
@@ -961,7 +1066,7 @@ func TestStorageDownloadActionStream(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -992,7 +1097,7 @@ func TestStorageDownloadActionStream(t *testing.T) {
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
-			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Content-Disposition": []string{`inline`},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
 		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
@@ -1009,7 +1114,7 @@ func TestStorageDownloadActionStream(t *testing.T) {
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"6"},
 			"Content-Type":        []string{"foo/bar"},
-			"Content-Disposition": []string{`inline; filename="foo"`},
+			"Content-Disposition": []string{`inline`},
 			"Content-Range":       []string{"bytes 0-5/12"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 		}, rec.Header())
@@ -1022,7 +1127,7 @@ func TestStorageCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)

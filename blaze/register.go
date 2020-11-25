@@ -23,7 +23,7 @@ type Binding struct {
 	// The allowed media types.
 	Types []string
 
-	// The filename used for downloads.
+	// The forced filename for downloads.
 	Filename string
 }
 

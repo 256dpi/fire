@@ -45,7 +45,7 @@ func (g *GridFS) Prepare(_ context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string) (Upload, error) {
+func (g *GridFS) Upload(ctx context.Context, handle Handle, _, _ string) (Upload, error) {
 	// get id
 	id, ok := handle["id"].(primitive.ObjectID)
 	if !ok || id.IsZero() {

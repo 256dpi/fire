@@ -33,7 +33,7 @@ func init() {
 		Name:     "test-req",
 		Owner:    &testModel{},
 		Field:    "RequiredFile",
-		Filename: "foo",
+		Filename: "forced",
 	})
 
 	register.Add(&Binding{

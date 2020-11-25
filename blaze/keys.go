@@ -13,6 +13,9 @@ type ClaimKey struct {
 	// The claimable file.
 	File coal.ID `json:"file"`
 
+	// The files name.
+	Name string `json:"name"`
+
 	// The files size.
 	Size int64 `json:"size"`
 
@@ -25,6 +28,7 @@ func (k *ClaimKey) Validate() error {
 	return stick.Validate(k, func(v *stick.Validator) {
 		v.Value("File", false, stick.IsNotZero)
 		v.Value("Size", false, stick.IsMinInt(1))
+		v.Value("Name", false, stick.IsMaxLen(maxFileNameLength))
 		v.Value("Type", false, func(stick.Subject) error {
 			return ValidateType(k.Type)
 		})
