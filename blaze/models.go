@@ -45,14 +45,18 @@ type Link struct {
 }
 
 // Validate will validate the link.
-func (l *Link) Validate(whitelist ...string) error {
+func (l *Link) Validate(requireFilename bool, whitelist ...string) error {
 	// ensure reference
 	if l.Ref == "" {
 		l.Ref = coal.New().Hex()
 	}
 
 	return stick.Validate(l, func(v *stick.Validator) {
+		v.Value("Ref", false, stick.IsNotZero)
 		v.Value("File", false, stick.IsNotZero)
+		if requireFilename {
+			v.Value("FileName", false, stick.IsNotZero)
+		}
 		v.Value("FileType", false, func(stick.Subject) error {
 			return ValidateType(l.FileType, whitelist...)
 		})
@@ -74,23 +78,32 @@ func (l *Links) UnmarshalJSON(bytes []byte) error {
 }
 
 // Validate will validate the links.
-func (l Links) Validate(whitelist ...string) error {
-	// validate all links
+func (l Links) Validate(uniqueFilenames bool, whitelist ...string) error {
+	// prepare maps
 	refs := make(map[string]bool, len(l))
+	names := make(map[string]bool, len(l))
+
+	// validate all links
 	for _, link := range l {
 		// validate link
-		err := link.Validate(whitelist...)
+		err := link.Validate(uniqueFilenames, whitelist...)
 		if err != nil {
 			return err
 		}
 
-		// check uniqueness
+		// check ref uniqueness
 		if refs[link.Ref] {
-			return xo.SF("non-unique link reference")
+			return xo.SF("ambiguous reference")
+		}
+
+		// check filename uniqueness
+		if uniqueFilenames && names[link.FileName] {
+			return xo.SF("ambiguous filename")
 		}
 
 		// add reference
 		refs[link.Ref] = true
+		names[link.FileName] = true
 	}
 
 	return nil

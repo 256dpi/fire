@@ -39,18 +39,19 @@ func TestValidateType(t *testing.T) {
 func TestLinkValidate(t *testing.T) {
 	link := &Link{}
 
-	err := link.Validate()
-	assert.Equal(t, "File: zero; FileSize: too small; FileType: type invalid", err.Error())
+	err := link.Validate(true)
+	assert.Equal(t, "File: zero; FileName: zero; FileSize: too small; FileType: type invalid", err.Error())
 
 	link.File = coal.New()
+	link.FileName = "foo"
 	link.FileType = "foo/bar"
 	link.FileSize = 12
 
-	err = link.Validate("bar/foo")
+	err = link.Validate(true, "bar/foo")
 	assert.Error(t, err)
 	assert.Equal(t, "FileType: type unallowed", err.Error())
 
-	err = link.Validate()
+	err = link.Validate(true)
 	assert.NoError(t, err)
 }
 
@@ -72,4 +73,69 @@ func TestLinksUnmarshal(t *testing.T) {
 		{Ref: "3", Size: 3},
 		{Ref: "1", Size: 1},
 	}, links)
+}
+
+func TestLinksValidate(t *testing.T) {
+	links := Links{}
+	err := links.Validate(true)
+	assert.NoError(t, err)
+
+	links = Links{{}}
+	err = links.Validate(true)
+	assert.Error(t, err)
+
+	links = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = links.Validate(false)
+	assert.Error(t, err)
+	assert.Equal(t, "ambiguous reference", err.Error())
+
+	links = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "2",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = links.Validate(true)
+	assert.Error(t, err)
+	assert.Equal(t, "ambiguous filename", err.Error())
+
+	links = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileName: "foo",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "2",
+			File:     coal.New(),
+			FileName: "bar",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = links.Validate(true)
+	assert.NoError(t, err)
 }

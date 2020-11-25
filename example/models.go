@@ -67,7 +67,7 @@ func (i *Item) Validate() error {
 	return stick.Validate(i, func(v *stick.Validator) {
 		v.Value("Name", false, stick.IsNotZero, stick.IsVisible)
 		v.Value("File", true, func(stick.Subject) error {
-			return i.File.Validate()
+			return i.File.Validate(false)
 		})
 		v.Value("Created", false, stick.IsNotZero)
 		v.Value("Updated", false, stick.IsNotZero)
