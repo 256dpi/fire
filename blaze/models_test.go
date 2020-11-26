@@ -118,7 +118,7 @@ func TestLinksValidate(t *testing.T) {
 	}
 	err = links.Validate(true)
 	assert.Error(t, err)
-	assert.Equal(t, "ambiguous filename", err.Error())
+	assert.Equal(t, "FileName: zero", err.Error())
 
 	links = Links{
 		{

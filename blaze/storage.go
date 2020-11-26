@@ -7,6 +7,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -61,7 +62,12 @@ func (s *Storage) Upload(ctx context.Context, name, mediaType string, cb func(Up
 
 	// set default type
 	if mediaType == "" {
-		mediaType = "application/octet-stream"
+		if name != "" {
+			mediaType = mime.TypeByExtension(path.Ext(name))
+		}
+		if mediaType == "" {
+			mediaType = "application/octet-stream"
+		}
 	}
 
 	// create handle
@@ -159,9 +165,12 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 			return xo.F("stores must be identical")
 		}
 
+		// get raw content type
+		rawContentType := ctx.HTTPRequest.Header.Get("Content-Type")
+
 		// get content type
-		contentType, ctParams, err := mime.ParseMediaType(ctx.HTTPRequest.Header.Get("Content-Type"))
-		if err != nil {
+		contentType, ctParams, err := mime.ParseMediaType(rawContentType)
+		if rawContentType != "" && err != nil {
 			ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
 			return nil
 		}

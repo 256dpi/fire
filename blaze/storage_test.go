@@ -90,7 +90,6 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		body := strings.NewReader("Hello World!")
 
 		req := httptest.NewRequest("POST", "/foo", body)
-		req.Header.Set("Content-Type", "application/octet-stream")
 		req.Header.Set("Content-Disposition", "foo; filename=data.bin")
 
 		res, err := tester.RunAction(&fire.Context{
@@ -100,7 +99,7 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "expected attachment content disposition", err.Error())
 
-		req.Header.Set("Content-Disposition", "attachment; filename=data.bin")
+		req.Header.Set("Content-Disposition", "attachment; filename=script.js")
 
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
@@ -111,8 +110,8 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		assert.NotEmpty(t, res.Body.String())
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "data.bin",
-				Type:  "application/octet-stream",
+				Name:  "script.js",
+				Type:  "application/javascript",
 				Bytes: []byte("Hello World!"),
 			},
 		}, service.Blobs)
@@ -120,7 +119,7 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		files := *tester.FindAll(&File{}).(*[]*File)
 		assert.Len(t, files, 1)
 		assert.Equal(t, Uploaded, files[0].State)
-		assert.Equal(t, "application/octet-stream", files[0].Type)
+		assert.Equal(t, "application/javascript", files[0].Type)
 		assert.Equal(t, int64(12), files[0].Size)
 		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 	})
@@ -132,6 +131,7 @@ func TestStorageUploadActionInvalidContentType(t *testing.T) {
 
 		body := strings.NewReader("Hello World!")
 		req := httptest.NewRequest("POST", "/foo", body)
+		req.Header.Set("Content-Type", "- _ -")
 
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
