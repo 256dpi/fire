@@ -117,7 +117,7 @@ type Controller struct {
 	// on the collection (e.g. "posts/delete-cache") or resource (e.g.
 	// "users/1/recover-password"). The request context is forwarded to
 	// the specified callback after running the authorizers. No validators,
-	// notifiers and decorators are run for the request.
+	// modifiers, decorators and notifiers are run for these requests.
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 

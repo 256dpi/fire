@@ -22,7 +22,7 @@ import (
 type GroupAction struct {
 	// Authorizers authorize the group action and are run before the action.
 	// Returned errors will cause the abortion of the request with an
-	// unauthorized status by default.
+	// "Unauthorized" status by default.
 	Authorizers []*Callback
 
 	// Action is the action that should be executed.
@@ -45,7 +45,7 @@ func NewGroup(reporter func(error)) *Group {
 	}
 }
 
-// Add will add a controller to the group.
+// Add will add controllers to the group.
 func (g *Group) Add(controllers ...*Controller) {
 	for _, controller := range controllers {
 		// prepare controller
@@ -64,10 +64,8 @@ func (g *Group) Add(controllers ...*Controller) {
 	}
 }
 
-// Handle allows to add an action as a group action. Group actions will be run
-// when no controller matches the request.
-//
-// Note: The passed context is more or less empty.
+// Handle allows to add an action as a group action. Group actions will only be
+// run when no controller matches the request.
 func (g *Group) Handle(name string, a *GroupAction) {
 	if name == "" {
 		panic(fmt.Sprintf(`fire: invalid group action "%s"`, name))
@@ -92,8 +90,8 @@ func (g *Group) Handle(name string, a *GroupAction) {
 	g.actions[name] = a
 }
 
-// Endpoint will return an http handler that serves requests for this group. The
-// specified prefix is used to parse the requests and generate urls for the
+// Endpoint will return a handler that serves requests for this group. The
+// specified prefix is used to parse the requests and generate URLs for the
 // resources.
 func (g *Group) Endpoint(prefix string) http.Handler {
 	// trim prefix

@@ -96,13 +96,14 @@ func (o Operation) String() string {
 	return ""
 }
 
-// A Context provides useful contextual information.
+// Context carries the state of a request and allows callbacks to influence the
+// processing of a request.
 type Context struct {
 	// The context that is cancelled when the timeout has been exceeded or the
 	// underlying connection transport has been closed. It may also carry the
-	// database session if transactions have been enabled.
+	// database session if a transaction is used.
 	//
-	// Values: lungo.ISessionContext?, opentracing.Span, *xo.Tracer
+	// Values: lungo.ISessionContext?, trace.Span, *xo.Tracer
 	context.Context
 
 	// The custom data map.
