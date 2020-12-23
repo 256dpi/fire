@@ -139,9 +139,6 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags
 func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindFirst")
-	span.Tag("filter", filter)
-	span.Tag("sort", sort)
-	span.Tag("skip", skip)
 	defer span.End()
 
 	// check lock
@@ -230,10 +227,6 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindAll")
-	span.Tag("filter", filter)
-	span.Tag("sort", sort)
-	span.Tag("skip", skip)
-	span.Tag("limit", limit)
 	defer span.End()
 
 	// check list
@@ -330,10 +323,6 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*ManagedIterator, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindEach")
-	span.Tag("filter", filter)
-	span.Tag("sort", sort)
-	span.Tag("skip", skip)
-	span.Tag("limit", limit)
 
 	// finish span on error
 	var iter *Iterator
@@ -414,8 +403,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 func (m *Manager) Project(ctx context.Context, id ID, field string, lock bool) (interface{}, bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Project")
-	span.Tag("id", id)
-	span.Tag("field", field)
+	defer span.End()
 
 	// project
 	var res interface{}
@@ -444,8 +432,7 @@ func (m *Manager) Project(ctx context.Context, id ID, field string, lock bool) (
 func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string, sort []string, skip int64, lock bool) (interface{}, bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectFirst")
-	span.Tag("filter", filter)
-	span.Tag("field", field)
+	defer span.End()
 
 	// project
 	var res interface{}
@@ -472,8 +459,7 @@ func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string,
 func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, flags ...Flags) (map[ID]interface{}, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectAll")
-	span.Tag("filter", filter)
-	span.Tag("field", field)
+	defer span.End()
 
 	// project
 	res := make(map[ID]interface{})
@@ -499,11 +485,7 @@ func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, s
 func (m *Manager) ProjectEach(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectEach")
-	span.Tag("filter", filter)
-	span.Tag("field", field)
-	span.Tag("sort", sort)
-	span.Tag("skip", skip)
-	span.Tag("limit", limit)
+	defer span.End()
 
 	return m.project(ctx, filter, field, sort, skip, limit, lock, fn, flags...)
 }
@@ -609,9 +591,6 @@ func (m *Manager) project(ctx context.Context, filter bson.M, field string, sort
 func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, flags ...Flags) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Count")
-	span.Tag("filter", filter)
-	span.Tag("skip", skip)
-	span.Tag("limit", limit)
 	defer span.End()
 
 	// require transaction if locked or not unsafe
@@ -795,7 +774,6 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.InsertIfMissing")
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// require transaction
@@ -913,7 +891,6 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...
 func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ReplaceFirst")
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// check model
@@ -963,8 +940,6 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Update")
-	span.Tag("id", id.Hex())
-	span.Tag("update", update)
 	defer span.End()
 
 	// require transaction
@@ -1022,8 +997,6 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateFirst")
-	span.Tag("filter", filter)
-	span.Tag("update", update)
 	defer span.End()
 
 	// require transaction
@@ -1095,8 +1068,6 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateAll")
-	span.Tag("filter", filter)
-	span.Tag("update", update)
 	defer span.End()
 
 	// require transaction
@@ -1146,8 +1117,6 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Upsert")
-	span.Tag("filter", filter)
-	span.Tag("update", update)
 	defer span.End()
 
 	// require transaction
@@ -1219,7 +1188,6 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Delete")
-	span.Tag("id", id.Hex())
 	defer span.End()
 
 	// delete document
@@ -1260,7 +1228,6 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteAll")
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// translate filter
@@ -1286,7 +1253,6 @@ func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, sort []string) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteFirst")
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// translate filter

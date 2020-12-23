@@ -38,7 +38,6 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline interface{}, opts .
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.Aggregate")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("pipeline", pipeline)
 
 	// aggregate
 	csr, err := c.coll.Aggregate(ctx, pipeline, opts...)
@@ -81,7 +80,6 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.CountDocuments")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// count documents
@@ -101,7 +99,6 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.DeleteMany")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// delete many
@@ -121,7 +118,6 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.DeleteOne")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// delete one
@@ -142,7 +138,6 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	ctx, span := xo.Trace(ctx, "coal/Collection.Distinct")
 	span.Tag("collection", c.coll.Name())
 	span.Tag("field", field)
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// distinct
@@ -181,7 +176,6 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.Find")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 
 	// find
 	csr, err := c.coll.Find(ctx, filter, opts...)
@@ -201,7 +195,6 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.FindOne")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// find one
@@ -215,7 +208,6 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndDelete")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// find one and delete
@@ -229,7 +221,6 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndReplace")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// find and replace one
@@ -243,7 +234,6 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndUpdate")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// find one and update
@@ -290,7 +280,6 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.ReplaceOne")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// replace one
@@ -307,7 +296,6 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateMany")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// update many
@@ -329,7 +317,6 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateOne")
 	span.Tag("collection", c.coll.Name())
-	span.Tag("filter", filter)
 	defer span.End()
 
 	// update one
