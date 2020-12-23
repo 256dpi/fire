@@ -48,7 +48,7 @@ func TestManagerFind(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post1.Lock++
 
 			found, err = m.Find(ctx, &post2, post1.ID(), true)
@@ -113,7 +113,7 @@ func TestManagerFindFirst(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			// fetch
 			post1.Lock++
 			var post postModel
@@ -178,7 +178,7 @@ func TestManagerFindAll(t *testing.T) {
 		assert.Equal(t, []postModel{post1, post2}, list)
 
 		// all
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			var list []postModel
 			err := m.FindAll(ctx, &list, nil, nil, 0, 0, false)
 			assert.NoError(t, err)
@@ -187,7 +187,7 @@ func TestManagerFindAll(t *testing.T) {
 		})
 
 		// filter
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			var list []postModel
 			err := m.FindAll(ctx, &list, bson.M{
 				"Title": "Hello World!",
@@ -198,7 +198,7 @@ func TestManagerFindAll(t *testing.T) {
 		})
 
 		// sort
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			var list []postModel
 			err := m.FindAll(ctx, &list, nil, []string{"Title"}, 0, 0, false)
 			assert.NoError(t, err)
@@ -207,7 +207,7 @@ func TestManagerFindAll(t *testing.T) {
 		})
 
 		// skip
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			var list []postModel
 			err := m.FindAll(ctx, &list, nil, nil, 1, 0, false)
 			assert.NoError(t, err)
@@ -216,7 +216,7 @@ func TestManagerFindAll(t *testing.T) {
 		})
 
 		// limit
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			var list []postModel
 			err := m.FindAll(ctx, &list, nil, nil, 0, 1, false)
 			assert.NoError(t, err)
@@ -225,7 +225,7 @@ func TestManagerFindAll(t *testing.T) {
 		})
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
 
@@ -263,7 +263,7 @@ func TestManagerFindEach(t *testing.T) {
 		assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
 
 		// all
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, nil, nil, 0, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post1, post2}, readPosts(t, iter))
@@ -271,7 +271,7 @@ func TestManagerFindEach(t *testing.T) {
 		})
 
 		// filter
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, bson.M{
 				"Title": "Hello World!",
 			}, nil, 0, 0, false)
@@ -281,7 +281,7 @@ func TestManagerFindEach(t *testing.T) {
 		})
 
 		// sort
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, nil, []string{"Title"}, 0, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post2, post1}, readPosts(t, iter))
@@ -289,7 +289,7 @@ func TestManagerFindEach(t *testing.T) {
 		})
 
 		// skip
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, nil, nil, 1, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post2}, readPosts(t, iter))
@@ -297,7 +297,7 @@ func TestManagerFindEach(t *testing.T) {
 		})
 
 		// limit
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			iter, err = m.FindEach(ctx, nil, nil, 0, 1, false)
 			assert.NoError(t, err)
 			assert.Equal(t, []postModel{post1}, readPosts(t, iter))
@@ -305,7 +305,7 @@ func TestManagerFindEach(t *testing.T) {
 		})
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
 
@@ -391,7 +391,7 @@ func TestManagerCount(t *testing.T) {
 		assert.Equal(t, int64(2), count)
 
 		// all
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			count, err = m.Count(ctx, nil, 0, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, int64(2), count)
@@ -399,7 +399,7 @@ func TestManagerCount(t *testing.T) {
 		})
 
 		// filter
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			count, err = m.Count(ctx, bson.M{
 				"Title": "Hello World!",
 			}, 0, 0, false)
@@ -409,7 +409,7 @@ func TestManagerCount(t *testing.T) {
 		})
 
 		// skip
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			count, err = m.Count(ctx, nil, 1, 0, false)
 			assert.NoError(t, err)
 			assert.Equal(t, int64(1), count)
@@ -417,7 +417,7 @@ func TestManagerCount(t *testing.T) {
 		})
 
 		// limit
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			count, err = m.Count(ctx, nil, 0, 1, false)
 			assert.NoError(t, err)
 			assert.Equal(t, int64(1), count)
@@ -425,7 +425,7 @@ func TestManagerCount(t *testing.T) {
 		})
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
 
@@ -470,7 +470,7 @@ func TestManagerDistinct(t *testing.T) {
 		assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
 
 		// all
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			titles, err = m.Distinct(ctx, "Title", nil, false)
 			assert.NoError(t, err)
 			assert.ElementsMatch(t, []interface{}{post1.Title, post2.Title}, titles)
@@ -478,7 +478,7 @@ func TestManagerDistinct(t *testing.T) {
 		})
 
 		// filter
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			titles, err = m.Distinct(ctx, "Title", bson.M{
 				"Title": "Hello World!",
 			}, false)
@@ -488,7 +488,7 @@ func TestManagerDistinct(t *testing.T) {
 		})
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post1.Lock++
 			post2.Lock++
 			post3.Lock++
@@ -552,7 +552,7 @@ func TestManagerInsertIfMissing(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			inserted, err = m.InsertIfMissing(ctx, bson.M{
 				"Title": "Hello World!",
 			}, &postModel{
@@ -594,7 +594,7 @@ func TestManagerReplace(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post.Title = "Hello Space!"
 			found, err = m.Replace(ctx, post, true)
 			assert.NoError(t, err)
@@ -639,7 +639,7 @@ func TestManagerReplaceFirst(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post.Title = "Hello World!"
 			found, err = m.ReplaceFirst(ctx, bson.M{
 				"Title": "Hello Space!",
@@ -712,7 +712,7 @@ func TestManagerUpdate(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post.Lock++
 
 			found, err = m.Update(ctx, &updated, post.ID(), bson.M{
@@ -802,7 +802,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post.Lock++
 
 			found, err = m.UpdateFirst(ctx, &updated, bson.M{
@@ -870,7 +870,7 @@ func TestManagerUpdateAll(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			matched, err = m.UpdateAll(ctx, bson.M{
 				"Title": "Hello Space!",
 			}, bson.M{
@@ -957,7 +957,7 @@ func TestManagerUpsert(t *testing.T) {
 		assert.True(t, ErrTransactionRequired.Is(err))
 
 		// lock
-		_ = tester.Store.T(nil, func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			post.Lock++
 
 			post.Published = false

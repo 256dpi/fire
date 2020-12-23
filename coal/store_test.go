@@ -7,6 +7,7 @@ import (
 
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestConnect(t *testing.T) {
@@ -41,7 +42,7 @@ func TestStoreT(t *testing.T) {
 		assert.False(t, ok)
 		assert.Nil(t, store)
 
-		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
+		assert.NoError(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
 			ok, store := GetTransaction(tc)
@@ -51,7 +52,7 @@ func TestStoreT(t *testing.T) {
 			return nil
 		}))
 
-		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
+		assert.Error(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
 			ok, store := GetTransaction(tc)
@@ -65,7 +66,7 @@ func TestStoreT(t *testing.T) {
 
 		assert.Equal(t, 1, tester.Count(&postModel{}))
 
-		assert.NoError(t, tester.Store.T(nil, func(tc context.Context) error {
+		assert.NoError(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
 			ok, store := GetTransaction(tc)
@@ -81,7 +82,7 @@ func TestStoreT(t *testing.T) {
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
 
-		assert.Error(t, tester.Store.T(nil, func(tc context.Context) error {
+		assert.Error(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
 			ok, store := GetTransaction(tc)
@@ -97,6 +98,23 @@ func TestStoreT(t *testing.T) {
 			}
 
 			return io.EOF
+		}))
+
+		assert.Equal(t, 2, tester.Count(&postModel{}))
+
+		assert.NoError(t, tester.Store.T(nil, true, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, store := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, store)
+
+			_, err := tester.Store.C(&postModel{}).DeleteMany(tc, bson.M{})
+			if err != nil {
+				panic(err)
+			}
+
+			return nil
 		}))
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))

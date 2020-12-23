@@ -132,12 +132,12 @@ func collectionCursorIsolationTest(t *testing.T, tester *Tester, useTransaction,
 
 	var result []string
 	if useTransaction {
-		_ = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		_ = tester.Store.T(nil, false, func(ctx context.Context) error {
 			result = workload(ctx)
 			return nil
 		})
 	} else {
-		result = workload(context.Background())
+		result = workload(nil)
 	}
 
 	if expectIsolation {

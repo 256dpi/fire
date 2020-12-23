@@ -92,7 +92,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 			id := ctx.Job.(*generateJob).Item
 
 			// use transaction
-			return store.T(ctx, func(ctx context.Context) error {
+			return store.T(ctx, false, func(ctx context.Context) error {
 				// get item
 				var item Item
 				found, err := store.M(&item).Find(ctx, &item, id, true)

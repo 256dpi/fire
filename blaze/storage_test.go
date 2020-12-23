@@ -353,7 +353,7 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 
 		/* claim without key */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Claim(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
@@ -362,7 +362,7 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 		/* claim with key */
 
 		model.RequiredFile.ClaimKey = key
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Claim(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
@@ -384,14 +384,14 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 
 		/* release */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Release(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
 
 		/* release again */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Release(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
@@ -417,7 +417,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 
 		/* claim without link */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Claim(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)
@@ -426,7 +426,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 		/* claim without key */
 
 		model.OptionalFile = &Link{}
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Claim(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)
@@ -435,7 +435,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 		/* claim with key */
 
 		model.OptionalFile.ClaimKey = key
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Claim(ctx, model, "OptionalFile")
 		})
 		assert.NoError(t, err)
@@ -457,14 +457,14 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 
 		/* release */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Release(ctx, model, "OptionalFile")
 		})
 		assert.NoError(t, err)
 
 		/* release again */
 
-		err = tester.Store.T(context.Background(), func(ctx context.Context) error {
+		err = tester.Store.T(nil, false, func(ctx context.Context) error {
 			return storage.Release(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)

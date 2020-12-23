@@ -180,7 +180,8 @@ func (s *Store) M(model Model) *Manager {
 // T will create a transaction around the specified callback. If the callback
 // returns no error the transaction will be committed. If T itself does not
 // return an error the transaction has been committed. The created context must
-// be used with all operations that should be included in the transaction.
+// be used with all operations that should be included in the transaction. A
+// read only transaction will always abort the transaction when done.
 //
 // A transaction has the effect that the read concern is upgraded to "snapshot"
 // which results in isolated and linearizable reads and writes of the data that
@@ -191,9 +192,9 @@ func (s *Store) M(model Model) *Manager {
 // - Reads are not guaranteed to be stable, another transaction may delete or
 //   modify the document an also commit concurrently. Therefore, documents that
 //   must "survive" the transaction and cause transactional writes to abort,
-//   must be locked by incrementing or changing a field to a new value.
-func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
-	// set context background
+//   must be locked by changing a field to a new value.
+func (s *Store) T(ctx context.Context, readOnly bool, fn func(tc context.Context) error) error {
+	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -227,8 +228,12 @@ func (s *Store) T(ctx context.Context, fn func(context.Context) error) error {
 			return xo.W(err)
 		}
 
-		// commit transaction
-		err = sc.CommitTransaction(sc)
+		// abort ort commit transaction
+		if readOnly {
+			err = sc.AbortTransaction(sc)
+		} else {
+			err = sc.CommitTransaction(sc)
+		}
 		if err != nil {
 			return xo.W(err)
 		}
@@ -257,7 +262,7 @@ type contextKey struct{}
 
 var hasTransaction = contextKey{}
 
-// GetTransaction will return whether the context carries a transaction and thes
+// GetTransaction will return whether the context carries a transaction and the
 // store used to create the transaction.
 func GetTransaction(ctx context.Context) (bool, *Store) {
 	// check context
