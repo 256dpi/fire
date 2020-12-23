@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// TODO: Return error if transaction is read only and command is a write.
+
 // IsMissing returns whether the provided error describes a missing document.
 func IsMissing(err error) bool {
 	return err == lungo.ErrNoDocuments || errors.Is(err, lungo.ErrNoDocuments)
