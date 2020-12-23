@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
 
@@ -186,8 +187,12 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 
 	group.reporter = func(err error) {}
 
+	headers := map[string]string{
+		"Content-Type": jsonapi.MediaType,
+	}
+
 	parallelBenchmark(b, parallelism, func() bool {
-		res := serve.Record(tester.Handler, "POST", "/posts", nil, `{
+		res := serve.Record(tester.Handler, "POST", "/posts", headers, `{
 			"data": {
 				"type": "posts",
 				"attributes": {
