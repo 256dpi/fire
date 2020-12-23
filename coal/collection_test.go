@@ -49,7 +49,7 @@ func TestCollectionCursorIsolation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		if _, ok := tester.Store.DB().(*lungo.Database); ok {
 			collectionCursorIsolationTest(t, tester, false, true)
-			// transaction will cause a deadlock
+			// nested transaction will cause a deadlock
 		} else {
 			collectionCursorIsolationTest(t, tester, false, false)
 			collectionCursorIsolationTest(t, tester, true, true)
