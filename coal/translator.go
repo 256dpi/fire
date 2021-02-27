@@ -122,7 +122,7 @@ func (t *Translator) value(value interface{}, skipTranslation bool) error {
 		return nil
 	case nil, int32, int64, float64, string, bool, primitive.Null,
 		primitive.ObjectID, primitive.DateTime, primitive.Timestamp,
-		primitive.Regex, primitive.Binary:
+		primitive.Regex, primitive.Binary, primitive.Decimal128:
 		return nil
 	default:
 		return xo.F("unsupported type %T", value)
