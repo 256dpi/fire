@@ -15,9 +15,9 @@ import (
 )
 
 // MustConnect will call Connect and panic on errors.
-func MustConnect(uri string, reporter func(error)) *Store {
+func MustConnect(uri string, reporter func(error), opts ...*options.ClientOptions) *Store {
 	// connect store
-	store, err := Connect(uri, reporter)
+	store, err := Connect(uri, reporter, opts...)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func MustConnect(uri string, reporter func(error)) *Store {
 // fields may return duplicate or missing documents due to the documents moving
 // within the index. For operations involving multiple documents a transaction
 // must be used to ensure atomicity, consistency and isolation.
-func Connect(uri string, reporter func(error)) (*Store, error) {
+func Connect(uri string, reporter func(error), opts ...*options.ClientOptions) (*Store, error) {
 	// parse url
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
@@ -44,12 +44,13 @@ func Connect(uri string, reporter func(error)) (*Store, error) {
 	defaultDB := strings.Trim(parsedURL.Path, "/")
 
 	// prepare options
-	opts := options.Client().ApplyURI(uri)
-	opts.SetReadConcern(readconcern.Linearizable())
-	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+	opt := options.MergeClientOptions(opts...)
+	opt.ApplyURI(uri)
+	opt.SetReadConcern(readconcern.Linearizable())
+	opt.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
 
 	// create client
-	client, err := lungo.Connect(nil, opts)
+	client, err := lungo.Connect(nil, opt)
 	if err != nil {
 		return nil, xo.W(err)
 	}
