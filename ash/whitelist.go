@@ -9,9 +9,9 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var validTag = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
+var validFieldTag = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
 
-// Matrix is used declaratively specify field access of multiple candidates.
+// Matrix is used declaratively to specify field access of multiple candidates.
 type Matrix struct {
 	// Model is the model being authorized.
 	Model coal.Model
@@ -20,24 +20,24 @@ type Matrix struct {
 	// authorization.
 	Candidates []*Authorizer
 
-	// Access is the matrix that specifies read and write access per and field
-	// and candidate using the tags "R", "C", "U" and "W".
-	Access map[string][]string
+	// Fields is the matrix that specifies read and write permissions per and
+	// field and candidate using the tags "R", "C", "U" and "W".
+	Fields map[string][]string
 }
 
-// Collect will return a list of fields for the specified column in the matrix
-// which match at least one of the provided tags.
-func (m *Matrix) Collect(i int, tags ...string) []string {
+// CollectFields will return a list of fields for the specified column in the
+// matrix which match at least one of the provided tags.
+func (m *Matrix) CollectFields(i int, tags ...string) []string {
 	// prepare fields
 	var fields []string
 
 	// collect fields
-	for field, permission := range m.Access {
+	for field, permission := range m.Fields {
 		// ensure field
 		coal.F(m.Model, field)
 
 		// check tag
-		if !validTag(permission[i]) {
+		if !validFieldTag(permission[i]) {
 			panic("ash: invalid tag")
 		}
 
@@ -59,7 +59,7 @@ func (m *Matrix) Collect(i int, tags ...string) []string {
 }
 
 // Whitelist will return a list of authorizers that will authorize field access
-// for the specified candidates in the matrix. Access is evaluated by checking
+// for the specified candidates in the matrix. Fields is evaluated by checking
 // for the "R" (readable), "C" (creatable), "U" (updatable) and "W" (writable)
 // tag in the proper row and column of the matrix. It is recommended to authorize
 // field access in a separate strategy following general resource access as the
@@ -69,7 +69,7 @@ func (m *Matrix) Collect(i int, tags ...string) []string {
 //		All: ash.Whitelist(ash.Matrix{
 //			Model: &Post{},
 //			Candidates: ash.L{Public(), Token("user")},
-//			Access: map[string][]string{
+//			Fields: map[string][]string{
 //				"Title": {"R", "RC"},
 //				"Body":  {"R", "RW"},
 //			},
@@ -81,10 +81,10 @@ func Whitelist(m Matrix) []*Authorizer {
 	var authorizers []*Authorizer
 	for i, a := range m.Candidates {
 		authorizers = append(authorizers, a.And(WhitelistFields(Fields{
-			Readable:  m.Collect(i, "R"),
-			Creatable: m.Collect(i, "C"),
-			Updatable: m.Collect(i, "U"),
-			Writable:  m.Collect(i, "W"),
+			Readable:  m.CollectFields(i, "R"),
+			Writable:  m.CollectFields(i, "W"),
+			Creatable: m.CollectFields(i, "C"),
+			Updatable: m.CollectFields(i, "U"),
 		})))
 	}
 
@@ -94,9 +94,9 @@ func Whitelist(m Matrix) []*Authorizer {
 // Fields defines the readable and writable fields.
 type Fields struct {
 	Readable  []string
+	Writable  []string
 	Creatable []string
 	Updatable []string
-	Writable  []string
 }
 
 // WhitelistFields is an authorizer that will whitelist the readable and writable
@@ -107,8 +107,8 @@ type Fields struct {
 // be chained together:
 //
 //	Token("user").And(WhitelistFields(Fields{
-//		Readable: []string{"foo", "bar"},
-//		Writable: []string{"foo"},
+//		Readable: []string{"Title", "Body"},
+//		Writable: []string{"Body"},
 //	}))
 //
 func WhitelistFields(fields Fields) *Authorizer {

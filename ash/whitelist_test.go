@@ -14,7 +14,7 @@ func TestWhitelist(t *testing.T) {
 		Whitelist(Matrix{
 			Model:      &postModel{},
 			Candidates: L{accessGranted(), accessGranted()},
-			Access: map[string][]string{
+			Fields: map[string][]string{
 				"Foo": {"RW", "RW"}, // <- invalid field
 			},
 		})
@@ -24,7 +24,7 @@ func TestWhitelist(t *testing.T) {
 		Whitelist(Matrix{
 			Model:      &postModel{},
 			Candidates: L{accessGranted(), accessGranted()},
-			Access: map[string][]string{
+			Fields: map[string][]string{
 				"Title": {"RWX", "RW"}, // <- invalid tag
 			},
 		})
@@ -33,7 +33,7 @@ func TestWhitelist(t *testing.T) {
 	authorizers := Whitelist(Matrix{
 		Model:      &postModel{},
 		Candidates: L{conditional("foo"), conditional("bar")},
-		Access: map[string][]string{
+		Fields: map[string][]string{
 			"Title":     {"RW", "RC"},
 			"Published": {"R", "RU"},
 		},
