@@ -97,8 +97,7 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 func AddRelationshipFilter(rel string, filter bson.M) *Enforcer {
 	return E("ash/AddRelationshipFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
 		// append filter
-		list, _ := ctx.RelationshipFilters[rel]
-		ctx.RelationshipFilters[rel] = append(list, filter)
+		ctx.RelationshipFilters[rel] = append(ctx.RelationshipFilters[rel], filter)
 
 		return nil
 	})
