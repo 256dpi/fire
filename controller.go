@@ -159,7 +159,7 @@ type Controller struct {
 
 	parser     jsonapi.Parser
 	meta       *coal.Meta
-	properties map[string]reflect.Value
+	properties map[string]func(coal.Model) (interface{}, error)
 }
 
 func (c *Controller) prepare() {
@@ -256,32 +256,10 @@ func (c *Controller) prepare() {
 		}
 	}
 
-	// get pointer type
-	ptrType := reflect.PtrTo(c.meta.Type)
-
-	// prepare properties
-	c.properties = map[string]reflect.Value{}
-
 	// lookup properties
+	c.properties = map[string]func(coal.Model) (interface{}, error){}
 	for name := range c.Properties {
-		// get method
-		method, ok := ptrType.MethodByName(name)
-		if !ok {
-			panic(fmt.Sprintf(`fire: missing property method "%s" for model "%s"`, name, c.meta.Name))
-		}
-
-		// check parameters and return values
-		if method.Type.NumIn() != 1 || method.Type.NumOut() < 1 || method.Type.NumOut() > 2 {
-			panic(fmt.Sprintf(`fire: expected property method "%s" for model "%s" to have no parameters and one or two return values`, name, c.meta.Name))
-		}
-
-		// check second return value
-		if method.Type.NumOut() == 2 && method.Type.Out(1).String() != "error" {
-			panic(fmt.Sprintf(`fire: expected second return value of property method "%s" for model "%s" to be of type error`, name, c.meta.Name))
-		}
-
-		// store method
-		c.properties[name] = method.Func
+		c.properties[name] = P(c.Model, name)
 	}
 }
 
@@ -2095,9 +2073,6 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		}
 	}
 
-	// prepare input
-	input := []reflect.Value{reflect.ValueOf(model)}
-
 	// call properties
 	for name, key := range c.Properties {
 		// check whitelist
@@ -2105,17 +2080,12 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			continue
 		}
 
-		// call method
-		out := c.properties[name].Call(input)
-
-		// check error
-		if len(out) == 2 {
-			err, _ := out[1].Interface().(error)
-			xo.AbortIf(err)
-		}
+		// call property
+		value, err := c.properties[name](model)
+		xo.AbortIf(err)
 
 		// set attribute
-		resource.Attributes[key] = out[0].Interface()
+		resource.Attributes[key] = value
 	}
 
 	return resource
