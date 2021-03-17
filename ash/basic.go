@@ -31,7 +31,7 @@ func Public() *Authorizer {
 // Note: This authorizer requires preliminary authorization using
 // flame.Callback().
 func Token(scope ...string) *Authorizer {
-	return A("api/Token", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
+	return A("ash/Token", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
 		// get auth info
 		info, _ := ctx.Data[flame.AuthInfoDataKey].(*flame.AuthInfo)
 		if info == nil {
@@ -57,7 +57,7 @@ func Token(scope ...string) *Authorizer {
 
 // Filter will authorize the request by enforcing the provided filter.
 func Filter(filter bson.M) *Authorizer {
-	return A("api/Filter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) ([]*Enforcer, error) {
+	return A("ash/Filter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) ([]*Enforcer, error) {
 		return S{AddFilter(filter)}, nil
 	})
 }
