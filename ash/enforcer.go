@@ -93,7 +93,7 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 // Note: This enforcer cannot be used to authorize Delete, ResourceAction and
 // CollectionAction operations.
 func WhitelistReadableProperties(fields ...string) *Enforcer {
-	return E("ash/WhitelistReadableProperties", fire.Only(fire.Create, fire.Update), func(ctx *fire.Context) error {
+	return E("ash/WhitelistReadableProperties", fire.Except(fire.Delete, fire.ResourceAction, fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
 		ctx.ReadableProperties = stick.Intersect(ctx.ReadableProperties, fields)
 
