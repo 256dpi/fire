@@ -9,9 +9,10 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var validFieldTag = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
+var validFieldTags = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
 
-// Matrix is used declaratively to specify field access of multiple candidates.
+// Matrix is used declaratively to specify field and property access of multiple
+// candidates.
 type Matrix struct {
 	// Model is the model being authorized.
 	Model coal.Model
@@ -20,9 +21,13 @@ type Matrix struct {
 	// authorization.
 	Candidates []*Authorizer
 
-	// Fields is the matrix that specifies read and write permissions per and
-	// field and candidate using the tags "R", "C", "U" and "W".
+	// Fields is the matrix that specifies read and write permissions per field
+	// and candidate using the tags "R", "C", "U" and "W".
 	Fields map[string][]string
+
+	// Properties is the matrix that specifies read permissions per property and
+	// candidate.
+	Properties map[string][]bool
 }
 
 // CollectFields will return a list of fields for the specified column in the
@@ -36,9 +41,9 @@ func (m *Matrix) CollectFields(i int, tags ...string) []string {
 		// ensure field
 		coal.F(m.Model, field)
 
-		// check tag
-		if !validFieldTag(permission[i]) {
-			panic("ash: invalid tag")
+		// check tags
+		if !validFieldTags(permission[i]) {
+			panic("ash: invalid tags")
 		}
 
 		// check if field as at least one tag
@@ -58,6 +63,26 @@ func (m *Matrix) CollectFields(i int, tags ...string) []string {
 	return fields
 }
 
+// CollectProperties will return a list of properties for the specified column
+// in the matrix.
+func (m *Matrix) CollectProperties(i int) []string {
+	// prepare properties
+	var properties []string
+
+	// collect properties
+	for property, permission := range m.Properties {
+		// ensure property
+		fire.P(m.Model, property)
+
+		// add property if present
+		if permission[i] {
+			properties = append(properties, property)
+		}
+	}
+
+	return properties
+}
+
 // Whitelist will return a list of authorizers that will authorize field access
 // for the specified candidates in the matrix. Fields is evaluated by checking
 // for the "R" (readable), "C" (creatable), "U" (updatable) and "W" (writable)
@@ -73,6 +98,9 @@ func (m *Matrix) CollectFields(i int, tags ...string) []string {
 //				"Title": {"R", "RC"},
 //				"Body":  {"R", "RW"},
 //			},
+//			Properties: map[string][]bool{
+//				"Info": {false, true},
+//			},
 //		}),
 //	}
 //
@@ -85,7 +113,7 @@ func Whitelist(m Matrix) []*Authorizer {
 			Writable:  m.CollectFields(i, "W"),
 			Creatable: m.CollectFields(i, "C"),
 			Updatable: m.CollectFields(i, "U"),
-		})))
+		}).And(WhitelistProperties(m.CollectProperties(i)))))
 	}
 
 	return authorizers
@@ -138,6 +166,29 @@ func WhitelistFields(fields Fields) *Authorizer {
 
 			// add enforcer
 			list = append(list, WhitelistWritableFields(writable...))
+		}
+
+		return list, nil
+	})
+}
+
+// WhitelistFields is an authorizer that will whitelist the readable properties
+// on the context using enforcers. It is recommended to authorize property
+// access in a separate strategy following general resource access as the
+// returned enforcers will always authorize the request. Furthermore, the easiest
+// is to implement a custom candidate authorizer with which this authorizer can
+// be chained together:
+//
+//	Token("user").And(WhitelistProperties([]string{"Info"})
+//
+func WhitelistProperties(readable []string) *Authorizer {
+	return A("ash/WhitelistProperties", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
+		// prepare list
+		list := S{GrantAccess()}
+
+		// add readable properties enforcer if possible
+		if ctx.Operation != fire.Delete && ctx.Operation != fire.ResourceAction && ctx.Operation != fire.CollectionAction {
+			list = append(list, WhitelistReadableProperties(readable...))
 		}
 
 		return list, nil

@@ -87,6 +87,20 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 	})
 }
 
+// WhitelistReadableProperties will enforce the authorization by making sure only
+// the specified properties are returned for the client.
+//
+// Note: This enforcer cannot be used to authorize Delete, ResourceAction and
+// CollectionAction operations.
+func WhitelistReadableProperties(fields ...string) *Enforcer {
+	return E("ash/WhitelistReadableProperties", fire.Only(fire.Create, fire.Update), func(ctx *fire.Context) error {
+		// set new list
+		ctx.ReadableProperties = stick.Intersect(ctx.ReadableProperties, fields)
+
+		return nil
+	})
+}
+
 // AddRelationshipFilter will enforce the authorization by adding the passed
 // relationship filter to the RelationshipFilter field of the context. It should
 // be used if the candidate is allowed to access the relationship in general, but

@@ -17,6 +17,10 @@ type postModel struct {
 	stick.NoValidation
 }
 
+func (p *postModel) Info() string {
+	return p.Title
+}
+
 func blank() *Authorizer {
 	return A("blank", fire.All(), func(_ *fire.Context) ([]*Enforcer, error) {
 		return nil, nil

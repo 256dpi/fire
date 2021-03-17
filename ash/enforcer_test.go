@@ -52,6 +52,18 @@ func TestWhitelistWritableFields(t *testing.T) {
 	assert.Equal(t, []string{}, ctx.WritableFields)
 }
 
+func TestWhitelistReadableProperties(t *testing.T) {
+	ctx := &fire.Context{ReadableProperties: []string{"foo", "bar", "baz"}}
+	err := tester.RunCallback(ctx, WhitelistReadableProperties("bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"bar"}, ctx.ReadableProperties)
+
+	ctx = &fire.Context{ReadableProperties: []string{}}
+	err = tester.RunCallback(ctx, WhitelistReadableProperties("foo", "bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{}, ctx.ReadableProperties)
+}
+
 func TestAddRelationshipFilter(t *testing.T) {
 	ctx := &fire.Context{}
 

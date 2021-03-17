@@ -30,12 +30,25 @@ func TestWhitelist(t *testing.T) {
 		})
 	})
 
+	assert.Panics(t, func() {
+		Whitelist(Matrix{
+			Model:      &postModel{},
+			Candidates: L{accessGranted(), accessGranted()},
+			Properties: map[string][]bool{
+				"Foo": {true, false}, // <- invalid property
+			},
+		})
+	})
+
 	authorizers := Whitelist(Matrix{
 		Model:      &postModel{},
 		Candidates: L{conditional("foo"), conditional("bar")},
 		Fields: map[string][]string{
 			"Title":     {"RW", "RC"},
 			"Published": {"R", "RU"},
+		},
+		Properties: map[string][]bool{
+			"Info": {true, false},
 		},
 	})
 	assert.Len(t, authorizers, 2)
@@ -45,10 +58,11 @@ func TestWhitelist(t *testing.T) {
 	})
 
 	ctx := &fire.Context{
-		Data:           stick.Map{"key": "foo"},
-		Operation:      fire.Create,
-		ReadableFields: []string{"Title", "Published", "Author"},
-		WritableFields: []string{"Title", "Published", "Author"},
+		Data:               stick.Map{"key": "foo"},
+		Operation:          fire.Create,
+		ReadableFields:     []string{"Title", "Published", "Author"},
+		WritableFields:     []string{"Title", "Published", "Author"},
+		ReadableProperties: []string{"Info"},
 	}
 
 	tester.WithContext(ctx, func(ctx *fire.Context) {
@@ -57,13 +71,15 @@ func TestWhitelist(t *testing.T) {
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
+		assert.Equal(t, []string{"Info"}, ctx.ReadableProperties)
 	})
 
 	ctx = &fire.Context{
-		Data:           stick.Map{"key": "bar"},
-		Operation:      fire.Create,
-		ReadableFields: []string{"Title", "Published", "Author"},
-		WritableFields: []string{"Title", "Published", "Author"},
+		Data:               stick.Map{"key": "bar"},
+		Operation:          fire.Create,
+		ReadableFields:     []string{"Title", "Published", "Author"},
+		WritableFields:     []string{"Title", "Published", "Author"},
+		ReadableProperties: []string{"Info"},
 	}
 
 	tester.WithContext(ctx, func(ctx *fire.Context) {
@@ -72,6 +88,7 @@ func TestWhitelist(t *testing.T) {
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
+		assert.Equal(t, []string{}, ctx.ReadableProperties)
 	})
 }
 
@@ -100,5 +117,28 @@ func TestWhitelistFields(t *testing.T) {
 
 		assert.Equal(t, []string{"Foo", "Bar"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Bar"}, ctx.WritableFields)
+	})
+}
+
+func TestWhitelistProperties(t *testing.T) {
+	authorizer := WhitelistProperties([]string{"Foo", "Bar"})
+	assert.NotNil(t, authorizer)
+
+	ctx := &fire.Context{
+		Operation:          fire.Create,
+		ReadableProperties: []string{"Foo", "Bar", "Baz"},
+	}
+
+	tester.WithContext(ctx, func(ctx *fire.Context) {
+		enforcers, err := authorizer.Handler(ctx)
+		assert.NoError(t, err)
+		assert.Len(t, enforcers, 2)
+
+		for _, enforcer := range enforcers {
+			err = enforcer.Handler(ctx)
+			assert.NoError(t, err)
+		}
+
+		assert.Equal(t, []string{"Foo", "Bar"}, ctx.ReadableProperties)
 	})
 }
