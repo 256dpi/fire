@@ -29,6 +29,26 @@ func (p *postModel) Validate() error {
 	return nil
 }
 
+func (p *postModel) Virtual() int64 {
+	return 42
+}
+
+func (p *postModel) VirtualError() (string, error) {
+	if p.Title == "virtual-error" {
+		return "", xo.SF("virtual error")
+	}
+
+	return p.Title, nil
+}
+
+func (p *postModel) SetTitle(title string) {
+	p.Title = title
+}
+
+func (p *postModel) Strings() (string, string) {
+	return p.Title, p.TextBody
+}
+
 type commentModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"comments"`
 	Message   string     `json:"message"`

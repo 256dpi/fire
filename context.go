@@ -160,6 +160,14 @@ type Context struct {
 	// Operations: Create, Update
 	WritableFields []string
 
+	// Only the whitelisted readable properties are exposed to the client as
+	// attributes.
+	//
+	// Usage: Reduce Only
+	// Availability: Authorizers
+	// Operations: !Delete, !ResourceActon, !CollectionAction
+	ReadableProperties []string
+
 	// The filters that will be applied when loading has one and has many
 	// relationships.
 	//

@@ -2994,6 +2994,281 @@ func TestSorting(t *testing.T) {
 	})
 }
 
+func TestProperties(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		// unknown property
+		assert.PanicsWithValue(t, `fire: missing property method "Foo" for model "fire.postModel"`, func() {
+			tester.Assign("", &Controller{
+				Model: &postModel{},
+				Properties: map[string]string{
+					"Foo": "foo",
+				},
+			})
+		})
+
+		// invalid shape
+		assert.PanicsWithValue(t, `fire: expected property method "SetTitle" for model "fire.postModel" to have no parameters and one or two return values`, func() {
+			tester.Assign("", &Controller{
+				Model: &postModel{},
+				Properties: map[string]string{
+					"SetTitle": "set-title",
+				},
+			})
+		})
+
+		// invalid second return value
+		assert.PanicsWithValue(t, `fire: expected second return value of property method "Strings" for model "fire.postModel" to be of type error`, func() {
+			tester.Assign("", &Controller{
+				Model: &postModel{},
+				Properties: map[string]string{
+					"Strings": "strings",
+				},
+			})
+		})
+
+		group := tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Properties: map[string]string{
+				"Virtual":      "virtual",
+				"VirtualError": "virtual-error",
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+		})
+
+		// catch errors
+		var errs []string
+		group.reporter = func(err error) {
+			errs = append(errs, err.Error())
+		}
+
+		// create post
+		post1 := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID().Hex()
+
+		// list
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": "",
+						"virtual": 42,
+						"virtual-error": "post-1"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				}],
+				"links": {
+					"self": "/posts"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// find
+		tester.Request("GET", "/posts/"+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": "",
+						"virtual": 42,
+						"virtual-error": "post-1"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create error post
+		errorPost := tester.Insert(&postModel{
+			Title: "virtual-error",
+		}).ID().Hex()
+
+		// error
+		tester.Request("GET", "/posts/"+errorPost, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusInternalServerError, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "500",
+					"title": "internal server error"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+		assert.Equal(t, "virtual error", errs[0])
+
+		// create
+		tester.Request("POST", "/posts", `{
+			"data": {
+				"type": "posts",
+				"attributes": {
+					"title": "post-2",
+					"published": true
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			post2 := tester.FindLast(&postModel{}).ID().Hex()
+
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": true,
+						"text-body": "",
+						"virtual": 42,
+						"virtual-error": "post-2"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post2+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// update
+		tester.Request("PATCH", "/posts/"+post1, `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1+`",
+				"attributes": {
+					"title": "Post 1"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": {
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "Post 1",
+						"published": true,
+						"text-body": "",
+						"virtual": 42,
+						"virtual-error": "Post 1"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
+				},
+				"links": {
+					"self": "/posts/`+post1+`"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestAuthorizers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
@@ -3883,6 +4158,9 @@ func TestSparseFields(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
+			Properties: map[string]string{
+				"Virtual": "virtual",
+			},
 		}, &Controller{
 			Model: &noteModel{},
 			Store: tester.Store,
@@ -3893,27 +4171,16 @@ func TestSparseFields(t *testing.T) {
 			Title: "Post 1",
 		}).ID()
 
-		// get posts with invalid filter
-		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"errors": [{
-					"status": "400",
-					"title": "bad request",
-					"detail": "invalid sparse field \"foo\""
-				}]
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
-		})
-
 		// get posts with single value filter
-		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title,virtual&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"data": {
 					"type": "posts",
 					"id": "`+post.Hex()+`",
 					"attributes": {
-						"title": "Post 1"
+						"title": "Post 1",
+						"virtual": 42
 					},
 					"relationships": {
 						"note": {
@@ -4300,6 +4567,92 @@ func TestWritableFields(t *testing.T) {
 					"title": "bad request",
 					"detail": "relationship is not writable"
 				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestReadableProperties(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Properties: map[string]string{
+				"Virtual":      "virtual",
+				"VirtualError": "virtual-error",
+			},
+			Authorizers: L{
+				C("TestReadableProperties", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{"Virtual", "VirtualError"}, ctx.ReadableProperties)
+					ctx.ReadableProperties = []string{"Virtual"}
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &noteModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestReadableProperties", All(), func(ctx *Context) error {
+					assert.Equal(t, []string{}, ctx.ReadableProperties)
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &commentModel{},
+			Store: tester.Store,
+		}, &Controller{
+			Model: &selectionModel{},
+			Store: tester.Store,
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID().Hex()
+
+		// get posts with single value filter
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post+`",
+						"attributes": {
+							"title": "post-1",
+							"published": true,
+							"text-body": "",
+							"virtual": 42
+						},
+						"relationships": {
+							"comments": {
+								"data": [],
+								"links": {
+									"self": "/posts/`+post+`/relationships/comments",
+									"related": "/posts/`+post+`/comments"
+								}
+							},
+							"selections": {
+								"data": [],
+								"links": {
+									"self": "/posts/`+post+`/relationships/selections",
+									"related": "/posts/`+post+`/selections"
+								}
+							},
+							"note": {
+								"data": null,
+								"links": {
+									"self": "/posts/`+post+`/relationships/note",
+									"related": "/posts/`+post+`/note"
+								}
+							}
+						}
+					}
+				],
+				"links": {
+					"self": "/posts"
+				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 	})

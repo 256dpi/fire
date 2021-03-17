@@ -47,6 +47,11 @@ type Controller struct {
 	// exposed and indexed should be made sortable.
 	Sorters []string
 
+	// Properties is a mapping of model properties to attribute keys. These properties
+	// are called and their result set as attributes before returning the
+	// response.
+	Properties map[string]string
+
 	// Authorizers authorize the requested operation on the requested resource
 	// and are run before any models are loaded from the store. Returned errors
 	// will cause the abortion of the request with an unauthorized status by
@@ -152,8 +157,9 @@ type Controller struct {
 	// a TTL index to delete the documents automatically after some timeout.
 	SoftDelete bool
 
-	parser jsonapi.Parser
-	meta   *coal.Meta
+	parser     jsonapi.Parser
+	meta       *coal.Meta
+	properties map[string]reflect.Value
 }
 
 func (c *Controller) prepare() {
@@ -249,6 +255,34 @@ func (c *Controller) prepare() {
 			panic(fmt.Sprintf(`fire: consistent update field "%s" for model "%s" is not of type "string"`, fieldName, c.meta.Name))
 		}
 	}
+
+	// get pointer type
+	ptrType := reflect.PtrTo(c.meta.Type)
+
+	// prepare properties
+	c.properties = map[string]reflect.Value{}
+
+	// lookup properties
+	for name := range c.Properties {
+		// get method
+		method, ok := ptrType.MethodByName(name)
+		if !ok {
+			panic(fmt.Sprintf(`fire: missing property method "%s" for model "%s"`, name, c.meta.Name))
+		}
+
+		// check parameters and return values
+		if method.Type.NumIn() != 1 || method.Type.NumOut() < 1 || method.Type.NumOut() > 2 {
+			panic(fmt.Sprintf(`fire: expected property method "%s" for model "%s" to have no parameters and one or two return values`, name, c.meta.Name))
+		}
+
+		// check second return value
+		if method.Type.NumOut() == 2 && method.Type.Out(1).String() != "error" {
+			panic(fmt.Sprintf(`fire: expected second return value of property method "%s" for model "%s" to be of type error`, name, c.meta.Name))
+		}
+
+		// store method
+		c.properties[name] = method.Func
+	}
 }
 
 func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write bool) {
@@ -325,6 +359,7 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	ctx.Filters = []bson.M{}
 	ctx.ReadableFields = c.initialFields(false, ctx.JSONAPIRequest)
 	ctx.WritableFields = c.initialFields(true, nil)
+	ctx.ReadableProperties = c.initialProperties(ctx.JSONAPIRequest)
 	ctx.RelationshipFilters = map[string][]bson.M{}
 
 	// set store
@@ -1345,17 +1380,50 @@ func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
 			// add attribute
 			if f := c.meta.Attributes[field]; f != nil {
 				requested = append(requested, f.Name)
-				continue
 			}
 
 			// add relationship
 			if f := c.meta.Relationships[field]; f != nil && (!write || f.ToOne || f.ToMany) {
 				requested = append(requested, f.Name)
-				continue
 			}
+		}
 
-			// raise error
-			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sparse field "%s"`, field)))
+		// whitelist requested fields
+		list = stick.Intersect(requested, list)
+	}
+
+	// sort list
+	sort.Strings(list)
+
+	return list
+}
+
+func (c *Controller) initialProperties(r *jsonapi.Request) []string {
+	// prepare list
+	list := make([]string, 0, len(c.Properties))
+
+	// add properties
+	for name := range c.Properties {
+		list = append(list, name)
+	}
+
+	// check if a field whitelist has been provided
+	if r != nil && len(r.Fields[c.meta.PluralName]) > 0 {
+		// convert requested fields list
+		var requested []string
+		for _, field := range r.Fields[c.meta.PluralName] {
+			// add attribute
+			var found bool
+			var name string
+			for n, key := range c.Properties {
+				if field == key {
+					found = true
+					name = n
+				}
+			}
+			if found {
+				requested = append(requested, name)
+			}
 		}
 
 		// whitelist requested fields
@@ -2025,6 +2093,29 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 				},
 			}
 		}
+	}
+
+	// prepare input
+	input := []reflect.Value{reflect.ValueOf(model)}
+
+	// call properties
+	for name, key := range c.Properties {
+		// check whitelist
+		if !stick.Contains(ctx.ReadableProperties, name) {
+			continue
+		}
+
+		// call method
+		out := c.properties[name].Call(input)
+
+		// check error
+		if len(out) == 2 {
+			err, _ := out[1].Interface().(error)
+			xo.AbortIf(err)
+		}
+
+		// set attribute
+		resource.Attributes[key] = out[0].Interface()
 	}
 
 	return resource
