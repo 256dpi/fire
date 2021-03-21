@@ -76,6 +76,39 @@ func TestQueueing(t *testing.T) {
 			},
 		}, model)
 
+		job.Data = "1,2,3..."
+		err = Update(nil, tester.Store, &job, "Crunching!", 0.42)
+		assert.NoError(t, err)
+
+		model = tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "test",
+			Data: stick.Map{
+				"data": "1,2,3...",
+			},
+			State:     Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  1,
+			Status:    "Crunching!",
+			Progress:  0.42,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					State:     Enqueued,
+				},
+				{
+					Timestamp: *model.Started,
+					State:     Dequeued,
+				},
+			},
+		}, model)
+
 		job.Data = "Hello!!!"
 		err = Complete(nil, tester.Store, &job)
 		assert.NoError(t, err)
@@ -99,6 +132,7 @@ func TestQueueing(t *testing.T) {
 			Ended:     model.Ended,
 			Finished:  model.Finished,
 			Attempts:  1,
+			Progress:  1,
 			Events: []Event{
 				{
 					Timestamp: model.Created,

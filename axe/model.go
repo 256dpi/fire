@@ -75,6 +75,12 @@ type Model struct {
 	// Attempts is incremented with each execution attempt.
 	Attempts int `json:"attempts"`
 
+	// The current execution status.
+	Status string `json:":status"`
+
+	// The execution progress.
+	Progress float64 `json:"progress"`
+
 	// The individual job events.
 	Events []Event `json:"events"`
 }

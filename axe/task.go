@@ -65,6 +65,11 @@ type Context struct {
 	Tracer *xo.Tracer
 }
 
+// Update will update the job and set the provided execution status and progress.
+func (c *Context) Update(status string, progress float64) error {
+	return Update(c, c.Queue.options.Store, c.Job, status, progress)
+}
+
 // Task describes work that is managed using a job queue.
 type Task struct {
 	// The job this task should execute.

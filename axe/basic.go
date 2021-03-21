@@ -201,6 +201,53 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	return true, model.Attempts, nil
 }
 
+// Update will update the specified job and set the provided execution status
+// and progress.
+func Update(ctx context.Context, store *coal.Store, job Job, status string, progress float64) error {
+	// get meta and base
+	meta := GetMeta(job)
+	base := job.GetBase()
+
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Update")
+	span.Tag("name", meta.Name)
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	defer span.End()
+
+	// validate job
+	err := job.Validate()
+	if err != nil {
+		return err
+	}
+
+	// encode job
+	var data stick.Map
+	err = data.Marshal(job, meta.Coding)
+	if err != nil {
+		return err
+	}
+
+	// update job
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":   job.ID(),
+		"State": Dequeued,
+	}, bson.M{
+		"$set": bson.M{
+			"Data":     data,
+			"Status":   status,
+			"Progress": progress,
+		},
+	}, nil, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return xo.F("missing job")
+	}
+
+	return nil
+}
+
 // Complete will complete the specified job. Only jobs in the "dequeued" state
 // can be completed.
 func Complete(ctx context.Context, store *coal.Store, job Job) error {
@@ -241,6 +288,8 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 			"Data":     data,
 			"Ended":    now,
 			"Finished": now,
+			"Status":   "",
+			"Progress": 1,
 		},
 		"$push": bson.M{
 			"Events": Event{

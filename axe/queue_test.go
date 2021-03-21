@@ -25,7 +25,14 @@ func TestQueue(t *testing.T) {
 			Job: &testJob{},
 			Handler: func(ctx *Context) error {
 				job := ctx.Job.(*testJob)
+
+				err := ctx.Update("1,2,3...", 0.42)
+				if err != nil {
+					return err
+				}
+
 				job.Data = "Hello!!!"
+
 				return nil
 			},
 			Notifier: func(ctx *Context, cancelled bool, reason string) error {
