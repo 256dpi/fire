@@ -172,12 +172,12 @@ func WhitelistFields(fields Fields) *Authorizer {
 	})
 }
 
-// WhitelistFields is an authorizer that will whitelist the readable properties
-// on the context using enforcers. It is recommended to authorize property
-// access in a separate strategy following general resource access as the
-// returned enforcers will always authorize the request. Furthermore, the easiest
-// is to implement a custom candidate authorizer with which this authorizer can
-// be chained together:
+// WhitelistProperties is an authorizer that will whitelist the readable
+// properties on the context using enforcers. It is recommended to authorize
+// property access in a separate strategy following general resource access as
+// the returned enforcers will always authorize the request. Furthermore, the
+// easiest is to implement a custom candidate authorizer with which this
+// authorizer can be chained together:
 //
 //	Token("user").And(WhitelistProperties([]string{"Info"})
 //
