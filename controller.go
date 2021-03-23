@@ -126,9 +126,9 @@ type Controller struct {
 	CollectionActions map[string]*Action
 	ResourceActions   map[string]*Action
 
-	// TolerateViolations will prevent errors if a non-writable field is
-	// changed during a Create or Update operation.
-	TolerateViolations bool
+	// TolerateViolations will prevent errors if the specified non-writable
+	// fields are changed during a Create or Update operation.
+	TolerateViolations []string
 
 	// IdempotentCreate can be set to true to enable the idempotent create
 	// mechanism. When creating resources, clients have to generate and submit a
@@ -1626,7 +1626,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// check whitelist
 		if !stick.Contains(whitelist, name) {
 			// ignore violation if tolerated or verify read only access
-			if c.TolerateViolations {
+			if stick.Contains(c.TolerateViolations, field.Name) {
 				continue
 			} else {
 				verifyReadOnly = append(verifyReadOnly, field.Name)
@@ -1652,7 +1652,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 		// check whitelist
 		if !stick.Contains(whitelist, name) || (!field.ToOne && !field.ToMany) {
 			// ignore violation if tolerated or verify read only access
-			if c.TolerateViolations {
+			if stick.Contains(c.TolerateViolations, field.Name) {
 				continue
 			} else {
 				verifyReadOnly = append(verifyReadOnly, field.Name)

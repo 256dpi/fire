@@ -5005,7 +5005,7 @@ func TestTolerateViolations(t *testing.T) {
 					return nil
 				}),
 			},
-			TolerateViolations: true,
+			TolerateViolations: []string{"Published"},
 		}, &Controller{
 			Model: &commentModel{},
 			Store: tester.Store,
@@ -5018,7 +5018,7 @@ func TestTolerateViolations(t *testing.T) {
 					return nil
 				}),
 			},
-			TolerateViolations: true,
+			TolerateViolations: []string{"Posts"},
 		}, &Controller{
 			Model: &noteModel{},
 			Store: tester.Store,
