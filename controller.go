@@ -1601,12 +1601,24 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// prepare fields to verify read only access
 	verifyReadOnly := make([]string, 0, len(res.Attributes)+len(res.Relationships))
 
+	// collect properties
+	properties := make([]string, 0, len(c.Properties))
+	for _, key := range c.Properties {
+		properties = append(properties, key)
+	}
+
 	// whitelist attributes
 	attributes := make(jsonapi.Map)
 	for name, value := range res.Attributes {
 		// get field
 		field := c.meta.Attributes[name]
 		if field == nil {
+			// continue if property
+			if stick.Contains(properties, name) {
+				continue
+			}
+
+			// otherwise raise error
 			pointer := fmt.Sprintf("/data/attributes/%s", name)
 			xo.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
 		}

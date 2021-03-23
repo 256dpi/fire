@@ -3167,7 +3167,8 @@ func TestProperties(t *testing.T) {
 				"type": "posts",
 				"attributes": {
 					"title": "post-2",
-					"published": true
+					"published": true,
+					"virtual": 42
 				}
 			}
 		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
