@@ -65,7 +65,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	}
 
 	// set content type
-	req.Header.Set("Content-Type", mimeTypes[meta.Coding])
+	req.Header.Set("Content-Type", meta.Coding.MimeType())
 
 	// perform request
 	res, err := c.http.Do(req)

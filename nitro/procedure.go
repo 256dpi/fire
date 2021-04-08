@@ -8,11 +8,6 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var mimeTypes = map[stick.Coding]string{
-	stick.JSON: "application/json",
-	stick.BSON: "application/bson",
-}
-
 // Procedure denotes types that can be processed by the BSON-RPC system.
 type Procedure interface {
 	Validate() error

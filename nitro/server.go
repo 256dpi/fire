@@ -162,7 +162,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 		}
 
 		// write header
-		ctx.Writer.Header().Set("Content-Type", mimeTypes[meta.Coding])
+		ctx.Writer.Header().Set("Content-Type", meta.Coding.MimeType())
 		ctx.Writer.WriteHeader(anError.Status)
 
 		// write body
@@ -179,7 +179,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 	}
 
 	// write header
-	ctx.Writer.Header().Set("Content-Type", mimeTypes[meta.Coding])
+	ctx.Writer.Header().Set("Content-Type", meta.Coding.MimeType())
 	ctx.Writer.WriteHeader(http.StatusOK)
 
 	// write response
