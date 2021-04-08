@@ -34,14 +34,18 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 		ctx = context.Background()
 	}
 
+	// get meta
+	meta := GetMeta(proc)
+
+	// trace request
+	ctx, span := xo.Trace(ctx, "CALL "+meta.Name)
+	defer span.End()
+
 	// pre validate
 	err := proc.Validate()
 	if err != nil {
 		return xo.W(err)
 	}
-
-	// get meta
-	meta := GetMeta(proc)
 
 	// prepare url
 	url := fmt.Sprintf("%s/%s", strings.TrimRight(c.base, "/"), meta.Name)
@@ -51,6 +55,8 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO: Set trace headers.
 
 	// create request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(buf))

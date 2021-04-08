@@ -87,10 +87,17 @@ func (s *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get meta
+	meta := GetMeta(handler.Procedure)
+
+	// trace
+	reqCTX, span := xo.Trace(r.Context(), "PROC "+meta.Name)
+	defer span.End()
+
 	// prepare context
 	ctx := &Context{
-		Context:   r.Context(),
-		Procedure: GetMeta(handler.Procedure).Make(),
+		Context:   reqCTX,
+		Procedure: meta.Make(),
 		Handler:   handler,
 		Request:   r,
 		Writer:    w,
