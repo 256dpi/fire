@@ -36,6 +36,7 @@ func TestRPC(t *testing.T) {
 		Callback: func(ctx *Context) error {
 			// get proc
 			proc := ctx.Procedure.(*procedure)
+			assert.True(t, proc.Response)
 
 			// check foo
 			if proc.Foo == "panic" {
@@ -99,7 +100,10 @@ func TestRPC(t *testing.T) {
 	proc = &procedure{}
 	err = client.Call(nil, proc)
 	assert.NoError(t, err)
-	assert.Equal(t, &procedure{Foo: "bar"}, proc)
+	assert.Equal(t, &procedure{
+		Base: Base{Response: true},
+		Foo:  "bar",
+	}, proc)
 
 	/* panic */
 

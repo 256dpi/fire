@@ -16,7 +16,10 @@ type Procedure interface {
 }
 
 // Base can be embedded in a struct to turn it into a procedure.
-type Base struct{}
+type Base struct {
+	// Response is set to true if the procedure is treated as a response.
+	Response bool
+}
 
 // GetBase implements the Key interface.
 func (b *Base) GetBase() *Base {

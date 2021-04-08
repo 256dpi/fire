@@ -100,6 +100,9 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 		return err
 	}
 
+	// set response flag
+	proc.GetBase().Response = true
+
 	// post validate
 	err = proc.Validate()
 	if err != nil {

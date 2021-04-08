@@ -94,10 +94,13 @@ func (s *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqCTX, span := xo.Trace(r.Context(), "PROC "+meta.Name)
 	defer span.End()
 
+	// prepare procedure
+	proc := meta.Make()
+
 	// prepare context
 	ctx := &Context{
 		Context:   reqCTX,
-		Procedure: meta.Make(),
+		Procedure: proc,
 		Handler:   handler,
 		Request:   r,
 		Writer:    w,
@@ -135,6 +138,9 @@ func (s *Endpoint) Process(ctx *Context) error {
 	if err != nil {
 		return xo.W(err)
 	}
+
+	// set response flag
+	ctx.Procedure.GetBase().Response = true
 
 	// run callback
 	err = xo.Catch(func() error {
