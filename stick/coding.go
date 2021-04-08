@@ -115,6 +115,18 @@ func (c Coding) Transfer(in, out interface{}) error {
 	return nil
 }
 
+// MimeType returns the coding mim type.
+func (c Coding) MimeType() string {
+	switch c {
+	case JSON:
+		return "application/json"
+	case BSON:
+		return "application/bson"
+	default:
+		panic(fmt.Sprintf("stick: unknown coding %q", c))
+	}
+}
+
 // GetKey will return the coding key for the specified struct field.
 func (c Coding) GetKey(field reflect.StructField) string {
 	// get tag
