@@ -61,7 +61,7 @@ func (c Coding) Marshal(in interface{}) ([]byte, error) {
 
 		return nil, xo.W(err)
 	default:
-		panic(fmt.Sprintf("coal: unknown coding %q", c))
+		panic(fmt.Sprintf("stick: unknown coding %q", c))
 	}
 }
 
@@ -80,7 +80,7 @@ func (c Coding) Unmarshal(in []byte, out interface{}) error {
 
 		return xo.W(bson.Unmarshal(in, out))
 	default:
-		panic(fmt.Sprintf("coal: unknown coding %q", c))
+		panic(fmt.Sprintf("stick: unknown coding %q", c))
 	}
 }
 
