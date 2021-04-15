@@ -122,6 +122,12 @@ func (s *Store) Client() lungo.IClient {
 	return s.client
 }
 
+// Lungo returns whether the stores uses a lungo instead of a mongo client.
+func (s *Store) Lungo() bool {
+	_, ok := s.client.(*lungo.Client)
+	return ok
+}
+
 // DB returns the database used by this store.
 func (s *Store) DB() lungo.IDatabase {
 	return s.client.Database(s.defDB)

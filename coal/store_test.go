@@ -34,6 +34,11 @@ func TestOpen(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestStoreLungo(t *testing.T) {
+	assert.True(t, lungoStore.Lungo())
+	assert.False(t, mongoStore.Lungo())
+}
+
 func TestStoreT(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		assert.False(t, HasTransaction(nil))
