@@ -68,7 +68,7 @@ func (m *polyModel) Validate() error {
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)
 var lungoStore = MustOpen(nil, "test-fire-coal", xo.Panic)
 
-var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &polyModel{}}
+var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &polyModel{}, &fooModel{}}
 
 func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
