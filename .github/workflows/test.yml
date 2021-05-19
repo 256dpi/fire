@@ -10,6 +10,8 @@ jobs:
           go-version: 1.16.x
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Prepare
+        run: sudo apt-get install graphviz
       - name: MongoDB
         uses: supercharge/mongodb-github-action@1.4.0
         with:
