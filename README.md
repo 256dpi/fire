@@ -2,11 +2,9 @@
 
 # Go on Fire
 
-[![Build Status](https://travis-ci.org/256dpi/fire.svg?branch=master)](https://travis-ci.org/256dpi/fire)
-[![Coverage Status](https://coveralls.io/repos/github/256dpi/fire/badge.svg?branch=master)](https://coveralls.io/github/256dpi/fire?branch=master)
+[![Test](https://github.com/256dpi/fire/actions/workflows/test.yml/badge.svg)](https://github.com/256dpi/fire/actions/workflows/test.yml)
 [![GoDoc](https://godoc.org/github.com/256dpi/fire?status.svg)](http://godoc.org/github.com/256dpi/fire)
 [![Release](https://img.shields.io/github/release/256dpi/fire.svg)](https://github.com/256dpi/fire/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/fire)](http://goreportcard.com/report/256dpi/fire)
 
 **An idiomatic micro-framework for building Ember.js compatible APIs with Go.**
 
