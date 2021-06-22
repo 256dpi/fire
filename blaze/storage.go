@@ -63,7 +63,7 @@ func (s *Storage) Upload(ctx context.Context, name, mediaType string, cb func(Up
 	// set default type
 	if mediaType == "" {
 		if name != "" {
-			mediaType = mime.TypeByExtension(path.Ext(name))
+			mediaType = serve.MimeTypeByExtension(path.Ext(name), false)
 		}
 		if mediaType == "" {
 			mediaType = "application/octet-stream"
