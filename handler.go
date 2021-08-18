@@ -11,7 +11,7 @@ type Callback struct {
 	// The matcher that decides whether the callback should be run.
 	Matcher Matcher
 
-	// The handler handler that gets executed with the context.
+	// The handler that gets executed with the context.
 	//
 	// If returned errors are marked with Safe() they will be included in the
 	// returned JSON-API error.
@@ -64,7 +64,7 @@ type Action struct {
 	// Default: 30s.
 	Timeout time.Duration
 
-	// The handler handler that gets executed with the context.
+	// The handler that gets executed with the context.
 	//
 	// If returned errors are marked with Safe() they will be included in the
 	// returned JSON-API error.

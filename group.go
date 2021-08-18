@@ -214,7 +214,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 			}
 		}
 
-		// otherwise return error
+		// otherwise, return error
 		xo.Abort(jsonapi.NotFound("resource not found"))
 	})
 }

@@ -24,52 +24,52 @@ type Operation int
 const (
 	_ Operation = iota
 
-	// The list operation will used to authorize the loading of multiple
+	// List operation will be used to authorize the loading of multiple
 	// resources from a collection.
 	//
 	// Note: This operation is also used to load related resources.
 	List
 
-	// The find operation will be used to authorize the loading of a specific
+	// Find operation will be used to authorize the loading of a specific
 	// resource from a collection.
 	//
 	// Note: This operation is also used to load a specific related resource.
 	Find
 
-	// The create operation will be used to authorize and validate the creation
+	// Create operation will be used to authorize and validate the creation
 	// of a new resource in a collection.
 	Create
 
-	// The update operation will be used to authorize the loading and validate
+	// Update operation will be used to authorize the loading and validate
 	// the updating of a specific resource in a collection.
 	//
 	// Note: Updates can include attributes, relationships or both.
 	Update
 
-	// The delete operation will be used to authorize the loading and validate
+	// Delete operation will be used to authorize the loading and validate
 	// the deletion of a specific resource in a collection.
 	Delete
 
-	// The collection action operation will be used to authorize the execution
+	// CollectionAction operation will be used to authorize the execution
 	// of a callback for a collection action.
 	CollectionAction
 
-	// The resource action operation will be used to authorize the execution
-	// of a callback for a resource action.
+	// ResourceAction operation will be used to authorize the execution of a
+	// callback for a resource action.
 	ResourceAction
 )
 
-// Read will return true when this operations does only read data.
+// Read will return true when the operations only reads data.
 func (o Operation) Read() bool {
 	return o == List || o == Find
 }
 
-// Write will return true when this operation does write data.
+// Write will return true when the operation writes data.
 func (o Operation) Write() bool {
 	return o == Create || o == Update || o == Delete
 }
 
-// Action will return true when this operation is a collection or resource action.
+// Action will return true when the operation is a collection or resource action.
 func (o Operation) Action() bool {
 	return o == CollectionAction || o == ResourceAction
 }
@@ -115,7 +115,7 @@ type Context struct {
 	// Availability: Authorizers
 	Operation Operation
 
-	// The query that will be used during an List, Find, Update, Delete or
+	// The query that will be used during a List, Find, Update, Delete or
 	// ResourceAction operation to select a list of models or a specific model.
 	//
 	// On Find, Update and Delete operations, the "_id" key is preset to the
@@ -127,7 +127,7 @@ type Context struct {
 	// Operations: !Create, !CollectionAction
 	Selector bson.M
 
-	// The filters that will be used during an List, Find, Update, Delete or
+	// The filters that will be used during a List, Find, Update, Delete or
 	// ResourceAction operation to further filter the selection of a list of
 	// models or a specific model.
 	//
@@ -184,7 +184,7 @@ type Context struct {
 	// Operations: Create, Update, Delete, ResourceAction
 	Model coal.Model
 
-	// The models that will will be returned for a List operation.
+	// The models that will be returned for a List operation.
 	//
 	// Usage: Modify Only
 	// Availability: Decorators
@@ -300,7 +300,7 @@ func (c *Context) Query() bson.M {
 		return bson.M{}
 	}
 
-	// otherwise return $and query
+	// otherwise, return $and query
 	return bson.M{"$and": subQueries}
 }
 

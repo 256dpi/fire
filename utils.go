@@ -7,7 +7,7 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-// P is a short-hand to lookup the specified property method on the provided
+// P is a short-hand to look up the specified property method on the provided
 // model. It will return a function that can be used to evaluate the property.
 func P(model coal.Model, name string) func(coal.Model) (interface{}, error) {
 	// get meta

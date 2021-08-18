@@ -257,5 +257,5 @@ func (t *Tester) DebugRequest(r *http.Request, rr *httptest.ResponseRecorder) st
 	Header: %s
 	Status: %d
 	Header: %v
-	Body:   %v`, r.URL.String(), r.Header, rr.Code, rr.HeaderMap, rr.Body.String())
+	Body:   %v`, r.URL.String(), r.Header, rr.Code, rr.Result().Header, rr.Body.String())
 }

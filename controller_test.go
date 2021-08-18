@@ -4172,8 +4172,8 @@ func TestSparseFields(t *testing.T) {
 			Title: "Post 1",
 		}).ID()
 
-		// get posts with single value filter
 		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title,virtual&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		// get posts
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"data": {
@@ -4612,7 +4612,7 @@ func TestReadableProperties(t *testing.T) {
 			Published: true,
 		}).ID().Hex()
 
-		// get posts with single value filter
+		// get posts
 		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{

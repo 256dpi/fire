@@ -35,7 +35,7 @@ type Controller struct {
 	Store *coal.Store
 
 	// Supported may be set to limit the supported operations of a controller.
-	// By default all operations are supported. If the operation is not
+	// By default, all operations are supported. If the operation is not
 	// supported the request will be aborted with an unsupported method error.
 	Supported Matcher
 
@@ -59,7 +59,7 @@ type Controller struct {
 	//
 	// The callbacks are expected to return an error if the requester should be
 	// informed about being unauthorized to access the resource, or add filters
-	// to the context to only return accessible resources. The later improves
+	// to the context to only return accessible resources. The latter improves
 	// privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
 
@@ -1434,7 +1434,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
-	// lock document if a write is expected
+	// lock document if a write operation is expected
 	lock := ctx.Operation.Write()
 
 	// find model
@@ -1582,7 +1582,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	// prepare whitelist
 	var whitelist []string
 
-	// covert field names to attributes and relationships
+	// convert attribute and relationship field names
 	for _, field := range ctx.WritableFields {
 		// get field
 		f := c.meta.Fields[field]
@@ -1618,7 +1618,7 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 				continue
 			}
 
-			// otherwise raise error
+			// otherwise, raise error
 			pointer := fmt.Sprintf("/data/attributes/%s", name)
 			xo.Abort(jsonapi.BadRequestPointer("invalid attribute", pointer))
 		}
@@ -1754,7 +1754,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
 
-	// covert field names to relationships
+	// convert relationship field names
 	for _, field := range ctx.ReadableFields {
 		// get field
 		f := c.meta.Fields[field]
@@ -1907,7 +1907,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 	// prepare whitelist
 	whitelist := make([]string, 0, len(ctx.ReadableFields))
 
-	// covert field names to attributes and relationships
+	// convert attribute and relationship field names
 	for _, field := range ctx.ReadableFields {
 		// get field
 		f := c.meta.Fields[field]
