@@ -2037,7 +2037,7 @@ func TestFiltering(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?filter[title]=post-1"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2123,7 +2123,7 @@ func TestFiltering(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?filter[title]=post-2,post-3"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2212,7 +2212,7 @@ func TestFiltering(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?filter[published]=true"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2261,7 +2261,7 @@ func TestFiltering(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?filter[published]=false"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2322,7 +2322,7 @@ func TestFiltering(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/selections/`+selection+`/posts"
+					"self": "/selections/`+selection+`/posts?filter[published]=false"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2365,7 +2365,7 @@ func TestFiltering(t *testing.T) {
 	    			}
 	  			],
 	  			"links": {
-	    			"self": "/notes"
+	    			"self": "/notes?filter[post]=`+post1+`"
 	  			}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2406,7 +2406,7 @@ func TestFiltering(t *testing.T) {
 					}
 			  	],
 			  	"links": {
-					"self": "/selections"
+					"self": "/selections?filter[posts]=`+post1+`"
 			  	}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2572,7 +2572,7 @@ func TestSorting(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?sort=title"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2680,7 +2680,7 @@ func TestSorting(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?sort=-title"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2788,7 +2788,7 @@ func TestSorting(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts"
+					"self": "/posts?sort=text-body"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2897,7 +2897,7 @@ func TestSorting(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts/`+post.Hex()+`/comments"
+					"self": "/posts/`+post.Hex()+`/comments?sort=message"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2987,7 +2987,7 @@ func TestSorting(t *testing.T) {
 					}
 				],
 				"links": {
-					"self": "/posts/`+post.Hex()+`/comments"
+					"self": "/posts/`+post.Hex()+`/comments?sort=-message"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -4172,8 +4172,8 @@ func TestSparseFields(t *testing.T) {
 			Title: "Post 1",
 		}).ID()
 
-		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title,virtual&fields[posts]=note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 		// get posts
+		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title,virtual,note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"data": {
@@ -4194,7 +4194,7 @@ func TestSparseFields(t *testing.T) {
 					}
 				},
 				"links": {
-					"self": "/posts/`+post.Hex()+`"
+					"self": "/posts/`+post.Hex()+`?fields[posts]=title,virtual,note"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -4226,7 +4226,7 @@ func TestSparseFields(t *testing.T) {
 					}
 				},
 				"links": {
-					"self": "/posts/`+post.Hex()+`/note"
+					"self": "/posts/`+post.Hex()+`/note?fields[notes]=post"
 				}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})

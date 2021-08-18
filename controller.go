@@ -417,7 +417,7 @@ func (c *Controller) listResources(ctx *Context) {
 		Data: &jsonapi.HybridResource{
 			Many: c.resourcesForModels(ctx, ctx.Models, relationships),
 		},
-		Links: c.listLinks(ctx.JSONAPIRequest.Self(), ctx),
+		Links: c.listLinks(ctx),
 	}
 	ctx.ResponseCode = http.StatusOK
 
@@ -563,7 +563,7 @@ func (c *Controller) createResource(ctx *Context) {
 			One: c.resourceForModel(ctx, ctx.Model, nil),
 		},
 		Links: &jsonapi.DocumentLinks{
-			Self: ctx.JSONAPIRequest.Self() + "/" + ctx.Model.ID().Hex(),
+			Self: ctx.JSONAPIRequest.Base() + "/" + ctx.Model.ID().Hex(),
 		},
 	}
 	ctx.ResponseCode = http.StatusCreated
@@ -933,7 +933,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	ctx.ResponseCode = subCtx.ResponseCode
 
 	// rewrite links
-	from, to := subCtx.JSONAPIRequest.Self(), ctx.JSONAPIRequest.Self()
+	from, to := subCtx.JSONAPIRequest.Path(), ctx.JSONAPIRequest.Path()
 	ctx.Response.Links.Self = strings.Replace(ctx.Response.Links.Self, from, to, 1)
 	ctx.Response.Links.Related = strings.Replace(ctx.Response.Links.Related, from, to, 1)
 	ctx.Response.Links.First = strings.Replace(ctx.Response.Links.First, from, to, 1)
@@ -2103,14 +2103,14 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 	return resource
 }
 
-func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks {
+func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 	// trace
 	ctx.Tracer.Push("fire/Controller.listLinks")
 	defer ctx.Tracer.Pop()
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: self,
+		Self: ctx.JSONAPIRequest.Self(),
 	}
 
 	// add pagination links
@@ -2122,19 +2122,25 @@ func (c *Controller) listLinks(self string, ctx *Context) *jsonapi.DocumentLinks
 		// calculate last page
 		lastPage := int64(math.Ceil(float64(count) / float64(ctx.JSONAPIRequest.PageSize)))
 
-		// add basic pagination links
-		links.Self = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber, ctx.JSONAPIRequest.PageSize)
-		links.First = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, 1, ctx.JSONAPIRequest.PageSize)
-		links.Last = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, lastPage, ctx.JSONAPIRequest.PageSize)
+		// copy request
+		req := *ctx.JSONAPIRequest
+
+		// add first and last links
+		req.PageNumber = 1
+		links.First = req.Self()
+		req.PageNumber = lastPage
+		links.Last = req.Self()
 
 		// add previous link if not on first page
 		if ctx.JSONAPIRequest.PageNumber > 1 {
-			links.Previous = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber-1, ctx.JSONAPIRequest.PageSize)
+			req.PageNumber = ctx.JSONAPIRequest.PageNumber - 1
+			links.Previous = req.Self()
 		}
 
 		// add next link if not on last page
 		if ctx.JSONAPIRequest.PageNumber < lastPage {
-			links.Next = fmt.Sprintf("%s?page[number]=%d&page[size]=%d", self, ctx.JSONAPIRequest.PageNumber+1, ctx.JSONAPIRequest.PageSize)
+			req.PageNumber = ctx.JSONAPIRequest.PageNumber + 1
+			links.Next = req.Self()
 		}
 	}
 
