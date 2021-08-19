@@ -4310,6 +4310,42 @@ func TestReadableFields(t *testing.T) {
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
+
+		// filter posts
+		tester.Request("GET", "posts?filter[title]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "filter field is not readable"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// filter notes
+		tester.Request("GET", "notes?filter[post]="+post.Hex(), "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "filter field is not readable"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// sort posts
+		tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "sort field is not readable"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
 	})
 }
 

@@ -1486,6 +1486,8 @@ func (c *Controller) loadModels(ctx *Context) {
 				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
 
+			// readability is checked after running authorizers
+
 			// handle boolean values
 			if field.Kind == reflect.Bool && len(values) == 1 {
 				ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: values[0] == "true"})
@@ -1503,6 +1505,8 @@ func (c *Controller) loadModels(ctx *Context) {
 			if !field.ToOne && !field.ToMany || !stick.Contains(c.Filters, field.Name) {
 				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 			}
+
+			// readability is checked after running authorizers
 
 			// convert to object ids
 			var ids []coal.ID
@@ -1542,6 +1546,8 @@ func (c *Controller) loadModels(ctx *Context) {
 			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`unsupported sorter "%s"`, normalizedSorter)))
 		}
 
+		// readability is checked after running authorizers
+
 		// add sorter
 		if descending {
 			ctx.Sorting = append(ctx.Sorting, "-"+field.BSONKey)
@@ -1563,6 +1569,45 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+
+	// check filter readability
+	for name := range ctx.JSONAPIRequest.Filters {
+		// handle attributes filter
+		if field := c.meta.Attributes[name]; field != nil {
+			if !stick.Contains(ctx.ReadableFields, field.Name) {
+				xo.Abort(jsonapi.BadRequest("filter field is not readable"))
+			}
+			continue
+		}
+
+		// handle relationship filters
+		if field := c.meta.Relationships[name]; field != nil {
+			if !stick.Contains(ctx.ReadableFields, field.Name) {
+				xo.Abort(jsonapi.BadRequest("filter field is not readable"))
+			}
+			continue
+		}
+
+		// raise an error on a unsupported filter
+		xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+	}
+
+	// check sorting readability
+	for _, sorter := range ctx.JSONAPIRequest.Sorting {
+		// normalize sorter
+		normalizedSorter := strings.TrimPrefix(sorter, "-")
+
+		// find field
+		field := c.meta.Attributes[normalizedSorter]
+		if field == nil {
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid sorter "%s"`, normalizedSorter)))
+		}
+
+		// check if field is readable
+		if !stick.Contains(ctx.ReadableFields, field.Name) {
+			xo.Abort(jsonapi.BadRequest("sort field is not readable"))
+		}
+	}
 
 	// add pagination
 	var skip, limit int64
