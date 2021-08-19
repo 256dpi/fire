@@ -146,7 +146,8 @@ type Context struct {
 	Sorting []string
 
 	// Only the whitelisted readable fields are exposed to the client as
-	// attributes and relationships.
+	// attributes and relationships. Additionally, only readable fields can
+	// be used for filtering and sorting.
 	//
 	// Usage: Reduce Only
 	// Availability: Authorizers
