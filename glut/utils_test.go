@@ -29,16 +29,16 @@ func (v *testValue) Validate() error {
 }
 
 type ttlValue struct {
-	Base `json:"-" glut:"ttl,5m"`
-	Data string `json:"data"`
-	stick.NoValidation
+	Base               `json:"-" glut:"ttl,5m"`
+	Data               string `json:"data"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 type extendedValue struct {
-	Base `json:"-" glut:"extended,0"`
-	ID   string `json:"id"`
-	Data string `json:"data"`
-	stick.NoValidation
+	Base               `json:"-" glut:"extended,0"`
+	ID                 string `json:"id"`
+	Data               string `json:"data"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 func (v *extendedValue) GetExtension() (string, error) {

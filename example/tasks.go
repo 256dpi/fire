@@ -20,7 +20,7 @@ type counterValue struct {
 	// the counter total
 	Total int `json:"total"`
 
-	stick.NoValidation
+	stick.NoValidation `json:"-"`
 }
 
 type incrementJob struct {
@@ -50,8 +50,8 @@ func (j *generateJob) Validate() error {
 }
 
 type periodicJob struct {
-	axe.Base `json:"-" axe:"periodic"`
-	stick.NoValidation
+	axe.Base           `json:"-" axe:"periodic"`
+	stick.NoValidation `json:"-"`
 }
 
 func incrementTask(store *coal.Store) *axe.Task {

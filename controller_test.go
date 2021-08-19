@@ -4236,8 +4236,10 @@ func TestSparseFields(t *testing.T) {
 func TestReadableFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model: &postModel{},
-			Store: tester.Store,
+			Model:   &postModel{},
+			Store:   tester.Store,
+			Filters: []string{"Title"},
+			Sorters: []string{"Title"},
 			Authorizers: L{
 				C("TestReadableFields", All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
@@ -4247,8 +4249,9 @@ func TestReadableFields(t *testing.T) {
 				}),
 			},
 		}, &Controller{
-			Model: &noteModel{},
-			Store: tester.Store,
+			Model:   &noteModel{},
+			Store:   tester.Store,
+			Filters: []string{"Post"},
 			Authorizers: L{
 				C("TestReadableFields", All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Post", "Title"}, ctx.ReadableFields)
@@ -4265,7 +4268,7 @@ func TestReadableFields(t *testing.T) {
 			Published: true,
 		}).ID()
 
-		// get posts with single value filter
+		// get posts
 		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
@@ -4331,8 +4334,8 @@ func TestWritableFields(t *testing.T) {
 			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", All(), func(ctx *Context) error {
-					assert.Equal(t, []string{"CreateToken", "Name", "NoValidation", "Posts", "UpdateToken"}, ctx.ReadableFields)
-					assert.Equal(t, []string{"CreateToken", "Name", "NoValidation", "Posts", "UpdateToken"}, ctx.WritableFields)
+					assert.Equal(t, []string{"CreateToken", "Name", "Posts", "UpdateToken"}, ctx.ReadableFields)
+					assert.Equal(t, []string{"CreateToken", "Name", "Posts", "UpdateToken"}, ctx.WritableFields)
 					ctx.WritableFields = []string{}
 					return nil
 				}),

@@ -40,7 +40,7 @@ type Key struct {
 	// The extra data included in the key.
 	Extra stick.Map `json:"extra,omitempty"`
 
-	stick.NoValidation
+	stick.NoValidation `json:"-"`
 }
 
 // Grants defines the selected grants.

@@ -7,6 +7,6 @@ import (
 
 // CleanupJob is the periodic job enqueued to cleanup a storage.
 type CleanupJob struct {
-	axe.Base `json:"-" axe:"fire/blaze.cleanup"`
-	stick.NoValidation
+	axe.Base           `json:"-" axe:"fire/blaze.cleanup"`
+	stick.NoValidation `json:"-"`
 }

@@ -50,45 +50,45 @@ func (p *postModel) Strings() (string, string) {
 }
 
 type commentModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"comments"`
-	Message   string     `json:"message"`
-	Deleted   *time.Time `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
-	Parent    *coal.ID   `json:"-" bson:"parent_id" coal:"parent:comments"`
-	Post      coal.ID    `json:"-" bson:"post_id" coal:"post:posts"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"comments"`
+	Message            string     `json:"message"`
+	Deleted            *time.Time `json:"-" bson:"deleted_at" coal:"fire-soft-delete"`
+	Parent             *coal.ID   `json:"-" bson:"parent_id" coal:"parent:comments"`
+	Post               coal.ID    `json:"-" bson:"post_id" coal:"post:posts"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 type selectionModel struct {
-	coal.Base   `json:"-" bson:",inline" coal:"selections:selections"`
-	Name        string    `json:"name"`
-	CreateToken string    `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
-	UpdateToken string    `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
-	Posts       []coal.ID `json:"-" bson:"post_ids" coal:"posts:posts"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"selections:selections"`
+	Name               string    `json:"name"`
+	CreateToken        string    `json:"create-token,omitempty" bson:"create_token" coal:"fire-idempotent-create"`
+	UpdateToken        string    `json:"update-token,omitempty" bson:"update_token" coal:"fire-consistent-update"`
+	Posts              []coal.ID `json:"-" bson:"post_ids" coal:"posts:posts"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 type noteModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"notes"`
-	Title     string  `json:"title" bson:"title"`
-	Post      coal.ID `json:"-" bson:"post_id" coal:"post:posts"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"notes"`
+	Title              string  `json:"title" bson:"title"`
+	Post               coal.ID `json:"-" bson:"post_id" coal:"post:posts"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 type fooModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"foos"`
-	Foo       coal.ID   `json:"-" bson:"foo_id" coal:"foo:foos"`
-	OptFoo    *coal.ID  `json:"-" bson:"opt_foo_id" coal:"opt-foo:foos"`
-	Foos      []coal.ID `json:"-" bson:"foo_ids" coal:"foos:foos"`
-	Bar       coal.ID   `json:"-" bson:"bar_id" coal:"bar:bars"`
-	OptBar    *coal.ID  `json:"-" bson:"opt_bar_id" coal:"opt-bar:bars"`
-	Bars      []coal.ID `json:"-" bson:"bar_ids" coal:"bars:bars"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"foos"`
+	Foo                coal.ID   `json:"-" bson:"foo_id" coal:"foo:foos"`
+	OptFoo             *coal.ID  `json:"-" bson:"opt_foo_id" coal:"opt-foo:foos"`
+	Foos               []coal.ID `json:"-" bson:"foo_ids" coal:"foos:foos"`
+	Bar                coal.ID   `json:"-" bson:"bar_id" coal:"bar:bars"`
+	OptBar             *coal.ID  `json:"-" bson:"opt_bar_id" coal:"opt-bar:bars"`
+	Bars               []coal.ID `json:"-" bson:"bar_ids" coal:"bars:bars"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 type barModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"bars"`
-	Foo       coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"bars"`
+	Foo                coal.ID `json:"-" bson:"foo_id" coal:"foo:foos"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire", xo.Panic)

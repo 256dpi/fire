@@ -11,10 +11,10 @@ import (
 var tester = fire.NewTester(nil)
 
 type postModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"posts"`
-	Title     string `json:"title"`
-	Published bool   `json:"published"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"posts"`
+	Title              string `json:"title"`
+	Published          bool   `json:"published"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 func (p *postModel) Info() string {

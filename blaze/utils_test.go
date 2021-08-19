@@ -19,11 +19,11 @@ var modelList = []coal.Model{&File{}, &testModel{}}
 var testNotary = heat.NewNotary("test", heat.MustRand(32))
 
 type testModel struct {
-	coal.Base     `json:"-" bson:",inline" coal:"tests"`
-	RequiredFile  Link  `json:"required-file"`
-	OptionalFile  *Link `json:"optional-file"`
-	MultipleFiles Links `json:"multiple-files"`
-	stick.NoValidation
+	coal.Base          `json:"-" bson:",inline" coal:"tests"`
+	RequiredFile       Link  `json:"required-file"`
+	OptionalFile       *Link `json:"optional-file"`
+	MultipleFiles      Links `json:"multiple-files"`
+	stick.NoValidation `json:"-" bson:"-"`
 }
 
 var register = NewRegister()
