@@ -452,7 +452,7 @@ func (c *Controller) findResource(ctx *Context) {
 			One: c.resourceForModel(ctx, ctx.Model, relationships),
 		},
 		Links: &jsonapi.DocumentLinks{
-			Self: ctx.JSONAPIRequest.Self(),
+			Self: jsonapi.Link(ctx.JSONAPIRequest.Self()),
 		},
 	}
 	ctx.ResponseCode = http.StatusOK
@@ -557,13 +557,18 @@ func (c *Controller) createResource(ctx *Context) {
 	// run decorators
 	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
 
+	// prepare link
+	selfLink := ctx.JSONAPIRequest.Merge(jsonapi.Request{
+		ResourceID: ctx.Model.ID().Hex(),
+	})
+
 	// compose response
 	ctx.Response = &jsonapi.Document{
 		Data: &jsonapi.HybridResource{
 			One: c.resourceForModel(ctx, ctx.Model, nil),
 		},
 		Links: &jsonapi.DocumentLinks{
-			Self: ctx.JSONAPIRequest.Base() + "/" + ctx.Model.ID().Hex(),
+			Self: jsonapi.Link(selfLink.Self()),
 		},
 	}
 	ctx.ResponseCode = http.StatusCreated
@@ -700,7 +705,7 @@ func (c *Controller) updateResource(ctx *Context) {
 			One: c.resourceForModel(ctx, ctx.Model, relationships),
 		},
 		Links: &jsonapi.DocumentLinks{
-			Self: ctx.JSONAPIRequest.Self(),
+			Self: jsonapi.Link(ctx.JSONAPIRequest.Self()),
 		},
 	}
 	ctx.ResponseCode = http.StatusOK
@@ -934,12 +939,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// rewrite links
 	from, to := subCtx.JSONAPIRequest.Path(), ctx.JSONAPIRequest.Path()
-	ctx.Response.Links.Self = strings.Replace(ctx.Response.Links.Self, from, to, 1)
-	ctx.Response.Links.Related = strings.Replace(ctx.Response.Links.Related, from, to, 1)
-	ctx.Response.Links.First = strings.Replace(ctx.Response.Links.First, from, to, 1)
-	ctx.Response.Links.Previous = strings.Replace(ctx.Response.Links.Previous, from, to, 1)
-	ctx.Response.Links.Next = strings.Replace(ctx.Response.Links.Next, from, to, 1)
-	ctx.Response.Links.Last = strings.Replace(ctx.Response.Links.Last, from, to, 1)
+	ctx.Response.Links.Self = jsonapi.Link(strings.Replace(string(ctx.Response.Links.Self), from, to, 1))
+	ctx.Response.Links.Related = jsonapi.Link(strings.Replace(string(ctx.Response.Links.Related), from, to, 1))
+	ctx.Response.Links.First = jsonapi.Link(strings.Replace(string(ctx.Response.Links.First), from, to, 1))
+	ctx.Response.Links.Previous = jsonapi.Link(strings.Replace(string(ctx.Response.Links.Previous), from, to, 1))
+	ctx.Response.Links.Next = jsonapi.Link(strings.Replace(string(ctx.Response.Links.Next), from, to, 1))
+	ctx.Response.Links.Last = jsonapi.Link(strings.Replace(string(ctx.Response.Links.Last), from, to, 1))
 }
 
 func (c *Controller) getRelationship(ctx *Context) {
@@ -1935,10 +1940,11 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
-	// generate base link
-	base := "/" + c.meta.PluralName + "/" + model.ID().Hex()
-	if ctx.JSONAPIRequest.Prefix != "" {
-		base = "/" + ctx.JSONAPIRequest.Prefix + base
+	// prepare base link
+	baseLink := jsonapi.Request{
+		Prefix:       ctx.JSONAPIRequest.Prefix,
+		ResourceType: c.meta.PluralName,
+		ResourceID:   model.ID().Hex(),
 	}
 
 	// go through all relationships
@@ -1948,10 +1954,18 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			continue
 		}
 
+		// prepare links
+		selfLink := baseLink.Merge(jsonapi.Request{
+			Relationship: field.RelName,
+		})
+		relatedLink := baseLink.Merge(jsonapi.Request{
+			RelatedResource: field.RelName,
+		})
+
 		// prepare relationship links
 		links := &jsonapi.DocumentLinks{
-			Self:    base + "/relationships/" + field.RelName,
-			Related: base + "/" + field.RelName,
+			Self:    jsonapi.Link(selfLink.Self()),
+			Related: jsonapi.Link(relatedLink.Self()),
 		}
 
 		// handle to-one relationship
@@ -2110,7 +2124,7 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 
 	// prepare links
 	links := &jsonapi.DocumentLinks{
-		Self: ctx.JSONAPIRequest.Self(),
+		Self: jsonapi.Link(ctx.JSONAPIRequest.Self()),
 	}
 
 	// add pagination links
@@ -2127,20 +2141,20 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 
 		// add first and last links
 		req.PageNumber = 1
-		links.First = req.Self()
+		links.First = jsonapi.Link(req.Self())
 		req.PageNumber = lastPage
-		links.Last = req.Self()
+		links.Last = jsonapi.Link(req.Self())
 
 		// add previous link if not on first page
 		if ctx.JSONAPIRequest.PageNumber > 1 {
 			req.PageNumber = ctx.JSONAPIRequest.PageNumber - 1
-			links.Previous = req.Self()
+			links.Previous = jsonapi.Link(req.Self())
 		}
 
 		// add next link if not on last page
 		if ctx.JSONAPIRequest.PageNumber < lastPage {
 			req.PageNumber = ctx.JSONAPIRequest.PageNumber + 1
-			links.Next = req.Self()
+			links.Next = jsonapi.Link(req.Self())
 		}
 	}
 
