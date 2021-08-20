@@ -1581,7 +1581,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// check list limit
-	if ctx.JSONAPIRequest.PageSize > c.ListLimit {
+	if c.ListLimit > 0 && ctx.JSONAPIRequest.PageSize > c.ListLimit {
 		xo.Abort(jsonapi.BadRequestParam("max page size exceeded", "page[size]"))
 	}
 
