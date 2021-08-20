@@ -105,6 +105,21 @@ func Sort(fields ...string) bson.D {
 	return sort
 }
 
+// ReverseSort is a helper function to revers a sort.
+func ReverseSort(sort []string) []string {
+	// reverse sort
+	newSort := make([]string, 0, len(sort))
+	for _, key := range sort {
+		if strings.HasPrefix(key, "-") {
+			newSort = append(newSort, key[1:])
+		} else {
+			newSort = append(newSort, "-"+key)
+		}
+	}
+
+	return newSort
+}
+
 // ToM converts a model to a bson.M including all database fields.
 func ToM(model Model) bson.M {
 	// prepare map

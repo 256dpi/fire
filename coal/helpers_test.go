@@ -59,6 +59,11 @@ func TestSort(t *testing.T) {
 	}, sort)
 }
 
+func TestReverseSort(t *testing.T) {
+	sort := ReverseSort([]string{"foo", "-bar", "baz", "-_id"})
+	assert.Equal(t, []string{"-foo", "bar", "-baz", "_id"}, sort)
+}
+
 func TestToM(t *testing.T) {
 	assert.Equal(t, bson.M{
 		"title":     "Title",
