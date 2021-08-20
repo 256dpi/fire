@@ -109,3 +109,7 @@ func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 		fn(t, tester)
 	})
 }
+
+func numID(n uint8) coal.ID {
+	return coal.ID{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n}
+}

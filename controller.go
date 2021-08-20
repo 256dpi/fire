@@ -3,6 +3,7 @@ package fire
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"net/http"
@@ -15,10 +16,15 @@ import (
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
+
+const blankCursor = "*"
+
+var cursorEncoding = base64.URLEncoding.WithPadding(base64.NoPadding)
 
 // A Controller provides a JSON API based interface to a model.
 //
@@ -102,8 +108,21 @@ type Controller struct {
 	// responses and restrain the page size to be within one and the limit.
 	//
 	// Note: Fire uses the "page[number]" and "page[size]" query parameters for
-	// pagination.
+	// offset based pagination.
 	ListLimit int64
+
+	// CursorPagination can be set to use cursor based pagination. It can be
+	// enforced by also setting ListLimit. Cursor pagination will use the sort
+	// fields (including _id as the tiebreaker) to return a cursor that can be
+	// used to traverse large collections without incurring the performance
+	// costs of offset based pagination. This also implicitly adds the _id field
+	// as the last sorting field for all queries using pagination. For the
+	// pagination to be stable the filter and sorting fields must also remain
+	// stable between requests.
+	//
+	// Note: Fire uses the "page[after]", "page[before]" and "page[size]" query
+	// parameters for cursor based pagination.
+	CursorPagination bool
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
 	// The serve.ByteSize helper can be used to set the value.
@@ -1550,21 +1569,30 @@ func (c *Controller) loadModels(ctx *Context) {
 
 		// add sorter
 		if descending {
-			ctx.Sorting = append(ctx.Sorting, "-"+field.BSONKey)
+			ctx.Sorting = append(ctx.Sorting, "-"+field.Name)
 		} else {
-			ctx.Sorting = append(ctx.Sorting, field.BSONKey)
+			ctx.Sorting = append(ctx.Sorting, field.Name)
 		}
 	}
 
-	// honor list limit
-	if c.ListLimit > 0 && (ctx.JSONAPIRequest.PageSize == 0 || ctx.JSONAPIRequest.PageSize > c.ListLimit) {
-		// restrain page size
+	// apply list limit
+	if c.ListLimit > 0 && ctx.JSONAPIRequest.PageSize <= 0 {
 		ctx.JSONAPIRequest.PageSize = c.ListLimit
+	}
 
-		// enforce pagination
-		if ctx.JSONAPIRequest.PageNumber == 0 {
-			ctx.JSONAPIRequest.PageNumber = 1
-		}
+	// check list limit
+	if ctx.JSONAPIRequest.PageSize > c.ListLimit {
+		xo.Abort(jsonapi.BadRequestParam("max page size exceeded", "page[size]"))
+	}
+
+	// ensure default page number
+	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageNumber <= 0 {
+		ctx.JSONAPIRequest.PageNumber = 1
+	}
+
+	// ensure default page after
+	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageAfter == "" && ctx.JSONAPIRequest.PageBefore == "" {
+		ctx.JSONAPIRequest.PageAfter = blankCursor
 	}
 
 	// run authorizers
@@ -1609,19 +1637,125 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 	}
 
-	// add pagination
+	// prepare
+	query := ctx.Query()
+	sorting := append([]string{}, ctx.Sorting...)
 	var skip, limit int64
-	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
+	var reverse bool
+
+	// handle offset pagination
+	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		limit = ctx.JSONAPIRequest.PageSize
 		skip = (ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize
 	}
 
+	// handle cursor pagination
+	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+		// set limit
+		limit = ctx.JSONAPIRequest.PageSize
+
+		// force _id sorting
+		sorting = append(sorting, "_id")
+
+		// check cursor
+		before := ctx.JSONAPIRequest.PageBefore != ""
+		after := ctx.JSONAPIRequest.PageAfter != ""
+		if before && after {
+			xo.Abort(jsonapi.BadRequest("range pagination not supported"))
+		}
+
+		// check cursor availability
+		if before || after {
+			// get raw cursor
+			rawCursor := ctx.JSONAPIRequest.PageAfter
+			if before {
+				rawCursor = ctx.JSONAPIRequest.PageBefore
+			}
+
+			// reverse soring if before
+			if before {
+				reverse = true
+				sorting = coal.ReverseSort(sorting)
+			}
+
+			// handle non-blank cursor
+			if rawCursor != blankCursor {
+				// parse cursor
+				var cursor bson.A
+				bsonCursor, err := cursorEncoding.DecodeString(rawCursor)
+				xo.AbortIf(err)
+				rawValue := bson.RawValue{Value: bsonCursor, Type: bsontype.Array}
+				err = rawValue.Unmarshal(&cursor)
+				xo.AbortIf(err)
+
+				// compare cursor and sorting length
+				if len(cursor) != len(sorting) {
+					xo.Abort(jsonapi.BadRequest("cursor sorting mismatch"))
+				}
+
+				// collect fields
+				fields := make([]string, 0, len(sorting))
+				for _, field := range sorting {
+					fields = append(fields, strings.TrimLeft(field, "-"))
+				}
+
+				// we need to build the following expressions to properly
+				// select the documents before or after the cursor:
+				//  { $or: [
+				//  	{ a: { $lt: x } },
+				// 		{ a: x, b: { $lt: y } },
+				// 		{ a: x, b: y, c: { $lt: z } },
+				//	] }
+
+				// generate cursor clauses
+				cursorClauses := make([]bson.M, 0, len(cursor))
+				for i, value := range cursor {
+					// prepare operator
+					operator := "$gt"
+					if strings.HasPrefix(sorting[i], "-") {
+						operator = "$lt"
+					}
+
+					// build clause
+					clause := make(bson.M, i+1)
+					for j := 0; j < i; j++ {
+						clause[fields[j]] = cursor[j]
+					}
+					clause[fields[i]] = bson.M{
+						operator: value,
+					}
+
+					// add clause
+					cursorClauses = append(cursorClauses, clause)
+				}
+
+				// apply cursor
+				if len(query) > 0 {
+					query["$and"] = append(query["$and"].([]bson.M), bson.M{
+						"$or": cursorClauses,
+					})
+				} else {
+					query = bson.M{
+						"$or": cursorClauses,
+					}
+				}
+			}
+		}
+	}
+
 	// load documents
 	models := c.meta.MakeSlice()
-	xo.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, ctx.Query(), ctx.Sorting, skip, limit, false))
+	xo.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, query, sorting, skip, limit, false))
 
 	// set models
 	ctx.Models = coal.Slice(models)
+
+	// undo reversion
+	if reverse {
+		for i, j := 0, len(ctx.Models)-1; i < j; i, j = i+1, j-1 {
+			ctx.Models[i], ctx.Models[j] = ctx.Models[j], ctx.Models[i]
+		}
+	}
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
@@ -2172,8 +2306,8 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 		Self: jsonapi.Link(ctx.JSONAPIRequest.Self()),
 	}
 
-	// add pagination links
-	if ctx.JSONAPIRequest.PageNumber > 0 && ctx.JSONAPIRequest.PageSize > 0 {
+	// add offset pagination links
+	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		// count resources
 		count, err := ctx.Store.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
 		xo.AbortIf(err)
@@ -2200,6 +2334,82 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 		if ctx.JSONAPIRequest.PageNumber < lastPage {
 			req.PageNumber = ctx.JSONAPIRequest.PageNumber + 1
 			links.Next = jsonapi.Link(req.Self())
+		}
+	}
+
+	// add cursor pagination links
+	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+		// copy request
+		req := *ctx.JSONAPIRequest
+
+		// add first link
+		req.PageBefore = ""
+		req.PageAfter = blankCursor
+		links.First = jsonapi.Link(req.Self())
+
+		// add last link
+		req.PageBefore = blankCursor
+		req.PageAfter = ""
+		links.Last = jsonapi.Link(req.Self())
+
+		// determine state
+		before := ctx.JSONAPIRequest.PageBefore != ""
+		after := ctx.JSONAPIRequest.PageAfter != ""
+		fullPage := int64(len(ctx.Models)) == ctx.JSONAPIRequest.PageSize
+
+		// handle empty result set
+		if len(ctx.Models) == 0 {
+			if before {
+				links.Previous = jsonapi.NullLink
+				links.Next = links.First
+			} else if after {
+				links.Next = jsonapi.NullLink
+				links.Previous = links.Last
+			}
+		}
+
+		// handle non-empty result set
+		if len(ctx.Models) > 0 {
+			// prepare cursors
+			beforeCursor := make(bson.A, 0, len(ctx.Sorting)+1)
+			afterCursor := make(bson.A, 0, len(ctx.Sorting)+1)
+
+			// add sorting field values
+			for _, field := range ctx.Sorting {
+				field := strings.TrimLeft(field, "-")
+				beforeCursor = append(beforeCursor, stick.MustGet(ctx.Models[0], field))
+				afterCursor = append(afterCursor, stick.MustGet(ctx.Models[len(ctx.Models)-1], field))
+			}
+
+			// add ids
+			beforeCursor = append(beforeCursor, ctx.Models[0].ID())
+			afterCursor = append(afterCursor, ctx.Models[len(ctx.Models)-1].ID())
+
+			// encode cursors
+			_, rbc, err := bson.MarshalValue(beforeCursor)
+			xo.AbortIf(err)
+			_, rac, err := bson.MarshalValue(afterCursor)
+			xo.AbortIf(err)
+			rawBeforeCursor := cursorEncoding.EncodeToString(rbc)
+			rawAfterCursor := cursorEncoding.EncodeToString(rac)
+
+			// add previous link if not on first page
+			if links.Self == links.First || (before && !fullPage) {
+				links.Previous = jsonapi.NullLink
+			} else {
+				req.PageAfter = ""
+				req.PageBefore = rawBeforeCursor
+				links.Previous = jsonapi.Link(req.Self())
+			}
+
+			// add next link if not on last page
+			if links.Self == links.Last || (after && !fullPage) {
+				links.Next = jsonapi.NullLink
+			} else {
+				req.PageAfter = rawAfterCursor
+				req.PageBefore = ""
+				links.Next = jsonapi.Link(req.Self())
+			}
 		}
 	}
 

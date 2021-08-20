@@ -5159,20 +5159,24 @@ func TestTolerateViolations(t *testing.T) {
 	})
 }
 
-func TestPagination(t *testing.T) {
+func TestOffsetPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model: &postModel{},
-			Store: tester.Store,
+			Model:     &postModel{},
+			Store:     tester.Store,
+			ListLimit: 7,
 		}, &Controller{
-			Model: &commentModel{},
-			Store: tester.Store,
+			Model:     &commentModel{},
+			Store:     tester.Store,
+			ListLimit: 7,
 		}, &Controller{
-			Model: &selectionModel{},
-			Store: tester.Store,
+			Model:     &selectionModel{},
+			Store:     tester.Store,
+			ListLimit: 7,
 		}, &Controller{
-			Model: &noteModel{},
-			Store: tester.Store,
+			Model:     &noteModel{},
+			Store:     tester.Store,
+			ListLimit: 7,
 		})
 
 		// prepare ids
@@ -5184,6 +5188,38 @@ func TestPagination(t *testing.T) {
 				Title: fmt.Sprintf("Post %d", i+1),
 			}).ID())
 		}
+
+		// get first page of posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[number]=1&page[size]=7",
+				"first": "/posts?page[number]=1&page[size]=7",
+				"last": "/posts?page[number]=2&page[size]=7",
+				"next": "/posts?page[number]=2&page[size]=7"
+			}`, links)
+		})
+
+		// get first page of posts
+		tester.Request("GET", "posts?page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[number]=1&page[size]=5",
+				"first": "/posts?page[number]=1&page[size]=5",
+				"last": "/posts?page[number]=2&page[size]=5",
+				"next": "/posts?page[number]=2&page[size]=5"
+			}`, links)
+		})
 
 		// get first page of posts
 		tester.Request("GET", "posts?page[number]=1&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -5301,6 +5337,365 @@ func TestPagination(t *testing.T) {
 	})
 }
 
+func TestCursorPagination(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model:            &postModel{},
+			Store:            tester.Store,
+			Filters:          []string{"Published"},
+			Sorters:          []string{"Title", "TextBody", "Published"},
+			ListLimit:        7,
+			CursorPagination: true,
+		}, &Controller{
+			Model:            &commentModel{},
+			Store:            tester.Store,
+			ListLimit:        7,
+			CursorPagination: true,
+		}, &Controller{
+			Model:            &selectionModel{},
+			Store:            tester.Store,
+			ListLimit:        7,
+			CursorPagination: true,
+		}, &Controller{
+			Model:            &noteModel{},
+			Store:            tester.Store,
+			ListLimit:        7,
+			CursorPagination: true,
+		})
+
+		// prepare ids
+		var ids []coal.ID
+
+		// create some posts
+		for i := 0; i < 10; i++ {
+			ids = append(ids, tester.Insert(&postModel{
+				Base:      coal.B(numID(uint8(i) + 1)),
+				Title:     fmt.Sprintf("Post %02d", i+1),
+				TextBody:  fmt.Sprintf("Body %02d", 10-i),
+				Published: i >= 5,
+			}).ID())
+		}
+
+		/* ascending */
+
+		// get first page of posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 01", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 07", list[6].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=*&page[size]=7",
+				"first": "/posts?page[after]=*&page[size]=7",
+				"prev": null,
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABwA&page[size]=7",
+				"last": "/posts?page[before]=*&page[size]=7"
+			}`, links)
+		})
+
+		// get first page of posts with size
+		tester.Request("GET", "posts?page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 01", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 05", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=*&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": null,
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5",
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get last page of posts
+		tester.Request("GET", "posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 06", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5",
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAACgA&page[size]=5",
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get empty last page of posts
+		tester.Request("GET", "posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAACgA&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 0, len(list), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAACgA&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": "/posts?page[before]=*&page[size]=5",
+				"next": null,
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get capped page of posts
+		tester.Request("GET", "posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=6", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 06", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=6",
+				"first": "/posts?page[after]=*&page[size]=6",
+				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=6",
+				"next": null,
+				"last": "/posts?page[before]=*&page[size]=6"
+			}`, links)
+		})
+
+		/* descending */
+
+		// get last page of posts (reverse)
+		tester.Request("GET", "posts?page[before]=*&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 06", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=*&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5",
+				"next": null,
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get middle page of posts (reverse)
+		tester.Request("GET", "posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 3, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 03", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 05", list[2].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=3",
+				"first": "/posts?page[after]=*&page[size]=3",
+				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAwA&page[size]=3",
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=3",
+				"last": "/posts?page[before]=*&page[size]=3"
+			}`, links)
+		})
+
+		// get first page of posts (reverse)
+		tester.Request("GET", "posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 01", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 05", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAQA&page[size]=5",
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5",
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get empty first page of posts (reverse)
+		tester.Request("GET", "posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAQA&page[size]=5", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 0, len(list), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAQA&page[size]=5",
+				"first": "/posts?page[after]=*&page[size]=5",
+				"prev": null,
+				"next": "/posts?page[after]=*&page[size]=5",
+				"last": "/posts?page[before]=*&page[size]=5"
+			}`, links)
+		})
+
+		// get capped first page of posts (reverse)
+		tester.Request("GET", "posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=6", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 01", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 05", list[4].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=6",
+				"first": "/posts?page[after]=*&page[size]=6",
+				"prev": null,
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=6",
+				"last": "/posts?page[before]=*&page[size]=6"
+			}`, links)
+		})
+
+		/* sorted */
+
+		// get first page of sorted posts
+		tester.Request("GET", "posts?sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 04", list[6].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=*&page[size]=7&sort=-title",
+				"first": "/posts?page[after]=*&page[size]=7&sort=-title",
+				"prev": null,
+				"next": "/posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title",
+				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
+			}`, links)
+		})
+
+		// get last page of sorted posts
+		tester.Request("GET", "posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 3, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 03", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 01", list[2].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title",
+				"first": "/posts?page[after]=*&page[size]=7&sort=-title",
+				"prev": "/posts?page[before]=IwAAAAIwAAgAAABQb3N0IDAzAAcxAAAAAAAAAAAAAAAAAwA&page[size]=7&sort=-title",
+				"next": null,
+				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
+			}`, links)
+		})
+
+		// get first page of sorted posts (reverse)
+		tester.Request("GET", "posts?page[before]=IwAAAAIwAAgAAABQb3N0IDAzAAcxAAAAAAAAAAAAAAAAAwA&page[size]=7&sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 04", list[6].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[before]=IwAAAAIwAAgAAABQb3N0IDAzAAcxAAAAAAAAAAAAAAAAAwA&page[size]=7&sort=-title",
+				"first": "/posts?page[after]=*&page[size]=7&sort=-title",
+				"prev": "/posts?page[before]=IwAAAAIwAAgAAABQb3N0IDEwAAcxAAAAAAAAAAAAAAAACgA&page[size]=7&sort=-title",
+				"next": "/posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title",
+				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
+			}`, links)
+		})
+
+		/* filtered */
+
+		// get first page of filtered posts
+		tester.Request("GET", "posts?filter[published]=true&page[size]=3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 3, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 06", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 08", list[2].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[published]=true&page[after]=*&page[size]=3",
+				"first": "/posts?filter[published]=true&page[after]=*&page[size]=3",
+				"prev": null,
+				"next": "/posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3",
+				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
+			}`, links)
+		})
+
+		// get last page of filtered posts
+		tester.Request("GET", "posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 2, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 09", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 10", list[1].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3",
+				"first": "/posts?filter[published]=true&page[after]=*&page[size]=3",
+				"prev": "/posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAACQA&page[size]=3",
+				"next": null,
+				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
+			}`, links)
+		})
+
+		// get first page of filtered posts (reverse)
+		tester.Request("GET", "posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAACQA&page[size]=3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 3, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 06", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 08", list[2].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAACQA&page[size]=3",
+				"first": "/posts?filter[published]=true&page[after]=*&page[size]=3",
+				"prev": "/posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=3",
+				"next": "/posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3",
+				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
+			}`, links)
+		})
+
+		// TODO: Test relationship pagination.
+
+		// try range pagination
+		tester.Request("GET", "posts?page[after]=X&page[before]=X", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "range pagination not supported"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// try invalid cursor sorting combination
+		tester.Request("GET", "posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5&sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "cursor sorting mismatch"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
@@ -5341,20 +5736,19 @@ func TestListLimit(t *testing.T) {
 			}`, links)
 		})
 
-		// get first page of posts
-		tester.Request("GET", "posts?page[number]=1&page[size]=7", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
-			list := gjson.Get(r.Body.String(), "data").Array()
-			links := gjson.Get(r.Body.String(), "links").Raw
-
-			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.Equal(t, 5, len(list), tester.DebugRequest(rq, r))
-			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+		// try bigger page size than limit
+		tester.Request("GET", "posts?page[size]=7", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
-				"self": "/posts?page[number]=1&page[size]=5",
-				"first": "/posts?page[number]=1&page[size]=5",
-				"last": "/posts?page[number]=2&page[size]=5",
-				"next": "/posts?page[number]=2&page[size]=5"
-			}`, links)
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "max page size exceeded",
+					"source": {
+						"parameter": "page[size]"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 	})
 }
