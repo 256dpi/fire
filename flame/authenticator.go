@@ -73,7 +73,7 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 			// record error
 			tracer.Record(err)
 
-			// otherwise report critical errors
+			// otherwise, report critical errors
 			if a.reporter != nil {
 				a.reporter(err)
 			}
@@ -148,7 +148,7 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				// record error
 				tracer.Record(err)
 
-				// otherwise report critical errors
+				// otherwise, report critical errors
 				if a.reporter != nil {
 					a.reporter(err)
 				}

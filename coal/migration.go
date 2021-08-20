@@ -460,7 +460,7 @@ func RenameArrayFields(ctx context.Context, store *Store, model Model, rawArrayF
 }
 
 // UnsetArrayFields will unset the provided fields in all document arrays they
-// exits.
+// exist.
 func UnsetArrayFields(ctx context.Context, store *Store, model Model, rawArrayField string, rawFields ...string) (int64, int64, error) {
 	// check support
 	if store.Lungo() {

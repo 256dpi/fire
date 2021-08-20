@@ -22,7 +22,7 @@ type Error struct {
 	// A unique identifier for this particular occurrence of the problem.
 	ID string `json:"id,omitempty" bson:"id,omitempty"`
 
-	// An URL that leads to further details about this problem.
+	// A URL that leads to further details about this problem.
 	Link string `json:"link,omitempty" bson:"link,omitempty"`
 
 	// The HTTP status code applicable to this problem.

@@ -110,7 +110,7 @@ func (l Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 }
 
 // State describes the current state of a file. Usually, the state of a file
-// always moves forward by one step but it may also jump directly to "deleting".
+// always moves forward by one step, but it may also jump directly to "deleting".
 type State string
 
 // The individual states.

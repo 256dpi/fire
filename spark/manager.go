@@ -16,7 +16,7 @@ import (
 
 const (
 	// max message size
-	maxMessageSize = 4096 // 4KB
+	maxMessageSize = 4096 // 4 KB
 
 	// the time after which a write times out
 	writeTimeout = 10 * time.Second

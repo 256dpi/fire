@@ -62,12 +62,12 @@ type Manager struct {
 	trans *Translator
 }
 
-// C is a short-hand to access the mangers collection.
+// C is a short-hand to access the underlying collection.
 func (m *Manager) C() *Collection {
 	return m.coll
 }
 
-// T is a short-hand to access the managers translator.
+// T is a short-hand to access the underlying translator.
 func (m *Manager) T() *Translator {
 	return m.trans
 }
@@ -449,7 +449,7 @@ func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string,
 	return res, found, nil
 }
 
-// ProjectAll will lookup the specified field for all matching documents and
+// ProjectAll will look up the specified field for all matching documents and
 // return a map with their ids and field values.
 //
 // A transaction is required to ensure isolation.
@@ -474,7 +474,7 @@ func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, s
 	return res, nil
 }
 
-// ProjectEach will lookup the specified field for all documents matching the
+// ProjectEach will look up the specified field for all documents matching the
 // specified filter and yield them to the provided function until all have been
 // found or false has been returned.
 //
@@ -1332,7 +1332,7 @@ func (i *ManagedIterator) Decode(model Model) error {
 }
 
 // Error returns the first error encountered during iteration. It should always
-// be checked when finished to ensure there have been no errors.
+// be checked when done to ensure there have been no errors.
 func (i *ManagedIterator) Error() error {
 	return i.iterator.Error()
 }

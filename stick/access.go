@@ -95,7 +95,7 @@ func BuildAccessor(v Accessible, ignore ...string) *Accessor {
 	return accessor
 }
 
-// Get will lookup the specified field on the accessible and return its value
+// Get will look up the specified field on the accessible and return its value
 // and whether the field was found at all.
 func Get(acc Accessible, name string) (interface{}, bool) {
 	// find field

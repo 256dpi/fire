@@ -39,7 +39,7 @@ func Includes(all, subset []string) bool {
 	return true
 }
 
-// Union will will merge all list and remove duplicates.
+// Union will merge all list and remove duplicates.
 func Union(lists ...[]string) []string {
 	// sum length
 	var sum int

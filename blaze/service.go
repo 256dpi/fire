@@ -23,11 +23,12 @@ type Handle map[string]interface{}
 
 // Upload handles the upload of a blob.
 type Upload interface {
-	// Resume() (int64, error)
 	Write(data []byte) (int, error)
-	// Suspend() (int64, error)
 	Abort() error
 	Close() error
+
+	// TODO: Resume() (int64, error)
+	// TODO: Suspend() (int64, error)
 }
 
 // Download handles the download of a blob.
@@ -51,7 +52,7 @@ type Service interface {
 	// Delete should delete the blob.
 	Delete(ctx context.Context, handle Handle) error
 
-	// Cleanup is called periodically and allows the service to cleanup its
+	// Cleanup is called periodically and allows the service to clean up its
 	// storage until the context is cancelled.
 	Cleanup(ctx context.Context) error
 }

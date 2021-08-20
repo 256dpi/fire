@@ -161,7 +161,7 @@ func (t *Translator) convert(in bson.M) (bson.D, error) {
 		return *doc, xo.W(err)
 	}
 
-	// otherwise convert safely
+	// otherwise, convert safely
 	doc, err = bsonkit.Transform(in)
 	if err != nil {
 		return nil, xo.W(err)

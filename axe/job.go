@@ -33,7 +33,7 @@ func B(label string) Base {
 	}
 }
 
-// ID will return the jobs id.
+// ID will return the job id.
 func (b *Base) ID() coal.ID {
 	return b.DocID
 }

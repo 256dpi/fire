@@ -73,7 +73,7 @@ func Validate(obj Accessible, fn func(v *Validator)) error {
 	return val.Error()
 }
 
-// Nest nest validation under the specified field.
+// Nest will nest validations under the specified field.
 func (v *Validator) Nest(field string, fn func()) {
 	// push
 	v.path = append(v.path, field)
@@ -104,7 +104,7 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 			return
 		}
 
-		// otherwise unwrap pointer once
+		// otherwise, unwrap pointer once
 		sub.RValue = sub.RValue.Elem()
 		sub.IValue = sub.RValue.Interface()
 	}

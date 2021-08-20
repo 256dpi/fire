@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Decimal supports coding to an from the BSON decimal128 type.
+// Decimal supports coding to and from the BSON decimal128 type.
 type Decimal = decimal.Decimal
 
 var decimalType = reflect.TypeOf(Decimal{})

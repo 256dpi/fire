@@ -1,4 +1,4 @@
-<img src="http://joel-github-static.s3.amazonaws.com/gonfire/logo.png" alt="Logo" width="256"/>
+<img src="https://joel-github-static.s3.amazonaws.com/gonfire/logo.png" alt="Logo" width="256"/>
 
 # Go on Fire
 
@@ -23,7 +23,7 @@
 
 [Go on Fire](https://gonfire.org) is built on top of the wonderful built-in [http](https://golang.org/pkg/net/http) package, implements the [JSON API](http://jsonapi.org) specification through the dedicated [jsonapi](https://github.com/256dpi/jsonapi) library, uses the official [mongo](https://github.com/mongodb/mongo-go-driver) driver for persisting resources with [MongoDB](https://www.mongodb.com) and leverages the dedicated [oauth2](https://github.com/256dpi/oauth2) library to provide out of the box support for [OAuth2](https://oauth.net/2/) authentication using [JWT](https://jwt.io) tokens. Additionally, it provides packages for request authorization, asynchronous job processing and WebSocket/SSE based event sourcing.  
 
-The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
+The deliberate and tight integration of these components provides a very simple and extensible set of abstractions for rapidly building backend services for websites that use [Ember.js](http://emberjs.com) as their frontend framework. Of course, it can also be used in conjunction with any other single page application framework or as a backend for native mobile applications.
 
 To quickly get started with building an API with Go on Fire read the following sections in this documentation and refer to the [package documentation](https://godoc.org/github.com/256dpi/fire) for more detailed information on the used types and methods.
 
@@ -55,7 +55,7 @@ $ go get -u github.com/256dpi/fire
 
 ## Models
 
-Go on Fire implements a small introspection library that is able to infer all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally it introduces the `coal` struct tag that is used to declare to-one, to-many and has-many relationships.
+Go on Fire implements a small introspection library that is able to infer all necessary meta information about your models from the already available `json` and `bson` struct tags. Additionally, it introduces the `coal` struct tag that is used to declare to-one, to-many and has-many relationships.
 
 ### Basics
 
@@ -198,7 +198,7 @@ The store does not provide other typical ORM methods that wrap the underlying dr
 The `coal` package offers the following advanced features:
 
 - [`Stream`](https://godoc.org/github.com/256dpi/fire/coal#Stream) uses MongoDB change streams to provide an event source of created, updated and deleted models.
-- [`Reconcile`](https://godoc.org/github.com/256dpi/fire/coal#Reconcile) uses streams to provide an simple API to synchronize a collection of models.
+- [`Reconcile`](https://godoc.org/github.com/256dpi/fire/coal#Reconcile) uses streams to provide a simple API to synchronize a collection of models.
 - [`Catalog`](https://godoc.org/github.com/256dpi/fire/coal#Catalog) serves as a registry for models and indexes and allows the rendering of and ERD using `graphviz`.
 - Various helpers to DRY up the code.
 
@@ -256,7 +256,7 @@ More information about filtering and sorting can be found in the [JSON API Spec]
 
 ### Sparse Fieldsets
 
-Sparse Fieldsets are automatically supported on all responses an can be activated using the `/posts?fields[posts]=bar` query parameter.
+Sparse Fieldsets are automatically supported on all responses and can be activated using the `/posts?fields[posts]=bar` query parameter.
 
 More information about sparse fieldsets can be found in the [JSON API Spec](http://jsonapi.org/format/#fetching-sparse-fieldsets).
 
@@ -275,7 +275,7 @@ postsController := &fire.Controller{
 }
 ```
 
-The [`Authorizers`](https://godoc.org/github.com/256dpi/fire#Controller.Authorizers) are run after inferring all available data from the request and are therefore perfectly suited to do a general user authentication. The [`Validators`](https://godoc.org/github.com/256dpi/fire#Controller.Validators) are only run before creating, updating or deleting a model and are ideal to protect resources from certain actions. The [`Decorators`](https://godoc.org/github.com/256dpi/fire#Controller.Decorators) are run after the models or model have been loaded from the database or the model has been saved or updated. Finally, the [`Notifiers`]() are run before the final response is written to the client. Errors returned by the callbacks are serialize to an JSON API compliant error object and yield a status code appropriate to the class of callback.
+The [`Authorizers`](https://godoc.org/github.com/256dpi/fire#Controller.Authorizers) are run after inferring all available data from the request and are therefore perfectly suited to do a general user authentication. The [`Validators`](https://godoc.org/github.com/256dpi/fire#Controller.Validators) are only run before creating, updating or deleting a model and are ideal to protect resources from certain actions. The [`Decorators`](https://godoc.org/github.com/256dpi/fire#Controller.Decorators) are run after the models or model have been loaded from the database or the model has been saved or updated. Finally, the [`Notifiers`]() are run before the final response is written to the client. Errors returned by the callbacks are serialized to an JSON API compliant error object and yield a status code appropriate to the class of callback.
 
 Go on Fire ships with several built-in callbacks that implement common concerns:
 

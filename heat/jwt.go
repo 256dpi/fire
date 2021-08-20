@@ -79,7 +79,7 @@ func (c jwtClaims) Valid() error {
 	return err
 }
 
-// ErrInvalidToken is returned if a token is in some way invalid.
+// ErrInvalidToken is returned if a token is invalid.
 var ErrInvalidToken = xo.BF("invalid token")
 
 // ErrExpiredToken is returned if a token is expired but otherwise valid.

@@ -401,7 +401,7 @@ func (i *Iterator) Decode(v interface{}) error {
 }
 
 // Error returns the first error encountered during iteration. It should always
-// be checked when finished to ensure there have been no errors.
+// be checked when done to ensure there have been no errors.
 func (i *Iterator) Error() error {
 	return xo.W(i.error)
 }
@@ -441,7 +441,7 @@ func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 	return raw, xo.W(err)
 }
 
-// Err return will return the operations error.
+// Err return will return the last error.
 func (r *SingleResult) Err() error {
 	return xo.W(r.res.Err())
 }

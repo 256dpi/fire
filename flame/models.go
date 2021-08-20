@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// TokenType defines the type of a token.
+// TokenType defines the token type.
 type TokenType string
 
 const (
@@ -53,7 +53,7 @@ type TokenData struct {
 type GenericToken interface {
 	coal.Model
 
-	// GetTokenData should collect and return the tokens data.
+	// GetTokenData should collect and return the token data.
 	GetTokenData() TokenData
 
 	// SetTokenData should apply the specified token data.
@@ -121,7 +121,7 @@ func (t *Token) Validate() error {
 
 // Client is the interface that must be implemented by clients. The field used
 // to uniquely identify the client may be flagged with "flame-client-id". If
-// missing the models id is used instead.
+// missing the model id is used instead.
 type Client interface {
 	coal.Model
 
@@ -211,7 +211,7 @@ func (a *Application) HashSecret() error {
 
 // ResourceOwner is the interface that must be implemented by resource owners.
 // The field used to uniquely identify the resource owner may be flagged with
-// "flame-resource-owner-id". If missing the models id is used instead.
+// "flame-resource-owner-id". If missing the model id is used instead.
 type ResourceOwner interface {
 	coal.Model
 

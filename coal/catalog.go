@@ -127,7 +127,7 @@ func (c *Catalog) All() map[Model][]Index {
 }
 
 // AddIndex will add an index to the internal index list. Fields that are prefixed
-// with a dash will result in an descending index. See the MongoDB documentation
+// with a dash will result in a descending index. See the MongoDB documentation
 // for more details.
 func (c *Catalog) AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
 	// get name
@@ -168,7 +168,7 @@ func (c *Catalog) AddPartialIndex(model Model, unique bool, expiry time.Duration
 }
 
 // EnsureIndexes will ensure that the added indexes exist. It may fail early if
-// some of the indexes are already existing and do not match the supplied index.
+// some indexes are already existing and do not match the supplied index.
 func (c *Catalog) EnsureIndexes(store *Store) error {
 	// create context
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

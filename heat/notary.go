@@ -16,7 +16,7 @@ type Notary struct {
 }
 
 // NewNotary creates a new notary with the specified name and secret. It will
-// panic if the name is missing or the specified secret is less that 16 bytes.
+// panic if the name is missing or the specified secret is less than 16 bytes.
 func NewNotary(name string, secret []byte) *Notary {
 	// check name
 	if name == "" {

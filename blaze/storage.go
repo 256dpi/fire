@@ -943,7 +943,7 @@ func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Dur
 // Cleanup will remove obsolete files and remove their blobs. Files in the
 // states "uploading" or "uploaded" are removed after the specified retention
 // which defaults to one hour if zero. Files in the states "released" and
-// "deleting" are removed immediately. It will also allow the service to cleanup.
+// "deleting" are removed immediately. It will also allow the service to clean up.
 func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
 	// set default retention
 	if retention == 0 {

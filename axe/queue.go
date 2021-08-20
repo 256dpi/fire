@@ -40,7 +40,7 @@ type Options struct {
 
 	// The maximum amount of lag that should be applied to every dequeue attempt.
 	//
-	// By default multiple workers compete with each other when getting jobs
+	// By default, multiple workers compete with each other when getting jobs
 	// from the same queue. An artificial lag limits multiple simultaneous
 	// dequeue attempts and allows the worker with the smallest lag to dequeue
 	// the job and inform the other workers to limit parallel dequeue attempts.

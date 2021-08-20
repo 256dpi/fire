@@ -29,7 +29,7 @@ func (s State) Valid() bool {
 	}
 }
 
-// Event is logged during a jobs execution.
+// Event is logged during a job execution.
 type Event struct {
 	// The time when the event was reported.
 	Timestamp time.Time `json:"timestamp"`

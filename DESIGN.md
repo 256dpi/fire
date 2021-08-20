@@ -92,7 +92,7 @@ The `Controller` type is a type that is instantiated by the user to configure a
 single unit of logic abstraction. The constructor less design allows the adding
 of more knobs and switches in the future without generating churn. The controller
 instances are then provided to the `Manager` that provides little configuration
-and is created using an constructor. While the `Controller` has no public methods
+and is created using a constructor. While the `Controller` has no public methods
 the `Manager` provides public methods to control the execution of the logic.
 
 The open controllers pattern may be combined with the classifiable models

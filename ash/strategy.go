@@ -21,7 +21,7 @@ func C(s *Strategy) *fire.Callback {
 
 // Strategy contains lists of authorizers that are used to authorize operations.
 // The authorizes are run in order beginning with the most specific authorizer.
-// The first authorizer that returns no error and a non empty set of enforcers
+// The first authorizer that returns no error and a non-empty set of enforcers
 // has its enforcers applied to the request. If the enforcers do not return and
 // error the access is granted.
 type Strategy struct {

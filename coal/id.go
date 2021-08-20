@@ -42,13 +42,13 @@ func IsHex(str string) bool {
 	return err == nil
 }
 
-// FromHex will convert the provided string to a object id.
+// FromHex will convert the provided string to an object id.
 func FromHex(str string) (ID, error) {
 	id, err := primitive.ObjectIDFromHex(str)
 	return id, xo.W(err)
 }
 
-// MustFromHex will convert the provided string to a object id and panic if
+// MustFromHex will convert the provided string to an object id and panic if
 // the string is not a valid object id.
 func MustFromHex(str string) ID {
 	id, err := FromHex(str)

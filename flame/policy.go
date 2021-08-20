@@ -96,7 +96,7 @@ type Policy struct {
 	ClientFilter func(ctx *Context, c Client) (bson.M, error)
 
 	// RedirectURIValidator should validate a redirect URI and return the valid
-	// or corrected redirect URI. It can return ErrInvalidRedirectURI to to
+	// or corrected redirect URI. It can return ErrInvalidRedirectURI to
 	// cancel the authorization request. The validator is during the
 	// authorization and the token request. If the result differs, no token will
 	// be issue and the request aborted.

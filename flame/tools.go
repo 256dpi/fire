@@ -10,7 +10,7 @@ import (
 )
 
 // TokenMigrator is a middleware that detects access tokens passed via query
-// parameters and migrates them to a "Bearer" token header. Additionally it may
+// parameters and migrates them to a "Bearer" token header. Additionally, it may
 // remove the migrated query parameter from the request.
 //
 // Note: The TokenMigrator should be added before any logger in the middleware

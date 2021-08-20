@@ -427,7 +427,7 @@ func TestBasicOperations(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt delete post with invalid id
+		// attempt to delete post with invalid id
 		tester.Request("DELETE", "posts/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
@@ -1571,7 +1571,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to add to posts relationship with invalid type
+		// attempt to add posts relationship with invalid type
 		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1590,7 +1590,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to add to posts relationship with invalid id
+		// attempt to add posts relationship with invalid id
 		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1609,7 +1609,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// add to posts relationship
+		// add posts relationship
 		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -4572,7 +4572,7 @@ func TestWritableFields(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to add to posts relationship
+		// attempt to add posts relationship
 		tester.Request("POST", "selections/"+selection1+"/relationships/posts", `{
 			"data": [
 				{

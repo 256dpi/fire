@@ -4,7 +4,7 @@ Package spark implements a simple pub/sub mechanism that allows clients to watch
 
 ## WebSocket
 
-To watch resources, the client initiates a WebSocket connection to the a group action:
+To watch resources, the client initiates a WebSocket connection to the group action:
 
 ```
 wss://example.com/v1/api/watch

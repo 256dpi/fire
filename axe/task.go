@@ -12,7 +12,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Error is used to control retry an cancellation. These errors are expected and
+// Error is used to control retry a cancellation. These errors are expected and
 // are not forwarded to the reporter.
 type Error struct {
 	Reason string

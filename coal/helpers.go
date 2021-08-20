@@ -40,7 +40,7 @@ func F(m Model, field string) string {
 	return bsonField
 }
 
-// L is a short-hand function to lookup a flagged field of a model.
+// L is a short-hand function to look up a flagged field of a model.
 //
 // Note: L will panic if multiple flagged fields have been found or force is
 // requested and no flagged field has been found.

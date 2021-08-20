@@ -29,7 +29,7 @@ func MustConnect(uri string, reporter func(error), opts ...*options.ClientOption
 // read and write concern is set to majority by default.
 //
 // In summary, queries may return data that has bas been committed but may not
-// be the most recent committed data. Also, long running cursors on indexed
+// be the most recent committed data. Also, long-running cursors on indexed
 // fields may return duplicate or missing documents due to the documents moving
 // within the index. For operations involving multiple documents a transaction
 // must be used to ensure atomicity, consistency and isolation.
@@ -122,7 +122,7 @@ func (s *Store) Client() lungo.IClient {
 	return s.client
 }
 
-// Lungo returns whether the stores uses a lungo instead of a mongo client.
+// Lungo returns whether the stores is using a lungo instead of a mongo client.
 func (s *Store) Lungo() bool {
 	_, ok := s.client.(*lungo.Client)
 	return ok
@@ -197,7 +197,7 @@ func (s *Store) M(model Model) *Manager {
 // - Writes that conflict with other transactional writes will return an error.
 //   Non-transactional writes will wait until the transaction has completed.
 // - Reads are not guaranteed to be stable, another transaction may delete or
-//   modify the document an also commit concurrently. Therefore, documents that
+//   modify the document and also commit concurrently. Therefore, documents that
 //   must "survive" the transaction and cause transactional writes to abort,
 //   must be locked by changing a field to a new value.
 func (s *Store) T(ctx context.Context, readOnly bool, fn func(tc context.Context) error) error {

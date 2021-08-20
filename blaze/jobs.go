@@ -5,7 +5,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// CleanupJob is the periodic job enqueued to cleanup a storage.
+// CleanupJob is the periodic job enqueued to clean up a storage.
 type CleanupJob struct {
 	axe.Base           `json:"-" axe:"fire/blaze.cleanup"`
 	stick.NoValidation `json:"-"`
