@@ -913,7 +913,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// prepare selector
 		selector := bson.M{
-			inverse.BSONKey: ctx.Model.ID(),
+			inverse.Name: ctx.Model.ID(),
 		}
 
 		// handle virtual request
@@ -943,7 +943,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 		// prepare selector
 		selector := bson.M{
-			inverse.BSONKey: bson.M{
+			inverse.Name: bson.M{
 				"$in": []coal.ID{ctx.Model.ID()},
 			},
 		}
@@ -1509,12 +1509,12 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// handle boolean values
 			if field.Kind == reflect.Bool && len(values) == 1 {
-				ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: values[0] == "true"})
+				ctx.Filters = append(ctx.Filters, bson.M{field.Name: values[0] == "true"})
 				continue
 			}
 
 			// handle string values
-			ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: bson.M{"$in": values}})
+			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": values}})
 			continue
 		}
 
@@ -1538,7 +1538,7 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 
 			// set relationship filter
-			ctx.Filters = append(ctx.Filters, bson.M{field.BSONKey: bson.M{"$in": ids}})
+			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": ids}})
 			continue
 		}
 
@@ -1984,7 +1984,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 		// prepare query
 		query := bson.M{
-			rel.BSONKey: bson.M{
+			rel.Name: bson.M{
 				"$in": modelIDs,
 			},
 		}
