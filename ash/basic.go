@@ -57,7 +57,7 @@ func Token(scope ...string) *Authorizer {
 
 // Filter will authorize the request by enforcing the provided filter.
 func Filter(filter bson.M) *Authorizer {
-	return A("ash/Filter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) ([]*Enforcer, error) {
+	return A("ash/Filter", fire.Except(fire.Create|fire.CollectionAction), func(ctx *fire.Context) ([]*Enforcer, error) {
 		return S{AddFilter(filter)}, nil
 	})
 }

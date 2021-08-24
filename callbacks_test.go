@@ -18,13 +18,13 @@ func TestC(t *testing.T) {
 }
 
 func TestOnly(t *testing.T) {
-	assert.True(t, Only(Create, Delete)(&Context{Operation: Create}))
-	assert.False(t, Only(Create, Delete)(&Context{Operation: Update}))
+	assert.True(t, Only(Create|Delete)(&Context{Operation: Create}))
+	assert.False(t, Only(Create|Delete)(&Context{Operation: Update}))
 }
 
 func TestExcept(t *testing.T) {
-	assert.True(t, Except(Create, Delete)(&Context{Operation: Update}))
-	assert.False(t, Except(Create, Delete)(&Context{Operation: Create}))
+	assert.True(t, Except(Create|Delete)(&Context{Operation: Update}))
+	assert.False(t, Except(Create|Delete)(&Context{Operation: Create}))
 }
 
 func TestBasicAuthorizer(t *testing.T) {

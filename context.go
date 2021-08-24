@@ -22,13 +22,11 @@ type Operation int
 
 // All the available operations.
 const (
-	_ Operation = iota
-
 	// List operation will be used to authorize the loading of multiple
 	// resources from a collection.
 	//
 	// Note: This operation is also used to load related resources.
-	List
+	List Operation = 1 << iota
 
 	// Find operation will be used to authorize the loading of a specific
 	// resource from a collection.

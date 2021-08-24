@@ -116,30 +116,16 @@ func All() Matcher {
 }
 
 // Only will match if the operation is present in the provided list.
-func Only(ops ...Operation) Matcher {
+func Only(op Operation) Matcher {
 	return func(ctx *Context) bool {
-		// allow if operation is listed
-		for _, op := range ops {
-			if op == ctx.Operation {
-				return true
-			}
-		}
-
-		return false
+		return ctx.Operation&op != 0
 	}
 }
 
 // Except will match if the operation is not present in the provided list.
-func Except(ops ...Operation) Matcher {
+func Except(op Operation) Matcher {
 	return func(ctx *Context) bool {
-		// disallow if operation is listed
-		for _, op := range ops {
-			if op == ctx.Operation {
-				return false
-			}
-		}
-
-		return true
+		return ctx.Operation&op == 0
 	}
 }
 

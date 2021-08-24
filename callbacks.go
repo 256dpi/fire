@@ -40,7 +40,7 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 // "fire-updated-timestamp" flags. Missing created timestamps are retroactively
 // set using the timestamp encoded in the model id.
 func TimestampModifier() *Callback {
-	return C("fire/TimestampModifier", Only(Create, Update), func(ctx *Context) error {
+	return C("fire/TimestampModifier", Only(Create|Update), func(ctx *Context) error {
 		// get time
 		now := time.Now()
 
@@ -87,7 +87,7 @@ type noDefault int
 // The special NoDefault value can be provided to skip the default enforcement
 // on Create.
 func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
-	return C("fire/ProtectedFieldsValidator", Only(Create, Update), func(ctx *Context) error {
+	return C("fire/ProtectedFieldsValidator", Only(Create|Update), func(ctx *Context) error {
 		// handle resource creation
 		if ctx.Operation == Create {
 			// check all fields
@@ -175,7 +175,7 @@ func DependentResourcesValidator(pairs map[coal.Model]string) *Callback {
 //
 // The callbacks supports to-one, optional to-one and to-many relationships.
 func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
-	return C("fire/ReferencedResourcesValidator", Only(Create, Update), func(ctx *Context) error {
+	return C("fire/ReferencedResourcesValidator", Only(Create|Update), func(ctx *Context) error {
 		// check all references
 		for field, collection := range pairs {
 			// read referenced id
@@ -310,7 +310,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, exclude ...s
 // To-many, optional to-many and has-many relationships are supported both for
 // the initial reference and in the matchers.
 func MatchingReferencesValidator(reference string, target coal.Model, matcher map[string]string) *Callback {
-	return C("fire/MatchingReferencesValidator", Only(Create, Update), func(ctx *Context) error {
+	return C("fire/MatchingReferencesValidator", Only(Create|Update), func(ctx *Context) error {
 		// prepare ids
 		var ids []coal.ID
 

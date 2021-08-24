@@ -52,7 +52,7 @@ func DenyAccess() *Enforcer {
 // Note: This enforcer cannot be used to authorize Create and CollectionAction
 // operations.
 func AddFilter(filter bson.M) *Enforcer {
-	return E("ash/AddFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
+	return E("ash/AddFilter", fire.Except(fire.Create|fire.CollectionAction), func(ctx *fire.Context) error {
 		// assign specified filter
 		ctx.Filters = append(ctx.Filters, filter)
 
@@ -66,7 +66,7 @@ func AddFilter(filter bson.M) *Enforcer {
 // Note: This enforcer cannot be used to authorize Delete, ResourceAction and
 // CollectionAction operations.
 func WhitelistReadableFields(fields ...string) *Enforcer {
-	return E("ash/WhitelistReadableFields", fire.Except(fire.Delete, fire.ResourceAction, fire.CollectionAction), func(ctx *fire.Context) error {
+	return E("ash/WhitelistReadableFields", fire.Except(fire.Delete|fire.ResourceAction|fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
 		ctx.ReadableFields = stick.Intersect(ctx.ReadableFields, fields)
 
@@ -79,7 +79,7 @@ func WhitelistReadableFields(fields ...string) *Enforcer {
 //
 // Note: This enforcer can only be used to authorize Create and Update operations.
 func WhitelistWritableFields(fields ...string) *Enforcer {
-	return E("ash/WhitelistWritableFields", fire.Only(fire.Create, fire.Update), func(ctx *fire.Context) error {
+	return E("ash/WhitelistWritableFields", fire.Only(fire.Create|fire.Update), func(ctx *fire.Context) error {
 		// set new list
 		ctx.WritableFields = stick.Intersect(ctx.WritableFields, fields)
 
@@ -93,7 +93,7 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 // Note: This enforcer cannot be used to authorize Delete, ResourceAction and
 // CollectionAction operations.
 func WhitelistReadableProperties(fields ...string) *Enforcer {
-	return E("ash/WhitelistReadableProperties", fire.Except(fire.Delete, fire.ResourceAction, fire.CollectionAction), func(ctx *fire.Context) error {
+	return E("ash/WhitelistReadableProperties", fire.Except(fire.Delete|fire.ResourceAction|fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
 		ctx.ReadableProperties = stick.Intersect(ctx.ReadableProperties, fields)
 
@@ -109,7 +109,7 @@ func WhitelistReadableProperties(fields ...string) *Enforcer {
 // Note: This enforcer cannot be used to authorize Create and CollectionAction
 // operations.
 func AddRelationshipFilter(rel string, filter bson.M) *Enforcer {
-	return E("ash/AddRelationshipFilter", fire.Except(fire.Create, fire.CollectionAction), func(ctx *fire.Context) error {
+	return E("ash/AddRelationshipFilter", fire.Except(fire.Create|fire.CollectionAction), func(ctx *fire.Context) error {
 		// append filter
 		ctx.RelationshipFilters[rel] = append(ctx.RelationshipFilters[rel], filter)
 
