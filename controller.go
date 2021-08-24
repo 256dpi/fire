@@ -708,7 +708,7 @@ func (c *Controller) updateResource(ctx *Context) {
 
 		// check if missing
 		if !found {
-			xo.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(ErrResourceNotFound.Wrap())
 		}
 	}
 
@@ -780,7 +780,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 
 		// check if missing
 		if !found {
-			xo.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(ErrResourceNotFound.Wrap())
 		}
 	} else {
 		// delete model
@@ -789,7 +789,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 
 		// check if missing
 		if !found {
-			xo.Abort(jsonapi.NotFound("resource not found"))
+			xo.Abort(ErrResourceNotFound.Wrap())
 		}
 	}
 
@@ -1069,7 +1069,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 
 	// check if missing
 	if !found {
-		xo.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(ErrResourceNotFound.Wrap())
 	}
 
 	// run decorators
@@ -1172,7 +1172,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 
 	// check if missing
 	if !found {
-		xo.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(ErrResourceNotFound.Wrap())
 	}
 
 	// run decorators
@@ -1282,7 +1282,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 
 	// check if missing
 	if !found {
-		xo.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(ErrResourceNotFound.Wrap())
 	}
 
 	// run decorators
@@ -1468,7 +1468,7 @@ func (c *Controller) loadModel(ctx *Context) {
 
 	// check if missing
 	if !found {
-		xo.Abort(jsonapi.NotFound("resource not found"))
+		xo.Abort(ErrResourceNotFound.Wrap())
 	}
 
 	// set model

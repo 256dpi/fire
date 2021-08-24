@@ -14,8 +14,11 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// ErrAccessDenied can be returned by any callback to deny access.
+// ErrAccessDenied may be returned to indicate unauthorized access.
 var ErrAccessDenied = xo.BW(jsonapi.ErrorFromStatus(http.StatusUnauthorized, "access denied"))
+
+// ErrResourceNotFound may be returned to indicate a missing resource.
+var ErrResourceNotFound = xo.BW(jsonapi.NotFound("resource not found"))
 
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
