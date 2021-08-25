@@ -152,12 +152,22 @@ type Context struct {
 	// Operations: !Delete, !ResourceAction, !CollectionAction
 	ReadableFields []string
 
+	// Used instead of ReadableFields if set. Allows specifying readable fields
+	// on a per model basis. The provided model may be nil if run before any
+	// model has been loaded.
+	GetReadableFields func(coal.Model) []string
+
 	// Only the whitelisted writable fields can be altered by requests.
 	//
 	// Usage: Reduce Only
 	// Availability: Authorizers
 	// Operations: Create, Update
 	WritableFields []string
+
+	// Used instead of WritableFields if set. Allows specifying writable fields
+	// on a per model basis. The provided model may be nil if run before any
+	// model has been loaded.
+	GetWritableFields func(coal.Model) []string
 
 	// Only the whitelisted readable properties are exposed to the client as
 	// attributes.
@@ -166,6 +176,11 @@ type Context struct {
 	// Availability: Authorizers
 	// Operations: !Delete, !ResourceActon, !CollectionAction
 	ReadableProperties []string
+
+	// Used instead of ReadableProperties if set. Allows specifying readable
+	// properties on a per model basis. The provided model may be nil if run
+	// before any model has been loaded.
+	GetReadableProperties func(coal.Model) []string
 
 	// The filters that will be applied when loading has one and has many
 	// relationships.

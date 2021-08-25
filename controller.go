@@ -822,7 +822,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is readable
-	if !stick.Contains(ctx.ReadableFields, rel.Name) {
+	if !stick.Contains(c.readableFields(ctx, ctx.Model), rel.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
@@ -988,7 +988,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is readable
-	if !stick.Contains(ctx.ReadableFields, field.Name) {
+	if !stick.Contains(c.readableFields(ctx, ctx.Model), field.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not readable"))
 	}
 
@@ -1036,7 +1036,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !stick.Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(c.writableFields(ctx, ctx.Model), rel.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1116,7 +1116,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !stick.Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(c.writableFields(ctx, ctx.Model), rel.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1219,7 +1219,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	c.loadModel(ctx)
 
 	// check if relationship is writable
-	if !stick.Contains(ctx.WritableFields, rel.Name) {
+	if !stick.Contains(c.writableFields(ctx, ctx.Model), rel.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
@@ -1598,11 +1598,14 @@ func (c *Controller) loadModels(ctx *Context) {
 	// run authorizers
 	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
 
+	// get readable fields
+	readableFields := c.readableFields(ctx, nil)
+
 	// check filter readability
 	for name := range ctx.JSONAPIRequest.Filters {
 		// handle attributes filter
 		if field := c.meta.Attributes[name]; field != nil {
-			if !stick.Contains(ctx.ReadableFields, field.Name) {
+			if !stick.Contains(readableFields, field.Name) {
 				xo.Abort(jsonapi.BadRequest("filter field is not readable"))
 			}
 			continue
@@ -1610,7 +1613,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 		// handle relationship filters
 		if field := c.meta.Relationships[name]; field != nil {
-			if !stick.Contains(ctx.ReadableFields, field.Name) {
+			if !stick.Contains(readableFields, field.Name) {
 				xo.Abort(jsonapi.BadRequest("filter field is not readable"))
 			}
 			continue
@@ -1632,7 +1635,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 
 		// check if field is readable
-		if !stick.Contains(ctx.ReadableFields, field.Name) {
+		if !stick.Contains(readableFields, field.Name) {
 			xo.Abort(jsonapi.BadRequest("sort field is not readable"))
 		}
 	}
@@ -1763,11 +1766,14 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 	ctx.Tracer.Push("fire/Controller.assignData")
 	defer ctx.Tracer.Pop()
 
+	// get writable fields
+	writableFields := c.writableFields(ctx, ctx.Model)
+
 	// prepare whitelist
 	var whitelist []string
 
 	// convert attribute and relationship field names
-	for _, field := range ctx.WritableFields {
+	for _, field := range writableFields {
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
@@ -1932,14 +1938,17 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	ctx.Tracer.Push("fire/Controller.preloadRelationships")
 	defer ctx.Tracer.Pop()
 
+	// get readable fields
+	readableFields := c.readableFields(ctx, ctx.Model)
+
 	// prepare relationships
 	relationships := make(map[string]map[coal.ID][]coal.ID)
 
 	// prepare whitelist
-	whitelist := make([]string, 0, len(ctx.ReadableFields))
+	whitelist := make([]string, 0, len(readableFields))
 
 	// convert relationship field names
-	for _, field := range ctx.ReadableFields {
+	for _, field := range readableFields {
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
@@ -2088,11 +2097,14 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[coal.ID][]coal.ID) *jsonapi.Resource {
 	// do not trace this call
 
+	// get readable fields
+	readableFields := c.readableFields(ctx, model)
+
 	// prepare whitelist
-	whitelist := make([]string, 0, len(ctx.ReadableFields))
+	whitelist := make([]string, 0, len(readableFields))
 
 	// convert attribute and relationship field names
-	for _, field := range ctx.ReadableFields {
+	for _, field := range readableFields {
 		// get field
 		f := c.meta.Fields[field]
 		if f == nil {
@@ -2278,10 +2290,13 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		}
 	}
 
+	// get readable properties
+	readableProperties := c.readableProperties(ctx, model)
+
 	// call properties
 	for name, key := range c.Properties {
 		// check whitelist
-		if !stick.Contains(ctx.ReadableProperties, name) {
+		if !stick.Contains(readableProperties, name) {
 			continue
 		}
 
@@ -2461,4 +2476,31 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	} else if err != nil {
 		xo.Abort(err)
 	}
+}
+
+func (c *Controller) readableFields(ctx *Context, model coal.Model) []string {
+	// check getter
+	if ctx.GetReadableFields != nil {
+		return ctx.GetReadableFields(model)
+	}
+
+	return ctx.ReadableFields
+}
+
+func (c *Controller) writableFields(ctx *Context, model coal.Model) []string {
+	// check getter
+	if ctx.GetWritableFields != nil {
+		return ctx.GetWritableFields(model)
+	}
+
+	return ctx.WritableFields
+}
+
+func (c *Controller) readableProperties(ctx *Context, model coal.Model) []string {
+	// check getter
+	if ctx.GetReadableProperties != nil {
+		return ctx.GetReadableProperties(model)
+	}
+
+	return ctx.ReadableProperties
 }

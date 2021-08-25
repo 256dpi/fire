@@ -4349,6 +4349,66 @@ func TestReadableFields(t *testing.T) {
 	})
 }
 
+func TestReadableFieldsGetter(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestReadableFieldsGetter", All(), func(ctx *Context) error {
+					ctx.GetReadableFields = func(model coal.Model) []string {
+						if model != nil {
+							post := model.(*postModel)
+							if post.Title == "post1" {
+								return []string{"Title", "Published"}
+							}
+						}
+						return []string{"Title"}
+					}
+					return nil
+				}),
+			},
+		})
+
+		// create posts
+		post1 := tester.Insert(&postModel{
+			Title:     "post1",
+			Published: true,
+		}).ID()
+		post2 := tester.Insert(&postModel{
+			Title:     "post2",
+			Published: true,
+		}).ID()
+
+		// get posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post1.Hex()+`",
+						"attributes": {
+							"title": "post1",
+							"published": true
+						}
+					},
+					{
+						"type": "posts",
+						"id": "`+post2.Hex()+`",
+						"attributes": {
+							"title": "post2"
+						}
+					}
+				],
+				"links": {
+					"self": "/posts"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestWritableFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
@@ -4612,6 +4672,77 @@ func TestWritableFields(t *testing.T) {
 	})
 }
 
+func TestWritableFieldsGetter(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Authorizers: L{
+				C("TestWritableFieldsGetter", All(), func(ctx *Context) error {
+					ctx.ReadableFields = []string{"Title"}
+					ctx.GetWritableFields = func(model coal.Model) []string {
+						if model != nil {
+							post := model.(*postModel)
+							if post.Title == "post2" {
+								return []string{"Title", "Published"}
+							}
+						}
+						return []string{"Title"}
+					}
+					return nil
+				}),
+			},
+		})
+
+		// create posts
+		post1 := tester.Insert(&postModel{
+			Title: "post1",
+		}).ID()
+		post2 := tester.Insert(&postModel{
+			Title: "post2",
+		}).ID()
+
+		// attempt to update post
+		tester.Request("PATCH", "posts/"+post1.Hex(), `{
+			"data": {
+				"type": "posts",
+				"id": "`+post1.Hex()+`",
+				"attributes": {
+					"published": true
+				},
+				"relationships": {}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "field is not writable",
+					"source": {
+						"pointer": "Published"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create post
+		tester.Request("PATCH", "posts/"+post2.Hex(), `{
+			"data": {
+				"type": "posts",
+				"id": "`+post2.Hex()+`",
+				"attributes": {
+					"published": true
+				},
+				"relationships": {}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotEmpty(t, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestReadableProperties(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
@@ -4687,6 +4818,70 @@ func TestReadableProperties(t *testing.T) {
 									"related": "/posts/`+post+`/note"
 								}
 							}
+						}
+					}
+				],
+				"links": {
+					"self": "/posts"
+				}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestReadablePropertiesGetter(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Store: tester.Store,
+			Properties: map[string]string{
+				"Virtual":      "virtual",
+				"VirtualError": "virtual-error",
+			},
+			Authorizers: L{
+				C("TestReadablePropertiesGetter", All(), func(ctx *Context) error {
+					ctx.ReadableFields = []string{"Title"}
+					ctx.GetReadableProperties = func(model coal.Model) []string {
+						if model != nil {
+							if model.(*postModel).Title == "post1" {
+								return []string{"Virtual", "VirtualError"}
+							}
+						}
+						return []string{"Virtual"}
+					}
+					return nil
+				}),
+			},
+		})
+
+		// create posts
+		post1 := tester.Insert(&postModel{
+			Title: "post1",
+		}).ID().Hex()
+		post2 := tester.Insert(&postModel{
+			Title: "post2",
+		}).ID().Hex()
+
+		// get posts
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [
+					{
+						"type": "posts",
+						"id": "`+post1+`",
+						"attributes": {
+							"title": "post1",
+							"virtual": 42,
+							"virtual-error": "post1"
+						}
+					},
+					{
+						"type": "posts",
+						"id": "`+post2+`",
+						"attributes": {
+							"title": "post2",
+							"virtual": 42
 						}
 					}
 				],
