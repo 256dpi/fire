@@ -8,6 +8,12 @@ import (
 
 // A Callback is called during the request processing flow of a controller.
 type Callback struct {
+	// The name.
+	Name string
+
+	// The stage.
+	Stage Stage
+
 	// The matcher that decides whether the callback should be run.
 	Matcher Matcher
 
@@ -23,13 +29,15 @@ type L = []*Callback
 
 // C is a short-hand function to construct a callback. It will also add tracing
 // code around the execution of the callback.
-func C(name string, m Matcher, h Handler) *Callback {
-	// panic if matcher or handler is not set
-	if m == nil || h == nil {
-		panic("fire: missing matcher or handler")
+func C(name string, s Stage, m Matcher, h Handler) *Callback {
+	// panic if parameters are not set
+	if name == "" || m == nil || h == nil {
+		panic("fire: missing parameters")
 	}
 
 	return &Callback{
+		Name:    name,
+		Stage:   s,
 		Matcher: m,
 		Handler: func(ctx *Context) error {
 			// trace
@@ -130,8 +138,17 @@ func Except(op Operation) Matcher {
 }
 
 // Combine will combine multiple callbacks.
-func Combine(name string, cbs ...*Callback) *Callback {
-	return C(name, func(ctx *Context) bool {
+func Combine(name string, stage Stage, cbs ...*Callback) *Callback {
+	// check stage
+	if stage != 0 {
+		for _, cb := range cbs {
+			if cb.Stage&stage == 0 {
+				panic("fire: callback does not support stage")
+			}
+		}
+	}
+
+	return C(name, stage, func(ctx *Context) bool {
 		// check if one of the callback matches
 		for _, cb := range cbs {
 			if cb.Matcher(ctx) {
@@ -143,7 +160,7 @@ func Combine(name string, cbs ...*Callback) *Callback {
 	}, func(ctx *Context) error {
 		// call all matching callbacks
 		for _, cb := range cbs {
-			if cb.Matcher(ctx) {
+			if ctx.Stage&cb.Stage != 0 && cb.Matcher(ctx) {
 				err := cb.Handler(ctx)
 				if err != nil {
 					return xo.W(err)

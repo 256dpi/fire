@@ -3276,7 +3276,7 @@ func TestAuthorizers(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestAuthorizer", All(), func(ctx *Context) error {
+				C("TestAuthorizer", Authorizer, All(), func(ctx *Context) error {
 					return xo.SF("not authorized")
 				}),
 			},
@@ -3368,7 +3368,7 @@ func TestModifiers(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Modifiers: L{
-				C("TestModifier", All(), func(ctx *Context) error {
+				C("TestModifier", Modifier, All(), func(ctx *Context) error {
 					ctx.Model.(*postModel).TextBody += "!!!"
 					calls = append(calls, ctx.Operation)
 					return nil
@@ -3595,7 +3595,7 @@ func TestValidators(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Validators: L{
-				C("TestValidators", All(), func(ctx *Context) error {
+				C("TestValidators", Validator, All(), func(ctx *Context) error {
 					return xo.SF("not valid")
 				}),
 			},
@@ -3682,7 +3682,7 @@ func TestDecorators(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Decorators: L{
-				C("TestDecorator", All(), func(ctx *Context) error {
+				C("TestDecorator", Decorator, All(), func(ctx *Context) error {
 					if ctx.Model != nil {
 						ctx.Model.(*postModel).TextBody = "Hello World!"
 					}
@@ -3911,7 +3911,7 @@ func TestNotifiers(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Notifiers: L{
-				C("TestNotifier", All(), func(ctx *Context) error {
+				C("TestNotifier", Notifier, All(), func(ctx *Context) error {
 					if ctx.Response != nil {
 						ctx.Response.Meta = jsonapi.Map{
 							"Hello": "World!",
@@ -4241,7 +4241,7 @@ func TestReadableFields(t *testing.T) {
 			Filters: []string{"Title"},
 			Sorters: []string{"Title"},
 			Authorizers: L{
-				C("TestReadableFields", All(), func(ctx *Context) error {
+				C("TestReadableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
 					assert.Equal(t, []string{"Published", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.ReadableFields = []string{"Published"}
@@ -4253,7 +4253,7 @@ func TestReadableFields(t *testing.T) {
 			Store:   tester.Store,
 			Filters: []string{"Post"},
 			Authorizers: L{
-				C("TestReadableFields", All(), func(ctx *Context) error {
+				C("TestReadableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Post", "Title"}, ctx.ReadableFields)
 					assert.Equal(t, []string{"Post", "Title"}, ctx.WritableFields)
 					ctx.ReadableFields = []string{}
@@ -4355,7 +4355,7 @@ func TestReadableFieldsGetter(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestReadableFieldsGetter", All(), func(ctx *Context) error {
+				C("TestReadableFieldsGetter", Authorizer, All(), func(ctx *Context) error {
 					ctx.GetReadableFields = func(model coal.Model) []string {
 						if model != nil {
 							post := model.(*postModel)
@@ -4415,7 +4415,7 @@ func TestWritableFields(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestWritableFields", All(), func(ctx *Context) error {
+				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
 					assert.Equal(t, []string{"Published", "TextBody", "Title"}, ctx.WritableFields)
 					ctx.WritableFields = []string{"Title"}
@@ -4429,7 +4429,7 @@ func TestWritableFields(t *testing.T) {
 			Model: &selectionModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestWritableFields", All(), func(ctx *Context) error {
+				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"CreateToken", "Name", "Posts", "UpdateToken"}, ctx.ReadableFields)
 					assert.Equal(t, []string{"CreateToken", "Name", "Posts", "UpdateToken"}, ctx.WritableFields)
 					ctx.WritableFields = []string{}
@@ -4678,7 +4678,7 @@ func TestWritableFieldsGetter(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestWritableFieldsGetter", All(), func(ctx *Context) error {
+				C("TestWritableFieldsGetter", Authorizer, All(), func(ctx *Context) error {
 					ctx.ReadableFields = []string{"Title"}
 					ctx.GetWritableFields = func(model coal.Model) []string {
 						if model != nil {
@@ -4753,7 +4753,7 @@ func TestReadableProperties(t *testing.T) {
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
-				C("TestReadableProperties", All(), func(ctx *Context) error {
+				C("TestReadableProperties", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Virtual", "VirtualError"}, ctx.ReadableProperties)
 					ctx.ReadableProperties = []string{"Virtual"}
 					return nil
@@ -4763,7 +4763,7 @@ func TestReadableProperties(t *testing.T) {
 			Model: &noteModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestReadableProperties", All(), func(ctx *Context) error {
+				C("TestReadableProperties", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{}, ctx.ReadableProperties)
 					return nil
 				}),
@@ -4839,7 +4839,7 @@ func TestReadablePropertiesGetter(t *testing.T) {
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
-				C("TestReadablePropertiesGetter", All(), func(ctx *Context) error {
+				C("TestReadablePropertiesGetter", Authorizer, All(), func(ctx *Context) error {
 					ctx.ReadableFields = []string{"Title"}
 					ctx.GetReadableProperties = func(model coal.Model) []string {
 						if model != nil {
@@ -4902,7 +4902,7 @@ func TestRelationshipFilters(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Comments": {
 							{
@@ -4930,7 +4930,7 @@ func TestRelationshipFilters(t *testing.T) {
 			Model: &selectionModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Posts": {
 							{
@@ -4945,7 +4945,7 @@ func TestRelationshipFilters(t *testing.T) {
 			Model: &noteModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestRelationshipFilters", All(), func(ctx *Context) error {
+				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
 						"Post": {
 							{
@@ -5234,7 +5234,7 @@ func TestTolerateViolations(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestWritableFields", All(), func(ctx *Context) error {
+				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					ctx.WritableFields = []string{"Title"}
 					return nil
 				}),
@@ -5247,7 +5247,7 @@ func TestTolerateViolations(t *testing.T) {
 			Model: &selectionModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("TestWritableFields", All(), func(ctx *Context) error {
+				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					ctx.WritableFields = []string{}
 					return nil
 				}),
@@ -6597,7 +6597,7 @@ func TestTransactions(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Notifiers: L{
-				C("foo", All(), func(ctx *Context) error {
+				C("foo", Notifier, All(), func(ctx *Context) error {
 					if ctx.Model.(*postModel).Title == "FAIL" {
 						return xo.F("foo")
 					}

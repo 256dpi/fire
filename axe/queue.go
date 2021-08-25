@@ -119,7 +119,7 @@ func (q *Queue) Enqueue(ctx context.Context, job Job, delay, isolation time.Dura
 // Callback is a factory to create callbacks that can be used to enqueue jobs
 // during request processing.
 func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Blueprint) *fire.Callback {
-	return fire.C("axe/Queue.Callback", matcher, func(ctx *fire.Context) error {
+	return fire.C("axe/Queue.Callback", 0, matcher, func(ctx *fire.Context) error {
 		// get blueprint
 		bp := cb(ctx)
 

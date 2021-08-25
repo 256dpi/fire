@@ -22,7 +22,7 @@ type AuthInfo struct {
 // Note: The callback requires that the request has already been authorized
 // using the Authorizer middleware from an Authenticator.
 func Callback(force bool, scope ...string) *fire.Callback {
-	return fire.C("flame/Callback", fire.All(), func(ctx *fire.Context) error {
+	return fire.C("flame/Callback", fire.Authorizer, fire.All(), func(ctx *fire.Context) error {
 		// coerce scope
 		requiredScope := oauth2.Scope(scope)
 

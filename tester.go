@@ -88,7 +88,17 @@ func (t *Tester) Path(path string) string {
 
 // RunCallback is a helper to test callbacks.
 func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
-	return t.RunHandler(ctx, cb.Handler)
+	return t.RunHandler(ctx, func(ctx *Context) error {
+		// force stage
+		ctx.Stage = cb.Stage // TODO: Get first stage if mask?
+
+		// check matcher
+		if !cb.Matcher(ctx) {
+			return fmt.Errorf("failed matcher")
+		}
+
+		return cb.Handler(ctx)
+	})
 }
 
 // RunAction is a helper to test actions.
@@ -147,6 +157,11 @@ func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 	// ensure data
 	if ctx.Data == nil {
 		ctx.Data = stick.Map{}
+	}
+
+	// ensure stage
+	if ctx.Stage == 0 {
+		ctx.Stage = Authorizer
 	}
 
 	// ensure operation

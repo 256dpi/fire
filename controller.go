@@ -26,6 +26,18 @@ const blankCursor = "*"
 
 var cursorEncoding = base64.URLEncoding.WithPadding(base64.NoPadding)
 
+// Stage is the controller callback stage.
+type Stage int
+
+// The available controller callback stages.
+const (
+	Authorizer Stage = 1 << iota
+	Modifier
+	Validator
+	Decorator
+	Notifier
+)
+
 // A Controller provides a JSON API based interface to a model.
 //
 // Database transactions are automatically used for list, find, create, update
@@ -426,7 +438,7 @@ func (c *Controller) listResources(ctx *Context) {
 	c.loadModels(ctx)
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, ctx.Models)
@@ -441,7 +453,7 @@ func (c *Controller) listResources(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) findResource(ctx *Context) {
@@ -460,7 +472,7 @@ func (c *Controller) findResource(ctx *Context) {
 	c.loadModel(ctx)
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -477,7 +489,7 @@ func (c *Controller) findResource(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) createResource(ctx *Context) {
@@ -508,7 +520,7 @@ func (c *Controller) createResource(ctx *Context) {
 	}
 
 	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+	c.runCallbacks(ctx, Authorizer, c.Authorizers, http.StatusUnauthorized)
 
 	// create model with id
 	ctx.Model = c.meta.Make()
@@ -518,7 +530,7 @@ func (c *Controller) createResource(ctx *Context) {
 	c.assignData(ctx, ctx.Request.Data.One)
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -532,7 +544,7 @@ func (c *Controller) createResource(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// set initial update token if consistent update is enabled
 	if c.ConsistentUpdate {
@@ -574,7 +586,7 @@ func (c *Controller) createResource(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// prepare link
 	selfLink := ctx.JSONAPIRequest.Merge(jsonapi.Request{
@@ -593,7 +605,7 @@ func (c *Controller) createResource(ctx *Context) {
 	ctx.ResponseCode = http.StatusCreated
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) updateResource(ctx *Context) {
@@ -645,7 +657,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	c.assignData(ctx, ctx.Request.Data.One)
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -659,7 +671,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// check if idempotent create token has been changed
 	if c.IdempotentCreate {
@@ -713,7 +725,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -730,7 +742,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) deleteResource(ctx *Context) {
@@ -749,7 +761,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	c.loadModel(ctx)
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -763,7 +775,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// check if soft delete has been enabled
 	if c.SoftDelete {
@@ -794,7 +806,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	}
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 
 	// set status
 	ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
@@ -993,7 +1005,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -1006,7 +1018,7 @@ func (c *Controller) getRelationship(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) setRelationship(ctx *Context) {
@@ -1044,7 +1056,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	c.assignRelationship(ctx, ctx.Request, rel)
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -1058,7 +1070,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
@@ -1073,7 +1085,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -1086,7 +1098,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) appendToRelationship(ctx *Context) {
@@ -1147,7 +1159,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	}
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -1161,7 +1173,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
@@ -1176,7 +1188,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -1189,7 +1201,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) removeFromRelationship(ctx *Context) {
@@ -1257,7 +1269,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	}
 
 	// run modifiers
-	c.runCallbacks(c.Modifiers, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Modifier, c.Modifiers, http.StatusBadRequest)
 
 	// validate model
 	err := ctx.Model.Validate()
@@ -1271,7 +1283,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	}
 
 	// run validators
-	c.runCallbacks(c.Validators, ctx, http.StatusBadRequest)
+	c.runCallbacks(ctx, Validator, c.Validators, http.StatusBadRequest)
 
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
@@ -1286,7 +1298,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	}
 
 	// run decorators
-	c.runCallbacks(c.Decorators, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Decorator, c.Decorators, http.StatusInternalServerError)
 
 	// preload relationships
 	relationships := c.preloadRelationships(ctx, []coal.Model{ctx.Model})
@@ -1299,7 +1311,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	ctx.ResponseCode = http.StatusOK
 
 	// run notifiers
-	c.runCallbacks(c.Notifiers, ctx, http.StatusInternalServerError)
+	c.runCallbacks(ctx, Notifier, c.Notifiers, http.StatusInternalServerError)
 }
 
 func (c *Controller) handleCollectionAction(ctx *Context) {
@@ -1324,7 +1336,7 @@ func (c *Controller) handleCollectionAction(ctx *Context) {
 	ctx.Context = ct
 
 	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+	c.runCallbacks(ctx, Authorizer, c.Authorizers, http.StatusUnauthorized)
 
 	// run callback
 	c.runAction(action, ctx, http.StatusBadRequest)
@@ -1456,7 +1468,7 @@ func (c *Controller) loadModel(ctx *Context) {
 	}
 
 	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+	c.runCallbacks(ctx, Authorizer, c.Authorizers, http.StatusUnauthorized)
 
 	// lock document if a write operation is expected
 	lock := ctx.Operation.Write()
@@ -1596,7 +1608,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	}
 
 	// run authorizers
-	c.runCallbacks(c.Authorizers, ctx, http.StatusUnauthorized)
+	c.runCallbacks(ctx, Authorizer, c.Authorizers, http.StatusUnauthorized)
 
 	// get readable fields
 	readableFields := c.readableFields(ctx, nil)
@@ -2431,7 +2443,7 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 	return links
 }
 
-func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus int) {
+func (c *Controller) runCallbacks(ctx *Context, stage Stage, list []*Callback, errorStatus int) {
 	// return early if list is empty
 	if len(list) == 0 {
 		return
@@ -2443,10 +2455,18 @@ func (c *Controller) runCallbacks(list []*Callback, ctx *Context, errorStatus in
 
 	// run callbacks and handle errors
 	for _, cb := range list {
+		// check stage
+		if cb.Stage != 0 && cb.Stage&stage == 0 {
+			xo.Abort(xo.F("callback does not support stage"))
+		}
+
 		// check if callback should be run
 		if !cb.Matcher(ctx) {
 			continue
 		}
+
+		// set stage
+		ctx.Stage = stage
 
 		// call callback
 		err := xo.W(cb.Handler(ctx))

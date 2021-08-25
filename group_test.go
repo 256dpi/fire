@@ -17,7 +17,7 @@ func TestGroupAdd(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("Panic", All(), func(*Context) error {
+				C("Panic", Authorizer, All(), func(*Context) error {
 					xo.Abort(xo.F("foo"))
 					return nil
 				}),
@@ -59,7 +59,7 @@ func TestGroupAbort(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("Panic", All(), func(*Context) error {
+				C("Panic", Authorizer, All(), func(*Context) error {
 					xo.Abort(xo.F("foo"))
 					return nil
 				}),
@@ -95,7 +95,7 @@ func TestGroupPanic(t *testing.T) {
 			Model: &postModel{},
 			Store: tester.Store,
 			Authorizers: L{
-				C("Panic", All(), func(*Context) error {
+				C("Panic", Authorizer, All(), func(*Context) error {
 					panic("foo")
 				}),
 			},
@@ -123,7 +123,7 @@ func TestGroupAction(t *testing.T) {
 
 		group.Handle("foo", &GroupAction{
 			Authorizers: L{
-				C("TestGroupAction", All(), func(ctx *Context) error {
+				C("TestGroupAction", Authorizer, All(), func(ctx *Context) error {
 					if ctx.HTTPRequest.Method == "DELETE" {
 						return xo.SF("error")
 					}

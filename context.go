@@ -107,6 +107,9 @@ type Context struct {
 	// The custom data map.
 	Data stick.Map
 
+	// The current callback stage.
+	Stage Stage
+
 	// The current operation in process.
 	//
 	// Usage: Read Only

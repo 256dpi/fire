@@ -507,7 +507,7 @@ func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
 // Modifier will handle modifications on all or just the specified link fields
 // on the model.
 func (s *Storage) Modifier(fields ...string) *fire.Callback {
-	return fire.C("blaze/Storage.Modifier", fire.Only(fire.Create|fire.Update|fire.Delete), func(ctx *fire.Context) error {
+	return fire.C("blaze/Storage.Modifier", fire.Modifier, fire.Only(fire.Create|fire.Update|fire.Delete), func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != s.store {
 			return xo.F("stores must be identical")
@@ -741,7 +741,7 @@ func (s *Storage) Decorate(link *Link) error {
 // Decorator will generate view keys for all or just the specified link fields
 // on the returned model or models.
 func (s *Storage) Decorator(fields ...string) *fire.Callback {
-	return fire.C("blaze/Storage.Decorator", fire.All(), func(ctx *fire.Context) error {
+	return fire.C("blaze/Storage.Decorator", fire.Decorator, fire.All(), func(ctx *fire.Context) error {
 		// collect fields if empty
 		if len(fields) == 0 {
 			fields = collectFields(ctx.Controller.Model)

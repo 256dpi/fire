@@ -12,8 +12,8 @@ import (
 )
 
 func TestC(t *testing.T) {
-	assert.PanicsWithValue(t, `fire: missing matcher or handler`, func() {
-		C("", nil, nil)
+	assert.PanicsWithValue(t, `fire: missing parameters`, func() {
+		C("", 0, nil, nil)
 	})
 }
 

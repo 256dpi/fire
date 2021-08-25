@@ -11,7 +11,7 @@ import (
 
 // E is a short-hand function to create an enforcer.
 func E(name string, m fire.Matcher, h fire.Handler) *Enforcer {
-	return fire.C(name, m, h)
+	return fire.C(name, 0, m, h) // TODO: Set stage?
 }
 
 // An Enforcer is returned by an Authorizer to enforce the previously inspected

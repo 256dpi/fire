@@ -64,7 +64,7 @@ func (s *Strategy) Callback() *fire.Callback {
 	}
 
 	// construct and return callback
-	return fire.C("ash/Strategy.Callback", fire.All(), func(ctx *fire.Context) (err error) {
+	return fire.C("ash/Strategy.Callback", 0, fire.All(), func(ctx *fire.Context) (err error) {
 		// select authorizers based on operation
 		switch ctx.Operation {
 		case fire.List:
