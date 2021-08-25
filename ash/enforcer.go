@@ -1,6 +1,8 @@
 package ash
 
 import (
+	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
@@ -74,6 +76,27 @@ func WhitelistReadableFields(fields ...string) *Enforcer {
 	})
 }
 
+// SetReadableFieldsGetter will enforce the authorization by setting the
+// specified readable fields getter.
+//
+// Note: This enforcer cannot be used to authorize Delete, ResourceAction and
+// CollectionAction operations.
+func SetReadableFieldsGetter(fn func(ctx *fire.Context, model coal.Model) []string) *Enforcer {
+	return E("ash/SetReadableFieldsGetter", fire.Except(fire.Delete|fire.ResourceAction|fire.CollectionAction), func(ctx *fire.Context) error {
+		// check readable fields getter
+		if ctx.GetReadableFields != nil {
+			return xo.F("existing readable fields getter")
+		}
+
+		// set readable fields getter
+		ctx.GetReadableFields = func(model coal.Model) []string {
+			return fn(ctx, model)
+		}
+
+		return nil
+	})
+}
+
 // WhitelistWritableFields will enforce the authorization by making sure only the
 // specified fields can be changed by the client.
 //
@@ -82,6 +105,26 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 	return E("ash/WhitelistWritableFields", fire.Only(fire.Create|fire.Update), func(ctx *fire.Context) error {
 		// set new list
 		ctx.WritableFields = stick.Intersect(ctx.WritableFields, fields)
+
+		return nil
+	})
+}
+
+// SetWritableFieldsGetter will enforce the authorization by setting the
+// specified writable fields getter.
+//
+// Note: This enforcer can only be used to authorize Create and Update operations.
+func SetWritableFieldsGetter(fn func(ctx *fire.Context, model coal.Model) []string) *Enforcer {
+	return E("ash/SetReadableFieldsGetter", fire.Except(fire.Create|fire.Update), func(ctx *fire.Context) error {
+		// check writable fields getter
+		if ctx.GetWritableFields != nil {
+			return xo.F("existing writable fields getter")
+		}
+
+		// set writable fields getter
+		ctx.GetWritableFields = func(model coal.Model) []string {
+			return fn(ctx, model)
+		}
 
 		return nil
 	})
@@ -96,6 +139,27 @@ func WhitelistReadableProperties(fields ...string) *Enforcer {
 	return E("ash/WhitelistReadableProperties", fire.Except(fire.Delete|fire.ResourceAction|fire.CollectionAction), func(ctx *fire.Context) error {
 		// set new list
 		ctx.ReadableProperties = stick.Intersect(ctx.ReadableProperties, fields)
+
+		return nil
+	})
+}
+
+// SetReadablePropertiesGetter will enforce the authorization by setting the
+// specified readable properties getter.
+//
+// Note: This enforcer cannot be used to authorize Delete, ResourceAction and
+// CollectionAction operations.
+func SetReadablePropertiesGetter(fn func(ctx *fire.Context, model coal.Model) []string) *Enforcer {
+	return E("ash/SetReadablePropertiesGetter", fire.Except(fire.Delete|fire.ResourceAction|fire.CollectionAction), func(ctx *fire.Context) error {
+		// check readable properties getter
+		if ctx.GetReadableProperties != nil {
+			return xo.F("existing readable properties getter")
+		}
+
+		// set readable properties getter
+		ctx.GetReadableProperties = func(model coal.Model) []string {
+			return fn(ctx, model)
+		}
 
 		return nil
 	})
