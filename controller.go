@@ -2500,27 +2500,51 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 
 func (c *Controller) readableFields(ctx *Context, model coal.Model) []string {
 	// check getter
-	if ctx.GetReadableFields != nil {
-		return ctx.GetReadableFields(model)
+	if ctx.GetReadableFields == nil {
+		return ctx.ReadableFields
 	}
 
-	return ctx.ReadableFields
+	// get readable fields
+	list := ctx.GetReadableFields(model)
+
+	// check subset
+	if !stick.Includes(ctx.ReadableFields, list) {
+		xo.Abort(xo.F("readable fields are not a subset"))
+	}
+
+	return list
 }
 
 func (c *Controller) writableFields(ctx *Context, model coal.Model) []string {
 	// check getter
-	if ctx.GetWritableFields != nil {
-		return ctx.GetWritableFields(model)
+	if ctx.GetWritableFields == nil {
+		return ctx.WritableFields
 	}
 
-	return ctx.WritableFields
+	// get writable fields
+	fields := ctx.GetWritableFields(model)
+
+	// check subset
+	if !stick.Includes(ctx.WritableFields, fields) {
+		xo.Abort(xo.F("writable fields are not a subset"))
+	}
+
+	return fields
 }
 
 func (c *Controller) readableProperties(ctx *Context, model coal.Model) []string {
 	// check getter
-	if ctx.GetReadableProperties != nil {
-		return ctx.GetReadableProperties(model)
+	if ctx.GetReadableProperties == nil {
+		return ctx.ReadableProperties
 	}
 
-	return ctx.ReadableProperties
+	// get readable properties
+	properties := ctx.GetReadableProperties(model)
+
+	// check subset
+	if !stick.Includes(ctx.ReadableProperties, properties) {
+		xo.Abort(xo.F("readable properties are not a subset"))
+	}
+
+	return properties
 }
