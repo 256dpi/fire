@@ -115,7 +115,7 @@ func WhitelistWritableFields(fields ...string) *Enforcer {
 //
 // Note: This enforcer can only be used to authorize Create and Update operations.
 func SetWritableFieldsGetter(fn func(ctx *fire.Context, model coal.Model) []string) *Enforcer {
-	return E("ash/SetReadableFieldsGetter", fire.Except(fire.Create|fire.Update), func(ctx *fire.Context) error {
+	return E("ash/SetReadableFieldsGetter", fire.Only(fire.Create|fire.Update), func(ctx *fire.Context) error {
 		// check writable fields getter
 		if ctx.GetWritableFields != nil {
 			return xo.F("existing writable fields getter")

@@ -56,19 +56,19 @@ func TestSetReadableFieldsGetter(t *testing.T) {
 }
 
 func TestWhitelistWritableFields(t *testing.T) {
-	ctx := &fire.Context{WritableFields: []string{"foo", "bar", "baz"}}
+	ctx := &fire.Context{Operation: fire.Create, WritableFields: []string{"foo", "bar", "baz"}}
 	err := tester.RunCallback(ctx, WhitelistWritableFields("bar"))
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"bar"}, ctx.WritableFields)
 
-	ctx = &fire.Context{WritableFields: []string{}}
+	ctx = &fire.Context{Operation: fire.Create, WritableFields: []string{}}
 	err = tester.RunCallback(ctx, WhitelistWritableFields("foo", "bar"))
 	assert.NoError(t, err)
 	assert.Equal(t, []string{}, ctx.WritableFields)
 }
 
 func TestSetWritableFieldsGetter(t *testing.T) {
-	ctx := &fire.Context{}
+	ctx := &fire.Context{Operation: fire.Create}
 	err := tester.RunCallback(ctx, SetWritableFieldsGetter(func(ctx *fire.Context, model coal.Model) []string {
 		return nil
 	}))
