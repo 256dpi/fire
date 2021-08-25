@@ -112,7 +112,7 @@ type Context struct {
 
 	// The current operation in process.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	// Availability: Authorizers
 	Operation Operation
 
@@ -123,7 +123,7 @@ type Context struct {
 	// resource id, while on forwarded List operations the relationship filter
 	// is preset.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	// Availability: Authorizers
 	// Operations: !Create, !CollectionAction
 	Selector bson.M
@@ -134,7 +134,7 @@ type Context struct {
 	//
 	// On List operations, attribute and relationship filters are preset.
 	//
-	// Usage: Append Only
+	// Usage: Append only
 	// Availability: Authorizers
 	// Operations: !Create, !CollectionAction
 	Filters []bson.M
@@ -150,7 +150,7 @@ type Context struct {
 	// attributes and relationships. Additionally, only readable fields can
 	// be used for filtering and sorting.
 	//
-	// Usage: Reduce Only
+	// Usage: Reduce only
 	// Availability: Authorizers
 	// Operations: !Delete, !ResourceAction, !CollectionAction
 	ReadableFields []string
@@ -162,7 +162,7 @@ type Context struct {
 
 	// Only the whitelisted writable fields can be altered by requests.
 	//
-	// Usage: Reduce Only
+	// Usage: Reduce only
 	// Availability: Authorizers
 	// Operations: Create, Update
 	WritableFields []string
@@ -175,7 +175,7 @@ type Context struct {
 	// Only the whitelisted readable properties are exposed to the client as
 	// attributes.
 	//
-	// Usage: Reduce Only
+	// Usage: Reduce only
 	// Availability: Authorizers
 	// Operations: !Delete, !ResourceActon, !CollectionAction
 	ReadableProperties []string
@@ -188,7 +188,7 @@ type Context struct {
 	// The filters that will be applied when loading has one and has many
 	// relationships.
 	//
-	// Usage: Append Only
+	// Usage: Append only
 	// Availability: Authorizers.
 	// Operations: !Create, !CollectionAction
 	RelationshipFilters map[string][]bson.M
@@ -196,14 +196,14 @@ type Context struct {
 	// The model that will be created, updated, deleted or is requested by a
 	// resource action.
 	//
-	// Usage: Modify Only
+	// Usage: Modify only
 	// Availability: Validators
 	// Operations: Create, Update, Delete, ResourceAction
 	Model coal.Model
 
 	// The models that will be returned for a List operation.
 	//
-	// Usage: Modify Only
+	// Usage: Modify only
 	// Availability: Decorators
 	// Operations: List
 	Models []coal.Model
@@ -211,40 +211,40 @@ type Context struct {
 	// The original model that is being updated. Can be used to lookup up
 	// original values of changed fields.
 	//
-	// Usage: Ready Only
+	// Usage: Ready only
 	// Availability: Validators
 	// Operations: Update
 	Original coal.Model
 
 	// The document that has been received by the client.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	// Availability: Authorizers
 	// Operations: !List, !Find, !CollectionAction, !ResourceAction
 	Request *jsonapi.Document
 
 	// The document that will be written to the client.
 	//
-	// Usage: Modify Only
+	// Usage: Modify only
 	// Availability: Notifiers
 	// Operations: !CollectionAction, !ResourceAction
 	Response *jsonapi.Document
 
 	// The status code that will be written to the client.
 	//
-	// Usage: Modify Only
+	// Usage: Modify only
 	// Availability: Notifiers
 	// Operations: !CollectionAction, !ResourceAction
 	ResponseCode int
 
 	// The store that is used to retrieve and persist the model.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	Store *coal.Store
 
 	// The underlying JSON-API request.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	JSONAPIRequest *jsonapi.Request
 
 	// The underlying HTTP request.
@@ -252,28 +252,28 @@ type Context struct {
 	// Note: The path is not updated when a controller forwards a request to
 	// a related controller.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	HTTPRequest *http.Request
 
 	// The underlying HTTP response writer. The response writer should only be
 	// used during collection or resource actions to write a custom response.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	ResponseWriter http.ResponseWriter
 
 	// The controller that is managing the request.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	Controller *Controller
 
 	// The group that received the request.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	Group *Group
 
 	// The current tracer.
 	//
-	// Usage: Read Only
+	// Usage: Read only
 	Tracer *xo.Tracer
 }
 
