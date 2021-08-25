@@ -5950,6 +5950,31 @@ func TestListLimit(t *testing.T) {
 
 func TestCollectionActions(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
+		assert.PanicsWithValue(t, `fire: invalid collection action ""`, func() {
+			tester.Assign("api", &Controller{
+				Model: &postModel{},
+				Store: tester.Store,
+				CollectionActions: M{
+					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+						return nil
+					}),
+				},
+			})
+		})
+
+		id := coal.New().Hex()
+		assert.PanicsWithValue(t, `fire: invalid collection action "`+id+`"`, func() {
+			tester.Assign("api", &Controller{
+				Model: &postModel{},
+				Store: tester.Store,
+				CollectionActions: M{
+					id: A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+						return nil
+					}),
+				},
+			})
+		})
+
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
@@ -6021,6 +6046,42 @@ func TestCollectionActions(t *testing.T) {
 
 func TestResourceActions(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
+		assert.PanicsWithValue(t, `fire: invalid resource action ""`, func() {
+			tester.Assign("api", &Controller{
+				Model: &postModel{},
+				Store: tester.Store,
+				ResourceActions: M{
+					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+						return nil
+					}),
+				},
+			})
+		})
+
+		assert.PanicsWithValue(t, `fire: invalid resource action "relationships"`, func() {
+			tester.Assign("api", &Controller{
+				Model: &postModel{},
+				Store: tester.Store,
+				ResourceActions: M{
+					"relationships": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+						return nil
+					}),
+				},
+			})
+		})
+
+		assert.PanicsWithValue(t, `fire: invalid resource action "note"`, func() {
+			tester.Assign("api", &Controller{
+				Model: &postModel{},
+				Store: tester.Store,
+				ResourceActions: M{
+					"note": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+						return nil
+					}),
+				},
+			})
+		})
+
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
 			Store: tester.Store,
