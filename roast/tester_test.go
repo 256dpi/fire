@@ -19,17 +19,12 @@ type postModel struct {
 var catalog = coal.NewCatalog(&postModel{})
 
 func TestTester(t *testing.T) {
-	ft := fire.NewTester(nil, catalog.Models()...)
-
-	ft.Assign("", &fire.Controller{
-		Model: &postModel{},
-		Store: ft.Store,
+	tt := NewTester(Config{
+		Models: catalog.Models(),
 	})
 
-	tt := NewTester(Config{
-		Store:   ft.Store,
-		Catalog: catalog,
-		Handler: ft.Handler,
+	tt.Assign("", &fire.Controller{
+		Model: &postModel{},
 	})
 
 	tt.List(t, &postModel{}, nil)
@@ -50,11 +45,12 @@ func TestTester(t *testing.T) {
 }
 
 func TestTesterErrors(t *testing.T) {
-	ft := fire.NewTester(nil, catalog.Models()...)
+	tt := NewTester(Config{
+		Models: catalog.Models(),
+	})
 
-	ft.Assign("", &fire.Controller{
+	tt.Assign("", &fire.Controller{
 		Model: &postModel{},
-		Store: ft.Store,
 		Authorizers: fire.L{
 			fire.C("Error", 0, fire.All(), func(ctx *fire.Context) error {
 				if ctx.Operation == fire.Find || ctx.Operation == fire.List {
@@ -65,13 +61,7 @@ func TestTesterErrors(t *testing.T) {
 		},
 	})
 
-	post := ft.Insert(&postModel{})
-
-	tt := NewTester(Config{
-		Store:   ft.Store,
-		Catalog: catalog,
-		Handler: ft.Handler,
-	})
+	post := tt.Insert(&postModel{})
 
 	tt.ListError(t, &postModel{}, AccessDenied)
 	tt.FindError(t, post, AccessDenied)

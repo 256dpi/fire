@@ -51,6 +51,13 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 		panic(err)
 	})
 
+	// ensure store
+	for _, c := range controllers {
+		if c.Store == nil {
+			c.Store = t.Store
+		}
+	}
+
 	// add controllers
 	group.Add(controllers...)
 

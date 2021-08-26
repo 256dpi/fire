@@ -27,7 +27,7 @@ var ResourceNotFound = fire.ErrResourceNotFound.Self().(*xo.Err).Err
 // Config provides configuration of a tester.
 type Config struct {
 	Store         *coal.Store
-	Catalog       *coal.Catalog
+	Models        []coal.Model
 	Handler       http.Handler
 	DataNamespace string
 	AuthNamespace string
@@ -57,7 +57,7 @@ type Tester struct {
 func NewTester(config Config) *Tester {
 	// prepare tester
 	c := &Tester{
-		Tester: fire.NewTester(config.Store, config.Catalog.Models()...),
+		Tester: fire.NewTester(config.Store, config.Models...),
 	}
 
 	// set handler
