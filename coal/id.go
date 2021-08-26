@@ -98,3 +98,58 @@ func Includes(all, subset []ID) bool {
 
 	return true
 }
+
+// Union will merge all list and remove duplicates.
+func Union(lists ...[]ID) []ID {
+	// sum length
+	var sum int
+	for _, l := range lists {
+		sum += len(l)
+	}
+
+	// prepare table and result
+	table := make(map[ID]bool)
+	res := make([]ID, 0, sum)
+
+	// add items not present in table
+	for _, list := range lists {
+		for _, item := range list {
+			if _, ok := table[item]; !ok {
+				table[item] = true
+				res = append(res, item)
+			}
+		}
+	}
+
+	return res
+}
+
+// Subtract will return a list with items that are only part of the first list.
+func Subtract(listA, listB []ID) []ID {
+	// prepare new list
+	list := make([]ID, 0, len(listA))
+
+	// add items that are not in second list
+	for _, item := range listA {
+		if !Contains(listB, item) {
+			list = append(list, item)
+		}
+	}
+
+	return list
+}
+
+// Intersect will return a list with items that are not part of both lists.
+func Intersect(listA, listB []ID) []ID {
+	// prepare new list
+	list := make([]ID, 0, len(listA))
+
+	// add items that are part of both lists
+	for _, item := range listA {
+		if Contains(listB, item) {
+			list = append(list, item)
+		}
+	}
+
+	return list
+}

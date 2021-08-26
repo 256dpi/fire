@@ -67,3 +67,29 @@ func TestIncludes(t *testing.T) {
 	assert.False(t, Includes([]ID{a, b, c}, []ID{a, b, c, d}))
 	assert.False(t, Includes([]ID{a, b, c}, []ID{d}))
 }
+
+func TestUnion(t *testing.T) {
+	a := New()
+	b := New()
+	c := New()
+	d := New()
+	e := New()
+
+	assert.Equal(t, []ID{b, a, c, d, e}, Union([]ID{b, a, c}, []ID{d, a, b}, []ID{e}))
+}
+
+func TestSubtract(t *testing.T) {
+	a := New()
+	b := New()
+	c := New()
+
+	assert.Equal(t, []ID{a}, Subtract([]ID{a, b}, []ID{b, c}))
+}
+
+func TestIntersect(t *testing.T) {
+	a := New()
+	b := New()
+	c := New()
+
+	assert.Equal(t, []ID{b}, Intersect([]ID{a, b}, []ID{b, c}))
+}
