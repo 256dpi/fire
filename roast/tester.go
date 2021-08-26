@@ -214,8 +214,6 @@ func (t *Tester) Create(tt *testing.T, model, response, result coal.Model) Resul
 		result.GetBase().DocID = res.ID()
 		actual := coal.GetMeta(model).Make()
 		t.Tester.Fetch(actual, res.ID())
-		base := actual.GetBase()
-		*base = coal.B(actual.ID())
 		assert.Equal(tt, result, actual)
 	}
 
@@ -259,8 +257,6 @@ func (t *Tester) Update(tt *testing.T, model, response, result coal.Model) Resul
 	if err == nil && result != nil {
 		actual := coal.GetMeta(model).Make()
 		t.Tester.Fetch(actual, model.ID())
-		base := actual.GetBase()
-		*base = coal.B(actual.ID())
 		assert.Equal(tt, result, actual)
 	}
 
@@ -298,8 +294,6 @@ func (t *Tester) Delete(tt *testing.T, model, result coal.Model) Result {
 	if err == nil && result != nil {
 		actual := coal.GetMeta(model).Make()
 		t.Tester.Fetch(actual, model.ID())
-		base := actual.GetBase()
-		*base = coal.B(actual.ID())
 		assert.Equal(tt, result, actual)
 	}
 

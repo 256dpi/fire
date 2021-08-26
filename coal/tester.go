@@ -53,6 +53,12 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 		panic(err)
 	}
 
+	// clear bases
+	for _, model := range Slice(list) {
+		base := model.GetBase()
+		*base = B(model.ID())
+	}
+
 	return list
 }
 
@@ -71,6 +77,10 @@ func (t *Tester) FindLast(model Model, query ...bson.M) Model {
 	} else if !found {
 		panic("not found")
 	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
 
 	return model
 }
@@ -108,6 +118,10 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 		panic("not found")
 	}
 
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
 	return model
 }
 
@@ -118,6 +132,10 @@ func (t *Tester) Insert(model Model) Model {
 	if err != nil {
 		panic(err)
 	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
 
 	return model
 }
@@ -132,6 +150,10 @@ func (t *Tester) Replace(model Model) Model {
 		panic("not found")
 	}
 
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
 	return model
 }
 
@@ -144,6 +166,10 @@ func (t *Tester) Update(model Model, update bson.M) Model {
 	} else if !found {
 		panic("not found")
 	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
 
 	return model
 }
