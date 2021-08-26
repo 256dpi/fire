@@ -54,21 +54,17 @@ func ConvertModel(model coal.Model) (*jsonapi.Resource, error) {
 		// handle to-many relationship
 		if rel.ToMany {
 			ids := stick.MustGet(model, rel.Name).([]coal.ID)
-			if ids != nil {
-				many := make([]*jsonapi.Resource, 0, len(ids))
-				for _, id := range ids {
-					many = append(many, &jsonapi.Resource{
-						Type: rel.RelType,
-						ID:   id.Hex(),
-					})
-				}
-				relationships[rel.RelName] = &jsonapi.Document{
-					Data: &jsonapi.HybridResource{
-						Many: many,
-					},
-				}
-			} else {
-				relationships[rel.RelName] = &jsonapi.Document{}
+			many := make([]*jsonapi.Resource, 0, len(ids))
+			for _, id := range ids {
+				many = append(many, &jsonapi.Resource{
+					Type: rel.RelType,
+					ID:   id.Hex(),
+				})
+			}
+			relationships[rel.RelName] = &jsonapi.Document{
+				Data: &jsonapi.HybridResource{
+					Many: many,
+				},
 			}
 		}
 	}

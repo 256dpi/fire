@@ -212,9 +212,11 @@ func (t *Tester) Create(tt *testing.T, model, response, result coal.Model) Resul
 	// validate result
 	if err == nil && result != nil {
 		result.GetBase().DocID = res.ID()
-		rec := coal.GetMeta(model).Make()
-		t.Tester.Fetch(rec, res.ID())
-		assert.Equal(tt, result, rec)
+		actual := coal.GetMeta(model).Make()
+		t.Tester.Fetch(actual, res.ID())
+		base := actual.GetBase()
+		*base = coal.B(actual.ID())
+		assert.Equal(tt, result, actual)
 	}
 
 	return Result{

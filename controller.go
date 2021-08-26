@@ -1918,7 +1918,7 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 		var ids []coal.ID
 
 		// check if data is available
-		if rel.Data != nil {
+		if rel.Data != nil && len(rel.Data.Many) > 0 {
 			// prepare ids
 			ids = make([]coal.ID, len(rel.Data.Many))
 

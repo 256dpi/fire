@@ -37,7 +37,9 @@ func TestConvertModel(t *testing.T) {
 				Data: nil,
 			},
 			"many": {
-				Data: nil,
+				Data: &jsonapi.HybridResource{
+					Many: []*jsonapi.Resource{},
+				},
 			},
 		},
 	}, res)
