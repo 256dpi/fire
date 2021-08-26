@@ -104,7 +104,6 @@ func (t *Tester) Count(model Model, query ...bson.M) int {
 
 // Refresh will refresh the provided model.
 func (t *Tester) Refresh(model Model) {
-	// refresh model
 	t.Fetch(model, model.ID())
 }
 
@@ -185,8 +184,7 @@ func (t *Tester) Delete(model Model) {
 	}
 }
 
-// Clean will remove the collections of models that have been registered and
-// reset the header map.
+// Clean will clean the collections of models that have been registered.
 func (t *Tester) Clean() {
 	for _, model := range t.Models {
 		// remove all is faster than dropping the collection
