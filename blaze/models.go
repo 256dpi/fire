@@ -64,6 +64,24 @@ func (l *Link) Validate(requireFilename bool, whitelist ...string) error {
 	})
 }
 
+// IsValidLink returns a stick.Validate compatible link rule.
+func IsValidLink(requireFilename bool, whitelist ...string) func(sub stick.Subject) error {
+	return func(sub stick.Subject) error {
+		// unwrap
+		if !sub.Unwrap() {
+			return nil
+		}
+
+		// get link
+		link, ok := sub.IValue.(Link)
+		if !ok {
+			panic("blaze: expected link value")
+		}
+
+		return link.Validate(requireFilename, whitelist...)
+	}
+}
+
 // Links is a set of links.
 type Links []Link
 
@@ -107,6 +125,24 @@ func (l Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 	}
 
 	return nil
+}
+
+// IsValidLinks returns a stick.Validate compatible links rule.
+func IsValidLinks(uniqueFilenames bool, whitelist ...string) func(sub stick.Subject) error {
+	return func(sub stick.Subject) error {
+		// unwrap
+		if !sub.Unwrap() {
+			return nil
+		}
+
+		// get links
+		links, ok := sub.IValue.(Links)
+		if !ok {
+			panic("blaze: expected links value")
+		}
+
+		return links.Validate(uniqueFilenames, whitelist...)
+	}
 }
 
 // State describes the current state of a file. Usually, the state of a file

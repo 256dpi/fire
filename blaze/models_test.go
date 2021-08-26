@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/256dpi/fire/stick"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
@@ -51,7 +52,31 @@ func TestLinkValidate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "FileType: type unallowed", err.Error())
 
-	err = link.Validate(true)
+	err = link.Validate(true, "foo/bar")
+	assert.NoError(t, err)
+}
+
+func TestIsValidLink(t *testing.T) {
+	var model testModel
+	err := stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("RequiredFile", false, IsValidLink(true))
+	})
+	assert.Equal(t, "RequiredFile.File: zero; RequiredFile.FileName: zero; RequiredFile.FileSize: too small; RequiredFile.FileType: type invalid", err.Error())
+
+	model.RequiredFile = Link{
+		File:     coal.New(),
+		FileName: "foo",
+		FileType: "foo/bar",
+		FileSize: 12,
+	}
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("RequiredFile", false, IsValidLink(true, "bar/foo"))
+	})
+	assert.Equal(t, "RequiredFile.FileType: type unallowed", err.Error())
+
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("RequiredFile", false, IsValidLink(true, "foo/bar"))
+	})
 	assert.NoError(t, err)
 }
 
@@ -136,6 +161,91 @@ func TestLinksValidate(t *testing.T) {
 			FileSize: 12,
 		},
 	}
-	err = links.Validate(true)
+	err = links.Validate(true, "bar/foo")
+	assert.Error(t, err)
+	assert.Equal(t, "FileType: type unallowed", err.Error())
+
+	err = links.Validate(true, "foo/bar")
+	assert.NoError(t, err)
+}
+
+func TestIsLinksValid(t *testing.T) {
+	var model testModel
+	err := stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(true))
+	})
+	assert.NoError(t, err)
+
+	model.MultipleFiles = Links{{}}
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(true))
+	})
+	assert.Error(t, err)
+
+	model.MultipleFiles = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(false))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "MultipleFiles: ambiguous reference", err.Error())
+
+	model.MultipleFiles = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "2",
+			File:     coal.New(),
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(true))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "MultipleFiles.FileName: zero", err.Error())
+
+	model.MultipleFiles = Links{
+		{
+			Ref:      "1",
+			File:     coal.New(),
+			FileName: "foo",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "2",
+			File:     coal.New(),
+			FileName: "bar",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(true, "bar/foo"))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "MultipleFiles.FileType: type unallowed", err.Error())
+
+	err = stick.Validate(&model, func(v *stick.Validator) {
+		v.Value("MultipleFiles", false, IsValidLinks(true, "foo/bar"))
+	})
 	assert.NoError(t, err)
 }
