@@ -2,18 +2,11 @@ package roast
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 	"github.com/256dpi/jsonapi/v2"
 )
-
-// Now returns the time in UTC and second precision to ensure encoding/decoding
-// stability.
-func Now() time.Time {
-	return time.Now().Truncate(time.Second).UTC()
-}
 
 // ConvertModel will convert the provided model to a resource.
 func ConvertModel(model coal.Model) (*jsonapi.Resource, error) {
