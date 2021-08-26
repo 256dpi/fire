@@ -104,6 +104,16 @@ func TestValidateErrorIsolation(t *testing.T) {
 	assert.Equal(t, "Bar: error; Foo: error", err.Error())
 }
 
+func TestValidateErrorMerge(t *testing.T) {
+	err := Validate(nil, func(v *Validator) {
+		v.Report("Foo", Validate(nil, func(v *Validator) {
+			v.Report("Bar", io.EOF)
+		}))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "Foo.Bar: error", err.Error())
+}
+
 func TestSubjectUnwrap(t *testing.T) {
 	i1 := 1
 	ruleTest(t, &i1, IsMaxInt(5), "")

@@ -1,6 +1,7 @@
 package stick
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -152,6 +153,21 @@ func (v *Validator) Report(name string, err error) {
 	// ensure error
 	if v.error == nil {
 		v.error = ValidationError{}
+	}
+
+	// check error
+	var valError ValidationError
+	if errors.As(err, &valError) {
+		for err, pth := range valError {
+			// copy path
+			path := append([]string{}, v.path...)
+			path = append(path, name)
+			path = append(path, pth...)
+
+			// add error
+			v.error[err] = path
+		}
+		return
 	}
 
 	// copy path
