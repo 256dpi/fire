@@ -8,28 +8,29 @@ import (
 )
 
 func TestFactory(t *testing.T) {
-	f := NewFactory()
+	tester := coal.NewTester(nil)
+	factory := NewFactory(tester)
 
 	assert.Panics(t, func() {
-		f.Make(&fooModel{})
+		factory.Make(&fooModel{})
 	})
 
 	original := &fooModel{
 		String: "String!",
 	}
-	f.Register(original)
+	factory.Register(original)
 	assert.Panics(t, func() {
-		f.Register(original)
+		factory.Register(original)
 	})
 
-	res := f.Make(&fooModel{})
+	res := factory.Make(&fooModel{})
 	assert.NotNil(t, res)
 	assert.False(t, res == original)
 	assert.Equal(t, original, res)
 
 	id := coal.New()
 
-	res = f.Make(&fooModel{
+	res = factory.Make(&fooModel{
 		One: id,
 	})
 	assert.NotNil(t, res)
@@ -39,7 +40,7 @@ func TestFactory(t *testing.T) {
 		One:    id,
 	}, res)
 
-	res = f.Make(&fooModel{
+	res = factory.Make(&fooModel{
 		One: id,
 	}, &fooModel{
 		String: "World!",
@@ -53,22 +54,29 @@ func TestFactory(t *testing.T) {
 
 	/* functional */
 
-	f = NewFactory()
+	factory = NewFactory(tester)
 
-	f.RegisterFunc(func() coal.Model {
+	factory.RegisterFunc(func() coal.Model {
 		return &fooModel{
 			String: S(""),
 		}
 	})
 	assert.Panics(t, func() {
-		f.RegisterFunc(func() coal.Model {
+		factory.RegisterFunc(func() coal.Model {
 			return &fooModel{}
 		})
 	})
 
-	res1 := f.Make(&fooModel{}).(*fooModel)
-	res2 := f.Make(&fooModel{}).(*fooModel)
+	res1 := factory.Make(&fooModel{}).(*fooModel)
+	res2 := factory.Make(&fooModel{}).(*fooModel)
 	assert.NotZero(t, res1.String)
 	assert.NotZero(t, res2.String)
 	assert.NotEqual(t, res1.String, res2.String)
+
+	/* insert */
+
+	res1 = factory.Insert(&fooModel{Bool: true}).(*fooModel)
+	res2 = &fooModel{}
+	tester.Fetch(res2, res1.ID())
+	assert.Equal(t, res1, res2)
 }
