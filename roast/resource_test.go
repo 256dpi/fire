@@ -22,7 +22,7 @@ func TestConvertModel(t *testing.T) {
 		ID:   id.Hex(),
 		Attributes: jsonapi.Map{
 			"string": "String",
-			"bool": false,
+			"bool":   false,
 		},
 		Relationships: map[string]*jsonapi.Document{
 			"one": {
@@ -54,7 +54,7 @@ func TestConvertModel(t *testing.T) {
 		ID:   id.Hex(),
 		Attributes: jsonapi.Map{
 			"string": "String",
-			"bool": false,
+			"bool":   false,
 		},
 		Relationships: map[string]*jsonapi.Document{
 			"one": {
@@ -89,7 +89,7 @@ func TestConvertModel(t *testing.T) {
 		ID:   id.Hex(),
 		Attributes: jsonapi.Map{
 			"string": "String",
-			"bool": false,
+			"bool":   false,
 		},
 		Relationships: map[string]*jsonapi.Document{
 			"one": {
@@ -198,7 +198,7 @@ func TestAssignResource(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, fooModel{
-		Many: []coal.ID{},
+		Many: nil,
 	}, foo)
 
 	foo = fooModel{}

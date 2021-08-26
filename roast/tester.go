@@ -214,7 +214,7 @@ func (t *Tester) Create(tt *testing.T, model, response, result coal.Model) Resul
 		result.GetBase().DocID = res.ID()
 		rec := coal.GetMeta(model).Make()
 		t.Tester.Fetch(rec, res.ID())
-		assert.Equal(tt, result, res)
+		assert.Equal(tt, result, rec)
 	}
 
 	return Result{

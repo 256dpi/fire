@@ -132,11 +132,15 @@ func AssignResource(model coal.Model, res *jsonapi.Resource) error {
 
 		// handle to many
 		if rel.ToMany {
-			ids := make([]coal.ID, 0, len(doc.Data.Many))
-			for _, rel := range doc.Data.Many {
-				ids = append(ids, coal.MustFromHex(rel.ID))
+			if len(doc.Data.Many) > 0 {
+				ids := make([]coal.ID, 0, len(doc.Data.Many))
+				for _, rel := range doc.Data.Many {
+					ids = append(ids, coal.MustFromHex(rel.ID))
+				}
+				stick.MustSet(model, rel.Name, ids)
+			} else {
+				stick.MustSet(model, rel.Name, []coal.ID(nil))
 			}
-			stick.MustSet(model, rel.Name, ids)
 		}
 	}
 

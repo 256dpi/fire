@@ -18,7 +18,7 @@ func TestTester(t *testing.T) {
 
 	tt.List(t, &fooModel{}, nil)
 
-	post := &fooModel{String: "String", Many: []coal.ID{}}
+	post := &fooModel{String: "String"}
 	post = tt.Create(t, post, post, post).Model.(*fooModel)
 
 	tt.List(t, &fooModel{}, []coal.Model{
