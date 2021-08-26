@@ -1,6 +1,7 @@
 package roast
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -31,4 +32,16 @@ func TestT(t *testing.T) {
 	ret := T("Jul 16 16:16:16")
 	assert.Equal(t, time.UTC, ret.Location())
 	assert.Equal(t, ret, time.Date(time.Now().Year(), 7, 16, 16, 16, 16, 0, time.UTC))
+}
+
+func TestNow(t *testing.T) {
+	now1 := Now()
+	buf, err := json.Marshal(now1)
+	assert.NoError(t, err)
+
+	var now2 time.Time
+	err = json.Unmarshal(buf, &now2)
+	assert.NoError(t, err)
+
+	assert.Equal(t, now1, now2)
 }

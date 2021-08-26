@@ -15,7 +15,7 @@ func TestFactory(t *testing.T) {
 	})
 
 	original := &fooModel{
-		Hello: "Hello!",
+		String: "String!",
 	}
 	f.Register(original)
 	assert.Panics(t, func() {
@@ -35,20 +35,20 @@ func TestFactory(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.False(t, res == original)
 	assert.Equal(t, &fooModel{
-		Hello: "Hello!",
-		One:   id,
+		String: "String!",
+		One:    id,
 	}, res)
 
 	res = f.Make(&fooModel{
 		One: id,
 	}, &fooModel{
-		Hello: "World!",
+		String: "World!",
 	})
 	assert.NotNil(t, res)
 	assert.False(t, res == original)
 	assert.Equal(t, &fooModel{
-		Hello: "World!",
-		One:   id,
+		String: "World!",
+		One:    id,
 	}, res)
 
 	/* functional */
@@ -57,7 +57,7 @@ func TestFactory(t *testing.T) {
 
 	f.RegisterFunc(func() coal.Model {
 		return &fooModel{
-			Hello: S(""),
+			String: S(""),
 		}
 	})
 	assert.Panics(t, func() {
@@ -68,7 +68,7 @@ func TestFactory(t *testing.T) {
 
 	res1 := f.Make(&fooModel{}).(*fooModel)
 	res2 := f.Make(&fooModel{}).(*fooModel)
-	assert.NotZero(t, res1.Hello)
-	assert.NotZero(t, res2.Hello)
-	assert.NotEqual(t, res1.Hello, res2.Hello)
+	assert.NotZero(t, res1.String)
+	assert.NotZero(t, res2.String)
+	assert.NotEqual(t, res1.String, res2.String)
 }

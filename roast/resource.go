@@ -54,17 +54,21 @@ func ConvertModel(model coal.Model) (*jsonapi.Resource, error) {
 		// handle to-many relationship
 		if rel.ToMany {
 			ids := stick.MustGet(model, rel.Name).([]coal.ID)
-			many := make([]*jsonapi.Resource, 0, len(ids))
-			for _, id := range ids {
-				many = append(many, &jsonapi.Resource{
-					Type: rel.RelType,
-					ID:   id.Hex(),
-				})
-			}
-			relationships[rel.RelName] = &jsonapi.Document{
-				Data: &jsonapi.HybridResource{
-					Many: many,
-				},
+			if ids != nil {
+				many := make([]*jsonapi.Resource, 0, len(ids))
+				for _, id := range ids {
+					many = append(many, &jsonapi.Resource{
+						Type: rel.RelType,
+						ID:   id.Hex(),
+					})
+				}
+				relationships[rel.RelName] = &jsonapi.Document{
+					Data: &jsonapi.HybridResource{
+						Many: many,
+					},
+				}
+			} else {
+				relationships[rel.RelName] = &jsonapi.Document{}
 			}
 		}
 	}
@@ -115,7 +119,7 @@ func AssignResource(model coal.Model, res *jsonapi.Resource) error {
 		// handle to one
 		if rel.ToOne {
 			if rel.Optional {
-				if doc.Data != nil && doc.Data.One != nil {
+				if doc.Data != nil {
 					id := coal.MustFromHex(doc.Data.One.ID)
 					stick.MustSet(model, rel.Name, &id)
 				} else {

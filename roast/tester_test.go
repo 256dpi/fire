@@ -5,18 +5,7 @@ import (
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
-	"github.com/256dpi/fire/stick"
 )
-
-type postModel struct {
-	coal.Base `json:"-" bson:",inline" coal:"posts"`
-	Title     string `json:"title"`
-	Published bool   `json:"published"`
-
-	stick.NoValidation `json:"-" bson:"-"`
-}
-
-var catalog = coal.NewCatalog(&postModel{})
 
 func TestTester(t *testing.T) {
 	tt := NewTester(Config{
@@ -24,19 +13,19 @@ func TestTester(t *testing.T) {
 	})
 
 	tt.Assign("", &fire.Controller{
-		Model: &postModel{},
+		Model: &fooModel{},
 	})
 
-	tt.List(t, &postModel{}, nil)
+	tt.List(t, &fooModel{}, nil)
 
-	post := &postModel{Title: "Hello"}
-	post = tt.Create(t, post, post, post).Model.(*postModel)
+	post := &fooModel{String: "String", Many: []coal.ID{}}
+	post = tt.Create(t, post, post, post).Model.(*fooModel)
 
-	tt.List(t, &postModel{}, []coal.Model{
+	tt.List(t, &fooModel{}, []coal.Model{
 		post,
 	})
 
-	post.Published = true
+	post.Bool = true
 	tt.Update(t, post, post, post)
 
 	tt.Find(t, post, post)
@@ -50,7 +39,7 @@ func TestTesterErrors(t *testing.T) {
 	})
 
 	tt.Assign("", &fire.Controller{
-		Model: &postModel{},
+		Model: &fooModel{},
 		Authorizers: fire.L{
 			fire.C("Error", 0, fire.All(), func(ctx *fire.Context) error {
 				if ctx.Operation == fire.Find || ctx.Operation == fire.List {
@@ -61,9 +50,9 @@ func TestTesterErrors(t *testing.T) {
 		},
 	})
 
-	post := tt.Insert(&postModel{})
+	post := tt.Insert(&fooModel{})
 
-	tt.ListError(t, &postModel{}, AccessDenied)
+	tt.ListError(t, &fooModel{}, AccessDenied)
 	tt.FindError(t, post, AccessDenied)
 	tt.CreateError(t, post, ResourceNotFound)
 	tt.UpdateError(t, post, ResourceNotFound)
