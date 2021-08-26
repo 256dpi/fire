@@ -22,16 +22,12 @@ func TestBasicOperations(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// get empty list of posts
@@ -462,16 +458,12 @@ func TestHasOneRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create new post
@@ -711,16 +703,12 @@ func TestHasManyRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create existing post & comment
@@ -933,16 +921,12 @@ func TestToOneRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create posts
@@ -1269,16 +1253,12 @@ func TestToManyRelationships(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create posts
@@ -1806,16 +1786,12 @@ func TestModelValidation(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -1883,17 +1859,13 @@ func TestSupported(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model:     &commentModel{},
-			Store:     tester.Store,
 			Supported: Except(List),
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// attempt list comments
@@ -1914,18 +1886,14 @@ func TestFiltering(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:   &postModel{},
-			Store:   tester.Store,
 			Filters: []string{"Title", "Published"},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model:   &selectionModel{},
-			Store:   tester.Store,
 			Filters: []string{"Posts"},
 		}, &Controller{
 			Model:   &noteModel{},
-			Store:   tester.Store,
 			Filters: []string{"Post"},
 		})
 
@@ -2417,18 +2385,14 @@ func TestSorting(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:   &postModel{},
-			Store:   tester.Store,
 			Sorters: []string{"Title", "TextBody"},
 		}, &Controller{
 			Model:   &commentModel{},
-			Store:   tester.Store,
 			Sorters: []string{"Message"},
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create posts in random order
@@ -3028,20 +2992,16 @@ func TestProperties(t *testing.T) {
 
 		group := tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Properties: map[string]string{
 				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// catch errors
@@ -3274,7 +3234,6 @@ func TestAuthorizers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestAuthorizer", Authorizer, All(), func(ctx *Context) error {
 					return xo.SF("not authorized")
@@ -3366,7 +3325,6 @@ func TestModifiers(t *testing.T) {
 
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Modifiers: L{
 				C("TestModifier", Modifier, All(), func(ctx *Context) error {
 					ctx.Model.(*postModel).TextBody += "!!!"
@@ -3376,13 +3334,10 @@ func TestModifiers(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -3593,7 +3548,6 @@ func TestValidators(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Validators: L{
 				C("TestValidators", Validator, All(), func(ctx *Context) error {
 					return xo.SF("not valid")
@@ -3601,13 +3555,10 @@ func TestValidators(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -3680,7 +3631,6 @@ func TestDecorators(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Decorators: L{
 				C("TestDecorator", Decorator, All(), func(ctx *Context) error {
 					if ctx.Model != nil {
@@ -3696,13 +3646,10 @@ func TestDecorators(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -3909,7 +3856,6 @@ func TestNotifiers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Notifiers: L{
 				C("TestNotifier", Notifier, All(), func(ctx *Context) error {
 					if ctx.Response != nil {
@@ -3929,13 +3875,10 @@ func TestNotifiers(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -4158,13 +4101,11 @@ func TestSparseFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Properties: map[string]string{
 				"Virtual": "virtual",
 			},
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -4237,7 +4178,6 @@ func TestReadableFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:   &postModel{},
-			Store:   tester.Store,
 			Filters: []string{"Title"},
 			Sorters: []string{"Title"},
 			Authorizers: L{
@@ -4250,7 +4190,6 @@ func TestReadableFields(t *testing.T) {
 			},
 		}, &Controller{
 			Model:   &noteModel{},
-			Store:   tester.Store,
 			Filters: []string{"Post"},
 			Authorizers: L{
 				C("TestReadableFields", Authorizer, All(), func(ctx *Context) error {
@@ -4353,7 +4292,6 @@ func TestReadableFieldsGetter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestReadableFieldsGetter", Authorizer, All(), func(ctx *Context) error {
 					ctx.GetReadableFields = func(model coal.Model) []string {
@@ -4413,7 +4351,6 @@ func TestWritableFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
@@ -4424,10 +4361,8 @@ func TestWritableFields(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{"CreateToken", "Name", "Posts", "UpdateToken"}, ctx.ReadableFields)
@@ -4438,7 +4373,6 @@ func TestWritableFields(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// attempt to create post with protected field
@@ -4676,7 +4610,6 @@ func TestWritableFieldsGetter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFieldsGetter", Authorizer, All(), func(ctx *Context) error {
 					ctx.ReadableFields = []string{"Title"}
@@ -4747,7 +4680,6 @@ func TestReadableProperties(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Properties: map[string]string{
 				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
@@ -4761,7 +4693,6 @@ func TestReadableProperties(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestReadableProperties", Authorizer, All(), func(ctx *Context) error {
 					assert.Equal(t, []string{}, ctx.ReadableProperties)
@@ -4770,10 +4701,8 @@ func TestReadableProperties(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		})
 
 		// create post
@@ -4833,7 +4762,6 @@ func TestReadablePropertiesGetter(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Properties: map[string]string{
 				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
@@ -4900,7 +4828,6 @@ func TestRelationshipFilters(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
@@ -4925,10 +4852,8 @@ func TestRelationshipFilters(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
@@ -4943,7 +4868,6 @@ func TestRelationshipFilters(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestRelationshipFilters", Authorizer, All(), func(ctx *Context) error {
 					ctx.RelationshipFilters = map[string][]bson.M{
@@ -5157,16 +5081,12 @@ func TestDatabaseErrors(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// missing resource
@@ -5232,7 +5152,6 @@ func TestTolerateViolations(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					ctx.WritableFields = []string{"Title"}
@@ -5242,10 +5161,8 @@ func TestTolerateViolations(t *testing.T) {
 			TolerateViolations: []string{"Published"},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 			Authorizers: L{
 				C("TestWritableFields", Authorizer, All(), func(ctx *Context) error {
 					ctx.WritableFields = []string{}
@@ -5255,7 +5172,6 @@ func TestTolerateViolations(t *testing.T) {
 			TolerateViolations: []string{"Posts"},
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// attempt to create post with protected field
@@ -5358,19 +5274,15 @@ func TestOffsetPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:     &postModel{},
-			Store:     tester.Store,
 			ListLimit: 7,
 		}, &Controller{
 			Model:     &commentModel{},
-			Store:     tester.Store,
 			ListLimit: 7,
 		}, &Controller{
 			Model:     &selectionModel{},
-			Store:     tester.Store,
 			ListLimit: 7,
 		}, &Controller{
 			Model:     &noteModel{},
-			Store:     tester.Store,
 			ListLimit: 7,
 		})
 
@@ -5536,24 +5448,20 @@ func TestCursorPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:            &postModel{},
-			Store:            tester.Store,
 			Filters:          []string{"Published"},
 			Sorters:          []string{"Title", "TextBody", "Published"},
 			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
 			Model:            &commentModel{},
-			Store:            tester.Store,
 			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
 			Model:            &selectionModel{},
-			Store:            tester.Store,
 			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
 			Model:            &noteModel{},
-			Store:            tester.Store,
 			ListLimit:        7,
 			CursorPagination: true,
 		})
@@ -5895,17 +5803,13 @@ func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
 			Model:     &postModel{},
-			Store:     tester.Store,
 			ListLimit: 5,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// create some posts
@@ -5953,7 +5857,6 @@ func TestCollectionActions(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: invalid collection action ""`, func() {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
-				Store: tester.Store,
 				CollectionActions: M{
 					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
 						return nil
@@ -5966,7 +5869,6 @@ func TestCollectionActions(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: invalid collection action "`+id+`"`, func() {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
-				Store: tester.Store,
 				CollectionActions: M{
 					id: A("foo", []string{"POST"}, 0, func(ctx *Context) error {
 						return nil
@@ -5977,7 +5879,6 @@ func TestCollectionActions(t *testing.T) {
 
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			CollectionActions: M{
 				"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -6008,13 +5909,10 @@ func TestCollectionActions(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// get byte response
@@ -6049,7 +5947,6 @@ func TestResourceActions(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: invalid resource action ""`, func() {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
-				Store: tester.Store,
 				ResourceActions: M{
 					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
 						return nil
@@ -6061,7 +5958,6 @@ func TestResourceActions(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: invalid resource action "relationships"`, func() {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
-				Store: tester.Store,
 				ResourceActions: M{
 					"relationships": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
 						return nil
@@ -6073,7 +5969,6 @@ func TestResourceActions(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: invalid resource action "note"`, func() {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
-				Store: tester.Store,
 				ResourceActions: M{
 					"note": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
 						return nil
@@ -6084,7 +5979,6 @@ func TestResourceActions(t *testing.T) {
 
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			ResourceActions: M{
 				"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
@@ -6122,13 +6016,10 @@ func TestResourceActions(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		post := tester.Insert(&postModel{
@@ -6193,17 +6084,13 @@ func TestSoftDelete(t *testing.T) {
 
 		tester.Assign("", &Controller{
 			Model:      &postModel{},
-			Store:      tester.Store,
 			SoftDelete: true,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		id := tester.Insert(&postModel{
@@ -6367,17 +6254,13 @@ func TestIdempotentCreate(t *testing.T) {
 
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model:            &selectionModel{},
-			Store:            tester.Store,
 			IdempotentCreate: true,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		// missing create token
@@ -6518,17 +6401,13 @@ func TestConsistentUpdate(t *testing.T) {
 
 		tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model:            &selectionModel{},
-			Store:            tester.Store,
 			ConsistentUpdate: true,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		var id string
@@ -6656,7 +6535,6 @@ func TestTransactions(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		group := tester.Assign("", &Controller{
 			Model: &postModel{},
-			Store: tester.Store,
 			Notifiers: L{
 				C("foo", Notifier, All(), func(ctx *Context) error {
 					if ctx.Model.(*postModel).Title == "FAIL" {
@@ -6667,13 +6545,10 @@ func TestTransactions(t *testing.T) {
 			},
 		}, &Controller{
 			Model: &commentModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &selectionModel{},
-			Store: tester.Store,
 		}, &Controller{
 			Model: &noteModel{},
-			Store: tester.Store,
 		})
 
 		var errs []string

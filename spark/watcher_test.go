@@ -27,7 +27,6 @@ func TestWatcherWebSockets(t *testing.T) {
 
 		group := tester.Assign("", &fire.Controller{
 			Model: &itemModel{},
-			Store: tester.Store,
 		})
 		group.Handle("watch", &fire.GroupAction{
 			Action: watcher.Action(),
@@ -117,7 +116,6 @@ func TestWatcherSSE(t *testing.T) {
 
 		group := tester.Assign("", &fire.Controller{
 			Model: &itemModel{},
-			Store: tester.Store,
 		})
 		group.Handle("watch", &fire.GroupAction{
 			Action: watcher.Action(),

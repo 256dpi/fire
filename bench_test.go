@@ -94,16 +94,12 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 
 	group := tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: tester.Store,
 	})
 
 	tester.Handler = serve.Compose(
@@ -132,16 +128,12 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 
 	group := tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: tester.Store,
 	})
 
 	tester.Handler = serve.Compose(
@@ -168,16 +160,12 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 
 	group := tester.Assign("", &Controller{
 		Model: &postModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &commentModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &selectionModel{},
-		Store: tester.Store,
 	}, &Controller{
 		Model: &noteModel{},
-		Store: tester.Store,
 	})
 
 	tester.Handler = serve.Compose(
