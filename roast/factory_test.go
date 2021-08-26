@@ -50,4 +50,25 @@ func TestFactory(t *testing.T) {
 		Hello: "World!",
 		One:   id,
 	}, res)
+
+	/* functional */
+
+	f = NewFactory()
+
+	f.RegisterFunc(func() coal.Model {
+		return &fooModel{
+			Hello: S(""),
+		}
+	})
+	assert.Panics(t, func() {
+		f.RegisterFunc(func() coal.Model {
+			return &fooModel{}
+		})
+	})
+
+	res1 := f.Make(&fooModel{}).(*fooModel)
+	res2 := f.Make(&fooModel{}).(*fooModel)
+	assert.NotZero(t, res1.Hello)
+	assert.NotZero(t, res2.Hello)
+	assert.NotEqual(t, res1.Hello, res2.Hello)
 }

@@ -6,20 +6,27 @@ import (
 
 // Factory is model factory for tests.
 type Factory struct {
-	reg map[*coal.Meta]coal.Model
+	reg map[*coal.Meta]func() coal.Model
 }
 
 // NewFactory creates and returns a new factory.
 func NewFactory() *Factory {
 	return &Factory{
-		reg: map[*coal.Meta]coal.Model{},
+		reg: map[*coal.Meta]func() coal.Model{},
 	}
 }
 
 // Register will register a model with the factory.
 func (f *Factory) Register(model coal.Model) {
+	f.RegisterFunc(func() coal.Model {
+		return model
+	})
+}
+
+// RegisterFunc will register a functional model with the factory.
+func (f *Factory) RegisterFunc(fn func() coal.Model) {
 	// get meta
-	meta := coal.GetMeta(model)
+	meta := coal.GetMeta(fn())
 
 	// check registry
 	if f.reg[meta] != nil {
@@ -27,7 +34,7 @@ func (f *Factory) Register(model coal.Model) {
 	}
 
 	// register
-	f.reg[meta] = model
+	f.reg[meta] = fn
 }
 
 // Make will create and return a new model with the provided models merged
@@ -42,7 +49,7 @@ func (f *Factory) Make(model coal.Model, others ...coal.Model) coal.Model {
 	}
 
 	// get base
-	base := f.reg[meta]
+	base := f.reg[meta]()
 
 	// make model
 	ret := meta.Make()
