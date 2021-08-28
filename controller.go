@@ -2460,6 +2460,11 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 }
 
 func (c *Controller) runCallbacks(ctx *Context, stage Stage, list []*Callback, errorStatus int) {
+	c.runCallbackList(ctx, stage, list, errorStatus)
+	c.runCallbackList(ctx, stage, ctx.Defers[stage], errorStatus)
+}
+
+func (c *Controller) runCallbackList(ctx *Context, stage Stage, list []*Callback, errorStatus int) {
 	// return early if list is empty
 	if len(list) == 0 {
 		return

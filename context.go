@@ -110,6 +110,9 @@ type Context struct {
 	// The current callback stage.
 	Stage Stage
 
+	// The deferred callbacks.
+	Defers map[Stage][]*Callback
+
 	// The current operation in process.
 	//
 	// Usage: Read only
@@ -297,6 +300,25 @@ func (c *Context) With(ctx context.Context, fn func()) {
 	// switchback
 	c.Context = oc
 	c.Tracer = ot
+}
+
+// Defer will defer the provided handler and run it after all controller
+// callbacks have been run at the specified stages.
+func (c *Context) Defer(cb *Callback) {
+	// check stage
+	if cb.Stage <= c.Stage {
+		panic("fire: invalid stage")
+	}
+
+	// ensure map
+	if c.Defers == nil {
+		c.Defers = map[Stage][]*Callback{}
+	}
+
+	// add callback for all stages
+	for _, stage := range cb.Stage.Split() {
+		c.Defers[stage] = append(c.Defers[stage], cb)
+	}
 }
 
 // Query returns the composite query of Selector and Filter.

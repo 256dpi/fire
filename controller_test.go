@@ -2,6 +2,7 @@ package fire
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -5074,6 +5075,36 @@ func TestRelationshipFilters(t *testing.T) {
 		// 		}
 		// 	}`, r.Body.String(), tester.DebugRequest(rq, r))
 		// })
+	})
+}
+
+func TestDeferredCallbacks(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model: &postModel{},
+			Authorizers: L{
+				C("Test", Authorizer, All(), func(ctx *Context) error {
+					ctx.Defer(C("Test", Validator, Only(Create), func(ctx *Context) error {
+						return io.EOF
+					}))
+					return nil
+				}),
+			},
+		})
+
+		// missing resource
+		tester.Request("POST", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [
+					{
+						"status": "400",
+						"title": "bad request",
+						"detail": "EOF"
+					}
+				]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
 	})
 }
 
