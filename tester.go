@@ -97,7 +97,7 @@ func (t *Tester) Path(path string) string {
 func (t *Tester) RunCallback(ctx *Context, cb *Callback) error {
 	return t.RunHandler(ctx, func(ctx *Context) error {
 		// force stage
-		ctx.Stage = cb.Stage // TODO: Get first stage if mask?
+		ctx.Stage = cb.Stage.Split()[0]
 
 		// check matcher
 		if !cb.Matcher(ctx) {

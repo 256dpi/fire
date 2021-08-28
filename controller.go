@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math"
+	"math/bits"
 	"net/http"
 	"reflect"
 	"sort"
@@ -37,6 +38,21 @@ const (
 	Decorator
 	Notifier
 )
+
+var allStages = []Stage{Authorizer, Modifier, Validator, Decorator, Notifier}
+
+// Split will split a compound stage into a list of separate stages.
+func (s Stage) Split() []Stage {
+	// collect stages
+	list := make([]Stage, 0, bits.OnesCount8(uint8(s)))
+	for _, stage := range allStages {
+		if s&stage != 0 {
+			list = append(list, stage)
+		}
+	}
+
+	return list
+}
 
 // A Controller provides a JSON API based interface to a model.
 //
