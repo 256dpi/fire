@@ -6,6 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	UnsafeFastHash()
+}
+
 func TestHash(t *testing.T) {
 	hash, err := Hash("foo")
 	assert.NoError(t, err)

@@ -5,6 +5,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var hashCost = bcrypt.DefaultCost
+
+// UnsafeFastHash can be called to set the minimum allowed hash cost. This
+// should only be used for speeding up automated tests.
+func UnsafeFastHash() {
+	hashCost = bcrypt.MinCost
+}
+
 // Hash uses bcrypt to safely compute a hash. The returned hash can be converted
 // to readable string.
 func Hash(str string) ([]byte, error) {
@@ -20,7 +28,7 @@ func Hash(str string) ([]byte, error) {
 // HashBytes uses bcrypt to safely compute a hash. The returned hash can be
 // converted to readable string.
 func HashBytes(bytes []byte) ([]byte, error) {
-	buf, err := bcrypt.GenerateFromPassword(bytes, bcrypt.DefaultCost)
+	buf, err := bcrypt.GenerateFromPassword(bytes, hashCost)
 	return buf, xo.W(err)
 }
 
