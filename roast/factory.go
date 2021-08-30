@@ -18,25 +18,20 @@ func NewFactory(tester *coal.Tester) *Factory {
 	}
 }
 
-// Register will register a model with the factory.
-func (f *Factory) Register(model coal.Model) {
-	f.RegisterFunc(func() coal.Model {
-		return model
-	})
-}
+// Register will register the provided model factories.
+func (f *Factory) Register(fns ...func() coal.Model) {
+	for _, fn := range fns {
+		// get meta
+		meta := coal.GetMeta(fn())
 
-// RegisterFunc will register a functional model with the factory.
-func (f *Factory) RegisterFunc(fn func() coal.Model) {
-	// get meta
-	meta := coal.GetMeta(fn())
+		// check registry
+		if f.registry[meta] != nil {
+			panic("roast: model already registered")
+		}
 
-	// check registry
-	if f.registry[meta] != nil {
-		panic("roast: model already registered")
+		// register
+		f.registry[meta] = fn
 	}
-
-	// register
-	f.registry[meta] = fn
 }
 
 // Make will make and return a new model with the provided models merged into
