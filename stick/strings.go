@@ -48,7 +48,7 @@ func Union(lists ...[]string) []string {
 	}
 
 	// prepare table and result
-	table := make(map[string]bool)
+	table := make(map[string]bool, sum)
 	res := make([]string, 0, sum)
 
 	// add items not present in table

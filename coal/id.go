@@ -108,7 +108,7 @@ func Union(lists ...[]ID) []ID {
 	}
 
 	// prepare table and result
-	table := make(map[ID]bool)
+	table := make(map[ID]bool, sum)
 	res := make([]ID, 0, sum)
 
 	// add items not present in table
