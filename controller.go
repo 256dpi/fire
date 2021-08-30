@@ -1541,8 +1541,14 @@ func (c *Controller) loadModels(ctx *Context) {
 				continue
 			}
 
+			// split values
+			var items []string
+			for _, value := range values {
+				items = append(items, strings.Split(value, ",")...)
+			}
+
 			// handle string values
-			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": values}})
+			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": items}})
 			continue
 		}
 
@@ -1557,12 +1563,14 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// convert to object ids
 			var ids []coal.ID
-			for _, str := range values {
-				refID, err := coal.FromHex(str)
-				if err != nil {
-					xo.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
+			for _, value := range values {
+				for _, str := range strings.Split(value, ",") {
+					refID, err := coal.FromHex(str)
+					if err != nil {
+						xo.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
+					}
+					ids = append(ids, refID)
 				}
-				ids = append(ids, refID)
 			}
 
 			// set relationship filter

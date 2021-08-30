@@ -2379,6 +2379,47 @@ func TestFiltering(t *testing.T) {
 			  	}
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
+
+		// filter selections with multiple to-many relationship filters
+		tester.Request("GET", "selections?filter[posts]="+post1+","+post2, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"data": [
+					{
+				  		"type": "selections",
+				  		"id": "`+selection+`",
+				  		"attributes": {
+							"name": "selection-1"
+				  		},
+				  		"relationships": {
+							"posts": {
+					  			"data": [
+									{
+										"type": "posts",
+										"id": "`+post1+`"
+									},
+									{
+										"type": "posts",
+										"id": "`+post2+`"
+									},
+									{
+										"type": "posts",
+										"id": "`+post3+`"
+									}
+								],
+								"links": {
+									"self": "/selections/`+selection+`/relationships/posts",
+									"related": "/selections/`+selection+`/posts"
+								}
+							}
+						}
+					}
+			  	],
+			  	"links": {
+					"self": "/selections?filter[posts]=`+post1+`,`+post2+`"
+			  	}
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
 	})
 }
 

@@ -36,8 +36,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/256dpi/btree v0.0.0-20200517182607-63d76dfb3721 h1:sqwb677LEbafVHqK7z42khEatC+5E8mQTsGwnEpNxT4=
 github.com/256dpi/btree v0.0.0-20200517182607-63d76dfb3721/go.mod h1:HcRNieBy4k2gr4Q6iilWxJnA64GdbOds4o8Iz2/G1UY=
-github.com/256dpi/jsonapi/v2 v2.1.1 h1:7/kSiS5i0G1wSXFhttwTMQ/E0SsLYk3QLnFkk2UBx6Q=
-github.com/256dpi/jsonapi/v2 v2.1.1/go.mod h1:f0ZOq/bhmnZdIjyYnDnwb9eAIH7V1upZ5hMP48OcgBw=
+github.com/256dpi/jsonapi/v2 v2.2.0 h1:IVLJpINQfnpHbnG0GPcw7OadeK8qb53xzfoM/Mdld6U=
+github.com/256dpi/jsonapi/v2 v2.2.0/go.mod h1:f0ZOq/bhmnZdIjyYnDnwb9eAIH7V1upZ5hMP48OcgBw=
 github.com/256dpi/lungo v0.2.9 h1:IFjuo5+Uau/PlheC1v7dhdw18zDlKa/QZZChXMs8vIo=
 github.com/256dpi/lungo v0.2.9/go.mod h1:9Fn1j1rUqgFU65pP1Cp8zncB078tAvyIjVHAGE5L/QA=
 github.com/256dpi/oauth2/v2 v2.1.0 h1:7q59kUT1rtxXbAR6uA0eLt63BqkblTSnBW62gJy2YBY=
