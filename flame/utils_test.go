@@ -18,6 +18,10 @@ var modelList = []coal.Model{&User{}, &Application{}, &Token{}}
 
 var testNotary = heat.NewNotary("test", heat.MustRand(32))
 
+func init() {
+	heat.UnsafeFastHash()
+}
+
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
 		tester := fire.NewTester(mongoStore, modelList...)
