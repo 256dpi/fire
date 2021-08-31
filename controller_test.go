@@ -718,7 +718,7 @@ func TestHasManyRelationships(t *testing.T) {
 		})
 		tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:	existingPost.ID(),
+			Post:    existingPost.ID(),
 		})
 
 		// create new post
@@ -941,7 +941,7 @@ func TestToOneRelationships(t *testing.T) {
 		// create comment
 		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:	coal.MustFromHex(post1),
+			Post:    coal.MustFromHex(post1),
 		}).ID().Hex()
 
 		var comment2 string
@@ -1797,7 +1797,7 @@ func TestModelValidation(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID()
 
@@ -1861,7 +1861,7 @@ func TestSupported(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 		}, &Controller{
-			Model:	 &commentModel{},
+			Model:     &commentModel{},
 			Supported: Except(List),
 		}, &Controller{
 			Model: &selectionModel{},
@@ -1900,15 +1900,15 @@ func TestFiltering(t *testing.T) {
 
 		// create posts
 		post1 := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
 		post2 := tester.Insert(&postModel{
-			Title:	 "post-2",
+			Title:     "post-2",
 			Published: false,
 		}).ID().Hex()
 		post3 := tester.Insert(&postModel{
-			Title:	 "post-3",
+			Title:     "post-3",
 			Published: true,
 		}).ID().Hex()
 
@@ -2447,15 +2447,15 @@ func TestSorting(t *testing.T) {
 
 		// create posts in random order
 		post2 := tester.Insert(&postModel{
-			Title:	"post-2",
+			Title:    "post-2",
 			TextBody: "body-2",
 		}).ID().Hex()
 		post1 := tester.Insert(&postModel{
-			Title:	"post-1",
+			Title:    "post-1",
 			TextBody: "body-1",
 		}).ID().Hex()
 		post3 := tester.Insert(&postModel{
-			Title:	"post-3",
+			Title:    "post-3",
 			TextBody: "body-3",
 		}).ID().Hex()
 
@@ -2818,15 +2818,15 @@ func TestSorting(t *testing.T) {
 		// create some comments
 		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:	post,
+			Post:    post,
 		}).ID().Hex()
 		comment2 := tester.Insert(&commentModel{
 			Message: "Comment 2",
-			Post:	post,
+			Post:    post,
 		}).ID().Hex()
 		comment3 := tester.Insert(&commentModel{
 			Message: "Comment 3",
-			Post:	post,
+			Post:    post,
 		}).ID().Hex()
 
 		// get first page of comments
@@ -3048,7 +3048,7 @@ func TestProperties(t *testing.T) {
 		group := tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":	  "virtual",
+				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
 			},
 		}, &Controller{
@@ -3067,7 +3067,7 @@ func TestProperties(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -3298,7 +3298,7 @@ func TestAuthorizers(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID()
 
@@ -3397,7 +3397,7 @@ func TestModifiers(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 			TextBody:  "Hello",
 		}).ID().Hex()
@@ -3618,7 +3618,7 @@ func TestValidators(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID()
 
@@ -3709,7 +3709,7 @@ func TestDecorators(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -3938,7 +3938,7 @@ func TestNotifiers(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -4260,7 +4260,7 @@ func TestReadableFields(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID()
 
@@ -4367,11 +4367,11 @@ func TestReadableFieldsGetter(t *testing.T) {
 
 		// create posts
 		post1 := tester.Insert(&postModel{
-			Title:	 "post1",
+			Title:     "post1",
 			Published: true,
 		}).ID()
 		post2 := tester.Insert(&postModel{
-			Title:	 "post2",
+			Title:     "post2",
 			Published: true,
 		}).ID()
 
@@ -4738,7 +4738,7 @@ func TestReadableProperties(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":	  "virtual",
+				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
@@ -4764,7 +4764,7 @@ func TestReadableProperties(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:	 "post-1",
+			Title:     "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -4820,7 +4820,7 @@ func TestReadablePropertiesGetter(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":	  "virtual",
+				"Virtual":      "virtual",
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
@@ -4947,17 +4947,17 @@ func TestRelationshipFilters(t *testing.T) {
 		// create comment
 		comment1 := coal.New().Hex()
 		tester.Insert(&commentModel{
-			Base:	coal.B(coal.MustFromHex(comment1)),
+			Base:    coal.B(coal.MustFromHex(comment1)),
 			Message: "foo",
 			Parent:  coal.P(coal.MustFromHex(comment1)),
-			Post:	coal.MustFromHex(post),
+			Post:    coal.MustFromHex(post),
 		})
 		comment2 := coal.New().Hex()
 		tester.Insert(&commentModel{
-			Base:	coal.B(coal.MustFromHex(comment2)),
+			Base:    coal.B(coal.MustFromHex(comment2)),
 			Message: "bar",
 			Parent:  coal.P(coal.MustFromHex(comment2)),
-			Post:	coal.MustFromHex(post),
+			Post:    coal.MustFromHex(post),
 		})
 
 		// create selection
@@ -5360,16 +5360,16 @@ func TestTolerateViolations(t *testing.T) {
 func TestOffsetPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:	 &postModel{},
+			Model:     &postModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:	 &commentModel{},
+			Model:     &commentModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:	 &selectionModel{},
+			Model:     &selectionModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:	 &noteModel{},
+			Model:     &noteModel{},
 			ListLimit: 7,
 		})
 
@@ -5493,7 +5493,7 @@ func TestOffsetPagination(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			tester.Insert(&commentModel{
 				Message: fmt.Sprintf("Comment %d", i+1),
-				Post:	post,
+				Post:    post,
 			})
 		}
 
@@ -5534,22 +5534,22 @@ func TestOffsetPagination(t *testing.T) {
 func TestCursorPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:			&postModel{},
-			Filters:		  []string{"Published"},
-			Sorters:		  []string{"Title", "TextBody", "Published"},
-			ListLimit:		7,
+			Model:            &postModel{},
+			Filters:          []string{"Published"},
+			Sorters:          []string{"Title", "TextBody", "Published"},
+			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:			&commentModel{},
-			ListLimit:		7,
+			Model:            &commentModel{},
+			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:			&selectionModel{},
-			ListLimit:		7,
+			Model:            &selectionModel{},
+			ListLimit:        7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:			&noteModel{},
-			ListLimit:		7,
+			Model:            &noteModel{},
+			ListLimit:        7,
 			CursorPagination: true,
 		})
 
@@ -5559,8 +5559,8 @@ func TestCursorPagination(t *testing.T) {
 		// create some posts
 		for i := 0; i < 10; i++ {
 			ids = append(ids, tester.Insert(&postModel{
-				Base:	  coal.B(numID(uint8(i) + 1)),
-				Title:	 fmt.Sprintf("Post %02d", i+1),
+				Base:      coal.B(numID(uint8(i) + 1)),
+				Title:     fmt.Sprintf("Post %02d", i+1),
 				TextBody:  fmt.Sprintf("Body %02d", 10-i),
 				Published: i >= 5,
 			}).ID())
@@ -5889,7 +5889,7 @@ func TestCursorPagination(t *testing.T) {
 func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:	 &postModel{},
+			Model:     &postModel{},
 			ListLimit: 5,
 		}, &Controller{
 			Model: &commentModel{},
@@ -6150,7 +6150,7 @@ func TestSoftDelete(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:	  &missingSoftDeleteField{},
+				Model:      &missingSoftDeleteField{},
 				SoftDelete: true,
 			})
 		})
@@ -6159,18 +6159,18 @@ func TestSoftDelete(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: soft delete field "Foo" for model "fire.invalidSoftDeleteFieldType" is not of type "*time.Time"`, func() {
 			type invalidSoftDeleteFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo	   int `coal:"fire-soft-delete"`
+				Foo       int `coal:"fire-soft-delete"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:	  &invalidSoftDeleteFieldType{},
+				Model:      &invalidSoftDeleteFieldType{},
 				SoftDelete: true,
 			})
 		})
 
 		tester.Assign("", &Controller{
-			Model:	  &postModel{},
+			Model:      &postModel{},
 			SoftDelete: true,
 		}, &Controller{
 			Model: &commentModel{},
@@ -6320,7 +6320,7 @@ func TestIdempotentCreate(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:			&missingIdempotentCreateField{},
+				Model:            &missingIdempotentCreateField{},
 				IdempotentCreate: true,
 			})
 		})
@@ -6329,12 +6329,12 @@ func TestIdempotentCreate(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: idempotent create field "Foo" for model "fire.invalidIdempotentCreateFieldType" is not of type "string"`, func() {
 			type invalidIdempotentCreateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo	   int `coal:"fire-idempotent-create"`
+				Foo       int `coal:"fire-idempotent-create"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:			&invalidIdempotentCreateFieldType{},
+				Model:            &invalidIdempotentCreateFieldType{},
 				IdempotentCreate: true,
 			})
 		})
@@ -6344,7 +6344,7 @@ func TestIdempotentCreate(t *testing.T) {
 		}, &Controller{
 			Model: &commentModel{},
 		}, &Controller{
-			Model:			&selectionModel{},
+			Model:            &selectionModel{},
 			IdempotentCreate: true,
 		}, &Controller{
 			Model: &noteModel{},
@@ -6467,7 +6467,7 @@ func TestConsistentUpdate(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:			&missingConsistentUpdateField{},
+				Model:            &missingConsistentUpdateField{},
 				ConsistentUpdate: true,
 			})
 		})
@@ -6476,12 +6476,12 @@ func TestConsistentUpdate(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: consistent update field "Foo" for model "fire.invalidConsistentUpdateFieldType" is not of type "string"`, func() {
 			type invalidConsistentUpdateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo	   int `coal:"fire-consistent-update"`
+				Foo       int `coal:"fire-consistent-update"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:			&invalidConsistentUpdateFieldType{},
+				Model:            &invalidConsistentUpdateFieldType{},
 				ConsistentUpdate: true,
 			})
 		})
@@ -6491,7 +6491,7 @@ func TestConsistentUpdate(t *testing.T) {
 		}, &Controller{
 			Model: &commentModel{},
 		}, &Controller{
-			Model:			&selectionModel{},
+			Model:            &selectionModel{},
 			ConsistentUpdate: true,
 		}, &Controller{
 			Model: &noteModel{},
