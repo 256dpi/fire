@@ -718,7 +718,7 @@ func TestHasManyRelationships(t *testing.T) {
 		})
 		tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:    existingPost.ID(),
+			Post:	existingPost.ID(),
 		})
 
 		// create new post
@@ -941,7 +941,7 @@ func TestToOneRelationships(t *testing.T) {
 		// create comment
 		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:    coal.MustFromHex(post1),
+			Post:	coal.MustFromHex(post1),
 		}).ID().Hex()
 
 		var comment2 string
@@ -1504,7 +1504,7 @@ func TestToManyRelationships(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"data": [
-	                {
+					{
 						"type": "posts",
 						"id": "`+post3+`"
 					}
@@ -1797,7 +1797,7 @@ func TestModelValidation(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID()
 
@@ -1861,7 +1861,7 @@ func TestSupported(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 		}, &Controller{
-			Model:     &commentModel{},
+			Model:	 &commentModel{},
 			Supported: Except(List),
 		}, &Controller{
 			Model: &selectionModel{},
@@ -1900,15 +1900,15 @@ func TestFiltering(t *testing.T) {
 
 		// create posts
 		post1 := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID().Hex()
 		post2 := tester.Insert(&postModel{
-			Title:     "post-2",
+			Title:	 "post-2",
 			Published: false,
 		}).ID().Hex()
 		post3 := tester.Insert(&postModel{
-			Title:     "post-3",
+			Title:	 "post-3",
 			Published: true,
 		}).ID().Hex()
 
@@ -1961,278 +1961,282 @@ func TestFiltering(t *testing.T) {
 
 		// get posts with single value filter
 		tester.Request("GET", "posts?filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post1+`",
-						"attributes": {
-							"title": "post-1",
-							"published": true,
-							"text-body": ""
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/comments",
-									"related": "/posts/`+post1+`/comments"
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
 								}
+							],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
 							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/selections",
-									"related": "/posts/`+post1+`/selections"
-								}
-							},
-							"note": {
-								"data": {
-									"type": "notes",
-									"id": "`+note+`"
-								},
-								"links": {
-									"self": "/posts/`+post1+`/relationships/note",
-									"related": "/posts/`+post1+`/note"
-								}
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?filter[title]=post-1"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[title]=post-1"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get posts with multi value filter
 		tester.Request("GET", "posts?filter[title]=post-2,post-3", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": ""
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
-								}
-							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
 					},
-					{
-						"type": "posts",
-						"id": "`+post3+`",
-						"attributes": {
-							"title": "post-3",
-							"published": true,
-							"text-body": ""
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/comments",
-									"related": "/posts/`+post3+`/comments"
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
 								}
-							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/selections",
-									"related": "/posts/`+post3+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post3+`/relationships/note",
-									"related": "/posts/`+post3+`/note"
-								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?filter[title]=post-2,post-3"
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[title]=post-2,post-3"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get posts with boolean
 		tester.Request("GET", "posts?filter[published]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post1+`",
-						"attributes": {
-							"title": "post-1",
-							"published": true,
-							"text-body": ""
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/comments",
-									"related": "/posts/`+post1+`/comments"
-								}
-							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/selections",
-									"related": "/posts/`+post1+`/selections"
-								}
-							},
-							"note": {
-								"data": {
-									"type": "notes",
-									"id": "`+note+`"
-								},
-								"links": {
-									"self": "/posts/`+post1+`/relationships/note",
-									"related": "/posts/`+post1+`/note"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": true,
+						"text-body": ""
 					},
-					{
-						"type": "posts",
-						"id": "`+post3+`",
-						"attributes": {
-							"title": "post-3",
-							"published": true,
-							"text-body": ""
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/comments",
-									"related": "/posts/`+post3+`/comments"
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
 								}
+							],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": {
+								"type": "notes",
+								"id": "`+note+`"
 							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/selections",
-									"related": "/posts/`+post3+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post3+`/relationships/note",
-									"related": "/posts/`+post3+`/note"
-								}
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?filter[published]=true"
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": true,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
+								}
+							],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[published]=true"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get posts with boolean
 		tester.Request("GET", "posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": ""
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
 								}
-							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?filter[published]=false"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[published]=false"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// test not supported relationship filter
@@ -2249,51 +2253,52 @@ func TestFiltering(t *testing.T) {
 
 		// get to-many posts with boolean
 		tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": ""
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": ""
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
+						"selections": {
+							"data": [
+								{
+									"type": "selections",
+									"id": "`+selection+`"
 								}
-							},
-							"selections": {
-								"data": [
-									{
-										"type": "selections",
-										"id": "`+selection+`"
-									}
-								],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
+							],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/selections/`+selection+`/posts?filter[published]=false"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/selections/`+selection+`/posts?filter[published]=false"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// test invalid relationship filter id
@@ -2310,115 +2315,118 @@ func TestFiltering(t *testing.T) {
 
 		// filter notes with to-one relationship filter
 		tester.Request("GET", "notes?filter[post]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				{
+					"type": "notes",
+					"id": "`+note+`",
+					"attributes": {
+						"title": "note-1"
+					},
+					"relationships": {
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post1+`"
+							},
+							"links": {
+								"self": "/notes/`+note+`/relationships/post",
+								"related": "/notes/`+note+`/post"
+							}
+						}
+					}
+				}
+			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
-	  			"data": [
-	    			{
-	      				"type": "notes",
-	      				"id": "`+note+`",
-	      				"attributes": {
-	        				"title": "note-1"
-	      				},
-	      				"relationships": {
-	        				"post": {
-	          					"data": {
-	            					"type": "posts",
-	            					"id": "`+post1+`"
-	          					},
-	          					"links": {
-	            					"self": "/notes/`+note+`/relationships/post",
-	            					"related": "/notes/`+note+`/post"
-	          					}
-				        	}
-	      				}
-	    			}
-	  			],
-	  			"links": {
-	    			"self": "/notes?filter[post]=`+post1+`"
-	  			}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+				"self": "/notes?filter[post]=`+post1+`"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// filter selections with to-many relationship filter
 		tester.Request("GET", "selections?filter[posts]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-				  		"type": "selections",
-				  		"id": "`+selection+`",
-				  		"attributes": {
-							"name": "selection-1"
-				  		},
-				  		"relationships": {
-							"posts": {
-					  			"data": [
-									{
-										"type": "posts",
-										"id": "`+post1+`"
-									},
-									{
-										"type": "posts",
-										"id": "`+post2+`"
-									},
-									{
-										"type": "posts",
-										"id": "`+post3+`"
-									}
-								],
-								"links": {
-									"self": "/selections/`+selection+`/relationships/posts",
-									"related": "/selections/`+selection+`/posts"
+			assert.JSONEq(t, `[
+				{
+					"type": "selections",
+					"id": "`+selection+`",
+					"attributes": {
+						"name": "selection-1"
+					},
+					"relationships": {
+						"posts": {
+							"data": [
+								{
+									"type": "posts",
+									"id": "`+post1+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post2+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post3+`"
 								}
+							],
+							"links": {
+								"self": "/selections/`+selection+`/relationships/posts",
+								"related": "/selections/`+selection+`/posts"
 							}
 						}
 					}
-			  	],
-			  	"links": {
-					"self": "/selections?filter[posts]=`+post1+`"
-			  	}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+				}
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/selections?filter[posts]=`+post1+`"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// filter selections with multiple to-many relationship filters
 		tester.Request("GET", "selections?filter[posts]="+post1+","+post2, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-				  		"type": "selections",
-				  		"id": "`+selection+`",
-				  		"attributes": {
-							"name": "selection-1"
-				  		},
-				  		"relationships": {
-							"posts": {
-					  			"data": [
-									{
-										"type": "posts",
-										"id": "`+post1+`"
-									},
-									{
-										"type": "posts",
-										"id": "`+post2+`"
-									},
-									{
-										"type": "posts",
-										"id": "`+post3+`"
-									}
-								],
-								"links": {
-									"self": "/selections/`+selection+`/relationships/posts",
-									"related": "/selections/`+selection+`/posts"
+			assert.JSONEq(t, `[
+				{
+					"type": "selections",
+					"id": "`+selection+`",
+					"attributes": {
+						"name": "selection-1"
+					},
+					"relationships": {
+						"posts": {
+							"data": [
+								{
+									"type": "posts",
+									"id": "`+post1+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post2+`"
+								},
+								{
+									"type": "posts",
+									"id": "`+post3+`"
 								}
+							],
+							"links": {
+								"self": "/selections/`+selection+`/relationships/posts",
+								"related": "/selections/`+selection+`/posts"
 							}
 						}
 					}
-			  	],
-			  	"links": {
-					"self": "/selections?filter[posts]=`+post1+`,`+post2+`"
-			  	}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+				}
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/selections?filter[posts]=`+post1+`,`+post2+`"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 	})
 }
@@ -2439,15 +2447,15 @@ func TestSorting(t *testing.T) {
 
 		// create posts in random order
 		post2 := tester.Insert(&postModel{
-			Title:    "post-2",
+			Title:	"post-2",
 			TextBody: "body-2",
 		}).ID().Hex()
 		post1 := tester.Insert(&postModel{
-			Title:    "post-1",
+			Title:	"post-1",
 			TextBody: "body-1",
 		}).ID().Hex()
 		post3 := tester.Insert(&postModel{
-			Title:    "post-3",
+			Title:	"post-3",
 			TextBody: "body-3",
 		}).ID().Hex()
 
@@ -2477,326 +2485,329 @@ func TestSorting(t *testing.T) {
 
 		// get posts in ascending order
 		tester.Request("GET", "posts?sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post1+`",
-						"attributes": {
-							"title": "post-1",
-							"published": false,
-							"text-body": "body-1"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/comments",
-									"related": "/posts/`+post1+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/selections",
-									"related": "/posts/`+post1+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post1+`/relationships/note",
-									"related": "/posts/`+post1+`/note"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": "body-1"
 					},
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": "body-2"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
 							}
-						}
-					},
-					{
-						"type": "posts",
-						"id": "`+post3+`",
-						"attributes": {
-							"title": "post-3",
-							"published": false,
-							"text-body": "body-3"
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/comments",
-									"related": "/posts/`+post3+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/selections",
-									"related": "/posts/`+post3+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post3+`/relationships/note",
-									"related": "/posts/`+post3+`/note"
-								}
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?sort=title"
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": "body-2"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": "body-3"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?sort=title"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get posts in descending order
 		tester.Request("GET", "posts?sort=-title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post3+`",
-						"attributes": {
-							"title": "post-3",
-							"published": false,
-							"text-body": "body-3"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/comments",
-									"related": "/posts/`+post3+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/selections",
-									"related": "/posts/`+post3+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post3+`/relationships/note",
-									"related": "/posts/`+post3+`/note"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": "body-3"
 					},
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": "body-2"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
 							}
-						}
-					},
-					{
-						"type": "posts",
-						"id": "`+post1+`",
-						"attributes": {
-							"title": "post-1",
-							"published": false,
-							"text-body": "body-1"
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/comments",
-									"related": "/posts/`+post1+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/selections",
-									"related": "/posts/`+post1+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post1+`/relationships/note",
-									"related": "/posts/`+post1+`/note"
-								}
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?sort=-title"
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": "body-2"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": "body-1"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?sort=-title"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get posts in ascending order
 		tester.Request("GET", "posts?sort=text-body", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "posts",
-						"id": "`+post1+`",
-						"attributes": {
-							"title": "post-1",
-							"published": false,
-							"text-body": "body-1"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/comments",
-									"related": "/posts/`+post1+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post1+`/relationships/selections",
-									"related": "/posts/`+post1+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post1+`/relationships/note",
-									"related": "/posts/`+post1+`/note"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post1+`",
+					"attributes": {
+						"title": "post-1",
+						"published": false,
+						"text-body": "body-1"
 					},
-					{
-						"type": "posts",
-						"id": "`+post2+`",
-						"attributes": {
-							"title": "post-2",
-							"published": false,
-							"text-body": "body-2"
-						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/comments",
-									"related": "/posts/`+post2+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post2+`/relationships/selections",
-									"related": "/posts/`+post2+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post2+`/relationships/note",
-									"related": "/posts/`+post2+`/note"
-								}
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/comments",
+								"related": "/posts/`+post1+`/comments"
 							}
-						}
-					},
-					{
-						"type": "posts",
-						"id": "`+post3+`",
-						"attributes": {
-							"title": "post-3",
-							"published": false,
-							"text-body": "body-3"
 						},
-						"relationships": {
-							"comments": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/comments",
-									"related": "/posts/`+post3+`/comments"
-								}
-							},
-							"selections": {
-								"data": [],
-								"links": {
-									"self": "/posts/`+post3+`/relationships/selections",
-									"related": "/posts/`+post3+`/selections"
-								}
-							},
-							"note": {
-								"data": null,
-								"links": {
-									"self": "/posts/`+post3+`/relationships/note",
-									"related": "/posts/`+post3+`/note"
-								}
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post1+`/relationships/selections",
+								"related": "/posts/`+post1+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post1+`/relationships/note",
+								"related": "/posts/`+post1+`/note"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts?sort=text-body"
+				},
+				{
+					"type": "posts",
+					"id": "`+post2+`",
+					"attributes": {
+						"title": "post-2",
+						"published": false,
+						"text-body": "body-2"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/comments",
+								"related": "/posts/`+post2+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post2+`/relationships/selections",
+								"related": "/posts/`+post2+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post2+`/relationships/note",
+								"related": "/posts/`+post2+`/note"
+							}
+						}
+					}
+				},
+				{
+					"type": "posts",
+					"id": "`+post3+`",
+					"attributes": {
+						"title": "post-3",
+						"published": false,
+						"text-body": "body-3"
+					},
+					"relationships": {
+						"comments": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/comments",
+								"related": "/posts/`+post3+`/comments"
+							}
+						},
+						"selections": {
+							"data": [],
+							"links": {
+								"self": "/posts/`+post3+`/relationships/selections",
+								"related": "/posts/`+post3+`/selections"
+							}
+						},
+						"note": {
+							"data": null,
+							"links": {
+								"self": "/posts/`+post3+`/relationships/note",
+								"related": "/posts/`+post3+`/note"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?sort=text-body"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// create post
@@ -2807,195 +2818,197 @@ func TestSorting(t *testing.T) {
 		// create some comments
 		comment1 := tester.Insert(&commentModel{
 			Message: "Comment 1",
-			Post:    post,
+			Post:	post,
 		}).ID().Hex()
 		comment2 := tester.Insert(&commentModel{
 			Message: "Comment 2",
-			Post:    post,
+			Post:	post,
 		}).ID().Hex()
 		comment3 := tester.Insert(&commentModel{
 			Message: "Comment 3",
-			Post:    post,
+			Post:	post,
 		}).ID().Hex()
 
 		// get first page of comments
 		tester.Request("GET", "posts/"+post.Hex()+"/comments?sort=message", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "comments",
-						"id": "`+comment1+`",
-						"attributes": {
-							"message": "Comment 1"
-						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment1+`/relationships/parent",
-									"related": "/comments/`+comment1+`/parent"
-								}
-							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment1+`/relationships/post",
-									"related": "/comments/`+comment1+`/post"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": "Comment 1"
 					},
-					{
-						"type": "comments",
-						"id": "`+comment2+`",
-						"attributes": {
-							"message": "Comment 2"
-						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment2+`/relationships/parent",
-									"related": "/comments/`+comment2+`/parent"
-								}
-							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment2+`/relationships/post",
-									"related": "/comments/`+comment2+`/post"
-								}
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
 							}
-						}
-					},
-					{
-						"type": "comments",
-						"id": "`+comment3+`",
-						"attributes": {
-							"message": "Comment 3"
 						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment3+`/relationships/parent",
-									"related": "/comments/`+comment3+`/parent"
-								}
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
 							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment3+`/relationships/post",
-									"related": "/comments/`+comment3+`/post"
-								}
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts/`+post.Hex()+`/comments?sort=message"
+				},
+				{
+					"type": "comments",
+					"id": "`+comment2+`",
+					"attributes": {
+						"message": "Comment 2"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/parent",
+								"related": "/comments/`+comment2+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/post",
+								"related": "/comments/`+comment2+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment3+`",
+					"attributes": {
+						"message": "Comment 3"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/parent",
+								"related": "/comments/`+comment3+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/post",
+								"related": "/comments/`+comment3+`/post"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`/comments?sort=message"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// get second page of comments
 		tester.Request("GET", "posts/"+post.Hex()+"/comments?sort=-message", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `{
-				"data": [
-					{
-						"type": "comments",
-						"id": "`+comment3+`",
-						"attributes": {
-							"message": "Comment 3"
-						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment3+`/relationships/parent",
-									"related": "/comments/`+comment3+`/parent"
-								}
-							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment3+`/relationships/post",
-									"related": "/comments/`+comment3+`/post"
-								}
-							}
-						}
+			assert.JSONEq(t, `[
+				{
+					"type": "comments",
+					"id": "`+comment3+`",
+					"attributes": {
+						"message": "Comment 3"
 					},
-					{
-						"type": "comments",
-						"id": "`+comment2+`",
-						"attributes": {
-							"message": "Comment 2"
-						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment2+`/relationships/parent",
-									"related": "/comments/`+comment2+`/parent"
-								}
-							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment2+`/relationships/post",
-									"related": "/comments/`+comment2+`/post"
-								}
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/parent",
+								"related": "/comments/`+comment3+`/parent"
 							}
-						}
-					},
-					{
-						"type": "comments",
-						"id": "`+comment1+`",
-						"attributes": {
-							"message": "Comment 1"
 						},
-						"relationships": {
-							"parent": {
-								"data": null,
-								"links": {
-									"self": "/comments/`+comment1+`/relationships/parent",
-									"related": "/comments/`+comment1+`/parent"
-								}
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
 							},
-							"post": {
-								"data": {
-									"type": "posts",
-									"id": "`+post.Hex()+`"
-								},
-								"links": {
-									"self": "/comments/`+comment1+`/relationships/post",
-									"related": "/comments/`+comment1+`/post"
-								}
+							"links": {
+								"self": "/comments/`+comment3+`/relationships/post",
+								"related": "/comments/`+comment3+`/post"
 							}
 						}
 					}
-				],
-				"links": {
-					"self": "/posts/`+post.Hex()+`/comments?sort=-message"
+				},
+				{
+					"type": "comments",
+					"id": "`+comment2+`",
+					"attributes": {
+						"message": "Comment 2"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/parent",
+								"related": "/comments/`+comment2+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment2+`/relationships/post",
+								"related": "/comments/`+comment2+`/post"
+							}
+						}
+					}
+				},
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": "Comment 1"
+					},
+					"relationships": {
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
+							}
+						},
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post.Hex()+`"
+							},
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
+							}
+						}
+					}
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`/comments?sort=-message"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 	})
 }
@@ -3035,7 +3048,7 @@ func TestProperties(t *testing.T) {
 		group := tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":      "virtual",
+				"Virtual":	  "virtual",
 				"VirtualError": "virtual-error",
 			},
 		}, &Controller{
@@ -3054,7 +3067,7 @@ func TestProperties(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -3285,7 +3298,7 @@ func TestAuthorizers(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID()
 
@@ -3384,7 +3397,7 @@ func TestModifiers(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 			TextBody:  "Hello",
 		}).ID().Hex()
@@ -3605,7 +3618,7 @@ func TestValidators(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID()
 
@@ -3696,7 +3709,7 @@ func TestDecorators(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -3925,7 +3938,7 @@ func TestNotifiers(t *testing.T) {
 
 		// create post
 		post1 := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -4157,29 +4170,30 @@ func TestSparseFields(t *testing.T) {
 
 		// get posts
 		tester.Request("GET", "posts/"+post.Hex()+"?fields[posts]=title,virtual,note", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
-				"data": {
-					"type": "posts",
-					"id": "`+post.Hex()+`",
-					"attributes": {
-						"title": "Post 1",
-						"virtual": 42
-					},
-					"relationships": {
-						"note": {
-							"data": null,
-							"links": {
-								"self": "/posts/`+post.Hex()+`/relationships/note",
-								"related": "/posts/`+post.Hex()+`/note"
-							}
+				"type": "posts",
+				"id": "`+post.Hex()+`",
+				"attributes": {
+					"title": "Post 1",
+					"virtual": 42
+				},
+				"relationships": {
+					"note": {
+						"data": null,
+						"links": {
+							"self": "/posts/`+post.Hex()+`/relationships/note",
+							"related": "/posts/`+post.Hex()+`/note"
 						}
 					}
-				},
-				"links": {
-					"self": "/posts/`+post.Hex()+`?fields[posts]=title,virtual,note"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			}`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`?fields[posts]=title,virtual,note"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
 		// create note
@@ -4190,28 +4204,29 @@ func TestSparseFields(t *testing.T) {
 
 		// get related note
 		tester.Request("GET", "/posts/"+post.Hex()+"/note?fields[notes]=post", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
-				"data": {
-					"type": "notes",
-					"id": "`+note.Hex()+`",
-					"relationships": {
-						"post": {
-							"data": {
-								"type": "posts",
-								"id": "`+post.Hex()+`"
-							},
-							"links": {
-								"self": "/notes/`+note.Hex()+`/relationships/post",
-								"related": "/notes/`+note.Hex()+`/post"
-							}
+				"type": "notes",
+				"id": "`+note.Hex()+`",
+				"relationships": {
+					"post": {
+						"data": {
+							"type": "posts",
+							"id": "`+post.Hex()+`"
+						},
+						"links": {
+							"self": "/notes/`+note.Hex()+`/relationships/post",
+							"related": "/notes/`+note.Hex()+`/post"
 						}
 					}
-				},
-				"links": {
-					"self": "/posts/`+post.Hex()+`/note?fields[notes]=post"
 				}
-			}`, r.Body.String(), tester.DebugRequest(rq, r))
+			}`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`/note?fields[notes]=post"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 	})
 }
@@ -4245,7 +4260,7 @@ func TestReadableFields(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID()
 
@@ -4352,11 +4367,11 @@ func TestReadableFieldsGetter(t *testing.T) {
 
 		// create posts
 		post1 := tester.Insert(&postModel{
-			Title:     "post1",
+			Title:	 "post1",
 			Published: true,
 		}).ID()
 		post2 := tester.Insert(&postModel{
-			Title:     "post2",
+			Title:	 "post2",
 			Published: true,
 		}).ID()
 
@@ -4723,7 +4738,7 @@ func TestReadableProperties(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":      "virtual",
+				"Virtual":	  "virtual",
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
@@ -4749,7 +4764,7 @@ func TestReadableProperties(t *testing.T) {
 
 		// create post
 		post := tester.Insert(&postModel{
-			Title:     "post-1",
+			Title:	 "post-1",
 			Published: true,
 		}).ID().Hex()
 
@@ -4805,7 +4820,7 @@ func TestReadablePropertiesGetter(t *testing.T) {
 		tester.Assign("", &Controller{
 			Model: &postModel{},
 			Properties: map[string]string{
-				"Virtual":      "virtual",
+				"Virtual":	  "virtual",
 				"VirtualError": "virtual-error",
 			},
 			Authorizers: L{
@@ -4932,17 +4947,17 @@ func TestRelationshipFilters(t *testing.T) {
 		// create comment
 		comment1 := coal.New().Hex()
 		tester.Insert(&commentModel{
-			Base:    coal.B(coal.MustFromHex(comment1)),
+			Base:	coal.B(coal.MustFromHex(comment1)),
 			Message: "foo",
 			Parent:  coal.P(coal.MustFromHex(comment1)),
-			Post:    coal.MustFromHex(post),
+			Post:	coal.MustFromHex(post),
 		})
 		comment2 := coal.New().Hex()
 		tester.Insert(&commentModel{
-			Base:    coal.B(coal.MustFromHex(comment2)),
+			Base:	coal.B(coal.MustFromHex(comment2)),
 			Message: "bar",
 			Parent:  coal.P(coal.MustFromHex(comment2)),
-			Post:    coal.MustFromHex(post),
+			Post:	coal.MustFromHex(post),
 		})
 
 		// create selection
@@ -5345,16 +5360,16 @@ func TestTolerateViolations(t *testing.T) {
 func TestOffsetPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:     &postModel{},
+			Model:	 &postModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:     &commentModel{},
+			Model:	 &commentModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:     &selectionModel{},
+			Model:	 &selectionModel{},
 			ListLimit: 7,
 		}, &Controller{
-			Model:     &noteModel{},
+			Model:	 &noteModel{},
 			ListLimit: 7,
 		})
 
@@ -5381,7 +5396,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts?page[number]=1&page[size]=7",
 				"last": "/posts?page[number]=2&page[size]=7",
 				"next": "/posts?page[number]=2&page[size]=7"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of posts
@@ -5397,7 +5412,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts?page[number]=1&page[size]=5",
 				"last": "/posts?page[number]=2&page[size]=5",
 				"next": "/posts?page[number]=2&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of posts
@@ -5413,7 +5428,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts?page[number]=1&page[size]=5",
 				"last": "/posts?page[number]=2&page[size]=5",
 				"next": "/posts?page[number]=2&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get second page of posts
@@ -5429,7 +5444,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts?page[number]=1&page[size]=5",
 				"last": "/posts?page[number]=2&page[size]=5",
 				"prev": "/posts?page[number]=1&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// create selection
@@ -5450,7 +5465,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/selections/`+selection+`/posts?page[number]=1&page[size]=5",
 				"last": "/selections/`+selection+`/posts?page[number]=2&page[size]=5",
 				"next": "/selections/`+selection+`/posts?page[number]=2&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get second page of posts
@@ -5466,7 +5481,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/selections/`+selection+`/posts?page[number]=1&page[size]=5",
 				"last": "/selections/`+selection+`/posts?page[number]=2&page[size]=5",
 				"prev": "/selections/`+selection+`/posts?page[number]=1&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// create post
@@ -5478,7 +5493,7 @@ func TestOffsetPagination(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			tester.Insert(&commentModel{
 				Message: fmt.Sprintf("Comment %d", i+1),
-				Post:    post,
+				Post:	post,
 			})
 		}
 
@@ -5495,7 +5510,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5",
 				"last": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5",
 				"next": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get second page of comments
@@ -5511,7 +5526,7 @@ func TestOffsetPagination(t *testing.T) {
 				"first": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5",
 				"last": "/posts/`+post.Hex()+`/comments?page[number]=2&page[size]=5",
 				"prev": "/posts/`+post.Hex()+`/comments?page[number]=1&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 	})
 }
@@ -5519,22 +5534,22 @@ func TestOffsetPagination(t *testing.T) {
 func TestCursorPagination(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:            &postModel{},
-			Filters:          []string{"Published"},
-			Sorters:          []string{"Title", "TextBody", "Published"},
-			ListLimit:        7,
+			Model:			&postModel{},
+			Filters:		  []string{"Published"},
+			Sorters:		  []string{"Title", "TextBody", "Published"},
+			ListLimit:		7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:            &commentModel{},
-			ListLimit:        7,
+			Model:			&commentModel{},
+			ListLimit:		7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:            &selectionModel{},
-			ListLimit:        7,
+			Model:			&selectionModel{},
+			ListLimit:		7,
 			CursorPagination: true,
 		}, &Controller{
-			Model:            &noteModel{},
-			ListLimit:        7,
+			Model:			&noteModel{},
+			ListLimit:		7,
 			CursorPagination: true,
 		})
 
@@ -5544,8 +5559,8 @@ func TestCursorPagination(t *testing.T) {
 		// create some posts
 		for i := 0; i < 10; i++ {
 			ids = append(ids, tester.Insert(&postModel{
-				Base:      coal.B(numID(uint8(i) + 1)),
-				Title:     fmt.Sprintf("Post %02d", i+1),
+				Base:	  coal.B(numID(uint8(i) + 1)),
+				Title:	 fmt.Sprintf("Post %02d", i+1),
 				TextBody:  fmt.Sprintf("Body %02d", 10-i),
 				Published: i >= 5,
 			}).ID())
@@ -5568,7 +5583,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABwA&page[size]=7",
 				"last": "/posts?page[before]=*&page[size]=7"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of posts with size
@@ -5586,7 +5601,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5",
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get last page of posts
@@ -5604,7 +5619,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5",
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAACgA&page[size]=5",
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get empty last page of posts
@@ -5620,7 +5635,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=*&page[size]=5",
 				"next": null,
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get capped page of posts
@@ -5638,7 +5653,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=6",
 				"next": null,
 				"last": "/posts?page[before]=*&page[size]=6"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		/* descending */
@@ -5658,7 +5673,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=5",
 				"next": null,
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get middle page of posts (reverse)
@@ -5676,7 +5691,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAwA&page[size]=3",
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=3",
 				"last": "/posts?page[before]=*&page[size]=3"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of posts (reverse)
@@ -5694,7 +5709,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=FAAAAAcwAAAAAAAAAAAAAAAAAQA&page[size]=5",
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=5",
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get empty first page of posts (reverse)
@@ -5710,7 +5725,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?page[after]=*&page[size]=5",
 				"last": "/posts?page[before]=*&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get capped first page of posts (reverse)
@@ -5728,7 +5743,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABQA&page[size]=6",
 				"last": "/posts?page[before]=*&page[size]=6"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		/* sorted */
@@ -5748,7 +5763,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title",
 				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get last page of sorted posts
@@ -5766,7 +5781,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=IwAAAAIwAAgAAABQb3N0IDAzAAcxAAAAAAAAAAAAAAAAAwA&page[size]=7&sort=-title",
 				"next": null,
 				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of sorted posts (reverse)
@@ -5784,7 +5799,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?page[before]=IwAAAAIwAAgAAABQb3N0IDEwAAcxAAAAAAAAAAAAAAAACgA&page[size]=7&sort=-title",
 				"next": "/posts?page[after]=IwAAAAIwAAgAAABQb3N0IDA0AAcxAAAAAAAAAAAAAAAABAA&page[size]=7&sort=-title",
 				"last": "/posts?page[before]=*&page[size]=7&sort=-title"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		/* filtered */
@@ -5804,7 +5819,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": null,
 				"next": "/posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3",
 				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get last page of filtered posts
@@ -5822,7 +5837,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAACQA&page[size]=3",
 				"next": null,
 				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// get first page of filtered posts (reverse)
@@ -5840,7 +5855,7 @@ func TestCursorPagination(t *testing.T) {
 				"prev": "/posts?filter[published]=true&page[before]=FAAAAAcwAAAAAAAAAAAAAAAABgA&page[size]=3",
 				"next": "/posts?filter[published]=true&page[after]=FAAAAAcwAAAAAAAAAAAAAAAACAA&page[size]=3",
 				"last": "/posts?filter[published]=true&page[before]=*&page[size]=3"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// TODO: Test relationship pagination.
@@ -5874,7 +5889,7 @@ func TestCursorPagination(t *testing.T) {
 func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
-			Model:     &postModel{},
+			Model:	 &postModel{},
 			ListLimit: 5,
 		}, &Controller{
 			Model: &commentModel{},
@@ -5904,7 +5919,7 @@ func TestListLimit(t *testing.T) {
 				"first": "/posts?page[number]=1&page[size]=5",
 				"last": "/posts?page[number]=2&page[size]=5",
 				"next": "/posts?page[number]=2&page[size]=5"
-			}`, links)
+			}`, linkUnescape(links))
 		})
 
 		// try bigger page size than limit
@@ -6135,7 +6150,7 @@ func TestSoftDelete(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:      &missingSoftDeleteField{},
+				Model:	  &missingSoftDeleteField{},
 				SoftDelete: true,
 			})
 		})
@@ -6144,18 +6159,18 @@ func TestSoftDelete(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: soft delete field "Foo" for model "fire.invalidSoftDeleteFieldType" is not of type "*time.Time"`, func() {
 			type invalidSoftDeleteFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo       int `coal:"fire-soft-delete"`
+				Foo	   int `coal:"fire-soft-delete"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:      &invalidSoftDeleteFieldType{},
+				Model:	  &invalidSoftDeleteFieldType{},
 				SoftDelete: true,
 			})
 		})
 
 		tester.Assign("", &Controller{
-			Model:      &postModel{},
+			Model:	  &postModel{},
 			SoftDelete: true,
 		}, &Controller{
 			Model: &commentModel{},
@@ -6305,7 +6320,7 @@ func TestIdempotentCreate(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:            &missingIdempotentCreateField{},
+				Model:			&missingIdempotentCreateField{},
 				IdempotentCreate: true,
 			})
 		})
@@ -6314,12 +6329,12 @@ func TestIdempotentCreate(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: idempotent create field "Foo" for model "fire.invalidIdempotentCreateFieldType" is not of type "string"`, func() {
 			type invalidIdempotentCreateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo       int `coal:"fire-idempotent-create"`
+				Foo	   int `coal:"fire-idempotent-create"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:            &invalidIdempotentCreateFieldType{},
+				Model:			&invalidIdempotentCreateFieldType{},
 				IdempotentCreate: true,
 			})
 		})
@@ -6329,7 +6344,7 @@ func TestIdempotentCreate(t *testing.T) {
 		}, &Controller{
 			Model: &commentModel{},
 		}, &Controller{
-			Model:            &selectionModel{},
+			Model:			&selectionModel{},
 			IdempotentCreate: true,
 		}, &Controller{
 			Model: &noteModel{},
@@ -6452,7 +6467,7 @@ func TestConsistentUpdate(t *testing.T) {
 			}
 
 			tester.Assign("", &Controller{
-				Model:            &missingConsistentUpdateField{},
+				Model:			&missingConsistentUpdateField{},
 				ConsistentUpdate: true,
 			})
 		})
@@ -6461,12 +6476,12 @@ func TestConsistentUpdate(t *testing.T) {
 		assert.PanicsWithValue(t, `fire: consistent update field "Foo" for model "fire.invalidConsistentUpdateFieldType" is not of type "string"`, func() {
 			type invalidConsistentUpdateFieldType struct {
 				coal.Base `json:"-" bson:",inline" coal:"models"`
-				Foo       int `coal:"fire-consistent-update"`
+				Foo	   int `coal:"fire-consistent-update"`
 				stick.NoValidation
 			}
 
 			tester.Assign("", &Controller{
-				Model:            &invalidConsistentUpdateFieldType{},
+				Model:			&invalidConsistentUpdateFieldType{},
 				ConsistentUpdate: true,
 			})
 		})
@@ -6476,7 +6491,7 @@ func TestConsistentUpdate(t *testing.T) {
 		}, &Controller{
 			Model: &commentModel{},
 		}, &Controller{
-			Model:            &selectionModel{},
+			Model:			&selectionModel{},
 			ConsistentUpdate: true,
 		}, &Controller{
 			Model: &noteModel{},

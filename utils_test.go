@@ -1,6 +1,7 @@
 package fire
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -112,4 +113,11 @@ func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 
 func numID(n uint8) coal.ID {
 	return coal.ID{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n}
+}
+
+func linkUnescape(str string) string {
+	str = strings.ReplaceAll(str, "%5B", "[")
+	str = strings.ReplaceAll(str, "%5D", "]")
+	str = strings.ReplaceAll(str, "%2A", "*")
+	return strings.ReplaceAll(str, "%2C", ",")
 }
