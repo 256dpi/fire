@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestFlags(t *testing.T) {
@@ -236,6 +237,49 @@ func TestManagerFindAll(t *testing.T) {
 
 			return nil
 		})
+	})
+}
+
+func TestManagerFindAllTextScoreSort(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		if tester.Store.Lungo() {
+			return
+		}
+
+		post1 := *tester.Insert(&postModel{
+			Title: "Hello World!",
+		}).(*postModel)
+
+		post2 := *tester.Insert(&postModel{
+			Title: "Hello Space!",
+		}).(*postModel)
+
+		post1.Score = 0.75
+		post2.Score = 1.5
+
+		m := tester.Store.M(&postModel{})
+
+		// add index
+		name, err := m.C().Native().Indexes().CreateOne(nil, mongo.IndexModel{
+			Keys: bson.M{
+				"$**": "text",
+			},
+		})
+		assert.NoError(t, err)
+
+		// sort by score
+		var list []postModel
+		err = m.FindAll(nil, &list, bson.M{
+			"$text": bson.M{
+				"$search": "hello spaces",
+			},
+		}, nil, 0, 0, false, NoTransaction|TextScoreSort)
+		assert.NoError(t, err)
+		assert.Equal(t, []postModel{post2, post1}, list)
+
+		// remove index
+		_, err = m.C().Native().Indexes().DropOne(nil, name)
+		assert.NoError(t, err)
 	})
 }
 

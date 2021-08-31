@@ -18,9 +18,10 @@ type Model interface {
 
 // Base is the base for every coal model.
 type Base struct {
-	DocID ID    `json:"-" bson:"_id,omitempty"`
-	Lock  int64 `json:"-" bson:"_lk,omitempty"`
-	Token ID    `json:"-" bson:"_tk,omitempty"`
+	DocID ID      `json:"-" bson:"_id,omitempty"`
+	Lock  int64   `json:"-" bson:"_lk,omitempty"`
+	Token ID      `json:"-" bson:"_tk,omitempty"`
+	Score float64 `json:"-" bson:"_sc,omitempty"`
 }
 
 // B is a short-hand to construct a base with the provided id or a generated

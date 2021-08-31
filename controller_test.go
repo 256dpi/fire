@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -3010,6 +3011,93 @@ func TestSorting(t *testing.T) {
 				"self": "/posts/`+post.Hex()+`/comments?sort=-message"
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
+	})
+}
+
+func TestSearching(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		if tester.Store.Lungo() {
+			return
+		}
+
+		tester.Assign("", &Controller{
+			Model:  &postModel{},
+			Search: true,
+		}, &Controller{
+			Model: &commentModel{},
+		}, &Controller{
+			Model: &selectionModel{},
+		}, &Controller{
+			Model: &noteModel{},
+		})
+
+		name, err := tester.Store.C(&postModel{}).Native().Indexes().CreateOne(nil, mongo.IndexModel{
+			Keys: bson.M{
+				"$**": "text",
+			},
+		})
+		assert.NoError(t, err)
+
+		// create posts in random order
+		post1 := tester.Insert(&postModel{
+			Title:    "post-2",
+			TextBody: "bar quz",
+		}).ID().Hex()
+		tester.Insert(&postModel{
+			Title:    "post-1",
+			TextBody: "bar baz",
+		})
+		post3 := tester.Insert(&postModel{
+			Title:    "post-3",
+			TextBody: "foo bar",
+		}).ID().Hex()
+
+		// attempt to search comments
+		tester.Request("GET", "comments?search=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors":[{
+					"status": "400",
+					"title": "bad request",
+					"detail": "search not supported"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// attempt search and sort
+		tester.Request("GET", "posts?search=foo&sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors":[{
+					"status": "400",
+					"title": "bad request",
+					"detail": "cannot sort search"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// search posts
+		tester.Request("GET", "posts?search=foo+Bar+-baz", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data.#.id").Raw
+			score := gjson.Get(r.Body.String(), "data.#.meta.score").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				"`+post3+`",
+				"`+post1+`"
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				1.5,
+				0.75
+			]`, score, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?search=foo+Bar+-baz"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+
+		_, err = tester.Store.C(&postModel{}).Native().Indexes().DropOne(nil, name)
+		assert.NoError(t, err)
 	})
 }
 

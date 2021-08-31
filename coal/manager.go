@@ -22,6 +22,10 @@ const (
 
 	// NoValidation will allow storing and retrieving invalid models.
 	NoValidation
+
+	// TextScoreSort will prepend the sort with a sort based on the text score
+	// of documents. The Base.Score attribute is set to the respective score.
+	TextScoreSort
 )
 
 // Has returns whether the receiver has set all provided flags.
@@ -50,6 +54,10 @@ var incrementLock = bson.M{
 	"$inc": bson.M{
 		"_lk": 1,
 	},
+}
+
+var metaTextScore = bson.M{
+	"$meta": "textScore",
 }
 
 var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -277,6 +285,21 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 	// set limit
 	if limit > 0 {
 		opts.SetLimit(limit)
+	}
+
+	// handle text score sort
+	if Merge(flags).Has(TextScoreSort) {
+		// set projection
+		opts.SetProjection(bson.M{
+			"_sc": metaTextScore,
+		})
+
+		// prepend score sort
+		rawSort, _ := opts.Sort.(bson.D)
+		rawSort = append(bson.D{
+			{Key: "_sc", Value: metaTextScore},
+		}, rawSort...)
+		opts.SetSort(rawSort)
 	}
 
 	// lock documents

@@ -81,6 +81,9 @@ type Controller struct {
 	// exposed and indexed should be made sortable.
 	Sorters []string
 
+	// Search will enable full text search.
+	Search bool
+
 	// Properties is a mapping of model properties to attribute keys. These properties
 	// are called and their result set as attributes before returning the
 	// response.
@@ -1582,6 +1585,26 @@ func (c *Controller) loadModels(ctx *Context) {
 		xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
 	}
 
+	// add search
+	if ctx.JSONAPIRequest.Search != "" {
+		// check availability
+		if !c.Search {
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf("search not supported")))
+		}
+
+		// add filter
+		ctx.Filters = append(ctx.Filters, bson.M{
+			"$text": bson.M{
+				"$search": ctx.JSONAPIRequest.Search,
+			},
+		})
+
+		// check sorting
+		if len(ctx.JSONAPIRequest.Sorting) > 0 {
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf("cannot sort search")))
+		}
+	}
+
 	// add sorting
 	for _, sorter := range ctx.JSONAPIRequest.Sorting {
 		// get direction
@@ -1782,9 +1805,17 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 	}
 
+	// prepare flags
+	var flags coal.Flags
+
+	// enable text score sort on search
+	if ctx.JSONAPIRequest.Search != "" {
+		flags |= coal.TextScoreSort
+	}
+
 	// load documents
 	models := c.meta.MakeSlice()
-	xo.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, query, sorting, skip, limit, false))
+	xo.AbortIf(ctx.Store.M(c.Model).FindAll(ctx, models, query, sorting, skip, limit, false, flags))
 
 	// set models
 	ctx.Models = coal.Slice(models)
@@ -2342,6 +2373,13 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 		// set attribute
 		resource.Attributes[key] = value
+	}
+
+	// add score meta on search
+	if ctx.Operation == List && ctx.JSONAPIRequest.Search != "" {
+		resource.Meta = jsonapi.Map{
+			"score": model.GetBase().Score,
+		}
 	}
 
 	return resource
