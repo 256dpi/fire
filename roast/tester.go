@@ -56,20 +56,23 @@ type Tester struct {
 // NewTester will create and return a new tester.
 func NewTester(config Config) *Tester {
 	// prepare tester
-	c := &Tester{
+	tester := &Tester{
 		Tester: fire.NewTester(config.Store, config.Models...),
 	}
 
+	// set prefix
+	tester.Prefix = config.DataNamespace
+
 	// set handler
-	c.Tester.Handler = config.Handler
+	tester.Tester.Handler = config.Handler
 
 	// prepare http client
-	c.RawClient = &http.Client{
+	tester.RawClient = &http.Client{
 		Transport: serve.Local(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if config.Debug {
 				fmt.Println(r.Method, r.URL.String())
 			}
-			c.Tester.Handler.ServeHTTP(w, r)
+			tester.Tester.Handler.ServeHTTP(w, r)
 			if config.Debug {
 				rec := w.(*httptest.ResponseRecorder)
 				fmt.Println(rec.Code, rec.Body.String())
@@ -80,26 +83,26 @@ func NewTester(config Config) *Tester {
 	// get authorizer
 	if config.Authorizer == nil {
 		config.Authorizer = func(req *http.Request) {
-			if c.AuthToken != "" {
-				req.Header.Set("Authorization", "Bearer "+c.AuthToken)
+			if tester.AuthToken != "" {
+				req.Header.Set("Authorization", "Bearer "+tester.AuthToken)
 			}
 		}
 	}
 
 	// set data client
-	c.DataClient = NewClient(jsonapi.NewClientWithClient(jsonapi.ClientConfig{
+	tester.DataClient = NewClient(jsonapi.NewClientWithClient(jsonapi.ClientConfig{
 		BaseURI:       "/" + strings.Trim(config.DataNamespace, "/"),
 		Authorizer:    config.Authorizer,
 		ResponseLimit: serve.MustByteSize("8M"),
-	}, c.RawClient))
+	}, tester.RawClient))
 
 	// set auth client
-	c.AuthClient = oauth2.NewClientWithClient(oauth2.ClientConfig{
+	tester.AuthClient = oauth2.NewClientWithClient(oauth2.ClientConfig{
 		BaseURI:       "/" + strings.Trim(config.AuthNamespace, "/"),
 		TokenEndpoint: "/" + strings.Trim(config.TokenEndpoint, "/"),
-	}, c.RawClient)
+	}, tester.RawClient)
 
-	return c
+	return tester
 }
 
 // Authenticate will request an access token using the provided credentials.
