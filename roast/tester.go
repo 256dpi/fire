@@ -16,7 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Support Upload & Download.
+// TODO: Support filters and sorters.
+// TODO: Support pagination.
+// TODO: Support upload & download.
 
 // AccessDenied is the raw access denied error value.
 var AccessDenied = fire.ErrAccessDenied.Self().(*xo.Err).Err
