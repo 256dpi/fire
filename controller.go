@@ -73,6 +73,9 @@ type Controller struct {
 	// supported the request will be aborted with an unsupported method error.
 	Supported Matcher
 
+	// Search will enable full text search.
+	Search bool
+
 	// Filters is a list of fields that are filterable. Only fields that are
 	// exposed and indexed should be made filterable.
 	Filters []string
@@ -80,9 +83,6 @@ type Controller struct {
 	// Sorters is a list of fields that are sortable. Only fields that are
 	// exposed and indexed should be made sortable.
 	Sorters []string
-
-	// Search will enable full text search.
-	Search bool
 
 	// Properties is a mapping of model properties to attribute keys. These properties
 	// are called and their result set as attributes before returning the
