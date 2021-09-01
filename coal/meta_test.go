@@ -101,6 +101,14 @@ func TestGetMeta(t *testing.T) {
 			"selections": post.Fields["Selections"],
 			"note":       post.Fields["Note"],
 		},
+		RequestFields: map[string]*Field{
+			"title":      post.Fields["Title"],
+			"published":  post.Fields["Published"],
+			"text-body":  post.Fields["TextBody"],
+			"comments":   post.Fields["Comments"],
+			"selections": post.Fields["Selections"],
+			"note":       post.Fields["Note"],
+		},
 		FlaggedFields: map[string][]*Field{
 			"foo": {
 				post.Fields["Title"],
@@ -203,6 +211,11 @@ func TestGetMeta(t *testing.T) {
 			"parent": comment.Fields["Parent"],
 			"post":   comment.Fields["Post"],
 		},
+		RequestFields: map[string]*Field{
+			"message": comment.Fields["Message"],
+			"parent":  comment.Fields["Parent"],
+			"post":    comment.Fields["Post"],
+		},
 		FlaggedFields: map[string][]*Field{},
 		Accessor: &stick.Accessor{
 			Name: "coal.commentModel",
@@ -263,6 +276,10 @@ func TestGetMeta(t *testing.T) {
 			"name": selection.Fields["Name"],
 		},
 		Relationships: map[string]*Field{
+			"posts": selection.Fields["Posts"],
+		},
+		RequestFields: map[string]*Field{
+			"name":  selection.Fields["Name"],
 			"posts": selection.Fields["Posts"],
 		},
 		FlaggedFields: map[string][]*Field{},
@@ -337,6 +354,11 @@ func TestGetMeta(t *testing.T) {
 		},
 		Attributes: map[string]*Field{},
 		Relationships: map[string]*Field{
+			"ref1": poly.Fields["Ref1"],
+			"ref2": poly.Fields["Ref2"],
+			"ref3": poly.Fields["Ref3"],
+		},
+		RequestFields: map[string]*Field{
 			"ref1": poly.Fields["Ref1"],
 			"ref2": poly.Fields["Ref2"],
 			"ref3": poly.Fields["Ref3"],

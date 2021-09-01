@@ -101,6 +101,9 @@ type Meta struct {
 	// The relationships.
 	Relationships map[string]*Field
 
+	// The request fields.
+	RequestFields map[string]*Field
+
 	// The flagged fields.
 	FlaggedFields map[string][]*Field
 
@@ -130,11 +133,12 @@ func GetMeta(model Model) *Meta {
 	meta = &Meta{
 		Type:           modelType,
 		Name:           modelType.String(),
-		Fields:         make(map[string]*Field),
-		DatabaseFields: make(map[string]*Field),
-		Attributes:     make(map[string]*Field),
-		Relationships:  make(map[string]*Field),
-		FlaggedFields:  make(map[string][]*Field),
+		Fields:         map[string]*Field{},
+		DatabaseFields: map[string]*Field{},
+		Attributes:     map[string]*Field{},
+		Relationships:  map[string]*Field{},
+		RequestFields:  map[string]*Field{},
+		FlaggedFields:  map[string][]*Field{},
 		Accessor:       stick.BuildAccessor(model, "Base"),
 	}
 
@@ -366,6 +370,7 @@ func GetMeta(model Model) *Meta {
 
 			// add field
 			meta.Attributes[metaField.JSONKey] = metaField
+			meta.RequestFields[metaField.JSONKey] = metaField
 		}
 
 		// add relationships
@@ -377,6 +382,7 @@ func GetMeta(model Model) *Meta {
 
 			// add field
 			meta.Relationships[metaField.RelName] = metaField
+			meta.RequestFields[metaField.RelName] = metaField
 		}
 
 		// add flagged fields
