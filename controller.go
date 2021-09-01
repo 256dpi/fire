@@ -314,6 +314,13 @@ func (c *Controller) prepare() {
 		}
 	}
 
+	// check filter handlers
+	for name := range c.FilterHandlers {
+		if !stick.Contains(c.Filters, name) {
+			panic(fmt.Sprintf(`fire: filter handler for missing filter "%s"`, name))
+		}
+	}
+
 	// lookup properties
 	c.properties = map[string]func(coal.Model) (interface{}, error){}
 	for name := range c.Properties {

@@ -2434,6 +2434,15 @@ func TestFiltering(t *testing.T) {
 
 func TestFilterHandlers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
+		assert.PanicsWithValue(t, `fire: filter handler for missing filter "Title"`, func() {
+			tester.Assign("", &Controller{
+				Model: &postModel{},
+				FilterHandlers: map[string]FilterHandler{
+					"Title": nil,
+				},
+			})
+		})
+
 		tester.Assign("", &Controller{
 			Model:   &postModel{},
 			Filters: []string{"Title"},
