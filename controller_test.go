@@ -2100,7 +2100,7 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
-		// get posts with boolean
+		// get posts with positive boolean
 		tester.Request("GET", "posts?filter[published]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
 			links := gjson.Get(r.Body.String(), "links").Raw
@@ -2190,7 +2190,7 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
-		// get posts with boolean
+		// get posts with negative boolean
 		tester.Request("GET", "posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
 			links := gjson.Get(r.Body.String(), "links").Raw
@@ -2252,7 +2252,7 @@ func TestFiltering(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// get to-many posts with boolean
+		// get to-many posts with negative boolean
 		tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
 			links := gjson.Get(r.Body.String(), "links").Raw
@@ -2427,6 +2427,88 @@ func TestFiltering(t *testing.T) {
 			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"self": "/selections?filter[posts]=`+post1+`,`+post2+`"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestFilterHandlers(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model:   &postModel{},
+			Filters: []string{"Title"},
+			FilterHandlers: map[string]FilterHandler{
+				"Title": func(ctx *Context, values []string) (bson.M, error) {
+					if len(values) == 1 && values[0] == "error" {
+						return nil, xo.SF("invalid title filter")
+					} else if len(values) == 1 && values[0] == "true" {
+						return bson.M{
+							"Title": "bar",
+						}, nil
+					}
+					return nil, nil
+				},
+			},
+		}, &Controller{
+			Model: &commentModel{},
+		}, &Controller{
+			Model:   &selectionModel{},
+			Filters: []string{"Posts"},
+		}, &Controller{
+			Model:   &noteModel{},
+			Filters: []string{"Post"},
+		})
+
+		// create posts
+		post1 := tester.Insert(&postModel{
+			Title: "foo",
+		}).ID().Hex()
+		post2 := tester.Insert(&postModel{
+			Title: "bar",
+		}).ID().Hex()
+		post3 := tester.Insert(&postModel{
+			Title: "baz",
+		}).ID().Hex()
+
+		// test filter handler error
+		tester.Request("GET", "posts?filter[title]=error", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors":[{
+					"status": "400",
+					"title": "bad request",
+					"detail": "invalid title filter"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// test filter handler
+		tester.Request("GET", "posts?filter[title]=true", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			ids := gjson.Get(r.Body.String(), "data.#.id").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				"`+post2+`"
+			]`, ids, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[title]=true"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+
+		// test no expression filter handler
+		tester.Request("GET", "posts?filter[title]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			ids := gjson.Get(r.Body.String(), "data.#.id").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				"`+post1+`",
+				"`+post2+`",
+				"`+post3+`"
+			]`, ids, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?filter[title]=foo"
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 	})

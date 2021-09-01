@@ -54,6 +54,10 @@ func (s Stage) Split() []Stage {
 	return list
 }
 
+// FilterHandler defines a function that turns filter values into a filter
+// expression.
+type FilterHandler func(ctx *Context, values []string) (bson.M, error)
+
 // A Controller provides a JSON API based interface to a model.
 //
 // Database transactions are automatically used for list, find, create, update
@@ -79,6 +83,10 @@ type Controller struct {
 	// Filters is a list of fields that are filterable. Only fields that are
 	// exposed and indexed should be made filterable.
 	Filters []string
+
+	// FilterHandlers is a map of custom filter handlers that convert filter
+	// values into a filter expression.
+	FilterHandlers map[string]FilterHandler
 
 	// Sorters is a list of fields that are sortable. Only fields that are
 	// exposed and indexed should be made sortable.
@@ -1529,8 +1537,28 @@ func (c *Controller) loadModels(ctx *Context) {
 
 	// add filters
 	for name, values := range ctx.JSONAPIRequest.Filters {
+		// get field
+		field := c.meta.RequestFields[name]
+		if field == nil {
+			xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+		}
+
+		// handle filter handlers
+		if handler := c.FilterHandlers[field.Name]; handler != nil {
+			expression, err := handler(ctx, values)
+			if xo.IsSafe(err) {
+				xo.Abort(jsonapi.BadRequest(err.Error()))
+			} else if err != nil {
+				xo.Abort(err)
+			}
+			if len(expression) > 0 {
+				ctx.Filters = append(ctx.Filters, expression)
+			}
+			continue
+		}
+
 		// handle attributes filter
-		if field := c.meta.Attributes[name]; field != nil {
+		if field.JSONKey != "" {
 			// check whitelist
 			if !stick.Contains(c.Filters, field.Name) {
 				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
@@ -1538,7 +1566,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// readability is checked after running authorizers
 
-			// handle boolean values
+			// handle boolean attributes
 			if field.Kind == reflect.Bool && len(values) == 1 {
 				ctx.Filters = append(ctx.Filters, bson.M{field.Name: values[0] == "true"})
 				continue
@@ -1556,7 +1584,7 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 
 		// handle relationship filters
-		if field := c.meta.Relationships[name]; field != nil {
+		if field.RelName != "" {
 			// check whitelist
 			if !field.ToOne && !field.ToMany || !stick.Contains(c.Filters, field.Name) {
 				xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
