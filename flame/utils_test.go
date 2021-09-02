@@ -40,7 +40,7 @@ func newHandler(auth *Authenticator, force bool) http.Handler {
 	router := http.NewServeMux()
 	router.Handle("/oauth2/", auth.Endpoint("/oauth2/"))
 
-	authorizer := auth.Authorizer("foo", force, true, true)
+	authorizer := auth.Authorizer([]string{"foo"}, force, true, true)
 	router.Handle("/api/protected", authorizer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("OK"))
 	})))

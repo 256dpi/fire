@@ -115,12 +115,15 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 
 // Authorizer returns a middleware that can be used to authorize a request by
 // requiring an access token with the provided scope to be granted.
-func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
+func (a *Authenticator) Authorizer(scope []string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
+	// get scope str
+	scopeStr := oauth2.Scope(scope).String()
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// create tracer
 			tracer, rcx := xo.CreateTracer(r.Context(), "flame/Authenticator.Authorizer")
-			tracer.Tag("scope", scope)
+			tracer.Tag("scope", scopeStr)
 			tracer.Tag("force", force)
 			tracer.Tag("loadClient", loadClient)
 			tracer.Tag("loadResourceOwner", loadResourceOwner)
@@ -156,9 +159,6 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 				// write generic server error
 				_ = oauth2.WriteBearerError(w, oauth2.ServerError(""))
 			})
-
-			// parse scope
-			requiredScope := oauth2.ParseScope(scope)
 
 			// parse bearer token
 			tk, err := oauth2.ParseBearerToken(r)
@@ -200,8 +200,8 @@ func (a *Authenticator) Authorizer(scope string, force, loadClient, loadResource
 			}
 
 			// validate scope
-			if !data.Scope.Includes(requiredScope) {
-				xo.Abort(oauth2.InsufficientScope(requiredScope.String()))
+			if !data.Scope.Includes(scope) {
+				xo.Abort(oauth2.InsufficientScope(scopeStr))
 			}
 
 			// create new context with access token

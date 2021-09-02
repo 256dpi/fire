@@ -219,7 +219,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 
 	// register group
 	mux.Handle("/api/", serve.Compose(
-		a.Authorizer("", false, true, true),
+		a.Authorizer(nil, false, true, true),
 		g.Endpoint("/api/"),
 	))
 

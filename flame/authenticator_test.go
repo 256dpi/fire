@@ -214,7 +214,7 @@ func TestContextKeys(t *testing.T) {
 
 		token := mustIssue(authenticator.policy, AccessToken, accessToken, time.Now().Add(time.Hour))
 
-		auth := authenticator.Authorizer("", true, true, true)
+		auth := authenticator.Authorizer(nil, true, true, true)
 
 		tester.Handler.(*http.ServeMux).Handle("/api/info", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, accessToken, r.Context().Value(AccessTokenContextKey).(*Token).ID())
