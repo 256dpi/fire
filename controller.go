@@ -33,13 +33,21 @@ type Stage int
 // The available controller callback stages.
 const (
 	Authorizer Stage = 1 << iota
+	Verifier
 	Modifier
 	Validator
 	Decorator
 	Notifier
 )
 
-var allStages = []Stage{Authorizer, Modifier, Validator, Decorator, Notifier}
+var allStages = []Stage{
+	Authorizer,
+	Verifier,
+	Modifier,
+	Validator,
+	Decorator,
+	Notifier,
+}
 
 // Split will split a compound stage into a list of separate stages.
 func (s Stage) Split() []Stage {
@@ -108,6 +116,14 @@ type Controller struct {
 	// to the context to only return accessible resources. The latter improves
 	// privacy as a protected resource would appear as being not found.
 	Authorizers []*Callback
+
+	// Verifiers verify the requested operation on the requested resource and
+	// are run after models are loaded from the store. Returned errors will
+	// cause the abortions of the request with an unauthorized status by default.
+	//
+	// The callbacks are expected to return an error if the requester should be
+	// informed about being unauthorized to access the resource.
+	Verifiers []*Callback
 
 	// Modifiers are run to modify the model during Create, Update and Delete
 	// operations after the model is loaded and the changed attributes have been
@@ -560,6 +576,9 @@ func (c *Controller) createResource(ctx *Context) {
 	// create model with id
 	ctx.Model = c.meta.Make()
 	ctx.Model.GetBase().DocID = coal.New()
+
+	// run verifiers
+	c.runCallbacks(ctx, Verifier, c.Verifiers, http.StatusUnauthorized)
 
 	// assign attributes
 	c.assignData(ctx, ctx.Request.Data.One)
@@ -1527,6 +1546,9 @@ func (c *Controller) loadModel(ctx *Context) {
 		xo.AbortIf(stick.BSON.Transfer(model, original))
 		ctx.Original = original
 	}
+
+	// run verifiers
+	c.runCallbacks(ctx, Verifier, c.Verifiers, http.StatusUnauthorized)
 }
 
 func (c *Controller) loadModels(ctx *Context) {
@@ -1862,6 +1884,9 @@ func (c *Controller) loadModels(ctx *Context) {
 			ctx.Models[i], ctx.Models[j] = ctx.Models[j], ctx.Models[i]
 		}
 	}
+
+	// run verifiers
+	c.runCallbacks(ctx, Verifier, c.Verifiers, http.StatusUnauthorized)
 }
 
 func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
