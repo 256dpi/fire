@@ -101,9 +101,9 @@ type Controller struct {
 	// exposed and indexed should be made sortable.
 	Sorters []string
 
-	// Properties is a mapping of model properties to attribute keys. These properties
-	// are called and their result set as attributes before returning the
-	// response.
+	// Properties is a mapping of model properties to attribute keys. These
+	// properties are called and their result set as attributes before returning
+	// the response.
 	Properties map[string]string
 
 	// Authorizers authorize the requested operation on the requested resource
@@ -238,7 +238,7 @@ type Controller struct {
 }
 
 func (c *Controller) prepare() {
-	// check operations
+	// ensure supported
 	if c.Supported == nil {
 		c.Supported = All()
 	}
@@ -269,7 +269,7 @@ func (c *Controller) prepare() {
 			action.Timeout = 30 * time.Second
 		}
 
-		// add action to parser
+		// add to parser
 		c.parser.CollectionActions[name] = action.Methods
 	}
 
@@ -290,16 +290,16 @@ func (c *Controller) prepare() {
 			action.Timeout = 30 * time.Second
 		}
 
-		// add action to parser
+		// add to parser
 		c.parser.ResourceActions[name] = action.Methods
 	}
 
-	// set default document limit
+	// ensure document limit
 	if c.DocumentLimit == 0 {
 		c.DocumentLimit = serve.MustByteSize("8M")
 	}
 
-	// set default timeouts
+	// ensure timeouts
 	if c.ReadTimeout == 0 {
 		c.ReadTimeout = 30 * time.Second
 	}
@@ -409,21 +409,19 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 		))
 	}
 
-	// check selector
+	// ensure selector
 	if selector == nil {
 		selector = bson.M{}
 	}
 
 	// prepare context
+	ctx.Store = c.Store
 	ctx.Selector = selector
 	ctx.Filters = []bson.M{}
 	ctx.ReadableFields = c.initialFields(false, ctx.JSONAPIRequest)
 	ctx.WritableFields = c.initialFields(true, nil)
 	ctx.ReadableProperties = c.initialProperties(ctx.JSONAPIRequest)
 	ctx.RelationshipFilters = map[string][]bson.M{}
-
-	// set store
-	ctx.Store = c.Store
 
 	// run operation with transaction if not an action
 	if !ctx.Operation.Action() {
