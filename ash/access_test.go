@@ -31,6 +31,11 @@ func TestAccessMatrix(t *testing.T) {
 		"Foo": Full,
 		"Bar": Write,
 	}, m.Compile(1))
+
+	assert.Equal(t, AccessTable{
+		"Foo": Full,
+		"Bar": Full,
+	}, m.Compile(0, 1))
 }
 
 func TestNamedAccessMatrix(t *testing.T) {
@@ -51,4 +56,9 @@ func TestNamedAccessMatrix(t *testing.T) {
 		"Foo": Full,
 		"Bar": Write,
 	}, m.Compile("bar"))
+
+	assert.Equal(t, AccessTable{
+		"Foo": Full,
+		"Bar": Full,
+	}, m.Compile("foo", "bar"))
 }

@@ -17,7 +17,6 @@ const (
 )
 
 var accessTags = map[rune]Access{
-	' ': None,
 	'L': List,
 	'F': Find,
 	'C': Create,
@@ -48,14 +47,16 @@ func (t AccessTable) Collect(match Access) []string {
 type AccessMatrix map[string][]string
 
 // Compile return an access table for the provided column.
-func (m AccessMatrix) Compile(column int) AccessTable {
+func (m AccessMatrix) Compile(columns ...int) AccessTable {
 	// prepare table
 	table := make(AccessTable, len(m))
 
 	// fill table
-	for key, columns := range m {
-		for _, char := range columns[column] {
-			table[key] |= accessTags[char]
+	for key, r := range m {
+		for _, column := range columns {
+			for _, char := range r[column] {
+				table[key] |= accessTags[char]
+			}
 		}
 	}
 
@@ -69,15 +70,16 @@ type NamedAccessMatrix struct {
 }
 
 // Compile return an access table for the provided column.
-func (m NamedAccessMatrix) Compile(column string) AccessTable {
-	// get index
-	index := -1
-	for i, key := range m.Columns {
-		if key == column {
-			index = i
-			break
+func (m NamedAccessMatrix) Compile(columns ...string) AccessTable {
+	// get indexes
+	indexes := make([]int, 0, len(columns))
+	for _, column := range columns {
+		for i, key := range m.Columns {
+			if key == column {
+				indexes = append(indexes, i)
+			}
 		}
 	}
 
-	return m.Matrix.Compile(index)
+	return m.Matrix.Compile(indexes...)
 }
