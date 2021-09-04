@@ -359,10 +359,10 @@ func (c *Context) Modified(field string) bool {
 	return !reflect.DeepEqual(newValue, oldValue)
 }
 
-// Parse will decode a custom JSON body to the specified object.
-func (c *Context) Parse(obj interface{}) error {
+// Parse will decode a custom JSON body to the specified value.
+func (c *Context) Parse(value interface{}) error {
 	// unmarshal json
-	err := json.NewDecoder(c.HTTPRequest.Body).Decode(obj)
+	err := json.NewDecoder(c.HTTPRequest.Body).Decode(value)
 	if err == io.EOF {
 		return xo.SF("incomplete request body")
 	} else if err != nil {
