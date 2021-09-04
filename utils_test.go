@@ -77,6 +77,7 @@ type noteModel struct {
 
 type fooModel struct {
 	coal.Base          `json:"-" bson:",inline" coal:"foos"`
+	String             string    `json:"string"`
 	Foo                coal.ID   `json:"-" bson:"foo_id" coal:"foo:foos"`
 	OptFoo             *coal.ID  `json:"-" bson:"opt_foo_id" coal:"opt-foo:foos"`
 	Foos               []coal.ID `json:"-" bson:"foo_ids" coal:"foos:foos"`

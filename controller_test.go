@@ -3462,6 +3462,231 @@ func TestProperties(t *testing.T) {
 	})
 }
 
+func TestCallbacks(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		var stages []Stage
+
+		cb := C("Test", 0, All(), func(ctx *Context) error {
+			stages = append(stages, ctx.Stage)
+			return nil
+		})
+
+		action := A("Test", []string{"GET"}, 0, func(ctx *Context) error {
+			return nil
+		})
+
+		tester.Assign("", &Controller{
+			Model:       &fooModel{},
+			Authorizers: L{cb},
+			Verifiers:   L{cb},
+			Modifiers:   L{cb},
+			Validators:  L{cb},
+			Decorators:  L{cb},
+			Notifiers:   L{cb},
+			ResourceActions: M{
+				"test": action,
+			},
+			CollectionActions: M{
+				"test": action,
+			},
+		})
+
+		id := tester.Insert(&fooModel{
+			String: "Hello World!",
+		}).ID().Hex()
+
+		id2 := tester.Insert(&fooModel{
+			String: "Hello Cool!",
+		}).ID().Hex()
+
+		// list
+		tester.Request("GET", "foos", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// find
+		tester.Request("GET", "foos/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// create
+		tester.Request("POST", "foos", `{
+			"data": {
+				"type": "foos",
+				"attributes": {
+					"string": "Hello you!"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusCreated, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// update
+		tester.Request("PATCH", "foos/"+id, `{
+			"data": {
+				"type": "foos",
+				"id": "`+id+`",
+				"attributes": {
+					"string": "Awesome!"
+				}
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// set relationship
+		tester.Request("PATCH", "foos/"+id+"/relationships/foo", `{
+			"data": {
+				"type": "foos",
+				"id": "`+id2+`"
+			}
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// get related
+		tester.Request("GET", "foos/"+id+"/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Authorizer,
+				Verifier,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// get relationship
+		tester.Request("GET", "foos/"+id+"/relationships/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// add relationship
+		tester.Request("POST", "foos/"+id+"/relationships/foos", `{
+			"data": [
+				{
+					"type": "foos",
+					"id": "`+id2+`"
+				}
+			]
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// remove relationship
+		tester.Request("DELETE", "foos/"+id+"/relationships/foos", `{
+			"data": [
+				{
+					"type": "foos",
+					"id": "`+id2+`"
+				}
+			]
+		}`, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Decorator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// resource action
+		tester.Request("GET", "foos/"+id+"/test", ``, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+			}, stages)
+			stages = nil
+		})
+
+		// delete
+		tester.Request("DELETE", "foos/"+id, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+				Verifier,
+				Modifier,
+				Validator,
+				Notifier,
+			}, stages)
+			stages = nil
+		})
+
+		// collection action
+		tester.Request("GET", "foos/test", ``, func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, []Stage{
+				Authorizer,
+			}, stages)
+			stages = nil
+		})
+	})
+}
+
 func TestAuthorizers(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
