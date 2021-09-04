@@ -2475,9 +2475,9 @@ func TestFilterHandlers(t *testing.T) {
 		post2 := tester.Insert(&postModel{
 			Title: "bar",
 		}).ID().Hex()
-		post3 := tester.Insert(&postModel{
+		tester.Insert(&postModel{
 			Title: "baz",
-		}).ID().Hex()
+		})
 
 		// test filter handler error
 		tester.Request("GET", "posts?filter[title]=error", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -2505,16 +2505,14 @@ func TestFilterHandlers(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
-		// test no expression filter handler
+		// test nil expression filter handler
 		tester.Request("GET", "posts?filter[title]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			ids := gjson.Get(r.Body.String(), "data.#.id").Raw
 			links := gjson.Get(r.Body.String(), "links").Raw
 
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `[
-				"`+post1+`",
-				"`+post2+`",
-				"`+post3+`"
+				"`+post1+`"
 			]`, ids, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"self": "/posts?filter[title]=foo"

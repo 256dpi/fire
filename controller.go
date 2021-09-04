@@ -55,7 +55,8 @@ func (s Stage) Split() []Stage {
 }
 
 // FilterHandler defines a function that turns filter values into a filter
-// expression.
+// expression. If an empty expression is returned the filter values are handled
+// by the default filter algorithm.
 type FilterHandler func(ctx *Context, values []string) (bson.M, error)
 
 // A Controller provides a JSON API based interface to a model.
@@ -1560,8 +1561,8 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 			if len(expression) > 0 {
 				ctx.Filters = append(ctx.Filters, expression)
+				continue
 			}
-			continue
 		}
 
 		// handle attributes filter
