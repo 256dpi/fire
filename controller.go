@@ -27,7 +27,7 @@ const blankCursor = "*"
 
 var cursorEncoding = base64.URLEncoding.WithPadding(base64.NoPadding)
 
-// Stage is the controller callback stage.
+// Stage defines a controller callback stage.
 type Stage int
 
 // The available controller callback stages.
@@ -63,8 +63,7 @@ func (s Stage) Split() []Stage {
 }
 
 // FilterHandler defines a function that turns filter values into a filter
-// expression. If an empty expression is returned the filter values are handled
-// by the default filter algorithm.
+// expression.
 type FilterHandler func(ctx *Context, values []string) (bson.M, error)
 
 // A Controller provides a JSON API based interface to a model.
@@ -87,18 +86,25 @@ type Controller struct {
 	Supported Matcher
 
 	// Search will enable full text search.
+	//
+	// Note: The "search" query parameter is for searching.
 	Search bool
 
 	// Filters is a list of fields that are filterable. Only fields that are
 	// exposed and indexed should be made filterable.
+	//
+	// Note: The filter[field] query parameters are used for filtering.
 	Filters []string
 
 	// FilterHandlers is a map of custom filter handlers that convert filter
-	// values into a filter expression.
+	// values into a filter expression. Handlers thar return a nil or empty
+	// expression will delegate the handling to the default filter algorithm.
 	FilterHandlers map[string]FilterHandler
 
 	// Sorters is a list of fields that are sortable. Only fields that are
 	// exposed and indexed should be made sortable.
+	//
+	// Note: The "sort" query parameters is used for sorting.
 	Sorters []string
 
 	// Properties is a mapping of model properties to attribute keys. These
@@ -107,38 +113,43 @@ type Controller struct {
 	Properties map[string]string
 
 	// Authorizers authorize the requested operation on the requested resource
-	// and are run before any models are loaded from the store. Returned errors
-	// will cause the abortion of the request with an unauthorized status by
-	// default.
+	// and are run before any models are loaded from the store. Returned "safe"
+	// errors will cause the abortion of the request with an unauthorized status.
 	//
 	// The callbacks are expected to return an error if the requester should be
 	// informed about being unauthorized to access the resource, or add filters
 	// to the context to only return accessible resources. The latter improves
 	// privacy as a protected resource would appear as being not found.
+	//
+	// Operations: All
 	Authorizers []*Callback
 
 	// Verifiers verify the requested operation on the requested resource and
-	// are run after models are loaded from the store. Returned errors will
-	// cause the abortions of the request with an unauthorized status by default.
+	// are run after models are loaded from the store. Returned "safe" errors
+	// will cause the abortions of the request with an unauthorized status.
 	//
 	// The callbacks are expected to return an error if the requester should be
 	// informed about being unauthorized to access the resource.
+	//
+	// Operations: !CollectionAction
 	Verifiers []*Callback
 
 	// Modifiers are run to modify the model during Create, Update and Delete
 	// operations after the model is loaded and the changed attributes have been
 	// assigned during an Update but before the model is validated. Returned
-	// errors will cause the abortion of the request with a bad request status
-	// by default.
+	// "safe" errors will cause the abortion of the request with a bad request
+	// status.
 	//
 	// The callbacks are expected to modify the model to ensure default values,
 	// aggregate fields or in general add data to the model.
+	//
+	// Operations: Create, Update, Delete
 	Modifiers []*Callback
 
 	// Validators are run to validate Create, Update and Delete operations
-	// after the model is loaded, changed, modified and passed basic validation.
-	// Returned errors will cause the abortion of the request with a bad request
-	// status by default.
+	// after the model is loaded, got modified and passed basic validation.
+	// Returned "safe" errors will cause the abortion of the request with a bad
+	// request.
 	//
 	// The callbacks are expected to validate the model being created, updated
 	// or deleted and return errors if the presented attributes or relationships
@@ -146,24 +157,28 @@ type Controller struct {
 	// authorization checks should be repeated and now also include the model's
 	// attributes and relationships. The model should not be further modified to
 	// ensure that the validators do not influence each other.
+	//
+	// Operations: Create, Update, Delete
 	Validators []*Callback
 
 	// Decorators are run after the models or model have been loaded from the
 	// database for List and Find operations or the model has been saved or
-	// updated for Create and Update operations. Returned errors will cause the
-	// abortion of the request with an InternalServerError status by default.
+	// updated for Create and Update operations.
+	//
+	// Operations: !Delete, !ResourceAction, !CollectionAction
 	Decorators []*Callback
 
 	// Notifiers are run before the final response is written to the client
 	// and provide a chance to modify the response and notify other systems
-	// about the applied changes. Returned errors will cause the abortion of the
-	// request with an InternalServerError status by default.
+	// about the applied changes.
+	//
+	// Operations: !ResourceAction, !CollectionAction
 	Notifiers []*Callback
 
 	// ListLimit can be set to a value higher than 1 to enforce paginated
 	// responses and restrain the page size to be within one and the limit.
 	//
-	// Note: Fire uses the "page[number]" and "page[size]" query parameters for
+	// Note: The "page[number]" and "page[size]" query parameters are used for
 	// offset based pagination.
 	ListLimit int64
 
@@ -176,8 +191,8 @@ type Controller struct {
 	// pagination to be stable the filter and sorting fields must also remain
 	// stable between requests.
 	//
-	// Note: Fire uses the "page[after]", "page[before]" and "page[size]" query
-	// parameters for cursor based pagination.
+	// Note: The "page[after]", "page[before]" and "page[size]" query parameters
+	// are used for cursor based pagination.
 	CursorPagination bool
 
 	// DocumentLimit defines the maximum allowed size of an incoming document.
