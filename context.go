@@ -159,8 +159,8 @@ type Context struct {
 	ReadableFields []string
 
 	// Used instead of ReadableFields if set. Allows specifying readable fields
-	// on a per model basis. The provided model may be nil if run before any
-	// model has been loaded. Must be a subset of ReadableFields.
+	// on a per model basis. The model is nil during the initial load of fields
+	// during a List operation. Returned list must be a subset of ReadableFields.
 	GetReadableFields func(coal.Model) []string
 
 	// Only the whitelisted writable fields can be altered by requests.
@@ -171,7 +171,8 @@ type Context struct {
 	WritableFields []string
 
 	// Used instead of WritableFields if set. Allows specifying writable fields
-	// on a per model basis. Must be a subset of WritableFields.
+	// on a per model basis. The model is zero when getting the writable fields
+	// during a Create operation. Returned list must be a subset of WritableFields.
 	GetWritableFields func(coal.Model) []string
 
 	// Only the whitelisted readable properties are exposed to the client as
@@ -183,7 +184,8 @@ type Context struct {
 	ReadableProperties []string
 
 	// Used instead of ReadableProperties if set. Allows specifying readable
-	// properties on a per model basis. Must be a subset of ReadableProperties.
+	// properties on a per model basis. Returned list must be a subset of
+	// ReadableProperties.
 	GetReadableProperties func(coal.Model) []string
 
 	// The filters that will be applied when loading has one and has many
