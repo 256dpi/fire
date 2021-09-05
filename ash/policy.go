@@ -22,6 +22,12 @@ type Policy struct {
 	// Actions defines the allowed actions.
 	Actions map[string]bool
 
+	// The default fields used to determine the field access level. If the
+	// getter is set, these will only be used to establish valid filters and
+	// sorters during the fire.List operation authorizer stage, otherwise the
+	// model specific fields are used instead.
+	Fields AccessTable
+
 	// GetFilter is called to obtain the general resource access filter. This
 	// filter is used to narrow down accessible resources in all operations
 	// except fire.Create and fire.CollectionAction operations.
@@ -36,12 +42,6 @@ type Policy struct {
 	// resource level access. This function is called for all operations except
 	// fire.Create and fire.CollectionAction.
 	VerifyModel func(ctx *fire.Context, model coal.Model) Access
-
-	// The default fields used to determine the field access level. If the
-	// getter is set, these will only be used to establish valid filters and
-	// sorters during the fire.List operation authorizer stage, otherwise the
-	// model specific fields are used instead.
-	Fields AccessTable
 
 	// GetFields is called for every model to determine the field level access.
 	// The policy should refrain from creating a new map for every request and

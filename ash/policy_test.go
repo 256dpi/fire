@@ -66,6 +66,10 @@ func TestPolicy(t *testing.T) {
 				user := identity.(*flame.User)
 				return &Policy{
 					Access: Full,
+					Fields: AccessTable{
+						"User": Full,
+						"Mode": Full,
+					},
 					GetFilter: func(ctx *fire.Context) bson.M {
 						return bson.M{
 							"Mode": bson.M{
@@ -85,10 +89,6 @@ func TestPolicy(t *testing.T) {
 							return Full
 						}
 						return Read
-					},
-					Fields: AccessTable{
-						"User": Full,
-						"Mode": Full,
 					},
 					GetFields: func(ctx *fire.Context, model coal.Model) AccessTable {
 						example := model.(*exampleModel)
