@@ -90,6 +90,12 @@ func TestPolicy(t *testing.T) {
 						}
 						return Read
 					},
+					VerifyCreate: func(ctx *fire.Context, model coal.Model) bool {
+						return model.(*exampleModel).User == user.ID()
+					},
+					VerifyUpdate: func(ctx *fire.Context, model coal.Model) bool {
+						return model.(*exampleModel).Mode != "invalid"
+					},
 					GetFields: func(ctx *fire.Context, model coal.Model) AccessTable {
 						example := model.(*exampleModel)
 						if example.User == user.ID() {
@@ -188,8 +194,21 @@ func TestPolicy(t *testing.T) {
 		User: example2.User,
 	})
 
+	tester.CreateError(t, &exampleModel{
+		User: coal.New(),
+	}, roast.AccessDenied)
+	tester.Create(t, &exampleModel{
+		User: user.ID(),
+	}, &exampleModel{
+		User: user.ID(),
+	}, nil)
+
 	tester.UpdateError(t, example1, roast.AccessDenied)
 	tester.Update(t, example2, example2, nil)
+
+	example2.Mode = "invalid"
+	tester.UpdateError(t, example2, roast.AccessDenied)
+	example2.Mode = "bar"
 
 	magicID = example2.ID()
 	tester.DeleteError(t, example2, roast.AccessDenied)

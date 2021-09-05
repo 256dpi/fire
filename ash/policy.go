@@ -41,7 +41,17 @@ type Policy struct {
 	// VerifyModel is called for every model load from the database to determine
 	// resource level access. This function is called for all operations except
 	// fire.Create and fire.CollectionAction.
+	//
+	// Note: The verification is deferred to the fire.Verifier stage.
 	VerifyModel func(ctx *fire.Context, model coal.Model) Access
+
+	// VerifyCreate and VerifyUpdate determine resource level access after all
+	// modification have been applied. This function is called for the
+	// fire.Create and fire.Update operation.
+	//
+	// Note: The verification is deferred to the fire.Validator stage.
+	VerifyCreate func(ctx *fire.Context, model coal.Model) bool
+	VerifyUpdate func(ctx *fire.Context, model coal.Model) bool
 
 	// GetFields is called for every model to determine the field level access.
 	// The policy should refrain from creating a new map for every request and
@@ -121,6 +131,8 @@ func Execute() *fire.Callback {
 	getFilterMatcher := fire.Except(fire.Create | fire.CollectionAction)
 	verifyIDMatcher := fire.Except(fire.List | fire.Create | fire.CollectionAction)
 	verifyModelMatcher := fire.Except(fire.Create | fire.CollectionAction)
+	verifyCreateMatcher := fire.Only(fire.Create)
+	verifyUpdateMatcher := fire.Only(fire.Update)
 	getFieldsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
 
 	// prepare access tables
@@ -187,7 +199,7 @@ func Execute() *fire.Callback {
 
 		// verify model if available
 		if verifyModelMatcher(ctx) && policy.VerifyModel != nil {
-			ctx.Defer(fire.C("ash/Execute-Verifier", fire.Verifier, verifyModelMatcher, func(ctx *fire.Context) error {
+			ctx.Defer(fire.C("ash/Execute-VerifyModel", fire.Verifier, verifyModelMatcher, func(ctx *fire.Context) error {
 				// get required access
 				reqAccess := genericAccess[ctx.Operation]
 
@@ -202,6 +214,30 @@ func Execute() *fire.Callback {
 					if policy.VerifyModel(ctx, ctx.Model)&reqAccess == 0 {
 						return fire.ErrAccessDenied.Wrap()
 					}
+				}
+
+				return nil
+			}))
+		}
+
+		// verify create if available
+		if verifyCreateMatcher(ctx) && policy.VerifyCreate != nil {
+			ctx.Defer(fire.C("ash/Execute-VerifyCreate", fire.Validator, verifyCreateMatcher, func(ctx *fire.Context) error {
+				// check access
+				if !policy.VerifyCreate(ctx, ctx.Model) {
+					return fire.ErrAccessDenied.Wrap()
+				}
+
+				return nil
+			}))
+		}
+
+		// verify update if available
+		if verifyUpdateMatcher(ctx) && policy.VerifyUpdate != nil {
+			ctx.Defer(fire.C("ash/Execute-VerifyUpdate", fire.Validator, verifyUpdateMatcher, func(ctx *fire.Context) error {
+				// check access
+				if !policy.VerifyUpdate(ctx, ctx.Model) {
+					return fire.ErrAccessDenied.Wrap()
 				}
 
 				return nil
