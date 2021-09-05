@@ -33,8 +33,8 @@ type Policy struct {
 	VerifyID func(ctx *fire.Context, id coal.ID) Access
 
 	// VerifyModel is called for every model load from the database to determine
-	// the further resource level access. This function is called for all
-	// operations except fire.CollectionAction.
+	// resource level access. This function is called for all operations except
+	// fire.Create and fire.CollectionAction.
 	VerifyModel func(ctx *fire.Context, model coal.Model) Access
 
 	// The default fields used to determine the field access level. If the
@@ -118,10 +118,10 @@ func SelectPublic(fn func() *Policy) *fire.Callback {
 // Execute will execute the selected policy or deny access.
 func Execute() *fire.Callback {
 	// prepare matchers
-	filterMatcher := fire.Except(fire.Create | fire.CollectionAction)
-	idMatcher := fire.Except(fire.List | fire.Create | fire.CollectionAction)
-	modelMatcher := fire.Except(fire.CollectionAction)
-	fieldsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
+	getFilterMatcher := fire.Except(fire.Create | fire.CollectionAction)
+	verifyIDMatcher := fire.Except(fire.List | fire.Create | fire.CollectionAction)
+	verifyModelMatcher := fire.Except(fire.Create | fire.CollectionAction)
+	getFieldsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
 
 	// prepare access tables
 	genericAccess := map[fire.Operation]Access{
@@ -156,7 +156,7 @@ func Execute() *fire.Callback {
 		}
 
 		// apply filter if available
-		if filterMatcher(ctx) && policy.GetFilter != nil {
+		if getFilterMatcher(ctx) && policy.GetFilter != nil {
 			ctx.Filters = append(ctx.Filters, policy.GetFilter(ctx))
 		}
 
@@ -175,7 +175,7 @@ func Execute() *fire.Callback {
 		}
 
 		// verify id if available
-		if idMatcher(ctx) && policy.VerifyID != nil {
+		if verifyIDMatcher(ctx) && policy.VerifyID != nil {
 			// get access
 			access := policy.VerifyID(ctx, ctx.Selector["_id"].(coal.ID))
 
@@ -186,8 +186,8 @@ func Execute() *fire.Callback {
 		}
 
 		// verify model if available
-		if modelMatcher(ctx) && policy.VerifyModel != nil {
-			ctx.Defer(fire.C("ash/Execute-Verifier", fire.Verifier, modelMatcher, func(ctx *fire.Context) error {
+		if verifyModelMatcher(ctx) && policy.VerifyModel != nil {
+			ctx.Defer(fire.C("ash/Execute-Verifier", fire.Verifier, verifyModelMatcher, func(ctx *fire.Context) error {
 				// get required access
 				reqAccess := genericAccess[ctx.Operation]
 
@@ -217,7 +217,7 @@ func Execute() *fire.Callback {
 		ctx.WritableFields = stick.Intersect(ctx.WritableFields, writableFields)
 
 		// set fields getters if available
-		if fieldsMatcher(ctx) && policy.GetFields != nil {
+		if getFieldsMatcher(ctx) && policy.GetFields != nil {
 			ctx.GetReadableFields = func(model coal.Model) []string {
 				if model == nil {
 					return readableFields
@@ -230,7 +230,7 @@ func Execute() *fire.Callback {
 		}
 
 		// set properties getter if available
-		if fieldsMatcher(ctx) && policy.GetProperties != nil {
+		if getFieldsMatcher(ctx) && policy.GetProperties != nil {
 			ctx.GetReadableProperties = func(model coal.Model) []string {
 				return policy.GetProperties(ctx, model).Collect(readAccess[ctx.Operation])
 			}
