@@ -24,8 +24,9 @@ type Policy struct {
 
 	// The default fields used to determine the field access level. If the
 	// getter is set, these will only be used to establish valid filters and
-	// sorters during the fire.List operation authorizer stage, otherwise the
-	// model specific fields are used instead.
+	// sorters during the fire.List operation authorizer stage, as well as the
+	// writable fields during the fire.Create operation, otherwise the model
+	// specific fields are used instead.
 	Fields AccessTable
 
 	// GetFilter is called to obtain the general resource access filter. This
@@ -261,6 +262,9 @@ func Execute() *fire.Callback {
 				return policy.GetFields(ctx, model).Collect(readAccess[ctx.Operation])
 			}
 			ctx.GetWritableFields = func(model coal.Model) []string {
+				if ctx.Operation == fire.Create {
+					return writableFields
+				}
 				return policy.GetFields(ctx, model).Collect(writeAccess[ctx.Operation])
 			}
 		}
