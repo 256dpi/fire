@@ -12,7 +12,7 @@ func TestAccessTable(t *testing.T) {
 		"Bar": Read,
 	}
 
-	assert.Equal(t, []string{"Foo", "Bar"}, table.Collect(Read))
+	assert.Equal(t, []string{"Bar", "Foo"}, table.Collect(Read))
 	assert.Equal(t, []string{"Foo"}, table.Collect(Write))
 }
 

@@ -1,5 +1,9 @@
 package ash
 
+import (
+	"sort"
+)
+
 // Access defines access levels.
 type Access int
 
@@ -39,6 +43,9 @@ func (t AccessTable) Collect(match Access) []string {
 			list = append(list, item)
 		}
 	}
+
+	// sort list
+	sort.Strings(list)
 
 	return list
 }
