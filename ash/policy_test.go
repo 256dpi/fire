@@ -82,9 +82,9 @@ func TestPolicy(t *testing.T) {
 					CheckModel: func(ctx *fire.Context, model coal.Model) Access {
 						example := model.(*exampleModel)
 						if example.User == user.ID() {
-							return Write
+							return Full
 						}
-						return None
+						return Read
 					},
 					Fields: AccessTable{
 						"User": Full,

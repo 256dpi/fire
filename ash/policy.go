@@ -32,9 +32,9 @@ type Policy struct {
 	// fire.Create and fire.CollectionAction.
 	CheckID func(ctx *fire.Context, id coal.ID) Access
 
-	// CheckModel is called for every model determine the resource level access.
-	// This function is called for fire.Create, fire.Update and fire.Delete
-	// operations.
+	// CheckModel is called for every model load from the database to determine
+	// the further resource level access. This function is called for all
+	// operations except fire.CollectionAction.
 	CheckModel func(ctx *fire.Context, model coal.Model) Access
 
 	// The default fields used to determine the field access level. If the
@@ -120,7 +120,7 @@ func Execute() *fire.Callback {
 	// prepare matchers
 	filterMatcher := fire.Except(fire.Create | fire.CollectionAction)
 	idMatcher := fire.Except(fire.List | fire.Create | fire.CollectionAction)
-	modelMatcher := fire.Only(fire.Create | fire.Update | fire.Delete)
+	modelMatcher := fire.Except(fire.CollectionAction)
 	fieldsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
 
 	// prepare access tables
@@ -187,13 +187,21 @@ func Execute() *fire.Callback {
 
 		// verify model if available
 		if modelMatcher(ctx) && policy.CheckModel != nil {
-			ctx.Defer(fire.C("ash/Execute-Defer", fire.Validator, modelMatcher, func(ctx *fire.Context) error {
-				// get access
-				access := policy.CheckModel(ctx, ctx.Model)
+			ctx.Defer(fire.C("ash/Execute-Verifier", fire.Verifier, modelMatcher, func(ctx *fire.Context) error {
+				// get required access
+				reqAccess := genericAccess[ctx.Operation]
 
 				// check access
-				if access&genericAccess[ctx.Operation] == 0 {
-					return fire.ErrAccessDenied.Wrap()
+				if ctx.Operation == fire.List {
+					for _, model := range ctx.Models {
+						if policy.CheckModel(ctx, model)&reqAccess == 0 {
+							return fire.ErrAccessDenied.Wrap()
+						}
+					}
+				} else {
+					if policy.CheckModel(ctx, ctx.Model)&reqAccess == 0 {
+						return fire.ErrAccessDenied.Wrap()
+					}
 				}
 
 				return nil
