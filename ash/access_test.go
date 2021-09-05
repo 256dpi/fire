@@ -61,4 +61,8 @@ func TestNamedAccessMatrix(t *testing.T) {
 		"Foo": Full,
 		"Bar": Full,
 	}, m.Compile("foo", "bar"))
+
+	assert.PanicsWithValue(t, "ash: column not found", func() {
+		m.Compile("baz")
+	})
 }

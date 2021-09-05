@@ -74,10 +74,16 @@ func (m NamedAccessMatrix) Compile(columns ...string) AccessTable {
 	// get indexes
 	indexes := make([]int, 0, len(columns))
 	for _, column := range columns {
+		var found bool
 		for i, key := range m.Columns {
 			if key == column {
+				found = true
 				indexes = append(indexes, i)
+				break
 			}
+		}
+		if !found {
+			panic("ash: column not found")
 		}
 	}
 
