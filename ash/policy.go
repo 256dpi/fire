@@ -27,15 +27,15 @@ type Policy struct {
 	// except fire.Create and fire.CollectionAction operations.
 	GetFilter func(ctx *fire.Context) bson.M
 
-	// CheckID is called to for every direct model lookup to verify resource
+	// VerifyID is called to for every direct model lookup to verify resource
 	// level access. This function is called for all operations except fire.List,
 	// fire.Create and fire.CollectionAction.
-	CheckID func(ctx *fire.Context, id coal.ID) Access
+	VerifyID func(ctx *fire.Context, id coal.ID) Access
 
-	// CheckModel is called for every model load from the database to determine
+	// VerifyModel is called for every model load from the database to determine
 	// the further resource level access. This function is called for all
 	// operations except fire.CollectionAction.
-	CheckModel func(ctx *fire.Context, model coal.Model) Access
+	VerifyModel func(ctx *fire.Context, model coal.Model) Access
 
 	// The default fields used to determine the field access level. If the
 	// getter is set, these will only be used to establish valid filters and
@@ -174,10 +174,10 @@ func Execute() *fire.Callback {
 			}
 		}
 
-		// check id if available
-		if idMatcher(ctx) && policy.CheckID != nil {
+		// verify id if available
+		if idMatcher(ctx) && policy.VerifyID != nil {
 			// get access
-			access := policy.CheckID(ctx, ctx.Selector["_id"].(coal.ID))
+			access := policy.VerifyID(ctx, ctx.Selector["_id"].(coal.ID))
 
 			// check access
 			if access&genericAccess[ctx.Operation] == 0 {
@@ -186,7 +186,7 @@ func Execute() *fire.Callback {
 		}
 
 		// verify model if available
-		if modelMatcher(ctx) && policy.CheckModel != nil {
+		if modelMatcher(ctx) && policy.VerifyModel != nil {
 			ctx.Defer(fire.C("ash/Execute-Verifier", fire.Verifier, modelMatcher, func(ctx *fire.Context) error {
 				// get required access
 				reqAccess := genericAccess[ctx.Operation]
@@ -194,12 +194,12 @@ func Execute() *fire.Callback {
 				// check access
 				if ctx.Operation == fire.List {
 					for _, model := range ctx.Models {
-						if policy.CheckModel(ctx, model)&reqAccess == 0 {
+						if policy.VerifyModel(ctx, model)&reqAccess == 0 {
 							return fire.ErrAccessDenied.Wrap()
 						}
 					}
 				} else {
-					if policy.CheckModel(ctx, ctx.Model)&reqAccess == 0 {
+					if policy.VerifyModel(ctx, ctx.Model)&reqAccess == 0 {
 						return fire.ErrAccessDenied.Wrap()
 					}
 				}

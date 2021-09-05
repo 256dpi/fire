@@ -73,13 +73,13 @@ func TestPolicy(t *testing.T) {
 							},
 						}
 					},
-					CheckID: func(ctx *fire.Context, id coal.ID) Access {
+					VerifyID: func(ctx *fire.Context, id coal.ID) Access {
 						if id == magicID {
 							return Read
 						}
 						return Full
 					},
-					CheckModel: func(ctx *fire.Context, model coal.Model) Access {
+					VerifyModel: func(ctx *fire.Context, model coal.Model) Access {
 						example := model.(*exampleModel)
 						if example.User == user.ID() {
 							return Full
