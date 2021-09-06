@@ -75,7 +75,7 @@ func main() {
 		serve.Throttle(100),
 		serve.Timeout(time.Minute),
 		serve.Limit(serve.MustByteSize("8M")),
-		serve.CORS(serve.CORSDefault()),
+		serve.CORS(serve.CORSDefault("*")),
 		flame.TokenMigrator(true),
 		xo.RootHandler(),
 		createHandler(store, bucket),
