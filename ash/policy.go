@@ -11,6 +11,9 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+// TODO: Field access authorization should be clearer, especially the static
+//  fields used for List and Create operations.
+
 // PolicyDataKey is the key used to store policies.
 const PolicyDataKey = "ash:policy"
 
