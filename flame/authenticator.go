@@ -201,7 +201,7 @@ func (a *Authenticator) Authorizer(scope []string, force, loadClient, loadResour
 
 			// validate scope
 			if !data.Scope.Includes(scope) {
-				xo.Abort(oauth2.InsufficientScope(scopeStr))
+				xo.Abort(oauth2.InsufficientScope(scope))
 			}
 
 			// create new context with access token
@@ -787,7 +787,7 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 		// set response if valid and can be introspected
 		if !expired && (data.Type == AccessToken || data.Type == RefreshToken) {
 			res.Active = true
-			res.Scope = data.Scope.String()
+			res.Scope = data.Scope
 			res.ClientID = data.ClientID.Hex()
 			if data.ResourceOwnerID != nil {
 				res.Username = data.ResourceOwnerID.Hex()
