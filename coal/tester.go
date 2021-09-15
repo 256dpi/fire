@@ -184,13 +184,25 @@ func (t *Tester) Delete(model Model) {
 	}
 }
 
+// DeleteAll will delete all specified models.
+func (t *Tester) DeleteAll(model Model, query ...bson.M) {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
+	// delete models
+	_, err := t.Store.M(model).DeleteAll(nil, qry)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Clean will clean the collections of models that have been registered.
 func (t *Tester) Clean() {
+	// clear all models
 	for _, model := range t.Models {
-		// remove all is faster than dropping the collection
-		_, err := t.Store.M(model).DeleteAll(nil, bson.M{})
-		if err != nil {
-			panic(err)
-		}
+		t.DeleteAll(model)
 	}
 }
