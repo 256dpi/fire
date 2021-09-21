@@ -79,7 +79,7 @@ func Subtract(listA, listB []string) []string {
 	return list
 }
 
-// Intersect will return a list with items that are not part of both lists.
+// Intersect will return a list with items that are part of both lists.
 func Intersect(listA, listB []string) []string {
 	// prepare new list
 	list := make([]string, 0, len(listA))
