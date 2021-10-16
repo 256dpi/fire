@@ -44,7 +44,7 @@ func TestRPC(t *testing.T) {
 			} else if proc.Foo == "fail" {
 				return fmt.Errorf("some error")
 			} else if proc.Foo == "bad" {
-				return xo.SF("not good")
+				return xo.SW(fmt.Errorf("not good"))
 			} else if proc.Foo == "error" {
 				return BadRequest("just bad", "param.foo")
 			}

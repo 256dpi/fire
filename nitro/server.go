@@ -149,7 +149,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 	if err != nil {
 		// check if safe error
 		if xo.IsSafe(err) {
-			err = BadRequest(xo.AsSafe(err).Msg, "")
+			err = BadRequest(err.Error(), "")
 		}
 
 		// check if rich error
