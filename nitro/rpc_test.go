@@ -65,7 +65,7 @@ func TestRPC(t *testing.T) {
 	defer server.Close()
 	time.Sleep(10 * time.Millisecond)
 
-	client := NewClient("http://0.0.0.0:1337")
+	client := NewClient("http://0.0.0.0:1337", nil)
 
 	/* wrong method */
 
@@ -161,4 +161,18 @@ func TestRPC(t *testing.T) {
 	r = serve.Record(endpoint, "POST", "/cool", nil, "")
 	assert.Equal(t, http.StatusNotFound, r.Code)
 	assert.Equal(t, ``, r.Body.String())
+
+	/* local */
+
+	client = NewClient("http://0.0.0.0:1337", &http.Client{
+		Transport: serve.Local(endpoint),
+	})
+
+	proc = &procedure{}
+	err = client.Call(nil, proc)
+	assert.NoError(t, err)
+	assert.Equal(t, &procedure{
+		Base: Base{Response: true},
+		Foo:  "bar",
+	}, proc)
 }

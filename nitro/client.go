@@ -15,15 +15,21 @@ import (
 
 // Client is a reusable client for accessing procedure endpoints.
 type Client struct {
-	base string
-	http http.Client
+	baseURL    string
+	httpClient *http.Client
 }
 
-// NewClient will create and return a new client using the provided base
-// address.
-func NewClient(base string) *Client {
+// NewClient will create and return a new client using the provided base URL
+// and custom HTTP client. If the HTTP client is absent, a new one is created.
+func NewClient(baseURL string, httpClient *http.Client) *Client {
+	// ensure HTTP client
+	if httpClient == nil {
+		httpClient = new(http.Client)
+	}
+
 	return &Client{
-		base: base,
+		baseURL:    baseURL,
+		httpClient: httpClient,
 	}
 }
 
@@ -48,7 +54,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	}
 
 	// prepare url
-	url := fmt.Sprintf("%s/%s", strings.TrimRight(c.base, "/"), meta.Name)
+	url := fmt.Sprintf("%s/%s", strings.TrimRight(c.baseURL, "/"), meta.Name)
 
 	// encode procedure
 	buf, err := meta.Coding.Marshal(proc)
@@ -68,7 +74,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	req.Header.Set("Content-Type", meta.Coding.MimeType())
 
 	// perform request
-	res, err := c.http.Do(req)
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return xo.W(err)
 	}
