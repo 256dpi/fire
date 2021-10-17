@@ -19,20 +19,35 @@ func TestNoValidation(t *testing.T) {
 	assert.NoError(t, nv.Validate())
 }
 
+type subValidatable struct {
+	String string
+}
+
+func (v *subValidatable) Validate() error {
+	if v.String != "valid" {
+		return xo.SF("invalid")
+	}
+
+	return nil
+}
+
 type validatable struct {
-	Int       int32
-	Uint      uint16
-	Float     float64
-	OptInt    *int
-	String    string
-	OptString *string //
-	Strings   []string
-	Time      time.Time  // never zero
-	OptTime   *time.Time // never zero
+	Int            int32
+	Uint           uint16
+	Float          float64
+	OptInt         *int
+	String         string
+	OptString      *string
+	Strings        []string
+	Time           time.Time  // never zero
+	OptTime        *time.Time // never zero
+	Validatable    subValidatable
+	OptValidatable *subValidatable
+	Validatables   []subValidatable
 	BasicAccess
 }
 
-func (v validatable) Validate() error {
+func (v *validatable) Validate() error {
 	if v.String != "valid" {
 		return xo.SF("invalid")
 	}
@@ -93,6 +108,19 @@ func TestValidate(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "Foo: error", err.Error())
+
+	obj.OptValidatable = &subValidatable{}
+	obj.Validatables = []subValidatable{
+		{},
+	}
+	err = Validate(obj, func(v *Validator) {
+		v.Value("Validatable", false, IsValid)
+		v.Value("OptValidatable", true, IsValid)
+		v.Items("Validatables", IsValid)
+		v.Value("Validatables", false, IsMinLen(5))
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "OptValidatable: invalid; Validatable: invalid; Validatables.0: invalid; Validatables: too short", err.Error())
 }
 
 func TestValidateErrorIsolation(t *testing.T) {
@@ -223,7 +251,7 @@ func TestIsValid(t *testing.T) {
 		ruleTest(t, "", IsValid, "")
 	})
 
-	ruleTest(t, validatable{}, IsValid, "invalid")
+	ruleTest(t, &validatable{}, IsValid, "invalid")
 	ruleTest(t, &validatable{String: "valid"}, IsValid, "")
 
 	ruleTest(t, validStr(""), IsValid, "invalid")

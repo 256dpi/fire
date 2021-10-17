@@ -90,12 +90,12 @@ func (v *Validator) Nest(field string, fn func()) {
 // If the value is optional it will be skipped if nil or unwrapped if present.
 func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// get value
-	value := MustGet(v.obj, name)
+	value := MustGetRaw(v.obj, name)
 
 	// prepare subject
 	sub := Subject{
-		IValue: value,
-		RValue: reflect.ValueOf(value),
+		IValue: value.Interface(),
+		RValue: value,
 	}
 
 	// handle optionals
@@ -343,38 +343,58 @@ func IsNotEmpty(sub Subject) error {
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
 func IsValid(sub Subject) error {
+	// check raw
+	ok, err := isValid(sub.IValue)
+	if ok {
+		return err
+	}
+
+	// check address
+	if sub.RValue.CanAddr() {
+		ok, err = isValid(sub.RValue.Addr().Interface())
+		if ok {
+			return err
+		}
+	} else {
+		ok, err = isValid(reflect.PtrTo(sub.RValue.Type()))
+	}
+
+	panic(fmt.Sprintf("stick: cannot check validity of %T", sub.IValue))
+}
+
+func isValid(val interface{}) (bool, error) {
 	// check using Validate() method
-	if v, ok := sub.IValue.(Validatable); ok {
-		return v.Validate()
+	if v, ok := val.(Validatable); ok {
+		return true, v.Validate()
 	}
 
 	// check using IsValid() method
 	type isValid interface {
 		IsValid() bool
 	}
-	if v, ok := sub.IValue.(isValid); ok {
+	if v, ok := val.(isValid); ok {
 		// check validity
 		if !v.IsValid() {
-			return xo.SF("invalid")
+			return true, xo.SF("invalid")
 		}
 
-		return nil
+		return true, nil
 	}
 
 	// check using Valid() method
 	type valid interface {
 		Valid() bool
 	}
-	if v, ok := sub.IValue.(valid); ok {
+	if v, ok := val.(valid); ok {
 		// check validity
 		if !v.Valid() {
-			return xo.SF("invalid")
+			return true, xo.SF("invalid")
 		}
 
-		return nil
+		return true, nil
 	}
 
-	panic(fmt.Sprintf("stick: cannot check validity of %T", sub.IValue))
+	return false, nil
 }
 
 // IsMinLen checks whether the value has at least the specified length.
