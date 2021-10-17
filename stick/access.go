@@ -110,6 +110,21 @@ func Get(acc Accessible, name string) (interface{}, bool) {
 	return value, true
 }
 
+// GetRaw will look up the specified field on the accessible and return its raw
+// value and whether the field was found at all.
+func GetRaw(acc Accessible, name string) (reflect.Value, bool) {
+	// find field
+	field := GetAccessor(acc).Fields[name]
+	if field == nil {
+		return reflect.Value{}, false
+	}
+
+	// get value
+	value := reflect.ValueOf(acc).Elem().Field(field.Index)
+
+	return value, true
+}
+
 // Set will set the specified field on the accessible with the provided value
 // and return whether the field has been found and the value has been set.
 func Set(acc Accessible, name string, value interface{}) bool {
@@ -145,6 +160,17 @@ func Set(acc Accessible, name string, value interface{}) bool {
 func MustGet(acc Accessible, name string) interface{} {
 	// get value
 	value, ok := Get(acc, name)
+	if !ok {
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
+	}
+
+	return value
+}
+
+// MustGetRaw will call Get and panic if the operation failed.
+func MustGetRaw(acc Accessible, name string) reflect.Value {
+	// get value
+	value, ok := GetRaw(acc, name)
 	if !ok {
 		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
 	}

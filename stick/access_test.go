@@ -61,6 +61,36 @@ func TestMustGet(t *testing.T) {
 	})
 }
 
+func TestGetRaw(t *testing.T) {
+	acc := &accessible{}
+
+	value, ok := GetRaw(acc, "String")
+	assert.Equal(t, "", value.String())
+	assert.True(t, ok)
+
+	acc.String = "hello"
+
+	value, ok = GetRaw(acc, "String")
+	assert.Equal(t, "hello", value.String())
+	assert.True(t, ok)
+
+	value, ok = GetRaw(acc, "missing")
+	assert.Zero(t, value)
+	assert.False(t, ok)
+}
+
+func TestMustGetRaw(t *testing.T) {
+	acc := &accessible{}
+	assert.Equal(t, "", MustGetRaw(acc, "String").String())
+
+	acc.String = "hello"
+	assert.Equal(t, "hello", MustGetRaw(acc, "String").String())
+
+	assert.PanicsWithValue(t, `stick: could not get field "missing" on "stick.accessible"`, func() {
+		MustGet(acc, "missing")
+	})
+}
+
 func TestSet(t *testing.T) {
 	acc := &accessible{}
 
