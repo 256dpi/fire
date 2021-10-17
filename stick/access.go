@@ -167,9 +167,9 @@ func MustGet(acc Accessible, name string) interface{} {
 	return value
 }
 
-// MustGetRaw will call Get and panic if the operation failed.
+// MustGetRaw will call GetRaw and panic if the operation failed.
 func MustGetRaw(acc Accessible, name string) reflect.Value {
-	// get value
+	// get raw value
 	value, ok := GetRaw(acc, name)
 	if !ok {
 		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
