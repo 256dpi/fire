@@ -313,11 +313,7 @@ func isZero(sub Subject) bool {
 	}
 
 	// check zeroness
-	if !sub.RValue.IsZero() {
-		return false
-	}
-
-	return true
+	return sub.RValue.IsZero()
 }
 
 // IsEmpty will check if the provided value is empty. Emptiness can only be
@@ -365,6 +361,11 @@ func isEmpty(sub Subject) bool {
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
 func IsValid(sub Subject) error {
+	// check nil
+	if sub.IsNil() {
+		return nil
+	}
+
 	// check raw
 	ok, err := isValid(sub.IValue)
 	if ok {

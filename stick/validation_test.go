@@ -151,19 +151,34 @@ func TestSubjectUnwrap(t *testing.T) {
 	ruleTest(t, &i2, IsMaxInt(5), "")
 }
 
-func ruleTest(t *testing.T, val interface{}, rule Rule, msg string) {
+func ruleTest(t *testing.T, v interface{}, rule Rule, msg string) {
+	// prepare addressable value
+	val := reflect.ValueOf(v)
+	ptr := reflect.New(val.Type())
+	ptr.Elem().Set(val)
+
+	// prepare subject
 	sub := Subject{
-		IValue: val,
-		RValue: reflect.ValueOf(val),
+		IValue: ptr.Elem().Interface(),
+		RValue: ptr.Elem(),
 	}
 
+	// test rule
 	err := rule(sub)
 	if msg == "" {
 		assert.NoError(t, err)
 	} else {
-		assert.Error(t, err)
-		assert.Equal(t, msg, err.Error())
+		if assert.Error(t, err) {
+			assert.Equal(t, msg, err.Error())
+		}
 	}
+}
+
+func ptr(v interface{}) interface{} {
+	val := reflect.ValueOf(v)
+	ptr := reflect.New(val.Type())
+	ptr.Elem().Set(val)
+	return ptr.Interface()
 }
 
 type zeroStr string
@@ -172,50 +187,70 @@ func (s zeroStr) Zero() bool {
 	return s == "zero"
 }
 
+type zeroStrPtr string
+
+func (s *zeroStrPtr) Zero() bool {
+	return *s == "zero"
+}
+
 func TestIsZero(t *testing.T) {
+	ruleTest(t, (*int)(nil), IsZero, "")
+
 	foo := "foo"
 	empty := ""
 	ruleTest(t, foo, IsZero, "not zero")
 	ruleTest(t, empty, IsZero, "")
-	ruleTest(t, nil, IsZero, "")
+	ruleTest(t, (*string)(nil), IsZero, "")
 	ruleTest(t, &foo, IsZero, "not zero")
 	ruleTest(t, &empty, IsZero, "")
 
 	now := time.Now()
-	var nilTime *time.Time
 	ruleTest(t, now, IsZero, "not zero")
 	ruleTest(t, &now, IsZero, "not zero")
-	ruleTest(t, nilTime, IsZero, "")
+	ruleTest(t, (*time.Time)(nil), IsZero, "")
 	ruleTest(t, time.Time{}, IsZero, "")
 	ruleTest(t, &time.Time{}, IsZero, "")
 
 	zero := zeroStr("zero")
 	ruleTest(t, zero, IsZero, "")
 	ruleTest(t, &zero, IsZero, "")
+	ruleTest(t, (*zeroStr)(nil), IsZero, "")
 	ruleTest(t, zeroStr(""), IsZero, "not zero")
+
+	zeroPtr := zeroStrPtr("zero")
+	ruleTest(t, &zeroPtr, IsZero, "")
+	ruleTest(t, (*zeroStrPtr)(nil), IsZero, "")
+	ruleTest(t, zeroStrPtr(""), IsZero, "not zero")
 }
 
 func TestIsNotZero(t *testing.T) {
+	ruleTest(t, (*int)(nil), IsNotZero, "zero")
+
 	foo := "foo"
 	empty := ""
 	ruleTest(t, foo, IsNotZero, "")
 	ruleTest(t, empty, IsNotZero, "zero")
-	ruleTest(t, nil, IsNotZero, "zero")
+	ruleTest(t, (*string)(nil), IsNotZero, "zero")
 	ruleTest(t, &foo, IsNotZero, "")
 	ruleTest(t, &empty, IsNotZero, "zero")
 
 	now := time.Now()
-	var nilTime *time.Time
 	ruleTest(t, now, IsNotZero, "")
 	ruleTest(t, &now, IsNotZero, "")
-	ruleTest(t, nilTime, IsNotZero, "zero")
+	ruleTest(t, (*time.Time)(nil), IsNotZero, "zero")
 	ruleTest(t, time.Time{}, IsNotZero, "zero")
 	ruleTest(t, &time.Time{}, IsNotZero, "zero")
 
 	zero := zeroStr("zero")
 	ruleTest(t, zero, IsNotZero, "zero")
 	ruleTest(t, &zero, IsNotZero, "zero")
+	ruleTest(t, (*zeroStr)(nil), IsNotZero, "zero")
 	ruleTest(t, zeroStr(""), IsNotZero, "")
+
+	zeroPtr := zeroStrPtr("zero")
+	ruleTest(t, &zeroPtr, IsNotZero, "zero")
+	ruleTest(t, (*zeroStrPtr)(nil), IsNotZero, "zero")
+	ruleTest(t, zeroStrPtr(""), IsNotZero, "")
 }
 
 func TestEmpty(t *testing.T) {
@@ -252,10 +287,22 @@ func (s validStr) Valid() bool {
 	return s == "valid"
 }
 
+type validStrPtr string
+
+func (s *validStrPtr) Valid() bool {
+	return *s == "valid"
+}
+
 type isValidStr string
 
 func (s isValidStr) IsValid() bool {
 	return s == "valid"
+}
+
+type isValidStrPtr string
+
+func (s *isValidStrPtr) IsValid() bool {
+	return *s == "valid"
 }
 
 func TestIsValid(t *testing.T) {
@@ -263,14 +310,35 @@ func TestIsValid(t *testing.T) {
 		ruleTest(t, "", IsValid, "")
 	})
 
+	ruleTest(t, validatable{}, IsValid, "invalid")
+	ruleTest(t, validatable{String: "valid"}, IsValid, "")
+	ruleTest(t, (*validatable)(nil), IsValid, "")
 	ruleTest(t, &validatable{}, IsValid, "invalid")
 	ruleTest(t, &validatable{String: "valid"}, IsValid, "")
 
 	ruleTest(t, validStr(""), IsValid, "invalid")
 	ruleTest(t, validStr("valid"), IsValid, "")
+	ruleTest(t, (*validStr)(nil), IsValid, "")
+	ruleTest(t, ptr(validStr("")), IsValid, "invalid")
+	ruleTest(t, ptr(validStr("valid")), IsValid, "")
+
+	ruleTest(t, validStrPtr(""), IsValid, "invalid")
+	ruleTest(t, validStrPtr("valid"), IsValid, "")
+	ruleTest(t, (*validStrPtr)(nil), IsValid, "")
+	ruleTest(t, ptr(validStrPtr("")), IsValid, "invalid")
+	ruleTest(t, ptr(validStrPtr("valid")), IsValid, "")
 
 	ruleTest(t, isValidStr(""), IsValid, "invalid")
 	ruleTest(t, isValidStr("valid"), IsValid, "")
+	ruleTest(t, (*isValidStr)(nil), IsValid, "")
+	ruleTest(t, ptr(isValidStr("")), IsValid, "invalid")
+	ruleTest(t, ptr(isValidStr("valid")), IsValid, "")
+
+	ruleTest(t, isValidStrPtr(""), IsValid, "invalid")
+	ruleTest(t, isValidStrPtr("valid"), IsValid, "")
+	ruleTest(t, (*isValidStrPtr)(nil), IsValid, "")
+	ruleTest(t, ptr(isValidStrPtr("")), IsValid, "invalid")
+	ruleTest(t, ptr(isValidStrPtr("valid")), IsValid, "")
 }
 
 func TestIsMinLen(t *testing.T) {
