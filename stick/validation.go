@@ -254,6 +254,30 @@ func (s Subject) Reference() (Subject, bool) {
 // Rule is a single validation rule.
 type Rule func(sub Subject) error
 
+// IsZero will check if the provided value is zero. It will determine zeroness
+// using IsZero() or Zero() if implemented. A nil pointer, slice, array or map
+// is also considered as zero.
+func IsZero(sub Subject) error {
+	// check zeroness
+	if !isZero(sub) {
+		return xo.SF("not zero")
+	}
+
+	return nil
+}
+
+// IsNotZero will check if the provided value is not zero. It will determine
+// zeroness using IsZero() or Zero() if implemented. A nil pointer, slice, array
+// or map is also considered as zero.
+func IsNotZero(sub Subject) error {
+	// check zeroness
+	if isZero(sub) {
+		return xo.SF("zero")
+	}
+
+	return nil
+}
+
 func isZero(sub Subject) bool {
 	// check nil
 	if sub.IsNil() {
@@ -296,45 +320,6 @@ func isZero(sub Subject) bool {
 	return true
 }
 
-// IsZero will check if the provided value is zero. It will determine zeroness
-// using IsZero() or Zero() if implemented. A nil pointer, slice, array or map
-// is also considered as zero.
-func IsZero(sub Subject) error {
-	// check zeroness
-	if !isZero(sub) {
-		return xo.SF("not zero")
-	}
-
-	return nil
-}
-
-// IsNotZero will check if the provided value is not zero. It will determine
-// zeroness using IsZero() or Zero() if implemented. A nil pointer, slice, array
-// or map is also considered as zero.
-func IsNotZero(sub Subject) error {
-	// check zeroness
-	if isZero(sub) {
-		return xo.SF("zero")
-	}
-
-	return nil
-}
-
-func isEmpty(sub Subject) bool {
-	// unwrap
-	if !sub.Unwrap() {
-		return true
-	}
-
-	// check slice and map length
-	switch sub.RValue.Kind() {
-	case reflect.Slice, reflect.Map:
-		return sub.RValue.Len() == 0
-	}
-
-	panic(fmt.Sprintf("stick: cannot check length of %T", sub.IValue))
-}
-
 // IsEmpty will check if the provided value is empty. Emptiness can only be
 // checked for slices and maps.
 func IsEmpty(sub Subject) error {
@@ -355,6 +340,21 @@ func IsNotEmpty(sub Subject) error {
 	}
 
 	return nil
+}
+
+func isEmpty(sub Subject) bool {
+	// unwrap
+	if !sub.Unwrap() {
+		return true
+	}
+
+	// check slice and map length
+	switch sub.RValue.Kind() {
+	case reflect.Slice, reflect.Map:
+		return sub.RValue.Len() == 0
+	}
+
+	panic(fmt.Sprintf("stick: cannot check length of %T", sub.IValue))
 }
 
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
