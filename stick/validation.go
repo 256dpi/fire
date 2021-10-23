@@ -260,17 +260,17 @@ func isZero(sub Subject) bool {
 		return true
 	}
 
+	// get reference
+	ref, _ := sub.Reference()
+
 	// check using IsZero method
 	type isZero interface {
 		IsZero() bool
 	}
 	if v, ok := sub.IValue.(isZero); ok {
-		// check zeroness
-		if !v.IsZero() {
-			return false
-		}
-
-		return true
+		return v.IsZero()
+	} else if v, ok := ref.IValue.(isZero); ok {
+		return v.IsZero()
 	}
 
 	// check using Zero method
@@ -278,12 +278,9 @@ func isZero(sub Subject) bool {
 		Zero() bool
 	}
 	if v, ok := sub.IValue.(zero); ok {
-		// check zeroness
-		if !v.Zero() {
-			return false
-		}
-
-		return true
+		return v.Zero()
+	} else if v, ok := ref.IValue.(zero); ok {
+		return v.Zero()
 	}
 
 	// unwrap
