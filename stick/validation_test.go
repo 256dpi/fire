@@ -219,6 +219,12 @@ func TestIsNotZero(t *testing.T) {
 }
 
 func TestEmpty(t *testing.T) {
+	assert.PanicsWithValue(t, `stick: cannot check length of int`, func() {
+		ruleTest(t, 1, IsEmpty, "")
+	})
+
+	ruleTest(t, (*string)(nil), IsEmpty, "")
+
 	ruleTest(t, []byte{}, IsEmpty, "")
 	ruleTest(t, []byte{1}, IsEmpty, "not empty")
 
@@ -227,6 +233,12 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestNotEmpty(t *testing.T) {
+	assert.PanicsWithValue(t, `stick: cannot check length of int`, func() {
+		ruleTest(t, 1, IsNotEmpty, "")
+	})
+
+	ruleTest(t, (*string)(nil), IsNotEmpty, "")
+
 	ruleTest(t, []byte{}, IsNotEmpty, "empty")
 	ruleTest(t, []byte{1}, IsNotEmpty, "")
 

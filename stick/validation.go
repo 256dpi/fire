@@ -323,6 +323,11 @@ func isZero(sub Subject) bool {
 // IsEmpty will check if the provided value is empty. Emptiness can only be
 // checked for slices and maps.
 func IsEmpty(sub Subject) error {
+	// unwrap
+	if !sub.Unwrap() {
+		return nil
+	}
+
 	// check emptiness
 	if !isEmpty(sub) {
 		return xo.SF("not empty")
@@ -334,6 +339,11 @@ func IsEmpty(sub Subject) error {
 // IsNotEmpty will check if the provided value is not empty. Emptiness can only
 // be checked for slices and maps.
 func IsNotEmpty(sub Subject) error {
+	// unwrap
+	if !sub.Unwrap() {
+		return nil
+	}
+
 	// check emptiness
 	if isEmpty(sub) {
 		return xo.SF("empty")
@@ -343,14 +353,9 @@ func IsNotEmpty(sub Subject) error {
 }
 
 func isEmpty(sub Subject) bool {
-	// unwrap
-	if !sub.Unwrap() {
-		return true
-	}
-
 	// check slice and map length
 	switch sub.RValue.Kind() {
-	case reflect.Slice, reflect.Map:
+	case reflect.Slice, reflect.Map, reflect.String:
 		return sub.RValue.Len() == 0
 	}
 
