@@ -420,6 +420,13 @@ func IsMinLen(min int) Rule {
 			return nil
 		}
 
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		default:
+			panic("stick: expected array/map/slice/string value")
+		}
+
 		// check length
 		if sub.RValue.Len() < min {
 			return xo.SF("too short")
@@ -435,6 +442,13 @@ func IsMaxLen(max int) Rule {
 		// unwrap
 		if !sub.Unwrap() {
 			return nil
+		}
+
+		// check value
+		switch sub.RValue.Kind() {
+		case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		default:
+			panic("stick: expected array/map/slice/string value")
 		}
 
 		// check length

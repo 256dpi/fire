@@ -262,11 +262,19 @@ func TestIsValid(t *testing.T) {
 }
 
 func TestIsMinLen(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: expected array/map/slice/string value", func() {
+		ruleTest(t, 1, IsMinLen(5), "")
+	})
+	ruleTest(t, (*string)(nil), IsMinLen(5), "")
 	ruleTest(t, "", IsMinLen(5), "too short")
 	ruleTest(t, "Hello World!", IsMinLen(5), "")
 }
 
 func TestIsMaxLen(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: expected array/map/slice/string value", func() {
+		ruleTest(t, 1, IsMaxLen(5), "")
+	})
+	ruleTest(t, (*string)(nil), IsMaxLen(5), "")
 	ruleTest(t, "", IsMaxLen(5), "")
 	ruleTest(t, "Hello World!", IsMaxLen(5), "too long")
 }
@@ -275,18 +283,21 @@ func TestIsMin(t *testing.T) {
 	assert.PanicsWithValue(t, "stick: expected int value", func() {
 		ruleTest(t, uint(1), IsMinInt(1), "")
 	})
+	ruleTest(t, (*int)(nil), IsMinInt(5), "")
 	ruleTest(t, 7, IsMinInt(5), "")
 	ruleTest(t, int16(1), IsMinInt(5), "too small")
 
 	assert.PanicsWithValue(t, "stick: expected uint value", func() {
 		ruleTest(t, 1, IsMinUint(1), "")
 	})
+	ruleTest(t, (*uint)(nil), IsMinUint(5), "")
 	ruleTest(t, uint(7), IsMinUint(5), "")
 	ruleTest(t, uint16(1), IsMinUint(5), "too small")
 
 	assert.PanicsWithValue(t, "stick: expected float value", func() {
 		ruleTest(t, 1, IsMinFloat(1), "")
 	})
+	ruleTest(t, (*float32)(nil), IsMinFloat(5), "")
 	ruleTest(t, 7., IsMinFloat(5), "")
 	ruleTest(t, float32(1), IsMinFloat(5), "too small")
 }
@@ -295,18 +306,21 @@ func TestIsMax(t *testing.T) {
 	assert.PanicsWithValue(t, "stick: expected int value", func() {
 		ruleTest(t, uint(1), IsMaxInt(1), "")
 	})
+	ruleTest(t, (*int)(nil), IsMaxInt(5), "")
 	ruleTest(t, 1, IsMaxInt(5), "")
 	ruleTest(t, int16(7), IsMaxInt(5), "too big")
 
 	assert.PanicsWithValue(t, "stick: expected uint value", func() {
 		ruleTest(t, 1, IsMaxUint(1), "")
 	})
+	ruleTest(t, (*uint)(nil), IsMaxUint(5), "")
 	ruleTest(t, uint(1), IsMaxUint(5), "")
 	ruleTest(t, uint16(7), IsMaxUint(5), "too big")
 
 	assert.PanicsWithValue(t, "stick: expected float value", func() {
 		ruleTest(t, 1, IsMaxFloat(1), "")
 	})
+	ruleTest(t, (*float32)(nil), IsMaxFloat(5), "")
 	ruleTest(t, 1., IsMaxFloat(5), "")
 	ruleTest(t, float32(7), IsMaxFloat(5), "too big")
 }
@@ -315,6 +329,8 @@ func TestIsFormat(t *testing.T) {
 	assert.PanicsWithValue(t, `stick: expected string value`, func() {
 		ruleTest(t, 1, IsEmail, "")
 	})
+
+	ruleTest(t, (*string)(nil), IsEmail, "")
 
 	ruleTest(t, "", IsPatternMatch("\\d+"), "")
 	ruleTest(t, "-", IsPatternMatch("\\d+"), "invalid format")
