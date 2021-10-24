@@ -223,24 +223,15 @@ func (s *Subject) Unwrap() bool {
 	return true
 }
 
-// Reference will attempt to obtain a referenced subject for interface testing.
-// Only struct fields and array/slice items can be referenced.
-func (s Subject) Reference() (Subject, bool) {
-	// check if already pointer
-	if s.RValue.Kind() == reflect.Ptr {
-		return s, false
+// Reference will obtain a referenced subject for interface testing.
+func (s *Subject) Reference() Subject {
+	// get addr (should not panic as all subjects are addressable)
+	addr := s.RValue.Addr()
+
+	return Subject{
+		IValue: addr.Interface(),
+		RValue: addr,
 	}
-
-	// check address
-	if !s.RValue.CanAddr() {
-		return s, false
-	}
-
-	// set value
-	s.RValue = s.RValue.Addr()
-	s.IValue = s.RValue.Interface()
-
-	return s, true
 }
 
 // Rule is a single validation rule.
@@ -277,7 +268,7 @@ func isZero(sub Subject) bool {
 	}
 
 	// get reference
-	ref, _ := sub.Reference()
+	ref := sub.Reference()
 
 	// check using IsZero method
 	type isZero interface {
@@ -360,11 +351,9 @@ func IsValid(sub Subject) error {
 	}
 
 	// check reference
-	if ref, refOK := sub.Reference(); refOK {
-		ok, err = isValid(ref.IValue)
-		if ok {
-			return err
-		}
+	ok, err = isValid(sub.Reference().IValue)
+	if ok {
+		return err
 	}
 
 	panic(fmt.Sprintf("stick: cannot check validity of %T", sub.IValue))
