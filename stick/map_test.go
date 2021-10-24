@@ -65,10 +65,14 @@ func TestMapFlat(t *testing.T) {
 		"bar": Map{
 			"foo": "bar",
 		},
+		"baz": map[string]interface{}{
+			"foo": "bar",
+		},
 	}
 
 	assert.Equal(t, Map{
 		"foo":     "bar",
 		"bar_foo": "bar",
+		"baz_foo": "bar",
 	}, m.Flat("_"))
 }
