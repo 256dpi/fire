@@ -213,14 +213,12 @@ func (s *Subject) IsNil() bool {
 
 // Unwrap will unwrap all pointers and return whether a value is available.
 func (s *Subject) Unwrap() bool {
-	// check nil
-	if s.IsNil() {
-		return false
-	}
-
 	// unwrap pointers
 	var unwrapped bool
-	for s.RValue.Kind() == reflect.Ptr && !s.RValue.IsNil() {
+	for s.RValue.Kind() == reflect.Ptr {
+		if s.RValue.IsNil() {
+			return false
+		}
 		s.RValue = s.RValue.Elem()
 		unwrapped = true
 	}
@@ -228,7 +226,7 @@ func (s *Subject) Unwrap() bool {
 		s.IValue = s.RValue.Interface()
 	}
 
-	return !s.IsNil()
+	return true
 }
 
 // Reference will attempt to obtain a referenced subject for interface testing.

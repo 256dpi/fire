@@ -259,10 +259,16 @@ func TestEmpty(t *testing.T) {
 	})
 
 	ruleTest(t, (*string)(nil), IsEmpty, "")
+	ruleTest(t, "", IsEmpty, "")
+	ruleTest(t, "foo", IsEmpty, "not empty")
 
+	ruleTest(t, (*[]byte)(nil), IsEmpty, "")
+	ruleTest(t, ([]byte)(nil), IsEmpty, "")
 	ruleTest(t, []byte{}, IsEmpty, "")
 	ruleTest(t, []byte{1}, IsEmpty, "not empty")
 
+	ruleTest(t, (*Map)(nil), IsEmpty, "")
+	ruleTest(t, (Map)(nil), IsEmpty, "")
 	ruleTest(t, Map{}, IsEmpty, "")
 	ruleTest(t, Map{"k": "v"}, IsEmpty, "not empty")
 }
@@ -273,10 +279,16 @@ func TestNotEmpty(t *testing.T) {
 	})
 
 	ruleTest(t, (*string)(nil), IsNotEmpty, "")
+	ruleTest(t, "", IsNotEmpty, "empty")
+	ruleTest(t, "foo", IsNotEmpty, "")
 
+	ruleTest(t, (*[]byte)(nil), IsNotEmpty, "")
+	ruleTest(t, ([]byte)(nil), IsNotEmpty, "empty")
 	ruleTest(t, []byte{}, IsNotEmpty, "empty")
 	ruleTest(t, []byte{1}, IsNotEmpty, "")
 
+	ruleTest(t, (*Map)(nil), IsNotEmpty, "")
+	ruleTest(t, (Map)(nil), IsNotEmpty, "empty")
 	ruleTest(t, Map{}, IsNotEmpty, "empty")
 	ruleTest(t, Map{"k": "v"}, IsNotEmpty, "")
 }
