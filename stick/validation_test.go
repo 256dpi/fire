@@ -82,6 +82,12 @@ func TestValidate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "Int: too small; Uint: too small", err.Error())
 
+	assert.PanicsWithValue(t, "stick: expected pointer", func() {
+		err = Validate(obj, func(v *Validator) {
+			v.Value("String", true)
+		})
+	})
+
 	err = Validate(obj, func(v *Validator) {
 		v.Value("OptInt", true, IsMinInt(5))
 	})

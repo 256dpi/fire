@@ -87,7 +87,7 @@ func (v *Validator) Nest(field string, fn func()) {
 }
 
 // Value will validate the value at the named field using the provided rules.
-// If the value is optional it will be skipped if nil or unwrapped if present.
+// Pointer may be optional and are skipped if nil or unwrapped if present.
 func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// get value
 	value := MustGetRaw(v.obj, name)
@@ -100,8 +100,13 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 
 	// handle optionals
 	if optional {
+		// check kind
+		if sub.RValue.Kind() != reflect.Ptr {
+			panic("stick: expected pointer")
+		}
+
 		// skip if nil
-		if sub.IsNil() {
+		if sub.RValue.IsNil() {
 			return
 		}
 
