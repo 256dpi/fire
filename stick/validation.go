@@ -205,22 +205,6 @@ type Subject struct {
 	RValue reflect.Value
 }
 
-// IsNil returns true if the value is nil or a typed nil (zero pointer).
-func (s *Subject) IsNil() bool {
-	// check plain nil
-	if s.IValue == nil {
-		return true
-	}
-
-	// check typed nils
-	switch s.RValue.Kind() {
-	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Interface:
-		return s.RValue.IsNil()
-	}
-
-	return false
-}
-
 // Unwrap will unwrap all pointers and return whether a value is available.
 func (s *Subject) Unwrap() bool {
 	// unwrap pointers
@@ -287,8 +271,8 @@ func IsNotZero(sub Subject) error {
 }
 
 func isZero(sub Subject) bool {
-	// check nil
-	if sub.IsNil() {
+	// unwrap
+	if !sub.Unwrap() {
 		return true
 	}
 
@@ -313,11 +297,6 @@ func isZero(sub Subject) bool {
 		return v.Zero()
 	} else if v, ok := ref.IValue.(zero); ok {
 		return v.Zero()
-	}
-
-	// unwrap
-	if !sub.Unwrap() {
-		return true
 	}
 
 	// check zeroness
@@ -369,8 +348,8 @@ func isEmpty(sub Subject) bool {
 // IsValid will check if the value is valid by calling Validate(), IsValid() or
 // Valid().
 func IsValid(sub Subject) error {
-	// check nil
-	if sub.IsNil() {
+	// unwrap
+	if !sub.Unwrap() {
 		return nil
 	}
 

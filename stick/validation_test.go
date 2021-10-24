@@ -205,64 +205,92 @@ func (s *zeroStrPtr) Zero() bool {
 	return *s == "zero"
 }
 
+type isZeroStr string
+
+func (s isZeroStr) IsZero() bool {
+	return s == "zero"
+}
+
+type isZeroStrPtr string
+
+func (s *isZeroStrPtr) IsZero() bool {
+	return *s == "zero"
+}
+
 func TestIsZero(t *testing.T) {
-	ruleTest(t, (*int)(nil), IsZero, "")
-
-	foo := "foo"
-	empty := ""
-	ruleTest(t, foo, IsZero, "not zero")
-	ruleTest(t, empty, IsZero, "")
+	ruleTest(t, "", IsZero, "")
+	ruleTest(t, "foo", IsZero, "not zero")
 	ruleTest(t, (*string)(nil), IsZero, "")
-	ruleTest(t, &foo, IsZero, "not zero")
-	ruleTest(t, &empty, IsZero, "")
+	ruleTest(t, ptr(""), IsZero, "")
+	ruleTest(t, ptr("foo"), IsZero, "not zero")
 
-	now := time.Now()
-	ruleTest(t, now, IsZero, "not zero")
-	ruleTest(t, &now, IsZero, "not zero")
-	ruleTest(t, (*time.Time)(nil), IsZero, "")
 	ruleTest(t, time.Time{}, IsZero, "")
+	ruleTest(t, time.Now(), IsZero, "not zero")
+	ruleTest(t, (*time.Time)(nil), IsZero, "")
 	ruleTest(t, &time.Time{}, IsZero, "")
+	ruleTest(t, ptr(time.Now()), IsZero, "not zero")
 
-	zero := zeroStr("zero")
-	ruleTest(t, zero, IsZero, "")
-	ruleTest(t, &zero, IsZero, "")
-	ruleTest(t, (*zeroStr)(nil), IsZero, "")
 	ruleTest(t, zeroStr(""), IsZero, "not zero")
+	ruleTest(t, zeroStr("zero"), IsZero, "")
+	ruleTest(t, (*zeroStr)(nil), IsZero, "")
+	ruleTest(t, ptr(zeroStr("")), IsZero, "not zero")
+	ruleTest(t, ptr(zeroStr("zero")), IsZero, "")
 
-	zeroPtr := zeroStrPtr("zero")
-	ruleTest(t, &zeroPtr, IsZero, "")
-	ruleTest(t, (*zeroStrPtr)(nil), IsZero, "")
 	ruleTest(t, zeroStrPtr(""), IsZero, "not zero")
+	ruleTest(t, zeroStrPtr("zero"), IsZero, "")
+	ruleTest(t, (*zeroStrPtr)(nil), IsZero, "")
+	ruleTest(t, ptr(zeroStrPtr("")), IsZero, "not zero")
+	ruleTest(t, ptr(zeroStrPtr("zero")), IsZero, "")
+
+	ruleTest(t, isZeroStr(""), IsZero, "not zero")
+	ruleTest(t, isZeroStr("zero"), IsZero, "")
+	ruleTest(t, (*isZeroStr)(nil), IsZero, "")
+	ruleTest(t, ptr(isZeroStr("")), IsZero, "not zero")
+	ruleTest(t, ptr(isZeroStr("zero")), IsZero, "")
+
+	ruleTest(t, isZeroStrPtr(""), IsZero, "not zero")
+	ruleTest(t, isZeroStrPtr("zero"), IsZero, "")
+	ruleTest(t, (*isZeroStrPtr)(nil), IsZero, "")
+	ruleTest(t, ptr(isZeroStrPtr("")), IsZero, "not zero")
+	ruleTest(t, ptr(isZeroStrPtr("zero")), IsZero, "")
 }
 
 func TestIsNotZero(t *testing.T) {
-	ruleTest(t, (*int)(nil), IsNotZero, "zero")
-
-	foo := "foo"
-	empty := ""
-	ruleTest(t, foo, IsNotZero, "")
-	ruleTest(t, empty, IsNotZero, "zero")
+	ruleTest(t, "", IsNotZero, "zero")
+	ruleTest(t, "foo", IsNotZero, "")
 	ruleTest(t, (*string)(nil), IsNotZero, "zero")
-	ruleTest(t, &foo, IsNotZero, "")
-	ruleTest(t, &empty, IsNotZero, "zero")
+	ruleTest(t, ptr(""), IsNotZero, "zero")
+	ruleTest(t, ptr("foo"), IsNotZero, "")
 
-	now := time.Now()
-	ruleTest(t, now, IsNotZero, "")
-	ruleTest(t, &now, IsNotZero, "")
-	ruleTest(t, (*time.Time)(nil), IsNotZero, "zero")
 	ruleTest(t, time.Time{}, IsNotZero, "zero")
+	ruleTest(t, time.Now(), IsNotZero, "")
+	ruleTest(t, (*time.Time)(nil), IsNotZero, "zero")
 	ruleTest(t, &time.Time{}, IsNotZero, "zero")
+	ruleTest(t, ptr(time.Now()), IsNotZero, "")
 
-	zero := zeroStr("zero")
-	ruleTest(t, zero, IsNotZero, "zero")
-	ruleTest(t, &zero, IsNotZero, "zero")
-	ruleTest(t, (*zeroStr)(nil), IsNotZero, "zero")
 	ruleTest(t, zeroStr(""), IsNotZero, "")
+	ruleTest(t, zeroStr("zero"), IsNotZero, "zero")
+	ruleTest(t, (*zeroStr)(nil), IsNotZero, "zero")
+	ruleTest(t, ptr(zeroStr("")), IsNotZero, "")
+	ruleTest(t, ptr(zeroStr("zero")), IsNotZero, "zero")
 
-	zeroPtr := zeroStrPtr("zero")
-	ruleTest(t, &zeroPtr, IsNotZero, "zero")
-	ruleTest(t, (*zeroStrPtr)(nil), IsNotZero, "zero")
 	ruleTest(t, zeroStrPtr(""), IsNotZero, "")
+	ruleTest(t, zeroStrPtr("zero"), IsNotZero, "zero")
+	ruleTest(t, (*zeroStrPtr)(nil), IsNotZero, "zero")
+	ruleTest(t, ptr(zeroStrPtr("")), IsNotZero, "")
+	ruleTest(t, ptr(zeroStrPtr("zero")), IsNotZero, "zero")
+
+	ruleTest(t, isZeroStr(""), IsNotZero, "")
+	ruleTest(t, isZeroStr("zero"), IsNotZero, "zero")
+	ruleTest(t, (*isZeroStr)(nil), IsNotZero, "zero")
+	ruleTest(t, ptr(isZeroStr("")), IsNotZero, "")
+	ruleTest(t, ptr(isZeroStr("zero")), IsNotZero, "zero")
+
+	ruleTest(t, isZeroStrPtr(""), IsNotZero, "")
+	ruleTest(t, isZeroStrPtr("zero"), IsNotZero, "zero")
+	ruleTest(t, (*isZeroStrPtr)(nil), IsNotZero, "zero")
+	ruleTest(t, ptr(isZeroStrPtr("")), IsNotZero, "")
+	ruleTest(t, ptr(isZeroStrPtr("zero")), IsNotZero, "zero")
 }
 
 func TestEmpty(t *testing.T) {
@@ -332,6 +360,10 @@ func (s *isValidStrPtr) IsValid() bool {
 func TestIsValid(t *testing.T) {
 	assert.PanicsWithValue(t, `stick: cannot check validity of string`, func() {
 		ruleTest(t, "", IsValid, "")
+	})
+
+	assert.PanicsWithValue(t, "stick: cannot check validity of []uint8", func() {
+		ruleTest(t, ([]byte)(nil), IsValid, "")
 	})
 
 	ruleTest(t, validatable{}, IsValid, "invalid")
