@@ -124,11 +124,16 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	}
 }
 
-// Items will validate each item of the slice at the named field using the
+// Items will validate each item of the array/slice at the named field using the
 // provided rules.
 func (v *Validator) Items(name string, rules ...Rule) {
 	// get slice
 	slice := reflect.ValueOf(MustGet(v.obj, name))
+
+	// check type
+	if slice.Kind() != reflect.Slice && slice.Kind() != reflect.Array {
+		panic("stick: expected array/slice")
+	}
 
 	// execute rules for each item
 	v.Nest(name, func() {

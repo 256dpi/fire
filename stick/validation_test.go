@@ -101,6 +101,12 @@ func TestValidate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "OptInt: too small", err.Error())
 
+	assert.PanicsWithValue(t, "stick: expected array/slice", func() {
+		err = Validate(obj, func(v *Validator) {
+			v.Items("String")
+		})
+	})
+
 	obj.Strings = []string{""}
 	err = Validate(obj, func(v *Validator) {
 		v.Value("Strings", false, IsMinLen(5))
