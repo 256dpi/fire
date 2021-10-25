@@ -27,39 +27,11 @@ func TestAccess(t *testing.T) {
 		GetAccessor(&n)
 	})
 
-	var foo struct {
-		Foo string
-	}
-
-	acc1 := GetAccessor(&foo)
-	acc2 := GetAccessor(&foo)
-	assert.True(t, acc1 == acc2)
-	assert.Equal(t, &Accessor{
-		Name: "struct { Foo string }",
-		Fields: map[string]*Field{
-			"Foo": {
-				Index: 0,
-				Type:  reflect.TypeOf(""),
-			},
-		},
-	}, acc1)
-
-	MustSet(&foo, "Foo", "bar")
-	ret := MustGet(&foo, "Foo")
-	assert.Equal(t, "bar", ret)
-}
-
-func TestCustomAccess(t *testing.T) {
-	acc := &customAccessible{}
-
-	assert.PanicsWithValue(t, `stick: could not get field "Bar" on "stick.customAccessible"`, func() {
-		MustGet(acc, "Bar")
-	})
-}
-
-func TestBuildAccessor(t *testing.T) {
 	acc := &accessible{}
 
+	acc1 := GetAccessor(acc)
+	acc2 := GetAccessor(acc)
+	assert.True(t, acc1 == acc2)
 	assert.Equal(t, &Accessor{
 		Name: "stick.accessible",
 		Fields: map[string]*Field{
@@ -72,7 +44,19 @@ func TestBuildAccessor(t *testing.T) {
 				Type:  reflect.PtrTo(reflect.TypeOf("")),
 			},
 		},
-	}, GetAccessor(acc))
+	}, acc1)
+
+	MustSet(acc, "String", "bar")
+	ret := MustGet(acc, "String")
+	assert.Equal(t, "bar", ret)
+}
+
+func TestCustomAccess(t *testing.T) {
+	acc := &customAccessible{}
+
+	assert.PanicsWithValue(t, `stick: could not get field "Bar" on "stick.customAccessible"`, func() {
+		MustGet(acc, "Bar")
+	})
 }
 
 func TestGet(t *testing.T) {

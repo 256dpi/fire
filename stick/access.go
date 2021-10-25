@@ -26,7 +26,10 @@ type Accessor struct {
 	Fields map[string]*Field
 }
 
-// Access will return create and cache an accessor for the provided value.
+// Access will create, cache and return an accessor for the provided value.
+//
+// Note: Ignored fields are only applied the first time Access is called for
+// the provided type.
 func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structValue(v).Type()
@@ -50,7 +53,7 @@ func Access(v interface{}, ignore ...string) *Accessor {
 	return accessor
 }
 
-// BuildAccessor will build an accessor for the provided type.
+// BuildAccessor will build and return an accessor for the provided type.
 func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structValue(v).Type()
@@ -87,7 +90,7 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	return accessor
 }
 
-// GetAccessor is a short-hand to retrieve the accessor of a value.
+// GetAccessor is a short-hand to retrieve a value's accessor.
 func GetAccessor(v interface{}) *Accessor {
 	// check type
 	structValue(v)
@@ -101,8 +104,8 @@ func GetAccessor(v interface{}) *Accessor {
 	return Access(v)
 }
 
-// Get will look up the specified field on the accessible and return its value
-// and whether the field was found at all.
+// Get will look up and return the value of the specified field and whether the
+// field was found at all.
 func Get(v interface{}, name string) (interface{}, bool) {
 	// find field
 	field := GetAccessor(v).Fields[name]
@@ -127,8 +130,8 @@ func MustGet(v interface{}, name string) interface{} {
 	return value
 }
 
-// GetRaw will look up the specified field on the accessible and return its raw
-// value and whether the field was found at all.
+// GetRaw will look up and return the value of the specified field and whether$
+// the field was found at all.
 func GetRaw(v interface{}, name string) (reflect.Value, bool) {
 	// find field
 	field := GetAccessor(v).Fields[name]
@@ -153,8 +156,8 @@ func MustGetRaw(v interface{}, name string) reflect.Value {
 	return value
 }
 
-// Set will set the specified field on the accessible with the provided value
-// and return whether the field has been found and the value has been set.
+// Set will set the specified field with the provided value and return whether
+// the field has been found and the value has been set.
 func Set(v interface{}, name string, value interface{}) bool {
 	// find field
 	field := GetAccessor(v).Fields[name]
