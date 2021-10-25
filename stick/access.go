@@ -37,7 +37,7 @@ type BasicAccess struct{}
 // GetAccessor implements the Accessible interface.
 func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 	// get type
-	typ := reflect.TypeOf(v).Elem()
+	typ := structType(v)
 
 	// acquire mutex
 	accessMutex.Lock()
@@ -61,7 +61,7 @@ func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 // BuildAccessor will build an accessor for the provided type.
 func BuildAccessor(v Accessible, ignore ...string) *Accessor {
 	// get type
-	typ := reflect.TypeOf(v).Elem()
+	typ := structType(v)
 
 	// prepare accessor
 	accessor := &Accessor{
@@ -105,7 +105,7 @@ func Get(acc Accessible, name string) (interface{}, bool) {
 	}
 
 	// get value
-	value := reflect.ValueOf(acc).Elem().Field(field.Index).Interface()
+	value := structValue(acc).Field(field.Index).Interface()
 
 	return value, true
 }
@@ -120,7 +120,7 @@ func GetRaw(acc Accessible, name string) (reflect.Value, bool) {
 	}
 
 	// get value
-	value := reflect.ValueOf(acc).Elem().Field(field.Index)
+	value := structValue(acc).Field(field.Index)
 
 	return value, true
 }
@@ -135,7 +135,7 @@ func Set(acc Accessible, name string, value interface{}) bool {
 	}
 
 	// get value
-	fieldValue := reflect.ValueOf(acc).Elem().Field(field.Index)
+	fieldValue := structValue(acc).Field(field.Index)
 
 	// get value value
 	valueValue := reflect.ValueOf(value)
@@ -185,4 +185,26 @@ func MustSet(acc Accessible, name string, value interface{}) {
 	if !ok {
 		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, GetAccessor(acc).Name))
 	}
+}
+
+func structType(v interface{}) reflect.Type {
+	typ := reflect.TypeOf(v)
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		panic("stick: expected struct")
+	}
+	return typ
+}
+
+func structValue(v interface{}) reflect.Value {
+	val := reflect.ValueOf(v)
+	for val.Type().Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Kind() != reflect.Struct {
+		panic("stick: expected struct")
+	}
+	return val
 }
