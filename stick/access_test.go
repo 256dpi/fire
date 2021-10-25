@@ -141,12 +141,8 @@ func TestSet(t *testing.T) {
 
 	ok = Set(acc, "String", 1)
 	assert.False(t, ok)
-}
 
-func TestSetNil(t *testing.T) {
-	acc := &accessible{}
-
-	ok := Set(acc, "OptString", nil)
+	ok = Set(acc, "OptString", nil)
 	assert.True(t, ok)
 
 	ok = Set(acc, "OptString", (*string)(nil))
@@ -173,5 +169,21 @@ func BenchmarkBuildAccessor(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		BuildAccessor(acc)
+	}
+}
+
+func BenchmarkMustGet(b *testing.B) {
+	acc := &accessible{}
+
+	for i := 0; i < b.N; i++ {
+		MustGet(acc, "String")
+	}
+}
+
+func BenchmarkMustSet(b *testing.B) {
+	acc := &accessible{}
+
+	for i := 0; i < b.N; i++ {
+		MustSet(acc, "String", "foo")
 	}
 }

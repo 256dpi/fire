@@ -6,7 +6,15 @@ import (
 	"sync"
 )
 
-// Field is dynamically accessible field.
+var accessMutex sync.Mutex
+var accessCache = map[reflect.Type]*Accessor{}
+
+// Accessible is a type that provides a custom accessor for dynamic access.
+type Accessible interface {
+	GetAccessor(interface{}) *Accessor
+}
+
+// Field is a dynamically accessible field.
 type Field struct {
 	Index int
 	Type  reflect.Type
@@ -18,34 +26,7 @@ type Accessor struct {
 	Fields map[string]*Field
 }
 
-// GetAccessor implements the Accessible interface.
-func (a *Accessor) GetAccessor(interface{}) *Accessor {
-	return a
-}
-
-// Accessible is a type that has dynamically accessible fields.
-type Accessible interface {
-	GetAccessor(interface{}) *Accessor
-}
-
-// GetAccessor is a short-hand to retrieve the accessor of an accessible.
-func GetAccessor(v interface{}) *Accessor {
-	// get value
-	value := structValue(v, false)
-
-	// check if accessible
-	if _, ok := value.Type().MethodByName("GetAccessor"); ok {
-		return v.(Accessible).GetAccessor(v)
-	}
-
-	// otherwise, get accessor on demand
-	return Access(v)
-}
-
-var accessMutex sync.Mutex
-var accessCache = map[reflect.Type]*Accessor{}
-
-// Access will return a basic accessor for the provided value.
+// Access will return create and cache an accessor for the provided value.
 func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structType(v)
@@ -106,6 +87,20 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	return accessor
 }
 
+// GetAccessor is a short-hand to retrieve the accessor of a value.
+func GetAccessor(v interface{}) *Accessor {
+	// get value
+	value := structValue(v, false)
+
+	// check if accessible
+	if _, ok := value.Type().MethodByName("GetAccessor"); ok {
+		return v.(Accessible).GetAccessor(v)
+	}
+
+	// otherwise, get accessor on demand
+	return Access(v)
+}
+
 // Get will look up the specified field on the accessible and return its value
 // and whether the field was found at all.
 func Get(v interface{}, name string) (interface{}, bool) {
@@ -121,6 +116,17 @@ func Get(v interface{}, name string) (interface{}, bool) {
 	return value, true
 }
 
+// MustGet will call Get and panic if the operation failed.
+func MustGet(v interface{}, name string) interface{} {
+	// get value
+	value, ok := Get(v, name)
+	if !ok {
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
+	}
+
+	return value
+}
+
 // GetRaw will look up the specified field on the accessible and return its raw
 // value and whether the field was found at all.
 func GetRaw(v interface{}, name string) (reflect.Value, bool) {
@@ -134,6 +140,17 @@ func GetRaw(v interface{}, name string) (reflect.Value, bool) {
 	value := structValue(v, false).Field(field.Index)
 
 	return value, true
+}
+
+// MustGetRaw will call GetRaw and panic if the operation failed.
+func MustGetRaw(v interface{}, name string) reflect.Value {
+	// get raw value
+	value, ok := GetRaw(v, name)
+	if !ok {
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
+	}
+
+	return value
 }
 
 // Set will set the specified field on the accessible with the provided value
@@ -165,28 +182,6 @@ func Set(v interface{}, name string, value interface{}) bool {
 	fieldValue.Set(valueValue)
 
 	return true
-}
-
-// MustGet will call Get and panic if the operation failed.
-func MustGet(v interface{}, name string) interface{} {
-	// get value
-	value, ok := Get(v, name)
-	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
-	}
-
-	return value
-}
-
-// MustGetRaw will call GetRaw and panic if the operation failed.
-func MustGetRaw(v interface{}, name string) reflect.Value {
-	// get raw value
-	value, ok := GetRaw(v, name)
-	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
-	}
-
-	return value
 }
 
 // MustSet will call Set and panic if the operation failed.
