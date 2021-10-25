@@ -57,16 +57,16 @@ func (e ValidationError) Error() string {
 
 // Validator is used to validate an object.
 type Validator struct {
-	obj   Accessible
+	value interface{}
 	path  []string
 	error ValidationError
 }
 
 // Validate will validate the provided accessible using the specified validator
 // function.
-func Validate(obj Accessible, fn func(v *Validator)) error {
+func Validate(v interface{}, fn func(v *Validator)) error {
 	// prepare validator
-	val := &Validator{obj: obj}
+	val := &Validator{value: v}
 
 	// run validator
 	fn(val)
@@ -90,7 +90,7 @@ func (v *Validator) Nest(field string, fn func()) {
 // Pointer may be optional and are skipped if nil or unwrapped if present.
 func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 	// get value
-	value := MustGetRaw(v.obj, name)
+	value := MustGetRaw(v.value, name)
 
 	// prepare subject
 	sub := Subject{
@@ -128,7 +128,7 @@ func (v *Validator) Value(name string, optional bool, rules ...Rule) {
 // provided rules.
 func (v *Validator) Items(name string, rules ...Rule) {
 	// get slice
-	slice := reflect.ValueOf(MustGet(v.obj, name))
+	slice := MustGetRaw(v.value, name)
 
 	// check type
 	if slice.Kind() != reflect.Slice && slice.Kind() != reflect.Array {

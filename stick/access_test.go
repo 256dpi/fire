@@ -7,10 +7,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAccess(t *testing.T) {
+	var foo struct {
+		Foo string
+	}
+
+	acc1 := GetAccessor(foo)
+	acc2 := GetAccessor(&foo)
+	assert.True(t, acc1 == acc2)
+	assert.Equal(t, &Accessor{
+		Name: "struct { Foo string }",
+		Fields: map[string]*Field{
+			"Foo": {
+				Index: 0,
+				Type:  reflect.TypeOf(""),
+			},
+		},
+	}, acc1)
+
+	MustSet(&foo, "Foo", "bar")
+	ret := MustGet(foo, "Foo")
+	assert.Equal(t, "bar", ret)
+}
+
 type accessible struct {
 	String    string
 	OptString *string
-	BasicAccess
 }
 
 func TestBuildAccessor(t *testing.T) {
@@ -28,10 +50,14 @@ func TestBuildAccessor(t *testing.T) {
 				Type:  reflect.PtrTo(reflect.TypeOf("")),
 			},
 		},
-	}, acc.GetAccessor(acc))
+	}, GetAccessor(acc))
 }
 
 func TestGet(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: nil value", func() {
+		Get((*accessible)(nil), "String")
+	})
+
 	acc := &accessible{}
 
 	value, ok := Get(acc, "String")
@@ -62,6 +88,10 @@ func TestMustGet(t *testing.T) {
 }
 
 func TestGetRaw(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: nil value", func() {
+		GetRaw((*accessible)(nil), "String")
+	})
+
 	acc := &accessible{}
 
 	value, ok := GetRaw(acc, "String")
@@ -92,6 +122,14 @@ func TestMustGetRaw(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: nil value", func() {
+		Set((*accessible)(nil), "String", "foo")
+	})
+
+	assert.PanicsWithValue(t, "stick: not addressable", func() {
+		Set(accessible{}, "String", "foo")
+	})
+
 	acc := &accessible{}
 
 	ok := Set(acc, "String", "3")

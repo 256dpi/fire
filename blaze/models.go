@@ -40,8 +40,6 @@ type Link struct {
 	FileName string `json:"-" bson:"name"`
 	FileType string `json:"-" bson:"type"`
 	FileSize int64  `json:"-" bson:"size"`
-
-	stick.BasicAccess `json:"-" bson:"-"`
 }
 
 // Validate will validate the link.

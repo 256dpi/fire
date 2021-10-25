@@ -18,24 +18,35 @@ type Accessor struct {
 	Fields map[string]*Field
 }
 
+// GetAccessor implements the Accessible interface.
+func (a *Accessor) GetAccessor(interface{}) *Accessor {
+	return a
+}
+
 // Accessible is a type that has dynamically accessible fields.
 type Accessible interface {
 	GetAccessor(interface{}) *Accessor
 }
 
 // GetAccessor is a short-hand to retrieve the accessor of an accessible.
-func GetAccessor(acc Accessible) *Accessor {
-	return acc.GetAccessor(acc)
+func GetAccessor(v interface{}) *Accessor {
+	// get value
+	value := structValue(v, false)
+
+	// check if accessible
+	if _, ok := value.Type().MethodByName("GetAccessor"); ok {
+		return v.(Accessible).GetAccessor(v)
+	}
+
+	// otherwise, get accessor on demand
+	return Access(v)
 }
 
 var accessMutex sync.Mutex
 var accessCache = map[reflect.Type]*Accessor{}
 
-// BasicAccess may be embedded in a struct to provide basic accessibility.
-type BasicAccess struct{}
-
-// GetAccessor implements the Accessible interface.
-func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
+// Access will return a basic accessor for the provided value.
+func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structType(v)
 
@@ -50,7 +61,7 @@ func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 	}
 
 	// build accessor
-	accessor = BuildAccessor(v.(Accessible), "BasicAccess")
+	accessor = BuildAccessor(v, ignore...)
 
 	// cache accessor
 	accessCache[typ] = accessor
@@ -59,7 +70,7 @@ func (a *BasicAccess) GetAccessor(v interface{}) *Accessor {
 }
 
 // BuildAccessor will build an accessor for the provided type.
-func BuildAccessor(v Accessible, ignore ...string) *Accessor {
+func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structType(v)
 
@@ -97,45 +108,45 @@ func BuildAccessor(v Accessible, ignore ...string) *Accessor {
 
 // Get will look up the specified field on the accessible and return its value
 // and whether the field was found at all.
-func Get(acc Accessible, name string) (interface{}, bool) {
+func Get(v interface{}, name string) (interface{}, bool) {
 	// find field
-	field := GetAccessor(acc).Fields[name]
+	field := GetAccessor(v).Fields[name]
 	if field == nil {
 		return nil, false
 	}
 
 	// get value
-	value := structValue(acc).Field(field.Index).Interface()
+	value := structValue(v, false).Field(field.Index).Interface()
 
 	return value, true
 }
 
 // GetRaw will look up the specified field on the accessible and return its raw
 // value and whether the field was found at all.
-func GetRaw(acc Accessible, name string) (reflect.Value, bool) {
+func GetRaw(v interface{}, name string) (reflect.Value, bool) {
 	// find field
-	field := GetAccessor(acc).Fields[name]
+	field := GetAccessor(v).Fields[name]
 	if field == nil {
 		return reflect.Value{}, false
 	}
 
 	// get value
-	value := structValue(acc).Field(field.Index)
+	value := structValue(v, false).Field(field.Index)
 
 	return value, true
 }
 
 // Set will set the specified field on the accessible with the provided value
 // and return whether the field has been found and the value has been set.
-func Set(acc Accessible, name string, value interface{}) bool {
+func Set(v interface{}, name string, value interface{}) bool {
 	// find field
-	field := GetAccessor(acc).Fields[name]
+	field := GetAccessor(v).Fields[name]
 	if field == nil {
 		return false
 	}
 
 	// get value
-	fieldValue := structValue(acc).Field(field.Index)
+	fieldValue := structValue(v, true).Field(field.Index)
 
 	// get value value
 	valueValue := reflect.ValueOf(value)
@@ -157,33 +168,33 @@ func Set(acc Accessible, name string, value interface{}) bool {
 }
 
 // MustGet will call Get and panic if the operation failed.
-func MustGet(acc Accessible, name string) interface{} {
+func MustGet(v interface{}, name string) interface{} {
 	// get value
-	value, ok := Get(acc, name)
+	value, ok := Get(v, name)
 	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
 	}
 
 	return value
 }
 
 // MustGetRaw will call GetRaw and panic if the operation failed.
-func MustGetRaw(acc Accessible, name string) reflect.Value {
+func MustGetRaw(v interface{}, name string) reflect.Value {
 	// get raw value
-	value, ok := GetRaw(acc, name)
+	value, ok := GetRaw(v, name)
 	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(acc).Name))
+		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
 	}
 
 	return value
 }
 
 // MustSet will call Set and panic if the operation failed.
-func MustSet(acc Accessible, name string, value interface{}) {
+func MustSet(v interface{}, name string, value interface{}) {
 	// get value
-	ok := Set(acc, name, value)
+	ok := Set(v, name, value)
 	if !ok {
-		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, GetAccessor(acc).Name))
+		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, GetAccessor(v).Name))
 	}
 }
 
@@ -198,13 +209,19 @@ func structType(v interface{}) reflect.Type {
 	return typ
 }
 
-func structValue(v interface{}) reflect.Value {
+func structValue(v interface{}, addressable bool) reflect.Value {
 	val := reflect.ValueOf(v)
 	for val.Type().Kind() == reflect.Ptr {
+		if val.IsNil() {
+			panic("stick: nil value")
+		}
 		val = val.Elem()
 	}
 	if val.Kind() != reflect.Struct {
 		panic("stick: expected struct")
+	}
+	if addressable && !val.CanAddr() {
+		panic("stick: not addressable")
 	}
 	return val
 }

@@ -44,7 +44,6 @@ type validatable struct {
 	Validatable    subValidatable
 	OptValidatable *subValidatable
 	Validatables   []subValidatable
-	BasicAccess
 }
 
 func (v *validatable) Validate() error {
