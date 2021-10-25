@@ -7,12 +7,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type accessible struct {
+	String    string
+	OptString *string
+}
+
+type customAccessible struct {
+	Foo string
+	Bar string
+}
+
+func (*customAccessible) GetAccessor(v interface{}) *Accessor {
+	return Access(v, "Bar")
+}
+
 func TestAccess(t *testing.T) {
+	assert.PanicsWithValue(t, "stick: expected struct", func() {
+		var n int
+		GetAccessor(&n)
+	})
+
 	var foo struct {
 		Foo string
 	}
 
-	acc1 := GetAccessor(foo)
+	acc1 := GetAccessor(&foo)
 	acc2 := GetAccessor(&foo)
 	assert.True(t, acc1 == acc2)
 	assert.Equal(t, &Accessor{
@@ -26,13 +45,16 @@ func TestAccess(t *testing.T) {
 	}, acc1)
 
 	MustSet(&foo, "Foo", "bar")
-	ret := MustGet(foo, "Foo")
+	ret := MustGet(&foo, "Foo")
 	assert.Equal(t, "bar", ret)
 }
 
-type accessible struct {
-	String    string
-	OptString *string
+func TestCustomAccess(t *testing.T) {
+	acc := &customAccessible{}
+
+	assert.PanicsWithValue(t, `stick: could not get field "Bar" on "stick.customAccessible"`, func() {
+		MustGet(acc, "Bar")
+	})
 }
 
 func TestBuildAccessor(t *testing.T) {
@@ -54,8 +76,12 @@ func TestBuildAccessor(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	assert.PanicsWithValue(t, "stick: nil value", func() {
+	assert.PanicsWithValue(t, "stick: nil pointer", func() {
 		Get((*accessible)(nil), "String")
+	})
+
+	assert.PanicsWithValue(t, "stick: expected pointer", func() {
+		Get(accessible{}, "String")
 	})
 
 	acc := &accessible{}
@@ -88,8 +114,12 @@ func TestMustGet(t *testing.T) {
 }
 
 func TestGetRaw(t *testing.T) {
-	assert.PanicsWithValue(t, "stick: nil value", func() {
+	assert.PanicsWithValue(t, "stick: nil pointer", func() {
 		GetRaw((*accessible)(nil), "String")
+	})
+
+	assert.PanicsWithValue(t, "stick: expected pointer", func() {
+		GetRaw(accessible{}, "String")
 	})
 
 	acc := &accessible{}
@@ -122,11 +152,11 @@ func TestMustGetRaw(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	assert.PanicsWithValue(t, "stick: nil value", func() {
+	assert.PanicsWithValue(t, "stick: nil pointer", func() {
 		Set((*accessible)(nil), "String", "foo")
 	})
 
-	assert.PanicsWithValue(t, "stick: not addressable", func() {
+	assert.PanicsWithValue(t, "stick: expected pointer", func() {
 		Set(accessible{}, "String", "foo")
 	})
 

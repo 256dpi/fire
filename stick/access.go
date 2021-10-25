@@ -29,7 +29,7 @@ type Accessor struct {
 // Access will return create and cache an accessor for the provided value.
 func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
-	typ := structType(v)
+	typ := structValue(v).Type()
 
 	// acquire mutex
 	accessMutex.Lock()
@@ -53,7 +53,7 @@ func Access(v interface{}, ignore ...string) *Accessor {
 // BuildAccessor will build an accessor for the provided type.
 func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	// get type
-	typ := structType(v)
+	typ := structValue(v).Type()
 
 	// prepare accessor
 	accessor := &Accessor{
@@ -89,12 +89,12 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 
 // GetAccessor is a short-hand to retrieve the accessor of a value.
 func GetAccessor(v interface{}) *Accessor {
-	// get value
-	value := structValue(v, false)
+	// check type
+	structValue(v)
 
 	// check if accessible
-	if _, ok := value.Type().MethodByName("GetAccessor"); ok {
-		return v.(Accessible).GetAccessor(v)
+	if acc, ok := v.(Accessible); ok {
+		return acc.GetAccessor(v)
 	}
 
 	// otherwise, get accessor on demand
@@ -111,7 +111,7 @@ func Get(v interface{}, name string) (interface{}, bool) {
 	}
 
 	// get value
-	value := structValue(v, false).Field(field.Index).Interface()
+	value := structValue(v).Field(field.Index).Interface()
 
 	return value, true
 }
@@ -137,7 +137,7 @@ func GetRaw(v interface{}, name string) (reflect.Value, bool) {
 	}
 
 	// get value
-	value := structValue(v, false).Field(field.Index)
+	value := structValue(v).Field(field.Index)
 
 	return value, true
 }
@@ -163,7 +163,7 @@ func Set(v interface{}, name string, value interface{}) bool {
 	}
 
 	// get value
-	fieldValue := structValue(v, true).Field(field.Index)
+	fieldValue := structValue(v).Field(field.Index)
 
 	// get value value
 	valueValue := reflect.ValueOf(value)
@@ -193,30 +193,17 @@ func MustSet(v interface{}, name string, value interface{}) {
 	}
 }
 
-func structType(v interface{}) reflect.Type {
-	typ := reflect.TypeOf(v)
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	if typ.Kind() != reflect.Struct {
-		panic("stick: expected struct")
-	}
-	return typ
-}
-
-func structValue(v interface{}, addressable bool) reflect.Value {
+func structValue(v interface{}) reflect.Value {
 	val := reflect.ValueOf(v)
-	for val.Type().Kind() == reflect.Ptr {
-		if val.IsNil() {
-			panic("stick: nil value")
-		}
-		val = val.Elem()
+	if val.Type().Kind() != reflect.Ptr {
+		panic("stick: expected pointer")
 	}
+	if val.IsNil() {
+		panic("stick: nil pointer")
+	}
+	val = val.Elem()
 	if val.Kind() != reflect.Struct {
 		panic("stick: expected struct")
-	}
-	if addressable && !val.CanAddr() {
-		panic("stick: not addressable")
 	}
 	return val
 }
