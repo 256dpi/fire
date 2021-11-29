@@ -88,7 +88,7 @@ func TestWhitelist(t *testing.T) {
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
-		assert.Equal(t, []string{}, ctx.ReadableProperties)
+		assert.Empty(t, ctx.ReadableProperties)
 	})
 }
 

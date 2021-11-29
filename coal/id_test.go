@@ -37,6 +37,7 @@ func TestUnique(t *testing.T) {
 	id1 := New()
 	id2 := New()
 
+	assert.Nil(t, Unique(nil))
 	assert.Equal(t, []ID{id1}, Unique([]ID{id1}))
 	assert.Equal(t, []ID{id1}, Unique([]ID{id1, id1}))
 	assert.Equal(t, []ID{id1, id2}, Unique([]ID{id1, id2, id1}))
@@ -75,6 +76,9 @@ func TestUnion(t *testing.T) {
 	d := New()
 	e := New()
 
+	assert.Nil(t, Union())
+	assert.Nil(t, Union(nil))
+	assert.Equal(t, []ID{a}, Union(nil, []ID{a}))
 	assert.Equal(t, []ID{b, a, c, d, e}, Union([]ID{b, a, c}, []ID{d, a, b}, []ID{e}))
 }
 
@@ -83,6 +87,9 @@ func TestSubtract(t *testing.T) {
 	b := New()
 	c := New()
 
+	assert.Nil(t, Subtract(nil, nil))
+	assert.Nil(t, Subtract(nil, []ID{a, b}))
+	assert.Equal(t, []ID{a, b}, Subtract([]ID{a, b}, nil))
 	assert.Equal(t, []ID{a}, Subtract([]ID{a, b}, []ID{b, c}))
 }
 
@@ -91,5 +98,8 @@ func TestIntersect(t *testing.T) {
 	b := New()
 	c := New()
 
+	assert.Nil(t, Intersect(nil, nil))
+	assert.Nil(t, Intersect(nil, []ID{a, b}))
+	assert.Nil(t, Intersect([]ID{a, b}, nil))
 	assert.Equal(t, []ID{b}, Intersect([]ID{a, b}, []ID{b, c}))
 }

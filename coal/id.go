@@ -61,6 +61,11 @@ func MustFromHex(str string) ID {
 
 // Unique is a helper to get a unique list of object ids.
 func Unique(ids []ID) []ID {
+	// check nil
+	if ids == nil {
+		return nil
+	}
+
 	// prepare table and result
 	table := make(map[ID]bool)
 	res := make([]ID, 0, len(ids))
@@ -101,10 +106,22 @@ func Includes(all, subset []ID) bool {
 
 // Union will merge all list and remove duplicates.
 func Union(lists ...[]ID) []ID {
-	// sum length
+	// check lists
+	if len(lists) == 0 {
+		return nil
+	}
+
+	// sum length and check nil
 	var sum int
+	var nonNil bool
 	for _, l := range lists {
 		sum += len(l)
+		if l != nil {
+			nonNil = true
+		}
+	}
+	if !nonNil {
+		return nil
 	}
 
 	// prepare table and result
@@ -126,6 +143,11 @@ func Union(lists ...[]ID) []ID {
 
 // Subtract will return a list with items that are only part of the first list.
 func Subtract(listA, listB []ID) []ID {
+	// check nil
+	if listA == nil {
+		return nil
+	}
+
 	// prepare new list
 	list := make([]ID, 0, len(listA))
 
@@ -141,6 +163,11 @@ func Subtract(listA, listB []ID) []ID {
 
 // Intersect will return a list with items that are part of both lists.
 func Intersect(listA, listB []ID) []ID {
+	// check nil
+	if listA == nil || listB == nil {
+		return nil
+	}
+
 	// prepare new list
 	list := make([]ID, 0, len(listA))
 
