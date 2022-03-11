@@ -237,6 +237,23 @@ func (s *Subject) Reference() Subject {
 // Rule is a single validation rule.
 type Rule func(sub Subject) error
 
+// IsEqual will check equality against the provided value.
+func IsEqual(v interface{}) func(sub Subject) error {
+	return func(sub Subject) error {
+		// unwrap
+		if !sub.Unwrap() {
+			return nil
+		}
+
+		// check equality
+		if !reflect.DeepEqual(v, sub.IValue) {
+			return xo.SF("not equal")
+		}
+
+		return nil
+	}
+}
+
 // IsZero will check if the provided value is zero. It will determine zeroness
 // using IsZero() or Zero() if implemented. A nil pointer, slice, array or map
 // is also considered as zero.

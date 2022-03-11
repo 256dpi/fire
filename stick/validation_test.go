@@ -192,6 +192,11 @@ func ptr(v interface{}) interface{} {
 	return ptr.Interface()
 }
 
+func TestIsEqual(t *testing.T) {
+	ruleTest(t, "", IsEqual(""), "")
+	ruleTest(t, "", IsEqual("foo"), "not equal")
+}
+
 type zeroStr string
 
 func (s zeroStr) Zero() bool {
