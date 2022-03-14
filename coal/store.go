@@ -200,7 +200,7 @@ func (s *Store) M(model Model) *Manager {
 //   modify the document and also commit concurrently. Therefore, documents that
 //   must "survive" the transaction and cause transactional writes to abort,
 //   must be locked by changing a field to a new value.
-func (s *Store) T(ctx context.Context, readOnly bool, fn func(tc context.Context) error) error {
+func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Context) error) error {
 	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
