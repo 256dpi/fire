@@ -12,7 +12,7 @@ require (
 	github.com/imdario/mergo v0.3.12
 	github.com/shopspring/decimal v1.2.0
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/gjson v1.9.0
+	github.com/tidwall/gjson v1.14.0
 	go.mongodb.org/mongo-driver v1.7.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
