@@ -7,7 +7,7 @@ require (
 	github.com/256dpi/serve v0.8.0
 	github.com/256dpi/xo v0.3.8
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-jwt/jwt/v4 v4.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.12
 	github.com/shopspring/decimal v1.2.0

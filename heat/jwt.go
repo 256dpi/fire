@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/256dpi/xo"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/256dpi/fire/stick"
 )
@@ -13,9 +13,7 @@ const minSecretLen = 16
 
 var jwtSigningMethod = jwt.SigningMethodHS256
 
-var jwtParser = &jwt.Parser{
-	ValidMethods: []string{jwtSigningMethod.Name},
-}
+var jwtParser = jwt.NewParser(jwt.WithValidMethods([]string{jwtSigningMethod.Name}))
 
 type jwtClaims struct {
 	Issuer    string    `json:"iss,omitempty"`

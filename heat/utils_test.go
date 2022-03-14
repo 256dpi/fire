@@ -1,6 +1,6 @@
 package heat
 
-import "github.com/dgrijalva/jwt-go"
+import "github.com/golang-jwt/jwt/v4"
 
 var testSecret = MustRand(32)
 
