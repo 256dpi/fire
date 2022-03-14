@@ -3,7 +3,9 @@ package coal
 import (
 	"context"
 	"io"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
@@ -123,5 +125,41 @@ func TestStoreT(t *testing.T) {
 		}))
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
+	})
+}
+
+func TestStoreRT(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		if tester.Store.Lungo() {
+			return
+		}
+
+		post := tester.Insert(&postModel{
+			Base:  B(),
+			Title: "foo",
+		}).(*postModel)
+
+		var attempts int
+		var wg sync.WaitGroup
+		wg.Add(5)
+		for i := 0; i < 5; i++ {
+			go func() {
+				err := tester.Store.RT(nil, 5, func(ctx context.Context) error {
+					attempts++
+					time.Sleep(10 * time.Millisecond)
+					_, err := tester.Store.M(post).Update(ctx, post, post.ID(), bson.M{
+						"$set": bson.M{
+							"Title": "bar",
+						},
+					}, false)
+					time.Sleep(10 * time.Millisecond)
+					return err
+				})
+				assert.NoError(t, err)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		assert.True(t, attempts > 5)
 	})
 }

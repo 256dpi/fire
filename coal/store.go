@@ -2,6 +2,7 @@ package coal
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
 	"sync"
@@ -9,9 +10,11 @@ import (
 
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/xo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/x/mongo/driver"
 )
 
 // MustConnect will call Connect and panic on errors.
@@ -235,7 +238,7 @@ func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Contex
 			return xo.W(err)
 		}
 
-		// abort ort commit transaction
+		// abort or commit transaction
 		if readOnly {
 			err = sc.AbortTransaction(sc)
 		} else {
@@ -246,6 +249,76 @@ func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Contex
 		}
 
 		return nil
+	}))
+}
+
+// RT will create a transaction around the specified callback and retry the
+// transaction on transient errors up to the specified amount of attempts. See T
+// for details on other transactional behaviours.
+func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Context) error) error {
+	// ensure context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// prevent nested transactions
+	if HasTransaction(ctx) {
+		return xo.F("nested transaction")
+	}
+
+	// trace
+	ctx, span := xo.Trace(ctx, "coal/Store.RT")
+	defer span.End()
+
+	// prepare options
+	opts := options.Session().
+		SetCausalConsistency(true).
+		SetDefaultReadConcern(readconcern.Snapshot())
+
+	// start transaction
+	return xo.W(s.client.UseSessionWithOptions(ctx, opts, func(sc lungo.ISessionContext) error {
+		// prepare counter
+		var attempts int
+
+		for {
+			// increment
+			attempts++
+
+			// start transaction
+			err := sc.StartTransaction()
+			if err != nil {
+				return xo.W(err)
+			}
+
+			// call function
+			err = fn(context.WithValue(sc, hasTransaction, s))
+			if err != nil {
+				// abort transaction
+				_ = sc.AbortTransaction(sc)
+
+				// handle transient transaction errors
+				if attempts < maxAttempts && sc.Err() == nil && hasErrorLabel(err, driver.TransientTransactionError) {
+					continue
+				}
+
+				return xo.W(err)
+			}
+
+			// commit transaction
+			err = sc.AbortTransaction(sc)
+			if err != nil {
+				// TODO: Handle driver.UnknownTransactionCommitResult errors?
+
+				// handle transient transaction errors
+				if attempts < maxAttempts && sc.Err() == nil && hasErrorLabel(err, driver.TransientTransactionError) {
+					continue
+				}
+
+				return xo.W(err)
+			}
+
+			return nil
+		}
 	}))
 }
 
@@ -290,4 +363,14 @@ func GetTransaction(ctx context.Context) (bool, *Store) {
 func HasTransaction(ctx context.Context) bool {
 	ok, _ := GetTransaction(ctx)
 	return ok
+}
+
+func hasErrorLabel(err error, label string) bool {
+	// check command error
+	var cmdErr mongo.CommandError
+	if errors.As(err, &cmdErr) && cmdErr.HasErrorLabel(label) {
+		return true
+	}
+
+	return false
 }
