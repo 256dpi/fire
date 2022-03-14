@@ -5,7 +5,6 @@ import (
 	"io"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
@@ -146,14 +145,20 @@ func TestStoreRT(t *testing.T) {
 			go func() {
 				err := tester.Store.RT(nil, 5, func(ctx context.Context) error {
 					attempts++
-					time.Sleep(10 * time.Millisecond)
-					_, err := tester.Store.M(post).Update(ctx, post, post.ID(), bson.M{
+					var p postModel
+					_, err := tester.Store.M(&p).Find(ctx, &p, post.ID(), false)
+					if err != nil {
+						return err
+					}
+					_, err = tester.Store.M(post).Update(ctx, post, post.ID(), bson.M{
 						"$set": bson.M{
-							"Title": "bar",
+							"Title": p.Title + "-bar",
 						},
 					}, false)
-					time.Sleep(10 * time.Millisecond)
-					return err
+					if err != nil {
+						return err
+					}
+					return nil
 				})
 				assert.NoError(t, err)
 				wg.Done()
@@ -161,5 +166,8 @@ func TestStoreRT(t *testing.T) {
 		}
 		wg.Wait()
 		assert.True(t, attempts > 5)
+
+		tester.Refresh(post)
+		assert.Equal(t, "foo-bar-bar-bar-bar-bar", post.Title)
 	})
 }

@@ -305,7 +305,7 @@ func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Con
 			}
 
 			// commit transaction
-			err = sc.AbortTransaction(sc)
+			err = sc.CommitTransaction(sc)
 			if err != nil {
 				// TODO: Handle driver.UnknownTransactionCommitResult errors?
 
