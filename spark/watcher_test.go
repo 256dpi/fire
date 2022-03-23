@@ -1,11 +1,7 @@
 package spark
 
 import (
-	"context"
-	"encoding/base64"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -14,10 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
 )
 
-func TestWatcherWebSockets(t *testing.T) {
+func TestWatcher(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		watcher := NewWatcher(xo.Panic)
 		watcher.Add(&Stream{
@@ -101,62 +96,6 @@ func TestWatcherWebSockets(t *testing.T) {
 				"`+itm.ID().Hex()+`": "deleted"
 			}
 		}`, string(bytes))
-
-		watcher.Close()
-	})
-}
-
-func TestWatcherSSE(t *testing.T) {
-	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		watcher := NewWatcher(xo.Panic)
-		watcher.Add(&Stream{
-			Model: &itemModel{},
-			Store: tester.Store,
-		})
-
-		group := tester.Assign("", &fire.Controller{
-			Model: &itemModel{},
-		})
-		group.Handle("watch", &fire.GroupAction{
-			Action: watcher.Action(),
-		})
-
-		ctx, cancel := context.WithCancel(context.Background())
-
-		rec := httptest.NewRecorder()
-		data := base64.StdEncoding.EncodeToString([]byte(`{ "items": { "state": true } }`))
-		req := httptest.NewRequest("GET", "/watch?s=items&d="+data, nil)
-		req = req.WithContext(ctx)
-
-		itm := &itemModel{
-			Base: coal.B(),
-			Bar:  "bar",
-		}
-
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-
-			tester.Insert(itm)
-
-			itm.Foo = "bar"
-			tester.Replace(itm)
-
-			tester.Delete(itm)
-
-			time.Sleep(100 * time.Millisecond)
-
-			cancel()
-		}()
-
-		group.Endpoint("").ServeHTTP(rec, req)
-
-		assert.Equal(t, 200, rec.Code)
-		assert.Equal(t, true, rec.Flushed)
-		assert.Equal(t, []string{
-			`data: {"items":{"` + itm.ID().Hex() + `":"created"}}`,
-			`data: {"items":{"` + itm.ID().Hex() + `":"updated"}}`,
-			`data: {"items":{"` + itm.ID().Hex() + `":"deleted"}}`,
-		}, strings.Split(strings.TrimSpace(rec.Body.String()), "\n\n"))
 
 		watcher.Close()
 	})

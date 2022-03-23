@@ -1,7 +1,6 @@
 package spark
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -18,7 +17,7 @@ const (
 	// max message size
 	maxMessageSize = 4096 // 4 KB
 
-	// the time after which a write times out
+	// the time after write times out
 	writeTimeout = 10 * time.Second
 
 	// the interval at which a ping is sent to keep the connection alive
@@ -124,20 +123,6 @@ func (m *manager) handle(ctx *fire.Context) error {
 		return tomb.ErrDying
 	}
 
-	// check if websocket upgrade
-	if websocket.IsWebSocketUpgrade(ctx.HTTPRequest) {
-		return m.handleWebsocket(ctx)
-	}
-
-	return m.handleSSE(ctx)
-}
-
-func (m *manager) close() {
-	m.tomb.Kill(nil)
-	_ = m.tomb.Wait()
-}
-
-func (m *manager) handleWebsocket(ctx *fire.Context) error {
 	// try to upgrade connection
 	conn, err := m.upgrader.Upgrade(ctx.ResponseWriter, ctx.HTTPRequest, nil)
 	if err != nil {
@@ -207,7 +192,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 
 			// check message type
 			if typ != websocket.TextMessage {
-				m.websocketWriteError(conn, "not a text message")
+				writeWebsocketError(conn, "not a text message")
 				close(errs)
 				return
 			}
@@ -246,7 +231,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				// get stream
 				stream, ok := m.watcher.streams[name]
 				if !ok {
-					m.websocketWriteError(conn, "invalid subscription")
+					writeWebsocketError(conn, "invalid subscription")
 					return nil
 				}
 
@@ -261,7 +246,7 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 				if stream.Validator != nil {
 					err := stream.Validator(sub)
 					if err != nil {
-						m.websocketWriteError(conn, "invalid subscription")
+						writeWebsocketError(conn, "invalid subscription")
 						return nil
 					}
 				}
@@ -335,157 +320,11 @@ func (m *manager) handleWebsocket(ctx *fire.Context) error {
 	}
 }
 
-func (m *manager) websocketWriteError(conn *websocket.Conn, msg string) {
-	_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, msg), time.Time{})
+func (m *manager) close() {
+	m.tomb.Kill(nil)
+	_ = m.tomb.Wait()
 }
 
-func (m *manager) handleSSE(ctx *fire.Context) error {
-	// check flusher support
-	flusher, ok := ctx.ResponseWriter.(http.Flusher)
-	if !ok {
-		http.Error(ctx.ResponseWriter, "SSE not supported", http.StatusNotImplemented)
-		return nil
-	}
-
-	// get subscription
-	name := ctx.HTTPRequest.URL.Query().Get("s")
-	if name == "" {
-		http.Error(ctx.ResponseWriter, "missing stream name", http.StatusBadRequest)
-		return nil
-	}
-
-	// prepare data
-	data := Map{}
-
-	// get data
-	encodedData := ctx.HTTPRequest.URL.Query().Get("d")
-	if encodedData != "" {
-		// decode data
-		bytes, err := base64.StdEncoding.DecodeString(encodedData)
-		if err != nil {
-			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
-			return nil
-		}
-
-		// unmarshal data
-		err = json.Unmarshal(bytes, &data)
-		if err != nil {
-			http.Error(ctx.ResponseWriter, "invalid data encoding", http.StatusBadRequest)
-			return nil
-		}
-	}
-
-	// get stream
-	stream, ok := m.watcher.streams[name]
-	if !ok {
-		http.Error(ctx.ResponseWriter, "stream not found", http.StatusBadRequest)
-		return nil
-	}
-
-	// create subscription
-	sub := &Subscription{
-		Context: ctx,
-		Data:    data,
-		Stream:  stream,
-	}
-
-	// validate subscription if present
-	if stream.Validator != nil {
-		err := stream.Validator(sub)
-		if err != nil {
-			http.Error(ctx.ResponseWriter, "invalid subscription", http.StatusBadRequest)
-			return nil
-		}
-	}
-
-	// set headers for SSE
-	h := ctx.ResponseWriter.Header()
-	h.Set("Cache-Control", "no-cache")
-	h.Set("Connection", "keep-alive")
-	h.Set("Content-Type", "text/event-stream")
-
-	// write ok
-	ctx.ResponseWriter.WriteHeader(http.StatusOK)
-
-	// flush header
-	flusher.Flush()
-
-	// prepare queue
-	queue := make(chan *Event, 10)
-
-	// register queue
-	select {
-	case m.subscribes <- queue:
-	case <-m.tomb.Dying():
-		return tomb.ErrDying
-	}
-
-	// ensure unsubscribe
-	defer func() {
-		select {
-		case m.unsubscribes <- queue:
-		case <-m.tomb.Dying():
-		}
-	}()
-
-	// get response writer
-	w := ctx.ResponseWriter
-
-	// create encoder
-	enc := json.NewEncoder(w)
-
-	// run writer
-	for {
-		select {
-		// handle events
-		case evt, ok := <-queue:
-			// check if closed
-			if !ok {
-				return nil
-			}
-
-			// check stream
-			if evt.Stream != sub.Stream {
-				continue
-			}
-
-			// run selector if present
-			if evt.Stream.Selector != nil {
-				if !evt.Stream.Selector(evt, sub) {
-					continue
-				}
-			}
-
-			// create response
-			res := response{
-				evt.Stream.Name(): {
-					evt.ID.Hex(): string(evt.Type),
-				},
-			}
-
-			// write prefix
-			_, err := w.Write([]byte("data: "))
-			if err != nil {
-				return xo.W(err)
-			}
-
-			// write json
-			err = enc.Encode(res)
-			if err != nil {
-				return xo.W(err)
-			}
-
-			// write suffix
-			_, err = w.Write([]byte("\n"))
-			if err != nil {
-				return xo.W(err)
-			}
-
-			// flush writer
-			flusher.Flush()
-		// handle close
-		case <-ctx.Done():
-			return nil
-		}
-	}
+func writeWebsocketError(conn *websocket.Conn, msg string) {
+	_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, msg), time.Time{})
 }
