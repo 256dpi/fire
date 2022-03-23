@@ -33,7 +33,7 @@ func NewClient(baseURL string, httpClient *http.Client) *Client {
 	}
 }
 
-// Call will perform the specified procedure against the RPC endpoint.
+// Call will perform the specified procedure against the endpoint.
 func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	// check context
 	if ctx == nil {

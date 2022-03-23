@@ -8,7 +8,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Procedure denotes types that can be processed by the BSON-RPC system.
+// Procedure denotes a request response object.
 type Procedure interface {
 	Validate() error
 	GetBase() *Base

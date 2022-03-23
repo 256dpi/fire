@@ -17,7 +17,7 @@ func AsError(err error) *Error {
 }
 
 // Error objects provide additional information about problems encountered
-// while performing an RPC operation.
+// while performing an operation.
 type Error struct {
 	// A unique identifier for this particular occurrence of the problem.
 	ID string `json:"id,omitempty" bson:"id,omitempty"`
