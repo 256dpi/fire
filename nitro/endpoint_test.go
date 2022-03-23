@@ -25,7 +25,7 @@ func (p *procedure) Validate() error {
 	return nil
 }
 
-func TestRPC(t *testing.T) {
+func TestEndpoint(t *testing.T) {
 	errs := make(chan error, 1)
 	endpoint := NewEndpoint(func(err error) {
 		errs <- err
