@@ -70,12 +70,12 @@ type Manager struct {
 	trans *Translator
 }
 
-// C is a short-hand to access the underlying collection.
+// C is a shorthand to access the underlying collection.
 func (m *Manager) C() *Collection {
 	return m.coll
 }
 
-// T is a short-hand to access the underlying translator.
+// T is a shorthand to access the underlying translator.
 func (m *Manager) T() *Translator {
 	return m.trans
 }

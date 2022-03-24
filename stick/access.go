@@ -90,7 +90,7 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	return accessor
 }
 
-// GetAccessor is a short-hand to retrieve a value's accessor.
+// GetAccessor is a shorthand to retrieve a value's accessor.
 func GetAccessor(v interface{}) *Accessor {
 	// check type
 	structValue(v)

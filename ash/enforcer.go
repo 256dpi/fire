@@ -1,15 +1,16 @@
 package ash
 
 import (
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/coal"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/stick"
 )
 
-// E is a short-hand function to create an enforcer.
+// E is a shorthand function to create an enforcer.
 func E(name string, m fire.Matcher, h fire.Handler) *Enforcer {
 	return fire.C(name, 0, m, h) // TODO: Set stage?
 }

@@ -26,7 +26,7 @@ type Base struct {
 	Label string
 }
 
-// B is a short-hand to construct a base with a label.
+// B is a shorthand to construct a base with a label.
 func B(label string) Base {
 	return Base{
 		Label: label,

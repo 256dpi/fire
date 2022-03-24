@@ -10,7 +10,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// F is a short-hand function to extract the BSON key of a model field.
+// F is a shorthand function to extract the BSON key of a model field.
 // Additionally, it supports the "-" prefix for retrieving sort keys.
 //
 // Note: F will panic if no field has been found.
@@ -40,7 +40,7 @@ func F(m Model, field string) string {
 	return bsonField
 }
 
-// L is a short-hand function to look up a flagged field of a model.
+// L is a shorthand function to look up a flagged field of a model.
 //
 // Note: L will panic if multiple flagged fields have been found or force is
 // requested and no flagged field has been found.
@@ -59,7 +59,7 @@ func L(m Model, flag string, force bool) string {
 	return ""
 }
 
-// T is a short-hand function to get a pointer of a timestamp.
+// T is a shorthand function to get a pointer of a timestamp.
 func T(t time.Time) *time.Time {
 	return &t
 }

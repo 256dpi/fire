@@ -19,7 +19,7 @@ type Error struct {
 	Retry  bool
 }
 
-// E is a short-hand to construct an error. If retry is true the job will be
+// E is a shorthand to construct an error. If retry is true the job will be
 // retried and if false it will be cancelled. These settings take precedence
 // over the tasks max attempts setting.
 func E(reason string, retry bool) *Error {

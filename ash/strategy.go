@@ -8,13 +8,13 @@ import (
 	"github.com/256dpi/fire"
 )
 
-// L is a short-hand type to create a list of authorizers.
+// L is a shorthand type to create a list of authorizers.
 type L = []*Authorizer
 
-// M is a short-hand type to create a map of authorizers.
+// M is a shorthand type to create a map of authorizers.
 type M = map[string][]*Authorizer
 
-// C is a short-hand to define a strategy and return its callback.
+// C is a shorthand to define a strategy and return its callback.
 func C(s *Strategy) *fire.Callback {
 	return s.Callback()
 }

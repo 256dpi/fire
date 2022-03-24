@@ -6,7 +6,7 @@ import (
 	"github.com/256dpi/fire"
 )
 
-// A is a short-hand function to construct an authorizer. It will also add tracing
+// A is a shorthand function to construct an authorizer. It will also add tracing
 // code around the execution of the authorizer.
 func A(name string, m fire.Matcher, h Handler) *Authorizer {
 	// panic if matcher or handler is not set
@@ -33,7 +33,7 @@ func A(name string, m fire.Matcher, h Handler) *Authorizer {
 	}
 }
 
-// S is a short-hand for a set of enforcers.
+// S is a shorthand for a set of enforcers.
 type S = []*Enforcer
 
 // Handler is a function that inspects an operation context and potentially

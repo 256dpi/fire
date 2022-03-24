@@ -7,20 +7,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// ID is short-hand type for the object id.
+// ID is shorthand type for the object id.
 type ID = primitive.ObjectID
 
-// Z is a short-hand to get a zero object id.
+// Z is a shorthand to get a zero object id.
 func Z() ID {
 	return ID{}
 }
 
-// P is a short-hand function to get a pointer of the specified object id.
+// P is a shorthand function to get a pointer of the specified object id.
 func P(id ID) *ID {
 	return &id
 }
 
-// N is a short-hand function to get a typed nil object id pointer.
+// N is a shorthand function to get a typed nil object id pointer.
 func N() *ID {
 	return nil
 }

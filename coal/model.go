@@ -24,7 +24,7 @@ type Base struct {
 	Score float64 `json:"-" bson:"_sc,omitempty"`
 }
 
-// B is a short-hand to construct a base with the provided id or a generated
+// B is a shorthand to construct a base with the provided id or a generated
 // id if none specified.
 func B(id ...ID) Base {
 	// check list

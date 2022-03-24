@@ -24,10 +24,10 @@ type Callback struct {
 	Handler Handler
 }
 
-// L is a short-hand type to create a list of callbacks.
+// L is a shorthand type to create a list of callbacks.
 type L = []*Callback
 
-// C is a short-hand function to construct a callback. It will also add tracing
+// C is a shorthand function to construct a callback. It will also add tracing
 // code around the execution of the callback.
 func C(name string, s Stage, m Matcher, h Handler) *Callback {
 	// panic if parameters are not set
@@ -79,10 +79,10 @@ type Action struct {
 	Handler Handler
 }
 
-// M is a short-hand type to create a map of actions.
+// M is a shorthand type to create a map of actions.
 type M = map[string]*Action
 
-// A is a short-hand function to construct an action.
+// A is a shorthand function to construct an action.
 func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 	// panic if methods or handler is not set
 	if len(methods) == 0 || h == nil {
