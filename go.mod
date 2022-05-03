@@ -1,5 +1,7 @@
 module github.com/256dpi/fire
 
+go 1.18
+
 require (
 	github.com/256dpi/jsonapi/v2 v2.3.0
 	github.com/256dpi/lungo v0.2.12
@@ -47,5 +49,3 @@ require (
 	google.golang.org/api v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200603094226-e3079894b1e8 // indirect
 )
-
-go 1.17
