@@ -3,9 +3,10 @@ package roast
 import (
 	"testing"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestConvertModel(t *testing.T) {

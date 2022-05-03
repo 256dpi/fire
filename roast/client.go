@@ -1,8 +1,9 @@
 package roast
 
 import (
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/jsonapi/v2"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // TODO: Maybe move to fire package?

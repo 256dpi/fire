@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/256dpi/fire"
-	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 )
 
 // TODO: Support filters and sorters.

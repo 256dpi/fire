@@ -3,8 +3,9 @@ package roast
 import (
 	"testing"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/256dpi/fire/coal"
 )
 
 func TestFactory(t *testing.T) {

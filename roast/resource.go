@@ -3,9 +3,10 @@ package roast
 import (
 	"fmt"
 
+	"github.com/256dpi/jsonapi/v2"
+
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
-	"github.com/256dpi/jsonapi/v2"
 )
 
 // ConvertModel will convert the provided model to a resource.
