@@ -16,9 +16,17 @@ func Merge[T any](base T, with ...T) T {
 		return base
 	}
 
+	// check if already a pointer
+	ptr := reflect.TypeOf(base).Kind() == reflect.Ptr
+
 	// merge base with values
 	for _, value := range with {
-		err := mergo.Merge(base, value, mergo.WithOverride, mergo.WithTransformers(&mergeTransformer{}))
+		var err error
+		if ptr {
+			err = mergo.Merge(base, value, mergo.WithOverride, mergo.WithTransformers(&mergeTransformer{}))
+		} else {
+			err = mergo.Merge(&base, &value, mergo.WithOverride, mergo.WithTransformers(&mergeTransformer{}))
+		}
 		if err != nil {
 			panic(err)
 		}

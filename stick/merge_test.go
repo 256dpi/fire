@@ -19,10 +19,6 @@ type foo struct {
 func TestMerge(t *testing.T) {
 	var base *foo
 
-	assert.Panics(t, func() {
-		Merge(foo{}, foo{})
-	})
-
 	ret := Merge(base)
 	assert.Nil(t, base)
 	assert.Equal(t, base, ret)
@@ -66,13 +62,15 @@ func TestMerge(t *testing.T) {
 	ret = Merge(base, &foo{})
 	assert.Equal(t, &foo{D: id, E: now}, base)
 	assert.Equal(t, base, ret)
+
+	assert.Equal(t, foo{A: "foo"}, Merge(foo{}, foo{A: "foo"}))
 }
 
 func BenchmarkMerge(b *testing.B) {
 	b.ReportAllocs()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		base := foo{}
-		Merge(&base, &foo{A: "foo"})
+		Merge(foo{}, foo{A: "foo"})
 	}
 }
