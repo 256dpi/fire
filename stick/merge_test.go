@@ -29,7 +29,7 @@ func TestMerge(t *testing.T) {
 
 	base = &foo{A: "Foo", C: []string{}}
 
-	ret = Merge(base, foo{})
+	ret = Merge(base, &foo{})
 	assert.Equal(t, &foo{A: "Foo", C: []string{}}, base)
 	assert.Equal(t, base, ret)
 
@@ -73,6 +73,6 @@ func BenchmarkMerge(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		base := foo{}
-		Merge(&base, foo{A: "foo"})
+		Merge(&base, &foo{A: "foo"})
 	}
 }

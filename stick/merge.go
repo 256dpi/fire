@@ -10,9 +10,9 @@ import (
 
 // Merge will merge the specified base value with the provided values and return
 // the base value.
-func Merge(base interface{}, with ...interface{}) interface{} {
-	// check nil
-	if with == nil {
+func Merge[T any](base T, with ...T) T {
+	// check list
+	if len(with) == 0 {
 		return base
 	}
 

@@ -53,11 +53,11 @@ func (f *Factory) Make(model coal.Model, others ...coal.Model) coal.Model {
 	ret := meta.Make()
 
 	// merge with base and model
-	ret = stick.Merge(ret, base, model).(coal.Model)
+	ret = stick.Merge(ret, base, model)
 
 	// merge with others
 	for _, value := range others {
-		ret = stick.Merge(ret, value).(coal.Model)
+		ret = stick.Merge(ret, value)
 	}
 
 	return ret
