@@ -348,7 +348,7 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		}
 
 		// ensure list is unique
-		ids = coal.Unique(ids)
+		ids = stick.Unique(ids)
 
 		// prepare query
 		query := bson.M{

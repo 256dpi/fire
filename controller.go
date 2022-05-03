@@ -1216,7 +1216,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// check if id is already present
-		if coal.Contains(ids, refID) {
+		if stick.Contains(ids, refID) {
 			continue
 		}
 

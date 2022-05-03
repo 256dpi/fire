@@ -1,15 +1,15 @@
 package stick
 
 // Unique will return a new list with unique strings.
-func Unique(list []string) []string {
+func Unique[T comparable](list []T) []T {
 	// check nil
 	if list == nil {
 		return nil
 	}
 
 	// prepare table and result
-	table := make(map[string]bool)
-	res := make([]string, 0, len(list))
+	table := make(map[T]bool)
+	res := make([]T, 0, len(list))
 
 	// add items not in table
 	for _, item := range list {
@@ -23,7 +23,7 @@ func Unique(list []string) []string {
 }
 
 // Contains return whether the list contains the item.
-func Contains(list []string, str string) bool {
+func Contains[T comparable](list []T, str T) bool {
 	for _, item := range list {
 		if item == str {
 			return true
@@ -34,7 +34,7 @@ func Contains(list []string, str string) bool {
 }
 
 // Includes returns whether a list includes another list.
-func Includes(all, subset []string) bool {
+func Includes[T comparable](all, subset []T) bool {
 	for _, item := range subset {
 		if !Contains(all, item) {
 			return false
@@ -45,7 +45,7 @@ func Includes(all, subset []string) bool {
 }
 
 // Union will merge all list and remove duplicates.
-func Union(lists ...[]string) []string {
+func Union[T comparable](lists ...[]T) []T {
 	// check lists
 	if len(lists) == 0 {
 		return nil
@@ -65,8 +65,8 @@ func Union(lists ...[]string) []string {
 	}
 
 	// prepare table and result
-	table := make(map[string]bool, sum)
-	res := make([]string, 0, sum)
+	table := make(map[T]bool, sum)
+	res := make([]T, 0, sum)
 
 	// add items not present in table
 	for _, list := range lists {
@@ -82,14 +82,14 @@ func Union(lists ...[]string) []string {
 }
 
 // Subtract will return a list with items that are only part of the first list.
-func Subtract(listA, listB []string) []string {
+func Subtract[T comparable](listA, listB []T) []T {
 	// check nil
 	if listA == nil {
 		return nil
 	}
 
 	// prepare new list
-	list := make([]string, 0, len(listA))
+	list := make([]T, 0, len(listA))
 
 	// add items that are not in second list
 	for _, item := range listA {
@@ -102,14 +102,14 @@ func Subtract(listA, listB []string) []string {
 }
 
 // Intersect will return a list with items that are part of both lists.
-func Intersect(listA, listB []string) []string {
+func Intersect[T comparable](listA, listB []T) []T {
 	// check nil
 	if listA == nil || listB == nil {
 		return nil
 	}
 
 	// prepare new list
-	list := make([]string, 0, len(listA))
+	list := make([]T, 0, len(listA))
 
 	// add items that are part of both lists
 	for _, item := range listA {
