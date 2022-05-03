@@ -2,6 +2,7 @@ package roast
 
 import (
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Factory is model factory for tests.
@@ -52,11 +53,11 @@ func (f *Factory) Make(model coal.Model, others ...coal.Model) coal.Model {
 	ret := meta.Make()
 
 	// merge with base and model
-	ret = Merge(ret, base, model).(coal.Model)
+	ret = stick.Merge(ret, base, model).(coal.Model)
 
 	// merge with others
 	for _, value := range others {
-		ret = Merge(ret, value).(coal.Model)
+		ret = stick.Merge(ret, value).(coal.Model)
 	}
 
 	return ret

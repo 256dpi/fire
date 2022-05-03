@@ -1,18 +1,18 @@
-package roast
+package stick
 
 import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type foo struct {
 	A string
 	B string
 	C []string
-	D coal.ID
+	D primitive.ObjectID
 	E time.Time
 }
 
@@ -56,7 +56,7 @@ func TestMerge(t *testing.T) {
 	assert.Equal(t, base, ret)
 
 	base = &foo{}
-	id := coal.New()
+	id := primitive.NewObjectID()
 	now := time.Now()
 
 	ret = Merge(base, &foo{D: id, E: now})

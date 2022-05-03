@@ -1,11 +1,11 @@
-package roast
+package stick
 
 import (
 	"reflect"
 	"time"
 
-	"github.com/256dpi/fire/coal"
 	"github.com/imdario/mergo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Merge will merge the specified base value with the provided values and return
@@ -27,24 +27,14 @@ func Merge(base interface{}, with ...interface{}) interface{} {
 	return base
 }
 
-var idType = reflect.TypeOf(coal.ID{})
+var idType = reflect.TypeOf(primitive.ObjectID{})
 var timeType = reflect.TypeOf(time.Time{})
 
 type mergeTransformer struct{}
 
 func (t *mergeTransformer) Transformer(typ reflect.Type) func(reflect.Value, reflect.Value) error {
-	// handle id
-	if typ == idType {
-		return func(dst reflect.Value, src reflect.Value) error {
-			if !src.IsZero() && dst.CanSet() {
-				dst.Set(src)
-			}
-			return nil
-		}
-	}
-
-	// handle time
-	if typ == timeType {
+	// handle id and time types
+	if typ == idType || typ == timeType {
 		return func(dst reflect.Value, src reflect.Value) error {
 			if !src.IsZero() && dst.CanSet() {
 				dst.Set(src)
