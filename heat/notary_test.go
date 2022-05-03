@@ -46,7 +46,7 @@ func TestNotaryIssueDefaults(t *testing.T) {
 	err = notary.Verify(&key, token)
 	assert.NoError(t, err)
 	assert.False(t, key.ID.IsZero())
-	assert.True(t, key.Expiry.Sub(time.Now()) > time.Hour-time.Minute)
+	assert.True(t, time.Until(key.Expiry) > time.Hour-time.Minute)
 	assert.Equal(t, "user", key.User)
 	assert.Equal(t, "role", key.Role)
 }

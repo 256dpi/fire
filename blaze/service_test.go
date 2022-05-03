@@ -21,6 +21,7 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	length, err = uploadFrom(svc, handle, "file2", "foo/bar", strings.NewReader("Hello World!"))
 	assert.Error(t, err)
 	assert.True(t, ErrUsedHandle.Is(err))
+	assert.Zero(t, length)
 
 	err = downloadTo(svc, nil, nil)
 	assert.Error(t, err)
@@ -111,6 +112,7 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 	pos, err = dl.Seek(-2, io.SeekStart)
 	assert.Error(t, err)
 	assert.True(t, ErrInvalidPosition.Is(err))
+	assert.Zero(t, pos)
 
 	// overflow
 
@@ -121,6 +123,7 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 	n, err = dl.Read(buf)
 	assert.Error(t, err)
 	assert.Equal(t, io.EOF, err)
+	assert.Zero(t, n)
 
 	// read after EOF
 

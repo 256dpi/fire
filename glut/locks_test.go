@@ -185,6 +185,7 @@ func TestLock(t *testing.T) {
 			value1.Data = "Hello!!!"
 			return nil
 		})
+		assert.NoError(t, err)
 
 		model = tester.FindLast(&Model{}).(*Model)
 		assert.Equal(t, "test", model.Key)

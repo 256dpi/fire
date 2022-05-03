@@ -297,7 +297,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		out.WriteString(fmt.Sprintf(`<<table border="0" align="center" cellspacing="0.5" cellpadding="0" width="134"><tr><td align="center" valign="bottom" width="130"><font face="Arial" point-size="11">%s</font></td></tr></table>|`, lookup[name]))
 
 		// write begin of tail table
-		out.WriteString(fmt.Sprintf(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`))
+		out.WriteString(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`)
 
 		// write attributes
 		for _, field := range GetMeta(model).OrderedFields {
@@ -307,7 +307,7 @@ func (c *Catalog) VisualizeDOT(title string) string {
 		}
 
 		// write end of tail table
-		out.WriteString(fmt.Sprintf(`</table>>`))
+		out.WriteString(`</table>>`)
 
 		// write end of node
 		out.WriteString(`, shape=Mrecord, fontsize=10, fontname="Arial", margin="0.07,0.05", penwidth="1.0" ];` + "\n")

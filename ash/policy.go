@@ -80,7 +80,7 @@ type Selector func(Identity) *Policy
 func Select(selector Selector) *fire.Callback {
 	return fire.C("ash/Selector", fire.Authorizer, fire.All(), func(ctx *fire.Context) error {
 		// get identity
-		identity, _ := ctx.Data[IdentityDataKey]
+		identity := ctx.Data[IdentityDataKey]
 		if identity == nil {
 			return fire.ErrAccessDenied.Wrap()
 		}

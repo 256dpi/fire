@@ -6044,17 +6044,14 @@ func TestCursorPagination(t *testing.T) {
 			CursorPagination: true,
 		})
 
-		// prepare ids
-		var ids []coal.ID
-
 		// create some posts
 		for i := 0; i < 10; i++ {
-			ids = append(ids, tester.Insert(&postModel{
+			tester.Insert(&postModel{
 				Base:      coal.B(numID(uint8(i) + 1)),
 				Title:     fmt.Sprintf("Post %02d", i+1),
 				TextBody:  fmt.Sprintf("Body %02d", 10-i),
 				Published: i >= 5,
-			}).ID())
+			})
 		}
 
 		/* ascending */

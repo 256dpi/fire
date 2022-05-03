@@ -97,6 +97,7 @@ func TestStorageUploadActionExtended(t *testing.T) {
 			HTTPRequest: req,
 		}, storage.UploadAction(0))
 		assert.Error(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
 		assert.Equal(t, "expected attachment content disposition", err.Error())
 
 		req.Header.Set("Content-Disposition", "attachment; filename=script.js")
@@ -264,6 +265,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 			"Content-Disposition": []string{`form-data; name="file1"`},
 			"Content-Type":        []string{"text/css"},
 		})
+		assert.NoError(t, err)
 
 		_, err = part.Write([]byte("h1 { color: red; }"))
 		assert.NoError(t, err)
@@ -272,6 +274,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 			"Content-Disposition": []string{`form-data; name="file2"; filename="script.js"`},
 			"Content-Type":        []string{"text/javascript"},
 		})
+		assert.NoError(t, err)
 
 		_, err = part.Write([]byte("console.log('Hello World!);"))
 		assert.NoError(t, err)
@@ -315,6 +318,7 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 			"Content-Disposition": []string{`form-data; name="file1"; filename="style.css"`},
 			"Content-Type":        []string{"text/css"},
 		})
+		assert.NoError(t, err)
 
 		_, err = part.Write([]byte("console.log('Hello World!);"))
 		assert.NoError(t, err)

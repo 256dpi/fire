@@ -1660,7 +1660,7 @@ func (c *Controller) loadModels(ctx *Context) {
 	if ctx.JSONAPIRequest.Search != "" {
 		// check availability
 		if !c.Search {
-			xo.Abort(jsonapi.BadRequest(fmt.Sprintf("search not supported")))
+			xo.Abort(jsonapi.BadRequest("search not supported"))
 		}
 
 		// add filter
@@ -1672,7 +1672,7 @@ func (c *Controller) loadModels(ctx *Context) {
 
 		// check sorting
 		if len(ctx.JSONAPIRequest.Sorting) > 0 {
-			xo.Abort(jsonapi.BadRequest(fmt.Sprintf("cannot sort search")))
+			xo.Abort(jsonapi.BadRequest("cannot sort search"))
 		}
 	}
 
@@ -2368,7 +2368,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			}
 
 			// get preloaded references
-			refs, _ := relationships[field.RelName][model.ID()]
+			refs := relationships[field.RelName][model.ID()]
 
 			// check length
 			if len(refs) > 1 {
@@ -2408,7 +2408,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 			}
 
 			// get preloaded references
-			refs, _ := relationships[field.RelName][model.ID()]
+			refs := relationships[field.RelName][model.ID()]
 
 			// prepare references
 			references := make([]*jsonapi.Resource, len(refs))

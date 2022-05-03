@@ -46,7 +46,7 @@ func F(m Model, field string) string {
 // requested and no flagged field has been found.
 func L(m Model, flag string, force bool) string {
 	// lookup fields
-	fields, _ := GetMeta(m).FlaggedFields[flag]
+	fields := GetMeta(m).FlaggedFields[flag]
 	if len(fields) > 1 || (force && len(fields) == 0) {
 		panic(fmt.Sprintf(`coal: no or multiple fields flagged as "%s" on "%s"`, flag, GetMeta(m).Name))
 	}

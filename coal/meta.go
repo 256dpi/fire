@@ -388,7 +388,7 @@ func GetMeta(model Model) *Meta {
 		// add flagged fields
 		for _, flag := range metaField.Flags {
 			// get list
-			list, _ := meta.FlaggedFields[flag]
+			list := meta.FlaggedFields[flag]
 
 			// add field
 			list = append(list, metaField)

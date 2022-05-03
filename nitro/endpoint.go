@@ -69,7 +69,7 @@ func (s *Endpoint) Add(handler *Handler) {
 	s.handlers[name] = handler
 }
 
-// ServerHTTP implements the http.Handler interface.
+// ServeHTTP implements the http.Handler interface.
 func (s *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check request method
 	if r.Method != "POST" {
