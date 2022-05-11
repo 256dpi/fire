@@ -44,7 +44,7 @@ func NewBucket(store *coal.Store, notary *heat.Notary, service Service, registry
 // Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
+func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.Upload")
 	span.Tag("type", mediaType)
@@ -71,7 +71,7 @@ func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// create handle
-	handle, err := s.service.Prepare(ctx)
+	handle, err := b.service.Prepare(ctx)
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
@@ -93,13 +93,13 @@ func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// create file
-	err = s.store.M(file).Insert(ctx, file)
+	err = b.store.M(file).Insert(ctx, file)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// begin upload
-	upload, err := s.service.Upload(ctx, handle, name, mediaType)
+	upload, err := b.service.Upload(ctx, handle, name, mediaType)
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
@@ -125,7 +125,7 @@ func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// update file
-	_, err = s.store.M(file).Update(ctx, nil, file.ID(), bson.M{
+	_, err = b.store.M(file).Update(ctx, nil, file.ID(), bson.M{
 		"$set": bson.M{
 			"State":   Uploaded,
 			"Updated": now,
@@ -137,7 +137,7 @@ func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// issue claim key
-	claimKey, err := s.notary.Issue(&ClaimKey{
+	claimKey, err := b.notary.Issue(&ClaimKey{
 		File: file.ID(),
 		Size: file.Size,
 		Name: file.Name,
@@ -153,7 +153,7 @@ func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 // UploadAction returns an action that provides an upload endpoint that stores
 // files and returns claim keys. The action should be protected and only allow
 // authorized clients.
-func (s *Bucket) UploadAction(limit int64) *fire.Action {
+func (b *Bucket) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
 		limit = serve.MustByteSize("8M")
@@ -161,7 +161,7 @@ func (s *Bucket) UploadAction(limit int64) *fire.Action {
 
 	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != nil && ctx.Store != s.store {
+		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")
 		}
 
@@ -185,9 +185,9 @@ func (s *Bucket) UploadAction(limit int64) *fire.Action {
 		// upload multipart or raw
 		var keys []string
 		if contentType == "multipart/form-data" {
-			keys, err = s.uploadMultipart(ctx, ctParams["boundary"])
+			keys, err = b.uploadMultipart(ctx, ctParams["boundary"])
 		} else {
-			keys, err = s.uploadBody(ctx, contentType)
+			keys, err = b.uploadBody(ctx, contentType)
 		}
 
 		// check limit error
@@ -205,7 +205,7 @@ func (s *Bucket) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (s *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
+func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
 	// prepare filename
 	filename := ""
 
@@ -226,7 +226,7 @@ func (s *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 	}
 
 	// upload stream
-	claimKey, _, err := s.Upload(ctx, filename, mediaType, func(upload Upload) (int64, error) {
+	claimKey, _, err := b.Upload(ctx, filename, mediaType, func(upload Upload) (int64, error) {
 		return UploadFrom(upload, ctx.HTTPRequest.Body)
 	})
 	if err != nil {
@@ -236,7 +236,7 @@ func (s *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 	return []string{claimKey}, nil
 }
 
-func (s *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
+func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
 
@@ -258,7 +258,7 @@ func (s *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, 
 		}
 
 		// upload part
-		claimKey, _, err := s.Upload(ctx, part.FileName(), contentType, func(upload Upload) (int64, error) {
+		claimKey, _, err := b.Upload(ctx, part.FileName(), contentType, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, part)
 		})
 		if err != nil {
@@ -281,12 +281,12 @@ func (s *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, 
 // Claim will claim the link at the field on the provided model. The claimed
 // link must be persisted in the same transaction as the claim to ensure
 // consistency.
-func (s *Bucket) Claim(ctx context.Context, model coal.Model, field string) error {
+func (b *Bucket) Claim(ctx context.Context, model coal.Model, field string) error {
 	// get value
 	value := stick.MustGet(model, field)
 
 	// lookup binding
-	binding := s.registry.Lookup(model, field)
+	binding := b.registry.Lookup(model, field)
 	if binding == nil {
 		return xo.F("missing binding")
 	}
@@ -306,7 +306,7 @@ func (s *Bucket) Claim(ctx context.Context, model coal.Model, field string) erro
 	}
 
 	// claim file
-	err := s.ClaimLink(ctx, link, binding.Name, model.ID())
+	err := b.ClaimLink(ctx, link, binding.Name, model.ID())
 	if err != nil {
 		return err
 	}
@@ -325,7 +325,7 @@ func (s *Bucket) Claim(ctx context.Context, model coal.Model, field string) erro
 // ClaimLink will claim the provided link under the specified binding. The
 // claimed link must be persisted in the same transaction as the claim to ensure
 // consistency.
-func (s *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
+func (b *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
 	// check transaction
 	if !coal.HasTransaction(ctx) {
 		return xo.F("missing transaction for claim")
@@ -342,7 +342,7 @@ func (s *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owne
 	}
 
 	// claim file
-	file, err := s.ClaimFile(ctx, link.ClaimKey, binding, owner)
+	file, err := b.ClaimFile(ctx, link.ClaimKey, binding, owner)
 	if err != nil {
 		return err
 	}
@@ -361,13 +361,13 @@ func (s *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owne
 
 // ClaimFile will claim the file referenced by the provided claim key using the
 // specified binding and owner.
-func (s *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
+func (b *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.ClaimFile")
 	defer span.End()
 
 	// get binding
-	bnd := s.registry.Get(binding)
+	bnd := b.registry.Get(binding)
 	if bnd == nil {
 		return nil, xo.F("unknown binding: %s", binding)
 	}
@@ -379,7 +379,7 @@ func (s *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner 
 
 	// verify claim key
 	var key ClaimKey
-	err := s.notary.Verify(&key, claimKey)
+	err := b.notary.Verify(&key, claimKey)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (s *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner 
 
 	// claim file
 	var file File
-	found, err := s.store.M(&File{}).UpdateFirst(ctx, &file, bson.M{
+	found, err := b.store.M(&File{}).UpdateFirst(ctx, &file, bson.M{
 		"_id":   key.File,
 		"State": Uploaded,
 	}, bson.M{
@@ -419,7 +419,7 @@ func (s *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner 
 // Release will release the link at the field on the provided model. The
 // released link must be persisted in the same transaction as the release to
 // ensure consistency.
-func (s *Bucket) Release(ctx context.Context, model coal.Model, field string) error {
+func (b *Bucket) Release(ctx context.Context, model coal.Model, field string) error {
 	// get field
 	value := stick.MustGet(model, field)
 
@@ -438,7 +438,7 @@ func (s *Bucket) Release(ctx context.Context, model coal.Model, field string) er
 	}
 
 	// release link
-	err := s.ReleaseLink(ctx, link)
+	err := b.ReleaseLink(ctx, link)
 	if err != nil {
 		return err
 	}
@@ -456,7 +456,7 @@ func (s *Bucket) Release(ctx context.Context, model coal.Model, field string) er
 
 // ReleaseLink will release the provided link. The released link must be
 // persisted in the same transaction as the release to ensure consistency.
-func (s *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
+func (b *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 	// get file
 	file := link.File
 	if file.IsZero() {
@@ -469,7 +469,7 @@ func (s *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 	}
 
 	// release file
-	err := s.ReleaseFile(ctx, file)
+	err := b.ReleaseFile(ctx, file)
 	if err != nil {
 		return err
 	}
@@ -478,13 +478,13 @@ func (s *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 }
 
 // ReleaseFile will release the file with the provided id.
-func (s *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {
+func (b *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.ReleaseFile")
 	defer span.End()
 
 	// release file
-	found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := b.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 		"_id":   file,
 		"State": Claimed,
 	}, bson.M{
@@ -505,10 +505,10 @@ func (s *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {
 }
 
 // Modifier will handle modifications on all or just the specified link fields.
-func (s *Bucket) Modifier(fields ...string) *fire.Callback {
+func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 	return fire.C("blaze/Bucket.Modifier", fire.Modifier, fire.Only(fire.Create|fire.Update|fire.Delete), func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != s.store {
+		if ctx.Store != b.store {
 			return xo.F("stores must be identical")
 		}
 
@@ -532,7 +532,7 @@ func (s *Bucket) Modifier(fields ...string) *fire.Callback {
 			}
 
 			// get binding
-			binding := s.registry.Lookup(ctx.Model, field)
+			binding := b.registry.Lookup(ctx.Model, field)
 			if binding == nil {
 				return xo.F("missing binding")
 			}
@@ -557,7 +557,7 @@ func (s *Bucket) Modifier(fields ...string) *fire.Callback {
 				}
 
 				// modify link
-				err := s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
+				err := b.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				if err != nil {
 					return xo.WF(err, field)
 				}
@@ -581,7 +581,7 @@ func (s *Bucket) Modifier(fields ...string) *fire.Callback {
 				}
 
 				// modify link
-				err := s.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
+				err := b.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				if err != nil {
 					return xo.WF(err, field)
 				}
@@ -603,7 +603,7 @@ func (s *Bucket) Modifier(fields ...string) *fire.Callback {
 				}
 
 				// modify links
-				err := s.modifyLinks(ctx, newLinks, oldLinks, binding.Name, owner)
+				err := b.modifyLinks(ctx, newLinks, oldLinks, binding.Name, owner)
 				if err != nil {
 					return xo.WF(err, field)
 				}
@@ -619,7 +619,7 @@ func (s *Bucket) Modifier(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
+func (b *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -627,7 +627,7 @@ func (s *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding
 
 	// release old file
 	if updated || deleted {
-		err := s.ReleaseLink(ctx, oldLink)
+		err := b.ReleaseLink(ctx, oldLink)
 		if err != nil {
 			return err
 		}
@@ -639,7 +639,7 @@ func (s *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding
 		newLink.File = coal.ID{}
 
 		// claim
-		err := s.ClaimLink(ctx, newLink, binding, owner)
+		err := b.ClaimLink(ctx, newLink, binding, owner)
 		if err != nil {
 			return err
 		}
@@ -648,7 +648,7 @@ func (s *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding
 	return nil
 }
 
-func (s *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, binding string, owner coal.ID) error {
+func (b *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, binding string, owner coal.ID) error {
 	// build map of new links
 	newMap := make(map[string]*Link, len(newLinks))
 	newRefs := make([]string, 0, len(newLinks))
@@ -686,7 +686,7 @@ func (s *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bind
 
 	// release old files
 	for _, ref := range stick.Union(updated, deleted) {
-		err := s.ReleaseLink(ctx, oldMap[ref])
+		err := b.ReleaseLink(ctx, oldMap[ref])
 		if err != nil {
 			return err
 		}
@@ -701,7 +701,7 @@ func (s *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bind
 		link.File = coal.ID{}
 
 		// claim
-		err := s.ClaimLink(ctx, link, binding, owner)
+		err := b.ClaimLink(ctx, link, binding, owner)
 		if err != nil {
 			return err
 		}
@@ -711,14 +711,14 @@ func (s *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bind
 }
 
 // Decorate will populate the provided link if a file is available.
-func (s *Bucket) Decorate(link *Link) error {
+func (b *Bucket) Decorate(link *Link) error {
 	// skip if file is missing
 	if link == nil || link.File.IsZero() {
 		return nil
 	}
 
 	// issue view key
-	viewKey, err := s.notary.Issue(&ViewKey{
+	viewKey, err := b.notary.Issue(&ViewKey{
 		File: link.File,
 	})
 	if err != nil {
@@ -737,7 +737,7 @@ func (s *Bucket) Decorate(link *Link) error {
 }
 
 // Decorator will populate all or just the specified link fields.
-func (s *Bucket) Decorator(fields ...string) *fire.Callback {
+func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 	return fire.C("blaze/Bucket.Decorator", fire.Decorator, fire.All(), func(ctx *fire.Context) error {
 		// collect fields if empty
 		if len(fields) == 0 {
@@ -746,7 +746,7 @@ func (s *Bucket) Decorator(fields ...string) *fire.Callback {
 
 		// decorate model
 		if ctx.Model != nil {
-			err := s.decorateModel(ctx.Model, fields)
+			err := b.decorateModel(ctx.Model, fields)
 			if err != nil {
 				return err
 			}
@@ -754,7 +754,7 @@ func (s *Bucket) Decorator(fields ...string) *fire.Callback {
 
 		// decorate models
 		for _, model := range ctx.Models {
-			err := s.decorateModel(model, fields)
+			err := b.decorateModel(model, fields)
 			if err != nil {
 				return err
 			}
@@ -764,7 +764,7 @@ func (s *Bucket) Decorator(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Bucket) decorateModel(model coal.Model, fields []string) error {
+func (b *Bucket) decorateModel(model coal.Model, fields []string) error {
 	// collect fields if empty
 	if len(fields) == 0 {
 		fields = collectFields(model)
@@ -780,7 +780,7 @@ func (s *Bucket) decorateModel(model coal.Model, fields []string) error {
 		switch value := value.(type) {
 		case Link:
 			// decorate link
-			err = s.Decorate(&value)
+			err = b.Decorate(&value)
 			if err != nil {
 				return err
 			}
@@ -789,14 +789,14 @@ func (s *Bucket) decorateModel(model coal.Model, fields []string) error {
 			stick.MustSet(model, field, value)
 		case *Link:
 			// decorate link
-			err = s.Decorate(value)
+			err = b.Decorate(value)
 			if err != nil {
 				return err
 			}
 		case Links:
 			// decorate links
 			for i := range value {
-				err = s.Decorate(&value[i])
+				err = b.Decorate(&value[i])
 				if err != nil {
 					return err
 				}
@@ -809,20 +809,20 @@ func (s *Bucket) decorateModel(model coal.Model, fields []string) error {
 
 // Download will initiate a download for the file referenced by the provided
 // view key.
-func (s *Bucket) Download(ctx context.Context, viewKey string) (Download, *File, error) {
+func (b *Bucket) Download(ctx context.Context, viewKey string) (Download, *File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.Download")
 	defer span.End()
 
 	// verify key
 	var key ViewKey
-	err := s.notary.Verify(&key, viewKey)
+	err := b.notary.Verify(&key, viewKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// download file
-	download, file, err := s.DownloadFile(ctx, key.File)
+	download, file, err := b.DownloadFile(ctx, key.File)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -831,10 +831,10 @@ func (s *Bucket) Download(ctx context.Context, viewKey string) (Download, *File,
 }
 
 // DownloadFile will initiate a download for the specified file.
-func (s *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File, error) {
+func (b *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File, error) {
 	// find file
 	var file File
-	found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
+	found, err := b.store.M(&File{}).FindFirst(ctx, &file, bson.M{
 		"_id":   id,
 		"State": Claimed,
 	}, nil, 0, false)
@@ -845,7 +845,7 @@ func (s *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File,
 	}
 
 	// begin download
-	download, err := s.service.Download(ctx, file.Handle)
+	download, err := b.service.Download(ctx, file.Handle)
 	if err != nil {
 		return nil, nil, xo.W(err)
 	}
@@ -855,10 +855,10 @@ func (s *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File,
 
 // DownloadAction returns an endpoint that allows downloading files using view
 // keys. This action is usually publicly accessible.
-func (s *Bucket) DownloadAction() *fire.Action {
+func (b *Bucket) DownloadAction() *fire.Action {
 	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
 		// check store
-		if ctx.Store != nil && ctx.Store != s.store {
+		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")
 		}
 
@@ -873,13 +873,13 @@ func (s *Bucket) DownloadAction() *fire.Action {
 		dl := ctx.HTTPRequest.URL.Query().Get("dl") == "1"
 
 		// initiate download
-		download, file, err := s.Download(ctx, key)
+		download, file, err := b.Download(ctx, key)
 		if err != nil {
 			return err
 		}
 
 		// get binding
-		binding := s.registry.Get(file.Binding)
+		binding := b.registry.Get(file.Binding)
 		if binding == nil {
 			return xo.F("missing binding")
 		}
@@ -916,11 +916,11 @@ func (s *Bucket) DownloadAction() *fire.Action {
 
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.
-func (s *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
+func (b *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
 	return &axe.Task{
 		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
-			return s.Cleanup(ctx, retention)
+			return b.Cleanup(ctx, retention)
 		},
 		Workers:     1,
 		MaxAttempts: 1,
@@ -939,7 +939,7 @@ func (s *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Dura
 // states "uploading" or "uploaded" are removed after the specified retention
 // which defaults to one hour if zero. Files in the states "released" and
 // "deleting" are removed immediately.
-func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
+func (b *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	// set default retention
 	if retention == 0 {
 		retention = time.Hour
@@ -951,7 +951,7 @@ func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	defer span.End()
 
 	// get iterator for deletable files
-	iter, err := s.store.M(&File{}).FindEach(ctx, bson.M{
+	iter, err := b.store.M(&File{}).FindEach(ctx, bson.M{
 		"$or": []bson.M{
 			{
 				"State": bson.M{
@@ -984,7 +984,7 @@ func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 
 		// flag file as deleting if not already
 		if file.State != Deleting {
-			found, err := s.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
+			found, err := b.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
 				"_id":   file.ID(),
 				"State": file.State,
 			}, bson.M{
@@ -1001,13 +1001,13 @@ func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 		}
 
 		// delete blob
-		err = s.service.Delete(ctx, file.Handle)
+		err = b.service.Delete(ctx, file.Handle)
 		if err != nil {
 			return xo.W(err)
 		}
 
 		// delete file
-		_, err = s.store.M(&File{}).Delete(ctx, nil, file.ID())
+		_, err = b.store.M(&File{}).Delete(ctx, nil, file.ID())
 		if err != nil {
 			return err
 		}
