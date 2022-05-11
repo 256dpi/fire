@@ -35,7 +35,7 @@ func (g *GridFS) Initialize(ctx context.Context) error {
 }
 
 // Prepare implements the Service interface.
-func (g *GridFS) Prepare(_ context.Context) (Handle, error) {
+func (g *GridFS) Prepare(context.Context) (Handle, error) {
 	// create handle
 	handle := Handle{
 		"id": primitive.NewObjectID(),
@@ -98,11 +98,6 @@ func (g *GridFS) Delete(ctx context.Context, handle Handle) error {
 		return xo.W(err)
 	}
 
-	return nil
-}
-
-// Cleanup implements the Service interface.
-func (g *GridFS) Cleanup(_ context.Context) error {
 	return nil
 }
 

@@ -35,7 +35,7 @@ func NewMemory() *Memory {
 }
 
 // Prepare implements the Service interface.
-func (m *Memory) Prepare(_ context.Context) (Handle, error) {
+func (m *Memory) Prepare(context.Context) (Handle, error) {
 	// increment id
 	m.Next++
 
@@ -105,11 +105,6 @@ func (m *Memory) Delete(_ context.Context, handle Handle) error {
 	// delete blob
 	delete(m.Blobs, id)
 
-	return nil
-}
-
-// Cleanup implements the Service interface.
-func (m *Memory) Cleanup(_ context.Context) error {
 	return nil
 }
 

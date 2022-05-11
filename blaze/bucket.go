@@ -940,7 +940,7 @@ func (s *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Dura
 // Cleanup will remove obsolete files and remove their blobs. Files in the
 // states "uploading" or "uploaded" are removed after the specified retention
 // which defaults to one hour if zero. Files in the states "released" and
-// "deleting" are removed immediately. It will also allow the service to clean up.
+// "deleting" are removed immediately.
 func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	// set default retention
 	if retention == 0 {
@@ -1019,12 +1019,6 @@ func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	err = iter.Error()
 	if err != nil {
 		return err
-	}
-
-	// cleanup service
-	err = s.service.Cleanup(ctx)
-	if err != nil {
-		return xo.W(err)
 	}
 
 	return nil
