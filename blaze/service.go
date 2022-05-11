@@ -26,9 +26,6 @@ type Upload interface {
 	Write(data []byte) (int, error)
 	Abort() error
 	Close() error
-
-	// TODO: Resume() (int64, error)
-	// TODO: Suspend() (int64, error)
 }
 
 // Download handles the download of a blob.

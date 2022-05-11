@@ -114,10 +114,6 @@ type memoryUpload struct {
 	mutex  sync.Mutex
 }
 
-// func (u *memoryUpload) Resume() (int64, error) {
-// 	panic("implement me")
-// }
-
 func (u *memoryUpload) Write(data []byte) (int, error) {
 	// acquire mutex
 	u.mutex.Lock()
@@ -133,10 +129,6 @@ func (u *memoryUpload) Write(data []byte) (int, error) {
 
 	return len(data), nil
 }
-
-// func (u *memoryUpload) Suspend() (int64, error) {
-// 	panic("implement me")
-// }
 
 func (u *memoryUpload) Abort() error {
 	// acquire mutex

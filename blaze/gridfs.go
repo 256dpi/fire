@@ -105,10 +105,6 @@ type gridFSUpload struct {
 	stream *lungo.UploadStream
 }
 
-// func (u *gridFSUpload) Resume() (int64, error) {
-// 	panic("implement me")
-// }
-
 func (u *gridFSUpload) Write(data []byte) (int, error) {
 	// write stream
 	n, err := u.stream.Write(data)
@@ -120,10 +116,6 @@ func (u *gridFSUpload) Write(data []byte) (int, error) {
 
 	return n, nil
 }
-
-// func (u *gridFSUpload) Suspend() (int64, error) {
-// 	panic("implement me")
-// }
 
 func (u *gridFSUpload) Abort() error {
 	return xo.W(u.stream.Abort())
