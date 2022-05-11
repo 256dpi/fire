@@ -17,21 +17,12 @@ type GridFS struct {
 }
 
 // NewGridFS creates a new GridFS service.
+//
+// Note: The bucket's indexes must already be ensured.
 func NewGridFS(bucket *lungo.Bucket) *GridFS {
 	return &GridFS{
 		bucket: bucket,
 	}
-}
-
-// Initialize will initialize the GridFS bucket.
-func (g *GridFS) Initialize(ctx context.Context) error {
-	// ensure indexes
-	err := g.bucket.EnsureIndexes(ctx, false)
-	if err != nil {
-		return xo.W(err)
-	}
-
-	return nil
 }
 
 // Prepare implements the Service interface.

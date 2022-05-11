@@ -11,10 +11,12 @@ import (
 
 func TestGridFSService(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		svc := NewGridFS(lungo.NewBucket(tester.Store.DB()))
+		bucket := lungo.NewBucket(tester.Store.DB())
 
-		err := svc.Initialize(nil)
+		err := bucket.EnsureIndexes(nil, false)
 		assert.NoError(t, err)
+
+		svc := NewGridFS(bucket)
 
 		abstractServiceTest(t, svc)
 	})
@@ -22,10 +24,12 @@ func TestGridFSService(t *testing.T) {
 
 func TestGridFSServiceSeek(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		svc := NewGridFS(lungo.NewBucket(tester.Store.DB()))
+		bucket := lungo.NewBucket(tester.Store.DB())
 
-		err := svc.Initialize(nil)
+		err := bucket.EnsureIndexes(nil, false)
 		assert.NoError(t, err)
+
+		svc := NewGridFS(bucket)
 
 		abstractServiceSeekTest(t, svc)
 	})
