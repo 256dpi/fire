@@ -21,7 +21,7 @@ var catalog = coal.NewCatalog(
 	&blaze.File{},
 )
 
-var register = blaze.NewRegister()
+var registry = blaze.NewRegistry()
 
 func init() {
 	// add item indexes
@@ -30,7 +30,7 @@ func init() {
 	catalog.AddIndex(&Item{}, true, 0, "CreateToken")
 
 	// add item file binding
-	register.Add(&blaze.Binding{
+	registry.Add(&blaze.Binding{
 		Name:     "item-file",
 		Owner:    &Item{},
 		Field:    "File",

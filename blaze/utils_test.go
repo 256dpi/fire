@@ -26,23 +26,23 @@ type testModel struct {
 	stick.NoValidation `json:"-" bson:"-"`
 }
 
-var register = NewRegister()
+var registry = NewRegistry()
 
 func init() {
-	register.Add(&Binding{
+	registry.Add(&Binding{
 		Name:     "test-req",
 		Owner:    &testModel{},
 		Field:    "RequiredFile",
 		Filename: "forced",
 	})
 
-	register.Add(&Binding{
+	registry.Add(&Binding{
 		Name:  "test-opt",
 		Owner: &testModel{},
 		Field: "OptionalFile",
 	})
 
-	register.Add(&Binding{
+	registry.Add(&Binding{
 		Name:  "multi-files",
 		Owner: &testModel{},
 		Field: "MultipleFiles",

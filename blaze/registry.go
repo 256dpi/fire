@@ -27,23 +27,23 @@ type Binding struct {
 	Filename string
 }
 
-// Register manages multiple bindings.
-type Register struct {
+// Registry manages multiple bindings.
+type Registry struct {
 	names map[string]*Binding
 	ids   map[string]*Binding
 }
 
-// NewRegister creates and returns a new register.
-func NewRegister() *Register {
-	return &Register{
+// NewRegistry creates and returns a new registry.
+func NewRegistry() *Registry {
+	return &Registry{
 		names: map[string]*Binding{},
 		ids:   map[string]*Binding{},
 	}
 }
 
-// Add will add the specified binding to the register. The name of the binding
+// Add will add the specified binding to the registry. The name of the binding
 // must be unique among all registered bindings.
-func (r *Register) Add(binding *Binding) {
+func (r *Registry) Add(binding *Binding) {
 	// check owner
 	if binding.Owner == nil {
 		panic(`blaze: missing owner`)
@@ -83,12 +83,12 @@ func (r *Register) Add(binding *Binding) {
 }
 
 // Get will get the binding with the specified name.
-func (r *Register) Get(name string) *Binding {
+func (r *Registry) Get(name string) *Binding {
 	return r.names[name]
 }
 
 // Lookup will lookup the binding for the field on the specified owner.
-func (r *Register) Lookup(owner coal.Model, field string) *Binding {
+func (r *Registry) Lookup(owner coal.Model, field string) *Binding {
 	return r.ids[bid(owner, field)]
 }
 
