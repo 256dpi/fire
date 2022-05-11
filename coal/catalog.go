@@ -117,10 +117,7 @@ func (c *Catalog) All() map[Model][]Index {
 
 	// add models and indexes
 	for _, model := range c.models {
-		all[model] = make([]Index, 0)
-		for _, index := range c.indexes[GetMeta(model).PluralName] {
-			all[model] = append(all[model], index)
-		}
+		all[model] = append(all[model], c.indexes[GetMeta(model).PluralName]...)
 	}
 
 	return all

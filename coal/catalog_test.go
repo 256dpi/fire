@@ -22,7 +22,7 @@ func TestCatalog(t *testing.T) {
 
 	assert.Equal(t, []Model{m}, c.Models())
 	assert.Equal(t, map[Model][]Index{
-		m: {},
+		m: nil,
 	}, c.All())
 
 	/* index */
