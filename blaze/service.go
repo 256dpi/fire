@@ -52,7 +52,7 @@ type Service interface {
 	// Delete should delete the blob.
 	Delete(ctx context.Context, handle Handle) error
 
-	// Cleanup is called periodically and allows the service to clean up its
-	// storage until the context is cancelled.
+	// Cleanup is called periodically and allows the service to clean up until
+	// the context is cancelled.
 	Cleanup(ctx context.Context) error
 }

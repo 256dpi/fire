@@ -49,11 +49,8 @@ func main() {
 		})
 	}
 
-	// create bucket
-	bucket := lungo.NewBucket(store.DB())
-
 	// prepare database
-	err = prepareDatabase(store, bucket)
+	err = prepareDatabase(store)
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +75,7 @@ func main() {
 		serve.CORS(serve.CORSDefault("*")),
 		flame.TokenMigrator(true),
 		xo.RootHandler(),
-		createHandler(store, bucket),
+		createHandler(store),
 	)
 
 	// run http server
@@ -89,7 +86,7 @@ func main() {
 	}
 }
 
-func prepareDatabase(store *coal.Store, bucket *lungo.Bucket) error {
+func prepareDatabase(store *coal.Store) error {
 	// ensure indexes
 	err := catalog.EnsureIndexes(store)
 	if err != nil {
@@ -97,7 +94,7 @@ func prepareDatabase(store *coal.Store, bucket *lungo.Bucket) error {
 	}
 
 	// ensure bucket indexes
-	err = bucket.EnsureIndexes(nil, false)
+	err = lungo.NewBucket(store.DB()).EnsureIndexes(nil, false)
 	if err != nil {
 		return err
 	}
@@ -128,7 +125,7 @@ func prepareDatabase(store *coal.Store, bucket *lungo.Bucket) error {
 	return nil
 }
 
-func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
+func createHandler(store *coal.Store) http.Handler {
 	// prepare master secret
 	masterSecret := heat.Secret(secret)
 
@@ -163,10 +160,10 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	watcher.Add(valueStream(store))
 	watcher.Add(fileStream(store))
 
-	// create storage
+	// create bucket
 	fileNotary := heat.NewNotary("example/file", fileSecret)
-	fileService := blaze.NewGridFS(bucket)
-	storage := blaze.NewStorage(store, fileNotary, fileService, register)
+	fileService := blaze.NewGridFS(lungo.NewBucket(store.DB()))
+	bucket := blaze.NewBucket(store, fileNotary, fileService, register)
 
 	// create queue
 	queue := axe.NewQueue(axe.Options{
@@ -176,9 +173,9 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 
 	// add tasks
 	queue.Add(incrementTask(store))
-	queue.Add(generateTask(store, storage))
+	queue.Add(generateTask(store, bucket))
 	queue.Add(periodicTask(store))
-	queue.Add(storage.CleanupTask(time.Minute, time.Minute, time.Minute, time.Minute))
+	queue.Add(bucket.CleanupTask(time.Minute, time.Minute, time.Minute, time.Minute))
 
 	// qun queue
 	queue.Run()
@@ -187,7 +184,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 	g := fire.NewGroup(xo.Capture)
 
 	// add controllers
-	g.Add(itemController(store, queue, storage))
+	g.Add(itemController(store, queue, bucket))
 	g.Add(userController(store))
 	g.Add(jobController(store))
 	g.Add(valueController(store))
@@ -206,7 +203,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Action: storage.UploadAction(serve.MustByteSize("16M")),
+		Action: bucket.UploadAction(serve.MustByteSize("16M")),
 	})
 
 	// add download action
@@ -214,7 +211,7 @@ func createHandler(store *coal.Store, bucket *lungo.Bucket) http.Handler {
 		Authorizers: fire.L{
 			// public endpoint
 		},
-		Action: storage.DownloadAction(),
+		Action: bucket.DownloadAction(),
 	})
 
 	// register group

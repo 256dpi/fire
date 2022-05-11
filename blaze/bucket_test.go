@@ -18,12 +18,12 @@ import (
 	"github.com/256dpi/fire/heat"
 )
 
-func TestStorageUpload(t *testing.T) {
+func TestBucketUpload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service, register)
+		bucket := NewBucket(tester.Store, testNotary, service, register)
 
-		key, file, err := storage.Upload(nil, "data.bin", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, file, err := bucket.Upload(nil, "data.bin", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -49,10 +49,10 @@ func TestStorageUpload(t *testing.T) {
 	})
 }
 
-func TestStorageUploadAction(t *testing.T) {
+func TestBucketUploadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service, register)
+		bucket := NewBucket(tester.Store, testNotary, service, register)
 
 		body := strings.NewReader("Hello World!")
 
@@ -62,7 +62,7 @@ func TestStorageUploadAction(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -82,10 +82,10 @@ func TestStorageUploadAction(t *testing.T) {
 	})
 }
 
-func TestStorageUploadActionExtended(t *testing.T) {
+func TestBucketUploadActionExtended(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service, register)
+		bucket := NewBucket(tester.Store, testNotary, service, register)
 
 		body := strings.NewReader("Hello World!")
 
@@ -95,7 +95,7 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.Error(t, err)
 		assert.Equal(t, http.StatusInternalServerError, res.Code)
 		assert.Equal(t, "expected attachment content disposition", err.Error())
@@ -105,7 +105,7 @@ func TestStorageUploadActionExtended(t *testing.T) {
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -126,9 +126,9 @@ func TestStorageUploadActionExtended(t *testing.T) {
 	})
 }
 
-func TestStorageUploadActionInvalidContentType(t *testing.T) {
+func TestBucketUploadActionInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		body := strings.NewReader("Hello World!")
 		req := httptest.NewRequest("POST", "/foo", body)
@@ -137,7 +137,7 @@ func TestStorageUploadActionInvalidContentType(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -146,9 +146,9 @@ func TestStorageUploadActionInvalidContentType(t *testing.T) {
 	})
 }
 
-func TestStorageUploadActionLimit(t *testing.T) {
+func TestBucketUploadActionLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		body := strings.NewReader("Hello World!")
 
@@ -158,17 +158,17 @@ func TestStorageUploadActionLimit(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(1))
+		}, bucket.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
 	})
 }
 
-func TestStorageUploadActionFormFiles(t *testing.T) {
+func TestBucketUploadActionFormFiles(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service, register)
+		bucket := NewBucket(tester.Store, testNotary, service, register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -194,7 +194,7 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -224,9 +224,9 @@ func TestStorageUploadActionFormFiles(t *testing.T) {
 	})
 }
 
-func TestStorageUploadActionFormFilesLimit(t *testing.T) {
+func TestBucketUploadActionFormFilesLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -246,17 +246,17 @@ func TestStorageUploadActionFormFilesLimit(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(1))
+		}, bucket.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
 	})
 }
 
-func TestStorageUploadActionMultipart(t *testing.T) {
+func TestBucketUploadActionMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
-		storage := NewStorage(tester.Store, testNotary, service, register)
+		bucket := NewBucket(tester.Store, testNotary, service, register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -288,7 +288,7 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(0))
+		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -307,9 +307,9 @@ func TestStorageUploadActionMultipart(t *testing.T) {
 	})
 }
 
-func TestStorageUploadActionMultipartLimit(t *testing.T) {
+func TestBucketUploadActionMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
@@ -332,20 +332,20 @@ func TestStorageUploadActionMultipartLimit(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, storage.UploadAction(1))
+		}, bucket.UploadAction(1))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
 	})
 }
 
-func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
+func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		/* upload */
 
-		key, _, err := storage.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := bucket.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -358,7 +358,7 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 		/* claim without key */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Claim(ctx, model, "RequiredFile")
+			return bucket.Claim(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "missing claim key", err.Error())
@@ -367,18 +367,18 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 
 		model.RequiredFile.ClaimKey = key
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Claim(ctx, model, "RequiredFile")
+			return bucket.Claim(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
 
 		/* decorate */
 
-		err = storage.Decorate(&model.RequiredFile)
+		err = bucket.Decorate(&model.RequiredFile)
 		assert.NoError(t, err)
 
 		/* download */
 
-		download, _, err := storage.Download(nil, model.RequiredFile.ViewKey)
+		download, _, err := bucket.Download(nil, model.RequiredFile.ViewKey)
 		assert.NoError(t, err)
 
 		var buffer bytes.Buffer
@@ -389,27 +389,27 @@ func TestStorageClaimDecorateReleaseRequired(t *testing.T) {
 		/* release */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Release(ctx, model, "RequiredFile")
+			return bucket.Release(ctx, model, "RequiredFile")
 		})
 		assert.NoError(t, err)
 
 		/* release again */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Release(ctx, model, "RequiredFile")
+			return bucket.Release(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "invalid file id", err.Error())
 	})
 }
 
-func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
+func TestBucketClaimDecorateReleaseOptional(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
 		/* upload */
 
-		key, _, err := storage.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := bucket.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -422,7 +422,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 		/* claim without link */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Claim(ctx, model, "OptionalFile")
+			return bucket.Claim(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "missing link", err.Error())
@@ -431,7 +431,7 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 
 		model.OptionalFile = &Link{}
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Claim(ctx, model, "OptionalFile")
+			return bucket.Claim(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "missing claim key", err.Error())
@@ -440,18 +440,18 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 
 		model.OptionalFile.ClaimKey = key
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Claim(ctx, model, "OptionalFile")
+			return bucket.Claim(ctx, model, "OptionalFile")
 		})
 		assert.NoError(t, err)
 
 		/* decorate */
 
-		err = storage.Decorate(model.OptionalFile)
+		err = bucket.Decorate(model.OptionalFile)
 		assert.NoError(t, err)
 
 		/* download */
 
-		download, _, err := storage.Download(nil, model.OptionalFile.ViewKey)
+		download, _, err := bucket.Download(nil, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 
 		var buffer bytes.Buffer
@@ -462,25 +462,25 @@ func TestStorageClaimDecorateReleaseOptional(t *testing.T) {
 		/* release */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Release(ctx, model, "OptionalFile")
+			return bucket.Release(ctx, model, "OptionalFile")
 		})
 		assert.NoError(t, err)
 
 		/* release again */
 
 		err = tester.Store.T(nil, false, func(ctx context.Context) error {
-			return storage.Release(ctx, model, "OptionalFile")
+			return bucket.Release(ctx, model, "OptionalFile")
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "missing link", err.Error())
 	})
 }
 
-func TestStorageModifierRequired(t *testing.T) {
+func TestBucketModifierRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		modifier := storage.Modifier()
+		modifier := bucket.Modifier()
 
 		/* missing */
 
@@ -509,7 +509,7 @@ func TestStorageModifierRequired(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey, err := storage.notary.Issue(&ClaimKey{
+		claimKey, err := bucket.notary.Issue(&ClaimKey{
 			File: file.ID(),
 			Size: file.Size,
 			Type: file.Type,
@@ -534,11 +534,11 @@ func TestStorageModifierRequired(t *testing.T) {
 	})
 }
 
-func TestStorageModifierOptional(t *testing.T) {
+func TestBucketModifierOptional(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		modifier := storage.Modifier()
+		modifier := bucket.Modifier()
 
 		model := &testModel{
 			Base: coal.B(),
@@ -559,7 +559,7 @@ func TestStorageModifierOptional(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey1, err := storage.notary.Issue(&ClaimKey{
+		claimKey1, err := bucket.notary.Issue(&ClaimKey{
 			File: file1.ID(),
 			Size: file1.Size,
 			Type: file1.Type,
@@ -600,7 +600,7 @@ func TestStorageModifierOptional(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey2, err := storage.notary.Issue(&ClaimKey{
+		claimKey2, err := bucket.notary.Issue(&ClaimKey{
 			File: file2.ID(),
 			Size: file2.Size,
 			Type: file2.Type,
@@ -648,11 +648,11 @@ func TestStorageModifierOptional(t *testing.T) {
 	})
 }
 
-func TestStorageModifierMultiple(t *testing.T) {
+func TestBucketModifierMultiple(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		modifier := storage.Modifier()
+		modifier := bucket.Modifier()
 
 		model := &testModel{
 			Base: coal.B(),
@@ -673,7 +673,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey1, err := storage.notary.Issue(&ClaimKey{
+		claimKey1, err := bucket.notary.Issue(&ClaimKey{
 			File: file1.ID(),
 			Size: file1.Size,
 			Type: file1.Type,
@@ -716,7 +716,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey2, err := storage.notary.Issue(&ClaimKey{
+		claimKey2, err := bucket.notary.Issue(&ClaimKey{
 			File: file2.ID(),
 			Size: file2.Size,
 			Type: file2.Type,
@@ -759,7 +759,7 @@ func TestStorageModifierMultiple(t *testing.T) {
 			Type: "image/png",
 		}).(*File)
 
-		claimKey3, err := storage.notary.Issue(&ClaimKey{
+		claimKey3, err := bucket.notary.Issue(&ClaimKey{
 			File: file3.ID(),
 			Size: file3.Size,
 			Type: file3.Type,
@@ -845,11 +845,11 @@ func TestStorageModifierMultiple(t *testing.T) {
 	})
 }
 
-func TestStorageDecorator(t *testing.T) {
+func TestBucketDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		decorator := storage.Decorator()
+		decorator := bucket.Decorator()
 
 		file1 := coal.New()
 		file2 := coal.New()
@@ -940,32 +940,32 @@ func TestStorageDecorator(t *testing.T) {
 		}, model.MultipleFiles)
 
 		var viewKey1 ViewKey
-		err = storage.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
+		err = bucket.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file1, viewKey1.File)
 
 		var viewKey2 ViewKey
-		err = storage.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
+		err = bucket.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file2, viewKey2.File)
 
 		var viewKey3 ViewKey
-		err = storage.notary.Verify(&viewKey3, model.MultipleFiles[0].ViewKey)
+		err = bucket.notary.Verify(&viewKey3, model.MultipleFiles[0].ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file3, viewKey3.File)
 
 		var viewKey4 ViewKey
-		err = storage.notary.Verify(&viewKey4, model.MultipleFiles[1].ViewKey)
+		err = bucket.notary.Verify(&viewKey4, model.MultipleFiles[1].ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file4, viewKey4.File)
 	})
 }
 
-func TestStorageDownload(t *testing.T) {
+func TestBucketDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -976,14 +976,14 @@ func TestStorageDownload(t *testing.T) {
 		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
-		key, err := storage.notary.Issue(&ViewKey{
+		key, err := bucket.notary.Issue(&ViewKey{
 			Base: heat.Base{},
 			File: file.ID(),
 		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
-		download, file, err := storage.Download(nil, key)
+		download, file, err := bucket.Download(nil, key)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, file)
 
@@ -994,11 +994,11 @@ func TestStorageDownload(t *testing.T) {
 	})
 }
 
-func TestStorageDownloadAction(t *testing.T) {
+func TestBucketDownloadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		action := storage.DownloadAction()
+		action := bucket.DownloadAction()
 
 		/* no key */
 
@@ -1013,7 +1013,7 @@ func TestStorageDownloadAction(t *testing.T) {
 
 		/* with key */
 
-		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1025,7 +1025,7 @@ func TestStorageDownloadAction(t *testing.T) {
 		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
-		key, err := storage.notary.Issue(&ViewKey{
+		key, err := bucket.notary.Issue(&ViewKey{
 			Base: heat.Base{},
 			File: file.ID(),
 		})
@@ -1066,11 +1066,11 @@ func TestStorageDownloadAction(t *testing.T) {
 	})
 }
 
-func TestStorageDownloadActionStream(t *testing.T) {
+func TestBucketDownloadActionStream(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1082,14 +1082,14 @@ func TestStorageDownloadActionStream(t *testing.T) {
 		file.Owner = coal.P(coal.New())
 		tester.Replace(file)
 
-		key, err := storage.notary.Issue(&ViewKey{
+		key, err := bucket.notary.Issue(&ViewKey{
 			Base: heat.Base{},
 			File: file.ID(),
 		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
-		action := storage.DownloadAction()
+		action := bucket.DownloadAction()
 
 		req := httptest.NewRequest("HEAD", "/foo?key="+key, nil)
 		rec, err := tester.RunAction(&fire.Context{
@@ -1127,11 +1127,11 @@ func TestStorageDownloadActionStream(t *testing.T) {
 	})
 }
 
-func TestStorageCleanup(t *testing.T) {
+func TestBucketCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		storage := NewStorage(tester.Store, testNotary, NewMemory(), register)
+		bucket := NewBucket(tester.Store, testNotary, NewMemory(), register)
 
-		_, file, err := storage.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1142,7 +1142,7 @@ func TestStorageCleanup(t *testing.T) {
 
 		time.Sleep(10 * time.Millisecond)
 
-		err = storage.Cleanup(nil, 1)
+		err = bucket.Cleanup(nil, 1)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, tester.Count(&File{}))
 	})

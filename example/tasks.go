@@ -76,12 +76,12 @@ func incrementTask(store *coal.Store) *axe.Task {
 	}
 }
 
-func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
+func generateTask(store *coal.Store, bucket *blaze.Bucket) *axe.Task {
 	return &axe.Task{
 		Job: &generateJob{},
 		Handler: func(ctx *axe.Context) error {
 			// upload random image
-			claimKey, _, err := storage.Upload(ctx, "", "image/png", func(upload blaze.Upload) (int64, error) {
+			claimKey, _, err := bucket.Upload(ctx, "", "image/png", func(upload blaze.Upload) (int64, error) {
 				return blaze.UploadFrom(upload, randomImage())
 			})
 			if err != nil {
@@ -104,7 +104,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 
 				// release file if available
 				if item.File != nil {
-					err = storage.Release(ctx, &item, "File")
+					err = bucket.Release(ctx, &item, "File")
 					if err != nil {
 						return err
 					}
@@ -116,7 +116,7 @@ func generateTask(store *coal.Store, storage *blaze.Storage) *axe.Task {
 				}
 
 				// claim file
-				err = storage.Claim(ctx, &item, "File")
+				err = bucket.Claim(ctx, &item, "File")
 				if err != nil {
 					return err
 				}

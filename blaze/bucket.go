@@ -23,17 +23,17 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Storage provides file storage services.
-type Storage struct {
+// Bucket provides file storage capabilities.
+type Bucket struct {
 	store    *coal.Store
 	notary   *heat.Notary
 	service  Service
 	register *Register
 }
 
-// NewStorage creates a new storage.
-func NewStorage(store *coal.Store, notary *heat.Notary, service Service, register *Register) *Storage {
-	return &Storage{
+// NewBucket creates a new bucket.
+func NewBucket(store *coal.Store, notary *heat.Notary, service Service, register *Register) *Bucket {
+	return &Bucket{
 		store:    store,
 		notary:   notary,
 		service:  service,
@@ -42,11 +42,11 @@ func NewStorage(store *coal.Store, notary *heat.Notary, service Service, registe
 }
 
 // Upload will initiate and perform an upload using the provided callback and
-// return a claim key and the uploaded file. Upload must be called outside of a
+// return a claim key and the uploaded file. Upload must be called outside a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (s *Storage) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
+func (s *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
 	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Storage.Upload")
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.Upload")
 	span.Tag("type", mediaType)
 	defer span.End()
 
@@ -150,16 +150,16 @@ func (s *Storage) Upload(ctx context.Context, name, mediaType string, cb func(Up
 	return claimKey, file, nil
 }
 
-// UploadAction returns an action that provides an upload service that stores
+// UploadAction returns an action that provides an upload endpoint that stores
 // files and returns claim keys. The action should be protected and only allow
 // authorized clients.
-func (s *Storage) UploadAction(limit int64) *fire.Action {
+func (s *Bucket) UploadAction(limit int64) *fire.Action {
 	// set default limit
 	if limit == 0 {
 		limit = serve.MustByteSize("8M")
 	}
 
-	return fire.A("blaze/Storage.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
+	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.store {
 			return xo.F("stores must be identical")
@@ -205,7 +205,7 @@ func (s *Storage) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (s *Storage) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
+func (s *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
 	// prepare filename
 	filename := ""
 
@@ -236,7 +236,7 @@ func (s *Storage) uploadBody(ctx *fire.Context, mediaType string) ([]string, err
 	return []string{claimKey}, nil
 }
 
-func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
+func (s *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
 
@@ -281,7 +281,7 @@ func (s *Storage) uploadMultipart(ctx *fire.Context, boundary string) ([]string,
 // Claim will claim the link at the field on the provided model. The claimed
 // link must be persisted in the same transaction as the claim to ensure
 // consistency.
-func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) error {
+func (s *Bucket) Claim(ctx context.Context, model coal.Model, field string) error {
 	// get value
 	value := stick.MustGet(model, field)
 
@@ -325,7 +325,7 @@ func (s *Storage) Claim(ctx context.Context, model coal.Model, field string) err
 // ClaimLink will claim the provided link under the specified binding. The
 // claimed link must be persisted in the same transaction as the claim to ensure
 // consistency.
-func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
+func (s *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owner coal.ID) error {
 	// check transaction
 	if !coal.HasTransaction(ctx) {
 		return xo.F("missing transaction for claim")
@@ -361,9 +361,9 @@ func (s *Storage) ClaimLink(ctx context.Context, link *Link, binding string, own
 
 // ClaimFile will claim the file referenced by the provided claim key using the
 // specified binding and owner.
-func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
+func (s *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
 	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Storage.ClaimFile")
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.ClaimFile")
 	defer span.End()
 
 	// get binding
@@ -419,7 +419,7 @@ func (s *Storage) ClaimFile(ctx context.Context, claimKey, binding string, owner
 // Release will release the link at the field on the provided model. The
 // released link must be persisted in the same transaction as the release to
 // ensure consistency.
-func (s *Storage) Release(ctx context.Context, model coal.Model, field string) error {
+func (s *Bucket) Release(ctx context.Context, model coal.Model, field string) error {
 	// get field
 	value := stick.MustGet(model, field)
 
@@ -456,7 +456,7 @@ func (s *Storage) Release(ctx context.Context, model coal.Model, field string) e
 
 // ReleaseLink will release the provided link. The released link must be
 // persisted in the same transaction as the release to ensure consistency.
-func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
+func (s *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 	// get file
 	file := link.File
 	if file.IsZero() {
@@ -478,9 +478,9 @@ func (s *Storage) ReleaseLink(ctx context.Context, link *Link) error {
 }
 
 // ReleaseFile will release the file with the provided id.
-func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
+func (s *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {
 	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Storage.ReleaseFile")
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.ReleaseFile")
 	defer span.End()
 
 	// release file
@@ -504,10 +504,9 @@ func (s *Storage) ReleaseFile(ctx context.Context, file coal.ID) error {
 	return nil
 }
 
-// Modifier will handle modifications on all or just the specified link fields
-// on the model.
-func (s *Storage) Modifier(fields ...string) *fire.Callback {
-	return fire.C("blaze/Storage.Modifier", fire.Modifier, fire.Only(fire.Create|fire.Update|fire.Delete), func(ctx *fire.Context) error {
+// Modifier will handle modifications on all or just the specified link fields.
+func (s *Bucket) Modifier(fields ...string) *fire.Callback {
+	return fire.C("blaze/Bucket.Modifier", fire.Modifier, fire.Only(fire.Create|fire.Update|fire.Delete), func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != s.store {
 			return xo.F("stores must be identical")
@@ -620,7 +619,7 @@ func (s *Storage) Modifier(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
+func (s *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
 	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
@@ -649,7 +648,7 @@ func (s *Storage) modifyLink(ctx context.Context, newLink, oldLink *Link, bindin
 	return nil
 }
 
-func (s *Storage) modifyLinks(ctx context.Context, newLinks, oldLinks Links, binding string, owner coal.ID) error {
+func (s *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, binding string, owner coal.ID) error {
 	// build map of new links
 	newMap := make(map[string]*Link, len(newLinks))
 	newRefs := make([]string, 0, len(newLinks))
@@ -711,9 +710,8 @@ func (s *Storage) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bin
 	return nil
 }
 
-// Decorate will populate the view key of the provided link if a file is
-// available.
-func (s *Storage) Decorate(link *Link) error {
+// Decorate will populate the provided link if a file is available.
+func (s *Bucket) Decorate(link *Link) error {
 	// skip if file is missing
 	if link == nil || link.File.IsZero() {
 		return nil
@@ -738,10 +736,9 @@ func (s *Storage) Decorate(link *Link) error {
 	return nil
 }
 
-// Decorator will generate view keys for all or just the specified link fields
-// on the returned model or models.
-func (s *Storage) Decorator(fields ...string) *fire.Callback {
-	return fire.C("blaze/Storage.Decorator", fire.Decorator, fire.All(), func(ctx *fire.Context) error {
+// Decorator will populate all or just the specified link fields.
+func (s *Bucket) Decorator(fields ...string) *fire.Callback {
+	return fire.C("blaze/Bucket.Decorator", fire.Decorator, fire.All(), func(ctx *fire.Context) error {
 		// collect fields if empty
 		if len(fields) == 0 {
 			fields = collectFields(ctx.Controller.Model)
@@ -767,7 +764,7 @@ func (s *Storage) Decorator(fields ...string) *fire.Callback {
 	})
 }
 
-func (s *Storage) decorateModel(model coal.Model, fields []string) error {
+func (s *Bucket) decorateModel(model coal.Model, fields []string) error {
 	// collect fields if empty
 	if len(fields) == 0 {
 		fields = collectFields(model)
@@ -812,9 +809,9 @@ func (s *Storage) decorateModel(model coal.Model, fields []string) error {
 
 // Download will initiate a download for the file referenced by the provided
 // view key.
-func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File, error) {
+func (s *Bucket) Download(ctx context.Context, viewKey string) (Download, *File, error) {
 	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Storage.Download")
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.Download")
 	defer span.End()
 
 	// verify key
@@ -834,7 +831,7 @@ func (s *Storage) Download(ctx context.Context, viewKey string) (Download, *File
 }
 
 // DownloadFile will initiate a download for the specified file.
-func (s *Storage) DownloadFile(ctx context.Context, id coal.ID) (Download, *File, error) {
+func (s *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File, error) {
 	// find file
 	var file File
 	found, err := s.store.M(&File{}).FindFirst(ctx, &file, bson.M{
@@ -856,10 +853,10 @@ func (s *Storage) DownloadFile(ctx context.Context, id coal.ID) (Download, *File
 	return download, &file, nil
 }
 
-// DownloadAction returns an action that allows downloading files using view
+// DownloadAction returns an endpoint that allows downloading files using view
 // keys. This action is usually publicly accessible.
-func (s *Storage) DownloadAction() *fire.Action {
-	return fire.A("blaze/Storage.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
+func (s *Bucket) DownloadAction() *fire.Action {
+	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != s.store {
 			return xo.F("stores must be identical")
@@ -921,7 +918,7 @@ func (s *Storage) DownloadAction() *fire.Action {
 
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.
-func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
+func (s *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
 	return &axe.Task{
 		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
@@ -944,14 +941,14 @@ func (s *Storage) CleanupTask(lifetime, timeout, periodicity, retention time.Dur
 // states "uploading" or "uploaded" are removed after the specified retention
 // which defaults to one hour if zero. Files in the states "released" and
 // "deleting" are removed immediately. It will also allow the service to clean up.
-func (s *Storage) Cleanup(ctx context.Context, retention time.Duration) error {
+func (s *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	// set default retention
 	if retention == 0 {
 		retention = time.Hour
 	}
 
 	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Storage.Cleanup")
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.Cleanup")
 	span.Tag("retention", retention.String())
 	defer span.End()
 

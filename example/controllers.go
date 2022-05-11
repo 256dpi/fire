@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/fire/glut"
 )
 
-func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage) *fire.Controller {
+func itemController(store *coal.Store, queue *axe.Queue, bucket *blaze.Bucket) *fire.Controller {
 	return &fire.Controller{
 		Model: &Item{},
 		Store: store,
@@ -17,14 +17,14 @@ func itemController(store *coal.Store, queue *axe.Queue, storage *blaze.Storage)
 			flame.Callback(true),
 		},
 		Modifiers: fire.L{
-			storage.Modifier(),
+			bucket.Modifier(),
 			fire.TimestampModifier(),
 		},
 		Validators: fire.L{
 			fire.RelationshipValidator(&Item{}, catalog),
 		},
 		Decorators: fire.L{
-			storage.Decorator(),
+			bucket.Decorator(),
 		},
 		ResourceActions: fire.M{
 			"add": queue.Action([]string{"POST"}, func(ctx *fire.Context) axe.Blueprint {
