@@ -17,7 +17,6 @@ func TestGridFSService(t *testing.T) {
 		assert.NoError(t, err)
 
 		svc := NewGridFS(bucket)
-
 		abstractServiceTest(t, svc)
 	})
 }
@@ -30,7 +29,6 @@ func TestGridFSServiceSeek(t *testing.T) {
 		assert.NoError(t, err)
 
 		svc := NewGridFS(bucket)
-
 		abstractServiceSeekTest(t, svc, true, false)
 	})
 }

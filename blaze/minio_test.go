@@ -18,7 +18,6 @@ func TestMinioService(t *testing.T) {
 		assert.NoError(t, err)
 
 		svc := NewMinio(client, "blaze")
-
 		abstractServiceTest(t, svc)
 	})
 }
@@ -31,7 +30,6 @@ func TestMinioServiceSeek(t *testing.T) {
 		assert.NoError(t, err)
 
 		svc := NewMinio(client, "blaze")
-
 		abstractServiceSeekTest(t, svc, false, true)
 	})
 }
