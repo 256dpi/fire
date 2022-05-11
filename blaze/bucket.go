@@ -914,8 +914,6 @@ func (s *Bucket) DownloadAction() *fire.Action {
 	})
 }
 
-// TODO: Periodically verify claimed files.
-
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.
 func (s *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
