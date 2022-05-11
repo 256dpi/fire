@@ -40,7 +40,7 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	assert.True(t, ErrNotFound.Is(err))
 }
 
-func abstractServiceSeekTest(t *testing.T, svc Service) {
+func abstractServiceSeekTest(t *testing.T, svc Service, allowCurNeg, overflowEOF bool) {
 	handle, err := svc.Prepare(nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
@@ -84,18 +84,23 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 
 	// from current (negative)
 
-	pos, err = dl.Seek(-1, io.SeekCurrent)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(8), pos)
+	if allowCurNeg {
+		pos, err = dl.Seek(-1, io.SeekCurrent)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(8), pos)
 
-	n, err = dl.Read(buf)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, n)
-	assert.Equal(t, []byte("rl"), buf)
+		n, err = dl.Read(buf)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, n)
+		assert.Equal(t, []byte("rl"), buf)
+	} else {
+		_, err = dl.Seek(-1, io.SeekCurrent)
+		assert.Error(t, err)
+	}
 
 	// from end
 
-	pos, err = dl.Seek(3, io.SeekEnd)
+	pos, err = dl.Seek(-3, io.SeekEnd)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(9), pos)
 
@@ -113,20 +118,27 @@ func abstractServiceSeekTest(t *testing.T, svc Service) {
 
 	// overflow
 
-	pos, err = dl.Seek(15, io.SeekStart)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(15), pos)
+	if overflowEOF {
+		pos, err = dl.Seek(15, io.SeekStart)
+		assert.Error(t, err)
+		assert.Equal(t, io.EOF, err)
+		assert.Zero(t, pos)
+	} else {
+		pos, err = dl.Seek(15, io.SeekStart)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(15), pos)
 
-	n, err = dl.Read(buf)
-	assert.Error(t, err)
-	assert.Equal(t, io.EOF, err)
-	assert.Zero(t, n)
+		n, err = dl.Read(buf)
+		assert.Error(t, err)
+		assert.Equal(t, io.EOF, err)
+		assert.Zero(t, n)
+	}
 
 	// read after EOF
 
 	pos, err = dl.Seek(0, io.SeekStart)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(0), pos)
+	assert.Zero(t, pos)
 
 	n, err = dl.Read(buf)
 	assert.NoError(t, err)

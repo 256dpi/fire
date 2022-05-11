@@ -183,7 +183,7 @@ func (d *memoryDownload) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		position = position + offset
 	case io.SeekEnd:
-		position = int64(len(d.blob.Bytes)) - offset
+		position = int64(len(d.blob.Bytes)) + offset
 	}
 
 	// check position

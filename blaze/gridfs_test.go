@@ -31,6 +31,6 @@ func TestGridFSServiceSeek(t *testing.T) {
 
 		svc := NewGridFS(bucket)
 
-		abstractServiceSeekTest(t, svc)
+		abstractServiceSeekTest(t, svc, true, false)
 	})
 }

@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/256dpi/jsonapi/v2 v2.3.0
-	github.com/256dpi/lungo v0.3.0
+	github.com/256dpi/lungo v0.3.1
 	github.com/256dpi/oauth2/v2 v2.2.0
 	github.com/256dpi/serve v0.8.0
 	github.com/256dpi/xo v0.3.8
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.19.0 // indirect
 	go.opentelemetry.io/otel/sdk v0.19.0 // indirect
 	go.opentelemetry.io/otel/trace v0.19.0 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/api v0.41.0 // indirect

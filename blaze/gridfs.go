@@ -133,7 +133,7 @@ func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	n, err := d.stream.Seek(offset, whence)
 	if err == lungo.ErrFileNotFound {
 		return 0, ErrNotFound.Wrap()
-	} else if err == lungo.ErrInvalidPosition {
+	} else if err == lungo.ErrNegativePosition {
 		return 0, ErrInvalidPosition.Wrap()
 	} else if err != nil {
 		return 0, xo.W(err)
