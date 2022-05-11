@@ -205,7 +205,9 @@ func (f *File) Validate() error {
 			return ValidateType(f.Type)
 		})
 
-		if f.State != Uploading {
+		if f.State == Uploading {
+			v.Value("Size", false, stick.IsMinInt(0))
+		} else {
 			v.Value("Size", false, stick.IsMinInt(1))
 		}
 
