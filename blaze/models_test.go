@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/256dpi/fire/stick"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestAddFileIndexes(t *testing.T) {

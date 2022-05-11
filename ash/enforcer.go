@@ -4,9 +4,8 @@ import (
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire/coal"
-
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
 
