@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/minio/minio-go/v7"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/fire/coal"
 )
 
 // Minio stores blobs in a S3 compatible bucket.
@@ -27,9 +28,13 @@ func NewMinio(client *minio.Client, bucket string) *Minio {
 
 // Prepare implements the Service interface.
 func (m *Minio) Prepare(context.Context) (Handle, error) {
+	// construct name
+	str := coal.New().Hex()
+	name := fmt.Sprintf("%s/%s/%s", str[len(str)-2:], str[len(str)-4:len(str)-2], str)
+
 	// create handle
 	handle := Handle{
-		"id": primitive.NewObjectID(),
+		"name": name,
 	}
 
 	return handle, nil
@@ -42,14 +47,14 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 		ctx = context.Background()
 	}
 
-	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
-	if !ok || id.IsZero() {
+	// get name
+	name, ok := handle["name"].(string)
+	if !ok || name == "" {
 		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// check object
-	_, err := m.client.StatObject(ctx, m.bucket, m.idToPath(id), minio.StatObjectOptions{})
+	_, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
 	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
 		// good
 	} else if err != nil {
@@ -69,7 +74,7 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 
 	// start upload
 	go func() {
-		_, err := m.client.PutObject(ctx, m.bucket, m.idToPath(id), r, -1, minio.PutObjectOptions{
+		_, err := m.client.PutObject(ctx, m.bucket, name, r, -1, minio.PutObjectOptions{
 			ContentType: mediaType,
 		})
 		upload.done <- err
@@ -86,14 +91,14 @@ func (m *Minio) Download(ctx context.Context, handle Handle) (Download, error) {
 		ctx = context.Background()
 	}
 
-	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
-	if !ok || id.IsZero() {
+	// get name
+	name, ok := handle["name"].(string)
+	if !ok || name == "" {
 		return nil, ErrInvalidHandle.Wrap()
 	}
 
 	// get object
-	obj, err := m.client.GetObject(ctx, m.bucket, m.idToPath(id), minio.GetObjectOptions{})
+	obj, err := m.client.GetObject(ctx, m.bucket, name, minio.GetObjectOptions{})
 	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
 		return nil, ErrNotFound.Wrap()
 	} else if err != nil {
@@ -118,14 +123,14 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 		ctx = context.Background()
 	}
 
-	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
-	if !ok || id.IsZero() {
+	// get name
+	name, ok := handle["name"].(string)
+	if !ok || name == "" {
 		return ErrInvalidHandle.Wrap()
 	}
 
 	// remove object
-	err := m.client.RemoveObject(ctx, m.bucket, m.idToPath(id), minio.RemoveObjectOptions{})
+	err := m.client.RemoveObject(ctx, m.bucket, name, minio.RemoveObjectOptions{})
 	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
 		return ErrNotFound.Wrap()
 	} else if err != nil {
@@ -133,11 +138,6 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 	}
 
 	return nil
-}
-
-func (m *Minio) idToPath(id primitive.ObjectID) string {
-	str := id.Hex()
-	return fmt.Sprintf("%s/%s/%s", str[len(str)-2:], str[len(str)-4:len(str)-2], str)
 }
 
 var errMinioAbort = errors.New("abort")
