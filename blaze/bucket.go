@@ -916,7 +916,7 @@ func (b *Bucket) DownloadAction() *fire.Action {
 
 // CleanupTask will return a periodic task that can be run to periodically
 // cleanup obsolete files.
-func (b *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Duration) *axe.Task {
+func (b *Bucket) CleanupTask(retention time.Duration) *axe.Task {
 	return &axe.Task{
 		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
@@ -924,9 +924,9 @@ func (b *Bucket) CleanupTask(lifetime, timeout, periodicity, retention time.Dura
 		},
 		Workers:     1,
 		MaxAttempts: 1,
-		Lifetime:    lifetime,
-		Timeout:     timeout,
-		Periodicity: periodicity,
+		Lifetime:    time.Minute,
+		Timeout:     2 * time.Minute,
+		Periodicity: 5 * time.Minute,
 		PeriodicJob: axe.Blueprint{
 			Job: &CleanupJob{
 				Base: axe.B("periodic"),
