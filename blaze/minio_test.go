@@ -12,7 +12,7 @@ import (
 
 func TestMinioService(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		client, err := minio.New("10.254.254.254:9000", &minio.Options{
+		client, err := minio.New("0.0.0.0:9000", &minio.Options{
 			Creds: credentials.NewStaticV4("minioadmin", "minioadmin", ""),
 		})
 		assert.NoError(t, err)
@@ -24,7 +24,7 @@ func TestMinioService(t *testing.T) {
 
 func TestMinioServiceSeek(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		client, err := minio.New("10.254.254.254:9000", &minio.Options{
+		client, err := minio.New("0.0.0.0:9000", &minio.Options{
 			Creds: credentials.NewStaticV4("minioadmin", "minioadmin", ""),
 		})
 		assert.NoError(t, err)

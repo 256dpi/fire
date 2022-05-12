@@ -3,6 +3,11 @@ name: Test
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      minio:
+        image: minio/minio
+        ports:
+          - "9000:9000"
     steps:
       - name: Install
         uses: actions/setup-go@v2
