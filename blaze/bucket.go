@@ -1064,3 +1064,35 @@ func (b *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 
 	return nil
 }
+
+// TODO: File Migrator.
+//  - Upload new file from existing file.
+//  - Swap service and handle between files.
+//  - Remove old file.
+
+// func (b *Bucket) MigrateTask(from, to string, batch int) *axe.Task {
+// 	// TODO: Allows for only one migrate job at a time.
+//
+// 	return &axe.Task{
+// 		Job: &MigrateJob{},
+// 		Handler: func(ctx *axe.Context) error {
+// 			m := ctx.Job.(*MigrateJob)
+// 			return b.Migrate(ctx, m.From, m.To, m.Batch)
+// 		},
+// 		Workers:     1,
+// 		MaxAttempts: 1,
+// 		Periodicity: time.Minute,
+// 		PeriodicJob: axe.Blueprint{
+// 			Job: &MigrateJob{
+// 				Base:  axe.B("periodic"),
+// 				From:  from,
+// 				To:    to,
+// 				Batch: batch,
+// 			},
+// 		},
+// 	}
+// }
+//
+// func (b *Bucket) Migrate(ctx context.Context, link *Link, service string) error {
+// 	return nil
+// }

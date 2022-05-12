@@ -10,3 +10,12 @@ type CleanupJob struct {
 	axe.Base           `json:"-" axe:"fire/blaze.cleanup"`
 	stick.NoValidation `json:"-"`
 }
+
+// MigrateJob is the periodic job enqueued to migrate files in a bucket.
+type MigrateJob struct {
+	axe.Base           `json:"-" axe:"fire/blaze.migrate"`
+	From               string `json:"from"`
+	To                 string `json:"to"`
+	Batch              int    `json:"batch"`
+	stick.NoValidation `json:"-"`
+}
