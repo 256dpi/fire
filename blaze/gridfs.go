@@ -6,7 +6,6 @@ import (
 
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/xo"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -29,7 +28,7 @@ func NewGridFS(bucket *lungo.Bucket) *GridFS {
 func (g *GridFS) Prepare(context.Context) (Handle, error) {
 	// create handle
 	handle := Handle{
-		"id": primitive.NewObjectID(),
+		"id": coal.New(),
 	}
 
 	return handle, nil
@@ -38,7 +37,7 @@ func (g *GridFS) Prepare(context.Context) (Handle, error) {
 // Upload implements the Service interface.
 func (g *GridFS) Upload(ctx context.Context, handle Handle, _, _ string) (Upload, error) {
 	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
+	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return nil, ErrInvalidHandle.Wrap()
 	}
@@ -57,7 +56,7 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _, _ string) (Upload
 // Download implements the Service interface.
 func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) {
 	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
+	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return nil, ErrInvalidHandle.Wrap()
 	}
@@ -78,7 +77,7 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 // Delete implements the Service interface.
 func (g *GridFS) Delete(ctx context.Context, handle Handle) error {
 	// get id
-	id, ok := handle["id"].(primitive.ObjectID)
+	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return ErrInvalidHandle.Wrap()
 	}
