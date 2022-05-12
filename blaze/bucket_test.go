@@ -524,12 +524,12 @@ func TestBucketModifierRequired(t *testing.T) {
 		file := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey, err := bucket.notary.Issue(&ClaimKey{
@@ -576,12 +576,12 @@ func TestBucketModifierOptional(t *testing.T) {
 		file1 := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey1, err := bucket.notary.Issue(&ClaimKey{
@@ -618,12 +618,12 @@ func TestBucketModifierOptional(t *testing.T) {
 		file2 := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey2, err := bucket.notary.Issue(&ClaimKey{
@@ -693,12 +693,12 @@ func TestBucketModifierMultiple(t *testing.T) {
 		file1 := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey1, err := bucket.notary.Issue(&ClaimKey{
@@ -737,12 +737,12 @@ func TestBucketModifierMultiple(t *testing.T) {
 		file2 := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey2, err := bucket.notary.Issue(&ClaimKey{
@@ -781,12 +781,12 @@ func TestBucketModifierMultiple(t *testing.T) {
 		file3 := tester.Insert(&File{
 			State:   Uploaded,
 			Updated: time.Now(),
+			Type:    "image/png",
 			Size:    42,
 			Service: "default",
 			Handle: Handle{
 				"foo": "bar",
 			},
-			Type: "image/png",
 		}).(*File)
 
 		claimKey3, err := bucket.notary.Issue(&ClaimKey{
@@ -1203,7 +1203,7 @@ func TestBucketMultiService(t *testing.T) {
 			assert.NotNil(t, file)
 			files = append(files, file)
 
-			file, err = bucket.ClaimFile(nil, claimKey, "test-req", coal.New())
+			_, err = bucket.ClaimFile(nil, claimKey, "test-req", coal.New())
 			assert.NoError(t, err)
 		}
 
