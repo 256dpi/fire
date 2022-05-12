@@ -392,6 +392,8 @@ func (b *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owne
 
 // ClaimFile will claim the file referenced by the provided claim key using the
 // specified binding and owner.
+//
+// Note: For consistency this should be called within a transaction.
 func (b *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner coal.ID) (*File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.ClaimFile")
@@ -509,6 +511,8 @@ func (b *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 }
 
 // ReleaseFile will release the file with the provided id.
+//
+// Note: For consistency this should be called within a transaction.
 func (b *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.ReleaseFile")
