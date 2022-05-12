@@ -6,6 +6,9 @@ jobs:
     services:
       minio:
         image: bitnami/minio
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
         ports:
           - "9000:9000"
     steps:
