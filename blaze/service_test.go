@@ -14,7 +14,11 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
 
-	length, err := uploadFrom(svc, handle, "file1", "foo/bar", strings.NewReader("Hello World!"))
+	length, err := uploadFrom(svc, nil, "file1", "foo/bar", strings.NewReader("Hello World!"))
+	assert.Error(t, err)
+	assert.True(t, ErrInvalidHandle.Is(err))
+
+	length, err = uploadFrom(svc, handle, "file1", "foo/bar", strings.NewReader("Hello World!"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), length)
 
@@ -31,6 +35,10 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	err = downloadTo(svc, handle, &buf)
 	assert.NoError(t, err)
 	assert.Equal(t, "Hello World!", buf.String())
+
+	err = svc.Delete(nil, nil)
+	assert.Error(t, err)
+	assert.True(t, ErrInvalidHandle.Is(err))
 
 	err = svc.Delete(nil, handle)
 	assert.NoError(t, err)
