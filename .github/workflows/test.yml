@@ -9,6 +9,7 @@ jobs:
         env:
           MINIO_ROOT_USER: minioadmin
           MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_DEFAULT_BUCKETS: blaze
         ports:
           - "9000:9000"
     steps:
