@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -27,17 +28,35 @@ import (
 type Bucket struct {
 	store    *coal.Store
 	notary   *heat.Notary
-	service  Service
 	registry *Registry
+	services map[string]Service
+	uploader []string
 }
 
 // NewBucket creates a new bucket.
-func NewBucket(store *coal.Store, notary *heat.Notary, service Service, registry *Registry) *Bucket {
+func NewBucket(store *coal.Store, notary *heat.Notary, registry *Registry) *Bucket {
 	return &Bucket{
 		store:    store,
 		notary:   notary,
-		service:  service,
 		registry: registry,
+		services: map[string]Service{},
+	}
+}
+
+// Use will register the specified service using the provided name. If upload
+// is true the service is used for new uploads.
+func (b *Bucket) Use(service Service, name string, upload bool) {
+	// check existence
+	if b.services[name] != nil {
+		panic("duplicate service name")
+	}
+
+	// store service
+	b.services[name] = service
+
+	// add uploader
+	if upload {
+		b.uploader = append(b.uploader, name)
 	}
 }
 
@@ -70,8 +89,19 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 		}
 	}
 
+	// check uploader
+	if len(b.uploader) == 0 {
+		return "", nil, xo.F("no uploader services configured")
+	}
+
+	// select random uploader
+	uploader := b.uploader[rand.Intn(len(b.uploader))]
+
+	// get service
+	service := b.services[uploader]
+
 	// create handle
-	handle, err := b.service.Prepare(ctx)
+	handle, err := service.Prepare(ctx)
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
@@ -83,6 +113,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 		Updated: time.Now(),
 		Name:    name,
 		Type:    mediaType,
+		Service: uploader,
 		Handle:  handle,
 	}
 
@@ -99,7 +130,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// begin upload
-	upload, err := b.service.Upload(ctx, handle, name, mediaType)
+	upload, err := service.Upload(ctx, handle, name, mediaType)
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
@@ -844,8 +875,14 @@ func (b *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File,
 		return nil, nil, xo.F("missing file")
 	}
 
+	// get service
+	service := b.services[file.Service]
+	if service == nil {
+		return nil, nil, xo.F("unknown service: %s", file.Service)
+	}
+
 	// begin download
-	download, err := b.service.Download(ctx, file.Handle)
+	download, err := service.Download(ctx, file.Handle)
 	if err != nil {
 		return nil, nil, xo.W(err)
 	}
@@ -1000,8 +1037,14 @@ func (b *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 			}
 		}
 
+		// get service
+		service := b.services[file.Service]
+		if service == nil {
+			return xo.F("unknown service: %s", file.Service)
+		}
+
 		// delete blob
-		err = b.service.Delete(ctx, file.Handle)
+		err = service.Delete(ctx, file.Handle)
 		if err != nil {
 			return xo.W(err)
 		}

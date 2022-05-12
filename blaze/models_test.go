@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
@@ -248,4 +249,39 @@ func TestIsLinksValid(t *testing.T) {
 		v.Value("MultipleFiles", false, IsValidLinks(true, "foo/bar"))
 	})
 	assert.NoError(t, err)
+}
+
+func TestEnsureService(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		_, err := tester.Store.C(&File{}).InsertMany(nil, []interface{}{
+			bson.M{
+				"_id":   coal.New(),
+				"state": Uploaded,
+			},
+			bson.M{
+				"_id":     coal.New(),
+				"state":   Claimed,
+				"service": "",
+			},
+		})
+		assert.NoError(t, err)
+
+		migration := EnsureService("foo")
+
+		found, migrated, err := migration.Migrator(nil, tester.Store)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), found)
+		assert.Equal(t, int64(2), migrated)
+
+		found, migrated, err = migration.Migrator(nil, tester.Store)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), found)
+		assert.Equal(t, int64(0), migrated)
+
+		num, err := tester.Store.C(&File{}).CountDocuments(nil, bson.M{
+			"service": "foo",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), num)
+	})
 }

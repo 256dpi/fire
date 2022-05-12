@@ -1,10 +1,12 @@
 package blaze
 
 import (
+	"context"
 	"mime"
 	"time"
 
 	"github.com/256dpi/xo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 
 	"github.com/256dpi/fire/coal"
@@ -185,6 +187,9 @@ type File struct {
 	// The size of the file.
 	Size int64 `json:"size"`
 
+	// The blob storage service.
+	Service string `json:"service"`
+
 	// The service specific blob handle.
 	Handle Handle `json:"handle"`
 
@@ -211,6 +216,7 @@ func (f *File) Validate() error {
 			v.Value("Size", false, stick.IsMinInt(1))
 		}
 
+		v.Value("Service", false, stick.IsNotZero)
 		v.Value("Handle", false, stick.IsNotEmpty)
 
 		if f.State == Claimed {
@@ -242,4 +248,36 @@ func ValidateType(str string, whitelist ...string) error {
 	}
 
 	return nil
+}
+
+// EnsureService will return a migration that ensures that the
+// specified service name is set on any file missing a service name.
+func EnsureService(name string) *coal.Migration {
+	return &coal.Migration{
+		Name: "blaze/EnsureService",
+		Migrator: func(ctx context.Context, store *coal.Store) (int64, int64, error) {
+			// set field to value
+			res, err := store.C(&File{}).UpdateMany(ctx, bson.M{
+				"$or": bson.A{
+					bson.M{
+						coal.F(&File{}, "Service"): bson.M{
+							"$exists": false,
+						},
+					},
+					bson.M{
+						coal.F(&File{}, "Service"): "",
+					},
+				},
+			}, bson.M{
+				"$set": bson.M{
+					coal.F(&File{}, "Service"): name,
+				},
+			})
+			if err != nil {
+				return 0, 0, err
+			}
+
+			return res.MatchedCount, res.ModifiedCount, nil
+		},
+	}
 }
