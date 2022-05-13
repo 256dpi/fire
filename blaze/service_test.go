@@ -17,6 +17,7 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	length, err := uploadFrom(svc, nil, "file1", "foo/bar", strings.NewReader("Hello World!"))
 	assert.Error(t, err)
 	assert.True(t, ErrInvalidHandle.Is(err))
+	assert.Zero(t, length)
 
 	length, err = uploadFrom(svc, handle, "file1", "foo/bar", strings.NewReader("Hello World!"))
 	assert.NoError(t, err)

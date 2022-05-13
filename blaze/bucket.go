@@ -1069,34 +1069,80 @@ func (b *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
 	return nil
 }
 
-// TODO: File Migrator.
-//  - Upload new file from existing file.
-//  - Swap service and handle between files.
-//  - Remove old file.
+// MigrateFile will migrate a single file by re-uploading the specified files
+// blob using on of the configured uploader services and swapping the handle to
+// the original file. On success or error the original or temporary blob is
+// automatically cleaned up.
+func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
+	// download original file
+	download, original, err := b.DownloadFile(ctx, id)
+	if err != nil {
+		return err
+	} else if original.State != Claimed {
+		return xo.F("unexpected file state")
+	}
 
-// func (b *Bucket) MigrateTask(from, to string, batch int) *axe.Task {
-// 	// TODO: Allows for only one migrate job at a time.
-//
-// 	return &axe.Task{
-// 		Job: &MigrateJob{},
-// 		Handler: func(ctx *axe.Context) error {
-// 			m := ctx.Job.(*MigrateJob)
-// 			return b.Migrate(ctx, m.From, m.To, m.Batch)
-// 		},
-// 		Workers:     1,
-// 		MaxAttempts: 1,
-// 		Periodicity: time.Minute,
-// 		PeriodicJob: axe.Blueprint{
-// 			Job: &MigrateJob{
-// 				Base:  axe.B("periodic"),
-// 				From:  from,
-// 				To:    to,
-// 				Batch: batch,
-// 			},
-// 		},
-// 	}
-// }
-//
-// func (b *Bucket) Migrate(ctx context.Context, link *Link, service string) error {
-// 	return nil
-// }
+	// upload new file
+	_, newFile, err := b.Upload(ctx, original.Name, original.Type, func(upload Upload) (int64, error) {
+		return io.Copy(upload, download)
+	})
+	if err != nil {
+		return err
+	} else if newFile.State != Uploaded {
+		return xo.F("unexpected file state")
+	}
+
+	// check services
+	if original.Service == newFile.Service {
+		return xo.F("unexpected service match")
+	}
+
+	// swap services and handles
+	err = b.store.T(ctx, false, func(ctx context.Context) error {
+		// update original file
+		found, err := b.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
+			"_id":     original.ID(),
+			"State":   original.State,
+			"Service": original.Service,
+			"Handle":  original.Handle,
+		}, bson.M{
+			"$set": bson.M{
+				"Updated": time.Now(),
+				"Service": newFile.Service,
+				"Handle":  newFile.Handle,
+			},
+		}, nil, false)
+		if err != nil {
+			return err
+		} else if !found {
+			return xo.F("file not found")
+		}
+
+		// update new file
+		found, err = b.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
+			"_id":     newFile.ID(),
+			"State":   newFile.State,
+			"Service": newFile.Service,
+			"Handle":  newFile.Handle,
+		}, bson.M{
+			"$set": bson.M{
+				"State":   Released,
+				"Updated": time.Now(),
+				"Service": original.Service,
+				"Handle":  original.Handle,
+			},
+		}, nil, false)
+		if err != nil {
+			return err
+		} else if !found {
+			return xo.F("file not found")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

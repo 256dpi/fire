@@ -1222,3 +1222,102 @@ func TestBucketMultiService(t *testing.T) {
 		}
 	})
 }
+
+func TestBucketMigrateFile(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		svc1 := NewMemory()
+		svc2 := NewMemory()
+
+		/* upload */
+
+		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(svc1, "svc1", true)
+
+		claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		owner := coal.New()
+
+		file, err = bucket.ClaimFile(nil, claimKey, "test-req", owner)
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Claimed,
+				Updated: files[0].Updated,
+				Name:    "file",
+				Type:    "foo/bar",
+				Size:    12,
+				Service: "svc1",
+				Handle:  Handle{"id": "1"},
+				Binding: "test-req",
+				Owner:   files[0].Owner,
+			},
+		}, files)
+		assert.Equal(t, map[string]*MemoryBlob{
+			"1": {
+				Name:  "file",
+				Type:  "foo/bar",
+				Bytes: []byte("Hello World!"),
+			},
+		}, svc1.Blobs)
+		assert.Empty(t, svc2.Blobs)
+
+		/* migrate */
+
+		bucket = NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(svc1, "svc1", false)
+		bucket.Use(svc2, "svc2", true)
+
+		err = bucket.MigrateFile(nil, file.ID())
+		assert.NoError(t, err)
+
+		files = *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Claimed,
+				Updated: files[0].Updated,
+				Name:    "file",
+				Type:    "foo/bar",
+				Size:    12,
+				Service: "svc2",
+				Handle:  Handle{"id": "1"},
+				Binding: "test-req",
+				Owner:   coal.P(owner),
+			},
+			{
+				Base:    files[1].Base,
+				State:   Released,
+				Updated: files[1].Updated,
+				Name:    "file",
+				Type:    "foo/bar",
+				Size:    12,
+				Service: "svc1",
+				Handle:  Handle{"id": "1"},
+				Binding: "",
+				Owner:   nil,
+			},
+		}, files)
+		assert.Equal(t, map[string]*MemoryBlob{
+			"1": {
+				Name:  "file",
+				Type:  "foo/bar",
+				Bytes: []byte("Hello World!"),
+			},
+		}, svc1.Blobs)
+		assert.Equal(t, map[string]*MemoryBlob{
+			"1": {
+				Name:  "file",
+				Type:  "foo/bar",
+				Bytes: []byte("Hello World!"),
+			},
+		}, svc2.Blobs)
+	})
+}
