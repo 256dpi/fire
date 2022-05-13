@@ -1165,23 +1165,87 @@ func TestBucketDownloadActionStream(t *testing.T) {
 
 func TestBucketCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		svc := NewMemory()
+
 		bucket := NewBucket(tester.Store, testNotary, registry)
-		bucket.Use(NewMemory(), "default", true)
+		bucket.Use(svc, "default", true)
 
-		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
-			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		for _, state := range []State{Uploading, Uploaded, Claimed, Released, Deleting} {
+			_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+				return UploadFrom(upload, strings.NewReader("Hello World!"))
+			})
+			assert.NoError(t, err)
+			assert.NotNil(t, file)
+
+			file.State = state
+			if state == Claimed {
+				file.Binding = "foo"
+				file.Owner = coal.P(coal.New())
+			}
+			tester.Replace(file)
+		}
+
+		assert.Equal(t, 5, tester.Count(&File{}))
+		assert.Len(t, svc.Blobs, 5)
+
+		/* cleanup */
+
+		queue := axe.NewQueue(axe.Options{
+			Store:    tester.Store,
+			Reporter: xo.Panic,
 		})
+
+		task := bucket.CleanupTask(1, 5)
+
+		notify := make(chan *axe.Context, 1)
+		task.Notifier = func(ctx *axe.Context, cancelled bool, reason string) error {
+			notify <- ctx
+			return nil
+		}
+
+		queue.Add(task)
+		<-queue.Run()
+		defer queue.Close()
+
+		/* first iteration */
+
+		ctx := <-notify
+		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
+
+		for i := 0; i < 4; i++ {
+			ctx = <-notify
+		}
+
+		/* second iteration */
+
+		task.PeriodicJob.Job.GetBase().DocID = coal.New()
+		_, err := queue.Enqueue(nil, task.PeriodicJob.Job, 0, 0)
 		assert.NoError(t, err)
-		assert.NotNil(t, file)
 
-		file.State = Released
-		tester.Replace(file)
+		ctx = <-notify
+		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
 
-		time.Sleep(10 * time.Millisecond)
+		for i := 0; i < 4; i++ {
+			ctx = <-notify
+		}
 
-		err = bucket.Cleanup(nil, 1)
+		/* third iteration */
+
+		task.PeriodicJob.Job.GetBase().DocID = coal.New()
+		_, err = queue.Enqueue(nil, task.PeriodicJob.Job, 0, 0)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, tester.Count(&File{}))
+
+		ctx = <-notify
+		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
+
+		for i := 0; i < 3; i++ {
+			ctx = <-notify
+		}
+
+		/* done */
+
+		assert.Equal(t, 1, tester.Count(&File{}))
+		assert.Len(t, svc.Blobs, 1)
 	})
 }
 
@@ -1284,7 +1348,7 @@ func TestBucketMigration(t *testing.T) {
 
 		task := bucket.MigrateTask([]string{"svc1"}, 5)
 
-		notify := make(chan *axe.Context)
+		notify := make(chan *axe.Context, 1)
 		task.Notifier = func(ctx *axe.Context, cancelled bool, reason string) error {
 			notify <- ctx
 			return nil
@@ -1292,6 +1356,7 @@ func TestBucketMigration(t *testing.T) {
 
 		queue.Add(task)
 		<-queue.Run()
+		defer queue.Close()
 
 		ctx := <-notify
 		assert.Equal(t, "scan", ctx.Job.GetBase().Label)

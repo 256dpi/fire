@@ -955,13 +955,141 @@ func (b *Bucket) DownloadAction() *fire.Action {
 	})
 }
 
-// CleanupTask will return a periodic task that can be run to periodically
-// cleanup obsolete files.
-func (b *Bucket) CleanupTask(retention time.Duration) *axe.Task {
+// CleanupFile will clean up a single file. In the first step, files in the
+// uploading or uploaded state are marked as "deleting". In the second step,
+// blobs of "deleting" files are deleted. In the last step "deleting" files with
+// missing blobs are fully deleted.
+func (b *Bucket) CleanupFile(ctx context.Context, id coal.ID) error {
+	// get file
+	var file File
+	found, err := b.store.M(&file).Find(ctx, &file, id, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return xo.F("missing file")
+	}
+
+	// mark leftover uploaded files
+	if file.State == Uploading || file.State == Uploaded || file.State == Released {
+		found, err := b.store.M(&file).UpdateFirst(ctx, &file, bson.M{
+			"_id":   file.ID(),
+			"State": file.State,
+		}, bson.M{
+			"$set": bson.M{
+				"State": Deleting,
+			},
+		}, nil, false)
+		if err != nil {
+			return err
+		} else if !found {
+			return xo.F("missing file")
+		}
+
+		return nil
+	}
+
+	// check state
+	if file.State != Deleting {
+		return xo.F("unexpected state: %s", file.State)
+	}
+
+	// get service
+	service := b.services[file.Service]
+	if service == nil {
+		return xo.F("unknown service: %s", file.Service)
+	}
+
+	// delete blob
+	err = service.Delete(ctx, file.Handle)
+	if err != nil && !ErrNotFound.Is(err) {
+		return err
+	}
+
+	// return if blob is not yet absent
+	if !ErrNotFound.Is(err) {
+		return nil
+	}
+
+	// otherwise, delete file
+	_, err = b.store.M(&File{}).Delete(ctx, nil, file.ID())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CleanupTask will return a periodic task that will scan and enqueue jobs that
+// clean up files in the "uploading" or "uploaded" state older than the specified
+// retention as well as files in the "released" and "deleting" state.
+func (b *Bucket) CleanupTask(retention time.Duration, batch int) *axe.Task {
+	// set default retention and batch
+	if retention == 0 {
+		retention = time.Hour
+	}
+	if batch == 0 {
+		batch = 100
+	}
+
 	return &axe.Task{
 		Job: &CleanupJob{},
 		Handler: func(ctx *axe.Context) error {
-			return b.Cleanup(ctx, retention)
+			// get job
+			job := ctx.Job.(*CleanupJob)
+
+			// handle file
+			if job.Label != "scan" {
+				// handle migration
+				id, err := coal.FromHex(job.Label)
+				if err != nil {
+					return err
+				}
+
+				// clean up file
+				err = b.CleanupFile(ctx, id)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
+			/* scan files  */
+
+			// get files
+			var files []File
+			err := b.store.M(&File{}).FindAll(ctx, &files, bson.M{
+				"$or": []bson.M{
+					{
+						"State": bson.M{
+							"$in": bson.A{Uploading, Uploaded},
+						},
+						"Updated": bson.M{
+							"$lt": time.Now().Add(-retention),
+						},
+					},
+					{
+						"State": bson.M{
+							"$in": bson.A{Released, Deleting},
+						},
+					},
+				},
+			}, nil, 0, int64(batch), false, coal.NoTransaction)
+			if err != nil {
+				return err
+			}
+
+			// enqueue jobs
+			for _, file := range files {
+				_, err = ctx.Queue.Enqueue(ctx, &CleanupJob{
+					Base: axe.B(file.ID().Hex()),
+				}, 0, 0)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 		Workers:     1,
 		MaxAttempts: 1,
@@ -970,103 +1098,10 @@ func (b *Bucket) CleanupTask(retention time.Duration) *axe.Task {
 		Periodicity: 5 * time.Minute,
 		PeriodicJob: axe.Blueprint{
 			Job: &CleanupJob{
-				Base: axe.B("periodic"),
+				Base: axe.B("scan"),
 			},
 		},
 	}
-}
-
-// Cleanup will remove obsolete files and remove their blobs. Files in the
-// states "uploading" or "uploaded" are removed after the specified retention
-// which defaults to one hour if zero. Files in the states "released" and
-// "deleting" are removed immediately.
-func (b *Bucket) Cleanup(ctx context.Context, retention time.Duration) error {
-	// set default retention
-	if retention == 0 {
-		retention = time.Hour
-	}
-
-	// trace
-	ctx, span := xo.Trace(ctx, "blaze/Bucket.Cleanup")
-	span.Tag("retention", retention.String())
-	defer span.End()
-
-	// get iterator for deletable files
-	iter, err := b.store.M(&File{}).FindEach(ctx, bson.M{
-		"$or": []bson.M{
-			{
-				"State": bson.M{
-					"$in": bson.A{Uploading, Uploaded},
-				},
-				"Updated": bson.M{
-					"$lt": time.Now().Add(-retention),
-				},
-			},
-			{
-				"State": bson.M{
-					"$in": bson.A{Released, Deleting},
-				},
-			},
-		},
-	}, nil, 0, 0, false, coal.NoTransaction)
-	if err != nil {
-		return err
-	}
-
-	// iterate over files
-	defer iter.Close()
-	for iter.Next() {
-		// decode file
-		var file File
-		err := iter.Decode(&file)
-		if err != nil {
-			return err
-		}
-
-		// flag file as deleting if not already
-		if file.State != Deleting {
-			found, err := b.store.M(&File{}).UpdateFirst(ctx, nil, bson.M{
-				"_id":   file.ID(),
-				"State": file.State,
-			}, bson.M{
-				"$set": bson.M{
-					"State":   Deleting,
-					"Updated": time.Now(),
-				},
-			}, nil, false)
-			if err != nil {
-				return err
-			} else if !found {
-				return nil
-			}
-		}
-
-		// get service
-		service := b.services[file.Service]
-		if service == nil {
-			return xo.F("unknown service: %s", file.Service)
-		}
-
-		// delete blob
-		err = service.Delete(ctx, file.Handle)
-		if err != nil {
-			return xo.W(err)
-		}
-
-		// delete file
-		_, err = b.store.M(&File{}).Delete(ctx, nil, file.ID())
-		if err != nil {
-			return err
-		}
-	}
-
-	// check error
-	err = iter.Error()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // MigrateFile will migrate a single file by re-uploading the specified files
@@ -1151,6 +1186,11 @@ func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
 // migrates files using one of the provided services to the current uploader
 // services. Up to specified amount of files are migrated per run.
 func (b *Bucket) MigrateTask(services []string, batch int) *axe.Task {
+	// set default batch
+	if batch == 0 {
+		batch = 100
+	}
+
 	return &axe.Task{
 		Job: &MigrateJob{},
 		Handler: func(ctx *axe.Context) error {
@@ -1189,23 +1229,22 @@ func (b *Bucket) MigrateTask(services []string, batch int) *axe.Task {
 			}
 
 			// enqueue jobs
-			var delay time.Duration
-			delayInc := ctx.Task.Periodicity / 2 / time.Duration(batch)
 			for _, file := range files {
 				_, err = ctx.Queue.Enqueue(ctx, &MigrateJob{
 					Base: axe.B(file.ID().Hex()),
-				}, delay, 0)
+				}, 0, 0)
 				if err != nil {
 					return err
 				}
-				delay += delayInc
 			}
 
 			return nil
 		},
 		Workers:     1,
 		MaxAttempts: 1,
-		Periodicity: time.Minute,
+		Lifetime:    time.Minute,
+		Timeout:     2 * time.Minute,
+		Periodicity: 5 * time.Minute,
 		PeriodicJob: axe.Blueprint{
 			Job: &MigrateJob{
 				Base: axe.B("scan"),
