@@ -63,6 +63,12 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
+	if err != nil {
+		return nil, xo.W(err)
+	}
+
+	// load file and first chunk
+	_, err = stream.Seek(0, io.SeekStart)
 	if err == lungo.ErrFileNotFound {
 		return nil, ErrNotFound.Wrap()
 	} else if err != nil {
@@ -132,9 +138,7 @@ type gridFSDownload struct {
 func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 	// seek stream
 	n, err := d.stream.Seek(offset, whence)
-	if err == lungo.ErrFileNotFound {
-		return 0, ErrNotFound.Wrap()
-	} else if err == lungo.ErrNegativePosition {
+	if err == lungo.ErrNegativePosition {
 		return 0, ErrInvalidPosition.Wrap()
 	} else if err != nil {
 		return 0, xo.W(err)
@@ -146,9 +150,7 @@ func (d *gridFSDownload) Seek(offset int64, whence int) (int64, error) {
 func (d *gridFSDownload) Read(buf []byte) (int, error) {
 	// read stream
 	n, err := d.stream.Read(buf)
-	if err == lungo.ErrFileNotFound {
-		return 0, ErrNotFound.Wrap()
-	} else if err == io.EOF {
+	if err == io.EOF {
 		return 0, io.EOF
 	} else if err != nil {
 		return 0, xo.W(err)
@@ -160,9 +162,7 @@ func (d *gridFSDownload) Read(buf []byte) (int, error) {
 func (d *gridFSDownload) Close() error {
 	// close stream
 	err := d.stream.Close()
-	if err == lungo.ErrFileNotFound {
-		return ErrNotFound.Wrap()
-	} else if err != nil {
+	if err != nil {
 		return xo.W(err)
 	}
 

@@ -55,8 +55,8 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 
 	// check object
 	_, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
-	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
-		// good
+	if isMinioNotFoundErr(err) {
+		// continue
 	} else if err != nil {
 		return nil, err
 	} else {
@@ -99,15 +99,13 @@ func (m *Minio) Download(ctx context.Context, handle Handle) (Download, error) {
 
 	// get object
 	obj, err := m.client.GetObject(ctx, m.bucket, name, minio.GetObjectOptions{})
-	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
-		return nil, ErrNotFound.Wrap()
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	// check object
 	_, err = obj.Stat()
-	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
+	if isMinioNotFoundErr(err) {
 		return nil, ErrNotFound.Wrap()
 	} else if err != nil {
 		return nil, err
@@ -131,7 +129,7 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 
 	// check object
 	_, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
-	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
+	if isMinioNotFoundErr(err) {
 		return ErrNotFound.Wrap()
 	} else if err != nil {
 		return err
@@ -139,9 +137,7 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 
 	// remove object
 	err = m.client.RemoveObject(ctx, m.bucket, name, minio.RemoveObjectOptions{})
-	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
-		return ErrNotFound.Wrap()
-	} else if err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -189,4 +185,8 @@ func (d *minioDownload) Seek(offset int64, whence int) (int64, error) {
 		err = ErrInvalidPosition.Wrap()
 	}
 	return pos, err
+}
+
+func isMinioNotFoundErr(err error) bool {
+	return minio.ToErrorResponse(err).Code == "NoSuchKey"
 }
