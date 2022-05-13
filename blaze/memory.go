@@ -120,6 +120,12 @@ func (m *Memory) Delete(_ context.Context, handle Handle) error {
 		return ErrInvalidHandle.Wrap()
 	}
 
+	// check blob
+	_, ok := m.Blobs[id]
+	if !ok {
+		return ErrNotFound.Wrap()
+	}
+
 	// delete blob
 	delete(m.Blobs, id)
 

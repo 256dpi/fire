@@ -84,7 +84,9 @@ func (g *GridFS) Delete(ctx context.Context, handle Handle) error {
 
 	// delete file
 	err := g.bucket.Delete(ctx, id)
-	if err != nil && err != lungo.ErrFileNotFound {
+	if err == lungo.ErrFileNotFound {
+		return ErrNotFound.Wrap()
+	} else if err != nil {
 		return xo.W(err)
 	}
 

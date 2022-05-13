@@ -129,8 +129,16 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 		return ErrInvalidHandle.Wrap()
 	}
 
+	// check object
+	_, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
+	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
+		return ErrNotFound.Wrap()
+	} else if err != nil {
+		return err
+	}
+
 	// remove object
-	err := m.client.RemoveObject(ctx, m.bucket, name, minio.RemoveObjectOptions{})
+	err = m.client.RemoveObject(ctx, m.bucket, name, minio.RemoveObjectOptions{})
 	if err != nil && minio.ToErrorResponse(err).Code == "NoSuchKey" {
 		return ErrNotFound.Wrap()
 	} else if err != nil {
