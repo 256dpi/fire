@@ -41,7 +41,7 @@ func (m *Minio) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType string) (Upload, error) {
+func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType string, size int64) (Upload, error) {
 	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
@@ -74,7 +74,7 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 
 	// start upload
 	go func() {
-		_, err := m.client.PutObject(ctx, m.bucket, name, r, -1, minio.PutObjectOptions{
+		_, err := m.client.PutObject(ctx, m.bucket, name, r, size, minio.PutObjectOptions{
 			ContentType: mediaType,
 		})
 		upload.done <- err

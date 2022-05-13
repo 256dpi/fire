@@ -41,7 +41,7 @@ type Service interface {
 	Prepare(ctx context.Context) (Handle, error)
 
 	// Upload should initiate the upload of a blob.
-	Upload(ctx context.Context, handle Handle, name, mediaType string) (Upload, error)
+	Upload(ctx context.Context, handle Handle, name, mediaType string, size int64) (Upload, error)
 
 	// Download should initiate the download of a blob.
 	Download(ctx context.Context, handle Handle) (Download, error)

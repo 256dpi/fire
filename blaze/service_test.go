@@ -14,16 +14,16 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
 
-	length, err := uploadFrom(svc, nil, "file1", "foo/bar", strings.NewReader("Hello World!"))
+	length, err := uploadFrom(svc, nil, "file1", "foo/bar", 12, strings.NewReader("Hello World!"))
 	assert.Error(t, err)
 	assert.True(t, ErrInvalidHandle.Is(err))
 	assert.Zero(t, length)
 
-	length, err = uploadFrom(svc, handle, "file1", "foo/bar", strings.NewReader("Hello World!"))
+	length, err = uploadFrom(svc, handle, "file1", "foo/bar", 12, strings.NewReader("Hello World!"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), length)
 
-	length, err = uploadFrom(svc, handle, "file2", "foo/bar", strings.NewReader("Hello World!"))
+	length, err = uploadFrom(svc, handle, "file2", "foo/bar", 12, strings.NewReader("Hello World!"))
 	assert.Error(t, err)
 	assert.True(t, ErrUsedHandle.Is(err))
 	assert.Zero(t, length)
@@ -58,7 +58,7 @@ func abstractServiceSeekTest(t *testing.T, svc Service, allowCurNeg, overflowEOF
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
 
-	length, err := uploadFrom(svc, handle, "file", "foo/bar", strings.NewReader("Hello World!"))
+	length, err := uploadFrom(svc, handle, "file", "foo/bar", 12, strings.NewReader("Hello World!"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), length)
 
@@ -159,8 +159,8 @@ func abstractServiceSeekTest(t *testing.T, svc Service, allowCurNeg, overflowEOF
 	assert.Equal(t, []byte("He"), buf)
 }
 
-func uploadFrom(svc Service, handle Handle, name, typ string, r io.Reader) (int64, error) {
-	upload, err := svc.Upload(nil, handle, name, typ)
+func uploadFrom(svc Service, handle Handle, name, typ string, size int64, r io.Reader) (int64, error) {
+	upload, err := svc.Upload(nil, handle, name, typ, size)
 	if err != nil {
 		return 0, err
 	}

@@ -54,7 +54,7 @@ func (m *Memory) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Memory) Upload(_ context.Context, handle Handle, name, mediaType string) (Upload, error) {
+func (m *Memory) Upload(ctx context.Context, handle Handle, name, mediaType string, _ int64) (Upload, error) {
 	// acquire mutex
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
