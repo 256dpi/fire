@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -188,5 +189,5 @@ func (d *minioDownload) Seek(offset int64, whence int) (int64, error) {
 }
 
 func isMinioNotFoundErr(err error) bool {
-	return minio.ToErrorResponse(err).Code == "NoSuchKey"
+	return minio.ToErrorResponse(err).StatusCode == http.StatusNotFound
 }
