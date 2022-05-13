@@ -14,6 +14,11 @@ import (
 // Enqueue will enqueue the specified job with the provided delay and isolation.
 // It will return whether a job has been enqueued. If the context carries a
 // transaction it must be associated with the specified store.
+//
+// The job is labeled, no job is queued if there is already a job with the same
+// label in the enqueued, dequeued or failed state. If isolation is non-zero
+// the same rules applies also to unlabeled jobs in addition to that finished
+// jobs must be older than the specified duration.
 func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation time.Duration) (bool, error) {
 	// get meta and base
 	meta := GetMeta(job)
@@ -72,7 +77,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		},
 	}
 
-	// insert unlabeled unisolated jobs immediately
+	// insert unlabeled non-isolated jobs immediately
 	if base.Label == "" && isolation == 0 {
 		err := store.M(&Model{}).Insert(ctx, model)
 		if err != nil {
