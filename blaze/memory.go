@@ -25,6 +25,8 @@ type Memory struct {
 
 	// The next id.
 	Next int
+
+	mutex sync.Mutex
 }
 
 // NewMemory will create a new memory service.
@@ -36,6 +38,10 @@ func NewMemory() *Memory {
 
 // Prepare implements the Service interface.
 func (m *Memory) Prepare(context.Context) (Handle, error) {
+	// acquire mutex
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	// increment id
 	m.Next++
 
@@ -49,6 +55,10 @@ func (m *Memory) Prepare(context.Context) (Handle, error) {
 
 // Upload implements the Service interface.
 func (m *Memory) Upload(_ context.Context, handle Handle, name, mediaType string) (Upload, error) {
+	// acquire mutex
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -77,6 +87,10 @@ func (m *Memory) Upload(_ context.Context, handle Handle, name, mediaType string
 
 // Download implements the Service interface.
 func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
+	// acquire mutex
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
@@ -96,6 +110,10 @@ func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 
 // Delete implements the Service interface.
 func (m *Memory) Delete(_ context.Context, handle Handle) error {
+	// acquire mutex
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	// get id
 	id, _ := handle["id"].(string)
 	if id == "" {
