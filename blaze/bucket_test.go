@@ -27,16 +27,33 @@ func TestBucketUpload(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, registry)
 		bucket.Use(service, "default", true)
 
-		key, file, err := bucket.Upload(nil, "data.bin", "application/octet-stream", 12, func(upload Upload) (int64, error) {
+		key, file, err := bucket.Upload(nil, strings.Repeat("x", 512), "application/octet-stream", 12, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.Error(t, err)
+		assert.Empty(t, key)
+		assert.Nil(t, file)
+		assert.Equal(t, "file name too long", err.Error())
+
+		key, file, err = bucket.Upload(nil, "data.bin", "", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
-		assert.Equal(t, Uploaded, file.State)
-		assert.Equal(t, "application/octet-stream", file.Type)
-		assert.Equal(t, int64(12), file.Size)
-		assert.Equal(t, "default", file.Service)
-		assert.Equal(t, Handle{"id": "1"}, file.Handle)
+		assert.Equal(t, &File{
+			Base:    file.Base,
+			State:   Uploaded,
+			Updated: file.Updated,
+			Name:    "data.bin",
+			Type:    "application/octet-stream",
+			Size:    12,
+			Service: "default",
+			Handle:  Handle{"id": "1"},
+		}, file)
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{file}, files)
+
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Name:  "data.bin",
@@ -44,14 +61,68 @@ func TestBucketUpload(t *testing.T) {
 				Bytes: []byte("Hello World!"),
 			},
 		}, service.Blobs)
+	})
+}
+
+func TestBucketUploadSizeMismatch(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		service := NewMemory()
+
+		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(service, "default", true)
+
+		key, file, err := bucket.Upload(nil, "data.bin", "", 16, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.Error(t, err)
+		assert.Empty(t, key)
+		assert.Nil(t, file)
+		assert.Equal(t, "size mismatch", err.Error())
+
+		key, file, err = bucket.Upload(nil, "data.bin", "", 8, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.Error(t, err)
+		assert.Empty(t, key)
+		assert.Nil(t, file)
+		assert.Equal(t, "size mismatch", err.Error())
 
 		files := *tester.FindAll(&File{}).(*[]*File)
-		assert.Len(t, files, 1)
-		assert.Equal(t, Uploaded, files[0].State)
-		assert.Equal(t, "application/octet-stream", files[0].Type)
-		assert.Equal(t, int64(12), files[0].Size)
-		assert.Equal(t, "default", files[0].Service)
-		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Uploading,
+				Updated: files[0].Updated,
+				Name:    "data.bin",
+				Type:    "application/octet-stream",
+				Size:    16,
+				Service: "default",
+				Handle:  Handle{"id": "1"},
+			},
+			{
+				Base:    files[1].Base,
+				State:   Uploading,
+				Updated: files[1].Updated,
+				Name:    "data.bin",
+				Type:    "application/octet-stream",
+				Size:    8,
+				Service: "default",
+				Handle:  Handle{"id": "2"},
+			},
+		}, files)
+
+		assert.Equal(t, map[string]*MemoryBlob{
+			"1": {
+				Name:  "data.bin",
+				Type:  "application/octet-stream",
+				Bytes: []byte("Hello World!"),
+			},
+			"2": {
+				Name:  "data.bin",
+				Type:  "application/octet-stream",
+				Bytes: []byte("Hello World!"),
+			},
+		}, service.Blobs)
 	})
 }
 
@@ -75,19 +146,27 @@ func TestBucketUploadAction(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Uploaded,
+				Updated: files[0].Updated,
+				Name:    "",
+				Type:    "application/octet-stream",
+				Size:    12,
+				Service: "default",
+				Handle:  Handle{"id": "1"},
+			},
+		}, files)
+
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
 		}, service.Blobs)
-
-		files := *tester.FindAll(&File{}).(*[]*File)
-		assert.Len(t, files, 1)
-		assert.Equal(t, Uploaded, files[0].State)
-		assert.Equal(t, "application/octet-stream", files[0].Type)
-		assert.Equal(t, int64(12), files[0].Size)
-		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 	})
 }
 
@@ -121,6 +200,21 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Uploaded,
+				Updated: files[0].Updated,
+				Name:    "script.js",
+				Type:    "application/javascript",
+				Size:    12,
+				Service: "default",
+				Handle:  Handle{"id": "1"},
+			},
+		}, files)
+
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
 				Name:  "script.js",
@@ -128,14 +222,6 @@ func TestBucketUploadActionExtended(t *testing.T) {
 				Bytes: []byte("Hello World!"),
 			},
 		}, service.Blobs)
-
-		files := *tester.FindAll(&File{}).(*[]*File)
-		assert.Len(t, files, 1)
-		assert.Equal(t, Uploaded, files[0].State)
-		assert.Equal(t, "application/javascript", files[0].Type)
-		assert.Equal(t, int64(12), files[0].Size)
-		assert.Equal(t, "default", files[0].Service)
-		assert.Equal(t, Handle{"id": "1"}, files[0].Handle)
 	})
 }
 
@@ -223,6 +309,30 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
+
+		files := *tester.FindAll(&File{}).(*[]*File)
+		assert.Equal(t, []*File{
+			{
+				Base:    files[0].Base,
+				State:   Uploaded,
+				Updated: files[0].Updated,
+				Name:    "",
+				Type:    "text/css",
+				Size:    18,
+				Service: "default",
+				Handle:  Handle{"id": "1"},
+			},
+			{
+				Base:    files[1].Base,
+				State:   Uploaded,
+				Updated: files[1].Updated,
+				Name:    "script.js",
+				Type:    "text/javascript",
+				Size:    27,
+				Service: "default",
+				Handle:  Handle{"id": "2"},
+			},
+		}, files)
 
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {

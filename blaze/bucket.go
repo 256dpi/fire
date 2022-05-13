@@ -81,11 +81,9 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 
 	// set default type
 	if mediaType == "" {
+		mediaType = "application/octet-stream"
 		if name != "" {
 			mediaType = serve.MimeTypeByExtension(path.Ext(name), false)
-		}
-		if mediaType == "" {
-			mediaType = "application/octet-stream"
 		}
 	}
 
@@ -161,7 +159,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	}
 
 	// update file
-	_, err = b.store.M(file).Update(ctx, nil, file.ID(), bson.M{
+	_, err = b.store.M(file).Update(ctx, file, file.ID(), bson.M{
 		"$set": bson.M{
 			"State":   Uploaded,
 			"Updated": now,
