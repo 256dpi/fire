@@ -186,9 +186,9 @@ func TestBucketUploadActionExtended(t *testing.T) {
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
 		}, bucket.UploadAction(0))
-		assert.Error(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.Code)
-		assert.Equal(t, "expected attachment content disposition", err.Error())
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "expected attachment content disposition", res.Body.String())
 
 		req.Header.Set("Content-Disposition", "attachment; filename=script.js")
 		req.Header.Set("Content-Length", "12")
@@ -240,7 +240,29 @@ func TestBucketUploadActionInvalidContentType(t *testing.T) {
 		}, bucket.UploadAction(0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
-		assert.Equal(t, "", res.Body.String())
+		assert.Equal(t, "invalid content type", res.Body.String())
+
+		assert.Equal(t, 0, tester.Count(&File{}))
+	})
+}
+
+func TestBucketUploadActionInvalidContentLength(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(NewMemory(), "default", true)
+
+		body := strings.NewReader("Hello World!")
+		req := httptest.NewRequest("POST", "/foo", body)
+		req.Header.Set("Content-Type", "text/css")
+		req.Header.Set("Content-Length", "foo")
+
+		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
+			HTTPRequest: req,
+		}, bucket.UploadAction(0))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "invalid content length", res.Body.String())
 
 		assert.Equal(t, 0, tester.Count(&File{}))
 	})
@@ -345,6 +367,74 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 				Bytes: []byte("console.log('Hello World!);"),
 			},
 		}, service.Blobs)
+	})
+}
+
+func TestBucketUploadActionMultipartInvalidContentType(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(NewMemory(), "default", true)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+
+		part, err := writer.CreatePart(textproto.MIMEHeader{
+			"Content-Disposition": []string{`form-data; name="file1"`},
+			"Content-Type":        []string{"- _ -"},
+			"Content-Length":      []string{"27"},
+		})
+		assert.NoError(t, err)
+
+		_, err = part.Write([]byte("console.log('Hello World!);"))
+		assert.NoError(t, err)
+
+		err = writer.Close()
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("POST", "/foo", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
+			HTTPRequest: req,
+		}, bucket.UploadAction(0))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "invalid content type", res.Body.String())
+	})
+}
+
+func TestBucketUploadActionMultipartInvalidContentLength(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket.Use(NewMemory(), "default", true)
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+
+		part, err := writer.CreatePart(textproto.MIMEHeader{
+			"Content-Disposition": []string{`form-data; name="file1"`},
+			"Content-Type":        []string{"text/css"},
+			"Content-Length":      []string{"foo"},
+		})
+		assert.NoError(t, err)
+
+		_, err = part.Write([]byte("console.log('Hello World!);"))
+		assert.NoError(t, err)
+
+		err = writer.Close()
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("POST", "/foo", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		res, err := tester.RunAction(&fire.Context{
+			Operation:   fire.CollectionAction,
+			HTTPRequest: req,
+		}, bucket.UploadAction(0))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "invalid content length", res.Body.String())
 	})
 }
 

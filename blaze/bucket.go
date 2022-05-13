@@ -205,10 +205,11 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 		contentType, ctParams, err := mime.ParseMediaType(rawContentType)
 		if rawContentType != "" && err != nil {
 			ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+			_, _ = ctx.ResponseWriter.Write([]byte("invalid content type"))
 			return nil
 		}
 
-		// get content length
+		// check content length
 		contentLength := ctx.HTTPRequest.ContentLength
 		if contentLength != -1 && contentLength > limit {
 			ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -223,9 +224,13 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 			keys, err = b.uploadBody(ctx, contentType)
 		}
 
-		// check limit error
+		// handle error
 		if err != nil && strings.HasSuffix(err.Error(), serve.ErrBodyLimitExceeded.Error()) {
 			ctx.ResponseWriter.WriteHeader(http.StatusRequestEntityTooLarge)
+			return nil
+		} else if err != nil && xo.IsSafe(err) {
+			ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
+			_, _ = ctx.ResponseWriter.Write([]byte(err.Error()))
 			return nil
 		} else if err != nil {
 			return err
@@ -293,7 +298,7 @@ func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, 
 		// parse content type
 		contentType, _, err := mime.ParseMediaType(part.Header.Get("Content-Type"))
 		if err != nil {
-			return nil, xo.W(err)
+			return nil, xo.SF("invalid content type")
 		}
 
 		// parse content length
