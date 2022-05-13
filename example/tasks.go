@@ -80,9 +80,12 @@ func generateTask(store *coal.Store, bucket *blaze.Bucket) *axe.Task {
 	return &axe.Task{
 		Job: &generateJob{},
 		Handler: func(ctx *axe.Context) error {
+			// generate image
+			image := randomImage()
+
 			// upload random image
-			claimKey, _, err := bucket.Upload(ctx, "", "image/png", func(upload blaze.Upload) (int64, error) {
-				return blaze.UploadFrom(upload, randomImage())
+			claimKey, _, err := bucket.Upload(ctx, "", "image/png", int64(image.Len()), func(upload blaze.Upload) (int64, error) {
+				return blaze.UploadFrom(upload, image)
 			})
 			if err != nil {
 				return err
