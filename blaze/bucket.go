@@ -960,6 +960,11 @@ func (b *Bucket) DownloadAction() *fire.Action {
 // blobs of "deleting" files are deleted. In the last step "deleting" files with
 // missing blobs are fully deleted.
 func (b *Bucket) CleanupFile(ctx context.Context, id coal.ID) error {
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.CleanupFile")
+	span.Tag("id", id.Hex())
+	defer span.End()
+
 	// get file
 	var file File
 	found, err := b.store.M(&file).Find(ctx, &file, id, false)
@@ -1109,6 +1114,11 @@ func (b *Bucket) CleanupTask(retention time.Duration, batch int) *axe.Task {
 // the original file. On success or error the original or temporary blob is
 // automatically cleaned up.
 func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
+	// trace
+	ctx, span := xo.Trace(ctx, "blaze/Bucket.MigrateFile")
+	span.Tag("id", id.Hex())
+	defer span.End()
+
 	// download original file
 	download, original, err := b.DownloadFile(ctx, id)
 	if err != nil {
