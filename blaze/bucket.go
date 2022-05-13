@@ -63,7 +63,7 @@ func (b *Bucket) Use(service Service, name string, upload bool) {
 // Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upload) (int64, error)) (string, *File, error) {
+func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64, cb func(Upload) (int64, error)) (string, *File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.Upload")
 	span.Tag("type", mediaType)
@@ -113,6 +113,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 		Updated: time.Now(),
 		Name:    name,
 		Type:    mediaType,
+		Size:    size,
 		Service: uploader,
 		Handle:  handle,
 	}
@@ -136,9 +137,14 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	}
 
 	// perform upload
-	size, err := cb(upload)
+	uploadSize, err := cb(upload)
 	if err != nil {
 		return "", nil, xo.W(err)
+	}
+
+	// verify size
+	if uploadSize != size {
+		return "", nil, xo.SF("size mismatch")
 	}
 
 	// get time
@@ -147,7 +153,6 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 	// set fields
 	file.State = Uploaded
 	file.Updated = now
-	file.Size = size
 
 	// validate file
 	err = file.Validate()
@@ -160,7 +165,6 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, cb func(Upl
 		"$set": bson.M{
 			"State":   Uploaded,
 			"Updated": now,
-			"Size":    size,
 		},
 	}, false)
 	if err != nil {
@@ -256,8 +260,14 @@ func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 		filename = params["filename"]
 	}
 
+	// parse content length
+	contentLength, err := strconv.ParseInt(ctx.HTTPRequest.Header.Get("Content-Length"), 10, 64)
+	if err != nil {
+		return nil, xo.SF("invalid content length")
+	}
+
 	// upload stream
-	claimKey, _, err := b.Upload(ctx, filename, mediaType, func(upload Upload) (int64, error) {
+	claimKey, _, err := b.Upload(ctx, filename, mediaType, contentLength, func(upload Upload) (int64, error) {
 		return UploadFrom(upload, ctx.HTTPRequest.Body)
 	})
 	if err != nil {
@@ -288,8 +298,14 @@ func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, 
 			return nil, xo.W(err)
 		}
 
+		// parse content length
+		contentLength, err := strconv.ParseInt(part.Header.Get("Content-Length"), 10, 64)
+		if err != nil {
+			return nil, xo.SF("invalid content length")
+		}
+
 		// upload part
-		claimKey, _, err := b.Upload(ctx, part.FileName(), contentType, func(upload Upload) (int64, error) {
+		claimKey, _, err := b.Upload(ctx, part.FileName(), contentType, contentLength, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, part)
 		})
 		if err != nil {
@@ -1128,7 +1144,7 @@ func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
 	}
 
 	// upload new file
-	_, newFile, err := b.Upload(ctx, original.Name, original.Type, func(upload Upload) (int64, error) {
+	_, newFile, err := b.Upload(ctx, original.Name, original.Type, original.Size, func(upload Upload) (int64, error) {
 		return io.Copy(upload, download)
 	})
 	if err != nil {

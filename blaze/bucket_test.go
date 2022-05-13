@@ -27,7 +27,7 @@ func TestBucketUpload(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, registry)
 		bucket.Use(service, "default", true)
 
-		key, file, err := bucket.Upload(nil, "data.bin", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, file, err := bucket.Upload(nil, "data.bin", "application/octet-stream", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -66,6 +66,7 @@ func TestBucketUploadAction(t *testing.T) {
 
 		req := httptest.NewRequest("POST", "/foo", body)
 		req.Header.Set("Content-Type", "application/octet-stream")
+		req.Header.Set("Content-Length", "12")
 
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
@@ -111,6 +112,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		assert.Equal(t, "expected attachment content disposition", err.Error())
 
 		req.Header.Set("Content-Disposition", "attachment; filename=script.js")
+		req.Header.Set("Content-Length", "12")
 
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
@@ -191,6 +193,7 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 		part, err := writer.CreatePart(textproto.MIMEHeader{
 			"Content-Disposition": []string{`form-data; name="file1"`},
 			"Content-Type":        []string{"text/css"},
+			"Content-Length":      []string{"18"},
 		})
 		assert.NoError(t, err)
 
@@ -200,6 +203,7 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 		part, err = writer.CreatePart(textproto.MIMEHeader{
 			"Content-Disposition": []string{`form-data; name="file2"; filename="script.js"`},
 			"Content-Type":        []string{"text/javascript"},
+			"Content-Length":      []string{"27"},
 		})
 		assert.NoError(t, err)
 
@@ -245,6 +249,7 @@ func TestBucketUploadActionMultipartLimit(t *testing.T) {
 		part, err := writer.CreatePart(textproto.MIMEHeader{
 			"Content-Disposition": []string{`form-data; name="file1"; filename="style.css"`},
 			"Content-Type":        []string{"text/css"},
+			"Content-Length":      []string{"27"},
 		})
 		assert.NoError(t, err)
 
@@ -274,7 +279,7 @@ func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 
 		/* upload */
 
-		key, _, err := bucket.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := bucket.Upload(nil, "", "application/octet-stream", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -339,7 +344,7 @@ func TestBucketClaimDecorateReleaseOptional(t *testing.T) {
 
 		/* upload */
 
-		key, _, err := bucket.Upload(nil, "", "application/octet-stream", func(upload Upload) (int64, error) {
+		key, _, err := bucket.Upload(nil, "", "application/octet-stream", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -906,7 +911,7 @@ func TestBucketDownload(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, registry)
 		bucket.Use(NewMemory(), "default", true)
 
-		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -955,7 +960,7 @@ func TestBucketDownloadAction(t *testing.T) {
 
 		/* with key */
 
-		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1013,7 +1018,7 @@ func TestBucketDownloadActionStream(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, registry)
 		bucket.Use(NewMemory(), "default", true)
 
-		_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1078,7 +1083,7 @@ func TestBucketCleanup(t *testing.T) {
 		bucket.Use(svc, "default", true)
 
 		for _, state := range []State{Uploading, Uploaded, Claimed, Released, Deleting} {
-			_, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+			_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 				return UploadFrom(upload, strings.NewReader("Hello World!"))
 			})
 			assert.NoError(t, err)
@@ -1169,7 +1174,7 @@ func TestBucketMultiService(t *testing.T) {
 
 		var files []*File
 		for i := 0; i < 20; i++ {
-			claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+			claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 				return UploadFrom(upload, strings.NewReader("Hello World!"))
 			})
 			assert.NoError(t, err)
@@ -1206,7 +1211,7 @@ func TestBucketMigration(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, registry)
 		bucket.Use(svc1, "svc1", true)
 
-		claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", func(upload Upload) (int64, error) {
+		claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
