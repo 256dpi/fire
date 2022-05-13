@@ -1146,3 +1146,70 @@ func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
 
 	return nil
 }
+
+// MigrateTask will return a periodic task that will scan and enqueue jobs that
+// migrates files using one of the provided services to the current uploader
+// services. Up to specified amount of files are migrated per run.
+func (b *Bucket) MigrateTask(services []string, batch int) *axe.Task {
+	return &axe.Task{
+		Job: &MigrateJob{},
+		Handler: func(ctx *axe.Context) error {
+			// get job
+			job := ctx.Job.(*MigrateJob)
+
+			// handle file
+			if job.Label != "scan" {
+				// handle migration
+				id, err := coal.FromHex(job.Label)
+				if err != nil {
+					return err
+				}
+
+				// migrate file
+				err = b.MigrateFile(ctx, id)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
+			/* scan files  */
+
+			// get files
+			var files []File
+			err := b.store.M(&File{}).FindAll(ctx, &files, bson.M{
+				"State": Claimed,
+				"Service": bson.M{
+					"$in": services,
+				},
+			}, nil, 0, int64(batch), false, coal.NoTransaction)
+			if err != nil {
+				return err
+			}
+
+			// enqueue jobs
+			var delay time.Duration
+			delayInc := ctx.Task.Periodicity / 2 / time.Duration(batch)
+			for _, file := range files {
+				_, err = ctx.Queue.Enqueue(ctx, &MigrateJob{
+					Base: axe.B(file.ID().Hex()),
+				}, delay, 0)
+				if err != nil {
+					return err
+				}
+				delay += delayInc
+			}
+
+			return nil
+		},
+		Workers:     1,
+		MaxAttempts: 1,
+		Periodicity: time.Minute,
+		PeriodicJob: axe.Blueprint{
+			Job: &MigrateJob{
+				Base: axe.B("scan"),
+			},
+		},
+	}
+}

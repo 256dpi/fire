@@ -11,9 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
 )
@@ -1223,7 +1225,7 @@ func TestBucketMultiService(t *testing.T) {
 	})
 }
 
-func TestBucketMigrateFile(t *testing.T) {
+func TestBucketMigration(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		svc1 := NewMemory()
 		svc2 := NewMemory()
@@ -1275,8 +1277,27 @@ func TestBucketMigrateFile(t *testing.T) {
 		bucket.Use(svc1, "svc1", false)
 		bucket.Use(svc2, "svc2", true)
 
-		err = bucket.MigrateFile(nil, file.ID())
-		assert.NoError(t, err)
+		queue := axe.NewQueue(axe.Options{
+			Store:    tester.Store,
+			Reporter: xo.Panic,
+		})
+
+		task := bucket.MigrateTask([]string{"svc1"}, 5)
+
+		notify := make(chan *axe.Context)
+		task.Notifier = func(ctx *axe.Context, cancelled bool, reason string) error {
+			notify <- ctx
+			return nil
+		}
+
+		queue.Add(task)
+		<-queue.Run()
+
+		ctx := <-notify
+		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
+
+		ctx = <-notify
+		assert.Equal(t, file.ID().Hex(), ctx.Job.GetBase().Label)
 
 		files = *tester.FindAll(&File{}).(*[]*File)
 		assert.Equal(t, []*File{
