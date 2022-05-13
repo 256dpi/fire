@@ -1213,7 +1213,7 @@ func TestBucketCleanup(t *testing.T) {
 		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
 
 		for i := 0; i < 4; i++ {
-			ctx = <-notify
+			<-notify
 		}
 
 		/* second iteration */
@@ -1226,7 +1226,7 @@ func TestBucketCleanup(t *testing.T) {
 		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
 
 		for i := 0; i < 4; i++ {
-			ctx = <-notify
+			<-notify
 		}
 
 		/* third iteration */
@@ -1239,7 +1239,7 @@ func TestBucketCleanup(t *testing.T) {
 		assert.Equal(t, "scan", ctx.Job.GetBase().Label)
 
 		for i := 0; i < 3; i++ {
-			ctx = <-notify
+			<-notify
 		}
 
 		/* done */
