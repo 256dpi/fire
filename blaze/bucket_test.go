@@ -18,6 +18,7 @@ import (
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestBucketUpload(t *testing.T) {
@@ -1119,7 +1120,7 @@ func TestBucketDownload(t *testing.T) {
 
 		file.State = Claimed
 		file.Binding = "foo"
-		file.Owner = coal.P(coal.New())
+		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
 		key, err := bucket.notary.Issue(&ViewKey{
@@ -1169,7 +1170,7 @@ func TestBucketDownloadAction(t *testing.T) {
 		file.State = Claimed
 		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
 		file.Binding = "test-req"
-		file.Owner = coal.P(coal.New())
+		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
 		key, err := bucket.notary.Issue(&ViewKey{
@@ -1227,7 +1228,7 @@ func TestBucketDownloadActionStream(t *testing.T) {
 		file.State = Claimed
 		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
 		file.Binding = "test-req"
-		file.Owner = coal.P(coal.New())
+		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
 		key, err := bucket.notary.Issue(&ViewKey{
@@ -1292,7 +1293,7 @@ func TestBucketCleanup(t *testing.T) {
 			file.State = state
 			if state == Claimed {
 				file.Binding = "foo"
-				file.Owner = coal.P(coal.New())
+				file.Owner = stick.P(coal.New())
 			}
 			tester.Replace(file)
 		}
@@ -1488,7 +1489,7 @@ func TestBucketMigration(t *testing.T) {
 				Service: "svc2",
 				Handle:  Handle{"id": "1"},
 				Binding: "test-req",
-				Owner:   coal.P(owner),
+				Owner:   stick.P(owner),
 			},
 			{
 				Base:    files[1].Base,

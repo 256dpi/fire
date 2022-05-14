@@ -15,6 +15,7 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestIntegration(t *testing.T) {
@@ -161,7 +162,7 @@ func TestIntegration(t *testing.T) {
 			ExpiresAt:   time.Now().Add(authenticator.policy.AccessTokenLifespan),
 			Scope:       []string{"foo", "bar"},
 			Application: app1.ID(),
-			User:        coal.P(user.ID()),
+			User:        stick.P(user.ID()),
 		}).(*Token)
 
 		validBearerToken, _ := policy.Issue(validToken, app1, user)

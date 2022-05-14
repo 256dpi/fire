@@ -193,7 +193,7 @@ func TestDependentResourcesValidatorSoftDelete(t *testing.T) {
 
 		tester.Insert(&commentModel{
 			Post:    post.ID(),
-			Deleted: coal.T(time.Now()),
+			Deleted: stick.P(time.Now()),
 		})
 
 		err = tester.RunCallback(&Context{Operation: Delete, Model: post}, validator)
@@ -216,7 +216,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		err := tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    coal.New(), // <- missing
-			OptBar: coal.P(existing.ID()),
+			OptBar: stick.P(existing.ID()),
 			Bars:   []coal.ID{existing.ID()},
 		})}, validator)
 		assert.Error(t, err)
@@ -225,7 +225,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
-			OptBar: coal.P(coal.New()), // <- missing
+			OptBar: stick.P(coal.New()), // <- missing
 			Bars:   []coal.ID{existing.ID()},
 		})}, validator)
 		assert.Error(t, err)
@@ -234,7 +234,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
-			OptBar: coal.P(existing.ID()),
+			OptBar: stick.P(existing.ID()),
 			Bars:   []coal.ID{coal.New()}, // <- missing
 		})}, validator)
 		assert.Error(t, err)
@@ -251,7 +251,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
-			OptBar: coal.P(existing.ID()),
+			OptBar: stick.P(existing.ID()),
 			Bars:   nil, // <- not set
 		})}, validator)
 		assert.NoError(t, err)
@@ -259,7 +259,7 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 		err = tester.RunCallback(&Context{Operation: Create, Model: tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    existing.ID(),
-			OptBar: coal.P(existing.ID()),
+			OptBar: stick.P(existing.ID()),
 			Bars:   []coal.ID{existing.ID()},
 		})}, validator)
 		assert.NoError(t, err)
@@ -301,7 +301,7 @@ func TestRelationshipValidatorReferencedResources(t *testing.T) {
 
 		post := tester.Insert(&postModel{})
 		comment2 := tester.Insert(&commentModel{
-			Parent: coal.P(comment1.ID()),
+			Parent: stick.P(comment1.ID()),
 			Post:   post.ID(),
 		})
 
@@ -323,14 +323,14 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
-			OptBar: coal.P(id),
+			OptBar: stick.P(id),
 			Bars:   []coal.ID{id},
 		})
 
 		candidate := &fooModel{
 			Foo:    existing.ID(),
 			Bar:    coal.New(),            // <- not the same
-			OptBar: coal.P(coal.New()),    // <- not the same
+			OptBar: stick.P(coal.New()),   // <- not the same
 			Bars:   []coal.ID{coal.New()}, // <- not the same
 		}
 
@@ -344,7 +344,7 @@ func TestMatchingReferencesValidatorToOne(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "references do not match", err.Error())
 
-		candidate.OptBar = coal.P(id)
+		candidate.OptBar = stick.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
@@ -370,7 +370,7 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
-			OptBar: coal.P(id),
+			OptBar: stick.P(id),
 			Bars:   []coal.ID{id},
 		})
 
@@ -378,14 +378,14 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 			Foo:    coal.New(),
 			OptFoo: nil,                   // <- missing
 			Bar:    coal.New(),            // <- not the same
-			OptBar: coal.P(coal.New()),    // <- not the same
+			OptBar: stick.P(coal.New()),   // <- not the same
 			Bars:   []coal.ID{coal.New()}, // <- not the same
 		}
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.NoError(t, err)
 
-		candidate.OptFoo = coal.P(existing.ID())
+		candidate.OptFoo = stick.P(existing.ID())
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
@@ -397,7 +397,7 @@ func TestMatchingReferencesValidatorOptToOne(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "references do not match", err.Error())
 
-		candidate.OptBar = coal.P(id)
+		candidate.OptBar = stick.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)
@@ -423,7 +423,7 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 		existing := tester.Insert(&fooModel{
 			Foo:    coal.New(),
 			Bar:    id,
-			OptBar: coal.P(id),
+			OptBar: stick.P(id),
 			Bars:   []coal.ID{id},
 		})
 
@@ -431,7 +431,7 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 			Foo:    coal.New(),
 			Foos:   nil,                   // <- missing
 			Bar:    coal.New(),            // <- not the same
-			OptBar: coal.P(coal.New()),    // <- not the same
+			OptBar: stick.P(coal.New()),   // <- not the same
 			Bars:   []coal.ID{coal.New()}, // <- not the same
 		}
 
@@ -450,7 +450,7 @@ func TestMatchingReferencesValidatorToMany(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "references do not match", err.Error())
 
-		candidate.OptBar = coal.P(id)
+		candidate.OptBar = stick.P(id)
 
 		err = tester.RunCallback(&Context{Operation: Create, Model: candidate}, validator)
 		assert.Error(t, err)

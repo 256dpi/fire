@@ -5440,14 +5440,14 @@ func TestRelationshipFilters(t *testing.T) {
 		tester.Insert(&commentModel{
 			Base:    coal.B(coal.MustFromHex(comment1)),
 			Message: "foo",
-			Parent:  coal.P(coal.MustFromHex(comment1)),
+			Parent:  stick.P(coal.MustFromHex(comment1)),
 			Post:    coal.MustFromHex(post),
 		})
 		comment2 := coal.New().Hex()
 		tester.Insert(&commentModel{
 			Base:    coal.B(coal.MustFromHex(comment2)),
 			Message: "bar",
-			Parent:  coal.P(coal.MustFromHex(comment2)),
+			Parent:  stick.P(coal.MustFromHex(comment2)),
 			Post:    coal.MustFromHex(post),
 		})
 

@@ -2036,7 +2036,7 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 			if !id.IsZero() {
 				stick.MustSet(ctx.Model, field.Name, &id)
 			} else {
-				stick.MustSet(ctx.Model, field.Name, coal.N())
+				stick.MustSet(ctx.Model, field.Name, stick.N[coal.ID]())
 			}
 		}
 	}

@@ -15,6 +15,7 @@ import (
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 type ctxKey string
@@ -1106,7 +1107,7 @@ func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, e
 	// get resource owner id
 	var roID *coal.ID
 	if resourceOwner != nil {
-		roID = coal.P(resourceOwner.ID())
+		roID = stick.P(resourceOwner.ID())
 	}
 
 	// set token data

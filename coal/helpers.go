@@ -3,7 +3,6 @@ package coal
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -57,11 +56,6 @@ func L(m Model, flag string, force bool) string {
 	}
 
 	return ""
-}
-
-// T is a shorthand function to get a pointer of a timestamp.
-func T(t time.Time) *time.Time {
-	return &t
 }
 
 // Require will check if the specified flags are set on the specified model and

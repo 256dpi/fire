@@ -80,7 +80,7 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// prepare deadline
 	var deadline *time.Time
 	if meta.TTL > 0 {
-		deadline = coal.T(time.Now().Add(meta.TTL))
+		deadline = stick.P(time.Now().Add(meta.TTL))
 	}
 
 	// validate value

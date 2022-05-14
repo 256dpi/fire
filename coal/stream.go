@@ -92,17 +92,17 @@ func (s *Stream) open() error {
 	for {
 		// check if alive
 		if !s.tomb.Alive() {
-			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
+			return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
 		}
 
 		// tail stream
 		err := s.tail()
 		if ErrStop.Is(err) {
-			return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
+			return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
 		} else if err != nil {
-			err = xo.W(s.receiver(Errored, Z(), nil, err, s.token))
+			err = xo.W(s.receiver(Errored, ID{}, nil, err, s.token))
 			if ErrStop.Is(err) {
-				return xo.W(s.receiver(Stopped, Z(), nil, nil, s.token))
+				return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
 			}
 		}
 	}
@@ -133,13 +133,13 @@ func (s *Stream) tail() error {
 	// check if stream has been opened before
 	if !s.opened {
 		// signal opened
-		err = s.receiver(Opened, Z(), nil, nil, s.token)
+		err = s.receiver(Opened, ID{}, nil, nil, s.token)
 		if err != nil {
 			return xo.W(err)
 		}
 	} else {
 		// signal resumed
-		err = s.receiver(Resumed, Z(), nil, nil, s.token)
+		err = s.receiver(Resumed, ID{}, nil, nil, s.token)
 		if err != nil {
 			return xo.W(err)
 		}

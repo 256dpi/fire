@@ -103,7 +103,7 @@ func (t *Token) SetTokenData(data TokenData) {
 	t.RedirectURI = data.RedirectURI
 	t.Application = data.Client.ID()
 	if data.ResourceOwner != nil {
-		t.User = coal.P(data.ResourceOwner.ID())
+		t.User = stick.P(data.ResourceOwner.ID())
 	}
 }
 

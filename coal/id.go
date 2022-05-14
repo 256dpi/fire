@@ -10,21 +10,6 @@ import (
 // ID is shorthand type for the object id.
 type ID = primitive.ObjectID
 
-// Z is a shorthand to get a zero object id.
-func Z() ID {
-	return ID{}
-}
-
-// P is a shorthand function to get a pointer of the specified object id.
-func P(id ID) *ID {
-	return &id
-}
-
-// N is a shorthand function to get a typed nil object id pointer.
-func N() *ID {
-	return nil
-}
-
 // New will return a new object id, optionally using a custom timestamp.
 func New(timestamp ...time.Time) ID {
 	// check timestamp

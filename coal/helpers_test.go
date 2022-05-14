@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/stick"
 )
 
 func TestF(t *testing.T) {
@@ -31,7 +33,7 @@ func TestL(t *testing.T) {
 
 func TestT(t *testing.T) {
 	t1 := time.Now()
-	t2 := T(t1)
+	t2 := stick.P(t1)
 	assert.Equal(t, t1, *t2)
 }
 

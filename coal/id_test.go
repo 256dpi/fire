@@ -6,17 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestP(t *testing.T) {
-	id := New()
-	assert.Equal(t, &id, P(id))
-}
-
-func TestN(t *testing.T) {
-	var id *ID
-	assert.Equal(t, id, N())
-	assert.NotEqual(t, nil, N())
-}
-
 func TestIsHex(t *testing.T) {
 	assert.False(t, IsHex("foo"))
 	assert.False(t, IsHex(""))

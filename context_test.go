@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestContextWith(t *testing.T) {
@@ -61,7 +61,7 @@ func TestContextModified(t *testing.T) {
 	// changed values
 	model.Title = "Hello"
 	model.Published = true
-	model.Deleted = coal.T(time.Now())
+	model.Deleted = stick.P(time.Now())
 	assert.True(t, ctx.Modified("Title"))
 	assert.True(t, ctx.Modified("Published"))
 	assert.True(t, ctx.Modified("Deleted"))
@@ -81,7 +81,7 @@ func TestContextModified(t *testing.T) {
 	// changed values
 	model.Title = "Hello"
 	model.Published = true
-	model.Deleted = coal.T(time.Now())
+	model.Deleted = stick.P(time.Now())
 	assert.True(t, ctx.Modified("Title"))
 	assert.True(t, ctx.Modified("Published"))
 	assert.True(t, ctx.Modified("Deleted"))
