@@ -54,21 +54,10 @@ func (m *noteModel) Validate() error {
 	return nil
 }
 
-type polyModel struct {
-	Base `json:"-" bson:",inline" coal:"polys"`
-	Ref1 Ref   `json:"-" coal:"ref1:*"`
-	Ref2 *Ref  `json:"-" coal:"ref2:posts"`
-	Ref3 []Ref `json:"-" coal:"ref3:notes+selections"`
-}
-
-func (m *polyModel) Validate() error {
-	return nil
-}
-
 var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)
 var lungoStore = MustOpen(nil, "test-fire-coal", xo.Panic)
 
-var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &polyModel{}, &fooModel{}}
+var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}}
 
 func withTester(t *testing.T, fn func(*testing.T, *Tester)) {
 	t.Run("Mongo", func(t *testing.T) {

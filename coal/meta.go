@@ -18,9 +18,6 @@ var optToOneType = reflect.TypeOf(&ID{})
 var toManyType = reflect.TypeOf([]ID{})
 var hasOneType = reflect.TypeOf(HasOne{})
 var hasManyType = reflect.TypeOf(HasMany{})
-var toOneRefType = reflect.TypeOf(Ref{})
-var optToOneRefType = reflect.TypeOf(&Ref{})
-var toManyRefType = reflect.TypeOf([]Ref{})
 
 // The HasOne type denotes a has-one relationship in a model declaration.
 //
@@ -246,54 +243,6 @@ func GetMeta(model Model) *Meta {
 				metaField.ToMany = true
 				metaField.RelName = toManyTag[0]
 				metaField.RelType = toManyTag[1]
-
-				// remove tag
-				coalTags = coalTags[1:]
-			}
-		}
-
-		// check if field is a valid polymorphic to-one relationship
-		if field.Type == toOneRefType || field.Type == optToOneRefType {
-			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
-				// check tag
-				if strings.Count(coalTags[0], ":") > 1 {
-					panic(`coal: expected to find a tag of the form 'coal:"name:*|type+type..."' on polymorphic to-one relationship`)
-				}
-
-				// parse special to-one relationship tag
-				toOneTag := strings.Split(coalTags[0], ":")
-
-				// set relationship data
-				metaField.ToOne = true
-				metaField.Polymorphic = true
-				metaField.RelName = toOneTag[0]
-				if toOneTag[1] != "*" {
-					metaField.RelTypes = strings.Split(toOneTag[1], "+")
-				}
-
-				// remove tag
-				coalTags = coalTags[1:]
-			}
-		}
-
-		// check if field is a valid polymorphic to-many relationship
-		if field.Type == toManyRefType {
-			if len(coalTags) > 0 && strings.Count(coalTags[0], ":") > 0 {
-				// check tag
-				if strings.Count(coalTags[0], ":") > 1 {
-					panic(`coal: expected to find a tag of the form 'coal:"name:*|type+type..."' on polymorphic to-many relationship`)
-				}
-
-				// parse special to-many relationship tag
-				toManyTag := strings.Split(coalTags[0], ":")
-
-				// set relationship data
-				metaField.ToMany = true
-				metaField.Polymorphic = true
-				metaField.RelName = toManyTag[0]
-				if toManyTag[1] != "*" {
-					metaField.RelTypes = strings.Split(toManyTag[1], "+")
-				}
 
 				// remove tag
 				coalTags = coalTags[1:]
