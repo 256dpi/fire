@@ -252,8 +252,8 @@ func ValidateType(str string, whitelist ...string) error {
 
 // EnsureService will return a migration that ensures that the
 // specified service name is set on any file missing a service name.
-func EnsureService(name string) *coal.Migration {
-	return &coal.Migration{
+func EnsureService(name string) coal.Migration {
+	return coal.Migration{
 		Name: "blaze/EnsureService",
 		Migrator: func(ctx context.Context, store *coal.Store) (int64, int64, error) {
 			// set field to value
