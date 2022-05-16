@@ -51,7 +51,7 @@ type Result struct {
 type Tester struct {
 	*fire.Tester
 	RawClient  *http.Client
-	DataClient *Client
+	DataClient *fire.Client
 	AuthClient *oauth2.Client
 	AuthToken  string
 }
@@ -93,7 +93,7 @@ func NewTester(config Config) *Tester {
 	}
 
 	// set data client
-	tester.DataClient = NewClient(jsonapi.NewClientWithClient(jsonapi.ClientConfig{
+	tester.DataClient = fire.NewClient(jsonapi.NewClientWithClient(jsonapi.ClientConfig{
 		BaseURI:       "/" + strings.Trim(config.DataNamespace, "/"),
 		Authorizer:    config.Authorizer,
 		ResponseLimit: serve.MustByteSize("8M"),

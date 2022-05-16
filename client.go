@@ -1,12 +1,10 @@
-package roast
+package fire
 
 import (
 	"github.com/256dpi/jsonapi/v2"
 
 	"github.com/256dpi/fire/coal"
 )
-
-// TODO: Maybe move to fire package?
 
 // Client wraps a jsonapi.Client to directly interact with models.
 type Client struct {

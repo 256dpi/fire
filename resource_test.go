@@ -1,4 +1,4 @@
-package roast
+package fire
 
 import (
 	"testing"
@@ -7,12 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
+
+type testModel struct {
+	coal.Base `json:"-" bson:",inline" coal:"foos"`
+	String    string    `json:"string"`
+	Bool      bool      `json:"bool"`
+	One       coal.ID   `json:"-" coal:"one:foos"`
+	OptOne    *coal.ID  `json:"-" coal:"opt-one:foos"`
+	Many      []coal.ID `json:"-" coal:"many:foos"`
+
+	stick.NoValidation `json:"-" bson:"-"`
+}
 
 func TestConvertModel(t *testing.T) {
 	id := coal.New()
 
-	res, err := ConvertModel(&fooModel{
+	res, err := ConvertModel(&testModel{
 		Base:   coal.B(id),
 		String: "String",
 		One:    id,
@@ -45,7 +57,7 @@ func TestConvertModel(t *testing.T) {
 		},
 	}, res)
 
-	res, err = ConvertModel(&fooModel{
+	res, err = ConvertModel(&testModel{
 		Base:   coal.B(id),
 		String: "String",
 		One:    id,
@@ -79,7 +91,7 @@ func TestConvertModel(t *testing.T) {
 		},
 	}, res)
 
-	res, err = ConvertModel(&fooModel{
+	res, err = ConvertModel(&testModel{
 		Base:   coal.B(id),
 		String: "String",
 		One:    id,
@@ -128,23 +140,23 @@ func TestConvertModel(t *testing.T) {
 func TestAssignResource(t *testing.T) {
 	id := coal.New()
 
-	var foo fooModel
+	var foo testModel
 	err := AssignResource(&foo, &jsonapi.Resource{})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{}, foo)
+	assert.Equal(t, testModel{}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Attributes: jsonapi.Map{
 			"string": "String",
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{
+	assert.Equal(t, testModel{
 		String: "String",
 	}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Relationships: map[string]*jsonapi.Document{
 			"one": {
@@ -157,11 +169,11 @@ func TestAssignResource(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{
+	assert.Equal(t, testModel{
 		One: id,
 	}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Relationships: map[string]*jsonapi.Document{
 			"opt-one": {
@@ -170,9 +182,9 @@ func TestAssignResource(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{}, foo)
+	assert.Equal(t, testModel{}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Relationships: map[string]*jsonapi.Document{
 			"opt-one": {
@@ -185,11 +197,11 @@ func TestAssignResource(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{
+	assert.Equal(t, testModel{
 		OptOne: &id,
 	}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Relationships: map[string]*jsonapi.Document{
 			"many": {
@@ -200,11 +212,11 @@ func TestAssignResource(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{
+	assert.Equal(t, testModel{
 		Many: nil,
 	}, foo)
 
-	foo = fooModel{}
+	foo = testModel{}
 	err = AssignResource(&foo, &jsonapi.Resource{
 		Relationships: map[string]*jsonapi.Document{
 			"many": {
@@ -219,7 +231,7 @@ func TestAssignResource(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, fooModel{
+	assert.Equal(t, testModel{
 		Many: []coal.ID{id},
 	}, foo)
 }
