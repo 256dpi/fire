@@ -5,9 +5,9 @@ import (
 )
 
 func TestMemoryService(t *testing.T) {
-	abstractServiceTest(t, NewMemory())
+	TestService(t, NewMemory())
 }
 
 func TestMemoryServiceSeek(t *testing.T) {
-	abstractServiceSeekTest(t, NewMemory(), true, false)
+	TestServiceSeek(t, NewMemory(), true, false)
 }

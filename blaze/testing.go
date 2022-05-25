@@ -4,12 +4,17 @@ import (
 	"bytes"
 	"io"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func abstractServiceTest(t *testing.T, svc Service) {
+// Tester is a common interface implemented by test objects.
+type Tester interface {
+	Errorf(format string, args ...interface{})
+}
+
+// TestService will test the specified service for compatibility.
+func TestService(t Tester, svc Service) {
 	handle, err := svc.Prepare(nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
@@ -53,7 +58,8 @@ func abstractServiceTest(t *testing.T, svc Service) {
 	assert.True(t, ErrNotFound.Is(err))
 }
 
-func abstractServiceSeekTest(t *testing.T, svc Service, allowCurNeg, overflowEOF bool) {
+// TestServiceSeek will test the specified service for seek compatibility.
+func TestServiceSeek(t Tester, svc Service, allowCurNeg, overflowEOF bool) {
 	handle, err := svc.Prepare(nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
