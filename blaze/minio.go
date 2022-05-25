@@ -2,7 +2,6 @@ package blaze
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -64,23 +63,13 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 		return nil, ErrUsedHandle.Wrap()
 	}
 
-	// prepare pipe
-	r, w := io.Pipe()
-
-	// prepare upload
-	upload := &minioUpload{
-		pipe: w,
-		done: make(chan error, 1),
-	}
-
-	// start upload
-	go func() {
-		_, err := m.client.PutObject(ctx, m.bucket, name, r, size, minio.PutObjectOptions{
+	// create upload pipe
+	upload := PipeUpload(func(source io.Reader) error {
+		_, err := m.client.PutObject(ctx, m.bucket, name, source, size, minio.PutObjectOptions{
 			ContentType: mediaType,
 		})
-		upload.done <- err
-		close(upload.done)
-	}()
+		return err
+	})
 
 	return upload, nil
 }
@@ -143,37 +132,6 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 	}
 
 	return nil
-}
-
-var errMinioAbort = errors.New("abort")
-
-type minioUpload struct {
-	pipe *io.PipeWriter
-	done chan error
-}
-
-func (p *minioUpload) Write(data []byte) (int, error) {
-	return p.pipe.Write(data)
-}
-
-func (p *minioUpload) Abort() error {
-	// abort upload
-	err := p.pipe.CloseWithError(errMinioAbort)
-	if err != nil {
-		return err
-	}
-
-	return <-p.done
-}
-
-func (p *minioUpload) Close() error {
-	// close upload
-	err := p.pipe.Close()
-	if err != nil {
-		return err
-	}
-
-	return <-p.done
 }
 
 type minioDownload struct {
