@@ -145,6 +145,28 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		return "", nil, xo.SF("size mismatch")
 	}
 
+	// verify upload
+	download, err := service.Download(ctx, handle)
+	if err != nil {
+		return "", nil, xo.W(err)
+	}
+	if size > 0 {
+		_, err = download.Seek(size-1, io.SeekStart)
+		if err != nil {
+			return "", nil, xo.W(err)
+		}
+		n, err := download.Read(make([]byte, 1))
+		if err != nil {
+			return "", nil, xo.W(err)
+		} else if n != 1 {
+			return "", nil, xo.F("upload verification failed")
+		}
+	}
+	err = download.Close()
+	if err != nil {
+		return "", nil, xo.W(err)
+	}
+
 	// get time
 	now := time.Now()
 
