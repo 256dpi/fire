@@ -11,8 +11,8 @@ import (
 
 func TestPipeUpload(t *testing.T) {
 	var buf bytes.Buffer
-	upload := PipeUpload(func(reader io.Reader) error {
-		_, err := io.Copy(&buf, reader)
+	upload := PipeUpload(func(upload io.Reader) error {
+		_, err := io.Copy(&buf, upload)
 		return err
 	})
 
@@ -25,8 +25,8 @@ func TestPipeUpload(t *testing.T) {
 	/* abort */
 
 	buf.Reset()
-	upload = PipeUpload(func(reader io.Reader) error {
-		_, err := io.Copy(&buf, reader)
+	upload = PipeUpload(func(upload io.Reader) error {
+		_, err := io.Copy(&buf, upload)
 		assert.Error(t, err)
 
 		return err
@@ -41,7 +41,7 @@ func TestPipeUpload(t *testing.T) {
 	/* early error */
 
 	buf.Reset()
-	upload = PipeUpload(func(reader io.Reader) error {
+	upload = PipeUpload(func(upload io.Reader) error {
 		return fmt.Errorf("foo")
 	})
 
@@ -55,8 +55,8 @@ func TestPipeUpload(t *testing.T) {
 	/* late error */
 
 	buf.Reset()
-	upload = PipeUpload(func(reader io.Reader) error {
-		_, _ = io.Copy(&buf, reader)
+	upload = PipeUpload(func(upload io.Reader) error {
+		_, _ = io.Copy(&buf, upload)
 		return fmt.Errorf("foo")
 	})
 

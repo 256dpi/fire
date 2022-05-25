@@ -64,8 +64,8 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType strin
 	}
 
 	// create upload pipe
-	upload := PipeUpload(func(source io.Reader) error {
-		_, err := m.client.PutObject(ctx, m.bucket, name, source, size, minio.PutObjectOptions{
+	upload := PipeUpload(func(upload io.Reader) error {
+		_, err := m.client.PutObject(ctx, m.bucket, name, upload, size, minio.PutObjectOptions{
 			ContentType: mediaType,
 		})
 		return err

@@ -52,7 +52,7 @@ type pipeUpload struct {
 // provided callback. This function is useful to upload data to a service that
 // expects a reader. Errors from the callback are returned by the upload either
 // on write or on close.
-func PipeUpload(fn func(reader io.Reader) error) Upload {
+func PipeUpload(fn func(upload io.Reader) error) Upload {
 	// prepare pipe
 	r, w := io.Pipe()
 
