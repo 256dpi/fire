@@ -67,3 +67,40 @@ func TestPipeUpload(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "foo", err.Error())
 }
+
+func TestSeekableDownload(t *testing.T) {
+	buf := make([]byte, 32)
+
+	var calls int
+	download := SeekableDownload(int64(len(buf)), func(offset int64) (io.ReadCloser, error) {
+		calls++
+		return io.NopCloser(io.NewSectionReader(bytes.NewReader(buf), offset, int64(len(buf))-offset)), nil
+	})
+
+	pos, err := download.Seek(0, io.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), pos)
+
+	pos, err = download.Seek(1, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), pos)
+
+	pos, err = download.Seek(1, io.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), pos)
+
+	pos, err = download.Seek(-3, io.SeekCurrent)
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), pos)
+
+	pos, err = download.Seek(1, io.SeekEnd)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(33), pos)
+
+	n, err := download.Read(buf)
+	assert.Error(t, err)
+	assert.Zero(t, n)
+	assert.Equal(t, io.EOF, err)
+
+	assert.Equal(t, 0, calls)
+}

@@ -9,5 +9,5 @@ func TestMemoryService(t *testing.T) {
 }
 
 func TestMemoryServiceSeek(t *testing.T) {
-	TestServiceSeek(t, NewMemory(), true, false)
+	TestServiceSeek(t, NewMemory())
 }

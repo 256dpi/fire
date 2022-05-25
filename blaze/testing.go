@@ -59,7 +59,7 @@ func TestService(t Tester, svc Service) {
 }
 
 // TestServiceSeek will test the specified service for seek compatibility.
-func TestServiceSeek(t Tester, svc Service, allowCurNeg, overflowEOF bool) {
+func TestServiceSeek(t Tester, svc Service) {
 	handle, err := svc.Prepare(nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
@@ -103,19 +103,14 @@ func TestServiceSeek(t Tester, svc Service, allowCurNeg, overflowEOF bool) {
 
 	// from current (negative)
 
-	if allowCurNeg {
-		pos, err = dl.Seek(-1, io.SeekCurrent)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(8), pos)
+	pos, err = dl.Seek(-1, io.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(8), pos)
 
-		n, err = dl.Read(buf)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, n)
-		assert.Equal(t, []byte("rl"), buf)
-	} else {
-		_, err = dl.Seek(-1, io.SeekCurrent)
-		assert.Error(t, err)
-	}
+	n, err = dl.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, n)
+	assert.Equal(t, []byte("rl"), buf)
 
 	// from end
 
@@ -137,21 +132,14 @@ func TestServiceSeek(t Tester, svc Service, allowCurNeg, overflowEOF bool) {
 
 	// overflow
 
-	if overflowEOF {
-		pos, err = dl.Seek(15, io.SeekStart)
-		assert.Error(t, err)
-		assert.Equal(t, io.EOF, err)
-		assert.Zero(t, pos)
-	} else {
-		pos, err = dl.Seek(15, io.SeekStart)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(15), pos)
+	pos, err = dl.Seek(15, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(15), pos)
 
-		n, err = dl.Read(buf)
-		assert.Error(t, err)
-		assert.Equal(t, io.EOF, err)
-		assert.Zero(t, n)
-	}
+	n, err = dl.Read(buf)
+	assert.Error(t, err)
+	assert.Equal(t, io.EOF, err)
+	assert.Zero(t, n)
 
 	// read after EOF
 

@@ -29,6 +29,6 @@ func TestGridFSServiceSeek(t *testing.T) {
 		assert.NoError(t, err)
 
 		svc := NewGridFS(bucket)
-		TestServiceSeek(t, svc, true, false)
+		TestServiceSeek(t, svc)
 	})
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/minio/minio-go/v7"
 
@@ -87,21 +86,37 @@ func (m *Minio) Download(ctx context.Context, handle Handle) (Download, error) {
 		return nil, ErrInvalidHandle.Wrap()
 	}
 
-	// get object
-	obj, err := m.client.GetObject(ctx, m.bucket, name, minio.GetObjectOptions{})
-	if err != nil {
-		return nil, err
-	}
-
 	// check object
-	_, err = obj.Stat()
+	info, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
 	if isMinioNotFoundErr(err) {
 		return nil, ErrNotFound.Wrap()
 	} else if err != nil {
 		return nil, err
 	}
 
-	return &minioDownload{Object: obj}, nil
+	// prepare download
+	download := SeekableDownload(info.Size, func(offset int64) (io.ReadCloser, error) {
+		// prepare options
+		opts := minio.GetObjectOptions{}
+
+		// set range
+		if offset > 0 {
+			err = opts.SetRange(offset, 0)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// get object
+		obj, err := m.client.GetObject(ctx, m.bucket, name, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		return obj, nil
+	})
+
+	return download, nil
 }
 
 // Delete implements the Service interface.
@@ -132,18 +147,6 @@ func (m *Minio) Delete(ctx context.Context, handle Handle) error {
 	}
 
 	return nil
-}
-
-type minioDownload struct {
-	*minio.Object
-}
-
-func (d *minioDownload) Seek(offset int64, whence int) (int64, error) {
-	pos, err := d.Object.Seek(offset, whence)
-	if err != nil && strings.Contains(minio.ToErrorResponse(err).Message, "Negative position") {
-		err = ErrInvalidPosition.Wrap()
-	}
-	return pos, err
 }
 
 func isMinioNotFoundErr(err error) bool {

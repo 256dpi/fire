@@ -25,5 +25,5 @@ func TestMinioServiceSeek(t *testing.T) {
 	assert.NoError(t, err)
 
 	svc := NewMinio(client, "blaze")
-	TestServiceSeek(t, svc, false, true)
+	TestServiceSeek(t, svc)
 }
