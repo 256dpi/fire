@@ -5,25 +5,23 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMinioService(t *testing.T) {
-	client, err := minio.New("0.0.0.0:9000", &minio.Options{
-		Creds: credentials.NewStaticV4("minioadmin", "minioadmin", ""),
-	})
-	assert.NoError(t, err)
-
-	svc := NewMinio(client, "blaze")
-	TestService(t, svc)
+	TestService(t, NewMinio(makeMinioClient(), "blaze"))
 }
 
 func TestMinioServiceSeek(t *testing.T) {
+	TestServiceSeek(t, NewMinio(makeMinioClient(), "blaze"))
+}
+
+func makeMinioClient() *minio.Client {
 	client, err := minio.New("0.0.0.0:9000", &minio.Options{
 		Creds: credentials.NewStaticV4("minioadmin", "minioadmin", ""),
 	})
-	assert.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 
-	svc := NewMinio(client, "blaze")
-	TestServiceSeek(t, svc)
+	return client
 }
