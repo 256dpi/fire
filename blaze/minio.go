@@ -40,7 +40,7 @@ func (m *Minio) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Minio) Upload(ctx context.Context, handle Handle, mediaType string, size int64) (Upload, error) {
+func (m *Minio) Upload(ctx context.Context, handle Handle, info Info) (Upload, error) {
 	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
@@ -64,13 +64,40 @@ func (m *Minio) Upload(ctx context.Context, handle Handle, mediaType string, siz
 
 	// create upload pipe
 	upload := PipeUpload(func(upload io.Reader) error {
-		_, err := m.client.PutObject(ctx, m.bucket, name, upload, size, minio.PutObjectOptions{
-			ContentType: mediaType,
+		_, err := m.client.PutObject(ctx, m.bucket, name, upload, info.Size, minio.PutObjectOptions{
+			ContentType: info.MediaType,
 		})
 		return err
 	})
 
 	return upload, nil
+}
+
+// Lookup implements the Service interface.
+func (m *Minio) Lookup(ctx context.Context, handle Handle) (Info, error) {
+	// ensure context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// get name
+	name, ok := handle["name"].(string)
+	if !ok || name == "" {
+		return Info{}, ErrInvalidHandle.Wrap()
+	}
+
+	// check object
+	info, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
+	if isMinioNotFoundErr(err) {
+		return Info{}, ErrNotFound.Wrap()
+	} else if err != nil {
+		return Info{}, err
+	}
+
+	return Info{
+		Size:      info.Size,
+		MediaType: info.ContentType,
+	}, nil
 }
 
 // Download implements the Service interface.

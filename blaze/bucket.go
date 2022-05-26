@@ -129,7 +129,10 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	}
 
 	// begin upload
-	upload, err := service.Upload(ctx, handle, mediaType, size)
+	upload, err := service.Upload(ctx, handle, Info{
+		Size:      size,
+		MediaType: mediaType,
+	})
 	if err != nil {
 		return "", nil, xo.W(err)
 	}

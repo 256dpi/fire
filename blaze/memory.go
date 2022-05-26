@@ -53,7 +53,7 @@ func (m *Memory) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string, _ int64) (Upload, error) {
+func (m *Memory) Upload(_ context.Context, handle Handle, info Info) (Upload, error) {
 	// acquire mutex
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -72,7 +72,7 @@ func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string, _ in
 
 	// prepare blob
 	blob := &MemoryBlob{
-		Type: mediaType,
+		Type: info.MediaType,
 	}
 
 	// store blob
@@ -80,6 +80,29 @@ func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string, _ in
 
 	return &memoryUpload{
 		blob: blob,
+	}, nil
+}
+
+func (m *Memory) Lookup(_ context.Context, handle Handle) (Info, error) {
+	// acquire mutex
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	// get id
+	id, _ := handle["id"].(string)
+	if id == "" {
+		return Info{}, ErrInvalidHandle.Wrap()
+	}
+
+	// get blob
+	blob, ok := m.Blobs[id]
+	if !ok {
+		return Info{}, ErrNotFound.Wrap()
+	}
+
+	return Info{
+		Size:      int64(len(blob.Bytes)),
+		MediaType: blob.Type,
 	}, nil
 }
 

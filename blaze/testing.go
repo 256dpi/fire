@@ -15,36 +15,68 @@ type Tester interface {
 
 // TestService will test the specified service for compatibility.
 func TestService(t Tester, svc Service) {
-	handle, err := svc.Prepare(nil)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, handle)
+	/* nil handle */
 
-	length, err := uploadFrom(svc, nil, "foo/bar", 12, strings.NewReader("Hello World!"))
+	length, err := uploadFrom(svc, nil, Info{
+		Size:      12,
+		MediaType: "foo/bar",
+	}, strings.NewReader("Hello World!"))
 	assert.Error(t, err)
 	assert.True(t, ErrInvalidHandle.Is(err))
 	assert.Zero(t, length)
 
-	length, err = uploadFrom(svc, handle, "foo/bar", 12, strings.NewReader("Hello World!"))
-	assert.NoError(t, err)
-	assert.Equal(t, int64(12), length)
-
-	length, err = uploadFrom(svc, handle, "foo/bar", 12, strings.NewReader("Hello World!"))
+	info, err := svc.Lookup(nil, nil)
 	assert.Error(t, err)
-	assert.True(t, ErrUsedHandle.Is(err))
-	assert.Zero(t, length)
+	assert.Empty(t, info)
+	assert.True(t, ErrInvalidHandle.Is(err))
 
 	err = downloadTo(svc, nil, nil)
 	assert.Error(t, err)
 	assert.True(t, ErrInvalidHandle.Is(err))
 
+	err = svc.Delete(nil, nil)
+	assert.Error(t, err)
+	assert.True(t, ErrInvalidHandle.Is(err))
+
+	/* correct handle */
+
+	handle, err := svc.Prepare(nil)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, handle)
+
+	info, err = svc.Lookup(nil, handle)
+	assert.Error(t, err)
+	assert.Empty(t, info)
+	assert.True(t, ErrNotFound.Is(err))
+
+	err = downloadTo(svc, handle, new(bytes.Buffer))
+	assert.Error(t, err)
+	assert.True(t, ErrNotFound.Is(err))
+
+	length, err = uploadFrom(svc, handle, Info{
+		Size:      12,
+		MediaType: "foo/bar",
+	}, strings.NewReader("Hello World!"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), length)
+
+	length, err = uploadFrom(svc, handle, Info{
+		Size:      12,
+		MediaType: "foo/bar",
+	}, strings.NewReader("Hello World!"))
+	assert.Error(t, err)
+	assert.True(t, ErrUsedHandle.Is(err))
+	assert.Zero(t, length)
+
+	info, err = svc.Lookup(nil, handle)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), info.Size)
+	// MediaType is optional
+
 	var buf bytes.Buffer
 	err = downloadTo(svc, handle, &buf)
 	assert.NoError(t, err)
 	assert.Equal(t, "Hello World!", buf.String())
-
-	err = svc.Delete(nil, nil)
-	assert.Error(t, err)
-	assert.True(t, ErrInvalidHandle.Is(err))
 
 	err = svc.Delete(nil, handle)
 	assert.NoError(t, err)
@@ -53,7 +85,12 @@ func TestService(t Tester, svc Service) {
 	assert.Error(t, err)
 	assert.True(t, ErrNotFound.Is(err))
 
-	err = downloadTo(svc, handle, &buf)
+	info, err = svc.Lookup(nil, handle)
+	assert.Error(t, err)
+	assert.Empty(t, info)
+	assert.True(t, ErrNotFound.Is(err))
+
+	err = downloadTo(svc, handle, new(bytes.Buffer))
 	assert.Error(t, err)
 	assert.True(t, ErrNotFound.Is(err))
 }
@@ -64,7 +101,10 @@ func TestServiceSeek(t Tester, svc Service) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, handle)
 
-	length, err := uploadFrom(svc, handle, "foo/bar", 12, strings.NewReader("Hello World!"))
+	length, err := uploadFrom(svc, handle, Info{
+		Size:      12,
+		MediaType: "foo/bar",
+	}, strings.NewReader("Hello World!"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), length)
 
@@ -153,8 +193,8 @@ func TestServiceSeek(t Tester, svc Service) {
 	assert.Equal(t, []byte("He"), buf)
 }
 
-func uploadFrom(svc Service, handle Handle, typ string, size int64, r io.Reader) (int64, error) {
-	upload, err := svc.Upload(nil, handle, typ, size)
+func uploadFrom(svc Service, handle Handle, info Info, r io.Reader) (int64, error) {
+	upload, err := svc.Upload(nil, handle, info)
 	if err != nil {
 		return 0, err
 	}

@@ -35,7 +35,7 @@ func (g *GridFS) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string, _ int64) (Upload, error) {
+func (g *GridFS) Upload(ctx context.Context, handle Handle, _ Info) (Upload, error) {
 	// get id
 	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
@@ -50,6 +50,36 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ string, _ int64) (
 
 	return &gridFSUpload{
 		stream: stream,
+	}, nil
+}
+
+func (g *GridFS) Lookup(ctx context.Context, handle Handle) (Info, error) {
+	// get id
+	id, ok := handle["id"].(coal.ID)
+	if !ok || id.IsZero() {
+		return Info{}, ErrInvalidHandle.Wrap()
+	}
+
+	// open download stream
+	stream, err := g.bucket.OpenDownloadStream(ctx, id)
+	if err != nil {
+		return Info{}, xo.W(err)
+	}
+
+	// load file and first chunk
+	_, err = stream.Seek(0, io.SeekStart)
+	if err == lungo.ErrFileNotFound {
+		return Info{}, ErrNotFound.Wrap()
+	} else if err != nil {
+		return Info{}, xo.W(err)
+	}
+
+	// get file
+	file := stream.GetFile()
+
+	return Info{
+		Size:      int64(file.Length),
+		MediaType: "",
 	}, nil
 }
 

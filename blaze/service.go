@@ -21,6 +21,12 @@ var ErrInvalidPosition = xo.BF("invalid position")
 // Handle is a reference to a blob stored in a service.
 type Handle map[string]interface{}
 
+// Info describes a blob stored in a service.
+type Info struct {
+	Size      int64
+	MediaType string
+}
+
 // Upload handles the upload of a blob.
 type Upload interface {
 	Write(data []byte) (int, error)
@@ -41,7 +47,10 @@ type Service interface {
 	Prepare(ctx context.Context) (Handle, error)
 
 	// Upload should initiate the upload of a blob.
-	Upload(ctx context.Context, handle Handle, mediaType string, size int64) (Upload, error)
+	Upload(ctx context.Context, handle Handle, info Info) (Upload, error)
+
+	// Lookup should retrieve the specified block and return its media type and size.
+	Lookup(ctx context.Context, handle Handle) (Info, error)
 
 	// Download should initiate the download of a blob.
 	Download(ctx context.Context, handle Handle) (Download, error)
