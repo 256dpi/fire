@@ -163,6 +163,17 @@ func TestServiceSeek(t Tester, svc Service) {
 	assert.Equal(t, 2, n)
 	assert.Equal(t, []byte("ld"), buf)
 
+	// last byte
+
+	pos, err = dl.Seek(11, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), pos)
+
+	n, err = dl.Read(buf[:1])
+	assert.NoError(t, err)
+	assert.Equal(t, 1, n)
+	assert.Equal(t, []byte("!"), buf[:1])
+
 	// underflow
 
 	pos, err = dl.Seek(-2, io.SeekStart)

@@ -220,6 +220,9 @@ func (s *seekableDownload) Read(buf []byte) (int, error) {
 
 	// read from stream
 	n, err := s.stream.Read(buf)
+	if n > 0 && err == io.EOF {
+		err = nil
+	}
 
 	// adjust offset
 	s.offset += int64(n)
