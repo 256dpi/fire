@@ -148,7 +148,15 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		return "", nil, xo.SF("size mismatch")
 	}
 
-	// verify upload
+	// verify upload meta data
+	info, err := service.Lookup(ctx, handle)
+	if err != nil {
+		return "", nil, xo.W(err)
+	} else if info.Size != size {
+		return "", nil, xo.F("upload verification failed")
+	}
+
+	// verify upload data
 	download, err := service.Download(ctx, handle)
 	if err != nil {
 		return "", nil, xo.W(err)
