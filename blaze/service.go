@@ -2,6 +2,7 @@ package blaze
 
 import (
 	"context"
+	"time"
 
 	"github.com/256dpi/xo"
 )
@@ -57,4 +58,13 @@ type Service interface {
 
 	// Delete should delete the blob.
 	Delete(ctx context.Context, handle Handle) error
+}
+
+// DirectDownloadService may be implemented by services that support downloading
+// from a URL directly.
+type DirectDownloadService interface {
+	Service
+
+	// DownloadURL should return a URL to download the blob.
+	DownloadURL(ctx context.Context, handle Handle, expiry time.Duration) (string, error)
 }

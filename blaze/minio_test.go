@@ -15,6 +15,10 @@ func TestMinioServiceSeek(t *testing.T) {
 	TestServiceSeek(t, NewMinio(makeMinioClient(), "blaze"))
 }
 
+func TestMinioServiceDownloadURL(t *testing.T) {
+	TestServiceDownloadURL(t, NewMinio(makeMinioClient(), "blaze"))
+}
+
 func makeMinioClient() *minio.Client {
 	client, err := minio.New("0.0.0.0:9000", &minio.Options{
 		Creds: credentials.NewStaticV4("minioadmin", "minioadmin", ""),

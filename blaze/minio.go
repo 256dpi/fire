@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 
@@ -144,6 +145,36 @@ func (m *Minio) Download(ctx context.Context, handle Handle) (Download, error) {
 	})
 
 	return download, nil
+}
+
+// DownloadURL implements the DirectDownloadService interface.
+func (m *Minio) DownloadURL(ctx context.Context, handle Handle, expiry time.Duration) (string, error) {
+	// ensure context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// get name
+	name, ok := handle["name"].(string)
+	if !ok || name == "" {
+		return "", ErrInvalidHandle.Wrap()
+	}
+
+	// check object
+	_, err := m.client.StatObject(ctx, m.bucket, name, minio.StatObjectOptions{})
+	if isMinioNotFoundErr(err) {
+		return "", ErrNotFound.Wrap()
+	} else if err != nil {
+		return "", err
+	}
+
+	// generate url
+	url, err := m.client.PresignedGetObject(ctx, m.bucket, name, expiry, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return url.String(), nil
 }
 
 // Delete implements the Service interface.

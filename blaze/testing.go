@@ -2,8 +2,12 @@ package blaze
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"net/http"
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -204,6 +208,48 @@ func TestServiceSeek(t Tester, svc Service) {
 	assert.Equal(t, []byte("He"), buf)
 }
 
+func TestServiceDownloadURL(t *testing.T, svc DirectDownloadService) {
+	url, err := svc.DownloadURL(nil, nil, 0)
+	assert.Error(t, err)
+	assert.True(t, ErrInvalidHandle.Is(err))
+	assert.Zero(t, url)
+
+	handle, err := svc.Prepare(nil)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, handle)
+
+	length, err := uploadFrom(svc, handle, Info{
+		Size:      12,
+		MediaType: "foo/bar",
+	}, strings.NewReader("Hello World!"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), length)
+
+	url, err = svc.DownloadURL(nil, handle, time.Hour)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, url)
+
+	println(url)
+
+	buf, err := downloadURL(url)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello World!", string(buf))
+
+	time.Sleep(2 * time.Second)
+
+	url2, err := svc.DownloadURL(nil, handle, time.Hour)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, url)
+	assert.NotEqual(t, url2, url)
+
+	err = svc.Delete(nil, handle)
+	assert.NoError(t, err)
+
+	buf, err = downloadURL(url)
+	assert.Error(t, err)
+	assert.Empty(t, buf)
+}
+
 func uploadFrom(svc Service, handle Handle, info Info, r io.Reader) (int64, error) {
 	upload, err := svc.Upload(nil, handle, info)
 	if err != nil {
@@ -220,4 +266,21 @@ func downloadTo(svc Service, handle Handle, w io.Writer) error {
 	}
 
 	return DownloadTo(download, w)
+}
+
+func downloadURL(url string) ([]byte, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 300 {
+		return nil, fmt.Errorf("request error")
+	}
+	buf, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
