@@ -137,11 +137,13 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		return "", nil, xo.W(err)
 	}
 
-	// perform upload
+	// perform upload and ensure abort or close
 	uploadSize, err := cb(upload)
 	if err != nil {
+		_ = upload.Abort()
 		return "", nil, xo.W(err)
 	}
+	_ = upload.Close()
 
 	// verify size
 	if uploadSize != size {
@@ -161,6 +163,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
+	defer download.Close()
 	if size > 0 {
 		_, err = download.Seek(size-1, io.SeekStart)
 		if err != nil {
@@ -1179,9 +1182,12 @@ func (b *Bucket) MigrateFile(ctx context.Context, id coal.ID) error {
 		return xo.F("unexpected file state")
 	}
 
+	// ensure download is closed
+	defer download.Close()
+
 	// upload new file
 	_, newFile, err := b.Upload(ctx, original.Name, original.Type, original.Size, func(upload Upload) (int64, error) {
-		return io.Copy(upload, download)
+		return UploadFrom(upload, download)
 	})
 	if err != nil {
 		return err
