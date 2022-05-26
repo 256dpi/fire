@@ -83,6 +83,7 @@ func (m *Memory) Upload(_ context.Context, handle Handle, info Info) (Upload, er
 	}, nil
 }
 
+// Lookup implements the Service interface.
 func (m *Memory) Lookup(_ context.Context, handle Handle) (Info, error) {
 	// acquire mutex
 	m.mutex.Lock()

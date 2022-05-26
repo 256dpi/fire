@@ -53,6 +53,7 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ Info) (Upload, err
 	}, nil
 }
 
+// Lookup implements the Service interface.
 func (g *GridFS) Lookup(ctx context.Context, handle Handle) (Info, error) {
 	// get id
 	id, ok := handle["id"].(coal.ID)
