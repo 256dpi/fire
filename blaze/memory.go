@@ -13,7 +13,6 @@ var errStreamClosed = xo.BF("stream closed")
 
 // MemoryBlob is a blob stored by the memory service.
 type MemoryBlob struct {
-	Name  string
 	Type  string
 	Bytes []byte
 }
@@ -54,7 +53,7 @@ func (m *Memory) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Memory) Upload(_ context.Context, handle Handle, name, mediaType string, _ int64) (Upload, error) {
+func (m *Memory) Upload(_ context.Context, handle Handle, mediaType string, _ int64) (Upload, error) {
 	// acquire mutex
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -73,7 +72,6 @@ func (m *Memory) Upload(_ context.Context, handle Handle, name, mediaType string
 
 	// prepare blob
 	blob := &MemoryBlob{
-		Name: name,
 		Type: mediaType,
 	}
 

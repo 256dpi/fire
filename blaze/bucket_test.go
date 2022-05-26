@@ -57,7 +57,6 @@ func TestBucketUpload(t *testing.T) {
 
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "data.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
@@ -114,12 +113,10 @@ func TestBucketUploadSizeMismatch(t *testing.T) {
 
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "data.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
 			"2": {
-				Name:  "data.bin",
 				Type:  "application/octet-stream",
 				Bytes: []byte("Hello World!"),
 			},
@@ -218,7 +215,6 @@ func TestBucketUploadActionExtended(t *testing.T) {
 
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "script.js",
 				Type:  "application/javascript",
 				Bytes: []byte("Hello World!"),
 			},
@@ -363,7 +359,6 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 				Bytes: []byte("h1 { color: red; }"),
 			},
 			"2": {
-				Name:  "script.js",
 				Type:  "text/javascript",
 				Bytes: []byte("console.log('Hello World!);"),
 			},
@@ -1441,7 +1436,6 @@ func TestBucketMigration(t *testing.T) {
 		}, files)
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "file",
 				Type:  "foo/bar",
 				Bytes: []byte("Hello World!"),
 			},
@@ -1506,14 +1500,12 @@ func TestBucketMigration(t *testing.T) {
 		}, files)
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "file",
 				Type:  "foo/bar",
 				Bytes: []byte("Hello World!"),
 			},
 		}, svc1.Blobs)
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Name:  "file",
 				Type:  "foo/bar",
 				Bytes: []byte("Hello World!"),
 			},

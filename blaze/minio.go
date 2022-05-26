@@ -40,7 +40,7 @@ func (m *Minio) Prepare(context.Context) (Handle, error) {
 }
 
 // Upload implements the Service interface.
-func (m *Minio) Upload(ctx context.Context, handle Handle, name, mediaType string, size int64) (Upload, error) {
+func (m *Minio) Upload(ctx context.Context, handle Handle, mediaType string, size int64) (Upload, error) {
 	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
