@@ -17,7 +17,6 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
-	"github.com/256dpi/fire/heat"
 	"github.com/256dpi/fire/stick"
 )
 
@@ -466,6 +465,21 @@ func TestBucketUploadActionMultipartLimit(t *testing.T) {
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
 	})
+}
+
+func TestBucketGetViewKey(t *testing.T) {
+	bucket := NewBucket(nil, testNotary, nil)
+
+	id := coal.New()
+
+	viewKey1, err := bucket.GetViewKey(id)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	viewKey2, err := bucket.GetViewKey(id)
+	assert.NoError(t, err)
+	assert.Equal(t, viewKey1, viewKey2)
 }
 
 func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
@@ -1118,10 +1132,7 @@ func TestBucketDownload(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.notary.Issue(&ViewKey{
-			Base: heat.Base{},
-			File: file.ID(),
-		})
+		key, err := bucket.GetViewKey(file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
@@ -1168,10 +1179,7 @@ func TestBucketDownloadAction(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.notary.Issue(&ViewKey{
-			Base: heat.Base{},
-			File: file.ID(),
-		})
+		key, err := bucket.GetViewKey(file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
@@ -1226,10 +1234,7 @@ func TestBucketDownloadActionStream(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.notary.Issue(&ViewKey{
-			Base: heat.Base{},
-			File: file.ID(),
-		})
+		key, err := bucket.GetViewKey(file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 

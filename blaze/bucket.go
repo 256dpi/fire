@@ -800,6 +800,32 @@ func (b *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bind
 	return nil
 }
 
+// GetViewKey generates and returns a view key for the specified file.
+func (b *Bucket) GetViewKey(file coal.ID) (string, error) {
+	// the view key is generated in such way that the key is stable for at least
+	// half of the expiry duration. this enables browsers to cache downloads
+
+	// get issued and expires
+	expiry := heat.GetMeta(&ViewKey{}).Expiry
+	issued := time.Now().Truncate(expiry / 2)
+	expires := issued.Add(expiry)
+
+	// issue view key
+	viewKey, err := b.notary.Issue(&ViewKey{
+		Base: heat.Base{
+			ID:      file,
+			Issued:  issued,
+			Expires: expires,
+		},
+		File: file,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return viewKey, nil
+}
+
 // Decorate will populate the provided link if a file is available.
 func (b *Bucket) Decorate(link *Link) error {
 	// skip if file is missing
@@ -807,15 +833,13 @@ func (b *Bucket) Decorate(link *Link) error {
 		return nil
 	}
 
-	// issue view key
-	viewKey, err := b.notary.Issue(&ViewKey{
-		File: link.File,
-	})
+	// get view key
+	viewKey, err := b.GetViewKey(link.File)
 	if err != nil {
 		return err
 	}
 
-	// set key
+	// set view key
 	link.ViewKey = viewKey
 
 	// copy info
