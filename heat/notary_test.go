@@ -14,8 +14,9 @@ func TestNotaryIssueAndVerify(t *testing.T) {
 
 	key1 := testKey{
 		Base: Base{
-			ID:     coal.New(),
-			Expiry: time.Now().Add(time.Hour).Round(time.Second),
+			ID:      coal.New(),
+			Issued:  time.Now().Add(-time.Second).Round(time.Second),
+			Expires: time.Now().Add(time.Hour).Round(time.Second),
 		},
 		User: "user1234",
 		Role: "admin",
@@ -28,7 +29,8 @@ func TestNotaryIssueAndVerify(t *testing.T) {
 	var key2 testKey
 	err = notary.Verify(&key2, token)
 	assert.NoError(t, err)
-	key2.Expiry = key2.Expiry.Local()
+	key2.Issued = key2.Issued.Local()
+	key2.Expires = key2.Expires.Local()
 	assert.Equal(t, key1, key2)
 }
 
@@ -46,7 +48,7 @@ func TestNotaryIssueDefaults(t *testing.T) {
 	err = notary.Verify(&key, token)
 	assert.NoError(t, err)
 	assert.False(t, key.ID.IsZero())
-	assert.True(t, time.Until(key.Expiry) > time.Hour-time.Minute)
+	assert.True(t, time.Until(key.Expires) > time.Hour-time.Minute)
 	assert.Equal(t, "user", key.User)
 	assert.Equal(t, "role", key.Role)
 }

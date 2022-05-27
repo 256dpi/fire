@@ -22,8 +22,9 @@ type Base struct {
 	// The key id.
 	ID coal.ID
 
-	// The key expiry.
-	Expiry time.Time
+	// The key timestamps
+	Issued  time.Time
+	Expires time.Time
 }
 
 // GetBase implements the Key interface.

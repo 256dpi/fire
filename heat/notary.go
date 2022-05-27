@@ -47,9 +47,14 @@ func (n *Notary) Issue(key Key) (string, error) {
 		base.ID = coal.New()
 	}
 
-	// ensure expiry
-	if base.Expiry.IsZero() {
-		base.Expiry = time.Now().Add(meta.Expiry)
+	// ensure issued
+	if base.Issued.IsZero() {
+		base.Issued = time.Now()
+	}
+
+	// ensure expires
+	if base.Expires.IsZero() {
+		base.Expires = base.Issued.Add(meta.Expiry)
 	}
 
 	// validate key
@@ -68,7 +73,8 @@ func (n *Notary) Issue(key Key) (string, error) {
 	// issue token
 	token, err := Issue(n.secret, n.issuer, meta.Name, RawKey{
 		ID:      base.ID.Hex(),
-		Expires: base.Expiry,
+		Issued:  base.Issued,
+		Expires: base.Expires,
 		Data:    data,
 	})
 	if err != nil {
@@ -95,9 +101,12 @@ func (n *Notary) Verify(key Key, token string) error {
 		return xo.F("invalid token id")
 	}
 
-	// set id and expiry
-	key.GetBase().ID = kid
-	key.GetBase().Expiry = rawKey.Expires
+	// set base
+	*key.GetBase() = Base{
+		ID:      kid,
+		Issued:  rawKey.Issued,
+		Expires: rawKey.Expires,
+	}
 
 	// assign data
 	err = rawKey.Data.Unmarshal(key, stick.JSON)
