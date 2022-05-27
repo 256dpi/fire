@@ -1194,7 +1194,9 @@ func TestBucketDownloadAction(t *testing.T) {
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
 			"Content-Disposition": []string{`inline`},
+			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
 		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
 
@@ -1211,7 +1213,9 @@ func TestBucketDownloadAction(t *testing.T) {
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
 			"Content-Disposition": []string{`attachment; filename="forced"`},
+			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
 		}, rec.Header())
 		assert.Equal(t, "Hello World!", rec.Body.String())
 	})
@@ -1251,7 +1255,9 @@ func TestBucketDownloadActionStream(t *testing.T) {
 			"Content-Length":      []string{"12"},
 			"Content-Type":        []string{"foo/bar"},
 			"Content-Disposition": []string{`inline`},
+			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
 		}, rec.Header())
 		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
 		assert.Equal(t, "", rec.Body.String())
@@ -1269,7 +1275,9 @@ func TestBucketDownloadActionStream(t *testing.T) {
 			"Content-Type":        []string{"foo/bar"},
 			"Content-Disposition": []string{`inline`},
 			"Content-Range":       []string{"bytes 0-5/12"},
+			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
 		}, rec.Header())
 		assert.Equal(t, "foo/bar", rec.Header().Get("Content-Type"))
 		assert.Equal(t, "", rec.Body.String())

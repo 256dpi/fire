@@ -1027,6 +1027,10 @@ func (b *Bucket) DownloadAction() *fire.Action {
 		// unset any content security policy
 		ctx.ResponseWriter.Header().Del("Content-Security-Policy")
 
+		// cache download for one year, using a versioned ETag based on the file ID
+		ctx.ResponseWriter.Header().Set("ETag", `"v1-`+file.ID().Hex()+`"`)
+		ctx.ResponseWriter.Header().Set("Cache-Control", "public, max-age=31536000")
+
 		// stream download
 		http.ServeContent(ctx.ResponseWriter, ctx.HTTPRequest, "", file.Updated, download)
 
