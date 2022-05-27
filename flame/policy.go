@@ -249,7 +249,7 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	// issue key
 	str, err := p.Notary.Issue(&key)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return str, nil
