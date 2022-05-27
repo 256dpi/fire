@@ -29,7 +29,7 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 	key, err := p.Verify(sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID(), key.ID)
-	assert.Equal(t, token.ExpiresAt, key.Expiry.Local())
+	assert.Equal(t, token.ExpiresAt, key.Expires.Local())
 	assert.Equal(t, stick.Map{
 		"name": "Hello",
 	}, key.Extra)

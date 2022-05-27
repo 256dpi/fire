@@ -59,6 +59,8 @@ func TestIntegration(t *testing.T) {
 			return scope, nil
 		}
 
+		policy.backTrackIssuedFromExpiry = true
+
 		authenticator := NewAuthenticator(tester.Store, policy, func(err error) {
 			t.Error(err)
 		})
@@ -127,7 +129,7 @@ func TestIntegration(t *testing.T) {
 		}).(*Token)
 
 		spec.InvalidToken = "foo"
-		spec.UnknownToken = mustIssue(policy, AccessToken, coal.New(), time.Now())
+		spec.UnknownToken = mustIssue(policy, AccessToken, coal.New(), time.Now().Add(authenticator.policy.AccessTokenLifespan))
 		spec.ValidToken = mustIssue(policy, AccessToken, validToken.ID(), validToken.ExpiresAt)
 		spec.ExpiredToken = mustIssue(policy, AccessToken, expiredToken.ID(), expiredToken.ExpiresAt)
 		spec.InsufficientToken = mustIssue(policy, AccessToken, insufficientToken.ID(), insufficientToken.ExpiresAt)
@@ -149,12 +151,12 @@ func TestIntegration(t *testing.T) {
 			Application: app1.ID(),
 		}).(*Token)
 
-		spec.UnknownRefreshToken = mustIssue(policy, RefreshToken, coal.New(), time.Now())
+		spec.UnknownRefreshToken = mustIssue(policy, RefreshToken, coal.New(), time.Now().Add(authenticator.policy.RefreshTokenLifespan))
 		spec.ValidRefreshToken = mustIssue(policy, RefreshToken, validRefreshToken.ID(), validRefreshToken.ExpiresAt)
 		spec.ExpiredRefreshToken = mustIssue(policy, RefreshToken, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		spec.InvalidAuthorizationCode = "foo"
-		spec.UnknownAuthorizationCode = mustIssue(policy, AuthorizationCode, coal.New(), time.Now())
+		spec.UnknownAuthorizationCode = mustIssue(policy, AuthorizationCode, coal.New(), time.Now().Add(authenticator.policy.AuthorizationCodeLifespan))
 		spec.ExpiredAuthorizationCode = mustIssue(policy, AuthorizationCode, expiredRefreshToken.ID(), expiredRefreshToken.ExpiresAt)
 
 		validToken = tester.Insert(&Token{

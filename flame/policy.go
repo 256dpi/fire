@@ -143,6 +143,8 @@ type Policy struct {
 	AccessTokenLifespan       time.Duration
 	RefreshTokenLifespan      time.Duration
 	AuthorizationCodeLifespan time.Duration
+
+	backTrackIssuedFromExpiry bool // TODO: Keep?
 }
 
 // StaticGrants always selects the specified grants.
@@ -231,6 +233,12 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	// get data
 	data := token.GetTokenData()
 
+	// get issued
+	issued := time.Now()
+	if p.backTrackIssuedFromExpiry && data.ExpiresAt.Before(issued) {
+		issued = data.ExpiresAt.Add(-time.Hour)
+	}
+
 	// get extra data
 	var extra stick.Map
 	if p.TokenData != nil {
@@ -240,8 +248,9 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	// prepare key
 	key := Key{
 		Base: heat.Base{
-			ID:     token.ID(),
-			Expiry: data.ExpiresAt,
+			ID:      token.ID(),
+			Issued:  issued,
+			Expires: data.ExpiresAt,
 		},
 		Extra: extra,
 	}
