@@ -11,8 +11,9 @@ import (
 
 func TestIssueAndVerify(t *testing.T) {
 	key1 := RawKey{
-		ID:     "id",
-		Expiry: time.Now().Add(time.Hour).Round(time.Second),
+		ID:      "id",
+		Issued:  time.Now().Add(-time.Second).Round(time.Second),
+		Expires: time.Now().Add(time.Hour).Round(time.Second),
 		Data: stick.Map{
 			"user": "user",
 			"role": "role",
@@ -24,7 +25,8 @@ func TestIssueAndVerify(t *testing.T) {
 	assert.NotEmpty(t, token)
 
 	key2, err := Verify(testSecret, "issuer", "name", token)
-	key2.Expiry = key2.Expiry.Local()
+	key2.Issued = key2.Issued.Local()
+	key2.Expires = key2.Expires.Local()
 	assert.NoError(t, err)
 	assert.Equal(t, key1, *key2)
 }
@@ -55,11 +57,20 @@ func TestIssueErrors(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Empty(t, token)
-	assert.Equal(t, "missing expiry", err.Error())
+	assert.Equal(t, "missing expires", err.Error())
 
 	token, err = Issue(testSecret, "foo", "bar", RawKey{
-		ID:     "baz",
-		Expiry: time.Now().Add(time.Hour),
+		ID:      "baz",
+		Issued:  time.Now().Add(time.Hour),
+		Expires: time.Now(),
+	})
+	assert.Error(t, err)
+	assert.Empty(t, token)
+	assert.Equal(t, "issued must be before expires", err.Error())
+
+	token, err = Issue(testSecret, "foo", "bar", RawKey{
+		ID:      "baz",
+		Expires: time.Now().Add(time.Hour),
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -67,8 +78,9 @@ func TestIssueErrors(t *testing.T) {
 
 func TestVerifyExpired(t *testing.T) {
 	token, err := Issue(testSecret, "issuer", "name", RawKey{
-		ID:     "id",
-		Expiry: time.Now().Add(-time.Hour).Round(time.Second),
+		ID:      "id",
+		Issued:  time.Now().Add(-2 * time.Hour),
+		Expires: time.Now().Add(-time.Hour).Round(time.Second),
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -84,8 +96,8 @@ func TestVerifyInvalid(t *testing.T) {
 	secret2 := MustRand(32)
 
 	token, err := Issue(secret1, "issuer", "name", RawKey{
-		ID:     "id",
-		Expiry: time.Now().Add(time.Hour).Round(time.Second),
+		ID:      "id",
+		Expires: time.Now().Add(time.Hour).Round(time.Second),
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -101,8 +113,9 @@ func TestVerifyExpiredAndInvalid(t *testing.T) {
 	secret2 := MustRand(32)
 
 	token, err := Issue(secret1, "issuer", "name", RawKey{
-		ID:     "id",
-		Expiry: time.Now().Add(-time.Hour).Round(time.Second),
+		ID:      "id",
+		Issued:  time.Now().Add(-2 * time.Hour),
+		Expires: time.Now().Add(-time.Hour).Round(time.Second),
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)

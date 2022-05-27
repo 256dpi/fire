@@ -85,9 +85,10 @@ var ErrExpiredToken = xo.BF("expired token")
 
 // RawKey represents a raw key.
 type RawKey struct {
-	ID     string
-	Expiry time.Time
-	Data   stick.Map
+	ID      string
+	Issued  time.Time
+	Expires time.Time
+	Data    stick.Map
 }
 
 // Issue will sign a token from the specified raw key.
@@ -112,24 +113,29 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 		return "", xo.F("missing id")
 	}
 
-	// check expiry
-	if key.Expiry.IsZero() {
-		return "", xo.F("missing expiry")
+	// ensure issued
+	if key.Issued.IsZero() {
+		key.Issued = time.Now()
 	}
 
-	// get time
-	now := time.Now()
+	// check expires
+	if key.Expires.IsZero() {
+		return "", xo.F("missing expires")
+	}
 
-	// create token
+	// verify time range
+	if !key.Issued.Before(key.Expires) {
+		return "", xo.F("issued must be before expires")
+	}
+
+	// create token (omit subject and not before)
 	token := jwt.NewWithClaims(jwtSigningMethod, jwtClaims{
 		Issuer:   issuer,
 		Audience: name,
 		ID:       key.ID,
-		// Subject:   "",
-		Issued: now.Unix(),
-		// NotBefore: 0,
-		Expires: key.Expiry.Unix(),
-		Data:    key.Data,
+		Issued:   key.Issued.Unix(),
+		Expires:  key.Expires.Unix(),
+		Data:     key.Data,
 	})
 
 	// compute signature
@@ -184,14 +190,16 @@ func Verify(secret []byte, issuer, name, token string) (*RawKey, error) {
 		return nil, ErrInvalidToken.Wrap()
 	}
 
-	// get expiry
-	expiry := time.Unix(claims.Expires, 0)
+	// get issued and expires
+	issued := time.Unix(claims.Issued, 0)
+	expires := time.Unix(claims.Expires, 0)
 
 	// prepare key
 	key := &RawKey{
-		ID:     claims.ID,
-		Expiry: expiry,
-		Data:   claims.Data,
+		ID:      claims.ID,
+		Issued:  issued,
+		Expires: expires,
+		Data:    claims.Data,
 	}
 
 	return key, nil

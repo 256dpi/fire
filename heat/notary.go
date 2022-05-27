@@ -67,9 +67,9 @@ func (n *Notary) Issue(key Key) (string, error) {
 
 	// issue token
 	token, err := Issue(n.secret, n.issuer, meta.Name, RawKey{
-		ID:     base.ID.Hex(),
-		Expiry: base.Expiry,
-		Data:   data,
+		ID:      base.ID.Hex(),
+		Expires: base.Expiry,
+		Data:    data,
 	})
 	if err != nil {
 		return "", err
@@ -97,7 +97,7 @@ func (n *Notary) Verify(key Key, token string) error {
 
 	// set id and expiry
 	key.GetBase().ID = kid
-	key.GetBase().Expiry = rawKey.Expiry
+	key.GetBase().Expiry = rawKey.Expires
 
 	// assign data
 	err = rawKey.Data.Unmarshal(key, stick.JSON)
