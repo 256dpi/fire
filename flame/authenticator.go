@@ -166,7 +166,7 @@ func (a *Authenticator) Authorizer(scope []string, force, loadClient, loadResour
 			xo.AbortIf(err)
 
 			// parse token
-			key, err := a.policy.Verify(tk)
+			key, err := a.policy.Verify(rcx, tk)
 			if heat.ErrExpiredToken.Is(err) {
 				xo.Abort(oauth2.InvalidToken("expired bearer token"))
 			} else if err != nil {
@@ -324,7 +324,7 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 	}
 
 	// parse token
-	key, err := a.policy.Verify(token)
+	key, err := a.policy.Verify(ctx, token)
 	if heat.ErrExpiredToken.Is(err) {
 		abort(oauth2.AccessDenied("expired access token"))
 	} else if err != nil {
@@ -532,7 +532,7 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 	}
 
 	// parse token
-	key, err := a.policy.Verify(req.RefreshToken)
+	key, err := a.policy.Verify(ctx, req.RefreshToken)
 	if heat.ErrExpiredToken.Is(err) {
 		xo.Abort(oauth2.InvalidGrant("expired refresh token"))
 	} else if err != nil {
@@ -600,7 +600,7 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 	}
 
 	// parse authorization code
-	key, err := a.policy.Verify(req.Code)
+	key, err := a.policy.Verify(ctx, req.Code)
 	if heat.ErrExpiredToken.Is(err) {
 		xo.Abort(oauth2.InvalidGrant("expired authorization code"))
 	} else if err != nil {
@@ -699,7 +699,7 @@ func (a *Authenticator) revocationEndpoint(ctx *Context) {
 	}
 
 	// parse token
-	key, err := a.policy.Verify(req.Token)
+	key, err := a.policy.Verify(ctx, req.Token)
 	if heat.ErrExpiredToken.Is(err) {
 		ctx.writer.WriteHeader(http.StatusOK)
 		return
@@ -753,7 +753,7 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 	}
 
 	// parse token
-	key, err := a.policy.Verify(req.Token)
+	key, err := a.policy.Verify(ctx, req.Token)
 	if heat.ErrExpiredToken.Is(err) {
 		xo.AbortIf(oauth2.WriteIntrospectionResponse(ctx.writer, &oauth2.IntrospectionResponse{}))
 		return
@@ -821,7 +821,7 @@ func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2
 	at := a.saveToken(ctx, AccessToken, scope, atExpiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	atSignature, err := a.policy.Issue(at, client, resourceOwner)
+	atSignature, err := a.policy.Issue(ctx, at, client, resourceOwner)
 	xo.AbortIf(err)
 
 	// prepare response
@@ -836,7 +836,7 @@ func (a *Authenticator) issueTokens(ctx *Context, refreshable bool, scope oauth2
 		rt := a.saveToken(ctx, RefreshToken, scope, rtExpiry, redirectURI, client, resourceOwner)
 
 		// generate new refresh token
-		rtSignature, err := a.policy.Issue(rt, client, resourceOwner)
+		rtSignature, err := a.policy.Issue(ctx, rt, client, resourceOwner)
 		xo.AbortIf(err)
 
 		// set refresh token
@@ -858,7 +858,7 @@ func (a *Authenticator) issueCode(ctx *Context, scope oauth2.Scope, redirectURI 
 	code := a.saveToken(ctx, AuthorizationCode, scope, expiry, redirectURI, client, resourceOwner)
 
 	// generate new access token
-	signature, err := a.policy.Issue(code, client, resourceOwner)
+	signature, err := a.policy.Issue(ctx, code, client, resourceOwner)
 	xo.AbortIf(err)
 
 	// prepare response

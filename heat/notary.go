@@ -1,6 +1,7 @@
 package heat
 
 import (
+	"context"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -35,7 +36,11 @@ func NewNotary(name string, secret []byte) *Notary {
 }
 
 // Issue will generate a token from the specified key.
-func (n *Notary) Issue(key Key) (string, error) {
+func (n *Notary) Issue(ctx context.Context, key Key) (string, error) {
+	// trace
+	_, span := xo.Trace(ctx, "heat/Notary.Issue")
+	defer span.End()
+
 	// get meta
 	meta := GetMeta(key)
 
@@ -85,7 +90,11 @@ func (n *Notary) Issue(key Key) (string, error) {
 }
 
 // Verify will verify the specified token and fill the specified key.
-func (n *Notary) Verify(key Key, token string) error {
+func (n *Notary) Verify(ctx context.Context, key Key, token string) error {
+	// trace
+	_, span := xo.Trace(ctx, "heat/Notary.Verify")
+	defer span.End()
+
 	// get meta
 	meta := GetMeta(key)
 

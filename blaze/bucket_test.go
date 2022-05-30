@@ -472,12 +472,12 @@ func TestBucketGetViewKey(t *testing.T) {
 
 	id := coal.New()
 
-	viewKey1, err := bucket.GetViewKey(id)
+	viewKey1, err := bucket.GetViewKey(nil, id)
 	assert.NoError(t, err)
 
 	time.Sleep(2 * time.Second)
 
-	viewKey2, err := bucket.GetViewKey(id)
+	viewKey2, err := bucket.GetViewKey(nil, id)
 	assert.NoError(t, err)
 	assert.Equal(t, viewKey1, viewKey2)
 }
@@ -517,7 +517,7 @@ func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 
 		/* decorate */
 
-		err = bucket.Decorate(&model.RequiredFile)
+		err = bucket.Decorate(nil, &model.RequiredFile)
 		assert.NoError(t, err)
 
 		/* download */
@@ -591,7 +591,7 @@ func TestBucketClaimDecorateReleaseOptional(t *testing.T) {
 
 		/* decorate */
 
-		err = bucket.Decorate(model.OptionalFile)
+		err = bucket.Decorate(nil, model.OptionalFile)
 		assert.NoError(t, err)
 
 		/* download */
@@ -656,7 +656,7 @@ func TestBucketModifierRequired(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey, err := bucket.notary.Issue(&ClaimKey{
+		claimKey, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file.ID(),
 			Size: file.Size,
 			Type: file.Type,
@@ -708,7 +708,7 @@ func TestBucketModifierOptional(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey1, err := bucket.notary.Issue(&ClaimKey{
+		claimKey1, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file1.ID(),
 			Size: file1.Size,
 			Type: file1.Type,
@@ -750,7 +750,7 @@ func TestBucketModifierOptional(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey2, err := bucket.notary.Issue(&ClaimKey{
+		claimKey2, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file2.ID(),
 			Size: file2.Size,
 			Type: file2.Type,
@@ -825,7 +825,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey1, err := bucket.notary.Issue(&ClaimKey{
+		claimKey1, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file1.ID(),
 			Size: file1.Size,
 			Type: file1.Type,
@@ -869,7 +869,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey2, err := bucket.notary.Issue(&ClaimKey{
+		claimKey2, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file2.ID(),
 			Size: file2.Size,
 			Type: file2.Type,
@@ -913,7 +913,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 			},
 		}).(*File)
 
-		claimKey3, err := bucket.notary.Issue(&ClaimKey{
+		claimKey3, err := bucket.notary.Issue(nil, &ClaimKey{
 			File: file3.ID(),
 			Size: file3.Size,
 			Type: file3.Type,
@@ -1095,22 +1095,22 @@ func TestBucketDecorator(t *testing.T) {
 		}, model.MultipleFiles)
 
 		var viewKey1 ViewKey
-		err = bucket.notary.Verify(&viewKey1, model.RequiredFile.ViewKey)
+		err = bucket.notary.Verify(nil, &viewKey1, model.RequiredFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file1, viewKey1.File)
 
 		var viewKey2 ViewKey
-		err = bucket.notary.Verify(&viewKey2, model.OptionalFile.ViewKey)
+		err = bucket.notary.Verify(nil, &viewKey2, model.OptionalFile.ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file2, viewKey2.File)
 
 		var viewKey3 ViewKey
-		err = bucket.notary.Verify(&viewKey3, model.MultipleFiles[0].ViewKey)
+		err = bucket.notary.Verify(nil, &viewKey3, model.MultipleFiles[0].ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file3, viewKey3.File)
 
 		var viewKey4 ViewKey
-		err = bucket.notary.Verify(&viewKey4, model.MultipleFiles[1].ViewKey)
+		err = bucket.notary.Verify(nil, &viewKey4, model.MultipleFiles[1].ViewKey)
 		assert.NoError(t, err)
 		assert.Equal(t, file4, viewKey4.File)
 	})
@@ -1132,7 +1132,7 @@ func TestBucketDownload(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.GetViewKey(file.ID())
+		key, err := bucket.GetViewKey(nil, file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
@@ -1179,7 +1179,7 @@ func TestBucketDownloadAction(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.GetViewKey(file.ID())
+		key, err := bucket.GetViewKey(nil, file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
@@ -1238,7 +1238,7 @@ func TestBucketDownloadActionStream(t *testing.T) {
 		file.Owner = stick.P(coal.New())
 		tester.Replace(file)
 
-		key, err := bucket.GetViewKey(file.ID())
+		key, err := bucket.GetViewKey(nil, file.ID())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 

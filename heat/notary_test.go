@@ -22,12 +22,12 @@ func TestNotaryIssueAndVerify(t *testing.T) {
 		Role: "admin",
 	}
 
-	token, err := notary.Issue(&key1)
+	token, err := notary.Issue(nil, &key1)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
 	var key2 testKey
-	err = notary.Verify(&key2, token)
+	err = notary.Verify(nil, &key2, token)
 	assert.NoError(t, err)
 	key2.Issued = key2.Issued.Local()
 	key2.Expires = key2.Expires.Local()
@@ -37,7 +37,7 @@ func TestNotaryIssueAndVerify(t *testing.T) {
 func TestNotaryIssueDefaults(t *testing.T) {
 	notary := NewNotary("test", testSecret)
 
-	token, err := notary.Issue(&testKey{
+	token, err := notary.Issue(nil, &testKey{
 		User: "user",
 		Role: "role",
 	})
@@ -45,7 +45,7 @@ func TestNotaryIssueDefaults(t *testing.T) {
 	assert.NotEmpty(t, token)
 
 	var key testKey
-	err = notary.Verify(&key, token)
+	err = notary.Verify(nil, &key, token)
 	assert.NoError(t, err)
 	assert.False(t, key.ID.IsZero())
 	assert.True(t, time.Until(key.Expires) > time.Hour-time.Minute)
@@ -56,7 +56,7 @@ func TestNotaryIssueDefaults(t *testing.T) {
 func TestNotaryIssueValidation(t *testing.T) {
 	notary := NewNotary("test", testSecret)
 
-	token, err := notary.Issue(&testKey{
+	token, err := notary.Issue(nil, &testKey{
 		User: "user",
 	})
 	assert.Error(t, err)
@@ -68,7 +68,7 @@ func TestNotaryVerifyErrors(t *testing.T) {
 	notary := NewNotary("test", testSecret)
 
 	var key testKey
-	err := notary.Verify(&key, makeToken(jwtClaims{
+	err := notary.Verify(nil, &key, makeToken(jwtClaims{
 		Issuer:   "test",
 		Audience: "test",
 		ID:       "invalid",
@@ -79,7 +79,7 @@ func TestNotaryVerifyErrors(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "invalid token id", err.Error())
 
-	err = notary.Verify(&key, makeToken(jwtClaims{
+	err = notary.Verify(nil, &key, makeToken(jwtClaims{
 		Issuer:   "test",
 		Audience: "test",
 		ID:       coal.New().Hex(),

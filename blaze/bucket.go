@@ -206,7 +206,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	}
 
 	// issue claim key
-	claimKey, err := b.notary.Issue(&ClaimKey{
+	claimKey, err := b.notary.Issue(ctx, &ClaimKey{
 		File: file.ID(),
 		Size: file.Size,
 		Name: file.Name,
@@ -467,7 +467,7 @@ func (b *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner 
 
 	// verify claim key
 	var key ClaimKey
-	err := b.notary.Verify(&key, claimKey)
+	err := b.notary.Verify(ctx, &key, claimKey)
 	if err != nil {
 		return nil, err
 	}
@@ -801,7 +801,7 @@ func (b *Bucket) modifyLinks(ctx context.Context, newLinks, oldLinks Links, bind
 }
 
 // GetViewKey generates and returns a view key for the specified file.
-func (b *Bucket) GetViewKey(file coal.ID) (string, error) {
+func (b *Bucket) GetViewKey(ctx context.Context, file coal.ID) (string, error) {
 	// the view key is generated in such way that the key is stable for at least
 	// half of the expiry duration. this enables browsers to cache downloads
 
@@ -811,7 +811,7 @@ func (b *Bucket) GetViewKey(file coal.ID) (string, error) {
 	expires := issued.Add(expiry)
 
 	// issue view key
-	viewKey, err := b.notary.Issue(&ViewKey{
+	viewKey, err := b.notary.Issue(ctx, &ViewKey{
 		Base: heat.Base{
 			ID:      file,
 			Issued:  issued,
@@ -827,14 +827,14 @@ func (b *Bucket) GetViewKey(file coal.ID) (string, error) {
 }
 
 // Decorate will populate the provided link if a file is available.
-func (b *Bucket) Decorate(link *Link) error {
+func (b *Bucket) Decorate(ctx context.Context, link *Link) error {
 	// skip if file is missing
 	if link == nil || link.File.IsZero() {
 		return nil
 	}
 
 	// get view key
-	viewKey, err := b.GetViewKey(link.File)
+	viewKey, err := b.GetViewKey(ctx, link.File)
 	if err != nil {
 		return err
 	}
@@ -860,7 +860,7 @@ func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 
 		// decorate model
 		if ctx.Model != nil {
-			err := b.decorateModel(ctx.Model, fields)
+			err := b.decorateModel(ctx, ctx.Model, fields)
 			if err != nil {
 				return err
 			}
@@ -868,7 +868,7 @@ func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 
 		// decorate models
 		for _, model := range ctx.Models {
-			err := b.decorateModel(model, fields)
+			err := b.decorateModel(ctx, model, fields)
 			if err != nil {
 				return err
 			}
@@ -878,7 +878,7 @@ func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 	})
 }
 
-func (b *Bucket) decorateModel(model coal.Model, fields []string) error {
+func (b *Bucket) decorateModel(ctx context.Context, model coal.Model, fields []string) error {
 	// collect fields if empty
 	if len(fields) == 0 {
 		fields = collectFields(model)
@@ -894,7 +894,7 @@ func (b *Bucket) decorateModel(model coal.Model, fields []string) error {
 		switch value := value.(type) {
 		case Link:
 			// decorate link
-			err = b.Decorate(&value)
+			err = b.Decorate(ctx, &value)
 			if err != nil {
 				return err
 			}
@@ -903,14 +903,14 @@ func (b *Bucket) decorateModel(model coal.Model, fields []string) error {
 			stick.MustSet(model, field, value)
 		case *Link:
 			// decorate link
-			err = b.Decorate(value)
+			err = b.Decorate(ctx, value)
 			if err != nil {
 				return err
 			}
 		case Links:
 			// decorate links
 			for i := range value {
-				err = b.Decorate(&value[i])
+				err = b.Decorate(ctx, &value[i])
 				if err != nil {
 					return err
 				}
@@ -930,7 +930,7 @@ func (b *Bucket) Download(ctx context.Context, viewKey string) (Download, *File,
 
 	// verify key
 	var key ViewKey
-	err := b.notary.Verify(&key, viewKey)
+	err := b.notary.Verify(ctx, &key, viewKey)
 	if err != nil {
 		return nil, nil, err
 	}

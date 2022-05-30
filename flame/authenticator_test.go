@@ -167,7 +167,7 @@ func TestIntegration(t *testing.T) {
 			User:        stick.P(user.ID()),
 		}).(*Token)
 
-		validBearerToken, _ := policy.Issue(validToken, app1, user)
+		validBearerToken, _ := policy.Issue(nil, validToken, app1, user)
 
 		spec.InvalidAuthorizationParams = map[string]string{
 			"access_token": "foo",
@@ -441,7 +441,7 @@ func TestInvalidResourceOwnerFilter(t *testing.T) {
 }
 
 func mustIssue(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string {
-	str, err := p.Issue(&Token{
+	str, err := p.Issue(nil, &Token{
 		Base:      coal.B(id),
 		Type:      typ,
 		ExpiresAt: expiresAt,

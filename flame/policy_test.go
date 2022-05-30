@@ -23,10 +23,10 @@ func TestPolicyIssueAndVerify(t *testing.T) {
 		ExpiresAt: time.Now().Add(time.Hour).Round(time.Second),
 	}
 
-	sig, err := p.Issue(token, nil, &User{Name: "Hello"})
+	sig, err := p.Issue(nil, token, nil, &User{Name: "Hello"})
 	assert.NoError(t, err)
 
-	key, err := p.Verify(sig)
+	key, err := p.Verify(nil, sig)
 	assert.NoError(t, err)
 	assert.Equal(t, token.ID(), key.ID)
 	assert.Equal(t, token.ExpiresAt, key.Expires.Local())

@@ -229,7 +229,7 @@ func DefaultPolicy(notary *heat.Notary) *Policy {
 }
 
 // Issue will issue a JWT token based on the provided information.
-func (p *Policy) Issue(token GenericToken, client Client, resourceOwner ResourceOwner) (string, error) {
+func (p *Policy) Issue(ctx context.Context, token GenericToken, client Client, resourceOwner ResourceOwner) (string, error) {
 	// get data
 	data := token.GetTokenData()
 
@@ -256,7 +256,7 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 	}
 
 	// issue key
-	str, err := p.Notary.Issue(&key)
+	str, err := p.Notary.Issue(ctx, &key)
 	if err != nil {
 		return "", err
 	}
@@ -265,10 +265,10 @@ func (p *Policy) Issue(token GenericToken, client Client, resourceOwner Resource
 }
 
 // Verify will verify the presented token and return the decoded raw key.
-func (p *Policy) Verify(str string) (*Key, error) {
+func (p *Policy) Verify(ctx context.Context, str string) (*Key, error) {
 	// parse token and check expired errors
 	var key Key
-	err := p.Notary.Verify(&key, str)
+	err := p.Notary.Verify(ctx, &key, str)
 	if err != nil {
 		return nil, err
 	}
