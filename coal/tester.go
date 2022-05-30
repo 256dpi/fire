@@ -235,3 +235,181 @@ func (t *Tester) Clean() {
 		t.DeleteAll(model)
 	}
 }
+
+type TypedTester[T Model] struct {
+	Store *Store
+}
+
+func TT[T Model](store *Store) *TypedTester[T] {
+	return &TypedTester[T]{
+		Store: store,
+	}
+}
+
+func (t *TypedTester[T]) Zero() T {
+	var zero T
+	return zero
+}
+
+// FindAll will return all saved models.
+func (t *TypedTester[T]) FindAll(query ...bson.M) []T {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
+	// find all documents
+	var list []T
+	err := t.Store.M(t.Zero()).FindAll(nil, &list, qry, []string{"_id"}, 0, 0, false, NoTransaction)
+	if err != nil {
+		panic(err)
+	}
+
+	// clear bases
+	for _, model := range Slice(list) {
+		base := model.GetBase()
+		*base = B(model.ID())
+	}
+
+	return list
+}
+
+// FindLast will return the last saved model.
+func (t *TypedTester[T]) FindLast(query ...bson.M) T {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
+	// find last document
+	var model T
+	found, err := t.Store.M(t.Zero()).FindFirst(nil, model, qry, []string{"-_id"}, 0, false)
+	if err != nil {
+		panic(err)
+	} else if !found {
+		panic("not found")
+	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
+	return model
+}
+
+// Count will count all saved models.
+func (t *TypedTester[T]) Count(query ...bson.M) int {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
+	// count all documents
+	n, err := t.Store.M(t.Zero()).Count(nil, qry, 0, 0, false, NoTransaction)
+	if err != nil {
+		panic(err)
+	}
+
+	return int(n)
+}
+
+// Refresh will refresh the provided model.
+func (t *TypedTester[T]) Refresh(model T) {
+	t.Fetch(model.ID())
+}
+
+// Fetch will return the saved model.
+func (t *TypedTester[T]) Fetch(id ID) T {
+	// find model
+	var model T
+	found, err := t.Store.M(t.Zero()).Find(nil, model, id, false)
+	if err != nil {
+		panic(err)
+	} else if !found {
+		panic("not found")
+	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
+	return model
+}
+
+// Insert will insert the specified model.
+func (t *TypedTester[T]) Insert(model T) T {
+	// insert to collection
+	err := t.Store.M(model).Insert(nil, model)
+	if err != nil {
+		panic(err)
+	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
+	return model
+}
+
+// Replace will replace the specified model.
+func (t *TypedTester[T]) Replace(model T) T {
+	// replace model
+	found, err := t.Store.M(model).Replace(nil, model, false)
+	if err != nil {
+		panic(err)
+	} else if !found {
+		panic("not found")
+	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
+	return model
+}
+
+// Update will update the specified model.
+func (t *TypedTester[T]) Update(model T, update bson.M) T {
+	// replace model
+	found, err := t.Store.M(model).Update(nil, model, model.ID(), update, false)
+	if err != nil {
+		panic(err)
+	} else if !found {
+		panic("not found")
+	}
+
+	// clear base
+	base := model.GetBase()
+	*base = B(model.ID())
+
+	return model
+}
+
+// Delete will delete the specified model.
+func (t *TypedTester[T]) Delete(model T) {
+	// delete model
+	found, err := t.Store.M(model).Delete(nil, nil, model.ID())
+	if err != nil {
+		panic(err)
+	} else if !found {
+		panic("not found")
+	}
+}
+
+// DeleteAll will delete all specified models.
+func (t *TypedTester[T]) DeleteAll(query ...bson.M) {
+	// prepare query
+	qry := bson.M{}
+	if len(query) > 0 {
+		qry = query[0]
+	}
+
+	// delete models
+	_, err := t.Store.M(t.Zero()).DeleteAll(nil, qry)
+	if err != nil {
+		panic(err)
+	}
+}
