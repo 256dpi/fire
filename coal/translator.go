@@ -26,7 +26,9 @@ var systemFields = map[string]bool{
 }
 
 // Translator is capable of translating query, update and sort documents from
-// struct field names to database fields names.
+// struct field names to database fields names. It also checks documents against
+// as list of unsafe operators. Field names may be prefixed with a "#" to bypass
+// any validation.
 type Translator struct {
 	meta *Meta
 }
@@ -130,6 +132,12 @@ func (t *Translator) value(value interface{}, skipTranslation bool) error {
 }
 
 func (t *Translator) field(field *string) error {
+	// handle raw fields
+	if strings.HasPrefix(*field, "#") {
+		*field = (*field)[1:]
+		return nil
+	}
+
 	// check if known
 	if t.meta.DatabaseFields[*field] != nil {
 		return nil

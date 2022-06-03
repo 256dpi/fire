@@ -11,8 +11,10 @@ import (
 )
 
 func TestF(t *testing.T) {
+	assert.Equal(t, "text_body", F(&postModel{}, "text_body"))
 	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
 	assert.Equal(t, "-text_body", F(&postModel{}, "-TextBody"))
+	assert.Equal(t, "foo_bar", F(&postModel{}, "#foo_bar"))
 
 	assert.PanicsWithValue(t, `coal: unknown field "Foo"`, func() {
 		F(&postModel{}, "Foo")

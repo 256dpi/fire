@@ -200,6 +200,15 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 	assert.Equal(t, `unknown field "Title.foo"`, err.Error())
+
+	// raw fields
+	doc, err = trans.Document(bson.M{
+		"#title.foo": "bar",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "title.foo", Value: "bar"},
+	}, doc)
 }
 
 func TestTranslatorSort(t *testing.T) {
@@ -251,6 +260,13 @@ func TestTranslatorSort(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		{Key: "_id", Value: int32(1)},
+	}, doc)
+
+	// raw
+	doc, err = trans.Sort([]string{"#foo.bar"})
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "foo.bar", Value: int32(1)},
 	}, doc)
 }
 
