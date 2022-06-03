@@ -189,6 +189,8 @@ func BenchmarkBuildAccessor(b *testing.B) {
 func BenchmarkMustGet(b *testing.B) {
 	acc := &accessible{}
 
+	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
 		MustGet(acc, "String")
 	}
@@ -196,6 +198,8 @@ func BenchmarkMustGet(b *testing.B) {
 
 func BenchmarkMustSet(b *testing.B) {
 	acc := &accessible{}
+
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		MustSet(acc, "String", "foo")
