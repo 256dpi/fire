@@ -14,7 +14,7 @@ func TestF(t *testing.T) {
 	assert.Equal(t, "text_body", F(&postModel{}, "TextBody"))
 	assert.Equal(t, "-text_body", F(&postModel{}, "-TextBody"))
 
-	assert.PanicsWithValue(t, `coal: field "Foo" not found on "coal.postModel"`, func() {
+	assert.PanicsWithValue(t, `coal: unknown field "Foo"`, func() {
 		F(&postModel{}, "Foo")
 	})
 }

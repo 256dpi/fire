@@ -23,20 +23,17 @@ func F(m Model, field string) string {
 	}
 
 	// find field
-	f := GetMeta(m).Fields[field]
-	if f == nil {
-		panic(fmt.Sprintf(`coal: field "%s" not found on "%s"`, field, GetMeta(m).Name))
+	field, err := NewTranslator(m).Field(field)
+	if err != nil {
+		panic("coal: " + err.Error())
 	}
-
-	// get field
-	bsonField := f.BSONKey
 
 	// prefix field again
 	if prefixed {
-		bsonField = "-" + bsonField
+		field = "-" + field
 	}
 
-	return bsonField
+	return field
 }
 
 // L is a shorthand function to look up a flagged field of a model.
