@@ -689,3 +689,28 @@ var IsVisible = IsFormat(utf8.ValidString, func(s string) bool {
 
 	return w < c
 })
+
+// IsField will check if a string is a field on the provided object with the
+// specified type.
+func IsField(obj any, typ any) Rule {
+	return func(sub Subject) error {
+		// get name
+		name, ok := sub.IValue.(string)
+		if !ok {
+			return xo.SF("expected string")
+		}
+
+		// get field
+		field, ok := Access(obj).Fields[name]
+		if !ok {
+			return xo.SF("unknown field")
+		}
+
+		// check type
+		if field.Type != reflect.TypeOf(typ) {
+			return xo.SF("invalid type")
+		}
+
+		return nil
+	}
+}
