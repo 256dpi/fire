@@ -690,9 +690,9 @@ var IsVisible = IsFormat(utf8.ValidString, func(s string) bool {
 	return w < c
 })
 
-// IsField will check if a string is a field on the provided object with the
-// specified type.
-func IsField(obj any, typ any) Rule {
+// IsField will check if a string is a field on the provided object with one
+// of the specified types.
+func IsField(obj any, types ...any) Rule {
 	return func(sub Subject) error {
 		// get name
 		name, ok := sub.IValue.(string)
@@ -707,7 +707,13 @@ func IsField(obj any, typ any) Rule {
 		}
 
 		// check type
-		if field.Type != reflect.TypeOf(typ) {
+		ok = false
+		for _, typ := range types {
+			if field.Type == reflect.TypeOf(typ) {
+				ok = true
+			}
+		}
+		if !ok {
 			return xo.SF("invalid type")
 		}
 

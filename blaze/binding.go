@@ -31,7 +31,7 @@ func (b *Binding) Validate() error {
 	return stick.Validate(b, func(v *stick.Validator) {
 		v.Value("Name", false, stick.IsNotZero)
 		v.Value("Owner", false, stick.IsNotZero)
-		v.Value("Field", false, stick.IsNotZero, stick.IsField(b.Owner, &Link{}))
+		v.Value("Field", false, stick.IsNotZero, stick.IsField(b.Owner, Link{}, &Link{}, Links{}))
 		v.Value("Limit", false, stick.IsMinInt(0))
 		v.Items("Types", stick.IsValidBy(func(value string) error {
 			return ValidateType(value)

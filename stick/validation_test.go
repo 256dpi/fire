@@ -513,6 +513,7 @@ func TestIsField(t *testing.T) {
 	ruleTest(t, "Foo", IsField(&accessible{}, 1), "unknown field")
 	ruleTest(t, "String", IsField(&accessible{}, 1), "invalid type")
 	ruleTest(t, "String", IsField(&accessible{}, ""), "")
+	ruleTest(t, "String", IsField(&accessible{}, 1, ""), "")
 }
 
 func BenchmarkValidate(b *testing.B) {
