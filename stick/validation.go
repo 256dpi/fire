@@ -411,6 +411,14 @@ func isValid(val interface{}) (bool, error) {
 	return false, nil
 }
 
+// IsValidBy will check if the value is valid by calling the specified typed
+// validator.
+func IsValidBy[T any](fn func(T) error) Rule {
+	return func(sub Subject) error {
+		return fn(sub.IValue.(T))
+	}
+}
+
 // IsMinLen checks whether the value has at least the specified length.
 func IsMinLen(min int) Rule {
 	return func(sub Subject) error {
