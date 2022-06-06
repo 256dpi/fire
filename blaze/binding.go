@@ -1,8 +1,6 @@
 package blaze
 
 import (
-	"github.com/256dpi/xo"
-
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
@@ -33,10 +31,7 @@ func (b *Binding) Validate() error {
 	return stick.Validate(b, func(v *stick.Validator) {
 		v.Value("Name", false, stick.IsNotZero)
 		v.Value("Owner", false, stick.IsNotZero)
-		v.Value("Field", false, stick.IsNotZero)
-		if coal.GetMeta(b.Owner).Fields[b.Field] == nil {
-			v.Report("Field", xo.SF("unknown field"))
-		}
+		v.Value("Field", false, stick.IsNotZero, stick.IsField(b.Owner, &Link{}))
 		v.Value("Limit", false, stick.IsMinInt(0))
 		v.Items("Types", stick.IsValidBy(func(value string) error {
 			return ValidateType(value)
