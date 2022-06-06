@@ -28,17 +28,17 @@ import (
 type Bucket struct {
 	store    *coal.Store
 	notary   *heat.Notary
-	registry *Registry
+	bindings *stick.Registry[*Binding]
 	services map[string]Service
 	uploader []string
 }
 
-// NewBucket creates a new bucket.
-func NewBucket(store *coal.Store, notary *heat.Notary, registry *Registry) *Bucket {
+// NewBucket creates a new bucket from a store, notary and binding registry.
+func NewBucket(store *coal.Store, notary *heat.Notary, bindings *stick.Registry[*Binding]) *Bucket {
 	return &Bucket{
 		store:    store,
 		notary:   notary,
-		registry: registry,
+		bindings: bindings,
 		services: map[string]Service{},
 	}
 }
@@ -372,7 +372,10 @@ func (b *Bucket) Claim(ctx context.Context, model coal.Model, field string) erro
 	value := stick.MustGet(model, field)
 
 	// lookup binding
-	binding := b.registry.Lookup(model, field)
+	binding, _ := b.bindings.Get(&Binding{
+		Owner: model,
+		Field: field,
+	})
 	if binding == nil {
 		return xo.F("missing binding")
 	}
@@ -455,7 +458,7 @@ func (b *Bucket) ClaimFile(ctx context.Context, claimKey, binding string, owner 
 	defer span.End()
 
 	// get binding
-	bnd := b.registry.Get(binding)
+	bnd, _ := b.bindings.Get(&Binding{Name: binding})
 	if bnd == nil {
 		return nil, xo.F("unknown binding: %s", binding)
 	}
@@ -622,7 +625,10 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 			}
 
 			// get binding
-			binding := b.registry.Lookup(ctx.Model, field)
+			binding, _ := b.bindings.Get(&Binding{
+				Owner: ctx.Model,
+				Field: field,
+			})
 			if binding == nil {
 				return xo.F("missing binding")
 			}
@@ -999,7 +1005,7 @@ func (b *Bucket) DownloadAction() *fire.Action {
 		}
 
 		// get binding
-		binding := b.registry.Get(file.Binding)
+		binding, _ := b.bindings.Get(&Binding{Name: file.Binding})
 		if binding == nil {
 			return xo.F("missing binding")
 		}
