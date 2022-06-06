@@ -41,8 +41,8 @@ func (b *Binding) Validate() error {
 
 // NewRegistry returns a binding registry indexed by the binding name and
 // owner/field tuple.
-func NewRegistry() *stick.Registry[*Binding] {
-	return stick.NewRegistry[*Binding](
+func NewRegistry(bindings ...*Binding) *stick.Registry[*Binding] {
+	return stick.NewRegistry(bindings,
 		// index by name
 		func(b *Binding) string {
 			return b.Name

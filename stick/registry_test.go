@@ -18,7 +18,7 @@ func (i *registryItem) Validate() error {
 }
 
 func TestRegistry(t *testing.T) {
-	registry := NewRegistry[*registryItem](
+	registry := NewRegistry[*registryItem](nil,
 		func(item *registryItem) string {
 			return item.Key1
 		},

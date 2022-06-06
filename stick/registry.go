@@ -14,17 +14,23 @@ type Registry[T Registrable] struct {
 
 // NewRegistry will create and return a new registry using the specified index
 // functions that must return unique keys.
-func NewRegistry[T Registrable](indexer ...func(T) string) *Registry[T] {
+func NewRegistry[T Registrable](values []T, indexer ...func(T) string) *Registry[T] {
 	// created indexes
 	indexes := make([]map[string]T, 0, len(indexer))
 	for range indexer {
 		indexes = append(indexes, map[string]T{})
 	}
 
-	return &Registry[T]{
+	// created registry
+	r := &Registry[T]{
 		indexer: indexer,
 		indexes: indexes,
 	}
+
+	// add values
+	r.Add(values...)
+
+	return r
 }
 
 // Add will add the specified values to the registry.
