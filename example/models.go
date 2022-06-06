@@ -32,7 +32,7 @@ func init() {
 	// add item file binding
 	registry.Add(&blaze.Binding{
 		Name:     "item-file",
-		Owner:    &Item{},
+		Model:    &Item{},
 		Field:    "File",
 		Limit:    0,
 		Types:    []string{"image/png"},

@@ -373,7 +373,7 @@ func (b *Bucket) Claim(ctx context.Context, model coal.Model, field string) erro
 
 	// lookup binding
 	binding, _ := b.bindings.Get(&Binding{
-		Owner: model,
+		Model: model,
 		Field: field,
 	})
 	if binding == nil {
@@ -626,7 +626,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 
 			// get binding
 			binding, _ := b.bindings.Get(&Binding{
-				Owner: ctx.Model,
+				Model: ctx.Model,
 				Field: field,
 			})
 			if binding == nil {

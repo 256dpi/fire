@@ -32,20 +32,20 @@ var registry = NewRegistry()
 func init() {
 	registry.Add(&Binding{
 		Name:     "test-req",
-		Owner:    &testModel{},
+		Model:    &testModel{},
 		Field:    "RequiredFile",
 		FileName: "forced",
 	})
 
 	registry.Add(&Binding{
 		Name:  "test-opt",
-		Owner: &testModel{},
+		Model: &testModel{},
 		Field: "OptionalFile",
 	})
 
 	registry.Add(&Binding{
 		Name:  "multi-files",
-		Owner: &testModel{},
+		Model: &testModel{},
 		Field: "MultipleFiles",
 	})
 }
