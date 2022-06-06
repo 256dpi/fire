@@ -1009,8 +1009,8 @@ func (b *Bucket) DownloadAction() *fire.Action {
 		if dl {
 			// get filename
 			filename := file.Name
-			if binding.Filename != "" {
-				filename = binding.Filename
+			if binding.FileName != "" {
+				filename = binding.FileName
 			} else if filename == "" {
 				filename = file.ID().Hex()
 			}

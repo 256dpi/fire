@@ -34,7 +34,7 @@ func init() {
 		Name:     "test-req",
 		Owner:    &testModel{},
 		Field:    "RequiredFile",
-		Filename: "forced",
+		FileName: "forced",
 	})
 
 	registry.Add(&Binding{

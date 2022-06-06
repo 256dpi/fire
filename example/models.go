@@ -36,7 +36,7 @@ func init() {
 		Field:    "File",
 		Limit:    0,
 		Types:    []string{"image/png"},
-		Filename: "image.png",
+		FileName: "image.png",
 	})
 
 	// add system indexes
