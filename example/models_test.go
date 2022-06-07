@@ -11,11 +11,11 @@ import (
 
 func TestEnsureIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		for _, model := range catalog.All() {
+		for _, model := range models.All() {
 			tester.Drop(model)
 		}
-		assert.NoError(t, coal.EnsureIndexes(tester.Store, catalog.All()...))
-		assert.NoError(t, coal.EnsureIndexes(tester.Store, catalog.All()...))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, models.All()...))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, models.All()...))
 	})
 }
 

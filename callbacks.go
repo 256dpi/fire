@@ -241,7 +241,13 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 // RelationshipValidator makes sure all relationships of a model are correct and
 // in place. It does so by combining a DependentResourcesValidator and a
 // ReferencedResourcesValidator based on the specified model and catalog.
-func RelationshipValidator(model coal.Model, catalog *coal.Catalog, exclude ...string) *Callback {
+func RelationshipValidator(model coal.Model, models []coal.Model, exclude ...string) *Callback {
+	// build index
+	index := make(map[string]coal.Model, len(models))
+	for _, model := range models {
+		index[coal.GetMeta(model).PluralName] = model
+	}
+
 	// prepare lists
 	resources := make(map[coal.Model]string)
 	references := make(map[string]coal.Model)
@@ -256,9 +262,9 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, exclude ...s
 		// handle has-one and has-many relationships
 		if field.HasOne || field.HasMany {
 			// get related model
-			relatedModel := catalog.Find(field.RelType)
+			relatedModel := index[field.RelType]
 			if relatedModel == nil {
-				panic(fmt.Sprintf(`fire: missing model in catalog: "%s"`, field.RelType))
+				panic(fmt.Sprintf(`fire: missing model: "%s"`, field.RelType))
 			}
 
 			// get related field
@@ -279,7 +285,7 @@ func RelationshipValidator(model coal.Model, catalog *coal.Catalog, exclude ...s
 		// handle to-one and to-many relationships
 		if field.ToOne || field.ToMany {
 			// get related model
-			relatedModel := catalog.Find(field.RelType)
+			relatedModel := index[field.RelType]
 			if relatedModel == nil {
 				panic(fmt.Sprintf(`fire: missing model in catalog: "%s"`, field.RelType))
 			}

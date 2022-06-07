@@ -80,3 +80,14 @@ func Slice(val interface{}) []Model {
 
 	return models
 }
+
+// NewRegistry will return a model registry indexed by plural name.
+func NewRegistry(models ...Model) *stick.Registry[Model] {
+	return stick.NewRegistry(models,
+		nil,
+		// index by plural name
+		func(model Model) string {
+			return GetMeta(model).PluralName
+		},
+	)
+}

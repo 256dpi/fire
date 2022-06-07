@@ -14,9 +14,9 @@ import (
 // Visualize writes a PDF document that visualizes the models and their
 // relationships. The method expects the graphviz toolkit to be installed and
 // accessible by the calling program.
-func Visualize(title, file string, catalog *Catalog) error {
+func Visualize(title, file string, models ...Model) error {
 	// visualize as PDF
-	pdf, err := VisualizePDF(title, catalog)
+	pdf, err := VisualizePDF(title, models...)
 	if err != nil {
 		return err
 	}
@@ -33,9 +33,9 @@ func Visualize(title, file string, catalog *Catalog) error {
 // VisualizePDF returns a PDF document that visualizes the models and their
 // relationships. The method expects the graphviz toolkit to be installed and
 // accessible by the calling program.
-func VisualizePDF(title string, catalog *Catalog) ([]byte, error) {
+func VisualizePDF(title string, models ...Model) ([]byte, error) {
 	// get dot
-	dot := VisualizeDOT(title, catalog)
+	dot := VisualizeDOT(title, models...)
 
 	// prepare buffer
 	var buf bytes.Buffer
@@ -58,7 +58,7 @@ func VisualizePDF(title string, catalog *Catalog) ([]byte, error) {
 // visualizes the models and their relationships.
 //
 //	fdp -Tpdf models.dot > models.pdf
-func VisualizeDOT(title string, catalog *Catalog) string {
+func VisualizeDOT(title string, models ...Model) string {
 	// prepare buffer
 	var out bytes.Buffer
 
@@ -79,10 +79,16 @@ func VisualizeDOT(title string, catalog *Catalog) string {
 	out.WriteString("  edge[headclip=true, tailclip=false];\n")
 	out.WriteString("  label=\"" + title + "\";\n")
 
+	// prepare catalog
+	catalog := make(map[string]Model)
+	for _, model := range models {
+		catalog[GetMeta(model).PluralName] = model
+	}
+
 	// get a sorted list of model names and lookup table
 	var names []string
 	lookup := make(map[string]string)
-	for name, model := range catalog.models {
+	for name, model := range catalog {
 		names = append(names, name)
 		lookup[name] = GetMeta(model).Name
 	}
@@ -91,7 +97,7 @@ func VisualizeDOT(title string, catalog *Catalog) string {
 	// add model nodes
 	for _, name := range names {
 		// get model
-		model := catalog.models[name]
+		model := catalog[name]
 
 		// get meta
 		meta := GetMeta(model)
@@ -155,7 +161,7 @@ func VisualizeDOT(title string, catalog *Catalog) string {
 	// prepare relationships
 	for _, name := range names {
 		// get model
-		model := catalog.models[name]
+		model := catalog[name]
 
 		// add all direct relationships
 		for _, field := range GetMeta(model).OrderedFields {
@@ -174,7 +180,7 @@ func VisualizeDOT(title string, catalog *Catalog) string {
 	// update relationships
 	for _, name := range names {
 		// get model
-		model := catalog.models[name]
+		model := catalog[name]
 
 		// add all indirect relationships
 		for _, field := range GetMeta(model).OrderedFields {

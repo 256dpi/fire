@@ -32,7 +32,7 @@ func main() {
 	xo.Debug(xo.DebugConfig{})
 
 	// visualize models
-	err := coal.Visualize("Example", "models.pdf", catalog)
+	err := coal.Visualize("Example", "models.pdf", models.All()...)
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +88,7 @@ func main() {
 
 func prepareDatabase(store *coal.Store) error {
 	// ensure indexes
-	err := coal.EnsureIndexes(store, catalog.All()...)
+	err := coal.EnsureIndexes(store, models.All()...)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func createHandler(store *coal.Store) http.Handler {
 	// create bucket
 	fileNotary := heat.NewNotary("example/file", fileSecret)
 	fileService := blaze.NewGridFS(lungo.NewBucket(store.DB()))
-	bucket := blaze.NewBucket(store, fileNotary, registry)
+	bucket := blaze.NewBucket(store, fileNotary, bindings)
 	bucket.Use(fileService, "default", true)
 
 	// create queue

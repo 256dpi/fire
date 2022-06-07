@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var catalog = coal.NewCatalog(
+var models = coal.NewRegistry(
 	&Item{},
 	&flame.Application{},
 	&flame.User{},
@@ -21,7 +21,7 @@ var catalog = coal.NewCatalog(
 	&blaze.File{},
 )
 
-var registry = blaze.NewRegistry()
+var bindings = blaze.NewRegistry()
 
 func init() {
 	// add item indexes
@@ -30,7 +30,7 @@ func init() {
 	coal.AddIndex(&Item{}, true, 0, "CreateToken")
 
 	// add item file binding
-	registry.Add(&blaze.Binding{
+	bindings.Add(&blaze.Binding{
 		Name:     "item-file",
 		Model:    &Item{},
 		Field:    "File",

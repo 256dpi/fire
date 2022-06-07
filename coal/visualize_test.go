@@ -7,15 +7,13 @@ import (
 )
 
 func TestCatalogVisualizePDF(t *testing.T) {
-	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-	pdf, err := VisualizePDF("Test", catalog)
+	pdf, err := VisualizePDF("Test", &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, pdf)
 }
 
 func TestCatalogVisualizeDOT(t *testing.T) {
-	catalog := NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-
+	out := VisualizeDOT("Test", &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
 	assert.Equal(t, `graph G {
   rankdir="LR";
   sep="0.3";
@@ -40,5 +38,5 @@ func TestCatalogVisualizeDOT(t *testing.T) {
   "coal.noteModel"--"coal.postModel"[ fontname="Arial", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=solid, color="black", arrowhead=normal, arrowtail=none ];
   "coal.selectionModel"--"coal.postModel"[ fontname="Arial", fontsize=7, dir=both, arrowsize="0.9", penwidth="0.9", labelangle=32, labeldistance="1.8", style=solid, color="black:white:black", arrowhead=normal, arrowtail=none ];
 }
-`, VisualizeDOT("Test", catalog))
+`, out)
 }

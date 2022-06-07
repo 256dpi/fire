@@ -268,8 +268,9 @@ func TestReferencedResourcesValidatorToOne(t *testing.T) {
 
 func TestRelationshipValidatorDependentResources(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-		validator := RelationshipValidator(&postModel{}, catalog)
+		validator := RelationshipValidator(&postModel{}, []coal.Model{
+			&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{},
+		})
 
 		post := &postModel{}
 
@@ -288,8 +289,9 @@ func TestRelationshipValidatorDependentResources(t *testing.T) {
 
 func TestRelationshipValidatorReferencedResources(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		catalog := coal.NewCatalog(&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{})
-		validator := RelationshipValidator(&commentModel{}, catalog)
+		validator := RelationshipValidator(&commentModel{}, []coal.Model{
+			&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{},
+		})
 
 		comment1 := tester.Insert(&commentModel{
 			Post: coal.New(),

@@ -21,7 +21,7 @@ func itemController(store *coal.Store, queue *axe.Queue, bucket *blaze.Bucket) *
 			fire.TimestampModifier(),
 		},
 		Validators: fire.L{
-			fire.RelationshipValidator(&Item{}, catalog),
+			fire.RelationshipValidator(&Item{}, models.All()),
 		},
 		Decorators: fire.L{
 			bucket.Decorator(),
@@ -56,7 +56,7 @@ func userController(store *coal.Store) *fire.Controller {
 			flame.Callback(true),
 		},
 		Validators: fire.L{
-			fire.RelationshipValidator(&flame.User{}, catalog),
+			fire.RelationshipValidator(&flame.User{}, models.All()),
 		},
 	}
 }

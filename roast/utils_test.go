@@ -16,4 +16,4 @@ type fooModel struct {
 	stick.NoValidation `json:"-" bson:"-"`
 }
 
-var catalog = coal.NewCatalog(&fooModel{})
+var models = coal.NewRegistry(&fooModel{})
