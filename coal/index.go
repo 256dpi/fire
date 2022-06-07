@@ -104,22 +104,25 @@ func addIndex(model Model, unique bool, expiry time.Duration, fields []string, f
 	})
 }
 
-// EnsureIndexes will ensure that the registered indexes of the specified model
+// EnsureIndexes will ensure that the registered indexes of the specified models
 // exist. It may fail early if some indexes are already existing and do not
-// match the registered index.
-func EnsureIndexes(store *Store, model Model) error {
-	// get meta
-	meta := GetMeta(model)
-
+// match the registered indexes.
+func EnsureIndexes(store *Store, models ...Model) error {
 	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	// ensure all indexes
-	for _, index := range meta.Indexes {
-		_, err := store.C(model).Native().Indexes().CreateOne(ctx, index.Compile())
-		if err != nil {
-			return err
+	// iterate models
+	for _, model := range models {
+		// get meta
+		meta := GetMeta(model)
+
+		// ensure all indexes
+		for _, index := range meta.Indexes {
+			_, err := store.C(model).Native().Indexes().CreateOne(ctx, index.Compile())
+			if err != nil {
+				return err
+			}
 		}
 	}
 

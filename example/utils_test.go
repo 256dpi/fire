@@ -14,13 +14,13 @@ var lungoStore = coal.MustOpen(nil, "test-fire-example", xo.Panic)
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
-		tester := fire.NewTester(mongoStore, catalog.Models()...)
+		tester := fire.NewTester(mongoStore, catalog.All()...)
 		tester.Clean()
 		fn(t, tester)
 	})
 
 	t.Run("Lungo", func(t *testing.T) {
-		tester := fire.NewTester(lungoStore, catalog.Models()...)
+		tester := fire.NewTester(lungoStore, catalog.All()...)
 		tester.Clean()
 		fn(t, tester)
 	})

@@ -32,7 +32,7 @@ func main() {
 	xo.Debug(xo.DebugConfig{})
 
 	// visualize models
-	err := catalog.Visualize("Example", "models.pdf")
+	err := coal.Visualize("Example", "models.pdf", catalog)
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +88,7 @@ func main() {
 
 func prepareDatabase(store *coal.Store) error {
 	// ensure indexes
-	err := catalog.EnsureIndexes(store)
+	err := coal.EnsureIndexes(store, catalog.All()...)
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,8 @@ func TestEnsureIndexes(t *testing.T) {
 		for _, model := range catalog.All() {
 			tester.Drop(model)
 		}
-		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
-		assert.NoError(t, catalog.EnsureIndexes(tester.Store))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, catalog.All()...))
+		assert.NoError(t, coal.EnsureIndexes(tester.Store, catalog.All()...))
 	})
 }
 

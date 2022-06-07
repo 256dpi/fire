@@ -9,7 +9,7 @@ import (
 
 func TestTester(t *testing.T) {
 	tt := NewTester(Config{
-		Models: catalog.Models(),
+		Models: catalog.All(),
 	})
 
 	tt.Assign("", &fire.Controller{
@@ -35,7 +35,7 @@ func TestTester(t *testing.T) {
 
 func TestTesterErrors(t *testing.T) {
 	tt := NewTester(Config{
-		Models: catalog.Models(),
+		Models: catalog.All(),
 	})
 
 	tt.Assign("", &fire.Controller{
