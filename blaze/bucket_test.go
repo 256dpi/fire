@@ -24,7 +24,7 @@ func TestBucketUpload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(service, "default", true)
 
 		key, file, err := bucket.Upload(nil, strings.Repeat("x", 512), "application/octet-stream", 12, func(upload Upload) (int64, error) {
@@ -67,7 +67,7 @@ func TestBucketUploadSizeMismatch(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(service, "default", true)
 
 		key, file, err := bucket.Upload(nil, "data.bin", "", 16, func(upload Upload) (int64, error) {
@@ -127,7 +127,7 @@ func TestBucketUploadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(service, "default", true)
 
 		body := strings.NewReader("Hello World!")
@@ -171,7 +171,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(service, "default", true)
 
 		body := strings.NewReader("Hello World!")
@@ -223,7 +223,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 
 func TestBucketUploadActionInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := strings.NewReader("Hello World!")
@@ -244,7 +244,7 @@ func TestBucketUploadActionInvalidContentType(t *testing.T) {
 
 func TestBucketUploadActionInvalidContentLength(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := strings.NewReader("Hello World!")
@@ -266,7 +266,7 @@ func TestBucketUploadActionInvalidContentLength(t *testing.T) {
 
 func TestBucketUploadActionLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := strings.NewReader("Hello World!")
@@ -288,7 +288,7 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(service, "default", true)
 
 		body := &bytes.Buffer{}
@@ -367,7 +367,7 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 
 func TestBucketUploadActionMultipartInvalidContentType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := &bytes.Buffer{}
@@ -401,7 +401,7 @@ func TestBucketUploadActionMultipartInvalidContentType(t *testing.T) {
 
 func TestBucketUploadActionMultipartInvalidContentLength(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := &bytes.Buffer{}
@@ -435,7 +435,7 @@ func TestBucketUploadActionMultipartInvalidContentLength(t *testing.T) {
 
 func TestBucketUploadActionMultipartLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		body := &bytes.Buffer{}
@@ -468,7 +468,7 @@ func TestBucketUploadActionMultipartLimit(t *testing.T) {
 }
 
 func TestBucketGetViewKey(t *testing.T) {
-	bucket := NewBucket(nil, testNotary, nil)
+	bucket := NewBucket(nil, testNotary)
 
 	id := coal.New()
 
@@ -484,7 +484,7 @@ func TestBucketGetViewKey(t *testing.T) {
 
 func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		/* upload */
@@ -549,7 +549,7 @@ func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 
 func TestBucketClaimDecorateReleaseOptional(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		/* upload */
@@ -623,7 +623,7 @@ func TestBucketClaimDecorateReleaseOptional(t *testing.T) {
 
 func TestBucketModifierRequired(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		modifier := bucket.Modifier()
@@ -683,7 +683,7 @@ func TestBucketModifierRequired(t *testing.T) {
 
 func TestBucketModifierOptional(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		modifier := bucket.Modifier()
@@ -800,7 +800,7 @@ func TestBucketModifierOptional(t *testing.T) {
 
 func TestBucketModifierMultiple(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		modifier := bucket.Modifier()
@@ -1001,7 +1001,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 
 func TestBucketDecorator(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		decorator := bucket.Decorator()
@@ -1118,7 +1118,7 @@ func TestBucketDecorator(t *testing.T) {
 
 func TestBucketDownload(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
@@ -1149,7 +1149,7 @@ func TestBucketDownload(t *testing.T) {
 
 func TestBucketDownloadAction(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		action := bucket.DownloadAction()
@@ -1223,7 +1223,7 @@ func TestBucketDownloadAction(t *testing.T) {
 
 func TestBucketDownloadActionStream(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
 		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
@@ -1288,7 +1288,7 @@ func TestBucketCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		svc := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(svc, "default", true)
 
 		for _, state := range []State{Uploading, Uploaded, Claimed, Released, Deleting} {
@@ -1376,7 +1376,7 @@ func TestBucketMultiService(t *testing.T) {
 		svc2 := NewMemory()
 		svc3 := NewMemory()
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(svc1, "svc1", true)
 		bucket.Use(svc2, "svc2", true)
 		bucket.Use(svc3, "svc3", false)
@@ -1417,7 +1417,7 @@ func TestBucketMigration(t *testing.T) {
 
 		/* upload */
 
-		bucket := NewBucket(tester.Store, testNotary, registry)
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(svc1, "svc1", true)
 
 		claimKey, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
@@ -1457,7 +1457,7 @@ func TestBucketMigration(t *testing.T) {
 
 		/* migrate */
 
-		bucket = NewBucket(tester.Store, testNotary, registry)
+		bucket = NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(svc1, "svc1", false)
 		bucket.Use(svc2, "svc2", true)
 

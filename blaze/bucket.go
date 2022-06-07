@@ -34,11 +34,11 @@ type Bucket struct {
 }
 
 // NewBucket creates a new bucket from a store, notary and binding registry.
-func NewBucket(store *coal.Store, notary *heat.Notary, bindings *stick.Registry[*Binding]) *Bucket {
+func NewBucket(store *coal.Store, notary *heat.Notary, bindings ...*Binding) *Bucket {
 	return &Bucket{
 		store:    store,
 		notary:   notary,
-		bindings: bindings,
+		bindings: NewRegistry(bindings...),
 		services: map[string]Service{},
 	}
 }
