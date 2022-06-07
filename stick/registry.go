@@ -1,20 +1,16 @@
 package stick
 
-// Registrable is value that can be registered with a Registry.
-type Registrable interface {
-	Validate() error
-}
-
 // Registry is a multi-key index of typed values.
-type Registry[T Registrable] struct {
-	indexer []func(T) string
-	indexes []map[string]T
-	list    []T
+type Registry[T any] struct {
+	validator func(T) error
+	indexer   []func(T) string
+	indexes   []map[string]T
+	list      []T
 }
 
 // NewRegistry will create and return a new registry using the specified index
 // functions that must return unique keys.
-func NewRegistry[T Registrable](values []T, indexer ...func(T) string) *Registry[T] {
+func NewRegistry[T any](values []T, validator func(T) error, indexer ...func(T) string) *Registry[T] {
 	// created indexes
 	indexes := make([]map[string]T, 0, len(indexer))
 	for range indexer {
@@ -23,8 +19,9 @@ func NewRegistry[T Registrable](values []T, indexer ...func(T) string) *Registry
 
 	// created registry
 	r := &Registry[T]{
-		indexer: indexer,
-		indexes: indexes,
+		validator: validator,
+		indexer:   indexer,
+		indexes:   indexes,
 	}
 
 	// add values
@@ -37,9 +34,11 @@ func NewRegistry[T Registrable](values []T, indexer ...func(T) string) *Registry
 func (r *Registry[T]) Add(values ...T) {
 	for _, value := range values {
 		// validate value
-		err := value.Validate()
-		if err != nil {
-			panic("stick: invalid value: " + err.Error())
+		if r.validator != nil {
+			err := r.validator(value)
+			if err != nil {
+				panic("stick: invalid value: " + err.Error())
+			}
 		}
 
 		// index value

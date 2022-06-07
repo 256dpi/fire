@@ -43,6 +43,9 @@ func (b *Binding) Validate() error {
 // owner/field tuple.
 func NewRegistry(bindings ...*Binding) *stick.Registry[*Binding] {
 	return stick.NewRegistry(bindings,
+		func(b *Binding) error {
+			return b.Validate()
+		},
 		// index by name
 		func(b *Binding) string {
 			return b.Name
