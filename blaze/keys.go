@@ -8,7 +8,7 @@ import (
 
 // ClaimKey is used to authorize file claims.
 type ClaimKey struct {
-	heat.Base `json:"-" heat:"fire/blaze.claim,1h"`
+	heat.Base `json:"-" heat:"blaze/claim,1h"`
 
 	// The claimable file.
 	File coal.ID `json:"file"`
@@ -37,7 +37,7 @@ func (k *ClaimKey) Validate() error {
 
 // ViewKey is used to authorize file views.
 type ViewKey struct {
-	heat.Base `json:"-" heat:"fire/blaze.view,24h"`
+	heat.Base `json:"-" heat:"blaze/view,24h"`
 
 	// The viewable file.
 	File coal.ID `json:"file"`

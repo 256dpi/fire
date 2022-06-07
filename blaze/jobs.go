@@ -7,12 +7,12 @@ import (
 
 // CleanupJob is the periodic job enqueued to clean up a bucket.
 type CleanupJob struct {
-	axe.Base           `json:"-" axe:"fire/blaze.cleanup"`
+	axe.Base           `json:"-" axe:"blaze/cleanup"`
 	stick.NoValidation `json:"-"`
 }
 
 // MigrateJob is the periodic job enqueued to migrate files in a bucket.
 type MigrateJob struct {
-	axe.Base           `json:"-" axe:"fire/blaze.migrate"`
+	axe.Base           `json:"-" axe:"blaze/migrate"`
 	stick.NoValidation `json:"-"`
 }
