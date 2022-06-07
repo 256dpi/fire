@@ -29,9 +29,9 @@ func (k *ClaimKey) Validate() error {
 		v.Value("File", false, stick.IsNotZero)
 		v.Value("Size", false, stick.IsMinInt(1))
 		v.Value("Name", false, stick.IsMaxLen(maxFileNameLength))
-		v.Value("Type", false, func(stick.Subject) error {
-			return ValidateType(k.Type)
-		})
+		v.Value("Type", false, stick.IsValidBy(func(typ string) error {
+			return ValidateType(typ)
+		}))
 	})
 }
 

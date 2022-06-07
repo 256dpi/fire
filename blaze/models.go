@@ -57,9 +57,9 @@ func (l *Link) Validate(requireFilename bool, whitelist ...string) error {
 		if requireFilename {
 			v.Value("FileName", false, stick.IsNotZero)
 		}
-		v.Value("FileType", false, func(stick.Subject) error {
-			return ValidateType(l.FileType, whitelist...)
-		})
+		v.Value("FileType", false, stick.IsValidBy(func(typ string) error {
+			return ValidateType(typ, whitelist...)
+		}))
 		v.Value("FileSize", false, stick.IsMinInt(1))
 	})
 }
@@ -211,9 +211,9 @@ func (f *File) Validate() error {
 		v.Value("State", false, stick.IsValid)
 		v.Value("Updated", false, stick.IsNotZero)
 		v.Value("Name", false, stick.IsMaxLen(maxFileNameLength))
-		v.Value("Type", false, func(stick.Subject) error {
-			return ValidateType(f.Type)
-		})
+		v.Value("Type", false, stick.IsValidBy(func(typ string) error {
+			return ValidateType(typ)
+		}))
 
 		if f.State == Uploading {
 			v.Value("Size", false, stick.IsMinInt(0))
