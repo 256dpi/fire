@@ -17,8 +17,8 @@ func TestIndex(t *testing.T) {
 		assert.Empty(t, newMeta.Indexes)
 
 		AddIndex(&postModel{}, false, time.Minute, "Title")
-		AddPartialIndex(&postModel{}, true, 0, []string{"Title", "-Published"}, bson.D{
-			{Key: "Title", Value: "Hello World!"},
+		AddPartialIndex(&postModel{}, true, 0, []string{"Title", "-Published"}, bson.M{
+			"Title": "Hello World!",
 		})
 		assert.EqualValues(t, []Index{
 			{

@@ -12,7 +12,7 @@ import (
 
 // Index is an index registered with a model.
 type Index struct {
-	// The unprefixed index struct fields.
+	// The un-prefixed index struct fields.
 	Fields []string
 
 	// The translated keys of the index.
@@ -51,14 +51,14 @@ func (i *Index) Compile() mongo.IndexModel {
 }
 
 // AddIndex will add an index to the models index list. Fields that are prefixed
-// with a dash will result in an descending key.
+// with a dash will result in a descending key.
 func AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
 	addIndex(model, unique, expiry, fields, nil)
 }
 
 // AddPartialIndex is similar to AddIndex except that it adds an index with a
-// a partial filter expression.
-func AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.D) {
+// partial filter expression.
+func AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
 	// check filter
 	if len(filter) == 0 {
 		panic(`coal: empty partial filter expression`)
@@ -68,11 +68,9 @@ func AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []st
 	addIndex(model, unique, expiry, fields, filter)
 }
 
-func addIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.D) {
-	// get meta
+func addIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
+	// get meta and translator
 	meta := GetMeta(model)
-
-	// get translator
 	trans := NewTranslator(model)
 
 	// translate keys
@@ -81,13 +79,10 @@ func addIndex(model Model, unique bool, expiry time.Duration, fields []string, f
 		panic(err)
 	}
 
-	// TODO: Use public translator API here.
-	//  => trans.Document(filter) should work.
-	//  => Allow conversion of bson.Ds in lungo.
-
 	// translate filter
+	var filterDoc bson.D
 	if filter != nil {
-		err = trans.value(filter, false)
+		filterDoc, err = trans.Document(filter)
 		if err != nil {
 			panic(err)
 		}
@@ -105,13 +100,13 @@ func addIndex(model Model, unique bool, expiry time.Duration, fields []string, f
 		Keys:   keys,
 		Unique: unique,
 		Expiry: expiry,
-		Filter: filter,
+		Filter: filterDoc,
 	})
 }
 
 // EnsureIndexes will ensure that the registered indexes of the specified model
-// exist. It may fail early if some of the indexes are already existing and do
-// not match the supplied index.
+// exist. It may fail early if some indexes are already existing and do not
+// match the registered index.
 func EnsureIndexes(store *Store, model Model) error {
 	// get meta
 	meta := GetMeta(model)

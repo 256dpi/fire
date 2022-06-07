@@ -57,8 +57,8 @@ func (m *noteModel) Validate() error {
 
 func init() {
 	AddIndex(&postModel{}, false, 0, "Published", "Title")
-	AddPartialIndex(&postModel{}, false, 0, []string{"-TextBody"}, bson.D{
-		{Key: "Title", Value: "Hello World!"},
+	AddPartialIndex(&postModel{}, false, 0, []string{"-TextBody"}, bson.M{
+		"Title": "Hello World!",
 	})
 }
 
