@@ -13,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/mediakit"
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
+	"github.com/kr/pretty"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
@@ -63,7 +65,10 @@ func (b *Bucket) Use(service Service, name string, upload bool) {
 // Upload will initiate and perform an upload using the provided callback and
 // return a claim key and the uploaded file. Upload must be called outside a
 // transaction to ensure the uploaded file is tracked in case of errors.
-func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64, cb func(Upload) (int64, error)) (string, *File, error) {
+//
+// Note: The provided media type must match the content of the upload. If a typ
+// is missing it is guessed from the file name extension.
+func (b *Bucket) Upload(ctx context.Context, fileName, mediaType string, size int64, cb func(Upload) (int64, error)) (string, *File, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "blaze/Bucket.Upload")
 	span.Tag("type", mediaType)
@@ -74,16 +79,16 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		return "", nil, xo.F("unexpected transaction for upload")
 	}
 
-	// check name
-	if len(name) > maxFileNameLength {
+	// check file name
+	if len(fileName) > maxFileNameLength {
 		return "", nil, xo.SF("file name too long")
 	}
 
-	// set default type
+	// set default media type
 	if mediaType == "" {
 		mediaType = "application/octet-stream"
-		if name != "" {
-			mediaType = serve.MimeTypeByExtension(path.Ext(name), false)
+		if fileName != "" {
+			mediaType = serve.MimeTypeByExtension(path.Ext(fileName), false)
 		}
 	}
 
@@ -109,7 +114,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		Base:    coal.B(),
 		State:   Uploading,
 		Updated: time.Now(),
-		Name:    name,
+		Name:    fileName,
 		Type:    mediaType,
 		Size:    size,
 		Service: uploader,
@@ -221,8 +226,9 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 
 // UploadAction returns an action that provides an upload endpoint that stores
 // files and returns claim keys. The action should be protected and only allow
-// authorized clients.
-func (b *Bucket) UploadAction(limit int64) *fire.Action {
+// authorized clients. Unless skip detection is true, the media type is detected
+// from the uploaded content to prevent media/content type spoofing.
+func (b *Bucket) UploadAction(limit int64, skipDetection bool) *fire.Action {
 	// set default limit
 	if limit == 0 {
 		limit = serve.MustByteSize("8M")
@@ -234,10 +240,8 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 			return xo.F("stores must be identical")
 		}
 
-		// get raw content type
-		rawContentType := ctx.HTTPRequest.Header.Get("Content-Type")
-
 		// get content type
+		rawContentType := ctx.HTTPRequest.Header.Get("Content-Type")
 		contentType, ctParams, err := mime.ParseMediaType(rawContentType)
 		if rawContentType != "" && err != nil {
 			ctx.ResponseWriter.WriteHeader(http.StatusBadRequest)
@@ -255,9 +259,9 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 		// upload multipart or raw
 		var keys []string
 		if contentType == "multipart/form-data" {
-			keys, err = b.uploadMultipart(ctx, ctParams["boundary"])
+			keys, err = b.uploadMultipart(ctx, ctParams["boundary"], skipDetection)
 		} else {
-			keys, err = b.uploadBody(ctx, contentType)
+			keys, err = b.uploadBody(ctx, contentType, skipDetection)
 		}
 
 		// handle error
@@ -279,12 +283,11 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 	})
 }
 
-func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, error) {
-	// prepare filename
-	filename := ""
-
-	// parse content disposition
+func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string, skipDetection bool) ([]string, error) {
+	// get file name
+	var fileName string
 	if ctx.HTTPRequest.Header.Get("Content-Disposition") != "" {
+		// parse content disposition
 		disposition, params, err := mime.ParseMediaType(ctx.HTTPRequest.Header.Get("Content-Disposition"))
 		if err != nil {
 			return nil, err
@@ -295,19 +298,29 @@ func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 			return nil, xo.SF("expected attachment content disposition")
 		}
 
-		// get filename
-		filename = params["filename"]
+		// get file name
+		fileName = params["filename"]
 	}
 
-	// parse content length
-	contentLength, err := strconv.ParseInt(ctx.HTTPRequest.Header.Get("Content-Length"), 10, 64)
-	if err != nil {
-		return nil, xo.SF("invalid content length")
+	// prepare stream
+	var stream io.Reader = ctx.HTTPRequest.Body
+
+	// detect media type from stream if not skipped
+	if !skipDetection {
+		var err error
+		mediaType, stream, err = mediakit.DetectStream(stream, false)
+		pretty.Println(mediaType, err)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	// get size
+	size := ctx.HTTPRequest.ContentLength
 
 	// upload stream
-	claimKey, _, err := b.Upload(ctx, filename, mediaType, contentLength, func(upload Upload) (int64, error) {
-		return UploadFrom(upload, ctx.HTTPRequest.Body)
+	claimKey, _, err := b.Upload(ctx, fileName, mediaType, size, func(upload Upload) (int64, error) {
+		return UploadFrom(upload, stream)
 	})
 	if err != nil {
 		return nil, err
@@ -316,7 +329,7 @@ func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 	return []string{claimKey}, nil
 }
 
-func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, error) {
+func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string, skipDetection bool) ([]string, error) {
 	// prepare reader
 	reader := multipart.NewReader(ctx.HTTPRequest.Body, boundary)
 
@@ -331,21 +344,33 @@ func (b *Bucket) uploadMultipart(ctx *fire.Context, boundary string) ([]string, 
 
 	// handle all parts
 	for part != nil {
-		// parse content type
-		contentType, _, err := mime.ParseMediaType(part.Header.Get("Content-Type"))
+		// get media type
+		mediaType, _, err := mime.ParseMediaType(part.Header.Get("Content-Type"))
 		if err != nil {
 			return nil, xo.SF("invalid content type")
 		}
 
-		// parse content length
-		contentLength, err := strconv.ParseInt(part.Header.Get("Content-Length"), 10, 64)
+		// get size
+		size, err := strconv.ParseInt(part.Header.Get("Content-Length"), 10, 64)
 		if err != nil {
 			return nil, xo.SF("invalid content length")
 		}
 
+		// prepare stream
+		var stream io.Reader = part
+
+		// get media type from stream if not skipped
+		if !skipDetection {
+			var err error
+			mediaType, stream, err = mediakit.DetectStream(stream, false)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// upload part
-		claimKey, _, err := b.Upload(ctx, part.FileName(), contentType, contentLength, func(upload Upload) (int64, error) {
-			return UploadFrom(upload, part)
+		claimKey, _, err := b.Upload(ctx, part.FileName(), mediaType, size, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, stream)
 		})
 		if err != nil {
 			return nil, err

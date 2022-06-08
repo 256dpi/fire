@@ -204,7 +204,7 @@ func createHandler(store *coal.Store) http.Handler {
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Action: bucket.UploadAction(serve.MustByteSize("16M")),
+		Action: bucket.UploadAction(serve.MustByteSize("16M"), false),
 	})
 
 	// add download action
