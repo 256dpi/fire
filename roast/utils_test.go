@@ -1,19 +1,21 @@
 package roast
 
 import (
+	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
 
+var models = coal.NewRegistry(&fooModel{})
+
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"foos"`
-	String    string    `json:"string"`
-	Bool      bool      `json:"bool"`
-	One       coal.ID   `json:"-" coal:"one:foos"`
-	OptOne    *coal.ID  `json:"-" coal:"opt-one:foos"`
-	Many      []coal.ID `json:"-" coal:"many:foos"`
+	String    string      `json:"string"`
+	Bool      bool        `json:"bool"`
+	One       coal.ID     `json:"-" coal:"one:foos"`
+	OptOne    *coal.ID    `json:"-" coal:"opt-one:foos"`
+	Many      []coal.ID   `json:"-" coal:"many:foos"`
+	Link      *blaze.Link `json:"link" `
 
 	stick.NoValidation `json:"-" bson:"-"`
 }
-
-var models = coal.NewRegistry(&fooModel{})

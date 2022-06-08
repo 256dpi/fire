@@ -1,9 +1,14 @@
 package roast
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -19,7 +24,6 @@ import (
 
 // TODO: Support filters and sorters.
 // TODO: Support pagination.
-// TODO: Support upload & download.
 
 // AccessDenied is the raw access denied error value.
 var AccessDenied = fire.ErrAccessDenied.Self().(*xo.Err).Err
@@ -29,14 +33,16 @@ var ResourceNotFound = fire.ErrResourceNotFound.Self().(*xo.Err).Err
 
 // Config provides configuration of a tester.
 type Config struct {
-	Store         *coal.Store
-	Models        []coal.Model
-	Handler       http.Handler
-	DataNamespace string
-	AuthNamespace string
-	TokenEndpoint string
-	Authorizer    func(req *http.Request)
-	Debug         bool
+	Store            *coal.Store
+	Models           []coal.Model
+	Handler          http.Handler
+	DataNamespace    string
+	AuthNamespace    string
+	TokenEndpoint    string
+	UploadEndpoint   string
+	DownloadEndpoint string
+	Authorizer       func(req *http.Request)
+	Debug            bool
 }
 
 // Result is returned by the tester.
@@ -50,10 +56,12 @@ type Result struct {
 // Tester provides a high-level unit test facility.
 type Tester struct {
 	*fire.Tester
-	RawClient  *http.Client
-	DataClient *fire.Client
-	AuthClient *oauth2.Client
-	AuthToken  string
+	RawClient   *http.Client
+	DataClient  *fire.Client
+	AuthClient  *oauth2.Client
+	AuthToken   string
+	UploadURL   string
+	DownloadURL string
 }
 
 // NewTester will create and return a new tester.
@@ -104,6 +112,10 @@ func NewTester(config Config) *Tester {
 		BaseURI:       "/" + strings.Trim(config.AuthNamespace, "/"),
 		TokenEndpoint: "/" + strings.Trim(config.TokenEndpoint, "/"),
 	}, tester.RawClient)
+
+	// set upload URL
+	tester.UploadURL = "/" + strings.Trim(config.DataNamespace, "/") + "/" + strings.Trim(config.UploadEndpoint, "/")
+	tester.DownloadURL = "/" + strings.Trim(config.DataNamespace, "/") + "/" + strings.Trim(config.DownloadEndpoint, "/")
 
 	return tester
 }
@@ -273,7 +285,7 @@ func (t *Tester) Update(tt *testing.T, model, response, result coal.Model) Resul
 	}
 }
 
-// UpdateError will updatet the provided model and expect an error.
+// UpdateError will update the provided model and expect an error.
 func (t *Tester) UpdateError(tt *testing.T, model coal.Model, e error) Result {
 	// update resource
 	_, doc, err := t.DataClient.Update(model)
@@ -322,4 +334,69 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 	return Result{
 		Error: err,
 	}
+}
+
+// Upload will upload the specified data with the provided media type and name.
+func (t *Tester) Upload(tt *testing.T, data []byte, typ, name string) string {
+	// prepare request
+	req, err := http.NewRequest("POST", t.UploadURL, bytes.NewReader(data))
+	assert.NoError(tt, err)
+
+	// set headers
+	req.Header.Set("Content-Length", strconv.Itoa(len(data)))
+	if typ != "" {
+		req.Header.Set("Content-Type", typ)
+	}
+	if name != "" {
+		req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	}
+
+	// perform request
+	res, err := t.RawClient.Do(req)
+	assert.NoError(tt, err)
+	assert.Equal(tt, http.StatusOK, res.StatusCode)
+
+	// get key
+	var out struct {
+		Keys []string `json:"keys"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&out)
+	assert.NoError(tt, err)
+	assert.Len(tt, out.Keys, 1)
+
+	return out.Keys[0]
+}
+
+// Download will download data using the specified view key. It will verify the
+// files media type, name and data if requested.
+func (t *Tester) Download(tt *testing.T, key string, typ, name string, data []byte) []byte {
+	// prepare request
+	req, err := http.NewRequest("GET", t.DownloadURL+"?dl=1&key="+key, nil)
+	assert.NoError(tt, err)
+
+	// perform request
+	res, err := t.RawClient.Do(req)
+	assert.NoError(tt, err)
+	assert.Equal(tt, http.StatusOK, res.StatusCode)
+
+	// check headers
+	if typ != "" {
+		assert.Equal(tt, typ, res.Header.Get("Content-Type"))
+	}
+	if name != "" {
+		_, params, err := mime.ParseMediaType(res.Header.Get("Content-Disposition"))
+		assert.NoError(tt, err)
+		assert.Equal(tt, name, params["filename"])
+	}
+
+	// read body
+	buf, err := io.ReadAll(res.Body)
+	assert.NoError(tt, err)
+
+	// check data
+	if data != nil {
+		assert.Equal(tt, data, buf)
+	}
+
+	return buf
 }
