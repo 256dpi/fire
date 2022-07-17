@@ -44,8 +44,8 @@ type Matrix struct {
 	items map[string][]Item
 }
 
-// New returns a new matrix.
-func New() *Matrix {
+// NewMatrix returns a new matrix.
+func NewMatrix() *Matrix {
 	return &Matrix{
 		items: map[string][]Item{},
 	}

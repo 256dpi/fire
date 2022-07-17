@@ -7,7 +7,7 @@ import (
 )
 
 func TestMatrix(t *testing.T) {
-	matrix := New()
+	matrix := NewMatrix()
 
 	matrix.Bool("foo")
 
