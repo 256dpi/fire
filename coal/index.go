@@ -31,7 +31,7 @@ type Index struct {
 // Compile will compile the index to a mongo.IndexModel.
 func (i *Index) Compile() mongo.IndexModel {
 	// prepare options
-	opts := options.Index().SetUnique(i.Unique).SetBackground(true)
+	opts := options.Index().SetUnique(i.Unique)
 
 	// set expire if available
 	if i.Expiry > 0 {

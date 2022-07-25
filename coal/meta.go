@@ -59,13 +59,9 @@ type Field struct {
 	HasOne  bool
 	HasMany bool
 
-	// Whether the field is a polymorphic relationship.
-	Polymorphic bool
-
 	// The relationship information.
 	RelName    string
 	RelType    string
-	RelTypes   []string
 	RelInverse string
 }
 
