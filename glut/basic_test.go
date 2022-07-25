@@ -105,6 +105,50 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+func TestEnsure(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		var value testValue
+
+		// get missing
+
+		exists, err := Get(nil, tester.Store, &value)
+		assert.NoError(t, err)
+		assert.False(t, exists)
+		assert.Equal(t, testValue{}, value)
+
+		// ensure new
+
+		value.Data = "Cool!"
+		created, err := Ensure(nil, tester.Store, &value)
+		assert.NoError(t, err)
+		assert.True(t, created)
+
+		model := tester.FindLast(&Model{}).(*Model)
+		assert.Equal(t, "test", model.Key)
+		assert.Equal(t, stick.Map{"data": "Cool!"}, model.Data)
+		assert.Nil(t, model.Deadline)
+		assert.Nil(t, model.Locked)
+		assert.Nil(t, model.Token)
+
+		// ensure existing
+
+		value.Data = "Cool!!!"
+		created, err = Ensure(nil, tester.Store, &value)
+		assert.NoError(t, err)
+		assert.False(t, created)
+
+		// get existing
+
+		value.Data = ""
+		exists, err = Get(nil, tester.Store, &value)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+		assert.Equal(t, testValue{
+			Data: "Cool!",
+		}, value)
+	})
+}
+
 func TestDeadline(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
 		value := &ttlValue{

@@ -56,6 +56,60 @@ func Get(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	return true, nil
 }
 
+// Ensure will write the specified value to the store if it does not exist
+// already. It will return if a new value has been created.
+func Ensure(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+	// trace
+	ctx, span := xo.Trace(ctx, "glut/Ensure")
+	defer span.End()
+
+	// get meta
+	meta := GetMeta(value)
+
+	// get key
+	key, err := GetKey(value)
+	if err != nil {
+		return false, err
+	}
+
+	// log key and ttl
+	span.Tag("key", key)
+	span.Tag("ttl", meta.TTL.String())
+
+	// prepare deadline
+	var deadline *time.Time
+	if meta.TTL > 0 {
+		deadline = stick.P(time.Now().Add(meta.TTL))
+	}
+
+	// validate value
+	err = value.Validate()
+	if err != nil {
+		return false, err
+	}
+
+	// encode value
+	var data stick.Map
+	err = data.Marshal(value, meta.Coding)
+	if err != nil {
+		return false, err
+	}
+
+	// insert value if missing
+	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, bson.M{
+		"Key": key,
+	}, &Model{
+		Key:      key,
+		Data:     data,
+		Deadline: deadline,
+	}, false)
+	if err != nil {
+		return false, err
+	}
+
+	return inserted, nil
+}
+
 // Set will write the specified value to the store and overwrite any existing
 // data. It will return if a new value has been created in the process. This
 // method will ignore any locks held on the value.
