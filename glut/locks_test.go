@@ -179,7 +179,7 @@ func TestLock(t *testing.T) {
 
 		// mutate locked
 
-		err = MutLocked(nil, tester.Store, &value1, func(exists bool) error {
+		err = MutateLocked(nil, tester.Store, &value1, func(exists bool) error {
 			assert.True(t, exists)
 			assert.Equal(t, "Hello!", value1.Data)
 			value1.Data = "Hello!!!"
@@ -195,7 +195,7 @@ func TestLock(t *testing.T) {
 
 		// del with different token
 
-		deleted, err := DelLocked(nil, tester.Store, &value2)
+		deleted, err := DeleteLocked(nil, tester.Store, &value2)
 		assert.NoError(t, err)
 		assert.False(t, deleted)
 
@@ -203,7 +203,7 @@ func TestLock(t *testing.T) {
 
 		// del with token
 
-		deleted, err = DelLocked(nil, tester.Store, &value1)
+		deleted, err = DeleteLocked(nil, tester.Store, &value1)
 		assert.NoError(t, err)
 		assert.True(t, deleted)
 

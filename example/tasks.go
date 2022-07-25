@@ -148,7 +148,7 @@ func periodicTask(store *coal.Store) *axe.Task {
 		Handler: func(ctx *axe.Context) error {
 			// increment counter
 			var counter counterValue
-			err := glut.Mut(ctx, store, &counter, func(exists bool) error {
+			err := glut.Mutate(ctx, store, &counter, func(exists bool) error {
 				counter.Total++
 				return nil
 			})

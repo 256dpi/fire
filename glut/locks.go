@@ -257,10 +257,10 @@ func GetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	return true, nil
 }
 
-// DelLocked will delete the specified value only if it is locked.
-func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+// DeleteLocked will delete the specified value only if it is locked.
+func DeleteLocked(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// trace
-	ctx, span := xo.Trace(ctx, "glut/DelLocked")
+	ctx, span := xo.Trace(ctx, "glut/DeleteLocked")
 	defer span.End()
 
 	// get base
@@ -296,11 +296,11 @@ func DelLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 	return deleted, nil
 }
 
-// MutLocked will load the specified value, run the callback and on success
+// MutateLocked will load the specified value, run the callback and on success
 // write the value back.
-func MutLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
+func MutateLocked(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// trace
-	ctx, span := xo.Trace(ctx, "glut/MutLocked")
+	ctx, span := xo.Trace(ctx, "glut/MutateLocked")
 	defer span.End()
 
 	// get value

@@ -112,11 +112,11 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	return inserted, nil
 }
 
-// Del will remove the specified value from the store. This method will ignore
+// Delete will remove the specified value from the store. This method will ignore
 // any locks held on the value.
-func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
+func Delete(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	// trace
-	ctx, span := xo.Trace(ctx, "glut/Del")
+	ctx, span := xo.Trace(ctx, "glut/Delete")
 	defer span.End()
 
 	// get key
@@ -139,11 +139,11 @@ func Del(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	return deleted, nil
 }
 
-// Mut will load the specified value, run the callback and on success write the
-// value back. This method will ignore any locks held on the value.
-func Mut(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
+// Mutate will load the specified value, run the callback and on success write
+// the value back. This method will ignore any locks held on the value.
+func Mutate(ctx context.Context, store *coal.Store, value Value, fn func(bool) error) error {
 	// trace
-	ctx, span := xo.Trace(ctx, "glut/Mut")
+	ctx, span := xo.Trace(ctx, "glut/Mutate")
 	defer span.End()
 
 	// get value

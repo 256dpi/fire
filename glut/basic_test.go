@@ -71,7 +71,7 @@ func TestBasic(t *testing.T) {
 
 		// mutate
 
-		err = Mut(nil, tester.Store, &value, func(exists bool) error {
+		err = Mutate(nil, tester.Store, &value, func(exists bool) error {
 			assert.True(t, exists)
 			assert.Equal(t, "Hello!", value.Data)
 			value.Data = "Hello!!!"
@@ -91,7 +91,7 @@ func TestBasic(t *testing.T) {
 
 		// delete existing
 
-		deleted, err := Del(nil, tester.Store, &value)
+		deleted, err := Delete(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, deleted)
 
@@ -99,7 +99,7 @@ func TestBasic(t *testing.T) {
 
 		// delete missing
 
-		deleted, err = Del(nil, tester.Store, &value)
+		deleted, err = Delete(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, deleted)
 	})
@@ -196,7 +196,7 @@ func TestExtended(t *testing.T) {
 
 		// mutate
 
-		err = Mut(nil, tester.Store, &value, func(exists bool) error {
+		err = Mutate(nil, tester.Store, &value, func(exists bool) error {
 			assert.True(t, exists)
 			assert.Equal(t, "Hello!", value.Data)
 			value.Data = "Hello!!!"
@@ -217,7 +217,7 @@ func TestExtended(t *testing.T) {
 
 		// delete existing
 
-		deleted, err := Del(nil, tester.Store, &value)
+		deleted, err := Delete(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.True(t, deleted)
 
@@ -225,7 +225,7 @@ func TestExtended(t *testing.T) {
 
 		// delete missing
 
-		deleted, err = Del(nil, tester.Store, &value)
+		deleted, err = Delete(nil, tester.Store, &value)
 		assert.NoError(t, err)
 		assert.False(t, deleted)
 	})
