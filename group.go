@@ -188,10 +188,7 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 					// call callback
 					err := cb.Handler(ctx)
 					if xo.IsSafe(err) {
-						xo.Abort(&jsonapi.Error{
-							Status: http.StatusUnauthorized,
-							Detail: err.Error(),
-						})
+						xo.Abort(jsonapi.ErrorFromStatus(http.StatusUnauthorized, err.Error()))
 					} else if err != nil {
 						xo.Abort(err)
 					}

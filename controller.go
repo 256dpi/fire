@@ -602,10 +602,7 @@ func (c *Controller) createResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -635,7 +632,7 @@ func (c *Controller) createResource(ctx *Context) {
 			idempotentCreateField: idempotentCreateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.BadRequest("document is not unique"))
 		}
 		xo.AbortIf(err)
 
@@ -647,7 +644,7 @@ func (c *Controller) createResource(ctx *Context) {
 		// insert model
 		err := ctx.Store.M(c.Model).Insert(ctx, ctx.Model)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.BadRequest("document is not unique"))
 		}
 		xo.AbortIf(err)
 	}
@@ -729,10 +726,7 @@ func (c *Controller) updateResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -769,7 +763,7 @@ func (c *Controller) updateResource(ctx *Context) {
 			consistentUpdateField: consistentUpdateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.BadRequest("document is not unique"))
 		}
 		xo.AbortIf(err)
 
@@ -781,7 +775,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		// replace model
 		found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+			xo.Abort(jsonapi.BadRequest("document is not unique"))
 		}
 		xo.AbortIf(err)
 
@@ -833,10 +827,7 @@ func (c *Controller) deleteResource(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -1128,10 +1119,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -1142,7 +1130,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.BadRequest("document is not unique"))
 	}
 	xo.AbortIf(err)
 
@@ -1231,10 +1219,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -1245,7 +1230,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.BadRequest("document is not unique"))
 	}
 	xo.AbortIf(err)
 
@@ -1341,10 +1326,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// validate model
 	err := ctx.Model.Validate()
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: http.StatusBadRequest,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.BadRequest(err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}
@@ -1355,7 +1337,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, "document is not unique"))
+		xo.Abort(jsonapi.BadRequest("document is not unique"))
 	}
 	xo.AbortIf(err)
 
@@ -2612,10 +2594,7 @@ func (c *Controller) runCallbackList(ctx *Context, stage Stage, list []*Callback
 		// call callback
 		err := xo.W(cb.Handler(ctx))
 		if xo.IsSafe(err) {
-			xo.Abort(&jsonapi.Error{
-				Status: errorStatus,
-				Detail: err.Error(),
-			})
+			xo.Abort(jsonapi.ErrorFromStatus(errorStatus, err.Error()))
 		} else if err != nil {
 			xo.Abort(err)
 		}
@@ -2630,10 +2609,7 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	// call action
 	err := xo.W(a.Handler(ctx))
 	if xo.IsSafe(err) {
-		xo.Abort(&jsonapi.Error{
-			Status: errorStatus,
-			Detail: err.Error(),
-		})
+		xo.Abort(jsonapi.ErrorFromStatus(errorStatus, err.Error()))
 	} else if err != nil {
 		xo.Abort(err)
 	}

@@ -1826,6 +1826,7 @@ func TestModelValidation(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
+					"title": "bad request",
 					"detail": "validation error"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -1845,6 +1846,7 @@ func TestModelValidation(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
+					"title": "bad request",
 					"detail": "validation error"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3711,6 +3713,7 @@ func TestAuthorizers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3722,6 +3725,7 @@ func TestAuthorizers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3740,6 +3744,7 @@ func TestAuthorizers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3759,6 +3764,7 @@ func TestAuthorizers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3770,6 +3776,7 @@ func TestAuthorizers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3800,6 +3807,7 @@ func TestVerifiers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3811,6 +3819,7 @@ func TestVerifiers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3829,6 +3838,7 @@ func TestVerifiers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3848,6 +3858,7 @@ func TestVerifiers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -3859,6 +3870,7 @@ func TestVerifiers(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "401",
+					"title": "unauthorized",
 					"detail": "not authorized"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -4137,6 +4149,7 @@ func TestValidators(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
+					"title": "bad request",
 					"detail": "not valid"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -4156,6 +4169,7 @@ func TestValidators(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
+					"title": "bad request",
 					"detail": "not valid"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
@@ -4167,6 +4181,7 @@ func TestValidators(t *testing.T) {
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
+					"title": "bad request",
 					"detail": "not valid"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
