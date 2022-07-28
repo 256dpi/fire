@@ -71,7 +71,6 @@ func NewTester(config Config) *Tester {
 	// prepare tester
 	tester := &Tester{
 		Tester: fire.NewTester(config.Store, config.Models...),
-		Config: config,
 	}
 
 	// set prefix
@@ -115,6 +114,9 @@ func NewTester(config Config) *Tester {
 		BaseURI:       "/" + strings.Trim(config.AuthNamespace, "/"),
 		TokenEndpoint: "/" + strings.Trim(config.TokenEndpoint, "/"),
 	}, tester.RawClient)
+
+	// set config
+	tester.Config = config
 
 	return tester
 }
@@ -352,8 +354,20 @@ func (t *Tester) Call(tt *testing.T, url string, in, out any) (int, *jsonapi.Err
 		body = bytes.NewReader(data)
 	}
 
+	// prepare request
+	req, err := http.NewRequest("POST", url, body)
+	require.NoError(tt, err)
+
+	// set header
+	req.Header.Set("Content-Type", "application/json")
+
+	// run authorizer if available
+	if t.Config.Authorizer != nil {
+		t.Config.Authorizer(req)
+	}
+
 	// perform request
-	res, err := t.RawClient.Post(url, "application/json", body)
+	res, err := t.RawClient.Do(req)
 	require.NoError(tt, err)
 	defer res.Body.Close()
 
