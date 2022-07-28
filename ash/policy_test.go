@@ -6,6 +6,7 @@ import (
 
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire"
@@ -66,6 +67,10 @@ func TestPolicy(t *testing.T) {
 				user := identity.(*flame.User)
 				return &Policy{
 					Access: Full,
+					Actions: map[string]bool{
+						"c1": true,
+						"r1": true,
+					},
 					Fields: AccessTable{
 						"User": Full,
 						"Mode": Full,
@@ -119,6 +124,22 @@ func TestPolicy(t *testing.T) {
 
 			// execute policy
 			Execute(),
+		},
+		CollectionActions: fire.M{
+			"c1": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return nil
+			}),
+			"c2": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return nil
+			}),
+		},
+		ResourceActions: fire.M{
+			"r1": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return nil
+			}),
+			"r2": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return nil
+			}),
 		},
 	})
 
@@ -214,4 +235,16 @@ func TestPolicy(t *testing.T) {
 	tester.DeleteError(t, example2, roast.AccessDenied)
 	magicID = coal.ID{}
 	tester.Delete(t, example2, nil)
+
+	code, _ := tester.Call(t, tester.URL("examples", "c1"), nil, nil)
+	assert.Equal(t, http.StatusOK, code)
+
+	code, _ = tester.Call(t, tester.URL("examples", "c2"), nil, nil)
+	assert.Equal(t, http.StatusUnauthorized, code)
+
+	code, _ = tester.Call(t, tester.URL("examples", example1.ID().Hex(), "r1"), nil, nil)
+	assert.Equal(t, http.StatusOK, code)
+
+	code, _ = tester.Call(t, tester.URL("examples", example1.ID().Hex(), "r2"), nil, nil)
+	assert.Equal(t, http.StatusUnauthorized, code)
 }
