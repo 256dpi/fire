@@ -1,6 +1,7 @@
 package roast
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/256dpi/lungo"
@@ -11,6 +12,7 @@ import (
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
+	"github.com/256dpi/fire/stick"
 )
 
 func TestTester(t *testing.T) {
@@ -63,6 +65,27 @@ func TestTesterErrors(t *testing.T) {
 	tt.CreateError(t, post, ResourceNotFound)
 	tt.UpdateError(t, post, ResourceNotFound)
 	tt.DeleteError(t, post, ResourceNotFound)
+}
+
+func TestTesterCall(t *testing.T) {
+	tt := NewTester(Config{
+		Models: models.All(),
+	})
+
+	tt.Assign("", &fire.Controller{
+		Model: &fooModel{},
+		CollectionActions: fire.M{
+			"bar": fire.A("foo", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return ctx.Respond(stick.Map{
+					"ok": true,
+				})
+			}),
+		},
+	})
+
+	var out stick.Map
+	code := tt.Call(t, tt.URL("foos", "bar"), stick.Map{"foo": "bar"}, &out)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func TestTesterUploadDownload(t *testing.T) {

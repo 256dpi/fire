@@ -17,6 +17,7 @@ import (
 	"github.com/256dpi/serve"
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/coal"
@@ -118,7 +119,7 @@ func NewTester(config Config) *Tester {
 
 // URL returns a URL based on the specified path segments.
 func (t *Tester) URL(path ...string) string {
-	return "/" + strings.Trim(t.Config.DataNamespace, "/") + "/" + strings.Join(path, "/")
+	return strings.ReplaceAll("/"+strings.Trim(t.Config.DataNamespace, "/")+"/"+strings.Join(path, "/"), "//", "/")
 }
 
 // Authenticate will request an access token using the provided credentials.
@@ -335,6 +336,31 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 	return Result{
 		Error: err,
 	}
+}
+
+// Call will call a JSON based action with the provided input and output at
+// the specified URL.
+func (t *Tester) Call(tt *testing.T, url string, in, out any) int {
+	// encode request
+	var body io.Reader
+	if in != nil {
+		data, err := json.Marshal(in)
+		require.NoError(tt, err)
+		body = bytes.NewReader(data)
+	}
+
+	// perform request
+	res, err := t.RawClient.Post(url, "application/json", body)
+	require.NoError(tt, err)
+	defer res.Body.Close()
+
+	// decode response
+	if out != nil {
+		err = json.NewDecoder(res.Body).Decode(out)
+		require.NoError(tt, err)
+	}
+
+	return res.StatusCode
 }
 
 // Upload will upload the specified data with the provided media type and name.
