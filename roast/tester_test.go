@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
@@ -82,12 +83,20 @@ func TestTesterCall(t *testing.T) {
 					"ok": true,
 				})
 			}),
+			"baz": fire.A("foo", []string{"POST"}, 128, func(ctx *fire.Context) error {
+				return xo.SF("failed")
+			}),
 		},
 	})
 
 	var out stick.Map
-	code := tt.Call(t, tt.URL("foos", "bar"), stick.Map{"foo": "bar"}, &out)
+	code, err := tt.Call(t, tt.URL("foos", "bar"), stick.Map{"foo": "bar"}, &out)
 	assert.Equal(t, http.StatusOK, code)
+	assert.Nil(t, err)
+
+	code, err = tt.Call(t, tt.URL("foos", "baz"), stick.Map{"foo": "bar"}, nil)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Equal(t, jsonapi.BadRequest("failed"), err)
 }
 
 func TestTesterUploadDownload(t *testing.T) {

@@ -341,8 +341,9 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 }
 
 // Call will call a JSON based action with the provided input and output at
-// the specified URL.
-func (t *Tester) Call(tt *testing.T, url string, in, out any) int {
+// the specified URL. If out is absent, the function will try to decode and
+// return any jsonapi.Error.
+func (t *Tester) Call(tt *testing.T, url string, in, out any) (int, *jsonapi.Error) {
 	// encode request
 	var body io.Reader
 	if in != nil {
@@ -360,9 +361,15 @@ func (t *Tester) Call(tt *testing.T, url string, in, out any) int {
 	if out != nil {
 		err = json.NewDecoder(res.Body).Decode(out)
 		require.NoError(tt, err)
+	} else {
+		var doc jsonapi.Document
+		_ = json.NewDecoder(res.Body).Decode(&doc)
+		if len(doc.Errors) > 0 {
+			return res.StatusCode, doc.Errors[0]
+		}
 	}
 
-	return res.StatusCode
+	return res.StatusCode, nil
 }
 
 // Upload will upload the specified data with the provided media type and name.
