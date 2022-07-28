@@ -37,13 +37,12 @@ type ttlValue struct {
 
 type extendedValue struct {
 	Base               `json:"-" glut:"extended,0"`
-	ID                 string `json:"id"`
-	Data               string `json:"data"`
+	Extension          string `json:"extension"`
 	stick.NoValidation `json:"-" bson:"-"`
 }
 
 func (v *extendedValue) GetExtension() string {
-	return "/" + v.ID
+	return v.Extension
 }
 
 type restrictedValue struct {

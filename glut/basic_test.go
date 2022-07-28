@@ -170,102 +170,17 @@ func TestDeadline(t *testing.T) {
 
 func TestExtended(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
-		value := extendedValue{}
+		value := &extendedValue{}
 
-		// get missing
+		key, err := GetKey(value)
+		assert.Error(t, err)
+		assert.Equal(t, "missing extension", err.Error())
 
-		value.ID = "A7"
-		exists, err := Get(nil, tester.Store, &value)
+		value.Extension = "/foo"
+
+		key, err = GetKey(value)
 		assert.NoError(t, err)
-		assert.False(t, exists)
-		assert.Equal(t, extendedValue{
-			ID: "A7",
-		}, value)
-
-		// set new
-
-		value.Data = "Cool!"
-		created, err := Set(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.True(t, created)
-
-		model := tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "extended/A7", model.Key)
-		assert.Equal(t, stick.Map{"data": "Cool!", "id": "A7"}, model.Data)
-		assert.Nil(t, model.Deadline)
-		assert.Nil(t, model.Locked)
-		assert.Nil(t, model.Token)
-
-		// get existing
-
-		value.Data = ""
-		exists, err = Get(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.True(t, exists)
-		assert.Equal(t, extendedValue{
-			ID:   "A7",
-			Data: "Cool!",
-		}, value)
-
-		// update
-
-		value.Data = "Hello!"
-		created, err = Set(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.False(t, created)
-
-		model = tester.FindLast(&Model{}).(*Model)
-		assert.Equal(t, "extended/A7", model.Key)
-		assert.Equal(t, stick.Map{"data": "Hello!", "id": "A7"}, model.Data)
-		assert.Nil(t, model.Deadline)
-		assert.Nil(t, model.Locked)
-		assert.Nil(t, model.Token)
-
-		// get updated
-
-		value.Data = ""
-		exists, err = Get(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.True(t, exists)
-		assert.Equal(t, extendedValue{
-			ID:   "A7",
-			Data: "Hello!",
-		}, value)
-
-		// mutate
-
-		err = Mutate(nil, tester.Store, &value, func(exists bool) error {
-			assert.True(t, exists)
-			assert.Equal(t, "Hello!", value.Data)
-			value.Data = "Hello!!!"
-			return nil
-		})
-		assert.NoError(t, err)
-
-		// get mutated
-
-		value.Data = ""
-		exists, err = Get(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.True(t, exists)
-		assert.Equal(t, extendedValue{
-			ID:   "A7",
-			Data: "Hello!!!",
-		}, value)
-
-		// delete existing
-
-		deleted, err := Delete(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.True(t, deleted)
-
-		assert.Equal(t, 0, tester.Count(&Model{}))
-
-		// delete missing
-
-		deleted, err = Delete(nil, tester.Store, &value)
-		assert.NoError(t, err)
-		assert.False(t, deleted)
+		assert.Equal(t, "extended/foo", key)
 	})
 }
 
@@ -281,6 +196,12 @@ func TestRestricted(t *testing.T) {
 	deadline, err = GetDeadline(value)
 	assert.NoError(t, err)
 	assert.Equal(t, 5*time.Minute, time.Until(*deadline).Round(time.Minute))
+
+	value.Deadline = stick.P(time.Time{})
+
+	deadline, err = GetDeadline(value)
+	assert.Error(t, err)
+	assert.Equal(t, "zero deadline", err.Error())
 }
 
 func TestValidation(t *testing.T) {
