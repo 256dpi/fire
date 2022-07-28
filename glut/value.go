@@ -20,7 +20,13 @@ type Value interface {
 // ExtendedValue is a value that can extends its key.
 type ExtendedValue interface {
 	Value
-	GetExtension() (string, error)
+	GetExtension() string
+}
+
+// RestrictedValue is value that can defines its deadline.
+type RestrictedValue interface {
+	Value
+	GetDeadline() *time.Time
 }
 
 // Base can be embedded in a struct to turn it into a value.

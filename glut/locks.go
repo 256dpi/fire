@@ -32,14 +32,22 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, err
 	}
 
+	// get deadline
+	deadline, err := GetDeadline(value)
+	if err != nil {
+		return false, err
+	}
+
 	// ensure token
 	if base.Token.IsZero() {
 		base.Token = coal.New()
 	}
 
-	// log key, ttl and token
+	// log key, deadline and token
 	span.Tag("key", key)
-	span.Tag("ttl", meta.TTL.String())
+	if deadline != nil {
+		span.Tag("deadline", deadline.String())
+	}
 	span.Tag("token", base.Token.Hex())
 
 	// check timeout
@@ -47,19 +55,11 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, xo.F("missing timeout")
 	}
 
-	// check TTL
-	if meta.TTL > 0 && meta.TTL < timeout {
-		return false, xo.F("timeout greater than time to live")
-	}
-
-	// prepare deadline
-	var deadline *time.Time
-	if meta.TTL > 0 {
-		deadline = stick.P(time.Now().Add(meta.TTL))
-	}
-
 	// compute locked
 	locked := time.Now().Add(timeout)
+	if deadline != nil && deadline.Before(locked) {
+		return false, xo.F("deadline before timeout")
+	}
 
 	// prepare value
 	model := Model{
@@ -153,20 +153,22 @@ func SetLocked(ctx context.Context, store *coal.Store, value Value) (bool, error
 		return false, err
 	}
 
-	// log key, ttl and token
+	// get deadline
+	deadline, err := GetDeadline(value)
+	if err != nil {
+		return false, err
+	}
+
+	// log key, deadline and token
 	span.Tag("key", key)
-	span.Tag("ttl", meta.TTL.String())
+	if deadline != nil {
+		span.Tag("deadline", deadline.String())
+	}
 	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {
 		return false, xo.F("missing token")
-	}
-
-	// prepare deadline
-	var deadline *time.Time
-	if meta.TTL > 0 {
-		deadline = stick.P(time.Now().Add(meta.TTL))
 	}
 
 	// validate value
@@ -331,9 +333,6 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 	ctx, span := xo.Trace(ctx, "glut/Unlock")
 	defer span.End()
 
-	// get meta
-	meta := GetMeta(value)
-
 	// get base
 	base := value.GetBase()
 
@@ -343,20 +342,22 @@ func Unlock(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 		return false, err
 	}
 
+	// get deadline
+	deadline, err := GetDeadline(value)
+	if err != nil {
+		return false, err
+	}
+
 	// log key, ttl and token
 	span.Tag("key", key)
-	span.Tag("ttl", meta.TTL.String())
+	if deadline != nil {
+		span.Tag("deadline", deadline.String())
+	}
 	span.Tag("token", base.Token.Hex())
 
 	// check token
 	if base.Token.IsZero() {
 		return false, xo.F("missing token")
-	}
-
-	// prepare deadline
-	var deadline *time.Time
-	if meta.TTL > 0 {
-		deadline = stick.P(time.Now().Add(meta.TTL))
 	}
 
 	// replace value

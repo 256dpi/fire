@@ -2,7 +2,6 @@ package glut
 
 import (
 	"context"
-	"time"
 
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,14 +71,16 @@ func Ensure(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 		return false, err
 	}
 
-	// log key and ttl
-	span.Tag("key", key)
-	span.Tag("ttl", meta.TTL.String())
+	// get deadline
+	deadline, err := GetDeadline(value)
+	if err != nil {
+		return false, err
+	}
 
-	// prepare deadline
-	var deadline *time.Time
-	if meta.TTL > 0 {
-		deadline = stick.P(time.Now().Add(meta.TTL))
+	// log key and deadline
+	span.Tag("key", key)
+	if deadline != nil {
+		span.Tag("deadline", deadline.String())
 	}
 
 	// validate value
@@ -127,14 +128,16 @@ func Set(ctx context.Context, store *coal.Store, value Value) (bool, error) {
 		return false, err
 	}
 
-	// log key and ttl
-	span.Tag("key", key)
-	span.Tag("ttl", meta.TTL.String())
+	// get deadline
+	deadline, err := GetDeadline(value)
+	if err != nil {
+		return false, err
+	}
 
-	// prepare deadline
-	var deadline *time.Time
-	if meta.TTL > 0 {
-		deadline = stick.P(time.Now().Add(meta.TTL))
+	// log key
+	span.Tag("key", key)
+	if deadline != nil {
+		span.Tag("deadline", deadline.String())
 	}
 
 	// validate value

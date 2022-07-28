@@ -172,12 +172,6 @@ func TestExtended(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *coal.Tester) {
 		value := extendedValue{}
 
-		// missing id
-
-		_, err := Get(nil, tester.Store, &value)
-		assert.Error(t, err)
-		assert.Equal(t, "missing id", err.Error())
-
 		// get missing
 
 		value.ID = "A7"
@@ -273,6 +267,20 @@ func TestExtended(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, deleted)
 	})
+}
+
+func TestRestricted(t *testing.T) {
+	value := &restrictedValue{}
+
+	deadline, err := GetDeadline(value)
+	assert.NoError(t, err)
+	assert.Equal(t, 7*time.Minute, time.Until(*deadline).Round(time.Minute))
+
+	value.Deadline = stick.P(time.Now().Add(5 * time.Minute))
+
+	deadline, err = GetDeadline(value)
+	assert.NoError(t, err)
+	assert.Equal(t, 5*time.Minute, time.Until(*deadline).Round(time.Minute))
 }
 
 func TestValidation(t *testing.T) {

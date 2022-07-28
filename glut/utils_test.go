@@ -2,6 +2,7 @@ package glut
 
 import (
 	"testing"
+	"time"
 
 	"github.com/256dpi/xo"
 
@@ -41,13 +42,18 @@ type extendedValue struct {
 	stick.NoValidation `json:"-" bson:"-"`
 }
 
-func (v *extendedValue) GetExtension() (string, error) {
-	// check id
-	if v.ID == "" {
-		return "", xo.F("missing id")
-	}
+func (v *extendedValue) GetExtension() string {
+	return "/" + v.ID
+}
 
-	return "/" + v.ID, nil
+type restrictedValue struct {
+	Base               `json:"-" glut:"restricted,7m"`
+	Deadline           *time.Time `json:"delta"`
+	stick.NoValidation `json:"-" bson:"-"`
+}
+
+func (v *restrictedValue) GetDeadline() *time.Time {
+	return v.Deadline
 }
 
 func withTester(t *testing.T, fn func(*testing.T, *coal.Tester)) {
