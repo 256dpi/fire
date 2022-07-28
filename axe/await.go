@@ -1,6 +1,8 @@
 package axe
 
 import (
+	"time"
+
 	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire/coal"
@@ -10,9 +12,9 @@ import (
 
 // AwaitJob will enqueue the specified job and wait until it and all other
 // jobs queued during its execution are finished. It will return the number
-// of processed jobs.
-func AwaitJob(store *coal.Store, job Job) (int, error) {
-	return Await(store, func() error {
+// of processed jobs. A timeout may be provided to stop after some time.
+func AwaitJob(store *coal.Store, timeout time.Duration, job Job) (int, error) {
+	return Await(store, timeout, func() error {
 		// enqueue job
 		ok, err := Enqueue(nil, store, job, 0, 0)
 		if err != nil {
@@ -28,12 +30,13 @@ func AwaitJob(store *coal.Store, job Job) (int, error) {
 // Await will await all jobs created during the execution of the callback. It
 // will wait for at least one job to complete and return the number of
 // processed jobs. If a job fails or is cancelled its reasons is returned as
-// an error.
-func Await(store *coal.Store, fns ...func() error) (int, error) {
+// an error. A timeout may be provided to stop after some time.
+func Await(store *coal.Store, timeout time.Duration, fns ...func() error) (int, error) {
 	// prepare state
 	var num int
 	jobs := map[coal.ID]struct{}{}
 	done := make(chan error, 1)
+	var closed bool
 
 	// open stream
 	stream := coal.OpenStream(store, &Model{}, nil, func(event coal.Event, id coal.ID, model coal.Model, err error, token []byte) error {
@@ -70,6 +73,7 @@ func Await(store *coal.Store, fns ...func() error) (int, error) {
 				delete(jobs, id)
 				if len(jobs) == 0 {
 					close(done)
+					closed = true
 					return coal.ErrStop.Wrap()
 				}
 				return nil
@@ -80,6 +84,7 @@ func Await(store *coal.Store, fns ...func() error) (int, error) {
 				}
 				done <- xo.F("failed: %s", reason)
 				close(done)
+				closed = true
 				return coal.ErrStop.Wrap()
 			}
 		}
@@ -87,10 +92,29 @@ func Await(store *coal.Store, fns ...func() error) (int, error) {
 		// handle errors
 		if event == coal.Errored {
 			xo.Panic(err)
+			return nil
+		}
+
+		// handles stop
+		if event == coal.Stopped && !closed {
+			close(done)
+			closed = true
+			return nil
 		}
 
 		return nil
 	})
+
+	// prepare timer
+	var timer *time.Timer
+	if timeout > 0 {
+		timer = time.NewTimer(timeout)
+		defer timer.Stop()
+		go func() {
+			<-timer.C
+			stream.Close()
+		}()
+	}
 
 	// await done
 	err := <-done

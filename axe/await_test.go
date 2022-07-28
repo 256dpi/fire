@@ -2,6 +2,7 @@ package axe
 
 import (
 	"testing"
+	"time"
 
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
@@ -27,10 +28,16 @@ func TestAwaitJob(t *testing.T) {
 
 		<-queue.Run()
 
-		n, err := AwaitJob(tester.Store, &testJob{})
+		n, err := AwaitJob(tester.Store, 0, &testJob{})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, n)
 		assert.True(t, ok)
+
+		n, err = Await(tester.Store, 10*time.Millisecond, func() error {
+			return nil
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 0, n)
 
 		queue.Close()
 	})
