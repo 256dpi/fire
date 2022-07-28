@@ -167,7 +167,8 @@ func Execute() *fire.Callback {
 		}
 
 		// check access
-		if policy.Access&genericAccess[ctx.Operation] == 0 {
+		access := genericAccess[ctx.Operation]
+		if policy.Access&access != access {
 			return fire.ErrAccessDenied.Wrap()
 		}
 
