@@ -174,6 +174,7 @@ func TestExtended(t *testing.T) {
 
 		key, err := GetKey(value)
 		assert.Error(t, err)
+		assert.Zero(t, key)
 		assert.Equal(t, "missing extension", err.Error())
 
 		value.Extension = "/foo"
@@ -201,6 +202,7 @@ func TestRestricted(t *testing.T) {
 
 	deadline, err = GetDeadline(value)
 	assert.Error(t, err)
+	assert.Nil(t, deadline)
 	assert.Equal(t, "zero deadline", err.Error())
 }
 
