@@ -56,12 +56,11 @@ type Result struct {
 // Tester provides a high-level unit test facility.
 type Tester struct {
 	*fire.Tester
-	RawClient   *http.Client
-	DataClient  *fire.Client
-	AuthClient  *oauth2.Client
-	AuthToken   string
-	UploadURL   string
-	DownloadURL string
+	Config     Config
+	RawClient  *http.Client
+	DataClient *fire.Client
+	AuthClient *oauth2.Client
+	AuthToken  string
 }
 
 // NewTester will create and return a new tester.
@@ -69,6 +68,7 @@ func NewTester(config Config) *Tester {
 	// prepare tester
 	tester := &Tester{
 		Tester: fire.NewTester(config.Store, config.Models...),
+		Config: config,
 	}
 
 	// set prefix
@@ -113,11 +113,12 @@ func NewTester(config Config) *Tester {
 		TokenEndpoint: "/" + strings.Trim(config.TokenEndpoint, "/"),
 	}, tester.RawClient)
 
-	// set upload URL
-	tester.UploadURL = "/" + strings.Trim(config.DataNamespace, "/") + "/" + strings.Trim(config.UploadEndpoint, "/")
-	tester.DownloadURL = "/" + strings.Trim(config.DataNamespace, "/") + "/" + strings.Trim(config.DownloadEndpoint, "/")
-
 	return tester
+}
+
+// URL returns a URL based on the specified path segments.
+func (t *Tester) URL(path ...string) string {
+	return "/" + strings.Trim(t.Config.DataNamespace, "/") + "/" + strings.Join(path, "/")
 }
 
 // Authenticate will request an access token using the provided credentials.
@@ -339,7 +340,7 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 // Upload will upload the specified data with the provided media type and name.
 func (t *Tester) Upload(tt *testing.T, data []byte, typ, name string) string {
 	// prepare request
-	req, err := http.NewRequest("POST", t.UploadURL, bytes.NewReader(data))
+	req, err := http.NewRequest("POST", t.URL(t.Config.UploadEndpoint), bytes.NewReader(data))
 	assert.NoError(tt, err)
 
 	// set headers
@@ -371,7 +372,7 @@ func (t *Tester) Upload(tt *testing.T, data []byte, typ, name string) string {
 // files media type, name and data if requested.
 func (t *Tester) Download(tt *testing.T, key string, typ, name string, data []byte) []byte {
 	// prepare request
-	req, err := http.NewRequest("GET", t.DownloadURL+"?dl=1&key="+key, nil)
+	req, err := http.NewRequest("GET", t.URL(t.Config.DownloadEndpoint)+"?dl=1&key="+key, nil)
 	assert.NoError(tt, err)
 
 	// perform request
