@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/oauth2/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
 )
 
@@ -426,4 +428,17 @@ func (t *Tester) Download(tt *testing.T, key string, typ, name string, data []by
 	}
 
 	return buf
+}
+
+// Await will wait for all jobs created during the execution of the callback to
+// complete. A timeout may be provided to stop after some time.
+func (t *Tester) Await(tt *testing.T, timeout time.Duration, fn func()) int {
+	// await processing
+	n, err := axe.Await(t.Store, timeout, func() error {
+		fn()
+		return nil
+	})
+	assert.NoError(tt, err)
+
+	return n
 }

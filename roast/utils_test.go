@@ -1,6 +1,7 @@
 package roast
 
 import (
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -18,4 +19,9 @@ type fooModel struct {
 	Link      *blaze.Link `json:"link" `
 
 	stick.NoValidation `json:"-" bson:"-"`
+}
+
+type fooJob struct {
+	axe.Base           `json:"-" axe:"foo"`
+	stick.NoValidation `json:"-"`
 }

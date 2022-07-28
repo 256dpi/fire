@@ -3,12 +3,14 @@ package roast
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/256dpi/lungo"
 	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
+	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/blaze"
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/heat"
@@ -131,4 +133,32 @@ func TestTesterUploadDownload(t *testing.T) {
 
 	buf := tt.Download(t, model.Link.ViewKey, "text/plain", "foo.txt", data)
 	assert.Equal(t, data, buf)
+}
+
+func TestTesterAwait(t *testing.T) {
+	tt := NewTester(Config{
+		Models: models.All(),
+	})
+
+	queue := axe.NewQueue(axe.Options{
+		Store:    tt.Store,
+		Reporter: xo.Panic,
+	})
+	queue.Add(&axe.Task{
+		Job: &fooJob{},
+		Handler: func(ctx *axe.Context) error {
+			return nil
+		},
+	})
+	queue.Run()
+
+	n := tt.Await(t, 0, func() {
+		ok, err := queue.Enqueue(nil, &fooJob{}, 0, 0)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	})
+	assert.Equal(t, 1, n)
+
+	n = tt.Await(t, 10*time.Millisecond, func() {})
+	assert.Equal(t, 0, n)
 }
