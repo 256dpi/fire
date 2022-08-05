@@ -23,10 +23,11 @@ func (m *postModel) Validate() error {
 }
 
 type commentModel struct {
-	Base    `json:"-" bson:",inline" coal:"comments"`
-	Message string `json:"message"`
-	Parent  *ID    `json:"-" coal:"parent:comments"`
-	Post    ID     `json:"-" bson:"post_id" coal:"post:posts"`
+	Base     `json:"-" bson:",inline" coal:"comments"`
+	Message  string  `json:"message"`
+	Post     ID      `json:"-" bson:"post_id" coal:"post:posts"`
+	Parent   *ID     `json:"-" coal:"parent:comments"`
+	Children HasMany `json:"-" bson:"-" coal:"children:comments:parent"`
 }
 
 func (m *commentModel) Validate() error {
