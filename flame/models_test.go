@@ -9,6 +9,10 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
+func TestModels(t *testing.T) {
+	assert.NoError(t, coal.Verify(modelList, "flame.Token#application", "flame.Token#user"))
+}
+
 func TestIndexes(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		tester.Drop(&Token{}, &Application{}, &User{})

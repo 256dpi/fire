@@ -7,6 +7,6 @@ import (
 )
 
 func TestVerify(t *testing.T) {
-	err := Verify(modelList...)
+	err := Verify(modelList)
 	assert.NoError(t, err)
 }
