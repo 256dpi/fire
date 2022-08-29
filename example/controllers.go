@@ -18,7 +18,7 @@ func itemController(store *coal.Store, queue *axe.Queue, bucket *blaze.Bucket) *
 		},
 		Modifiers: fire.L{
 			bucket.Modifier(),
-			fire.TimestampModifier(),
+			fire.TimestampModifier("Created", "Updated"),
 		},
 		Validators: fire.L{
 			fire.RelationshipValidator(&Item{}, models.All()),

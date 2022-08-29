@@ -39,31 +39,26 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 }
 
 // TimestampModifier will set timestamp fields on create and update operations.
-// The fields are inferred from the model using the "fire-created-timestamp" and
-// "fire-updated-timestamp" flags. Missing created timestamps are retroactively
-// set using the timestamp encoded in the model id.
-func TimestampModifier() *Callback {
+// Missing created timestamps are retroactively set using the timestamp encoded
+// in the model id.
+func TimestampModifier(createdField, updatedField string) *Callback {
 	return C("fire/TimestampModifier", Modifier, Only(Create|Update), func(ctx *Context) error {
 		// get time
 		now := time.Now()
 
-		// get timestamp fields
-		ctf := coal.L(ctx.Model, "fire-created-timestamp", false)
-		utf := coal.L(ctx.Model, "fire-updated-timestamp", false)
-
 		// set created timestamp on creation and set missing create timestamps
 		// to the timestamp inferred from the model id
-		if ctf != "" {
+		if createdField != "" {
 			if ctx.Operation == Create {
-				stick.MustSet(ctx.Model, ctf, now)
-			} else if t := stick.MustGet(ctx.Model, ctf).(time.Time); t.IsZero() {
-				stick.MustSet(ctx.Model, ctf, ctx.Model.ID().Timestamp())
+				stick.MustSet(ctx.Model, createdField, now)
+			} else if t := stick.MustGet(ctx.Model, createdField).(time.Time); t.IsZero() {
+				stick.MustSet(ctx.Model, createdField, ctx.Model.ID().Timestamp())
 			}
 		}
 
 		// always set updated timestamp
-		if utf != "" {
-			stick.MustSet(ctx.Model, utf, now)
+		if updatedField != "" {
+			stick.MustSet(ctx.Model, updatedField, now)
 		}
 
 		return nil

@@ -56,19 +56,19 @@ func TestTimestampModifier(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		type model struct {
 			coal.Base          `json:"-" bson:",inline" coal:"posts"`
-			CreatedAt          time.Time `coal:"fire-created-timestamp"`
-			UpdateAt           time.Time `coal:"fire-updated-timestamp"`
+			CreatedAt          time.Time
+			UpdatedAt          time.Time
 			stick.NoValidation `json:"-" bson:"-"`
 		}
 
 		m := &model{}
 
-		validator := TimestampModifier()
+		validator := TimestampModifier("CreatedAt", "UpdatedAt")
 
 		err := tester.RunCallback(&Context{Operation: Create, Model: m}, validator)
 		assert.NoError(t, err)
 		assert.True(t, !m.CreatedAt.IsZero())
-		assert.True(t, !m.UpdateAt.IsZero())
+		assert.True(t, !m.UpdatedAt.IsZero())
 	})
 }
 
