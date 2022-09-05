@@ -219,6 +219,13 @@ type Context struct {
 	// Operations: Update
 	Original coal.Model
 
+	// The model from the which the related resources are loaded.
+	//
+	// Usage: Read only
+	// Availability: Authorizers
+	// Operations: List?, Find?
+	Parent coal.Model
+
 	// The document that has been received by the client.
 	//
 	// Usage: Read only

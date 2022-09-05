@@ -906,6 +906,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 	subCtx := &Context{
 		Context:        ctx,
 		Data:           stick.Map{},
+		Parent:         ctx.Model,
 		HTTPRequest:    ctx.HTTPRequest,
 		ResponseWriter: nil,
 		Controller:     rc,
