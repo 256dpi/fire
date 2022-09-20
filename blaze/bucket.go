@@ -438,7 +438,7 @@ func (b *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owne
 
 	// update link
 	*link = Link{
-		Ref:      link.Ref,
+		Ref:      coal.New().Hex(),
 		File:     file.ID(),
 		FileName: file.Name,
 		FileType: file.Type,

@@ -17,22 +17,22 @@ const maxFileNameLength = 256
 
 // Link is used to link a file to a model.
 type Link struct {
-	// The user definable reference of the link.
+	// The local unique link reference. This value is used to map links in lists
+	// and thus allow list layout changes. New links must be initialized with a
+	// locally unique value. On changes the reference is automatically set to a
+	// new globally unique value.
 	Ref string `json:"ref"`
 
-	// The name of the linked files.
+	// The read-only name, type and size of the linked file.
 	Name string `json:"name" bson:"-"`
-
-	// The media type of the linked file.
 	Type string `json:"type" bson:"-"`
+	Size int64  `json:"size" bson:"-"`
 
-	// The size of the linked file.
-	Size int64 `json:"size" bson:"-"`
-
-	// The key for claiming a file.
+	// The key for claiming a file. This value may be set by the client to link
+	// a new file.
 	ClaimKey string `json:"claim-key" bson:"-"`
 
-	// The key for viewing the linked file.
+	// The read-only key for viewing the linked file.
 	ViewKey string `json:"view-key" bson:"-"`
 
 	// The internal reference to the linked file.
@@ -96,13 +96,13 @@ func (l *Links) UnmarshalJSON(bytes []byte) error {
 }
 
 // Validate will validate the links.
-func (l Links) Validate(uniqueFilenames bool, whitelist ...string) error {
+func (l *Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 	// prepare maps
-	refs := make(map[string]bool, len(l))
-	names := make(map[string]bool, len(l))
+	refs := make(map[string]bool, len(*l))
+	names := make(map[string]bool, len(*l))
 
 	// validate all links
-	for _, link := range l {
+	for _, link := range *l {
 		// validate link
 		err := link.Validate(uniqueFilenames, whitelist...)
 		if err != nil {

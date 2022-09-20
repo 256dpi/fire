@@ -852,6 +852,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file1.ID(), model.MultipleFiles[0].File)
+		assert.NotEqual(t, "1", model.MultipleFiles[0].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -893,6 +894,7 @@ func TestBucketModifierMultiple(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
+		assert.NotEqual(t, "2", model.MultipleFiles[1].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -927,6 +929,8 @@ func TestBucketModifierMultiple(t *testing.T) {
 			model.MultipleFiles[1],
 		}
 
+		ref1 := model.MultipleFiles[0].Ref
+
 		err = tester.RunCallback(&fire.Context{
 			Operation: fire.Update,
 			Model:     model,
@@ -936,7 +940,9 @@ func TestBucketModifierMultiple(t *testing.T) {
 			},
 		}, modifier)
 		assert.NoError(t, err)
+		assert.Equal(t, file3.ID(), model.MultipleFiles[0].File)
 		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
+		assert.NotEqual(t, ref1, model.MultipleFiles[0].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)
