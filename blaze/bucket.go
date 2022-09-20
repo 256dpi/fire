@@ -718,7 +718,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 func (b *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
-	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
+	updated := oldLink != nil && newLink != nil && (newLink.ClaimKey != "" || newLink.Ref != oldLink.Ref)
 	deleted := oldLink != nil && newLink == nil
 
 	// release old file

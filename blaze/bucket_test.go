@@ -737,6 +737,25 @@ func TestBucketModifierOptional(t *testing.T) {
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
 
+		/* ref change */
+
+		link := *model.OptionalFile
+		link.Ref = "foo"
+
+		err = tester.RunCallback(&fire.Context{
+			Operation: fire.Update,
+			Model: &testModel{
+				RequiredFile: model.RequiredFile,
+				OptionalFile: &link,
+			},
+			Original: model,
+			Controller: &fire.Controller{
+				Model: &testModel{},
+			},
+		}, modifier)
+		assert.Error(t, err)
+		assert.Equal(t, "OptionalFile: missing claim key", err.Error())
+
 		/* update */
 
 		file2 := tester.Insert(&File{
@@ -771,6 +790,7 @@ func TestBucketModifierOptional(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file2.ID(), model.OptionalFile.File)
+		assert.NotEqual(t, original.OptionalFile.Ref, model.OptionalFile.Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)
