@@ -145,15 +145,13 @@ func (t *Tester) RunAction(ctx *Context, action *Action) (*httptest.ResponseReco
 
 // RunHandler builds a context and runs the passed handler with it.
 func (t *Tester) RunHandler(ctx *Context, h Handler) error {
-	var err error
-	t.WithContext(ctx, func(ctx *Context) {
-		err = h(ctx)
+	return t.WithContext(ctx, func(ctx *Context) error {
+		return h(ctx)
 	})
-	return err
 }
 
 // WithContext runs the given function with a prepared context.
-func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
+func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context) error) error {
 	// ensure context
 	if ctx == nil {
 		ctx = &Context{}
@@ -232,15 +230,14 @@ func (t *Tester) WithContext(ctx *Context, fn func(ctx *Context)) {
 
 	// yield context
 	if !ctx.Operation.Action() && ctx.Store != nil {
-		_ = ctx.Store.T(ctx.Context, false, func(tc context.Context) error {
-			ctx.With(tc, func() {
-				fn(ctx)
+		return ctx.Store.T(ctx.Context, false, func(tc context.Context) error {
+			return ctx.With(tc, func() error {
+				return fn(ctx)
 			})
-			return nil
 		})
-	} else {
-		fn(ctx)
 	}
+
+	return fn(ctx)
 }
 
 // Request will run the specified request against the registered handler. This

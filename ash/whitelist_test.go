@@ -65,13 +65,15 @@ func TestWhitelist(t *testing.T) {
 		ReadableProperties: []string{"Info"},
 	}
 
-	tester.WithContext(ctx, func(ctx *fire.Context) {
+	_ = tester.WithContext(ctx, func(ctx *fire.Context) error {
 		err := strategy.Handler(ctx)
 		assert.NoError(t, err)
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
 		assert.Equal(t, []string{"Info"}, ctx.ReadableProperties)
+
+		return nil
 	})
 
 	ctx = &fire.Context{
@@ -82,13 +84,15 @@ func TestWhitelist(t *testing.T) {
 		ReadableProperties: []string{"Info"},
 	}
 
-	tester.WithContext(ctx, func(ctx *fire.Context) {
+	_ = tester.WithContext(ctx, func(ctx *fire.Context) error {
 		err := strategy.Handler(ctx)
 		assert.NoError(t, err)
 
 		assert.Equal(t, []string{"Title", "Published"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Title"}, ctx.WritableFields)
 		assert.Empty(t, ctx.ReadableProperties)
+
+		return nil
 	})
 }
 
@@ -105,7 +109,7 @@ func TestWhitelistFields(t *testing.T) {
 		WritableFields: []string{"Foo", "Bar", "Baz"},
 	}
 
-	tester.WithContext(ctx, func(ctx *fire.Context) {
+	_ = tester.WithContext(ctx, func(ctx *fire.Context) error {
 		enforcers, err := authorizer.Handler(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, enforcers, 3)
@@ -117,6 +121,8 @@ func TestWhitelistFields(t *testing.T) {
 
 		assert.Equal(t, []string{"Foo", "Bar"}, ctx.ReadableFields)
 		assert.Equal(t, []string{"Bar"}, ctx.WritableFields)
+
+		return nil
 	})
 }
 
@@ -129,7 +135,7 @@ func TestWhitelistProperties(t *testing.T) {
 		ReadableProperties: []string{"Foo", "Bar", "Baz"},
 	}
 
-	tester.WithContext(ctx, func(ctx *fire.Context) {
+	_ = tester.WithContext(ctx, func(ctx *fire.Context) error {
 		enforcers, err := authorizer.Handler(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, enforcers, 2)
@@ -140,5 +146,7 @@ func TestWhitelistProperties(t *testing.T) {
 		}
 
 		assert.Equal(t, []string{"Foo", "Bar"}, ctx.ReadableProperties)
+
+		return nil
 	})
 }

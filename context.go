@@ -289,7 +289,7 @@ type Context struct {
 
 // With will run the provided function with the specified context temporarily
 // set on the context. This is especially useful together with transactions.
-func (c *Context) With(ctx context.Context, fn func()) {
+func (c *Context) With(ctx context.Context, fn func() error) error {
 	// retain current context and tracer
 	oc := c.Context
 	ot := c.Tracer
@@ -301,12 +301,14 @@ func (c *Context) With(ctx context.Context, fn func()) {
 		c.Context = ctx
 	}
 
-	// yield
-	fn()
+	// ensure switchback
+	defer func() {
+		c.Context = oc
+		c.Tracer = ot
+	}()
 
-	// switchback
-	c.Context = oc
-	c.Tracer = ot
+	// yield
+	return fn()
 }
 
 // Defer will defer the provided handler and run it after all controller

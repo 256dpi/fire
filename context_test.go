@@ -14,8 +14,9 @@ func TestContextWith(t *testing.T) {
 	type key int
 	c := context.WithValue(context.Background(), key(1), 2)
 	ctx := &Context{Operation: List}
-	ctx.With(c, func() {
+	_ = ctx.With(c, func() error {
 		assert.True(t, ctx.Context == c)
+		return nil
 	})
 	assert.True(t, ctx.Context != c)
 }

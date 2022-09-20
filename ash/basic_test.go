@@ -14,13 +14,15 @@ import (
 func TestPublic(t *testing.T) {
 	/* no auth */
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		enf, err := Public().Handler(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, enf, 1)
 
 		err = enf[0].Handler(ctx)
 		assert.NoError(t, err)
+
+		return nil
 	})
 
 	/* with auth */
@@ -32,23 +34,27 @@ func TestPublic(t *testing.T) {
 	tester.Context = context.WithValue(tester.Context, flame.ResourceOwnerContextKey, user)
 	tester.Context = context.WithValue(tester.Context, flame.AccessTokenContextKey, token)
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		err := tester.RunCallback(ctx, flame.Callback(false, "foo"))
 		assert.NoError(t, err)
 
 		enf, err := Public().Handler(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, enf)
+
+		return nil
 	})
 }
 
 func TestToken(t *testing.T) {
 	/* no auth */
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		enf, err := Token().Handler(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, enf)
+
+		return nil
 	})
 
 	/* with auth */
@@ -60,7 +66,7 @@ func TestToken(t *testing.T) {
 	tester.Context = context.WithValue(tester.Context, flame.ResourceOwnerContextKey, user)
 	tester.Context = context.WithValue(tester.Context, flame.AccessTokenContextKey, token)
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		err := tester.RunCallback(ctx, flame.Callback(false, "foo"))
 		assert.NoError(t, err)
 
@@ -70,11 +76,13 @@ func TestToken(t *testing.T) {
 
 		err = enf[0].Handler(ctx)
 		assert.NoError(t, err)
+
+		return nil
 	})
 
 	/* correct scope */
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		err := tester.RunCallback(ctx, flame.Callback(false, "foo"))
 		assert.NoError(t, err)
 
@@ -84,24 +92,28 @@ func TestToken(t *testing.T) {
 
 		err = enf[0].Handler(ctx)
 		assert.NoError(t, err)
+
+		return nil
 	})
 
 	/* incorrect scope */
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		err := tester.RunCallback(ctx, flame.Callback(false, "foo"))
 		assert.NoError(t, err)
 
 		enf, err := Token("bar").Handler(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, enf)
+
+		return nil
 	})
 }
 
 func TestFilter(t *testing.T) {
 	/* no auth */
 
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		enf, err := Filter(bson.M{
 			"foo": "bar",
 		}).Handler(ctx)
@@ -115,5 +127,7 @@ func TestFilter(t *testing.T) {
 		assert.Equal(t, []bson.M{{
 			"foo": "bar",
 		}}, ctx.Filters)
+
+		return nil
 	})
 }

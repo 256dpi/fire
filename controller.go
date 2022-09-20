@@ -441,10 +441,10 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	// run operation with transaction if not an action
 	if !ctx.Operation.Action() {
 		xo.AbortIf(c.Store.T(ctx.Context, ctx.Operation.Read(), func(tc context.Context) error {
-			ctx.With(tc, func() {
+			return ctx.With(tc, func() error {
 				c.runOperation(ctx)
+				return nil
 			})
-			return nil
 		}))
 	} else {
 		c.runOperation(ctx)

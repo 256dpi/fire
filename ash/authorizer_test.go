@@ -15,7 +15,7 @@ func TestA(t *testing.T) {
 }
 
 func TestAnd(t *testing.T) {
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		enforcers, err := And(accessGranted(), accessGranted()).Handler(ctx)
 		assert.NoError(t, err)
 		assert.NotNil(t, enforcers)
@@ -58,11 +58,13 @@ func TestAnd(t *testing.T) {
 		enforcers, err = blank().And(accessGranted()).Handler(ctx)
 		assert.NoError(t, err)
 		assert.Nil(t, enforcers)
+
+		return nil
 	})
 }
 
 func TestOr(t *testing.T) {
-	tester.WithContext(nil, func(ctx *fire.Context) {
+	_ = tester.WithContext(nil, func(ctx *fire.Context) error {
 		enforcers, err := Or(accessGranted(), accessGranted()).Handler(ctx)
 		assert.NoError(t, err)
 		assert.NotNil(t, enforcers)
@@ -98,5 +100,7 @@ func TestOr(t *testing.T) {
 		assert.NotNil(t, enforcers)
 		assert.Len(t, enforcers, 1)
 		assert.NoError(t, tester.RunCallback(ctx, enforcers[0]))
+
+		return nil
 	})
 }
