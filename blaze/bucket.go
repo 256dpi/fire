@@ -438,7 +438,7 @@ func (b *Bucket) ClaimLink(ctx context.Context, link *Link, binding string, owne
 
 	// update link
 	*link = Link{
-		Ref:      coal.New().Hex(),
+		Ref:      link.Ref,
 		File:     file.ID(),
 		FileName: file.Name,
 		FileType: file.Type,
@@ -718,7 +718,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 func (b *Bucket) modifyLink(ctx context.Context, newLink, oldLink *Link, binding string, owner coal.ID) error {
 	// detect change
 	added := oldLink == nil && newLink != nil
-	updated := oldLink != nil && newLink != nil && (newLink.ClaimKey != "" || newLink.Ref != oldLink.Ref)
+	updated := oldLink != nil && newLink != nil && newLink.ClaimKey != ""
 	deleted := oldLink != nil && newLink == nil
 
 	// release old file

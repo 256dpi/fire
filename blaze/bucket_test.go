@@ -737,25 +737,6 @@ func TestBucketModifierOptional(t *testing.T) {
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
 
-		/* ref change */
-
-		link := *model.OptionalFile
-		link.Ref = "foo"
-
-		err = tester.RunCallback(&fire.Context{
-			Operation: fire.Update,
-			Model: &testModel{
-				RequiredFile: model.RequiredFile,
-				OptionalFile: &link,
-			},
-			Original: model,
-			Controller: &fire.Controller{
-				Model: &testModel{},
-			},
-		}, modifier)
-		assert.Error(t, err)
-		assert.Equal(t, "OptionalFile: missing claim key", err.Error())
-
 		/* update */
 
 		file2 := tester.Insert(&File{
@@ -790,7 +771,6 @@ func TestBucketModifierOptional(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file2.ID(), model.OptionalFile.File)
-		assert.NotEqual(t, original.OptionalFile.Ref, model.OptionalFile.Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)
@@ -872,7 +852,6 @@ func TestBucketModifierMultiple(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file1.ID(), model.MultipleFiles[0].File)
-		assert.NotEqual(t, "1", model.MultipleFiles[0].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -914,7 +893,6 @@ func TestBucketModifierMultiple(t *testing.T) {
 		}, modifier)
 		assert.NoError(t, err)
 		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
-		assert.NotEqual(t, "2", model.MultipleFiles[1].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Claimed, file1.State)
@@ -949,8 +927,6 @@ func TestBucketModifierMultiple(t *testing.T) {
 			model.MultipleFiles[1],
 		}
 
-		ref1 := model.MultipleFiles[0].Ref
-
 		err = tester.RunCallback(&fire.Context{
 			Operation: fire.Update,
 			Model:     model,
@@ -962,7 +938,6 @@ func TestBucketModifierMultiple(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, file3.ID(), model.MultipleFiles[0].File)
 		assert.Equal(t, file2.ID(), model.MultipleFiles[1].File)
-		assert.NotEqual(t, ref1, model.MultipleFiles[0].Ref)
 
 		file1 = tester.Fetch(&File{}, file1.ID()).(*File)
 		assert.Equal(t, Released, file1.State)

@@ -19,8 +19,7 @@ const maxFileNameLength = 256
 type Link struct {
 	// The local unique link reference. This value is used to map links in lists
 	// and thus allow list layout changes. New links must be initialized with a
-	// locally unique value. On changes the reference is automatically set to a
-	// new globally unique value.
+	// locally unique value.
 	Ref string `json:"ref"`
 
 	// The read-only name, type and size of the linked file.
