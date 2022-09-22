@@ -98,6 +98,7 @@ func (l *Links) UnmarshalJSON(bytes []byte) error {
 func (l *Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 	// prepare maps
 	refs := make(map[string]bool, len(*l))
+	files := make(map[coal.ID]bool, len(*l))
 	names := make(map[string]bool, len(*l))
 
 	// validate all links
@@ -111,6 +112,11 @@ func (l *Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 		// check ref uniqueness
 		if refs[link.Ref] {
 			return xo.SF("ambiguous reference")
+		}
+
+		// check file uniqueness
+		if files[link.File] {
+			return xo.SF("ambiguous file")
 		}
 
 		// check filename uniqueness
