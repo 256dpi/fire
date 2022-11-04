@@ -72,4 +72,16 @@ func TestRegistry(t *testing.T) {
 	})
 
 	assert.Equal(t, []*registryItem{item}, registry.All())
+
+	v, ok = registry.Lookup(0, "foo")
+	assert.True(t, ok)
+	assert.Equal(t, item, v)
+
+	v, ok = registry.Lookup(1, "foo")
+	assert.False(t, ok)
+	assert.NotEqual(t, item, v)
+
+	v, ok = registry.Lookup(1, "bar")
+	assert.True(t, ok)
+	assert.Equal(t, item, v)
 }

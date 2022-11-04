@@ -64,7 +64,7 @@ func (r *Registry[T]) Add(values ...T) {
 	}
 }
 
-// Get will attempt to look up a value using the specified predicate.
+// Get will attempt to find up a value using the specified predicate.
 func (r *Registry[T]) Get(predicate T) (T, bool) {
 	// check indexes
 	for i, index := range r.indexes {
@@ -98,4 +98,12 @@ func (r *Registry[T]) All() []T {
 	copy(list, r.list)
 
 	return list
+}
+
+// Lookup will attempt to look up a valued using the specified index and key.
+func (r *Registry[T]) Lookup(index int, key string) (T, bool) {
+	// get value
+	value, ok := r.indexes[index][key]
+
+	return value, ok
 }
