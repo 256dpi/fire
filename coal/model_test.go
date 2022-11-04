@@ -53,3 +53,17 @@ func TestSlice(t *testing.T) {
 	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice2a)
 	assert.Equal(t, []Model{&postModel{Title: "bar"}}, slice2b)
 }
+
+func TestRegistry(t *testing.T) {
+	registry := NewRegistry(&postModel{}, &commentModel{})
+	assert.Equal(t, []Model{&postModel{}, &commentModel{}}, registry.All())
+
+	registry.Add(&noteModel{})
+	assert.Equal(t, []Model{&postModel{}, &commentModel{}, &noteModel{}}, registry.All())
+
+	model := registry.Lookup("posts")
+	assert.Equal(t, &postModel{}, model)
+
+	model = registry.Lookup("foo")
+	assert.Nil(t, model)
+}

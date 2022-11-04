@@ -81,13 +81,28 @@ func Slice(val interface{}) []Model {
 	return models
 }
 
+// Registry is a collection of known models.
+type Registry struct {
+	*stick.Registry[Model]
+}
+
 // NewRegistry will return a model registry indexed by plural name.
-func NewRegistry(models ...Model) *stick.Registry[Model] {
-	return stick.NewRegistry(models,
-		nil,
-		// index by plural name
-		func(model Model) string {
-			return GetMeta(model).PluralName
-		},
-	)
+func NewRegistry(models ...Model) *Registry {
+	return &Registry{
+		Registry: stick.NewRegistry(models,
+			nil,
+			// index by plural name
+			func(model Model) string {
+				return GetMeta(model).PluralName
+			},
+		),
+	}
+}
+
+// Lookup will lookup a model by its plural name.
+func (r *Registry) Lookup(pluralName string) Model {
+	// lookup model
+	model, _ := r.Registry.Lookup(0, pluralName)
+
+	return model
 }
