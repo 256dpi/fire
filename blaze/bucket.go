@@ -28,7 +28,7 @@ import (
 type Bucket struct {
 	store    *coal.Store
 	notary   *heat.Notary
-	bindings *stick.Registry[*Binding]
+	bindings *Registry
 	services map[string]Service
 	uploader []string
 }

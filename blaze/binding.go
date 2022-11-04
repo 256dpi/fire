@@ -39,20 +39,27 @@ func (b *Binding) Validate() error {
 	})
 }
 
+// Registry is a collection of known bindings.
+type Registry struct {
+	*stick.Registry[*Binding]
+}
+
 // NewRegistry returns a binding registry indexed by the binding name and
 // owner/field tuple.
-func NewRegistry(bindings ...*Binding) *stick.Registry[*Binding] {
-	return stick.NewRegistry(bindings,
-		func(b *Binding) error {
-			return b.Validate()
-		},
-		// index by name
-		func(b *Binding) string {
-			return b.Name
-		},
-		// index by owner and field
-		func(b *Binding) string {
-			return coal.GetMeta(b.Model).Name + "/" + b.Field
-		},
-	)
+func NewRegistry(bindings ...*Binding) *Registry {
+	return &Registry{
+		Registry: stick.NewRegistry(bindings,
+			func(b *Binding) error {
+				return b.Validate()
+			},
+			// index by name
+			func(b *Binding) string {
+				return b.Name
+			},
+			// index by owner and field
+			func(b *Binding) string {
+				return coal.GetMeta(b.Model).Name + "/" + b.Field
+			},
+		),
+	}
 }
