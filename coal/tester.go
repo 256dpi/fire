@@ -29,15 +29,25 @@ func NewTester(store *Store, models ...Model) *Tester {
 		Models: models,
 	}
 
-	// ensure collections
-	for _, model := range models {
-		_, _ = store.C(model).InsertOne(nil, GetMeta(model).Make())
-	}
-
 	// clean
 	tester.Clean()
 
 	return tester
+}
+
+// Ensure will ensure existing collections by inserting models and cleaning
+// them right after.
+func (t *Tester) Ensure() {
+	// ensure collections
+	for _, model := range t.Models {
+		_, err := t.Store.C(model).InsertOne(nil, GetMeta(model).Make())
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// clean
+	t.Clean()
 }
 
 // FindAll will return all saved models.
