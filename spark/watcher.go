@@ -44,7 +44,7 @@ func (w *Watcher) Add(stream *Stream) {
 // Action returns an action that should be registered in the group under
 // the "watch" name.
 func (w *Watcher) Action() *fire.Action {
-	return fire.A("spark/Watcher.Action", []string{"GET"}, 0, func(ctx *fire.Context) error {
+	return fire.A("spark/Watcher.Action", []string{"GET"}, 0, 0, func(ctx *fire.Context) error {
 		// handle connection
 		err := w.manager.handle(ctx)
 		if err != nil {

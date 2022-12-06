@@ -78,12 +78,12 @@ func TestTesterCall(t *testing.T) {
 	tt.Assign("", &fire.Controller{
 		Model: &fooModel{},
 		CollectionActions: fire.M{
-			"bar": fire.A("foo", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"bar": fire.A("foo", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return ctx.Respond(stick.Map{
 					"ok": true,
 				})
 			}),
-			"baz": fire.A("foo", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"baz": fire.A("foo", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return xo.SF("failed")
 			}),
 		},

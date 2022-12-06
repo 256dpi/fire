@@ -228,7 +228,7 @@ func (b *Bucket) UploadAction(limit int64) *fire.Action {
 		limit = serve.MustByteSize("8M")
 	}
 
-	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, func(ctx *fire.Context) error {
+	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")
@@ -982,7 +982,7 @@ func (b *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File,
 // DownloadAction returns an endpoint that allows downloading files using view
 // keys. This action is usually publicly accessible.
 func (b *Bucket) DownloadAction() *fire.Action {
-	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, func(ctx *fire.Context) error {
+	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, 0, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")

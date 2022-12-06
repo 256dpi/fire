@@ -3474,7 +3474,7 @@ func TestCallbacks(t *testing.T) {
 			return nil
 		})
 
-		action := A("Test", []string{"GET"}, 0, func(ctx *Context) error {
+		action := A("Test", []string{"GET"}, 0, 0, func(ctx *Context) error {
 			return nil
 		})
 
@@ -6452,7 +6452,7 @@ func TestCollectionActions(t *testing.T) {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
 				CollectionActions: M{
-					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+					"": A("foo", []string{"POST"}, 0, 0, func(ctx *Context) error {
 						return nil
 					}),
 				},
@@ -6464,7 +6464,7 @@ func TestCollectionActions(t *testing.T) {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
 				CollectionActions: M{
-					id: A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+					id: A("foo", []string{"POST"}, 0, 0, func(ctx *Context) error {
 						return nil
 					}),
 				},
@@ -6474,7 +6474,7 @@ func TestCollectionActions(t *testing.T) {
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
 			CollectionActions: M{
-				"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
+				"bytes": A("bytes", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
@@ -6484,14 +6484,14 @@ func TestCollectionActions(t *testing.T) {
 
 					return nil
 				}),
-				"empty": A("empty", []string{"POST"}, 0, func(ctx *Context) error {
+				"empty": A("empty", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
 
 					return nil
 				}),
-				"error": A("error", []string{"POST"}, 3, func(ctx *Context) error {
+				"error": A("error", []string{"POST"}, 3, 0, func(ctx *Context) error {
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte{}, bytes)
@@ -6542,7 +6542,7 @@ func TestResourceActions(t *testing.T) {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
 				ResourceActions: M{
-					"": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+					"": A("foo", []string{"POST"}, 0, 0, func(ctx *Context) error {
 						return nil
 					}),
 				},
@@ -6553,7 +6553,7 @@ func TestResourceActions(t *testing.T) {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
 				ResourceActions: M{
-					"relationships": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+					"relationships": A("foo", []string{"POST"}, 0, 0, func(ctx *Context) error {
 						return nil
 					}),
 				},
@@ -6564,7 +6564,7 @@ func TestResourceActions(t *testing.T) {
 			tester.Assign("api", &Controller{
 				Model: &postModel{},
 				ResourceActions: M{
-					"note": A("foo", []string{"POST"}, 0, func(ctx *Context) error {
+					"note": A("foo", []string{"POST"}, 0, 0, func(ctx *Context) error {
 						return nil
 					}),
 				},
@@ -6574,7 +6574,7 @@ func TestResourceActions(t *testing.T) {
 		tester.Assign("api", &Controller{
 			Model: &postModel{},
 			ResourceActions: M{
-				"bytes": A("bytes", []string{"POST"}, 0, func(ctx *Context) error {
+				"bytes": A("bytes", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -6586,7 +6586,7 @@ func TestResourceActions(t *testing.T) {
 
 					return nil
 				}),
-				"empty": A("empty", []string{"POST"}, 0, func(ctx *Context) error {
+				"empty": A("empty", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
@@ -6595,7 +6595,7 @@ func TestResourceActions(t *testing.T) {
 
 					return nil
 				}),
-				"error": A("error", []string{"POST"}, 3, func(ctx *Context) error {
+				"error": A("error", []string{"POST"}, 3, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
 					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)

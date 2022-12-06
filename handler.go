@@ -83,7 +83,7 @@ type Action struct {
 type M = map[string]*Action
 
 // A is a shorthand function to construct an action.
-func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
+func A(name string, methods []string, bodyLimit int64, timeout time.Duration, h Handler) *Action {
 	// panic if methods or handler is not set
 	if len(methods) == 0 || h == nil {
 		panic("fire: missing methods or handler")
@@ -92,6 +92,7 @@ func A(name string, methods []string, bodyLimit int64, h Handler) *Action {
 	return &Action{
 		Methods:   methods,
 		BodyLimit: bodyLimit,
+		Timeout:   timeout,
 		Handler: func(ctx *Context) error {
 			// trace
 			ctx.Tracer.Push(name)

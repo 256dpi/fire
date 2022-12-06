@@ -126,18 +126,18 @@ func TestPolicy(t *testing.T) {
 			Execute(),
 		},
 		CollectionActions: fire.M{
-			"c1": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"c1": fire.A("c1", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return nil
 			}),
-			"c2": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"c2": fire.A("c1", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return nil
 			}),
 		},
 		ResourceActions: fire.M{
-			"r1": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"r1": fire.A("c1", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return nil
 			}),
-			"r2": fire.A("c1", []string{"POST"}, 128, func(ctx *fire.Context) error {
+			"r2": fire.A("c1", []string{"POST"}, 128, 0, func(ctx *fire.Context) error {
 				return nil
 			}),
 		},
