@@ -222,13 +222,18 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 // UploadAction returns an action that provides an upload endpoint that stores
 // files and returns claim keys. The action should be protected and only allow
 // authorized clients.
-func (b *Bucket) UploadAction(limit int64) *fire.Action {
+func (b *Bucket) UploadAction(limit int64, timeout time.Duration) *fire.Action {
 	// set default limit
 	if limit == 0 {
 		limit = serve.MustByteSize("8M")
 	}
 
-	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, 0, func(ctx *fire.Context) error {
+	// set default timeout
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
+
+	return fire.A("blaze/Bucket.UploadAction", []string{"POST"}, limit, timeout, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")
@@ -981,8 +986,13 @@ func (b *Bucket) DownloadFile(ctx context.Context, id coal.ID) (Download, *File,
 
 // DownloadAction returns an endpoint that allows downloading files using view
 // keys. This action is usually publicly accessible.
-func (b *Bucket) DownloadAction() *fire.Action {
-	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, 0, func(ctx *fire.Context) error {
+func (b *Bucket) DownloadAction(timeout time.Duration) *fire.Action {
+	// set default timeout
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
+
+	return fire.A("blaze/Bucket.DownloadAction", []string{"HEAD", "GET"}, 0, timeout, func(ctx *fire.Context) error {
 		// check store
 		if ctx.Store != nil && ctx.Store != b.store {
 			return xo.F("stores must be identical")

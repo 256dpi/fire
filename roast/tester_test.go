@@ -121,10 +121,10 @@ func TestTesterUploadDownload(t *testing.T) {
 		Decorators: fire.L{bucket.Decorator()},
 	})
 	group.Handle("upload", &fire.GroupAction{
-		Action: bucket.UploadAction(0),
+		Action: bucket.UploadAction(0, 0),
 	})
 	group.Handle("download", &fire.GroupAction{
-		Action: bucket.DownloadAction(),
+		Action: bucket.DownloadAction(0),
 	})
 
 	tt.Handler = group.Endpoint("api")

@@ -139,7 +139,7 @@ func TestBucketUploadAction(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -182,7 +182,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "expected attachment content disposition", res.Body.String())
@@ -193,7 +193,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -233,7 +233,7 @@ func TestBucketUploadActionInvalidContentType(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "invalid content type", res.Body.String())
@@ -255,7 +255,7 @@ func TestBucketUploadActionInvalidContentLength(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "invalid content length", res.Body.String())
@@ -277,7 +277,7 @@ func TestBucketUploadActionLimit(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(1))
+		}, bucket.UploadAction(1, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -323,7 +323,7 @@ func TestBucketUploadActionMultipart(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.Code)
 		assert.NotEmpty(t, res.Body.String())
@@ -392,7 +392,7 @@ func TestBucketUploadActionMultipartInvalidContentType(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "invalid content type", res.Body.String())
@@ -426,7 +426,7 @@ func TestBucketUploadActionMultipartInvalidContentLength(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(0))
+		}, bucket.UploadAction(0, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "invalid content length", res.Body.String())
@@ -460,7 +460,7 @@ func TestBucketUploadActionMultipartLimit(t *testing.T) {
 		res, err := tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
 			HTTPRequest: req,
-		}, bucket.UploadAction(1))
+		}, bucket.UploadAction(1, 0))
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 		assert.Equal(t, "", res.Body.String())
@@ -1153,7 +1153,7 @@ func TestBucketDownloadAction(t *testing.T) {
 		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
 		bucket.Use(NewMemory(), "default", true)
 
-		action := bucket.DownloadAction()
+		action := bucket.DownloadAction(0)
 
 		/* no key */
 
@@ -1243,7 +1243,7 @@ func TestBucketDownloadActionStream(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, key)
 
-		action := bucket.DownloadAction()
+		action := bucket.DownloadAction(0)
 
 		req := httptest.NewRequest("HEAD", "/foo?key="+key, nil)
 		rec, err := tester.RunAction(&fire.Context{

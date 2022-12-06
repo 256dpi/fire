@@ -204,7 +204,7 @@ func createHandler(store *coal.Store) http.Handler {
 		Authorizers: fire.L{
 			flame.Callback(true),
 		},
-		Action: bucket.UploadAction(serve.MustByteSize("16M")),
+		Action: bucket.UploadAction(serve.MustByteSize("16M"), time.Minute),
 	})
 
 	// add download action
@@ -212,7 +212,7 @@ func createHandler(store *coal.Store) http.Handler {
 		Authorizers: fire.L{
 			// public endpoint
 		},
-		Action: bucket.DownloadAction(),
+		Action: bucket.DownloadAction(time.Minute),
 	})
 
 	// register group
