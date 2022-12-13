@@ -49,6 +49,17 @@ func TestTesterErrors(t *testing.T) {
 		Models: models.All(),
 	})
 
+	err := coal.EnsureIndexes(tt.Store, tt.Models...)
+	assert.NoError(t, err)
+
+	tt.Assign("", &fire.Controller{
+		Model: &fooModel{},
+	})
+
+	post := &fooModel{String: "String"}
+	post = tt.Create(t, post, post, post).Model.(*fooModel)
+	tt.CreateError(t, post, DocumentNotUnique)
+
 	tt.Assign("", &fire.Controller{
 		Model: &fooModel{},
 		Authorizers: fire.L{
@@ -61,7 +72,7 @@ func TestTesterErrors(t *testing.T) {
 		},
 	})
 
-	post := tt.Insert(&fooModel{})
+	post = tt.Insert(&fooModel{}).(*fooModel)
 
 	tt.ListError(t, &fooModel{}, AccessDenied)
 	tt.FindError(t, post, AccessDenied)

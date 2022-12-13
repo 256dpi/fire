@@ -34,6 +34,9 @@ var AccessDenied = fire.ErrAccessDenied.Self().(*xo.Err).Err
 // ResourceNotFound is the raw resource not found error value.
 var ResourceNotFound = fire.ErrResourceNotFound.Self().(*xo.Err).Err
 
+// DocumentNotUnique is thr raw document not unique error value.
+var DocumentNotUnique = fire.ErrDocumentNotUnique.Self().(*xo.Err).Err
+
 // Config provides configuration of a tester.
 type Config struct {
 	Tester           *fire.Tester

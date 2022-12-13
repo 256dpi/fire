@@ -9,6 +9,10 @@ import (
 
 var models = coal.NewRegistry(&fooModel{})
 
+func init() {
+	coal.AddIndex(&fooModel{}, true, 0, "String")
+}
+
 type fooModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"foos"`
 	String    string      `json:"string"`
