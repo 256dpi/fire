@@ -123,3 +123,86 @@ func (c *Client) Delete(model coal.Model) error {
 func getType(model coal.Model) string {
 	return coal.GetMeta(model).PluralName
 }
+
+// ModelClient is model specific client.
+type ModelClient[M coal.Model] struct {
+	*Client
+}
+
+// ClientFor creates a model specific client for the specified model using the
+// provided generic client.
+func ClientFor[M coal.Model](c *Client) *ModelClient[M] {
+	return &ModelClient[M]{
+		Client: c,
+	}
+}
+
+// List will return a list of models.
+func (c *ModelClient[M]) List(reqs ...jsonapi.Request) ([]M, *jsonapi.Document, error) {
+	// perform list
+	var zero M
+	models, doc, err := c.Client.List(zero, reqs...)
+	if err != nil {
+		return nil, doc, err
+	}
+
+	// convert models
+	list := make([]M, 0, len(models))
+	for _, m := range models {
+		list = append(list, m.(M))
+	}
+
+	return list, doc, nil
+}
+
+// Find will find and return the model with the provided ID.
+func (c *ModelClient[M]) Find(id coal.ID, reqs ...jsonapi.Request) (M, *jsonapi.Document, error) {
+	// perform find
+	var zero M
+	model := coal.GetMeta(zero).Make().(M)
+	model.GetBase().DocID = id
+	m, doc, err := c.Client.Find(model, reqs...)
+	if err != nil {
+		return zero, doc, err
+	}
+
+	return m.(M), doc, nil
+}
+
+// Create will create the provided model and return the created model.
+func (c *ModelClient[M]) Create(model M) (M, *jsonapi.Document, error) {
+	// perform create
+	m, doc, err := c.Client.Create(model)
+	if err != nil {
+		var zero M
+		return zero, doc, err
+	}
+
+	return m.(M), doc, nil
+}
+
+// Update will update the provided model and return the updated model.
+func (c *ModelClient[M]) Update(model M) (M, *jsonapi.Document, error) {
+	// perform update
+	m, doc, err := c.Client.Update(model)
+	if err != nil {
+		var zero M
+		return zero, doc, err
+	}
+
+	return m.(M), doc, nil
+}
+
+// Delete will delete the model with the provided ID.
+func (c *ModelClient[M]) Delete(id coal.ID) error {
+	// perform delete
+	var zero M
+	model := coal.GetMeta(zero).Make().(M)
+	model.GetBase().DocID = id
+	err := c.Client.Delete(model)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
