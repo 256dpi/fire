@@ -20,6 +20,10 @@ var ErrAccessDenied = xo.BW(jsonapi.ErrorFromStatus(http.StatusUnauthorized, "ac
 // ErrResourceNotFound may be returned to indicate a missing resource.
 var ErrResourceNotFound = xo.BW(jsonapi.NotFound("resource not found"))
 
+// ErrDocumentNotUnique may be returned if a provided document does not satisfy
+// the required uniqueness constraints.
+var ErrDocumentNotUnique = xo.BW(jsonapi.BadRequest("document not unique"))
+
 // BasicAuthorizer authorizes requests based on a simple credentials list.
 func BasicAuthorizer(credentials map[string]string) *Callback {
 	return C("fire/BasicAuthorizer", Authorizer, All(), func(ctx *Context) error {

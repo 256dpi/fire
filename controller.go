@@ -632,7 +632,7 @@ func (c *Controller) createResource(ctx *Context) {
 			idempotentCreateField: idempotentCreateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.BadRequest("document is not unique"))
+			xo.Abort(ErrDocumentNotUnique.Wrap())
 		}
 		xo.AbortIf(err)
 
@@ -644,7 +644,7 @@ func (c *Controller) createResource(ctx *Context) {
 		// insert model
 		err := ctx.Store.M(c.Model).Insert(ctx, ctx.Model)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.BadRequest("document is not unique"))
+			xo.Abort(ErrDocumentNotUnique.Wrap())
 		}
 		xo.AbortIf(err)
 	}
@@ -763,7 +763,7 @@ func (c *Controller) updateResource(ctx *Context) {
 			consistentUpdateField: consistentUpdateToken,
 		}, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.BadRequest("document is not unique"))
+			xo.Abort(ErrDocumentNotUnique.Wrap())
 		}
 		xo.AbortIf(err)
 
@@ -775,7 +775,7 @@ func (c *Controller) updateResource(ctx *Context) {
 		// replace model
 		found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 		if coal.IsDuplicate(err) {
-			xo.Abort(jsonapi.BadRequest("document is not unique"))
+			xo.Abort(ErrDocumentNotUnique.Wrap())
 		}
 		xo.AbortIf(err)
 
@@ -1131,7 +1131,7 @@ func (c *Controller) setRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.BadRequest("document is not unique"))
+		xo.Abort(ErrDocumentNotUnique.Wrap())
 	}
 	xo.AbortIf(err)
 
@@ -1231,7 +1231,7 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.BadRequest("document is not unique"))
+		xo.Abort(ErrDocumentNotUnique.Wrap())
 	}
 	xo.AbortIf(err)
 
@@ -1338,7 +1338,7 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// replace model
 	found, err := ctx.Store.M(c.Model).Replace(ctx, ctx.Model, false)
 	if coal.IsDuplicate(err) {
-		xo.Abort(jsonapi.BadRequest("document is not unique"))
+		xo.Abort(ErrDocumentNotUnique.Wrap())
 	}
 	xo.AbortIf(err)
 

@@ -5733,7 +5733,7 @@ func TestDatabaseErrors(t *testing.T) {
 					{
 						"status": "400",
 						"title": "bad request",
-						"detail": "document is not unique"
+						"detail": "document not unique"
 					}
 				]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
