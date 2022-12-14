@@ -73,7 +73,7 @@ func TestClient(t *testing.T) {
 
 		model, doc, err = client.Find(model)
 		assert.Error(t, err)
-		assert.Equal(t, jsonapi.NotFound("resource not found"), err)
+		assert.True(t, ErrResourceNotFound.Is(err))
 		assert.Nil(t, model)
 		assert.NotNil(t, doc)
 
@@ -145,7 +145,7 @@ func TestModelClient(t *testing.T) {
 
 		model, doc, err = client.Find(model.ID())
 		assert.Error(t, err)
-		assert.Equal(t, jsonapi.NotFound("resource not found"), err)
+		assert.True(t, ErrResourceNotFound.Is(err))
 		assert.Nil(t, model)
 		assert.NotNil(t, doc)
 

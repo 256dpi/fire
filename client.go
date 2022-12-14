@@ -2,6 +2,7 @@ package fire
 
 import (
 	"github.com/256dpi/jsonapi/v2"
+	"github.com/256dpi/xo"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -21,9 +22,9 @@ func NewClient(client *jsonapi.Client) *Client {
 // List will list the provided models.
 func (c *Client) List(model coal.Model, reqs ...jsonapi.Request) ([]coal.Model, *jsonapi.Document, error) {
 	// list resources
-	doc, err := c.client.List(getType(model), reqs...)
+	doc, err := c.client.List(c.getType(model), reqs...)
 	if err != nil {
-		return nil, doc, err
+		return nil, doc, c.rewriteError(err)
 	}
 
 	// get listed models
@@ -43,9 +44,9 @@ func (c *Client) List(model coal.Model, reqs ...jsonapi.Request) ([]coal.Model, 
 // Find will find and return the provided model.
 func (c *Client) Find(model coal.Model, reqs ...jsonapi.Request) (coal.Model, *jsonapi.Document, error) {
 	// find resource
-	doc, err := c.client.Find(getType(model), model.ID().Hex(), reqs...)
+	doc, err := c.client.Find(c.getType(model), model.ID().Hex(), reqs...)
 	if err != nil {
-		return nil, doc, err
+		return nil, doc, c.rewriteError(err)
 	}
 
 	// get found model
@@ -72,7 +73,7 @@ func (c *Client) Create(model coal.Model) (coal.Model, *jsonapi.Document, error)
 	// create resource
 	doc, err := c.client.Create(resource)
 	if err != nil {
-		return nil, doc, err
+		return nil, doc, c.rewriteError(err)
 	}
 
 	// get created model
@@ -96,7 +97,7 @@ func (c *Client) Update(model coal.Model) (coal.Model, *jsonapi.Document, error)
 	// update resource
 	doc, err := c.client.Update(resource)
 	if err != nil {
-		return nil, doc, err
+		return nil, doc, c.rewriteError(err)
 	}
 
 	// get updated model
@@ -112,16 +113,38 @@ func (c *Client) Update(model coal.Model) (coal.Model, *jsonapi.Document, error)
 // Delete will delete the provided model.
 func (c *Client) Delete(model coal.Model) error {
 	// delete resource
-	err := c.client.Delete(getType(model), model.ID().Hex())
+	err := c.client.Delete(c.getType(model), model.ID().Hex())
 	if err != nil {
-		return err
+		return c.rewriteError(err)
 	}
 
 	return nil
 }
 
-func getType(model coal.Model) string {
+func (c *Client) getType(model coal.Model) string {
 	return coal.GetMeta(model).PluralName
+}
+
+func (c *Client) rewriteError(err error) error {
+	// get error
+	je, ok := err.(*jsonapi.Error)
+	if !ok {
+		return err
+	}
+
+	// check errors
+	for _, e := range []xo.BaseErr{
+		ErrAccessDenied,
+		ErrResourceNotFound,
+		ErrDocumentNotUnique,
+	} {
+		ee := e.Self().(*xo.Err).Err.(*jsonapi.Error)
+		if ee.Status == je.Status && ee.Detail == je.Detail {
+			return e.Wrap()
+		}
+	}
+
+	return err
 }
 
 // ModelClient is model specific client.
