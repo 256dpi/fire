@@ -16,7 +16,6 @@ import (
 	"github.com/256dpi/jsonapi/v2"
 	"github.com/256dpi/oauth2/v2"
 	"github.com/256dpi/serve"
-	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -29,13 +28,13 @@ import (
 // TODO: Support pagination.
 
 // AccessDenied is the raw access denied error value.
-var AccessDenied = fire.ErrAccessDenied.Self().(*xo.Err).Err
+var AccessDenied = fire.ErrAccessDenied.Self()
 
 // ResourceNotFound is the raw resource not found error value.
-var ResourceNotFound = fire.ErrResourceNotFound.Self().(*xo.Err).Err
+var ResourceNotFound = fire.ErrResourceNotFound.Self()
 
 // DocumentNotUnique is thr raw document not unique error value.
-var DocumentNotUnique = fire.ErrDocumentNotUnique.Self().(*xo.Err).Err
+var DocumentNotUnique = fire.ErrDocumentNotUnique.Self()
 
 // Config provides configuration of a tester.
 type Config struct {
@@ -185,7 +184,7 @@ func (t *Tester) ListError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.Equal(tt, e, err)
+		assert.ErrorIs(tt, err, e)
 	}
 
 	return Result{
@@ -220,7 +219,7 @@ func (t *Tester) FindError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.Equal(tt, e, err)
+		assert.ErrorIs(tt, err, e)
 	}
 
 	return Result{
@@ -265,7 +264,7 @@ func (t *Tester) CreateError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.Equal(tt, e, err)
+		assert.ErrorIs(tt, err, e)
 	}
 
 	return Result{
@@ -308,7 +307,7 @@ func (t *Tester) UpdateError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.Equal(tt, e, err)
+		assert.ErrorIs(tt, err, e)
 	}
 
 	return Result{
@@ -343,7 +342,7 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.Equal(tt, e, err)
+		assert.ErrorIs(tt, err, e)
 	}
 
 	return Result{
