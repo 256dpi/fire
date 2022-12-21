@@ -185,7 +185,7 @@ func (t *Tester) ListError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.ErrorIs(tt, err, e)
+		assert.Equal(tt, err, e)
 	}
 
 	return Result{
@@ -220,7 +220,7 @@ func (t *Tester) FindError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.ErrorIs(tt, err, e)
+		assert.Equal(tt, err, e)
 	}
 
 	return Result{
@@ -265,7 +265,7 @@ func (t *Tester) CreateError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.ErrorIs(tt, err, e)
+		assert.Equal(tt, err, e)
 	}
 
 	return Result{
@@ -308,7 +308,7 @@ func (t *Tester) UpdateError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.ErrorIs(tt, err, e)
+		assert.Equal(tt, err, e)
 	}
 
 	return Result{
@@ -343,7 +343,7 @@ func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
 
 	// validate error
 	if e != nil {
-		assert.ErrorIs(tt, err, e)
+		assert.Equal(tt, err, e)
 	}
 
 	return Result{
