@@ -140,7 +140,7 @@ func (c *Client) rewriteError(err error) error {
 	} {
 		ee := e.Self().(*xo.Err).Err.(*jsonapi.Error)
 		if ee.Status == je.Status && ee.Detail == je.Detail {
-			return e.Wrap()
+			return e.Self()
 		}
 	}
 
