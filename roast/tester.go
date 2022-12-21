@@ -8,6 +8,7 @@ import (
 	"mime"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -406,7 +407,7 @@ func (t *Tester) Upload(tt *testing.T, data []byte, typ, name string) string {
 		req.Header.Set("Content-Type", typ)
 	}
 	if name != "" {
-		req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+		req.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename*=utf-8''%s", url.QueryEscape(name)))
 	}
 
 	// perform request

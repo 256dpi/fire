@@ -142,7 +142,7 @@ func TestTesterUploadDownload(t *testing.T) {
 
 	data := []byte("Hello World!")
 
-	key := tt.Upload(t, data, "text/plain", "foo.txt")
+	key := tt.Upload(t, data, "text/plain", "火.txt")
 	assert.NotZero(t, key)
 
 	model := tt.Create(t, &fooModel{
@@ -150,8 +150,9 @@ func TestTesterUploadDownload(t *testing.T) {
 			ClaimKey: key,
 		},
 	}, nil, nil).Model.(*fooModel)
+	assert.Equal(t, model.Link.Name, "火.txt")
 
-	buf := tt.Download(t, model.Link.ViewKey, "text/plain", "foo.txt", data)
+	buf := tt.Download(t, model.Link.ViewKey, "text/plain", "火.txt", data)
 	assert.Equal(t, data, buf)
 }
 
