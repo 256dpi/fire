@@ -3,6 +3,7 @@ package blaze
 import (
 	"bytes"
 	"context"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -187,8 +188,10 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "expected attachment content disposition", res.Body.String())
 
-		req.Header.Set("Content-Disposition", "attachment; filename=script.js")
 		req.Header.Set("Content-Length", "12")
+		req.Header.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
+			"filename": "火.txt",
+		}))
 
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
@@ -204,8 +207,8 @@ func TestBucketUploadActionExtended(t *testing.T) {
 				Base:    files[0].Base,
 				State:   Uploaded,
 				Updated: files[0].Updated,
-				Name:    "script.js",
-				Type:    "application/javascript",
+				Name:    "火.txt",
+				Type:    "text/plain",
 				Size:    12,
 				Service: "default",
 				Handle:  Handle{"id": "1"},
@@ -214,7 +217,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 
 		assert.Equal(t, map[string]*MemoryBlob{
 			"1": {
-				Type:  "application/javascript",
+				Type:  "text/plain",
 				Bytes: []byte("Hello World!"),
 			},
 		}, service.Blobs)
@@ -1168,7 +1171,7 @@ func TestBucketDownloadAction(t *testing.T) {
 
 		/* with key */
 
-		_, file, err := bucket.Upload(nil, "file", "foo/bar", 12, func(upload Upload) (int64, error) {
+		_, file, err := bucket.Upload(nil, "火.txt", "text/plain", 12, func(upload Upload) (int64, error) {
 			return UploadFrom(upload, strings.NewReader("Hello World!"))
 		})
 		assert.NoError(t, err)
@@ -1193,7 +1196,7 @@ func TestBucketDownloadAction(t *testing.T) {
 		assert.Equal(t, http.Header{
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"12"},
-			"Content-Type":        []string{"foo/bar"},
+			"Content-Type":        []string{"text/plain"},
 			"Content-Disposition": []string{`inline`},
 			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
@@ -1212,8 +1215,69 @@ func TestBucketDownloadAction(t *testing.T) {
 		assert.Equal(t, http.Header{
 			"Accept-Ranges":       []string{"bytes"},
 			"Content-Length":      []string{"12"},
-			"Content-Type":        []string{"foo/bar"},
-			"Content-Disposition": []string{`attachment; filename="forced"`},
+			"Content-Type":        []string{"text/plain"},
+			"Content-Disposition": []string{"attachment; filename*=utf-8''%E7%81%AB.txt"},
+			"Cache-Control":       []string{"public, max-age=31536000"},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
+		}, rec.Header())
+		assert.Equal(t, "Hello World!", rec.Body.String())
+	})
+}
+
+func TestBucketDownloadActionExtended(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
+		bucket.Use(NewMemory(), "default", true)
+
+		action := bucket.DownloadAction(0)
+
+		_, file, err := bucket.Upload(nil, "test.txt", "text/plain", 12, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, file)
+
+		file.State = Claimed
+		file.Updated = time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+		file.Binding = "test-opt"
+		file.Owner = stick.P(coal.New())
+		tester.Replace(file)
+
+		key, err := bucket.GetViewKey(nil, file.ID())
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+
+		req := httptest.NewRequest("GET", "/foo?key="+key, nil)
+		rec, err := tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"12"},
+			"Content-Type":        []string{"text/plain"},
+			"Content-Disposition": []string{`inline`},
+			"Cache-Control":       []string{"public, max-age=31536000"},
+			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
+			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},
+		}, rec.Header())
+		assert.Equal(t, "Hello World!", rec.Body.String())
+
+		/* attachment */
+
+		req = httptest.NewRequest("GET", "/foo?key="+key+"&dl=1", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, http.Header{
+			"Accept-Ranges":       []string{"bytes"},
+			"Content-Length":      []string{"12"},
+			"Content-Type":        []string{"text/plain"},
+			"Content-Disposition": []string{"attachment; filename=forced"},
 			"Cache-Control":       []string{"public, max-age=31536000"},
 			"Last-Modified":       []string{"Mon, 25 May 2020 12:00:00 GMT"},
 			"Etag":                []string{`"v1-` + file.ID().Hex() + `"`},

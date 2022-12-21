@@ -2,7 +2,6 @@ package blaze
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"math/rand"
 	"mime"
@@ -1032,7 +1031,9 @@ func (b *Bucket) DownloadAction(timeout time.Duration) *fire.Action {
 			}
 
 			// set disposition
-			contentDisposition = fmt.Sprintf(`attachment; filename="%s"`, filename)
+			contentDisposition = mime.FormatMediaType("attachment", map[string]string{
+				"filename": filename,
+			})
 		}
 
 		// set content type, length and disposition

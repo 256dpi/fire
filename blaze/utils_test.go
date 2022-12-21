@@ -31,16 +31,16 @@ var bindings = NewRegistry()
 
 func init() {
 	bindings.Add(&Binding{
-		Name:     "test-req",
-		Model:    &testModel{},
-		Field:    "RequiredFile",
-		FileName: "forced",
+		Name:  "test-req",
+		Model: &testModel{},
+		Field: "RequiredFile",
 	})
 
 	bindings.Add(&Binding{
-		Name:  "test-opt",
-		Model: &testModel{},
-		Field: "OptionalFile",
+		Name:     "test-opt",
+		Model:    &testModel{},
+		Field:    "OptionalFile",
+		FileName: "forced",
 	})
 
 	bindings.Add(&Binding{
