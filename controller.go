@@ -182,7 +182,7 @@ type Controller struct {
 	// offset based pagination.
 	ListLimit int64
 
-	// CursorPagination can be set to use cursor based pagination. It can be
+	// CursorPagination can be set to require cursor based pagination. It can be
 	// enforced by also setting ListLimit. Cursor pagination will use the sort
 	// fields (including _id as the tiebreaker) to return a cursor that can be
 	// used to traverse large collections without incurring the performance
@@ -1688,6 +1688,16 @@ func (c *Controller) loadModels(ctx *Context) {
 		}
 	}
 
+	// check pagination
+	if ctx.JSONAPIRequest.Pagination != "" && ctx.JSONAPIRequest.Pagination != "offset" && ctx.JSONAPIRequest.Pagination != "cursor" {
+		xo.Abort(jsonapi.BadRequestParam("unknown pagination", "pagination"))
+	} else if c.CursorPagination && ctx.JSONAPIRequest.Pagination == "offset" {
+		xo.Abort(jsonapi.BadRequestParam("unsupported pagination", "pagination"))
+	}
+
+	// determine pagination
+	cursorPagination := c.CursorPagination || ctx.JSONAPIRequest.Pagination == "cursor"
+
 	// apply list limit
 	if c.ListLimit > 0 && ctx.JSONAPIRequest.PageSize <= 0 {
 		ctx.JSONAPIRequest.PageSize = c.ListLimit
@@ -1698,13 +1708,13 @@ func (c *Controller) loadModels(ctx *Context) {
 		xo.Abort(jsonapi.BadRequestParam("max page size exceeded", "page[size]"))
 	}
 
-	// ensure default page number
-	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageNumber <= 0 {
+	// ensure default page number for offset pagination
+	if !cursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageNumber <= 0 {
 		ctx.JSONAPIRequest.PageNumber = 1
 	}
 
-	// ensure default page after
-	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageAfter == "" && ctx.JSONAPIRequest.PageBefore == "" {
+	// ensure default page after for cursor pagination
+	if cursorPagination && ctx.JSONAPIRequest.PageSize > 0 && ctx.JSONAPIRequest.PageAfter == "" && ctx.JSONAPIRequest.PageBefore == "" {
 		ctx.JSONAPIRequest.PageAfter = blankCursor
 	}
 
@@ -1760,13 +1770,13 @@ func (c *Controller) loadModels(ctx *Context) {
 	var reverse bool
 
 	// handle offset pagination
-	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+	if !cursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		limit = ctx.JSONAPIRequest.PageSize
 		skip = (ctx.JSONAPIRequest.PageNumber - 1) * ctx.JSONAPIRequest.PageSize
 	}
 
 	// handle cursor pagination
-	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+	if cursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		// set limit
 		limit = ctx.JSONAPIRequest.PageSize
 
@@ -2452,8 +2462,11 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 		Self: jsonapi.Link(ctx.JSONAPIRequest.Self()),
 	}
 
+	// determine pagination
+	cursorPagination := c.CursorPagination || ctx.JSONAPIRequest.Pagination == "cursor"
+
 	// add offset pagination links
-	if !c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+	if !cursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		// count resources
 		count, err := ctx.Store.M(c.Model).Count(ctx, ctx.Query(), 0, 0, false)
 		xo.AbortIf(err)
@@ -2484,7 +2497,7 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 	}
 
 	// add cursor pagination links
-	if c.CursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
+	if cursorPagination && ctx.JSONAPIRequest.PageSize > 0 {
 		// copy request
 		req := *ctx.JSONAPIRequest
 

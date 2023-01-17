@@ -6393,6 +6393,163 @@ func TestCursorPagination(t *testing.T) {
 	})
 }
 
+func TestPaginationSelection(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model:     &postModel{},
+			ListLimit: 7,
+		}, &Controller{
+			Model:            &commentModel{},
+			ListLimit:        7,
+			CursorPagination: true,
+		}, &Controller{
+			Model:     &selectionModel{},
+			ListLimit: 7,
+		}, &Controller{
+			Model:     &noteModel{},
+			ListLimit: 7,
+		})
+
+		// prepare ids
+		var ids []coal.ID
+
+		// create some posts
+		for i := 0; i < 10; i++ {
+			ids = append(ids, tester.Insert(&postModel{
+				Base:  coal.B(numID(uint8(i) + 1)),
+				Title: fmt.Sprintf("Post %d", i+1),
+			}).ID())
+		}
+
+		// get first page of posts with default pagination
+		tester.Request("GET", "posts", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[number]=1&page[size]=7",
+				"first": "/posts?page[number]=1&page[size]=7",
+				"last": "/posts?page[number]=2&page[size]=7",
+				"next": "/posts?page[number]=2&page[size]=7"
+			}`, linkUnescape(links))
+		})
+
+		// get first page of posts using offset pagination
+		tester.Request("GET", "posts?pagination=offset", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[number]=1&page[size]=7&pagination=offset",
+				"first": "/posts?page[number]=1&page[size]=7&pagination=offset",
+				"last": "/posts?page[number]=2&page[size]=7&pagination=offset",
+				"next": "/posts?page[number]=2&page[size]=7&pagination=offset"
+			}`, linkUnescape(links))
+		})
+
+		// get first page of posts using cursor pagination
+		tester.Request("GET", "posts?pagination=cursor", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Post 1", list[0].Get("attributes.title").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts?page[after]=*&page[size]=7&pagination=cursor",
+				"first": "/posts?page[after]=*&page[size]=7&pagination=cursor",
+				"prev": null,
+				"last": "/posts?page[before]=*&page[size]=7&pagination=cursor",
+				"next": "/posts?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABwA&page[size]=7&pagination=cursor"
+			}`, linkUnescape(links))
+		})
+
+		// get first page of posts using unknown pagination
+		tester.Request("GET", "posts?pagination=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "unknown pagination",
+					"source": {
+						"parameter": "pagination"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		// create post
+		post := tester.Insert(&postModel{
+			Title: "Post",
+		}).ID()
+
+		// create some comments
+		for i := 0; i < 10; i++ {
+			tester.Insert(&commentModel{
+				Base:    coal.B(numID(uint8(i) + 1)),
+				Message: fmt.Sprintf("Comment %d", i+1),
+				Post:    post,
+			})
+		}
+
+		// get first page of comments with default pagination
+		tester.Request("GET", "posts/"+post.Hex()+"/comments", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Comment 1", list[0].Get("attributes.message").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`/comments?page[after]=*&page[size]=7",
+				"first": "/posts/`+post.Hex()+`/comments?page[after]=*&page[size]=7",
+				"prev": null,
+				"last": "/posts/`+post.Hex()+`/comments?page[before]=*&page[size]=7",
+				"next": "/posts/`+post.Hex()+`/comments?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABwA&page[size]=7"
+			}`, linkUnescape(links))
+		})
+
+		// get first page of comments with cursor pagination
+		tester.Request("GET", "posts/"+post.Hex()+"/comments?pagination=cursor", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			list := gjson.Get(r.Body.String(), "data").Array()
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.Equal(t, 7, len(list), tester.DebugRequest(rq, r))
+			assert.Equal(t, "Comment 1", list[0].Get("attributes.message").String(), tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/posts/`+post.Hex()+`/comments?page[after]=*&page[size]=7&pagination=cursor",
+				"first": "/posts/`+post.Hex()+`/comments?page[after]=*&page[size]=7&pagination=cursor",
+				"prev": null,
+				"last": "/posts/`+post.Hex()+`/comments?page[before]=*&page[size]=7&pagination=cursor",
+				"next": "/posts/`+post.Hex()+`/comments?page[after]=FAAAAAcwAAAAAAAAAAAAAAAABwA&page[size]=7&pagination=cursor"
+			}`, linkUnescape(links))
+		})
+
+		// get first page of comments with offset pagination
+		tester.Request("GET", "posts/"+post.Hex()+"/comments?pagination=offset", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "unsupported pagination",
+					"source": {
+						"parameter": "pagination"
+					}
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestListLimit(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{
