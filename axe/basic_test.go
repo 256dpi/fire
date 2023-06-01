@@ -270,6 +270,73 @@ func TestDequeueTimeout(t *testing.T) {
 	})
 }
 
+func TestExtend(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		job := testJob{
+			Data: "Hello!",
+		}
+
+		enqueued, err := Enqueue(nil, tester.Store, &job, 0, 0)
+		assert.NoError(t, err)
+		assert.True(t, enqueued)
+		assert.NotZero(t, job.ID())
+
+		dequeued, attempt, err := Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
+		assert.NoError(t, err)
+		assert.True(t, dequeued)
+		assert.Equal(t, 1, attempt)
+
+		err = Extend(nil, tester.Store, &job, 300*time.Millisecond)
+		assert.NoError(t, err)
+
+		time.Sleep(200 * time.Millisecond)
+
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
+		assert.NoError(t, err)
+		assert.False(t, dequeued)
+		assert.Equal(t, 0, attempt)
+
+		time.Sleep(200 * time.Millisecond)
+
+		dequeued, attempt, err = Dequeue(nil, tester.Store, &job, 100*time.Millisecond)
+		assert.NoError(t, err)
+		assert.True(t, dequeued)
+		assert.Equal(t, 2, attempt)
+
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.NotZero(t, model.Created)
+		assert.NotNil(t, model.Available)
+		assert.NotNil(t, model.Started)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.Equal(t, &Model{
+			Base: model.Base,
+			Name: "test",
+			Data: stick.Map{
+				"data": "Hello!",
+			},
+			State:     Dequeued,
+			Created:   model.Created,
+			Available: model.Available,
+			Started:   model.Started,
+			Attempts:  2,
+			Events: []Event{
+				{
+					Timestamp: model.Created,
+					State:     Enqueued,
+				},
+				{
+					Timestamp: model.Events[1].Timestamp,
+					State:     Dequeued,
+				},
+				{
+					Timestamp: *model.Started,
+					State:     Dequeued,
+				},
+			},
+		}, model)
+	})
+}
+
 func TestFail(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job := testJob{

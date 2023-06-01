@@ -63,6 +63,41 @@ type Context struct {
 	//
 	// Usage: Read Only
 	Tracer *xo.Tracer
+
+	parent   context.Context
+	cancel   context.CancelFunc
+	lifetime time.Duration
+}
+
+// Extend will extend the timeout and lifetime of the job.
+func (c *Context) Extend(timeout, lifetime time.Duration) error {
+	// check params
+	if lifetime > timeout {
+		return xo.F("lifetime must be less than timeout")
+	}
+
+	// check deadline
+	deadline, _ := c.Deadline()
+	if time.Until(deadline) > lifetime {
+		return nil
+	}
+
+	// extend job
+	err := Extend(c, c.Queue.options.Store, c.Job, timeout)
+	if err != nil {
+		return err
+	}
+
+	// cancel current context
+	c.cancel()
+
+	// replace context
+	c.Context, c.cancel = context.WithTimeout(c.parent, lifetime)
+
+	// update lifetime
+	c.lifetime = lifetime
+
+	return nil
 }
 
 // Update will update the job and set the provided execution status and progress.
@@ -313,17 +348,22 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 
 	// add timeout
 	innerContext, cancel := context.WithTimeout(outerContext, t.Lifetime)
-	defer cancel()
 
 	// prepare context
 	ctx := &Context{
-		Context: innerContext,
-		Job:     job,
-		Attempt: attempt,
-		Task:    t,
-		Queue:   queue,
-		Tracer:  tracer,
+		Context:  innerContext,
+		Job:      job,
+		Attempt:  attempt,
+		Task:     t,
+		Queue:    queue,
+		Tracer:   tracer,
+		parent:   outerContext,
+		cancel:   cancel,
+		lifetime: t.Lifetime,
 	}
+
+	// ensure cancel
+	defer ctx.cancel()
 
 	// call handler
 	err = xo.Catch(func() error {
@@ -335,7 +375,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 
 	// return immediately if lifetime has been reached. another worker might
 	// already have dequeued the job
-	if time.Since(start) > t.Lifetime {
+	if time.Since(start) > ctx.lifetime {
 		return xo.F(`task "%s" ran longer than the specified lifetime`, name)
 	}
 

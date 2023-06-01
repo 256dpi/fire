@@ -692,6 +692,94 @@ func TestQueueTimeout(t *testing.T) {
 	})
 }
 
+func TestQueueExtend(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		done := make(chan struct{})
+		errs := make(chan error, 1)
+
+		queue := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				errs <- err
+			},
+		})
+
+		queue.Add(&Task{
+			Job: &testJob{},
+			Handler: func(ctx *Context) error {
+				err := ctx.Extend(3*time.Second, 2*time.Second)
+				if err != nil {
+					return err
+				}
+
+				if ctx.Attempt == 1 {
+					select {
+					case <-time.After(700 * time.Millisecond):
+						return nil
+					case <-ctx.Done():
+						return nil
+					}
+				}
+
+				return nil
+			},
+			Notifier: func(ctx *Context, cancelled bool, reason string) error {
+				close(done)
+				return nil
+			},
+			Timeout:  500 * time.Millisecond,
+			Lifetime: 300 * time.Millisecond,
+		})
+
+		<-queue.Run()
+
+		job := testJob{
+			Data: "Hello!",
+		}
+
+		enqueued, err := queue.Enqueue(nil, &job, 0, 0)
+		assert.NoError(t, err)
+		assert.True(t, enqueued)
+
+		<-done
+
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, "test", model.Name)
+		assert.Empty(t, model.Label)
+		assert.Equal(t, stick.Map{"data": "Hello!"}, model.Data)
+		assert.Equal(t, Completed, model.State)
+		assert.NotZero(t, model.Created)
+		assert.NotZero(t, model.Available)
+		assert.NotZero(t, model.Started)
+		assert.NotZero(t, model.Ended)
+		assert.NotZero(t, model.Finished)
+		assert.Equal(t, 1, model.Attempts)
+		assert.NotZero(t, model.Events[1].Timestamp)
+		assert.Equal(t, []Event{
+			{
+				Timestamp: model.Created,
+				State:     Enqueued,
+			},
+			{
+				Timestamp: *model.Started,
+				State:     Dequeued,
+			},
+			{
+				Timestamp: *model.Finished,
+				State:     Completed,
+			},
+		}, model.Events)
+
+		select {
+		case err = <-errs:
+		default:
+		}
+		assert.NoError(t, err)
+
+		queue.Close()
+	})
+}
+
 func TestQueueExisting(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		job := testJob{

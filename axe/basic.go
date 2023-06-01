@@ -206,6 +206,51 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 	return true, model.Attempts, nil
 }
 
+// Extend will extend the specified job by the provided duration.
+func Extend(ctx context.Context, store *coal.Store, job Job, timeout time.Duration) error {
+	// get meta and base
+	meta := GetMeta(job)
+	base := job.GetBase()
+
+	// trace
+	ctx, span := xo.Trace(ctx, "axe/Extend")
+	span.Tag("name", meta.Name)
+	span.Tag("label", base.Label)
+	span.Tag("id", job.ID().Hex())
+	defer span.End()
+
+	// validate job
+	err := job.Validate()
+	if err != nil {
+		return err
+	}
+
+	// encode job
+	var data stick.Map
+	err = data.Marshal(job, meta.Coding)
+	if err != nil {
+		return err
+	}
+
+	// update job
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+		"_id":   job.ID(),
+		"State": Dequeued,
+	}, bson.M{
+		"$set": bson.M{
+			"Data":      data,
+			"Available": time.Now().Add(timeout),
+		},
+	}, nil, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return xo.F("missing job")
+	}
+
+	return nil
+}
+
 // Update will update the specified job and set the provided execution status
 // and progress.
 func Update(ctx context.Context, store *coal.Store, job Job, status string, progress float64) error {
