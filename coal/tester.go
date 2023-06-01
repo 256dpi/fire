@@ -68,7 +68,8 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 	// clear bases
 	for _, model := range Slice(list) {
 		base := model.GetBase()
-		*base = B(model.ID())
+		base.Lock = 0
+		base.Token = ID{}
 	}
 
 	return list
@@ -92,7 +93,8 @@ func (t *Tester) FindLast(model Model, query ...bson.M) Model {
 
 	// clear base
 	base := model.GetBase()
-	*base = B(model.ID())
+	base.Lock = 0
+	base.Token = ID{}
 
 	return model
 }
@@ -131,7 +133,8 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 
 	// clear base
 	base := model.GetBase()
-	*base = B(model.ID())
+	base.Lock = 0
+	base.Token = ID{}
 
 	return model
 }
@@ -146,7 +149,8 @@ func (t *Tester) Insert(model Model) Model {
 
 	// clear base
 	base := model.GetBase()
-	*base = B(model.ID())
+	base.Lock = 0
+	base.Token = ID{}
 
 	return model
 }
@@ -163,7 +167,8 @@ func (t *Tester) Replace(model Model) Model {
 
 	// clear base
 	base := model.GetBase()
-	*base = B(model.ID())
+	base.Lock = 0
+	base.Token = ID{}
 
 	return model
 }
@@ -180,7 +185,8 @@ func (t *Tester) Update(model Model, update bson.M) Model {
 
 	// clear base
 	base := model.GetBase()
-	*base = B(model.ID())
+	base.Lock = 0
+	base.Token = ID{}
 
 	return model
 }
