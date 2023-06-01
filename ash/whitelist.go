@@ -103,7 +103,6 @@ func (m *Matrix) CollectProperties(i int) []string {
 //			},
 //		}),
 //	}
-//
 func Whitelist(m Matrix) []*Authorizer {
 	// collect authorizers
 	var authorizers []*Authorizer
@@ -138,7 +137,6 @@ type Fields struct {
 //		Readable: []string{"Title", "Body"},
 //		Writable: []string{"Body"},
 //	}))
-//
 func WhitelistFields(fields Fields) *Authorizer {
 	return A("ash/WhitelistFields", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
 		// prepare list
@@ -180,7 +178,6 @@ func WhitelistFields(fields Fields) *Authorizer {
 // authorizer can be chained together:
 //
 //	Token("user").And(WhitelistProperties([]string{"Info"})
-//
 func WhitelistProperties(readable []string) *Authorizer {
 	return A("ash/WhitelistProperties", fire.All(), func(ctx *fire.Context) ([]*Enforcer, error) {
 		// prepare list

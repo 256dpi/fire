@@ -3,7 +3,6 @@ package fire
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -6410,15 +6409,12 @@ func TestPaginationSelection(t *testing.T) {
 			ListLimit: 7,
 		})
 
-		// prepare ids
-		var ids []coal.ID
-
 		// create some posts
 		for i := 0; i < 10; i++ {
-			ids = append(ids, tester.Insert(&postModel{
+			tester.Insert(&postModel{
 				Base:  coal.B(numID(uint8(i) + 1)),
 				Title: fmt.Sprintf("Post %d", i+1),
-			}).ID())
+			})
 		}
 
 		// get first page of posts with default pagination
@@ -6632,7 +6628,7 @@ func TestCollectionActions(t *testing.T) {
 			Model: &postModel{},
 			CollectionActions: M{
 				"bytes": A("bytes", []string{"POST"}, 0, 0, func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
 
@@ -6642,14 +6638,14 @@ func TestCollectionActions(t *testing.T) {
 					return nil
 				}),
 				"empty": A("empty", []string{"POST"}, 0, 0, func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
 
 					return nil
 				}),
 				"error": A("error", []string{"POST"}, 3, 0, func(ctx *Context) error {
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte{}, bytes)
 
@@ -6734,7 +6730,7 @@ func TestResourceActions(t *testing.T) {
 				"bytes": A("bytes", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Equal(t, []byte("PAYLOAD"), bytes)
 
@@ -6746,7 +6742,7 @@ func TestResourceActions(t *testing.T) {
 				"empty": A("empty", []string{"POST"}, 0, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.NoError(t, err)
 					assert.Empty(t, bytes)
 
@@ -6755,7 +6751,7 @@ func TestResourceActions(t *testing.T) {
 				"error": A("error", []string{"POST"}, 3, 0, func(ctx *Context) error {
 					assert.NotEmpty(t, ctx.Model)
 
-					bytes, err := ioutil.ReadAll(ctx.HTTPRequest.Body)
+					bytes, err := io.ReadAll(ctx.HTTPRequest.Body)
 					assert.Error(t, err)
 					assert.Equal(t, []byte{}, bytes)
 					assert.Equal(t, serve.ErrBodyLimitExceeded, err)

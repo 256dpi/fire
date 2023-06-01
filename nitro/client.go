@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -83,7 +83,7 @@ func (c *Client) Call(ctx context.Context, proc Procedure) error {
 	defer res.Body.Close()
 
 	// read body
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return xo.W(err)
 	}

@@ -2,7 +2,7 @@ package nitro
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -122,7 +122,7 @@ func (s *Endpoint) Process(ctx *Context) error {
 	serve.LimitBody(ctx.Writer, ctx.Request, ctx.Handler.Limit)
 
 	// read body
-	body, err := ioutil.ReadAll(ctx.Request.Body)
+	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		return xo.W(err)
 	}

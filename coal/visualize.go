@@ -3,7 +3,7 @@ package coal
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -22,7 +22,7 @@ func Visualize(title, file string, models ...Model) error {
 	}
 
 	// write visualization dot
-	err = ioutil.WriteFile(file, pdf, 0644)
+	err = os.WriteFile(file, pdf, 0644)
 	if err != nil {
 		return xo.W(err)
 	}

@@ -197,12 +197,12 @@ func (s *Store) M(model Model) *Manager {
 // which results in isolated and linearizable reads and writes of the data that
 // has been committed prior to the start of the transaction:
 //
-// - Writes that conflict with other transactional writes will return an error.
-//   Non-transactional writes will wait until the transaction has completed.
-// - Reads are not guaranteed to be stable, another transaction may delete or
-//   modify the document and also commit concurrently. Therefore, documents that
-//   must "survive" the transaction and cause transactional writes to abort,
-//   must be locked by changing a field to a new value.
+//   - Writes that conflict with other transactional writes will return an error.
+//     Non-transactional writes will wait until the transaction has completed.
+//   - Reads are not guaranteed to be stable, another transaction may delete or
+//     modify the document and also commit concurrently. Therefore, documents that
+//     must "survive" the transaction and cause transactional writes to abort,
+//     must be locked by changing a field to a new value.
 func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Context) error) error {
 	// ensure context
 	if ctx == nil {
