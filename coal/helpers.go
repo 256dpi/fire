@@ -3,6 +3,7 @@ package coal
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -53,6 +54,36 @@ func L(m Model, flag string, force bool) string {
 	}
 
 	return ""
+}
+
+// T is a helper function to construct the BSON key for a tag.
+func T(name string) string {
+	return "_tg." + name
+}
+
+// TV is a helper function to construct the BSON key for a tag value.
+func TV(name string) string {
+	return T(name) + ".v"
+}
+
+// TE is a helper function to construct the BSON key for a tag expiry.
+func TE(name string) string {
+	return T(name) + ".e"
+}
+
+// TQ is a helper function to construct the BSON query for a tag expiry. Only
+// tags with a non-zero expiry can become expired.
+func TQ(expired bool) bson.M {
+	if expired {
+		return bson.M{
+			"$lt": time.Now(),
+		}
+	}
+	return bson.M{
+		"$not": bson.M{
+			"$lt": time.Now(),
+		},
+	}
 }
 
 // Require will check if the specified flags are set on the specified model and

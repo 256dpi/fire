@@ -2,8 +2,10 @@ package coal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/stick"
 )
@@ -66,4 +68,136 @@ func TestRegistry(t *testing.T) {
 
 	model = registry.Lookup("foo")
 	assert.Nil(t, model)
+}
+
+func TestTags(t *testing.T) {
+	post := &postModel{}
+
+	value := post.GetTag("foo")
+	assert.Nil(t, value)
+
+	post.SetTag("foo", "bar", time.Now().Add(time.Minute))
+
+	value = post.GetTag("foo")
+	assert.Equal(t, value, "bar")
+
+	post.SetTag("foo", nil, time.Time{})
+
+	value = post.GetTag("foo")
+	assert.Nil(t, value)
+
+	withTester(t, func(t *testing.T, tester *Tester) {
+		post := tester.Insert(&postModel{})
+
+		/* missing */
+
+		value := post.GetBase().GetTag("foo")
+		assert.Nil(t, value)
+
+		n := tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+		})
+		assert.Equal(t, 0, n)
+
+		/* no expiry */
+
+		post = tester.Update(post, bson.M{
+			"$set": bson.M{
+				TV("foo"): "bar",
+			},
+		})
+
+		value = post.GetBase().GetTag("foo")
+		assert.Equal(t, value, "bar")
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+		})
+		assert.Equal(t, 1, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+			TE("foo"): TQ(true),
+		})
+		assert.Equal(t, 0, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+			TE("foo"): TQ(false),
+		})
+		assert.Equal(t, 1, n)
+
+		/* valid */
+
+		post = tester.Update(post, bson.M{
+			"$set": bson.M{
+				TE("foo"): time.Now().Add(time.Minute),
+			},
+		})
+
+		value = post.GetBase().GetTag("foo")
+		assert.Equal(t, value, "bar")
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+		})
+		assert.Equal(t, 1, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+			TE("foo"): TQ(true),
+		})
+		assert.Equal(t, 0, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "bar",
+			TE("foo"): TQ(false),
+		})
+		assert.Equal(t, 1, n)
+
+		/* expired */
+
+		post = tester.Update(post, bson.M{
+			"$set": bson.M{
+				T("foo"): Tag{
+					Value:  "baz",
+					Expiry: time.Now().Add(-time.Minute),
+				},
+			},
+		})
+
+		value = post.GetBase().GetTag("foo")
+		assert.Nil(t, value)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TV("foo"): "baz",
+		})
+		assert.Equal(t, 1, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TE("foo"): TQ(true),
+		})
+		assert.Equal(t, 1, n)
+
+		n = tester.Count(&postModel{}, bson.M{
+			TE("foo"): TQ(false),
+		})
+		assert.Equal(t, 0, n)
+
+		/* missing */
+
+		post = tester.Update(post, bson.M{
+			"$unset": bson.M{
+				T("foo"): "",
+			},
+		})
+
+		value = post.GetBase().GetTag("foo")
+		assert.Nil(t, value)
+
+		n = tester.Count(&postModel{}, bson.M{
+			T("foo"): "bar",
+		})
+		assert.Equal(t, 0, n)
+	})
 }

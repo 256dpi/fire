@@ -23,6 +23,12 @@ var unsafeOperators = map[string]bool{
 var systemFields = map[string]bool{
 	"_id": true,
 	"_lk": true,
+	"_tk": true,
+	"_tg": true,
+}
+
+var systemFieldPrefixes = []string{
+	"_tg.",
 }
 
 // Translator is capable of translating query, update and sort documents from
@@ -146,6 +152,11 @@ func (t *Translator) field(field *string) error {
 	// check if system
 	if systemFields[*field] {
 		return nil
+	}
+	for _, prefix := range systemFieldPrefixes {
+		if strings.HasPrefix(*field, prefix) {
+			return nil
+		}
 	}
 
 	// check meta

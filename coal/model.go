@@ -3,9 +3,16 @@ package coal
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/256dpi/fire/stick"
 )
+
+// Tag is underlying model tag structure.
+type Tag struct {
+	Value  interface{} `bson:"v"`
+	Expiry time.Time   `bson:"e,omitempty"`
+}
 
 // Model defines the shape of a document stored in a collection. Custom types
 // must implement the interface by embedding the Base type.
@@ -18,10 +25,11 @@ type Model interface {
 
 // Base is the base for every coal model.
 type Base struct {
-	DocID ID      `json:"-" bson:"_id,omitempty"`
-	Lock  int64   `json:"-" bson:"_lk,omitempty"`
-	Token ID      `json:"-" bson:"_tk,omitempty"`
-	Score float64 `json:"-" bson:"_sc,omitempty"`
+	DocID ID             `json:"-" bson:"_id,omitempty"`
+	Lock  int64          `json:"-" bson:"_lk,omitempty"`
+	Token ID             `json:"-" bson:"_tk,omitempty"`
+	Score float64        `json:"-" bson:"_sc,omitempty"`
+	Tags  map[string]Tag `json:"-" bson:"_tg,omitempty"`
 }
 
 // B is a shorthand to construct a base with the provided id or a generated
@@ -52,6 +60,30 @@ func (b *Base) ID() ID {
 // GetBase implements the Model interface.
 func (b *Base) GetBase() *Base {
 	return b
+}
+
+// GetTag will get the value for the specified tag.
+func (b *Base) GetTag(name string) interface{} {
+	tv, ok := b.Tags[name]
+	if ok && (tv.Expiry.IsZero() || tv.Expiry.After(time.Now())) {
+		return tv.Value
+	}
+	return nil
+}
+
+// SetTag will set the provided value for the specified tag.
+func (b *Base) SetTag(name string, value interface{}, expiry time.Time) {
+	if b.Tags == nil {
+		b.Tags = map[string]Tag{}
+	}
+	if value == nil {
+		delete(b.Tags, name)
+		return
+	}
+	b.Tags[name] = Tag{
+		Value:  value,
+		Expiry: expiry,
+	}
 }
 
 // GetAccessor implements the Model interface.
