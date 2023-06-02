@@ -201,3 +201,26 @@ func TestTags(t *testing.T) {
 		assert.Equal(t, 0, n)
 	})
 }
+
+func TestClean(t *testing.T) {
+	post := &postModel{}
+
+	value := post.GetTag("foo")
+	assert.Nil(t, value)
+
+	expiry := time.Now().Add(time.Minute)
+	post.SetTag("foo", "bar", expiry)
+
+	Clean(post)
+	assert.Equal(t, map[string]Tag{
+		"foo": {
+			Value:  "bar",
+			Expiry: expiry,
+		},
+	}, post.Base.Tags)
+
+	post.SetTag("foo", "bar", time.Now().Add(-time.Minute))
+
+	Clean(post)
+	assert.Equal(t, map[string]Tag{}, post.Base.Tags)
+}

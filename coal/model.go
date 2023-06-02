@@ -91,6 +91,18 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Model)).Accessor
 }
 
+// Clean will clean the model by removing expired tags.
+func Clean(model Model) {
+	// deleted expired tags
+	tags := model.GetBase().Tags
+	now := time.Now()
+	for name, tag := range tags {
+		if !tag.Expiry.IsZero() && tag.Expiry.Before(now) {
+			delete(tags, name)
+		}
+	}
+}
+
 // Slice takes a slice of the form []Post, []*Post, *[]Post or *[]*Post and
 // returns a new slice that contains all models.
 func Slice(val interface{}) []Model {

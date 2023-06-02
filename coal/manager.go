@@ -132,6 +132,9 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags
 		}
 	}
 
+	// clean model
+	Clean(model)
+
 	return true, nil
 }
 
@@ -220,6 +223,9 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 			return false, xo.W(err)
 		}
 	}
+
+	// clean model
+	Clean(model)
 
 	return true, nil
 }
@@ -322,14 +328,22 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 		return err
 	}
 
+	// get models
+	models := Slice(list)
+
 	// validate models
 	if !Merge(flags).Has(NoValidation) {
-		for _, model := range Slice(list) {
+		for _, model := range models {
 			err = model.Validate()
 			if err != nil {
 				return xo.W(err)
 			}
 		}
+	}
+
+	// clean models
+	for _, model := range models {
+		Clean(model)
 	}
 
 	return nil
@@ -761,6 +775,11 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 		}
 	}
 
+	// clean models
+	for _, model := range models {
+		Clean(model)
+	}
+
 	// get documents
 	docs := make([]interface{}, 0, len(models))
 	for _, model := range models {
@@ -828,6 +847,9 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 		}
 	}
 
+	// clean model
+	Clean(model)
+
 	// prepare options
 	opts := options.Update().SetUpsert(true)
 
@@ -886,6 +908,9 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...
 		}
 	}
 
+	// clean model
+	Clean(model)
+
 	// increment lock manually
 	if lock {
 		model.GetBase().Lock += 1000
@@ -933,6 +958,9 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 			return false, xo.W(err)
 		}
 	}
+
+	// clean model
+	Clean(model)
 
 	// increment lock manually
 	if lock {
@@ -1005,6 +1033,9 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 		return false, err
 	}
 
+	// clean model
+	Clean(model)
+
 	return true, nil
 }
 
@@ -1075,6 +1106,9 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 	} else if err != nil {
 		return false, err
 	}
+
+	// clean model
+	Clean(model)
 
 	return true, nil
 }
@@ -1202,6 +1236,9 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 	} else if err != nil {
 		return false, err
 	}
+
+	// clean model
+	Clean(model)
 
 	return model.GetBase().Token == token, nil
 }
@@ -1350,6 +1387,9 @@ func (i *ManagedIterator) Decode(model Model) error {
 			return xo.W(err)
 		}
 	}
+
+	// clean model
+	Clean(model)
 
 	return nil
 }
