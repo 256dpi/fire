@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -223,26 +221,11 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			return err
 		}
 
-		// transform model
-		doc, err := bsonkit.Transform(model)
-		if err != nil {
-			return xo.W(err)
-		}
-
-		// transform update
-		update, err := bsonkit.Transform(opCtx.Update)
-		if err != nil {
-			return xo.W(err)
-		}
+		// remove tag
+		model.GetBase().SetTag(operation.TagName, nil, time.Time{})
 
 		// apply update
-		_, err = mongokit.Apply(doc, nil, update, false, nil)
-		if err != nil {
-			return xo.W(err)
-		}
-
-		// decode model
-		err = bsonkit.Decode(doc, model)
+		err = coal.Apply(model, opCtx.Update)
 		if err != nil {
 			return xo.W(err)
 		}

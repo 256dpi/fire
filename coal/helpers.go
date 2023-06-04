@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/mongokit"
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/stick"
@@ -174,4 +177,38 @@ func ToD(model Model) bson.D {
 	}
 
 	return d
+}
+
+// Apply will apply the provided update document to the specified model.
+func Apply(model Model, update bson.M) error {
+	// skip if update is empty
+	if len(update) == 0 {
+		return nil
+	}
+
+	// transform model
+	modelDoc, err := bsonkit.Transform(model)
+	if err != nil {
+		return xo.W(err)
+	}
+
+	// transform update
+	updateDoc, err := bsonkit.Transform(update)
+	if err != nil {
+		return xo.W(err)
+	}
+
+	// apply update
+	_, err = mongokit.Apply(modelDoc, nil, updateDoc, false, nil)
+	if err != nil {
+		return xo.W(err)
+	}
+
+	// decode model
+	err = bsonkit.Decode(modelDoc, model)
+	if err != nil {
+		return xo.W(err)
+	}
+
+	return nil
 }

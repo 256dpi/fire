@@ -91,3 +91,52 @@ func TestToD(t *testing.T) {
 		TextBody:  "Hello World",
 	}))
 }
+
+func TestApply(t *testing.T) {
+	post := &postModel{}
+
+	err := Apply(post, bson.M{})
+	assert.NoError(t, err)
+
+	err = Apply(post, bson.M{
+		"$set": bson.M{
+			"title": "Title",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "Title", post.Title)
+
+	err = Apply(post, bson.M{
+		"$unset": bson.M{
+			"title": "",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "Title", post.Title)
+
+	err = Apply(post, bson.M{
+		"$set": bson.M{
+			"title": nil,
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "", post.Title)
+}
+
+func BenchmarkApply(b *testing.B) {
+	post := &postModel{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := Apply(post, bson.M{
+			"$set": bson.M{
+				"title": "Title",
+			},
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
