@@ -14,13 +14,24 @@ func TestIndex(t *testing.T) {
 		delete(metaCache, oldMeta.Type)
 
 		newMeta := GetMeta(&postModel{})
-		assert.Empty(t, newMeta.Indexes)
+		assert.Equal(t, []Index{
+			{
+				Keys: bson.D{
+					{Key: "_tg.$**", Value: 1},
+				},
+			},
+		}, newMeta.Indexes)
 
 		AddIndex(&postModel{}, false, time.Minute, "Title")
 		AddPartialIndex(&postModel{}, true, 0, []string{"Title", "-Published"}, bson.M{
 			"Title": "Hello World!",
 		})
 		assert.EqualValues(t, []Index{
+			{
+				Keys: bson.D{
+					{Key: "_tg.$**", Value: 1},
+				},
+			},
 			{
 				Fields: []string{"Title"},
 				Keys: bson.D{
@@ -50,7 +61,7 @@ func TestIndex(t *testing.T) {
 		err = EnsureIndexes(tester.Store, &postModel{})
 		assert.NoError(t, err)
 
-		newMeta.Indexes[0].Expiry = time.Hour
+		newMeta.Indexes[1].Expiry = time.Hour
 
 		err = EnsureIndexes(tester.Store, &postModel{})
 		assert.Error(t, err)

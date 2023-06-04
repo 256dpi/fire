@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/256dpi/fire/stick"
 )
 
@@ -345,6 +347,13 @@ func GetMeta(model Model) *Meta {
 			meta.FlaggedFields[flag] = list
 		}
 	}
+
+	// add tag wildcard index
+	meta.Indexes = append(meta.Indexes, Index{
+		Keys: bson.D{
+			{Key: "_tg.$**", Value: 1},
+		},
+	})
 
 	// cache meta
 	metaCache[modelType] = meta

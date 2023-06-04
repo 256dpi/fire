@@ -153,6 +153,11 @@ func TestGetMeta(t *testing.T) {
 		},
 		Indexes: []Index{
 			{
+				Keys: bson.D{
+					{Key: "_tg.$**", Value: 1},
+				},
+			},
+			{
 				Fields: []string{"Published", "Title"},
 				Keys: bson.D{
 					{Key: "published", Value: int32(1)},
@@ -273,6 +278,13 @@ func TestGetMeta(t *testing.T) {
 				},
 			},
 		},
+		Indexes: []Index{
+			{
+				Keys: bson.D{
+					{Key: "_tg.$**", Value: 1},
+				},
+			},
+		},
 	}, comment)
 
 	selection := GetMeta(&selectionModel{})
@@ -332,6 +344,13 @@ func TestGetMeta(t *testing.T) {
 				"Posts": {
 					Index: 2,
 					Type:  toManyType,
+				},
+			},
+		},
+		Indexes: []Index{
+			{
+				Keys: bson.D{
+					{Key: "_tg.$**", Value: 1},
 				},
 			},
 		},
