@@ -30,7 +30,7 @@ func testModelOp() *Operation {
 			model := ctx.Model.(*testModel)
 			if model.Input == -1 {
 				return axe.E("invalid input", false)
-			} else if model.Input == -2 && ctx.Context.(*axe.Context).Attempt == 1 {
+			} else if model.Input == -2 && (ctx.Sync || ctx.Context.(*axe.Context).Attempt == 1) {
 				return ErrDefer.Wrap()
 			}
 			ctx.Change("$set", "Output", model.Input*2)
@@ -111,6 +111,8 @@ func TestCheckError(t *testing.T) {
 
 func TestCheckDefer(t *testing.T) {
 	testOperation(t, testModelOp(), func(env operationTest) {
+		env.operation.Sync = true
+
 		model := &testModel{Base: coal.B(), Input: -2}
 		env.tester.Insert(model)
 

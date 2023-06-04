@@ -16,7 +16,8 @@ import (
 )
 
 // ErrDefer can be returned to indicate that the operation has not yet been
-// fully processed and the handler should be called again sometime later.
+// fully processed and the handler should be called again sometime later. If a
+// synchronous operation is deferred, it will be retried asynchronously.
 var ErrDefer = xo.BF("defer")
 
 // Context is passed to the operation process function.
@@ -210,6 +211,14 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			// increment tag
 			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
 			model.GetBase().SetTag(operation.TagName, n+1, time.Now().Add(operation.TagExpiry))
+
+			// enqueue job
+			_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
+			if err != nil {
+				return err
+			}
+
+			continue
 		} else if err != nil {
 			return err
 		}
