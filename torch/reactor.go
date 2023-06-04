@@ -24,8 +24,8 @@ var ErrDefer = xo.BF("defer")
 type Context struct {
 	context.Context
 	Model  coal.Model
-	Sync   bool
 	Update bson.M
+	Sync   bool
 }
 
 // Change will record a change to the update document.
@@ -201,8 +201,8 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 		opCtx := &Context{
 			Context: ctx,
 			Model:   model,
-			Sync:    true,
 			Update:  bson.M{},
+			Sync:    true,
 		}
 
 		// perform sync operation
@@ -229,8 +229,14 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			return xo.W(err)
 		}
 
+		// transform update
+		update, err := bsonkit.Transform(opCtx.Update)
+		if err != nil {
+			return xo.W(err)
+		}
+
 		// apply update
-		_, err = mongokit.Apply(doc, nil, bsonkit.MustConvert(opCtx.Update), false, nil)
+		_, err = mongokit.Apply(doc, nil, update, false, nil)
 		if err != nil {
 			return xo.W(err)
 		}
