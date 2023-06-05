@@ -10,8 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// TODO: Validate updates before writing.
-
 // Flags can be used to change the behaviour of operations.
 type Flags int
 
@@ -988,7 +986,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 // update did not change the document.
 //
 // A transaction is required for locking.
-func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool) (bool, error) {
+func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Update")
 	defer span.End()
@@ -1036,6 +1034,14 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 	// clean model
 	Clean(model)
 
+	// validate updated model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
+	}
+
 	return true, nil
 }
 
@@ -1048,7 +1054,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
+func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateFirst")
 	defer span.End()
@@ -1109,6 +1115,14 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 
 	// clean model
 	Clean(model)
+
+	// validate updated model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
+	}
 
 	return true, nil
 }
@@ -1171,7 +1185,7 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool) (bool, error) {
+func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Upsert")
 	defer span.End()
@@ -1239,6 +1253,14 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 	// clean model
 	Clean(model)
+
+	// validate updated model
+	if !Merge(flags).Has(NoValidation) {
+		err = model.Validate()
+		if err != nil {
+			return false, xo.W(err)
+		}
+	}
 
 	return model.GetBase().Token == token, nil
 }
