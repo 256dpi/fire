@@ -162,8 +162,8 @@ func (s *Store) C(model Model) *Collection {
 }
 
 // M will return the manager for the specified model. The manager will translate
-// query and update documents as well as perform extensive checks before running
-// operations to ensure they are as safe as possible.
+// query documents as well as perform extensive checks before running operations
+// to ensure they are as safe as possible.
 func (s *Store) M(model Model) *Manager {
 	// get meta
 	meta := GetMeta(model)

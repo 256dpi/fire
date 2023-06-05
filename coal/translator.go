@@ -31,7 +31,7 @@ var systemFieldPrefixes = []string{
 	"_tg.",
 }
 
-// Translator is capable of translating query, update and sort documents from
+// Translator is capable of translating filter, update and sort documents from
 // struct field names to database fields names. It also checks documents against
 // as list of unsafe operators. Field names may be prefixed with a "#" to bypass
 // any validation.
@@ -58,7 +58,7 @@ func (t *Translator) Field(field string) (string, error) {
 
 // Document will convert the provided filter or update document and translate
 // all field names to refer to known database fields. It will also validate the
-// query or update and return an error for unsafe expressions or operators.
+// filter or update and return an error for unsafe expressions or operators.
 func (t *Translator) Document(query bson.M) (bson.D, error) {
 	// convert
 	doc, err := t.convert(query)

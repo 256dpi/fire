@@ -51,16 +51,16 @@ func (t *Tester) Ensure() {
 }
 
 // FindAll will return all saved models.
-func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
-	// prepare query
-	qry := bson.M{}
-	if len(query) > 0 {
-		qry = query[0]
+func (t *Tester) FindAll(model Model, filters ...bson.M) interface{} {
+	// prepare filter
+	filter := bson.M{}
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	// find all documents
 	list := GetMeta(model).MakeSlice()
-	err := t.Store.M(model).FindAll(nil, list, qry, []string{"_id"}, 0, 0, false, NoTransaction)
+	err := t.Store.M(model).FindAll(nil, list, filter, []string{"_id"}, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -76,15 +76,15 @@ func (t *Tester) FindAll(model Model, query ...bson.M) interface{} {
 }
 
 // FindLast will return the last saved model.
-func (t *Tester) FindLast(model Model, query ...bson.M) Model {
-	// prepare query
-	qry := bson.M{}
-	if len(query) > 0 {
-		qry = query[0]
+func (t *Tester) FindLast(model Model, filters ...bson.M) Model {
+	// prepare filter
+	filter := bson.M{}
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	// find last document
-	found, err := t.Store.M(model).FindFirst(nil, model, qry, []string{"-_id"}, 0, false)
+	found, err := t.Store.M(model).FindFirst(nil, model, filter, []string{"-_id"}, 0, false)
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -100,15 +100,15 @@ func (t *Tester) FindLast(model Model, query ...bson.M) Model {
 }
 
 // Count will count all saved models.
-func (t *Tester) Count(model Model, query ...bson.M) int {
-	// prepare query
-	qry := bson.M{}
-	if len(query) > 0 {
-		qry = query[0]
+func (t *Tester) Count(model Model, filters ...bson.M) int {
+	// prepare filter
+	filter := bson.M{}
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	// count all documents
-	n, err := t.Store.M(model).Count(nil, qry, 0, 0, false, NoTransaction)
+	n, err := t.Store.M(model).Count(nil, filter, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -203,15 +203,15 @@ func (t *Tester) Delete(model Model) {
 }
 
 // DeleteAll will delete all specified models.
-func (t *Tester) DeleteAll(model Model, query ...bson.M) {
-	// prepare query
-	qry := bson.M{}
-	if len(query) > 0 {
-		qry = query[0]
+func (t *Tester) DeleteAll(model Model, filters ...bson.M) {
+	// prepare filter
+	filter := bson.M{}
+	if len(filters) > 0 {
+		filter = filters[0]
 	}
 
 	// delete models
-	_, err := t.Store.M(model).DeleteAll(nil, qry)
+	_, err := t.Store.M(model).DeleteAll(nil, filter)
 	if err != nil {
 		panic(err)
 	}

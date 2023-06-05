@@ -74,9 +74,9 @@ func TE(name string) string {
 	return T(name) + ".e"
 }
 
-// TQ is a helper function to construct the BSON query for a tag expiry. Only
+// TF is a helper function to construct the BSON filter for a tag expiry. Only
 // tags with a non-zero expiry can become expired.
-func TQ(expired bool) bson.M {
+func TF(expired bool) bson.M {
 	if expired {
 		return bson.M{
 			"$lt": time.Now(),

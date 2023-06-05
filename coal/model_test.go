@@ -117,13 +117,13 @@ func TestTags(t *testing.T) {
 
 		n = tester.Count(&postModel{}, bson.M{
 			TV("foo"): "bar",
-			TE("foo"): TQ(true),
+			TE("foo"): TF(true),
 		})
 		assert.Equal(t, 0, n)
 
 		n = tester.Count(&postModel{}, bson.M{
 			TV("foo"): "bar",
-			TE("foo"): TQ(false),
+			TE("foo"): TF(false),
 		})
 		assert.Equal(t, 1, n)
 
@@ -145,13 +145,13 @@ func TestTags(t *testing.T) {
 
 		n = tester.Count(&postModel{}, bson.M{
 			TV("foo"): "bar",
-			TE("foo"): TQ(true),
+			TE("foo"): TF(true),
 		})
 		assert.Equal(t, 0, n)
 
 		n = tester.Count(&postModel{}, bson.M{
 			TV("foo"): "bar",
-			TE("foo"): TQ(false),
+			TE("foo"): TF(false),
 		})
 		assert.Equal(t, 1, n)
 
@@ -175,12 +175,12 @@ func TestTags(t *testing.T) {
 		assert.Equal(t, 1, n)
 
 		n = tester.Count(&postModel{}, bson.M{
-			TE("foo"): TQ(true),
+			TE("foo"): TF(true),
 		})
 		assert.Equal(t, 1, n)
 
 		n = tester.Count(&postModel{}, bson.M{
-			TE("foo"): TQ(false),
+			TE("foo"): TF(false),
 		})
 		assert.Equal(t, 0, n)
 

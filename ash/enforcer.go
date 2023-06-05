@@ -20,7 +20,7 @@ func E(name string, m fire.Matcher, h fire.Handler) *Enforcer {
 // Enforcers should only return errors if the operation is clearly not allowed for
 // the presented candidate and that this information is general knowledge (e.g.
 // API documentation). In order to prevent the leakage of implementation details
-// the enforcer should mutate the context's Query field to hide existing data
+// the enforcer should mutate the context's filter list to hide existing data
 // from the candidate.
 type Enforcer = fire.Callback
 
@@ -48,7 +48,7 @@ func DenyAccess() *Enforcer {
 }
 
 // AddFilter will enforce the authorization by adding the passed filter to the
-// Filter query of the context. It should be used if the candidate is allowed to
+// Filter list of the context. It should be used if the candidate is allowed to
 // access the resource in general, but some documents should be filtered out.
 //
 // Note: This enforcer cannot be used to authorize Create and CollectionAction
