@@ -113,7 +113,7 @@ func TestCheckTag(t *testing.T) {
 
 		/* clear */
 
-		model.GetBase().SetTag("Checked", nil, time.Now())
+		model.SetTag("Checked", nil, time.Now())
 		env.tester.Replace(model)
 
 		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
@@ -125,7 +125,7 @@ func TestCheckTag(t *testing.T) {
 
 		/* outdated */
 
-		model.GetBase().SetTag("Checked", time.Now().Add(-2*time.Minute), time.Now())
+		model.SetTag("Checked", time.Now().Add(-2*time.Minute), time.Now())
 		env.tester.Replace(model)
 
 		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))

@@ -13,7 +13,7 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Context is passed to the operation process function.
+// Context holds context information for a reactor operation.
 type Context struct {
 	// The parent context.
 	context.Context
@@ -21,16 +21,16 @@ type Context struct {
 	// The operated model.
 	Model coal.Model
 
-	// The update document.
+	// The final update document.
 	Update bson.M
 
 	// Whether the operation is executed synchronously.
 	Sync bool
 
-	// The flag may be set by the handler to indicate that the operation has not
-	// yet been fully processed and the handler should be called again sometime
-	// later. If a synchronous operation is deferred, it will always be retried
-	// asynchronously.
+	// A flag that may be set by the handler to indicate that the operation has
+	// not yet been fully processed and the handler should be called again
+	// sometime later. If a synchronous operation is deferred, it will always be
+	// retried asynchronously.
 	Defer bool
 
 	// The executed operation.
@@ -71,7 +71,7 @@ type Operation struct {
 	// The query used to find potential models to process.
 	Query func() bson.M
 
-	// The filter decides whether a model should be processed.
+	// The filter function that decides whether a model should be processed.
 	Filter func(model coal.Model) bool
 
 	// The function called to process a model.
@@ -107,12 +107,15 @@ type Operation struct {
 
 	// The tag expiry time.
 	//
-	// Default: 15m.
+	// Default: 24h.
 	TagExpiry time.Duration
 }
 
 // Reactor organizes the execution of operations based on model events (via
-// modifier callback) or database scans (via periodic jobs).
+// modifier callback), direct checks or database scans (via periodic jobs). The
+// reactor will ensure that only one operation of the same type per model is
+// executed at the same. Outstanding operations are tracked using a tag on the
+// model and are guaranteed to be executed eventually until the tag expires.
 type Reactor struct {
 	store      *coal.Store
 	queue      *axe.Queue
@@ -147,7 +150,7 @@ func (r *Reactor) Add(operation *Operation) {
 		operation.TagName = "torch/Reactor/" + operation.Name
 	}
 	if operation.TagExpiry == 0 {
-		operation.TagExpiry = 15 * time.Minute
+		operation.TagExpiry = 24 * time.Hour
 	}
 
 	// validate operation
@@ -237,17 +240,17 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			return err
 		}
 
+		// apply update
+		err = coal.Apply(model, opCtx.Update)
+		if err != nil {
+			return xo.W(err)
+		}
+
 		// handle defer
 		if opCtx.Defer {
 			// increment tag
 			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
 			model.GetBase().SetTag(operation.TagName, n+1, time.Now().Add(operation.TagExpiry))
-
-			// apply update
-			err = coal.Apply(model, opCtx.Update)
-			if err != nil {
-				return xo.W(err)
-			}
 
 			// enqueue job
 			_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
@@ -260,12 +263,6 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 
 		// remove tag
 		model.GetBase().SetTag(operation.TagName, nil, time.Time{})
-
-		// apply update
-		err = coal.Apply(model, opCtx.Update)
-		if err != nil {
-			return xo.W(err)
-		}
 	}
 
 	return nil
