@@ -31,7 +31,8 @@ func testModelOp() *Operation {
 			if model.Input == -1 {
 				return axe.E("invalid input", false)
 			} else if model.Input == -2 && (ctx.Sync || ctx.Context.(*axe.Context).Attempt == 1) {
-				return ErrDefer.Wrap()
+				ctx.Defer = true
+				return nil
 			}
 			ctx.Change("$set", "Output", model.Input*2)
 			return nil

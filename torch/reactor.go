@@ -13,17 +13,18 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// ErrDefer can be returned to indicate that the operation has not yet been
-// fully processed and the handler should be called again sometime later. If a
-// synchronous operation is deferred, it will be retried asynchronously.
-var ErrDefer = xo.BF("defer")
-
 // Context is passed to the operation process function.
 type Context struct {
 	context.Context
 	Model  coal.Model
 	Update bson.M
 	Sync   bool
+
+	// The flag may be set by the handler to indicate that the operation has not
+	// yet been fully processed and the handler should be called again sometime
+	// later. If a synchronous operation is deferred, it will be retried
+	// asynchronously.
+	Defer bool
 }
 
 // Change will record a change to the update document.
@@ -205,10 +206,21 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 
 		// perform sync operation
 		err := operation.Process(opCtx)
-		if ErrDefer.Is(err) {
+		if err != nil {
+			return err
+		}
+
+		// handle defer
+		if opCtx.Defer {
 			// increment tag
 			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
 			model.GetBase().SetTag(operation.TagName, n+1, time.Now().Add(operation.TagExpiry))
+
+			// apply update
+			err = coal.Apply(model, opCtx.Update)
+			if err != nil {
+				return xo.W(err)
+			}
 
 			// enqueue job
 			_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
@@ -217,8 +229,6 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			}
 
 			continue
-		} else if err != nil {
-			return err
 		}
 
 		// remove tag
@@ -367,7 +377,12 @@ func (r *Reactor) ProcessTask() *axe.Task {
 
 			// process model
 			err = operation.Process(opCtx)
-			if ErrDefer.Is(err) {
+			if err != nil {
+				return xo.W(err)
+			}
+
+			// handle defer
+			if opCtx.Defer {
 				// retry until delay is too high
 				delay := stick.Backoff(ctx.Task.MinDelay, ctx.Task.MaxDelay, ctx.Task.DelayFactor, ctx.Attempt)
 				if delay < operation.MaxDeferDelay {
@@ -375,8 +390,6 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				}
 
 				return nil
-			} else if err != nil {
-				return xo.W(err)
 			}
 
 			// decrement tag and update expiry
