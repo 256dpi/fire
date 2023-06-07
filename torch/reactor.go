@@ -35,6 +35,9 @@ type Context struct {
 
 	// The executed operation.
 	Operation *Operation
+
+	// The executed check.
+	Check *Check
 }
 
 // Change will record a change to the update document.

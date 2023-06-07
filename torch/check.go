@@ -60,6 +60,7 @@ func CheckField(check Check) *Operation {
 			return checked == nil || checked.Before(check.Deadline())
 		},
 		Process: func(ctx *Context) error {
+			ctx.Check = &check
 			ctx.Change("$set", check.Name, time.Now())
 			return check.Handler(ctx)
 		},
@@ -88,6 +89,7 @@ func CheckTag(check Check) *Operation {
 			return !ok || checked.Before(check.Deadline())
 		},
 		Process: func(ctx *Context) error {
+			ctx.Check = &check
 			ctx.Change("$set", coal.T(check.Name), coal.Tag{
 				Value:  time.Now(),
 				Expiry: time.Now().Add(check.Interval),
