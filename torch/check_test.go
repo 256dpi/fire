@@ -18,12 +18,11 @@ type checkModel struct {
 	stick.NoValidation
 }
 
-func checkModelCheck() Check {
-	return Check{
+func checkModelCheck() Check[*checkModel] {
+	return Check[*checkModel]{
 		Name:     "Checked",
-		Model:    &checkModel{},
 		Interval: time.Minute,
-		Handler: func(ctx *Context, model coal.Model) error {
+		Handler: func(ctx *Context, model *checkModel) error {
 			ctx.Change("$inc", "Counter", 1)
 			return nil
 		},
