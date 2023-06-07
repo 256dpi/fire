@@ -19,6 +19,7 @@ type testModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"test"`
 	Input     int
 	Output    int
+	Sleep     time.Duration
 	stick.NoValidation
 }
 
@@ -28,6 +29,9 @@ func testModelOp() *Operation {
 		Model: &testModel{},
 		Processor: func(ctx *Context) error {
 			model := ctx.Model.(*testModel)
+			if model.Sleep > 0 {
+				time.Sleep(model.Sleep)
+			}
 			if model.Input == -1 {
 				return axe.E("invalid input", false)
 			} else if model.Input == -2 && (ctx.Sync || ctx.Context.(*axe.Context).Attempt == 1) {
@@ -329,7 +333,7 @@ func TestModifierConcurrency(t *testing.T) {
 	// triggered by the scan
 
 	testOperation(t, testModelOp(), func(env operationTest) {
-		model := &testModel{Input: 7}
+		model := &testModel{Input: 7, Sleep: 100 * time.Millisecond}
 
 		num, err := axe.Await(env.store, 0, func() error {
 			model = env.tester.Create(t, model, nil, nil).Model.(*testModel)

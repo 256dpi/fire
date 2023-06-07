@@ -449,6 +449,8 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				return err
 			}
 
+			// TODO: Check outstanding operations and restart job?
+
 			return nil
 		},
 	}
