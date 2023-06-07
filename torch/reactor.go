@@ -15,16 +15,26 @@ import (
 
 // Context is passed to the operation process function.
 type Context struct {
+	// The parent context.
 	context.Context
-	Model  coal.Model
+
+	// The operated model.
+	Model coal.Model
+
+	// The update document.
 	Update bson.M
-	Sync   bool
+
+	// Whether the operation is executed synchronously.
+	Sync bool
 
 	// The flag may be set by the handler to indicate that the operation has not
 	// yet been fully processed and the handler should be called again sometime
-	// later. If a synchronous operation is deferred, it will be retried
+	// later. If a synchronous operation is deferred, it will always be retried
 	// asynchronously.
 	Defer bool
+
+	// The executed operation.
+	Operation *Operation
 }
 
 // Change will record a change to the update document.
@@ -197,10 +207,11 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 
 		// prepare context
 		opCtx := &Context{
-			Context: ctx,
-			Model:   model,
-			Update:  bson.M{},
-			Sync:    true,
+			Context:   ctx,
+			Model:     model,
+			Update:    bson.M{},
+			Sync:      true,
+			Operation: operation,
 		}
 
 		// perform sync operation
@@ -369,9 +380,10 @@ func (r *Reactor) ProcessTask() *axe.Task {
 
 			// prepare context
 			opCtx := &Context{
-				Context: ctx,
-				Model:   model,
-				Update:  bson.M{},
+				Context:   ctx,
+				Model:     model,
+				Update:    bson.M{},
+				Operation: operation,
 			}
 
 			// process model
