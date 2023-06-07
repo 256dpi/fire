@@ -146,8 +146,7 @@ func (r *Reactor) Add(operation *Operation) {
 	r.operations[operation.Name] = operation
 }
 
-// Modifier will return a callback that will run Check on created and updated
-// models.
+// Modifier returns a callback that will run Check on created and updated models.
 func (r *Reactor) Modifier() *fire.Callback {
 	return fire.C("torch/Reactor.Modifier", fire.Modifier, fire.Only(fire.Create|fire.Update), func(ctx *fire.Context) error {
 		return r.Check(ctx, ctx.Model)
@@ -157,8 +156,8 @@ func (r *Reactor) Modifier() *fire.Callback {
 // Check will check the provided model and enqueue a job if processing is
 // necessary or if Operation.Sync is enabled perform the operation directly.
 //
-// Note: The function may not enqueue a job and tag the model instead. Therefore,
-// the caller must arrange for the model to be persisted for the tag to be saved.
+// Note: As the method may mutate the model, the caller must arrange for the
+// model to be persisted.
 func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "torch/Reactor.Check")
