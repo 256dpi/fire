@@ -25,7 +25,7 @@ type Check struct {
 	Jitter float64
 
 	// The check handler.
-	Handler func(ctx *Context, model coal.Model) error
+	Handler func(ctx *Context) error
 }
 
 // Deadline will return a deadline for a query or filter that has the configured
@@ -61,7 +61,7 @@ func CheckField(check Check) *Operation {
 		},
 		Process: func(ctx *Context) error {
 			ctx.Change("$set", check.Name, time.Now())
-			return check.Handler(ctx, ctx.Model)
+			return check.Handler(ctx)
 		},
 	}
 }
@@ -92,7 +92,7 @@ func CheckTag(check Check) *Operation {
 				Value:  time.Now(),
 				Expiry: time.Now().Add(check.Interval),
 			})
-			return check.Handler(ctx, ctx.Model)
+			return check.Handler(ctx)
 		},
 	}
 }

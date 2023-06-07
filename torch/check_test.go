@@ -23,7 +23,7 @@ func checkModelCheck() Check {
 		Name:     "Checked",
 		Model:    &checkModel{},
 		Interval: time.Minute,
-		Handler: func(ctx *Context, model coal.Model) error {
+		Handler: func(ctx *Context) error {
 			ctx.Change("$inc", "Counter", 1)
 			return nil
 		},
