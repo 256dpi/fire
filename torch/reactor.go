@@ -38,6 +38,11 @@ type Context struct {
 
 	// The executed check.
 	Check *Check
+
+	// The reactor, store and queue.
+	Reactor *Reactor
+	Store   *coal.Store
+	Queue   *axe.Queue
 }
 
 // Change will record a change to the update document.
@@ -215,6 +220,9 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			Update:    bson.M{},
 			Sync:      true,
 			Operation: operation,
+			Reactor:   r,
+			Store:     r.store,
+			Queue:     r.queue,
 		}
 
 		// perform sync operation
@@ -387,6 +395,9 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				Model:     model,
 				Update:    bson.M{},
 				Operation: operation,
+				Reactor:   r,
+				Store:     r.store,
+				Queue:     r.queue,
 			}
 
 			// process model
