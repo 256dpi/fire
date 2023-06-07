@@ -32,7 +32,7 @@ type Accessor struct {
 // the provided type.
 func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
-	typ := structValue(v).Type()
+	typ := structType(v)
 
 	// acquire mutex
 	accessMutex.Lock()
@@ -56,7 +56,7 @@ func Access(v interface{}, ignore ...string) *Accessor {
 // BuildAccessor will build and return an accessor for the provided type.
 func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 	// get type
-	typ := structValue(v).Type()
+	typ := structType(v)
 
 	// prepare accessor
 	accessor := &Accessor{
@@ -93,7 +93,7 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 // GetAccessor is a shorthand to retrieve a value's accessor.
 func GetAccessor(v interface{}) *Accessor {
 	// check type
-	structValue(v)
+	structType(v)
 
 	// check if accessible
 	if acc, ok := v.(Accessible); ok {
@@ -194,6 +194,18 @@ func MustSet(v interface{}, name string, value interface{}) {
 	if !ok {
 		panic(fmt.Sprintf(`stick: could not set "%s" on "%s"`, name, GetAccessor(v).Name))
 	}
+}
+
+func structType(v interface{}) reflect.Type {
+	typ := reflect.TypeOf(v)
+	if typ.Kind() != reflect.Ptr {
+		panic("stick: expected pointer")
+	}
+	typ = typ.Elem()
+	if typ.Kind() != reflect.Struct {
+		panic("stick: expected struct")
+	}
+	return typ
 }
 
 func structValue(v interface{}) reflect.Value {
