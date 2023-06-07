@@ -130,7 +130,7 @@ func Compute(comp Computation) *Operation {
 
 			return false
 		},
-		Process: func(ctx *Context) error {
+		Processor: func(ctx *Context) error {
 			// set computation
 			ctx.Computation = &comp
 

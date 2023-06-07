@@ -59,7 +59,7 @@ func CheckField(check Check) *Operation {
 			checked := stick.MustGet(model, check.Name).(*time.Time)
 			return checked == nil || checked.Before(check.Deadline())
 		},
-		Process: func(ctx *Context) error {
+		Processor: func(ctx *Context) error {
 			ctx.Check = &check
 			ctx.Change("$set", check.Name, time.Now())
 			return check.Handler(ctx)
@@ -88,7 +88,7 @@ func CheckTag(check Check) *Operation {
 			checked, ok := model.GetBase().GetTag(check.Name).(time.Time)
 			return !ok || checked.Before(check.Deadline())
 		},
-		Process: func(ctx *Context) error {
+		Processor: func(ctx *Context) error {
 			ctx.Check = &check
 			ctx.Change("$set", coal.T(check.Name), coal.Tag{
 				Value:  time.Now(),

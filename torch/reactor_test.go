@@ -26,7 +26,7 @@ func testModelOp() *Operation {
 	return &Operation{
 		Name:  "foo",
 		Model: &testModel{},
-		Process: func(ctx *Context) error {
+		Processor: func(ctx *Context) error {
 			model := ctx.Model.(*testModel)
 			if model.Input == -1 {
 				return axe.E("invalid input", false)

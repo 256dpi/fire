@@ -75,7 +75,7 @@ type Operation struct {
 	Filter func(model coal.Model) bool
 
 	// The function called to process a model.
-	Process func(ctx *Context) error
+	Processor func(ctx *Context) error
 
 	// The operation is executed synchronously during the modifier callback and
 	// when checked directly.
@@ -157,7 +157,7 @@ func (r *Reactor) Add(operation *Operation) {
 	if operation.Model == nil {
 		panic("torch: missing model")
 	}
-	if operation.Process == nil {
+	if operation.Processor == nil {
 		panic("torch: missing process function")
 	}
 
@@ -232,7 +232,7 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 		}
 
 		// perform sync operation
-		err := operation.Process(opCtx)
+		err := operation.Processor(opCtx)
 		if err != nil {
 			return err
 		}
@@ -407,7 +407,7 @@ func (r *Reactor) ProcessTask() *axe.Task {
 			}
 
 			// process model
-			err = operation.Process(opCtx)
+			err = operation.Processor(opCtx)
 			if err != nil {
 				return xo.W(err)
 			}
