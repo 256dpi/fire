@@ -18,7 +18,7 @@ import (
 type Status struct {
 	Progress float64   `json:"progress"`
 	Updated  time.Time `json:"updated"`
-	Hash     string    `json:"Hash"`
+	Hash     string    `json:"hash"`
 	Valid    bool      `json:"valid"`
 }
 
@@ -30,6 +30,40 @@ func Hash(input string) string {
 	}
 	sum := md5.Sum([]byte(input))
 	return hex.EncodeToString(sum[:])
+}
+
+// StringHasher constructs a hasher function for the provided string field.
+func StringHasher(field string) func(model coal.Model) string {
+	return func(model coal.Model) string {
+		return Hash(stick.MustGet(model, field).(string))
+	}
+}
+
+// StringComputer constructs a compute function for the provided string input
+// and generic output field. If the input string is empty, the output field will
+// be set to the zero value of the generic type.
+func StringComputer[T any](inField, outField string, fn func(ctx *Context, in string) (T, error)) func(ctx *Context) error {
+	return func(ctx *Context) error {
+		// get input
+		input := stick.MustGet(ctx.Model, inField).(string)
+
+		// handle absence
+		if input == "" {
+			var zero T
+			ctx.Change("$set", outField, zero)
+		}
+
+		// compute output
+		output, err := fn(ctx, input)
+		if err != nil {
+			return err
+		}
+
+		// set output
+		ctx.Change("$set", outField, output)
+
+		return nil
+	}
 }
 
 // Computation defines an asynchronous, pure and idempotent computation for a
@@ -51,15 +85,15 @@ type Computation struct {
 	// is the same.
 	RecomputeInterval time.Duration
 
-	// Hash returns a hash of the input that is used to determine whether the
+	// Hasher returns a hash of the input that is used to determine whether the
 	// computation needed. An absent input is indicated by an empty string.
-	Hash func(model coal.Model) string
+	Hasher func(model coal.Model) string
 
 	// The computation handler.
-	Handler func(ctx *Context) error
+	Computer func(ctx *Context) error
 
 	// The release handler.
-	Release func(ctx *Context) error
+	Releaser func(ctx *Context) error
 }
 
 // Compute will return an operation that runs the provided computation.
@@ -124,7 +158,7 @@ func Compute(comp Computation) *Operation {
 			}
 
 			// check input hash
-			if comp.Hash(model) != status.Hash {
+			if comp.Hasher(model) != status.Hash {
 				return true
 			}
 
@@ -135,7 +169,7 @@ func Compute(comp Computation) *Operation {
 			ctx.Computation = &comp
 
 			// hash input
-			hash := comp.Hash(ctx.Model)
+			hash := comp.Hasher(ctx.Model)
 
 			// get status
 			status := stick.MustGet(ctx.Model, comp.Name).(*Status)
@@ -145,8 +179,8 @@ func Compute(comp Computation) *Operation {
 				// handle leftover value
 				if status != nil && status.Valid {
 					// release value
-					if comp.Release != nil {
-						err := comp.Release(ctx)
+					if comp.Releaser != nil {
+						err := comp.Releaser(ctx)
 						if err != nil {
 							return err
 						}
@@ -185,8 +219,8 @@ func Compute(comp Computation) *Operation {
 				// release outdated status
 				if status != nil && !comp.KeepOutdated {
 					// release value
-					if status.Valid && comp.Release != nil {
-						err := comp.Release(ctx)
+					if status.Valid && comp.Releaser != nil {
+						err := comp.Releaser(ctx)
 						if err != nil {
 							return err
 						}
@@ -213,7 +247,7 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// TODO: Release existing value?
+			// TODO: Releaser existing value?
 
 			// set progress function
 			ctx.Progress = func(factor float64) error {
@@ -234,7 +268,7 @@ func Compute(comp Computation) *Operation {
 			}
 
 			// compute value
-			err := comp.Handler(ctx)
+			err := comp.Computer(ctx)
 			if err != nil {
 				return err
 			}

@@ -26,17 +26,13 @@ type computeModel struct {
 
 func TestComputeScan(t *testing.T) {
 	testOperation(t, Compute(Computation{
-		Name:  "Status",
-		Model: &computeModel{},
-		Hash: func(model coal.Model) string {
-			return Hash(model.(*computeModel).Input)
-		},
-		Handler: func(ctx *Context) error {
-			m := ctx.Model.(*computeModel)
-			ctx.Change("$set", "Output", strings.ToUpper(m.Input))
-			return nil
-		},
-		Release: func(ctx *Context) error {
+		Name:   "Status",
+		Model:  &computeModel{},
+		Hasher: StringHasher("Input"),
+		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
+			return strings.ToUpper(input), nil
+		}),
+		Releaser: func(ctx *Context) error {
 			ctx.Change("$set", "Output", "")
 			return nil
 		},
@@ -133,17 +129,13 @@ func TestComputeScan(t *testing.T) {
 
 func TestComputeProcess(t *testing.T) {
 	testOperation(t, Compute(Computation{
-		Name:  "Status",
-		Model: &computeModel{},
-		Hash: func(model coal.Model) string {
-			return Hash(model.(*computeModel).Input)
-		},
-		Handler: func(ctx *Context) error {
-			m := ctx.Model.(*computeModel)
-			ctx.Change("$set", "Output", strings.ToUpper(m.Input))
-			return nil
-		},
-		Release: func(ctx *Context) error {
+		Name:   "Status",
+		Model:  &computeModel{},
+		Hasher: StringHasher("Input"),
+		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
+			return strings.ToUpper(input), nil
+		}),
+		Releaser: func(ctx *Context) error {
 			ctx.Change("$set", "Output", "")
 			return nil
 		},
@@ -242,12 +234,10 @@ func TestComputeProcess(t *testing.T) {
 
 func TestComputeProgress(t *testing.T) {
 	testOperation(t, Compute(Computation{
-		Name:  "Status",
-		Model: &computeModel{},
-		Hash: func(model coal.Model) string {
-			return Hash(model.(*computeModel).Input)
-		},
-		Handler: func(ctx *Context) error {
+		Name:   "Status",
+		Model:  &computeModel{},
+		Hasher: StringHasher("Input"),
+		Computer: func(ctx *Context) error {
 			for i := 0; i < 4; i++ {
 				time.Sleep(50 * time.Millisecond)
 				err := ctx.Progress(float64(i) * 0.25)
@@ -259,7 +249,7 @@ func TestComputeProgress(t *testing.T) {
 			ctx.Change("$set", "Output", strings.ToUpper(m.Input))
 			return nil
 		},
-		Release: func(ctx *Context) error {
+		Releaser: func(ctx *Context) error {
 			ctx.Change("$set", "Output", "")
 			return nil
 		},
