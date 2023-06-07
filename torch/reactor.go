@@ -39,6 +39,12 @@ type Context struct {
 	// The executed check.
 	Check *Check
 
+	// The executed computation.
+	Computation *Computation
+
+	// The function used to report progress during a computation.
+	Progress func(factor float64) error
+
 	// The reactor, store and queue.
 	Reactor *Reactor
 	Store   *coal.Store
