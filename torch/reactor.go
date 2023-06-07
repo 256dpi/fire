@@ -384,6 +384,24 @@ func (r *Reactor) ProcessTask() *axe.Task {
 
 			// check filter
 			if operation.Filter != nil && !operation.Filter(model) {
+				// decrement tag and update expiry
+				n, _ := model.GetBase().GetTag(operation.TagName).(int32)
+
+				// update model if outstanding
+				if n > 0 {
+					_, err = r.store.M(model).Update(ctx, nil, model.ID(), bson.M{
+						"$inc": bson.M{
+							coal.TV(operation.TagName): -n,
+						},
+						"$set": bson.M{
+							coal.TE(operation.TagName): time.Now().Add(operation.TagExpiry),
+						},
+					}, false)
+					if err != nil {
+						return err
+					}
+				}
+
 				return nil
 			}
 

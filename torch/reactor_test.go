@@ -190,6 +190,31 @@ func TestScanFilter(t *testing.T) {
 	})
 }
 
+func TestProcessFilter(t *testing.T) {
+	testOperation(t, testModelOp(), func(env operationTest) {
+		env.operation.Query = func() bson.M {
+			return bson.M{
+				"Output": 0,
+			}
+		}
+		env.operation.Filter = func(model coal.Model) bool {
+			return model.(*testModel).Input%7 != 0
+		}
+
+		model := &testModel{Base: coal.B(), Input: 7}
+		model.SetTag("torch/Reactor/foo", 1, time.Now().Add(time.Hour))
+		env.tester.Insert(model)
+
+		num, err := axe.AwaitJob(env.store, 0, NewProcessJob("foo", model.ID()))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, num)
+
+		env.tester.Refresh(model)
+		assert.Equal(t, 0, model.Output)
+		assert.Equal(t, int32(0), model.GetTag("torch/Reactor/foo"))
+	})
+}
+
 func TestModifierAsync(t *testing.T) {
 	testOperation(t, testModelOp(), func(env operationTest) {
 		model := env.tester.Create(t, &testModel{
