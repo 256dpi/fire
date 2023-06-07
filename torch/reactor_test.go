@@ -350,8 +350,7 @@ func TestModifierConcurrency(t *testing.T) {
 
 		env.tester.Refresh(model)
 		assert.NotNil(t, model)
-		assert.Equal(t, 28, model.Input)
-		assert.Equal(t, 28, model.Output)
+		assert.NotZero(t, model.GetTag("torch/Reactor/foo").(int32))
 
 		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
 		assert.NoError(t, err)

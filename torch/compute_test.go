@@ -331,6 +331,7 @@ func TestComputeReleaser(t *testing.T) {
 			return strings.ToUpper(input), nil
 		}),
 		Releaser: func(ctx *Context) error {
+			time.Sleep(10 * time.Millisecond) // ensure time change
 			ctx.Change("$set", "Output", "")
 			return nil
 		},
@@ -356,6 +357,8 @@ func TestComputeReleaser(t *testing.T) {
 
 		/* new input */
 
+		oldUpdated := model.Status.Updated
+
 		model.Input = "What's up?"
 		env.tester.Await(t, 0, func() {
 			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
@@ -366,7 +369,10 @@ func TestComputeReleaser(t *testing.T) {
 				Hash:     "",
 				Valid:    false,
 			}, model.Status)
+			assert.True(t, model.Status.Updated.After(oldUpdated))
 		})
+
+		oldUpdated = model.Status.Updated
 
 		env.tester.Refresh(model)
 		assert.Equal(t, "WHAT'S UP?", model.Output)
@@ -376,8 +382,11 @@ func TestComputeReleaser(t *testing.T) {
 			Hash:     Hash("What's up?"),
 			Valid:    true,
 		}, model.Status)
+		assert.True(t, model.Status.Updated.After(oldUpdated))
 
 		/* leftover input */
+
+		oldUpdated = model.Status.Updated
 
 		model.Input = ""
 		model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
@@ -388,6 +397,7 @@ func TestComputeReleaser(t *testing.T) {
 			Hash:     "",
 			Valid:    true,
 		}, model.Status)
+		assert.True(t, model.Status.Updated.After(oldUpdated))
 	})
 }
 
@@ -400,6 +410,7 @@ func TestComputeKeepOutdated(t *testing.T) {
 			return strings.ToUpper(input), nil
 		}),
 		Releaser: func(ctx *Context) error {
+			time.Sleep(10 * time.Millisecond) // ensure time change
 			ctx.Change("$set", "Output", "")
 			return nil
 		},
