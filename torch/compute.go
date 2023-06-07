@@ -12,8 +12,6 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// TODO: What to do about changes done outside of the computation?
-
 // Status defines the status of a computation.
 type Status struct {
 	Progress float64   `json:"progress"`
@@ -25,11 +23,11 @@ type Status struct {
 // Hash is a helper function that returns the MD5 hash of the input if present
 // and an empty string otherwise.
 func Hash(input string) string {
-	if input == "" {
-		return ""
+	if input != "" {
+		sum := md5.Sum([]byte(input))
+		return hex.EncodeToString(sum[:])
 	}
-	sum := md5.Sum([]byte(input))
-	return hex.EncodeToString(sum[:])
+	return ""
 }
 
 // StringHasher constructs a hasher function for the provided string field.
@@ -51,6 +49,7 @@ func StringComputer[T any](inField, outField string, fn func(ctx *Context, in st
 		if input == "" {
 			var zero T
 			ctx.Change("$set", outField, zero)
+			return nil
 		}
 
 		// compute output
@@ -66,17 +65,13 @@ func StringComputer[T any](inField, outField string, fn func(ctx *Context, in st
 	}
 }
 
-// Computation defines an asynchronous, pure and idempotent computation for a
-// model field.
+// Computation defines a computation.
 type Computation struct {
 	// The status field name.
 	Name string
 
 	// The model.
 	Model coal.Model
-
-	// Whether outdated values should be kept until the new value is computed.
-	KeepOutdated bool
 
 	// The interval at which the value is checked for changes.
 	RehashInterval time.Duration
@@ -92,11 +87,26 @@ type Computation struct {
 	// The computation handler.
 	Computer func(ctx *Context) error
 
-	// The release handler.
+	// The release handler is called to release an invalidated value
+	// synchronously. Otherwise, a computation is scheduled to release the
+	// value asynchronously.
 	Releaser func(ctx *Context) error
+
+	// Whether outdated values should be kept until the new value is computed.
+	// Otherwise, values are released synchronously.
+	KeepOutdated bool
 }
 
-// Compute will return an operation that runs the provided computation.
+// Compute will return an operation that automatically runs the provided
+// asynchronous computation. During a check/modifier call, the hash of the input
+// is taken to determine if the values needs to be computed. During a scan the
+// computation is only invoked when the status is missing, invalid or outdated.
+// To force a computation in both cases, the status can be flagged as invalid.
+//
+// If no releaser is configured, the computer is also invoked asynchronously to
+// compute the value for a zero input (zero hash). If a releaser is configured,
+// it is invoked instead synchronously to release (clear) the current value.
+// Optionally, the outdated value can be kept until the new value is computed.
 func Compute(comp Computation) *Operation {
 	// validate field
 	_ = stick.MustGet(comp.Model, comp.Name).(*Status)
@@ -112,12 +122,8 @@ func Compute(comp Computation) *Operation {
 		Query: func() bson.M {
 			// prepare filters
 			filters := []bson.M{
-				{
-					comp.Name: nil,
-				},
-				{
-					validField: false,
-				},
+				{comp.Name: nil},
+				{validField: false},
 			}
 
 			// add rehash filter
@@ -143,9 +149,6 @@ func Compute(comp Computation) *Operation {
 			}
 		},
 		Filter: func(model coal.Model) bool {
-			// we need to process if the status is missing, is invalid, needs to
-			// be recomputed or does not match the input hash
-
 			// get status
 			status := stick.MustGet(model, comp.Name).(*Status)
 			if status == nil || !status.Valid {
@@ -174,55 +177,52 @@ func Compute(comp Computation) *Operation {
 			// get status
 			status := stick.MustGet(ctx.Model, comp.Name).(*Status)
 
-			// stop if hash is zero
-			if hash == "" {
-				// handle leftover value
-				if status != nil && status.Valid {
-					// release value
-					if comp.Releaser != nil {
-						err := comp.Releaser(ctx)
-						if err != nil {
-							return err
-						}
-					}
+			// handle missing status for zero hash
+			if hash == "" && status == nil {
+				ctx.Change("$set", comp.Name, &Status{
+					Progress: 1,
+					Updated:  time.Now(),
+					Valid:    true,
+				})
+				return nil
+			}
 
-					// update status value
-					ctx.Change("$set", comp.Name, &Status{
-						Progress: 1,
-						Updated:  time.Now(),
-						Valid:    true,
-					})
+			// release leftover value if possible
+			if hash == "" && status.Hash != "" && comp.Releaser != nil {
+				// release value
+				err := comp.Releaser(ctx)
+				if err != nil {
+					return err
 				}
 
-				// ensure status value
-				if status == nil {
-					ctx.Change("$set", comp.Name, &Status{
-						Progress: 1,
-						Updated:  time.Now(),
-						Valid:    true,
-					})
-				}
+				// update status value
+				ctx.Change("$set", comp.Name, &Status{
+					Progress: 1,
+					Updated:  time.Now(),
+					Valid:    true,
+				})
 
 				return nil
 			}
 
-			// stop if hashes match and no re-computation is required
-			if status != nil && status.Hash == hash && time.Since(status.Updated) < comp.RecomputeInterval {
+			// stop if hashes match, status is valid and no re-computation is required
+			if status != nil && status.Hash == hash && status.Valid && (comp.RecomputeInterval == 0 || time.Since(status.Updated) < comp.RecomputeInterval) {
 				return nil
 			}
 
-			/* computation required */
+			/* otherwise, computation is required */
 
 			// defer if sync
 			if ctx.Sync {
-				// release outdated status
-				if status != nil && !comp.KeepOutdated {
+				// set defer
+				ctx.Defer = true
+
+				// release outdated value if possible and not kept
+				if status != nil && status.Hash != "" && comp.Releaser != nil && !comp.KeepOutdated {
 					// release value
-					if status.Valid && comp.Releaser != nil {
-						err := comp.Releaser(ctx)
-						if err != nil {
-							return err
-						}
+					err := comp.Releaser(ctx)
+					if err != nil {
+						return err
 					}
 
 					// update status value
@@ -240,13 +240,8 @@ func Compute(comp Computation) *Operation {
 					})
 				}
 
-				// set defer
-				ctx.Defer = true
-
 				return nil
 			}
-
-			// TODO: Releaser existing value?
 
 			// set progress function
 			ctx.Progress = func(factor float64) error {

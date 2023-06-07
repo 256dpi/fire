@@ -28,10 +28,6 @@ func TestComputeScan(t *testing.T) {
 		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
 			return strings.ToUpper(input), nil
 		}),
-		Releaser: func(ctx *Context) error {
-			ctx.Change("$set", "Output", "")
-			return nil
-		},
 	}), func(env operationTest) {
 		model := env.tester.Insert(&computeModel{
 			Base: coal.B(),
@@ -55,7 +51,7 @@ func TestComputeScan(t *testing.T) {
 
 		/* first input */
 
-		updated := model.Status.Updated
+		oldUpdated := model.Status.Updated
 
 		model.Input = "Hello world!"
 		model.Status.Valid = false
@@ -73,12 +69,12 @@ func TestComputeScan(t *testing.T) {
 			Hash:     Hash("Hello world!"),
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldUpdated))
 
 		/* same input */
 
 		oldOutput := model.Output
-		oldStatus := model.Status
+		oldStatus := *model.Status
 
 		n, err = axe.AwaitJob(env.tester.Store, 0, NewScanJob(""))
 		assert.NoError(t, err)
@@ -87,11 +83,11 @@ func TestComputeScan(t *testing.T) {
 		env.tester.Refresh(model)
 		assert.NotNil(t, model.Output)
 		assert.Equal(t, oldOutput, model.Output)
-		assert.Equal(t, oldStatus, model.Status)
+		assert.Equal(t, oldStatus, *model.Status)
 
 		/* new input */
 
-		updated = model.Status.Updated
+		oldUpdated = model.Status.Updated
 
 		model.Input = "What's up?"
 		env.tester.Replace(model)
@@ -108,11 +104,32 @@ func TestComputeScan(t *testing.T) {
 			Hash:     Hash("What's up?"),
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldUpdated))
+
+		/* invalid status */
+
+		oldUpdated = model.Status.Updated
+
+		model.Status.Valid = false
+		env.tester.Replace(model)
+
+		n, err = axe.AwaitJob(env.tester.Store, 0, NewProcessJob("torch/Compute/Status", model.ID()))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, n)
+
+		env.tester.Refresh(model)
+		assert.Equal(t, "WHAT'S UP?", model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     Hash("What's up?"),
+			Valid:    true,
+		}, model.Status)
+		assert.True(t, model.Status.Updated.After(oldUpdated))
 
 		/* leftover input */
 
-		updated = model.Status.Updated
+		oldUpdated = model.Status.Updated
 
 		model.Input = ""
 		env.tester.Replace(model)
@@ -129,7 +146,7 @@ func TestComputeScan(t *testing.T) {
 			Hash:     "",
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldUpdated))
 	})
 }
 
@@ -141,10 +158,6 @@ func TestComputeProcess(t *testing.T) {
 		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
 			return strings.ToUpper(input), nil
 		}),
-		Releaser: func(ctx *Context) error {
-			ctx.Change("$set", "Output", "")
-			return nil
-		},
 	}), func(env operationTest) {
 		var model *computeModel
 
@@ -162,25 +175,19 @@ func TestComputeProcess(t *testing.T) {
 			Hash:     "",
 			Valid:    true,
 		}, model.Status)
+		assert.NotZero(t, model.Status.Updated)
 
 		/* first input */
 
-		updated := model.Status.Updated
+		oldOutput := model.Output
+		oldStatus := *model.Status
 
 		model.Input = "Hello world!"
 		env.tester.Await(t, 0, func() {
 			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
-			assert.Zero(t, model.Output)
-			assert.Equal(t, &Status{
-				Progress: 0,
-				Updated:  model.Status.Updated,
-				Hash:     "",
-				Valid:    false,
-			}, model.Status)
-			assert.True(t, model.Status.Updated.After(updated))
+			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, oldStatus, *model.Status)
 		})
-
-		updated = model.Status.Updated
 
 		env.tester.Refresh(model)
 		assert.Equal(t, "HELLO WORLD!", model.Output)
@@ -190,37 +197,30 @@ func TestComputeProcess(t *testing.T) {
 			Hash:     Hash("Hello world!"),
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 
 		/* same input */
 
-		before := model.Output
+		oldOutput = model.Output
 
 		env.tester.Await(t, 50*time.Millisecond, func() {
 			env.tester.Update(t, model, nil, nil)
 		})
 
 		env.tester.Refresh(model)
-		assert.Equal(t, before, model.Output)
+		assert.Equal(t, oldOutput, model.Output)
 
 		/* new input */
 
-		updated = model.Status.Updated
+		oldOutput = model.Output
+		oldStatus = *model.Status
 
 		model.Input = "What's up?"
 		env.tester.Await(t, 0, func() {
 			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
-			assert.Zero(t, model.Output)
-			assert.Equal(t, &Status{
-				Progress: 0,
-				Updated:  model.Status.Updated,
-				Hash:     "",
-				Valid:    false,
-			}, model.Status)
-			assert.True(t, model.Status.Updated.After(updated))
+			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, oldStatus, *model.Status)
 		})
-
-		updated = model.Status.Updated
 
 		env.tester.Refresh(model)
 		assert.Equal(t, "WHAT'S UP?", model.Output)
@@ -230,15 +230,41 @@ func TestComputeProcess(t *testing.T) {
 			Hash:     Hash("What's up?"),
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 
-		/* leftover link */
+		/* invalid status */
 
-		updated = model.Status.Updated
+		oldOutput = model.Output
+		oldStatus = *model.Status
+		oldStatus.Valid = false
+
+		model.Status.Valid = false
+		env.tester.Await(t, 0, func() {
+			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
+			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, oldStatus, *model.Status)
+		})
+
+		env.tester.Refresh(model)
+		assert.Equal(t, "WHAT'S UP?", model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     Hash("What's up?"),
+			Valid:    true,
+		}, model.Status)
+		assert.True(t, model.Status.Updated.After(oldStatus.Updated))
+
+		/* leftover input */
+
+		oldOutput = model.Output
+		oldStatus = *model.Status
 
 		model.Input = ""
-		env.tester.Await(t, 50*time.Millisecond, func() {
+		env.tester.Await(t, 0, func() {
 			env.tester.Update(t, model, nil, nil)
+			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, oldStatus, *model.Status)
 		})
 
 		env.tester.Refresh(model)
@@ -249,7 +275,7 @@ func TestComputeProcess(t *testing.T) {
 			Hash:     "",
 			Valid:    true,
 		}, model.Status)
-		assert.True(t, model.Status.Updated.After(updated))
+		assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 	})
 }
 
@@ -268,10 +294,6 @@ func TestComputeProgress(t *testing.T) {
 			}
 			m := ctx.Model.(*computeModel)
 			ctx.Change("$set", "Output", strings.ToUpper(m.Input))
-			return nil
-		},
-		Releaser: func(ctx *Context) error {
-			ctx.Change("$set", "Output", "")
 			return nil
 		},
 	}), func(env operationTest) {
@@ -297,6 +319,75 @@ func TestComputeProgress(t *testing.T) {
 			Valid:    true,
 		}, model.Status)
 		assert.Equal(t, []float64{0, 0.25, 0.5, 0.75, 1}, progress)
+	})
+}
+
+func TestComputeReleaser(t *testing.T) {
+	testOperation(t, Compute(Computation{
+		Name:   "Status",
+		Model:  &computeModel{},
+		Hasher: StringHasher("Input"),
+		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
+			return strings.ToUpper(input), nil
+		}),
+		Releaser: func(ctx *Context) error {
+			ctx.Change("$set", "Output", "")
+			return nil
+		},
+	}), func(env operationTest) {
+		var model *computeModel
+
+		/* first input */
+
+		env.tester.Await(t, 0, func() {
+			model = env.tester.Create(t, &computeModel{
+				Input: "Hello world!",
+			}, nil, nil).Model.(*computeModel)
+		})
+
+		env.tester.Refresh(model)
+		assert.Equal(t, "HELLO WORLD!", model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     Hash("Hello world!"),
+			Valid:    true,
+		}, model.Status)
+
+		/* new input */
+
+		model.Input = "What's up?"
+		env.tester.Await(t, 0, func() {
+			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Progress: 0,
+				Updated:  model.Status.Updated,
+				Hash:     "",
+				Valid:    false,
+			}, model.Status)
+		})
+
+		env.tester.Refresh(model)
+		assert.Equal(t, "WHAT'S UP?", model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     Hash("What's up?"),
+			Valid:    true,
+		}, model.Status)
+
+		/* leftover input */
+
+		model.Input = ""
+		model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
+		assert.Zero(t, model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     "",
+			Valid:    true,
+		}, model.Status)
 	})
 }
 
@@ -335,16 +426,14 @@ func TestComputeKeepOutdated(t *testing.T) {
 
 		/* new input */
 
+		oldOutput := model.Output
+		oldStatus := *model.Status
+
 		model.Input = "What's up?"
 		env.tester.Await(t, 0, func() {
 			model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
-			assert.Equal(t, "HELLO WORLD!", model.Output)
-			assert.Equal(t, &Status{
-				Progress: 1,
-				Updated:  model.Status.Updated,
-				Hash:     Hash("Hello world!"),
-				Valid:    true,
-			}, model.Status)
+			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, oldStatus, *model.Status)
 		})
 
 		env.tester.Refresh(model)
@@ -355,6 +444,21 @@ func TestComputeKeepOutdated(t *testing.T) {
 			Hash:     Hash("What's up?"),
 			Valid:    true,
 		}, model.Status)
+
+		/* leftover input */
+
+		oldStatus = *model.Status
+
+		model.Input = ""
+		model = env.tester.Update(t, model, nil, nil).Model.(*computeModel)
+		assert.Zero(t, model.Output)
+		assert.Equal(t, &Status{
+			Progress: 1,
+			Updated:  model.Status.Updated,
+			Hash:     "",
+			Valid:    true,
+		}, model.Status)
+		assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 	})
 }
 
@@ -366,10 +470,6 @@ func TestComputeRehashInterval(t *testing.T) {
 		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
 			return strings.ToUpper(input), nil
 		}),
-		Releaser: func(ctx *Context) error {
-			ctx.Change("$set", "Output", "")
-			return nil
-		},
 		RehashInterval: time.Millisecond,
 	}), func(env operationTest) {
 		model := env.tester.Insert(&computeModel{
@@ -429,10 +529,6 @@ func TestComputeRecomputeInterval(t *testing.T) {
 		Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
 			return strings.ToUpper(input), nil
 		}),
-		Releaser: func(ctx *Context) error {
-			ctx.Change("$set", "Output", "")
-			return nil
-		},
 		RecomputeInterval: time.Millisecond,
 	}), func(env operationTest) {
 		model := env.tester.Insert(&computeModel{
