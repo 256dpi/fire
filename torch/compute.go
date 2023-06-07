@@ -206,9 +206,8 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// stop if hashes match
-			if status != nil && status.Hash == hash {
-				// TODO: Continue if comp.RecomputeInterval > 0 && time.Since(status.Updated) > comp.RecomputeInterval?
+			// stop if hashes match and no re-computation is required
+			if status != nil && status.Hash == hash && time.Since(status.Updated) < comp.RecomputeInterval {
 				return nil
 			}
 
