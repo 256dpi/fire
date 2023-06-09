@@ -21,58 +21,16 @@ import (
 type Reactor struct {
 	store      *coal.Store
 	queue      *axe.Queue
-	operations map[string]*Operation
+	operations *Registry
 }
 
 // NewReactor creates and returns a new reactor.
-func NewReactor(store *coal.Store, queue *axe.Queue) *Reactor {
+func NewReactor(store *coal.Store, queue *axe.Queue, operations ...*Operation) *Reactor {
 	return &Reactor{
 		store:      store,
 		queue:      queue,
-		operations: make(map[string]*Operation),
+		operations: NewRegistry(operations...),
 	}
-}
-
-// Add will add the provided operation to the reactor.
-func (r *Reactor) Add(operation *Operation) {
-	// ensure defaults
-	if operation.ScanBatch == 0 {
-		operation.ScanBatch = 100
-	}
-	if operation.ProcessLifetime == 0 {
-		operation.ProcessLifetime = 5 * time.Minute
-	}
-	if operation.ProcessTimeout == 0 {
-		operation.ProcessTimeout = 10 * time.Minute
-	}
-	if operation.MaxDeferDelay == 0 {
-		operation.MaxDeferDelay = time.Minute
-	}
-	if operation.TagName == "" {
-		operation.TagName = "torch/Reactor/" + operation.Name
-	}
-	if operation.TagExpiry == 0 {
-		operation.TagExpiry = 24 * time.Hour
-	}
-
-	// validate operation
-	if operation.Name == "" {
-		panic("torch: missing name")
-	}
-	if operation.Model == nil {
-		panic("torch: missing model")
-	}
-	if operation.Processor == nil {
-		panic("torch: missing process function")
-	}
-
-	// check existence
-	if r.operations[operation.Name] != nil {
-		panic("torch: operation already exists")
-	}
-
-	// add operation
-	r.operations[operation.Name] = operation
 }
 
 // Modifier returns a callback that will run Check on created and updated models.
@@ -96,7 +54,7 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 	meta := coal.GetMeta(model)
 
 	// check all operations
-	for _, operation := range r.operations {
+	for _, operation := range r.operations.All() {
 		// check model
 		if coal.GetMeta(operation.Model) != meta {
 			continue
@@ -180,7 +138,7 @@ func (r *Reactor) ScanTask() *axe.Task {
 
 			// enqueue scan jobs if operations is missing
 			if job.Operation == "" {
-				for _, operation := range r.operations {
+				for _, operation := range r.operations.All() {
 					_, err := r.queue.Enqueue(ctx, NewScanJob(operation.Name), 0, 0)
 					if err != nil {
 						return err
@@ -192,7 +150,9 @@ func (r *Reactor) ScanTask() *axe.Task {
 			/* handle scan */
 
 			// get operation
-			operation, ok := r.operations[job.Operation]
+			operation, ok := r.operations.Get(&Operation{
+				Name: job.Operation,
+			})
 			if !ok {
 				return xo.F("unknown operation")
 			}
@@ -267,7 +227,9 @@ func (r *Reactor) ProcessTask() *axe.Task {
 			job := ctx.Job.(*ProcessJob)
 
 			// get operation
-			operation, ok := r.operations[job.Operation]
+			operation, ok := r.operations.Get(&Operation{
+				Name: job.Operation,
+			})
 			if !ok {
 				return xo.F("unknown operation")
 			}

@@ -374,8 +374,7 @@ func testOperation(t *testing.T, operation *Operation, fn func(env operationTest
 			Reporter: xo.Panic,
 		})
 
-		reactor := NewReactor(store, queue)
-		reactor.Add(operation)
+		reactor := NewReactor(store, queue, operation)
 
 		task := reactor.ScanTask()
 		task.Periodicity = 0

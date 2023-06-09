@@ -8,6 +8,7 @@ import (
 
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
+	"github.com/256dpi/fire/stick"
 )
 
 // Context holds context information for a reactor operation.
@@ -106,4 +107,53 @@ type Operation struct {
 	//
 	// Default: 24h.
 	TagExpiry time.Duration
+}
+
+// Validate will validate the operation.
+func (o *Operation) Validate() error {
+	// ensure defaults
+	if o.ScanBatch == 0 {
+		o.ScanBatch = 100
+	}
+	if o.ProcessLifetime == 0 {
+		o.ProcessLifetime = 5 * time.Minute
+	}
+	if o.ProcessTimeout == 0 {
+		o.ProcessTimeout = 10 * time.Minute
+	}
+	if o.MaxDeferDelay == 0 {
+		o.MaxDeferDelay = time.Minute
+	}
+	if o.TagName == "" {
+		o.TagName = "torch/Reactor/" + o.Name
+	}
+	if o.TagExpiry == 0 {
+		o.TagExpiry = 24 * time.Hour
+	}
+
+	return stick.Validate(o, func(v *stick.Validator) {
+		v.Value("Name", false, stick.IsNotZero)
+		v.Value("Model", false, stick.IsNotZero)
+		v.Value("Processor", false, stick.IsNotZero)
+	})
+}
+
+// Registry is a collection of known operations.
+type Registry struct {
+	*stick.Registry[*Operation]
+}
+
+// NewRegistry will return an operation registry indexed by name.
+func NewRegistry(operations ...*Operation) *Registry {
+	return &Registry{
+		Registry: stick.NewRegistry(operations,
+			func(o *Operation) error {
+				return o.Validate()
+			},
+			// index by name
+			func(op *Operation) string {
+				return op.Name
+			},
+		),
+	}
 }

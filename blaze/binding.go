@@ -26,7 +26,7 @@ type Binding struct {
 	FileName string
 }
 
-// Validate implements the stick.Registrable interface.
+// Validate will validate the binding.
 func (b *Binding) Validate() error {
 	return stick.Validate(b, func(v *stick.Validator) {
 		v.Value("Name", false, stick.IsNotZero)
