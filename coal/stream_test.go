@@ -134,7 +134,7 @@ func TestStreamIgnoreLock(t *testing.T) {
 		}).(*postModel)
 
 		err := tester.Store.T(nil, false, func(ctx context.Context) error {
-			_, err := tester.Store.M(&postModel{}).Find(ctx, post, post.ID(), true)
+			_, err := M[*postModel](tester.Store).Find(ctx, post, post.ID(), true)
 			return err
 		})
 		assert.NoError(t, err)

@@ -23,7 +23,7 @@ func TestManagerFind(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// existing
 		found, err := m.Find(nil, nil, post1.ID(), false)
@@ -72,7 +72,7 @@ func TestManagerFindFirst(t *testing.T) {
 			Title: "Hello World!!!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// existing
 		found, err := m.FindFirst(nil, nil, bson.M{
@@ -149,7 +149,7 @@ func TestManagerFindAll(t *testing.T) {
 			Title: "Hello Space!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// invalid list
 		err := m.FindAll(nil, nil, nil, nil, 0, 0, false)
@@ -257,7 +257,7 @@ func TestManagerFindAllTextScoreSort(t *testing.T) {
 		post1.Score = 0.75
 		post2.Score = 1.5
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// add index
 		name, err := m.C().Native().Indexes().CreateOne(nil, mongo.IndexModel{
@@ -293,7 +293,7 @@ func TestManagerFindEach(t *testing.T) {
 			Title: "Hello Space!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// error
 		iter, err := m.FindEach(nil, nil, nil, 0, 0, false)
@@ -373,7 +373,7 @@ func TestManagerProject(t *testing.T) {
 			Published: true,
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// unsafe single
 		value, found, err := m.Project(nil, post1.ID(), "Title", false)
@@ -421,7 +421,7 @@ func TestManagerCount(t *testing.T) {
 			Title: "Hello Space!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// error
 		count, err := m.Count(nil, nil, 0, 0, false)
@@ -501,7 +501,7 @@ func TestManagerDistinct(t *testing.T) {
 			Title: "Hello Space!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// error
 		titles, err := m.Distinct(nil, "Title", nil, false)
@@ -553,7 +553,7 @@ func TestManagerDistinct(t *testing.T) {
 
 func TestManagerInsert(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		err := m.Insert(nil, &postModel{
 			Title: "Hello World!",
@@ -565,7 +565,7 @@ func TestManagerInsert(t *testing.T) {
 
 func TestManagerInsertIfMissing(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// insert if missing
 		inserted, err := m.InsertIfMissing(nil, bson.M{
@@ -616,7 +616,7 @@ func TestManagerReplace(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.Replace(nil, &postModel{
@@ -655,7 +655,7 @@ func TestManagerReplaceFirst(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.ReplaceFirst(nil, bson.M{
@@ -702,7 +702,7 @@ func TestManagerUpdate(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.Update(nil, nil, New(), bson.M{
@@ -782,7 +782,7 @@ func TestManagerUpdateFirst(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.UpdateFirst(nil, nil, bson.M{
@@ -877,7 +877,7 @@ func TestManagerUpdateAll(t *testing.T) {
 			Title: "Hello World!",
 		})
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		matched, err := m.UpdateAll(nil, bson.M{
@@ -932,7 +932,7 @@ func TestManagerUpdateAll(t *testing.T) {
 
 func TestManagerUpsert(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// upsert (insert missing)
 		inserted, err := m.Upsert(nil, nil, bson.M{
@@ -1028,7 +1028,7 @@ func TestManagerDelete(t *testing.T) {
 			Title: "Hello World!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.Delete(nil, nil, New())
@@ -1053,7 +1053,7 @@ func TestManagerDeleteAll(t *testing.T) {
 			Title: "Hello World!",
 		})
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		deleted, err := m.DeleteAll(nil, bson.M{
@@ -1081,7 +1081,7 @@ func TestManagerDeleteFirst(t *testing.T) {
 			Title: "Hello Space!",
 		}).(*postModel)
 
-		m := tester.Store.M(&postModel{})
+		m := M[*postModel](tester.Store)
 
 		// missing
 		found, err := m.DeleteFirst(nil, nil, bson.M{
@@ -1116,7 +1116,7 @@ func TestManagerDeleteFirst(t *testing.T) {
 }
 
 func BenchmarkManagerFind(b *testing.B) {
-	m := lungoStore.M(&postModel{})
+	m := M[*postModel](lungoStore)
 
 	post1 := &postModel{
 		Title:    "Hello World!",
@@ -1132,7 +1132,7 @@ func BenchmarkManagerFind(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		m := lungoStore.M(&postModel{})
+		m := M[*postModel](lungoStore)
 
 		var post postModel
 		found, err := m.FindFirst(nil, &post, bson.M{
@@ -1146,7 +1146,7 @@ func BenchmarkManagerFind(b *testing.B) {
 	}
 }
 
-func readPosts(t *testing.T, iter *ManagedIterator) []postModel {
+func readPosts(t *testing.T, iter *ManagedIterator[*postModel]) []postModel {
 	defer iter.Close()
 	var list []postModel
 	for iter.Next() {

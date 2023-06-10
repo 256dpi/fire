@@ -60,7 +60,7 @@ func (t *Tester) FindAll(model Model, filters ...bson.M) interface{} {
 
 	// find all documents
 	list := GetMeta(model).MakeSlice()
-	err := t.Store.M(model).FindAll(nil, list, filter, []string{"_id"}, 0, 0, false, NoTransaction)
+	err := M[Model](t.Store).FindAll(nil, list, filter, []string{"_id"}, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -84,7 +84,7 @@ func (t *Tester) FindLast(model Model, filters ...bson.M) Model {
 	}
 
 	// find last document
-	found, err := t.Store.M(model).FindFirst(nil, model, filter, []string{"-_id"}, 0, false)
+	found, err := M[Model](t.Store).FindFirst(nil, model, filter, []string{"-_id"}, 0, false)
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -108,7 +108,7 @@ func (t *Tester) Count(model Model, filters ...bson.M) int {
 	}
 
 	// count all documents
-	n, err := t.Store.M(model).Count(nil, filter, 0, 0, false, NoTransaction)
+	n, err := M[Model](t.Store).Count(nil, filter, 0, 0, false, NoTransaction)
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func (t *Tester) Refresh(model Model) {
 // Fetch will return the saved model.
 func (t *Tester) Fetch(model Model, id ID) Model {
 	// find model
-	found, err := t.Store.M(model).Find(nil, model, id, false)
+	found, err := M[Model](t.Store).Find(nil, model, id, false)
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -142,7 +142,7 @@ func (t *Tester) Fetch(model Model, id ID) Model {
 // Insert will insert the specified model.
 func (t *Tester) Insert(model Model) Model {
 	// insert to collection
-	err := t.Store.M(model).Insert(nil, model)
+	err := M[Model](t.Store).Insert(nil, model)
 	if err != nil {
 		panic(err)
 	}
@@ -158,7 +158,7 @@ func (t *Tester) Insert(model Model) Model {
 // Replace will replace the specified model.
 func (t *Tester) Replace(model Model) Model {
 	// replace model
-	found, err := t.Store.M(model).Replace(nil, model, false)
+	found, err := M[Model](t.Store).Replace(nil, model, false)
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -176,7 +176,7 @@ func (t *Tester) Replace(model Model) Model {
 // Update will update the specified model.
 func (t *Tester) Update(model Model, update bson.M) Model {
 	// replace model
-	found, err := t.Store.M(model).Update(nil, model, model.ID(), update, false)
+	found, err := M[Model](t.Store).Update(nil, model, model.ID(), update, false)
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -194,7 +194,7 @@ func (t *Tester) Update(model Model, update bson.M) Model {
 // Delete will delete the specified model.
 func (t *Tester) Delete(model Model) {
 	// delete model
-	found, err := t.Store.M(model).Delete(nil, nil, model.ID())
+	found, err := M[Model](t.Store).Delete(nil, nil, model.ID())
 	if err != nil {
 		panic(err)
 	} else if !found {
@@ -211,7 +211,7 @@ func (t *Tester) DeleteAll(model Model, filters ...bson.M) {
 	}
 
 	// delete models
-	_, err := t.Store.M(model).DeleteAll(nil, filter)
+	_, err := M[Model](t.Store).DeleteAll(nil, filter)
 	if err != nil {
 		panic(err)
 	}

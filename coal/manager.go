@@ -62,19 +62,19 @@ var returnAfterUpdate = options.FindOneAndUpdate().SetReturnDocument(options.Aft
 
 // Manager manages operations on collection of documents. It will validate
 // operations and ensure that they are safe under the MongoDB guarantees.
-type Manager struct {
+type Manager[T Model] struct {
 	meta  *Meta
 	coll  *Collection
 	trans *Translator
 }
 
 // C is a shorthand to access the underlying collection.
-func (m *Manager) C() *Collection {
+func (m *Manager[T]) C() *Collection {
 	return m.coll
 }
 
 // T is a shorthand to access the underlying translator.
-func (m *Manager) T() *Translator {
+func (m *Manager[T]) T() *Translator {
 	return m.trans
 }
 
@@ -83,7 +83,7 @@ func (m *Manager) T() *Translator {
 // the document and prevent a stale read during a transaction.
 //
 // A transaction is required for locking.
-func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) Find(ctx context.Context, model Model, id ID, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Find")
 	span.Tag("id", id.Hex())
@@ -145,7 +145,7 @@ func (m *Manager) Find(ctx context.Context, model Model, id ID, lock bool, flags
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run during a transaction.
-func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) FindFirst(ctx context.Context, model Model, filter bson.M, sort []string, skip int64, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindFirst")
 	defer span.End()
@@ -236,7 +236,7 @@ func (m *Manager) FindFirst(ctx context.Context, model Model, filter bson.M, sor
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) error {
+func (m *Manager[T]) FindAll(ctx context.Context, list interface{}, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindAll")
 	defer span.End()
@@ -355,7 +355,7 @@ func (m *Manager) FindAll(ctx context.Context, list interface{}, filter bson.M, 
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*ManagedIterator, error) {
+func (m *Manager[T]) FindEach(ctx context.Context, filter bson.M, sort []string, skip, limit int64, lock bool, flags ...Flags) (*ManagedIterator[T], error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.FindEach")
 
@@ -424,7 +424,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 	// determine validation
 	validate := !Merge(flags).Has(NoValidation)
 
-	return &ManagedIterator{
+	return &ManagedIterator[T]{
 		meta:     m.meta,
 		iterator: iter,
 		validate: validate,
@@ -435,7 +435,7 @@ func (m *Manager) FindEach(ctx context.Context, filter bson.M, sort []string, sk
 // whether a document has been found at all.
 //
 // A transaction is required for locking.
-func (m *Manager) Project(ctx context.Context, id ID, field string, lock bool) (interface{}, bool, error) {
+func (m *Manager[T]) Project(ctx context.Context, id ID, field string, lock bool) (interface{}, bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Project")
 	defer span.End()
@@ -464,7 +464,7 @@ func (m *Manager) Project(ctx context.Context, id ID, field string, lock bool) (
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run during a transaction.
-func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string, sort []string, skip int64, lock bool) (interface{}, bool, error) {
+func (m *Manager[T]) ProjectFirst(ctx context.Context, filter bson.M, field string, sort []string, skip int64, lock bool) (interface{}, bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectFirst")
 	defer span.End()
@@ -491,7 +491,7 @@ func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string,
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, flags ...Flags) (map[ID]interface{}, error) {
+func (m *Manager[T]) ProjectAll(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, flags ...Flags) (map[ID]interface{}, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectAll")
 	defer span.End()
@@ -517,7 +517,7 @@ func (m *Manager) ProjectAll(ctx context.Context, filter bson.M, field string, s
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) ProjectEach(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
+func (m *Manager[T]) ProjectEach(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ProjectEach")
 	defer span.End()
@@ -525,7 +525,7 @@ func (m *Manager) ProjectEach(ctx context.Context, filter bson.M, field string, 
 	return m.project(ctx, filter, field, sort, skip, limit, lock, fn, flags...)
 }
 
-func (m *Manager) project(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
+func (m *Manager[T]) project(ctx context.Context, filter bson.M, field string, sort []string, skip, limit int64, lock bool, fn func(id ID, val interface{}) bool, flags ...Flags) error {
 	// require transaction if locked or not unsafe
 	if (lock || !Merge(flags).Has(NoTransaction)) && !HasTransaction(ctx) {
 		return ErrTransactionRequired.Wrap()
@@ -623,7 +623,7 @@ func (m *Manager) project(ctx context.Context, filter bson.M, field string, sort
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, flags ...Flags) (int64, error) {
+func (m *Manager[T]) Count(ctx context.Context, filter bson.M, skip, limit int64, lock bool, flags ...Flags) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Count")
 	defer span.End()
@@ -684,7 +684,7 @@ func (m *Manager) Count(ctx context.Context, filter bson.M, skip, limit int64, l
 //
 // NoTransaction: The result may miss documents or include them multiple times
 // if interleaving operations move the documents in the used index.
-func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, lock bool, flags ...Flags) ([]interface{}, error) {
+func (m *Manager[T]) Distinct(ctx context.Context, field string, filter bson.M, lock bool, flags ...Flags) ([]interface{}, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Distinct")
 	defer span.End()
@@ -725,18 +725,18 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 
 // Insert will insert the provided document. If the document has a zero id a new
 // id will be generated and assigned.
-func (m *Manager) Insert(ctx context.Context, models Model, flags ...Flags) error {
+func (m *Manager[T]) Insert(ctx context.Context, model T, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Insert")
 	defer span.End()
 
-	return m.insert(ctx, []Model{models}, flags...)
+	return m.insert(ctx, []T{model}, flags...)
 }
 
 // InsertAll will insert the provided documents. If a document has a zero id a
 // new id will be generated and assigned. The documents are inserted in order
 // until an error is encountered.
-func (m *Manager) InsertAll(ctx context.Context, models []Model, flags ...Flags) error {
+func (m *Manager[T]) InsertAll(ctx context.Context, models []T, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.InsertAll")
 	defer span.End()
@@ -744,20 +744,14 @@ func (m *Manager) InsertAll(ctx context.Context, models []Model, flags ...Flags)
 	return m.insert(ctx, models, flags...)
 }
 
-func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) error {
+func (m *Manager[T]) insert(ctx context.Context, models []T, flags ...Flags) error {
 	// check length
 	if len(models) == 0 {
 		return nil
 	}
 
-	// check models and ensure ids
+	// ensure ids
 	for _, model := range models {
-		// check model
-		if GetMeta(model) != m.meta {
-			return ErrMetaMismatch.Wrap()
-		}
-
-		// ensure id
 		if model.ID().IsZero() {
 			model.GetBase().DocID = New()
 		}
@@ -803,7 +797,7 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 // InsertIfMissing will insert the provided document if no document matched the
 // provided filter. If the document has a zero id a new id will be generated and
 // assigned. It will return whether a document has been inserted. The underlying
-// upsert operation will Merge the filter with the model fields. Lock can be set
+// upsert operation will merge the filter with the model fields. Lock can be set
 // to true to force a write lock on the existing document and prevent a stale
 // read during a transaction.
 //
@@ -811,7 +805,7 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
-func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) InsertIfMissing(ctx context.Context, filter bson.M, model T, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.InsertIfMissing")
 	defer span.End()
@@ -825,11 +819,6 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 	filterDoc, err := m.trans.Document(filter)
 	if err != nil {
 		return false, err
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
 	}
 
 	// ensure id
@@ -878,15 +867,10 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 // case the replace did not change the document.
 //
 // A transaction is required for locking.
-func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) Replace(ctx context.Context, model T, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Replace")
 	defer span.End()
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
-	}
 
 	// check id
 	if model.ID().IsZero() {
@@ -934,15 +918,10 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) ReplaceFirst(ctx context.Context, filter bson.M, model T, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.ReplaceFirst")
 	defer span.End()
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
-	}
 
 	// require transaction
 	if lock && !HasTransaction(ctx) {
@@ -986,7 +965,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 // update did not change the document.
 //
 // A transaction is required for locking.
-func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) Update(ctx context.Context, model T, id ID, update bson.M, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Update")
 	defer span.End()
@@ -998,12 +977,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 
 	// check model
 	if model == nil {
-		model = m.meta.Make()
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
+		model = m.meta.Make().(T)
 	}
 
 	// translate update
@@ -1054,7 +1028,7 @@ func (m *Manager) Update(ctx context.Context, model Model, id ID, update bson.M,
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) UpdateFirst(ctx context.Context, model T, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateFirst")
 	defer span.End()
@@ -1066,12 +1040,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 
 	// check model
 	if model == nil {
-		model = m.meta.Make()
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
+		model = m.meta.Make().(T)
 	}
 
 	// translate filter
@@ -1136,7 +1105,7 @@ func (m *Manager) UpdateFirst(ctx context.Context, model Model, filter, update b
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
+func (m *Manager[T]) UpdateAll(ctx context.Context, filter, update bson.M, lock bool) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.UpdateAll")
 	defer span.End()
@@ -1185,7 +1154,7 @@ func (m *Manager) UpdateAll(ctx context.Context, filter, update bson.M, lock boo
 //
 // Warning: Even with transactions there is a risk for duplicate inserts when
 // the filter is not covered by a unique index.
-func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
+func (m *Manager[T]) Upsert(ctx context.Context, model T, filter, update bson.M, sort []string, lock bool, flags ...Flags) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Upsert")
 	defer span.End()
@@ -1197,12 +1166,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 	// check model
 	if model == nil {
-		model = m.meta.Make()
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
+		model = m.meta.Make().(T)
 	}
 
 	// translate filter
@@ -1267,7 +1231,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 
 // Delete will remove the document with the specified id. It will return
 // whether a document has been found and deleted.
-func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
+func (m *Manager[T]) Delete(ctx context.Context, model T, id ID) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Delete")
 	defer span.End()
@@ -1282,11 +1246,6 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 		}
 
 		return res.DeletedCount == 1, nil
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
 	}
 
 	// find and delete document
@@ -1307,7 +1266,7 @@ func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) 
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
+func (m *Manager[T]) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteAll")
 	defer span.End()
@@ -1332,7 +1291,7 @@ func (m *Manager) DeleteAll(ctx context.Context, filter bson.M) (int64, error) {
 //
 // Warning: If the operation depends on interleaving writes to not include or
 // exclude documents from the filter it should be run as part of a transaction.
-func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, sort []string) (bool, error) {
+func (m *Manager[T]) DeleteFirst(ctx context.Context, model T, filter bson.M, sort []string) (bool, error) {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.DeleteFirst")
 	defer span.End()
@@ -1345,12 +1304,7 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 
 	// check model
 	if model == nil {
-		model = m.meta.Make()
-	}
-
-	// check model
-	if GetMeta(model) != m.meta {
-		return false, ErrMetaMismatch.Wrap()
+		model = m.meta.Make().(T)
 	}
 
 	// prepare options
@@ -1376,7 +1330,7 @@ func (m *Manager) DeleteFirst(ctx context.Context, model Model, filter bson.M, s
 }
 
 // ManagedIterator wraps an iterator to enforce decoding to a model.
-type ManagedIterator struct {
+type ManagedIterator[T Model] struct {
 	meta     *Meta
 	iterator *Iterator
 	validate bool
@@ -1385,17 +1339,12 @@ type ManagedIterator struct {
 // Next will load the next document from the cursor and if available return true.
 // If it returns false the iteration must be stopped due to the cursor being
 // exhausted or an error.
-func (i *ManagedIterator) Next() bool {
+func (i *ManagedIterator[T]) Next() bool {
 	return i.iterator.Next()
 }
 
 // Decode will decode the loaded document to the specified model.
-func (i *ManagedIterator) Decode(model Model) error {
-	// check model
-	if GetMeta(model) != i.meta {
-		return ErrMetaMismatch.Wrap()
-	}
-
+func (i *ManagedIterator[T]) Decode(model T) error {
 	// decode
 	err := i.iterator.Decode(model)
 	if err != nil {
@@ -1418,13 +1367,13 @@ func (i *ManagedIterator) Decode(model Model) error {
 
 // Error returns the first error encountered during iteration. It should always
 // be checked when done to ensure there have been no errors.
-func (i *ManagedIterator) Error() error {
+func (i *ManagedIterator[T]) Error() error {
 	return i.iterator.Error()
 }
 
 // Close will close the underlying cursor. A call to it should be deferred right
 // after obtaining an iterator. Close should be called also if the iterator is
 // still valid but no longer used by the application.
-func (i *ManagedIterator) Close() {
+func (i *ManagedIterator[T]) Close() {
 	i.iterator.Close()
 }

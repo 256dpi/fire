@@ -164,21 +164,22 @@ func (s *Store) C(model Model) *Collection {
 // M will return the manager for the specified model. The manager will translate
 // query documents as well as perform extensive checks before running operations
 // to ensure they are as safe as possible.
-func (s *Store) M(model Model) *Manager {
+func M[T Model](s *Store) *Manager[T] {
 	// get meta
-	meta := GetMeta(model)
+	var zero T
+	meta := GetMeta(zero)
 
 	// check cache
 	val, ok := s.managers.Load(meta)
 	if ok {
-		return val.(*Manager)
+		return val.(*Manager[T])
 	}
 
 	// create manager
-	manager := &Manager{
+	manager := &Manager[T]{
 		meta:  meta,
-		coll:  s.C(model),
-		trans: NewTranslator(model),
+		coll:  s.C(zero),
+		trans: NewTranslator(zero),
 	}
 
 	// cache collection

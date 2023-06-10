@@ -166,11 +166,11 @@ func TestStoreRT(t *testing.T) {
 
 					attempts++
 					var p postModel
-					_, err := tester.Store.M(&p).Find(ctx, &p, post.ID(), false)
+					_, err := M[*postModel](tester.Store).Find(ctx, &p, post.ID(), false)
 					if err != nil {
 						return err
 					}
-					_, err = tester.Store.M(post).Update(ctx, post, post.ID(), bson.M{
+					_, err = M[*postModel](tester.Store).Update(ctx, post, post.ID(), bson.M{
 						"$set": bson.M{
 							"Title": p.Title + "-bar",
 						},

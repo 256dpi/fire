@@ -79,7 +79,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 
 	// insert unlabeled non-isolated jobs immediately
 	if base.Label == "" && isolation == 0 {
-		err := store.M(&Model{}).Insert(ctx, model)
+		err := coal.M(store).Insert(ctx, model)
 		if err != nil {
 			return false, err
 		}
@@ -123,7 +123,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	}
 
 	// insert job if missing
-	inserted, err := store.M(&Model{}).InsertIfMissing(ctx, filter, model, false)
+	inserted, err := coal.M(store).InsertIfMissing(ctx, filter, model, false)
 	if err != nil {
 		return false, err
 	}
@@ -156,7 +156,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 
 	// dequeue job
 	var model Model
-	found, err := store.M(&Model{}).UpdateFirst(ctx, &model, bson.M{
+	found, err := coal.M(store).UpdateFirst(ctx, &model, bson.M{
 		"_id": job.ID(),
 		"State": bson.M{
 			"$in": bson.A{Enqueued, Dequeued, Failed},
@@ -279,7 +279,7 @@ func Update(ctx context.Context, store *coal.Store, job Job, status string, prog
 	}
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := coal.M(store).UpdateFirst(ctx, nil, bson.M{
 		"_id":   job.ID(),
 		"State": Dequeued,
 	}, bson.M{
@@ -329,7 +329,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := coal.M(store).UpdateFirst(ctx, nil, bson.M{
 		"_id":   job.ID(),
 		"State": Dequeued,
 	}, bson.M{
@@ -377,7 +377,7 @@ func Fail(ctx context.Context, store *coal.Store, job Job, reason string, delay 
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := coal.M(store).UpdateFirst(ctx, nil, bson.M{
 		"_id":   job.ID(),
 		"State": Dequeued,
 	}, bson.M{
@@ -422,7 +422,7 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+	found, err := coal.M(store).UpdateFirst(ctx, nil, bson.M{
 		"_id":   job.ID(),
 		"State": Dequeued,
 	}, bson.M{

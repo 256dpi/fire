@@ -118,7 +118,7 @@ func ProcessEach(ctx context.Context, store *Store, model Model, filter bson.M, 
 	meta := GetMeta(model)
 
 	// find models
-	iter, err := store.M(model).FindEach(ctx, filter, nil, 0, 0, false, NoTransaction, NoValidation)
+	iter, err := M[Model](store).FindEach(ctx, filter, nil, 0, 0, false, NoTransaction, NoValidation)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -210,7 +210,7 @@ func FindEachAndReplace(ctx context.Context, store *Store, model Model, filter b
 		}
 
 		// replace object
-		_, err = store.M(model).Replace(ctx, model, false)
+		_, err = M[Model](store).Replace(ctx, model, false)
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func FindEachAndUpdate(ctx context.Context, store *Store, model Model, filter bs
 
 		// update object
 		if len(update) > 0 {
-			_, err = store.M(model).Update(ctx, nil, model.ID(), update, false)
+			_, err = M[Model](store).Update(ctx, nil, model.ID(), update, false)
 			if err != nil {
 				return err
 			}
