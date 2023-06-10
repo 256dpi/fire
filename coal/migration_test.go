@@ -116,15 +116,13 @@ func TestProcessEach(t *testing.T) {
 		assert.Equal(t, int64(3), matched)
 		assert.Equal(t, int64(3), modified)
 
-		matched, modified, err = ProcessEach(nil, tester.Store, &fooModel{}, bson.M{}, 5, func(model Model) error {
+		_, _, err = ProcessEach(nil, tester.Store, &fooModel{}, bson.M{}, 5, func(model Model) error {
 			if model.(*fooModel).Name == "foo-3" {
 				return errors.New("foo")
 			}
 			return nil
 		})
 		assert.Error(t, err)
-		assert.Equal(t, int64(19), matched)
-		assert.Equal(t, int64(19), modified)
 	})
 }
 

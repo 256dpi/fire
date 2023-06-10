@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+	"gopkg.in/tomb.v2"
 )
 
 // Migration is a single migration.
@@ -126,90 +126,77 @@ func ProcessEach(ctx context.Context, store *Store, model Model, filter bson.M, 
 	// ensure close
 	defer iter.Close()
 
-	// prepare counter
+	// prepare group
+	var group tomb.Tomb
+
+	// prepare counter and channel
 	var counter int64
-
-	// prepare channels
-	objects := make(chan Model, concurrency+1)
-	errors := make(chan error, concurrency+1)
-
-	// prepare wait group
-	var wg sync.WaitGroup
+	work := make(chan Model, concurrency+1)
 
 	// launch workers
-	wg.Add(concurrency)
 	for i := 0; i < concurrency; i++ {
-		go func() {
-			// ensure done
-			defer wg.Done()
-
+		group.Go(func() error {
 			for {
-				// get object
-				obj := <-objects
-				if obj == nil {
-					return
+				// get model
+				var model Model
+				select {
+				case model = <-work:
+				case <-group.Dying():
+					return tomb.ErrDying
+				}
+				if model == nil {
+					return nil
 				}
 
-				// TODO: Stop whole pipeline on a worker error?
-
-				// yield object
-				err := fn(obj)
+				// yield model
+				err := fn(model)
 				if err != nil {
-					errors <- err
-					return
+					return err
 				}
 
 				// increment
 				atomic.AddInt64(&counter, 1)
 			}
-		}()
+		})
 	}
 
 	// launch distributor
-	wg.Add(1)
-	go func() {
-		// ensure done
-		wg.Done()
-
+	group.Go(func() error {
 		// ensure close
 		defer func() {
-			close(objects)
+			close(work)
 		}()
 
 		// iterate over results
 		for iter.Next() {
-			// create object
-			obj := meta.Make()
-
-			// decode object
-			err = iter.Decode(obj)
+			// decode model
+			model := meta.Make()
+			err = iter.Decode(model)
 			if err != nil {
-				errors <- err
-				return
+				return err
 			}
 
-			// queue object
-			objects <- obj
+			// queue model
+			select {
+			case work <- model:
+			case <-group.Dying():
+				return tomb.ErrDying
+			}
 		}
 
 		// check error
 		err = iter.Error()
 		if err != nil {
-			errors <- err
-			return
+			return err
 		}
-	}()
+
+		return nil
+	})
 
 	// await done
-	wg.Wait()
+	err = group.Wait()
 
-	// check errors
-	if len(errors) > 0 {
-		return counter, counter, <-errors
-
-	}
-
-	return counter, counter, nil
+	return counter, counter, err
 }
 
 // FindEachAndReplace will apply the provided function to each matching document
