@@ -298,7 +298,9 @@ func TestComputeProgress(t *testing.T) {
 		},
 	}), func(env operationTest) {
 		var progress []float64
-		stream := coal.Reconcile(env.store, &computeModel{}, nil, nil, func(model coal.Model) {
+		stream := coal.Reconcile(env.store, &computeModel{}, nil, func(model coal.Model) {
+			progress = append(progress, model.(*computeModel).Status.Progress)
+		}, func(model coal.Model) {
 			progress = append(progress, model.(*computeModel).Status.Progress)
 		}, nil, nil)
 		defer stream.Close()

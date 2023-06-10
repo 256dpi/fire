@@ -245,6 +245,12 @@ func Compute(comp Computation) *Operation {
 
 			// set progress function
 			ctx.Progress = func(factor float64) error {
+				// ignore some factors
+				if factor <= 0 || factor >= 1 {
+					return nil
+				}
+
+				// update model
 				found, err := ctx.Store.M(ctx.Model).Update(ctx, nil, ctx.Model.ID(), bson.M{
 					"$set": bson.M{
 						comp.Name: &Status{
@@ -258,6 +264,7 @@ func Compute(comp Computation) *Operation {
 				} else if !found {
 					return xo.F("missing model")
 				}
+
 				return nil
 			}
 
