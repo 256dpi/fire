@@ -11,9 +11,6 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// TODO: Field access authorization should be clearer, especially the static
-//  fields used for List and Create operations.
-
 // PolicyDataKey is the key used to store policies.
 const PolicyDataKey = "ash:policy"
 
@@ -57,18 +54,13 @@ type Policy struct {
 	VerifyCreate func(ctx *fire.Context, model coal.Model) bool
 	VerifyUpdate func(ctx *fire.Context, model coal.Model) bool
 
-	// GetFields is called for every model to determine the field level access.
-	// The policy should refrain from creating a new map for every request and
-	// instead pre-allocate possible combinations and return those. The function
-	// is called for all operations except fire.Delete, fire.CollectionAction and
-	// fire.ResourceAction.
-	GetFields func(ctx *fire.Context, model coal.Model) AccessTable
-
-	// GetProperties is called for every model to determine the property level
-	// access. The policy should refrain from creating a map for every request
-	// and instead pre-allocate possible combinations and return those. The
-	// function is called for all operations except fire.Delete,
-	// fire.CollectionAction and fire.ResourceAction.
+	// GetFields and GetProperties is called for every model to determine the
+	// field and property level access. The function is called for all operations
+	// except fire.Delete, fire.CollectionAction and fire.ResourceAction.
+	//
+	// Note: The policy should refrain from creating a new map for every request
+	// and instead pre-allocate possible combinations and return those.
+	GetFields     func(ctx *fire.Context, model coal.Model) AccessTable
 	GetProperties func(ctx *fire.Context, model coal.Model) AccessTable
 }
 
@@ -137,7 +129,7 @@ func Execute() *fire.Callback {
 	verifyModelMatcher := fire.Except(fire.Create | fire.CollectionAction)
 	verifyCreateMatcher := fire.Only(fire.Create)
 	verifyUpdateMatcher := fire.Only(fire.Update)
-	getFieldsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
+	getFieldsAndPropsMatcher := fire.Except(fire.Delete | fire.CollectionAction | fire.ResourceAction)
 
 	// prepare access tables
 	genericAccess := map[fire.Operation]Access{
@@ -258,7 +250,7 @@ func Execute() *fire.Callback {
 		ctx.WritableFields = stick.Intersect(ctx.WritableFields, writableFields)
 
 		// set fields getters if available
-		if getFieldsMatcher(ctx) && policy.GetFields != nil {
+		if getFieldsAndPropsMatcher(ctx) && policy.GetFields != nil {
 			ctx.GetReadableFields = func(model coal.Model) []string {
 				if model == nil {
 					return readableFields
@@ -274,7 +266,7 @@ func Execute() *fire.Callback {
 		}
 
 		// set properties getter if available
-		if getFieldsMatcher(ctx) && policy.GetProperties != nil {
+		if getFieldsAndPropsMatcher(ctx) && policy.GetProperties != nil {
 			ctx.GetReadableProperties = func(model coal.Model) []string {
 				return policy.GetProperties(ctx, model).Collect(readAccess[ctx.Operation])
 			}
