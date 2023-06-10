@@ -144,7 +144,8 @@ type Policy struct {
 	RefreshTokenLifespan      time.Duration
 	AuthorizationCodeLifespan time.Duration
 
-	backTrackIssuedFromExpiry bool // TODO: Keep?
+	// needed to allow tests to create already expired tokens
+	backTrackIssuedFromExpiry bool
 }
 
 // StaticGrants always selects the specified grants.

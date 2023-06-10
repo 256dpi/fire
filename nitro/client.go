@@ -11,8 +11,6 @@ import (
 	"github.com/256dpi/xo"
 )
 
-// TODO: Automatically retry until context is cancelled?
-
 // Client is a reusable client for accessing procedure endpoints.
 type Client struct {
 	baseURL    string

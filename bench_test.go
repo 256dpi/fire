@@ -16,8 +16,6 @@ import (
 
 const benchListItems = 20
 
-// TODO: Increase concurrency.
-
 var benchStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-coal?maxPoolSize=100", xo.Crash)
 
 var benchThrottle = 100
