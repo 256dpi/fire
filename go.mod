@@ -1,6 +1,6 @@
 module github.com/256dpi/fire
 
-go 1.18
+go 1.19
 
 require (
 	github.com/256dpi/jsonapi/v2 v2.3.1
