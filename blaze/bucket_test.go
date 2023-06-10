@@ -1378,7 +1378,7 @@ func TestBucketCleanup(t *testing.T) {
 
 		queue := axe.NewQueue(axe.Options{
 			Store:    tester.Store,
-			Reporter: xo.Panic,
+			Reporter: xo.Crash,
 		})
 
 		task := bucket.CleanupTask(1, 5)
@@ -1528,7 +1528,7 @@ func TestBucketMigration(t *testing.T) {
 
 		queue := axe.NewQueue(axe.Options{
 			Store:    tester.Store,
-			Reporter: xo.Panic,
+			Reporter: xo.Crash,
 		})
 
 		task := bucket.MigrateTask([]string{"svc1"}, 5)

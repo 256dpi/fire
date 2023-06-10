@@ -63,8 +63,8 @@ func init() {
 	})
 }
 
-var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)
-var lungoStore = MustOpen(nil, "test-fire-coal", xo.Panic)
+var mongoStore = MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Crash)
+var lungoStore = MustOpen(nil, "test-fire-coal", xo.Crash)
 
 var modelList = []Model{&postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &fooModel{}}
 

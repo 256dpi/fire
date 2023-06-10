@@ -20,7 +20,7 @@ type Tester struct {
 func NewTester(store *Store, models ...Model) *Tester {
 	// ensure store
 	if store == nil {
-		store = MustOpen(nil, "test", xo.Panic)
+		store = MustOpen(nil, "test", xo.Crash)
 	}
 
 	// create tester

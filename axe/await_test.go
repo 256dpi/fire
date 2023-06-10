@@ -14,7 +14,7 @@ func TestAwaitJob(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		queue := NewQueue(Options{
 			Store:    tester.Store,
-			Reporter: xo.Panic,
+			Reporter: xo.Crash,
 		})
 
 		var ok bool

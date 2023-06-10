@@ -9,8 +9,8 @@ import (
 	"github.com/256dpi/fire/coal"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-example", xo.Panic)
-var lungoStore = coal.MustOpen(nil, "test-fire-example", xo.Panic)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-example", xo.Crash)
+var lungoStore = coal.MustOpen(nil, "test-fire-example", xo.Crash)
 
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {

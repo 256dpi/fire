@@ -10,8 +10,8 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-glut", xo.Panic)
-var lungoStore = coal.MustOpen(nil, "test-fire-glut", xo.Panic)
+var mongoStore = coal.MustConnect("mongodb://0.0.0.0/test-fire-glut", xo.Crash)
+var lungoStore = coal.MustOpen(nil, "test-fire-glut", xo.Crash)
 
 var modelList = []coal.Model{&Model{}}
 

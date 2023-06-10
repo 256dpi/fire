@@ -183,7 +183,7 @@ func TestIntegration(t *testing.T) {
 
 func TestPublicAccess(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), xo.Panic)
+		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), xo.Crash)
 		tester.Handler = newHandler(authenticator, false)
 
 		tester.Request("GET", "api/protected", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
@@ -194,7 +194,7 @@ func TestPublicAccess(t *testing.T) {
 
 func TestContextKeys(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), xo.Panic)
+		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), xo.Crash)
 		tester.Handler = newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
@@ -236,7 +236,7 @@ func TestInvalidGrantType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy(testNotary)
 
-		authenticator := NewAuthenticator(tester.Store, policy, xo.Panic)
+		authenticator := NewAuthenticator(tester.Store, policy, xo.Crash)
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{
@@ -271,7 +271,7 @@ func TestInvalidResponseType(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		policy := DefaultPolicy(testNotary)
 
-		authenticator := NewAuthenticator(tester.Store, policy, xo.Panic)
+		authenticator := NewAuthenticator(tester.Store, policy, xo.Crash)
 		handler := newHandler(authenticator, false)
 
 		application := tester.Insert(&Application{

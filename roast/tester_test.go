@@ -124,7 +124,7 @@ func TestTesterUploadDownload(t *testing.T) {
 	})
 	bucket.Use(blaze.NewGridFS(lungo.NewBucket(tt.Store.DB())), "local", true)
 
-	group := fire.NewGroup(xo.Panic)
+	group := fire.NewGroup(xo.Crash)
 	group.Add(&fire.Controller{
 		Model:      &fooModel{},
 		Store:      tt.Store,
@@ -163,7 +163,7 @@ func TestTesterAwait(t *testing.T) {
 
 	queue := axe.NewQueue(axe.Options{
 		Store:    tt.Store,
-		Reporter: xo.Panic,
+		Reporter: xo.Crash,
 	})
 	queue.Add(&axe.Task{
 		Job: &fooJob{},

@@ -29,18 +29,18 @@ func (m *exampleModel) Foo() string {
 }
 
 func TestPolicy(t *testing.T) {
-	store := coal.MustOpen(nil, "test", xo.Panic)
+	store := coal.MustOpen(nil, "test", xo.Crash)
 
 	notary := heat.NewNotary("test", heat.MustRand(16))
 
 	policy := flame.DefaultPolicy(notary)
 	policy.Grants = flame.StaticGrants(true, false, false, false, false)
 
-	auth := flame.NewAuthenticator(store, policy, xo.Panic)
+	auth := flame.NewAuthenticator(store, policy, xo.Crash)
 
 	var magicID coal.ID
 
-	group := fire.NewGroup(xo.Panic)
+	group := fire.NewGroup(xo.Crash)
 	group.Add(&fire.Controller{
 		Store: store,
 		Model: &exampleModel{},

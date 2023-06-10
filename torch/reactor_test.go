@@ -371,7 +371,7 @@ func testOperation(t *testing.T, operation *Operation, fn func(env operationTest
 	withTester(t, func(t *testing.T, store *coal.Store) {
 		queue := axe.NewQueue(axe.Options{
 			Store:    store,
-			Reporter: xo.Panic,
+			Reporter: xo.Crash,
 		})
 
 		reactor := NewReactor(store, queue, operation)
@@ -386,7 +386,7 @@ func testOperation(t *testing.T, operation *Operation, fn func(env operationTest
 		queue.Run()
 		defer queue.Close()
 
-		group := fire.NewGroup(xo.Panic)
+		group := fire.NewGroup(xo.Crash)
 
 		group.Add(&fire.Controller{
 			Store: store,

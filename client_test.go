@@ -14,7 +14,7 @@ import (
 
 func TestClient(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		group := NewGroup(xo.Panic)
+		group := NewGroup(xo.Crash)
 		group.Add(&Controller{
 			Store: tester.Store,
 			Model: &testModel{},
@@ -86,7 +86,7 @@ func TestClient(t *testing.T) {
 
 func TestModelClient(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
-		group := NewGroup(xo.Panic)
+		group := NewGroup(xo.Crash)
 		group.Add(&Controller{
 			Store: tester.Store,
 			Model: &testModel{},

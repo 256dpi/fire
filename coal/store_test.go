@@ -12,7 +12,7 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	store := MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Panic)
+	store := MustConnect("mongodb://0.0.0.0/test-fire-coal", xo.Crash)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
@@ -21,12 +21,12 @@ func TestConnect(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Panics(t, func() {
-		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail", xo.Panic)
+		MustConnect("mongodb://0.0.0.0/test-fire-coal?authMechanism=fail", xo.Crash)
 	})
 }
 
 func TestOpen(t *testing.T) {
-	store := MustOpen(nil, "test-fire-coal", xo.Panic)
+	store := MustOpen(nil, "test-fire-coal", xo.Crash)
 	assert.NotNil(t, store.Client)
 
 	assert.Equal(t, "posts", store.C(&postModel{}).Native().Name())
