@@ -297,20 +297,24 @@ func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Con
 				_ = sc.AbortTransaction(sc)
 
 				// handle transient transaction errors
-				if attempts < maxAttempts && sc.Err() == nil && hasErrorLabel(err, driver.TransientTransactionError) {
+				if attempts < maxAttempts && sc.Err() == nil && isTransientTransactionError(err) {
 					continue
 				}
 
 				return xo.W(err)
 			}
 
+		Commit:
 			// commit transaction
 			err = sc.CommitTransaction(sc)
 			if err != nil {
-				// TODO: Handle driver.UnknownTransactionCommitResult errors?
+				// handle unknown commit result error
+				if attempts < maxAttempts && sc.Err() == nil && isUnknownCommitResultError(err) {
+					goto Commit
+				}
 
 				// handle transient transaction errors
-				if attempts < maxAttempts && sc.Err() == nil && hasErrorLabel(err, driver.TransientTransactionError) {
+				if attempts < maxAttempts && sc.Err() == nil && isTransientTransactionError(err) {
 					continue
 				}
 
@@ -365,12 +369,12 @@ func HasTransaction(ctx context.Context) bool {
 	return ok
 }
 
-func hasErrorLabel(err error, label string) bool {
-	// check command error
+func isTransientTransactionError(err error) bool {
 	var cmdErr mongo.CommandError
-	if errors.As(err, &cmdErr) && cmdErr.HasErrorLabel(label) {
-		return true
-	}
+	return errors.As(err, &cmdErr) && cmdErr.HasErrorLabel(driver.TransientTransactionError)
+}
 
-	return false
+func isUnknownCommitResultError(err error) bool {
+	var cmdErr mongo.CommandError
+	return errors.As(err, &cmdErr) && cmdErr.HasErrorLabel(driver.UnknownTransactionCommitResult) && !cmdErr.IsMaxTimeMSExpiredError()
 }
