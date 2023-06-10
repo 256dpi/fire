@@ -267,7 +267,8 @@ func (r *Reactor) ProcessTask() *axe.Task {
 			}
 
 			// extend job if requested
-			if operation.ProcessTimeout > 0 || operation.ProcessLifetime > 0 {
+			if operation.ProcessTimeout > 0 && operation.ProcessLifetime > 0 &&
+				(operation.ProcessTimeout > ctx.Task.Timeout || operation.ProcessLifetime > ctx.Task.Lifetime) {
 				err = ctx.Extend(operation.ProcessTimeout, operation.ProcessLifetime)
 				if err != nil {
 					return err

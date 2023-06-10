@@ -84,8 +84,8 @@ type Operation struct {
 	// Default: 100.
 	ScanBatch int
 
-	// The time after which an operation fails (lifetime) and is retried
-	// (timeout).
+	// The time after which an asynchronous operation fails (lifetime) and is
+	// retried (timeout).
 	//
 	// Default: 5m, 10m.
 	ProcessLifetime time.Duration
