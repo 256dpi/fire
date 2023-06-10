@@ -91,7 +91,8 @@ func Await(store *coal.Store, timeout time.Duration, fns ...func() error) (int, 
 
 		// handle errors
 		if event == coal.Errored {
-			xo.Panic(err)
+			done <- err
+			close(done)
 			return nil
 		}
 
