@@ -250,6 +250,12 @@ func Compute(comp Computation) *Operation {
 					return nil
 				}
 
+				// update job
+				err := ctx.AsyncContext.Update("computing", factor)
+				if err != nil {
+					return err
+				}
+
 				// update model
 				found, err := ctx.Store.M(ctx.Model).Update(ctx, nil, ctx.Model.ID(), bson.M{
 					"$set": bson.M{

@@ -277,13 +277,14 @@ func (r *Reactor) ProcessTask() *axe.Task {
 
 			// prepare context
 			opCtx := &Context{
-				Context:   ctx,
-				Model:     model,
-				Update:    bson.M{},
-				Operation: operation,
-				Reactor:   r,
-				Store:     r.store,
-				Queue:     r.queue,
+				Context:      ctx,
+				Model:        model,
+				Update:       bson.M{},
+				Operation:    operation,
+				Reactor:      r,
+				Store:        r.store,
+				Queue:        r.queue,
+				AsyncContext: ctx,
 			}
 
 			// process model

@@ -47,6 +47,9 @@ type Context struct {
 	Reactor *Reactor
 	Store   *coal.Store
 	Queue   *axe.Queue
+
+	// The async context.
+	AsyncContext *axe.Context
 }
 
 // Change will record a change to the update document.
