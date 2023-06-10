@@ -120,12 +120,20 @@ func TestStoreT(t *testing.T) {
 			assert.Equal(t, tester.Store, tx.Store)
 			assert.True(t, tx.ReadOnly)
 
-			_, err := tester.Store.C(&postModel{}).DeleteMany(tc, bson.M{})
-			if err != nil {
-				panic(err)
-			}
+			_, err := tester.Store.C(&postModel{}).CountDocuments(tc, bson.M{})
+			return err
+		}))
 
-			return nil
+		assert.Error(t, tester.Store.T(nil, true, func(tc context.Context) error {
+			assert.True(t, HasTransaction(tc))
+
+			ok, tx := GetTransaction(tc)
+			assert.True(t, ok)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.True(t, tx.ReadOnly)
+
+			_, err := tester.Store.C(&postModel{}).DeleteMany(tc, bson.M{})
+			return err
 		}))
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))

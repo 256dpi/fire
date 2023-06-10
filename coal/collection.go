@@ -12,7 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// TODO: Return error if transaction is read only and command is a write.
+// ErrReadOnlyTransaction is returned when performing writes under a read only
+// transaction.
+var ErrReadOnlyTransaction = xo.BF("read only transaction")
 
 // IsMissing returns whether the provided error describes a missing document.
 func IsMissing(err error) bool {
@@ -61,6 +63,12 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
+
 	// bulk write
 	res, err := c.coll.BulkWrite(ctx, models, opts...)
 	if err != nil {
@@ -103,6 +111,12 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
+
 	// delete many
 	res, err := c.coll.DeleteMany(ctx, filter, opts...)
 	if err != nil {
@@ -121,6 +135,12 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	ctx, span := xo.Trace(ctx, "coal/Collection.DeleteOne")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
+
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
 
 	// delete one
 	res, err := c.coll.DeleteOne(ctx, filter, opts...)
@@ -212,6 +232,12 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return &SingleResult{err: ErrReadOnlyTransaction.Wrap()}
+	}
+
 	// find one and delete
 	res := c.coll.FindOneAndDelete(ctx, filter, opts...)
 
@@ -224,6 +250,12 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter interface{}, 
 	ctx, span := xo.Trace(ctx, "coal/Collection.FindOneAndReplace")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
+
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return &SingleResult{err: ErrReadOnlyTransaction.Wrap()}
+	}
 
 	// find and replace one
 	res := c.coll.FindOneAndReplace(ctx, filter, replacement, opts...)
@@ -238,6 +270,12 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter interface{}, u
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return &SingleResult{err: ErrReadOnlyTransaction.Wrap()}
+	}
+
 	// find one and update
 	res := c.coll.FindOneAndUpdate(ctx, filter, update, opts...)
 
@@ -251,6 +289,12 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	span.Tag("collection", c.coll.Name())
 	span.Tag("count", len(documents))
 	defer span.End()
+
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
 
 	// insert many
 	res, err := c.coll.InsertMany(ctx, documents, opts...)
@@ -268,6 +312,12 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
+
 	// insert one
 	res, err := c.coll.InsertOne(ctx, document, opts...)
 	if err != nil {
@@ -284,6 +334,12 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter interface{}, replace
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
 
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
+
 	// replace one
 	res, err := c.coll.ReplaceOne(ctx, filter, replacement, opts...)
 	if err != nil {
@@ -299,6 +355,12 @@ func (c *Collection) UpdateMany(ctx context.Context, filter interface{}, update 
 	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateMany")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
+
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
 
 	// update many
 	res, err := c.coll.UpdateMany(ctx, filter, update, opts...)
@@ -320,6 +382,12 @@ func (c *Collection) UpdateOne(ctx context.Context, filter interface{}, update i
 	ctx, span := xo.Trace(ctx, "coal/Collection.UpdateOne")
 	span.Tag("collection", c.coll.Name())
 	defer span.End()
+
+	// check transaction
+	ok, tx := GetTransaction(ctx)
+	if ok && tx.ReadOnly {
+		return nil, ErrReadOnlyTransaction.Wrap()
+	}
 
 	// update one
 	res, err := c.coll.UpdateOne(ctx, filter, update, opts...)
@@ -428,20 +496,30 @@ func (i *Iterator) Close() {
 // SingleResult wraps a single operation result.
 type SingleResult struct {
 	res lungo.ISingleResult
+	err error
 }
 
 // Decode will decode the document to the specified value.
 func (r *SingleResult) Decode(i interface{}) error {
+	if r.err != nil {
+		return r.err
+	}
 	return xo.W(r.res.Decode(i))
 }
 
 // DecodeBytes will return the raw document bytes.s
 func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
 	raw, err := r.res.DecodeBytes()
 	return raw, xo.W(err)
 }
 
 // Err return will return the last error.
 func (r *SingleResult) Err() error {
+	if r.err != nil {
+		return r.err
+	}
 	return xo.W(r.res.Err())
 }
