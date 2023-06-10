@@ -124,10 +124,10 @@ func (q *Queue) Callback(matcher fire.Matcher, cb func(ctx *fire.Context) Bluepr
 		bp := cb(ctx)
 
 		// check transaction
-		ok, ts := coal.GetTransaction(ctx)
+		ok, tx := coal.GetTransaction(ctx)
 
 		// check if transaction store is different
-		if ok && ts != q.options.Store {
+		if ok && tx.Store != q.options.Store {
 			// enqueue job outside of transaction
 			_, err := q.Enqueue(nil, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {
@@ -152,10 +152,10 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 		bp := cb(ctx)
 
 		// check transaction
-		ok, ts := coal.GetTransaction(ctx)
+		ok, tx := coal.GetTransaction(ctx)
 
 		// check if transaction store is different
-		if ok && ts != q.options.Store {
+		if ok && tx.Store != q.options.Store {
 			// enqueue job outside of transaction
 			_, err := q.Enqueue(nil, bp.Job, bp.Delay, bp.Isolation)
 			if err != nil {

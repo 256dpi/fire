@@ -39,8 +39,8 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	defer span.End()
 
 	// check transaction
-	ok, ts := coal.GetTransaction(ctx)
-	if ok && ts != store {
+	ok, tx := coal.GetTransaction(ctx)
+	if ok && tx.Store != store {
 		return false, xo.F("transaction store does not match supplied store")
 	}
 

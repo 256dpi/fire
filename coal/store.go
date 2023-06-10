@@ -232,7 +232,10 @@ func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Contex
 		}
 
 		// call function
-		err = fn(context.WithValue(sc, hasTransaction, s))
+		err = fn(context.WithValue(sc, Transaction{}, Transaction{
+			Store:    s,
+			ReadOnly: readOnly,
+		}))
 		if err != nil {
 			_ = sc.AbortTransaction(sc)
 			return xo.W(err)
@@ -291,7 +294,10 @@ func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Con
 			}
 
 			// call function
-			err = fn(context.WithValue(sc, hasTransaction, s))
+			err = fn(context.WithValue(sc, Transaction{}, Transaction{
+				Store:    s,
+				ReadOnly: false,
+			}))
 			if err != nil {
 				// abort transaction
 				_ = sc.AbortTransaction(sc)
@@ -342,22 +348,24 @@ func (s *Store) Close() error {
 	return nil
 }
 
-type contextKey struct{}
-
-var hasTransaction = contextKey{}
+// Transaction describes a transaction.
+type Transaction struct {
+	Store    *Store
+	ReadOnly bool
+}
 
 // GetTransaction will return whether the context carries a transaction and the
 // store used to create the transaction.
-func GetTransaction(ctx context.Context) (bool, *Store) {
+func GetTransaction(ctx context.Context) (bool, Transaction) {
 	// check context
 	if ctx == nil {
-		return false, nil
+		return false, Transaction{}
 	}
 
 	// get value
-	val, ok := ctx.Value(hasTransaction).(*Store)
+	val, ok := ctx.Value(Transaction{}).(Transaction)
 	if !ok {
-		return false, nil
+		return false, Transaction{}
 	}
 
 	return true, val

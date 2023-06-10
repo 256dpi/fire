@@ -44,16 +44,17 @@ func TestStoreT(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		assert.False(t, HasTransaction(nil))
 
-		ok, store := GetTransaction(nil)
+		ok, tx := GetTransaction(nil)
 		assert.False(t, ok)
-		assert.Nil(t, store)
+		assert.Nil(t, tx.Store)
 
 		assert.NoError(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
-			ok, store := GetTransaction(tc)
+			ok, tx := GetTransaction(tc)
 			assert.True(t, ok)
-			assert.Equal(t, tester.Store, store)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.False(t, tx.ReadOnly)
 
 			return nil
 		}))
@@ -61,9 +62,10 @@ func TestStoreT(t *testing.T) {
 		assert.Error(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
-			ok, store := GetTransaction(tc)
+			ok, tx := GetTransaction(tc)
 			assert.True(t, ok)
-			assert.Equal(t, tester.Store, store)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.False(t, tx.ReadOnly)
 
 			return io.EOF
 		}))
@@ -75,9 +77,10 @@ func TestStoreT(t *testing.T) {
 		assert.NoError(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
-			ok, store := GetTransaction(tc)
+			ok, tx := GetTransaction(tc)
 			assert.True(t, ok)
-			assert.Equal(t, tester.Store, store)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.False(t, tx.ReadOnly)
 
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
@@ -91,9 +94,10 @@ func TestStoreT(t *testing.T) {
 		assert.Error(t, tester.Store.T(nil, false, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
-			ok, store := GetTransaction(tc)
+			ok, tx := GetTransaction(tc)
 			assert.True(t, ok)
-			assert.Equal(t, tester.Store, store)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.False(t, tx.ReadOnly)
 
 			_, err := tester.Store.C(&postModel{}).InsertOne(tc, &postModel{
 				Base:  B(),
@@ -111,9 +115,10 @@ func TestStoreT(t *testing.T) {
 		assert.NoError(t, tester.Store.T(nil, true, func(tc context.Context) error {
 			assert.True(t, HasTransaction(tc))
 
-			ok, store := GetTransaction(tc)
+			ok, tx := GetTransaction(tc)
 			assert.True(t, ok)
-			assert.Equal(t, tester.Store, store)
+			assert.Equal(t, tester.Store, tx.Store)
+			assert.True(t, tx.ReadOnly)
 
 			_, err := tester.Store.C(&postModel{}).DeleteMany(tc, bson.M{})
 			if err != nil {
@@ -144,6 +149,13 @@ func TestStoreRT(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			go func() {
 				err := tester.Store.RT(nil, 5, func(ctx context.Context) error {
+					assert.True(t, HasTransaction(ctx))
+
+					ok, tx := GetTransaction(ctx)
+					assert.True(t, ok)
+					assert.Equal(t, tester.Store, tx.Store)
+					assert.False(t, tx.ReadOnly)
+
 					attempts++
 					var p postModel
 					_, err := tester.Store.M(&p).Find(ctx, &p, post.ID(), false)
