@@ -4,14 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/256dpi/xo"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
 	"github.com/256dpi/fire/coal"
-	"github.com/256dpi/fire/roast"
 	"github.com/256dpi/fire/stick"
 )
 
@@ -42,14 +39,6 @@ func testModelOp() *Operation {
 			return nil
 		},
 	}
-}
-
-type operationTest struct {
-	store     *coal.Store
-	queue     *axe.Queue
-	reactor   *Reactor
-	operation *Operation
-	tester    *roast.Tester
 }
 
 func TestCheck(t *testing.T) {
@@ -364,50 +353,5 @@ func TestModifierConcurrency(t *testing.T) {
 		assert.NotNil(t, model)
 		assert.Equal(t, 28, model.Input)
 		assert.Equal(t, 56, model.Output)
-	})
-}
-
-func testOperation(t *testing.T, operation *Operation, fn func(env operationTest)) {
-	withTester(t, func(t *testing.T, store *coal.Store) {
-		queue := axe.NewQueue(axe.Options{
-			Store:    store,
-			Reporter: xo.Crash,
-		})
-
-		reactor := NewReactor(store, queue, operation)
-
-		task := reactor.ScanTask()
-		task.Periodicity = 0
-		task.PeriodicJob = axe.Blueprint{}
-		queue.Add(task)
-
-		queue.Add(reactor.ProcessTask())
-
-		queue.Run()
-		defer queue.Close()
-
-		group := fire.NewGroup(xo.Crash)
-
-		group.Add(&fire.Controller{
-			Store: store,
-			Model: operation.Model,
-			Modifiers: []*fire.Callback{
-				reactor.Modifier(),
-			},
-		})
-
-		tester := roast.NewTester(roast.Config{
-			Store:   store,
-			Models:  []coal.Model{operation.Model},
-			Handler: group.Endpoint(""),
-		})
-
-		fn(operationTest{
-			store:     store,
-			queue:     queue,
-			reactor:   reactor,
-			operation: operation,
-			tester:    tester,
-		})
 	})
 }
