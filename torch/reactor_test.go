@@ -16,7 +16,6 @@ type testModel struct {
 	coal.Base `json:"-" bson:",inline" coal:"test"`
 	Input     int
 	Output    int
-	Sleep     time.Duration
 	stick.NoValidation
 }
 
@@ -26,9 +25,6 @@ func testModelOp() *Operation {
 		Model: &testModel{},
 		Processor: func(ctx *Context) error {
 			model := ctx.Model.(*testModel)
-			if model.Sleep > 0 {
-				time.Sleep(model.Sleep)
-			}
 			if model.Input == -1 {
 				return axe.E("invalid input", false)
 			} else if model.Input == -2 && (ctx.Sync || ctx.Context.(*axe.Context).Attempt == 1) {
@@ -124,7 +120,7 @@ func TestCheckDefer(t *testing.T) {
 			assert.Equal(t, 1, num)
 			assert.Equal(t, "failed: deferred", err.Error())
 
-			num, err = axe.Await(env.store, time.Minute)
+			num, err = axe.Await(env.store, 0)
 			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 
@@ -342,20 +338,37 @@ func TestModifierConcurrency(t *testing.T) {
 	// triggered by the scan
 
 	withTester(t, func(t *testing.T, store *coal.Store) {
-		testOperation(store, testModelOp(), func(env operationTest) {
-			model := &testModel{Input: 7, Sleep: 100 * time.Millisecond}
+		paused := make(chan struct{}, 3)
+		resumed := make(chan struct{})
+
+		op := &Operation{
+			Name:  "foo",
+			Model: &testModel{},
+			Processor: func(ctx *Context) error {
+				paused <- struct{}{}
+				<-resumed
+				model := ctx.Model.(*testModel)
+				ctx.Change("$set", "Output", model.Input*2)
+				return nil
+			},
+		}
+
+		testOperation(store, op, func(env operationTest) {
+			model := &testModel{Input: 7}
 
 			num, err := axe.Await(env.store, 0, func() error {
 				model = env.tester.Create(t, model, nil, nil).Model.(*testModel)
 				assert.NotNil(t, model)
 
-				for i := 0; i < 2; i++ {
-					time.Sleep(50 * time.Millisecond)
+				<-paused
 
+				for i := 0; i < 2; i++ {
 					model = env.tester.Find(t, model, nil).Model.(*testModel)
 					model.Input *= 2
 					env.tester.Update(t, model, nil, nil)
 				}
+
+				close(resumed)
 
 				return nil
 			})

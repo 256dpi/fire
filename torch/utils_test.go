@@ -2,6 +2,7 @@ package torch
 
 import (
 	"testing"
+	"time"
 
 	"github.com/256dpi/xo"
 
@@ -47,9 +48,12 @@ func testOperation(store *coal.Store, operation *Operation, fn func(env operatio
 	task := reactor.ScanTask()
 	task.Periodicity = 0
 	task.PeriodicJob = axe.Blueprint{}
+	task.Interval = 10 * time.Millisecond
 	queue.Add(task)
 
-	queue.Add(reactor.ProcessTask())
+	task = reactor.ProcessTask()
+	task.Interval = 10 * time.Millisecond
+	queue.Add(task)
 
 	queue.Run()
 	defer queue.Close()
