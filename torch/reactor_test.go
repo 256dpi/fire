@@ -42,245 +42,263 @@ func testModelOp() *Operation {
 }
 
 func TestCheck(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		model := &testModel{Base: coal.B(), Input: 7}
-		env.tester.Insert(model)
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			model := &testModel{Base: coal.B(), Input: 7}
+			env.tester.Insert(model)
 
-		num, err := axe.Await(env.store, 0, func() error {
-			return env.reactor.Check(nil, model)
+			num, err := axe.Await(env.store, 0, func() error {
+				return env.reactor.Check(nil, model)
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 14, model.Output)
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 14, model.Output)
 	})
 }
 
 func TestCheckFilter(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Filter = func(model coal.Model) bool {
-			return model.(*testModel).Input%7 != 0
-		}
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Filter = func(model coal.Model) bool {
+				return model.(*testModel).Input%7 != 0
+			}
 
-		model := &testModel{Base: coal.B(), Input: 7}
-		env.tester.Insert(model)
+			model := &testModel{Base: coal.B(), Input: 7}
+			env.tester.Insert(model)
 
-		num, err := axe.Await(env.store, 50*time.Millisecond, func() error {
-			return env.reactor.Check(nil, model)
+			num, err := axe.Await(env.store, 50*time.Millisecond, func() error {
+				return env.reactor.Check(nil, model)
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, 0, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 0, model.Output)
+
+			model.Input = 9
+			env.tester.Replace(model)
+
+			num, err = axe.Await(env.store, 0, func() error {
+				return env.reactor.Check(nil, model)
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 18, model.Output)
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, 0, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 0, model.Output)
-
-		model.Input = 9
-		env.tester.Replace(model)
-
-		num, err = axe.Await(env.store, 0, func() error {
-			return env.reactor.Check(nil, model)
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 18, model.Output)
 	})
 }
 
 func TestCheckError(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		model := &testModel{Base: coal.B(), Input: -1}
-		env.tester.Insert(model)
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			model := &testModel{Base: coal.B(), Input: -1}
+			env.tester.Insert(model)
 
-		num, err := axe.Await(env.store, 0, func() error {
-			return env.reactor.Check(nil, model)
+			num, err := axe.Await(env.store, 0, func() error {
+				return env.reactor.Check(nil, model)
+			})
+			assert.Error(t, err)
+			assert.Equal(t, 1, num)
+			assert.Equal(t, "failed: invalid input", err.Error())
 		})
-		assert.Error(t, err)
-		assert.Equal(t, 1, num)
-		assert.Equal(t, "failed: invalid input", err.Error())
 	})
 }
 
 func TestCheckDefer(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Sync = true
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Sync = true
 
-		model := &testModel{Base: coal.B(), Input: -2}
-		env.tester.Insert(model)
+			model := &testModel{Base: coal.B(), Input: -2}
+			env.tester.Insert(model)
 
-		num, err := axe.Await(env.store, 0, func() error {
-			return env.reactor.Check(nil, model)
+			num, err := axe.Await(env.store, 0, func() error {
+				return env.reactor.Check(nil, model)
+			})
+			assert.Error(t, err)
+			assert.Equal(t, 1, num)
+			assert.Equal(t, "failed: deferred", err.Error())
+
+			num, err = axe.Await(env.store, time.Minute)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, -4, model.Output)
 		})
-		assert.Error(t, err)
-		assert.Equal(t, 1, num)
-		assert.Equal(t, "failed: deferred", err.Error())
-
-		num, err = axe.Await(env.store, time.Minute)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, -4, model.Output)
 	})
 }
 
 func TestScan(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Query = func() bson.M {
-			return bson.M{
-				"Output": 0,
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Query = func() bson.M {
+				return bson.M{
+					"Output": 0,
+				}
 			}
-		}
 
-		model := &testModel{Base: coal.B(), Input: 7}
-		env.tester.Insert(model)
+			model := &testModel{Base: coal.B(), Input: 7}
+			env.tester.Insert(model)
 
-		num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
+			num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
 
-		env.tester.Refresh(model)
-		assert.Equal(t, 14, model.Output)
+			env.tester.Refresh(model)
+			assert.Equal(t, 14, model.Output)
 
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 2, num)
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 2, num)
+		})
 	})
 }
 
 func TestScanFilter(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Query = func() bson.M {
-			return bson.M{
-				"Output": 0,
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Query = func() bson.M {
+				return bson.M{
+					"Output": 0,
+				}
 			}
-		}
-		env.operation.Filter = func(model coal.Model) bool {
-			return model.(*testModel).Input%7 != 0
-		}
+			env.operation.Filter = func(model coal.Model) bool {
+				return model.(*testModel).Input%7 != 0
+			}
 
-		model := &testModel{Base: coal.B(), Input: 7}
-		env.tester.Insert(model)
+			model := &testModel{Base: coal.B(), Input: 7}
+			env.tester.Insert(model)
 
-		num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 2, num)
+			num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 2, num)
 
-		env.tester.Refresh(model)
-		assert.Equal(t, 0, model.Output)
+			env.tester.Refresh(model)
+			assert.Equal(t, 0, model.Output)
 
-		model.Input = 9
-		env.tester.Replace(model)
+			model.Input = 9
+			env.tester.Replace(model)
 
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
 
-		env.tester.Refresh(model)
-		assert.Equal(t, 18, model.Output)
+			env.tester.Refresh(model)
+			assert.Equal(t, 18, model.Output)
+		})
 	})
 }
 
 func TestProcessFilter(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Query = func() bson.M {
-			return bson.M{
-				"Output": 0,
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Query = func() bson.M {
+				return bson.M{
+					"Output": 0,
+				}
 			}
-		}
-		env.operation.Filter = func(model coal.Model) bool {
-			return model.(*testModel).Input%7 != 0
-		}
+			env.operation.Filter = func(model coal.Model) bool {
+				return model.(*testModel).Input%7 != 0
+			}
 
-		model := &testModel{Base: coal.B(), Input: 7}
-		model.SetTag("torch/Reactor/foo", 1, time.Now().Add(time.Hour))
-		env.tester.Insert(model)
+			model := &testModel{Base: coal.B(), Input: 7}
+			model.SetTag("torch/Reactor/foo", 1, time.Now().Add(time.Hour))
+			env.tester.Insert(model)
 
-		num, err := axe.AwaitJob(env.store, 0, NewProcessJob("foo", model.ID()))
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
+			num, err := axe.AwaitJob(env.store, 0, NewProcessJob("foo", model.ID()))
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
 
-		env.tester.Refresh(model)
-		assert.Equal(t, 0, model.Output)
-		assert.Equal(t, int32(0), model.GetTag("torch/Reactor/foo"))
+			env.tester.Refresh(model)
+			assert.Equal(t, 0, model.Output)
+			assert.Equal(t, int32(0), model.GetTag("torch/Reactor/foo"))
+		})
 	})
 }
 
 func TestModifierAsync(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		model := env.tester.Create(t, &testModel{
-			Input: 7,
-		}, nil, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 0, model.Output)
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			model := env.tester.Create(t, &testModel{
+				Input: 7,
+			}, nil, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 0, model.Output)
 
-		num, err := axe.Await(env.store, 0)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
+			num, err := axe.Await(env.store, 0)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
 
-		model = env.tester.Find(t, model, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 14, model.Output)
+			model = env.tester.Find(t, model, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 14, model.Output)
 
-		model.Input = 17
-		model = env.tester.Update(t, model, nil, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 14, model.Output)
+			model.Input = 17
+			model = env.tester.Update(t, model, nil, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 14, model.Output)
 
-		num, err = axe.Await(env.store, 0)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
+			num, err = axe.Await(env.store, 0)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
 
-		model = env.tester.Find(t, model, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 34, model.Output)
+			model = env.tester.Find(t, model, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 34, model.Output)
 
-		env.tester.Delete(t, model, nil)
+			env.tester.Delete(t, model, nil)
 
-		num, err = axe.Await(env.store, 50*time.Millisecond)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, num)
+			num, err = axe.Await(env.store, 50*time.Millisecond)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, num)
+		})
 	})
 }
 
 func TestModifierSync(t *testing.T) {
-	testOperation(t, testModelOp(), func(env operationTest) {
-		env.operation.Sync = true
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			env.operation.Sync = true
 
-		model := env.tester.Create(t, &testModel{
-			Input: 7,
-		}, nil, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 14, model.Output)
+			model := env.tester.Create(t, &testModel{
+				Input: 7,
+			}, nil, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 14, model.Output)
 
-		num, err := axe.Await(env.store, 50*time.Millisecond)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, num)
+			num, err := axe.Await(env.store, 50*time.Millisecond)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, num)
 
-		model = env.tester.Find(t, model, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 14, model.Output)
+			model = env.tester.Find(t, model, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 14, model.Output)
 
-		model.Input = 17
-		model = env.tester.Update(t, model, nil, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 34, model.Output)
+			model.Input = 17
+			model = env.tester.Update(t, model, nil, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 34, model.Output)
 
-		num, err = axe.Await(env.store, 50*time.Millisecond)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, num)
+			num, err = axe.Await(env.store, 50*time.Millisecond)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, num)
 
-		model = env.tester.Find(t, model, nil).Model.(*testModel)
-		assert.NotNil(t, model)
-		assert.Equal(t, 34, model.Output)
+			model = env.tester.Find(t, model, nil).Model.(*testModel)
+			assert.NotNil(t, model)
+			assert.Equal(t, 34, model.Output)
 
-		env.tester.Delete(t, model, nil)
+			env.tester.Delete(t, model, nil)
 
-		num, err = axe.Await(env.store, 50*time.Millisecond)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, num)
+			num, err = axe.Await(env.store, 50*time.Millisecond)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, num)
+		})
 	})
 }
 
@@ -288,31 +306,33 @@ func TestModifierIdempotence(t *testing.T) {
 	// the reactor will not queue jobs for the subsequent updates, but the
 	// process of the insert will observe all updates
 
-	testOperation(t, testModelOp(), func(env operationTest) {
-		model := &testModel{Input: 7}
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			model := &testModel{Input: 7}
 
-		num, err := axe.Await(env.store, 0, func() error {
-			model = env.tester.Create(t, model, nil, nil).Model.(*testModel)
+			num, err := axe.Await(env.store, 0, func() error {
+				model = env.tester.Create(t, model, nil, nil).Model.(*testModel)
+				assert.NotNil(t, model)
+
+				for i := 0; i < 2; i++ {
+					model.Input *= 2
+					env.tester.Update(t, model, nil, nil)
+				}
+
+				return nil
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.tester.Refresh(model)
 			assert.NotNil(t, model)
+			assert.Equal(t, 28, model.Input)
+			assert.Equal(t, 56, model.Output)
 
-			for i := 0; i < 2; i++ {
-				model.Input *= 2
-				env.tester.Update(t, model, nil, nil)
-			}
-
-			return nil
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 2, num)
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
-
-		env.tester.Refresh(model)
-		assert.NotNil(t, model)
-		assert.Equal(t, 28, model.Input)
-		assert.Equal(t, 56, model.Output)
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 2, num)
 	})
 }
 
@@ -321,37 +341,39 @@ func TestModifierConcurrency(t *testing.T) {
 	// models as outstanding on the subsequent updates. the final execution is
 	// triggered by the scan
 
-	testOperation(t, testModelOp(), func(env operationTest) {
-		model := &testModel{Input: 7, Sleep: 100 * time.Millisecond}
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, testModelOp(), func(env operationTest) {
+			model := &testModel{Input: 7, Sleep: 100 * time.Millisecond}
 
-		num, err := axe.Await(env.store, 0, func() error {
-			model = env.tester.Create(t, model, nil, nil).Model.(*testModel)
+			num, err := axe.Await(env.store, 0, func() error {
+				model = env.tester.Create(t, model, nil, nil).Model.(*testModel)
+				assert.NotNil(t, model)
+
+				for i := 0; i < 2; i++ {
+					time.Sleep(50 * time.Millisecond)
+
+					model = env.tester.Find(t, model, nil).Model.(*testModel)
+					model.Input *= 2
+					env.tester.Update(t, model, nil, nil)
+				}
+
+				return nil
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.tester.Refresh(model)
 			assert.NotNil(t, model)
+			assert.NotZero(t, model.GetTag("torch/Reactor/foo").(int32))
 
-			for i := 0; i < 2; i++ {
-				time.Sleep(50 * time.Millisecond)
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
 
-				model = env.tester.Find(t, model, nil).Model.(*testModel)
-				model.Input *= 2
-				env.tester.Update(t, model, nil, nil)
-			}
-
-			return nil
+			env.tester.Refresh(model)
+			assert.NotNil(t, model)
+			assert.Equal(t, 28, model.Input)
+			assert.Equal(t, 56, model.Output)
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, num)
-
-		env.tester.Refresh(model)
-		assert.NotNil(t, model)
-		assert.NotZero(t, model.GetTag("torch/Reactor/foo").(int32))
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
-
-		env.tester.Refresh(model)
-		assert.NotNil(t, model)
-		assert.Equal(t, 28, model.Input)
-		assert.Equal(t, 56, model.Output)
 	})
 }

@@ -41,98 +41,102 @@ func TestCheckDeadline(t *testing.T) {
 }
 
 func TestCheckField(t *testing.T) {
-	testOperation(t, CheckField(checkModelCheck()), func(env operationTest) {
-		model := &checkModel{}
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, CheckField(checkModelCheck()), func(env operationTest) {
+			model := &checkModel{}
 
-		n := env.tester.Await(t, 0, func() {
-			model = env.tester.Create(t, model, nil, nil).Model.(*checkModel)
+			n := env.tester.Await(t, 0, func() {
+				model = env.tester.Create(t, model, nil, nil).Model.(*checkModel)
+			})
+			assert.Equal(t, 1, n)
+			assert.Equal(t, 0, model.Counter)
+			assert.Nil(t, model.Checked)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 1, model.Counter)
+			assert.NotNil(t, model.Checked)
+			assert.NotZero(t, *model.Checked)
+			assert.True(t, time.Since(*model.Checked) < time.Second)
+
+			num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 2, num)
+
+			/* clear */
+
+			model.Checked = nil
+			env.tester.Replace(model)
+
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 2, model.Counter)
+			assert.NotNil(t, model.Checked)
+			assert.NotZero(t, *model.Checked)
+			assert.True(t, time.Since(*model.Checked) < time.Second)
+
+			/* outdated */
+
+			model.Checked = stick.P(time.Now().Add(-2 * time.Minute))
+			env.tester.Replace(model)
+
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 3, model.Counter)
+			assert.NotNil(t, model.Checked)
+			assert.NotZero(t, *model.Checked)
+			assert.True(t, time.Since(*model.Checked) < time.Second)
 		})
-		assert.Equal(t, 1, n)
-		assert.Equal(t, 0, model.Counter)
-		assert.Nil(t, model.Checked)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 1, model.Counter)
-		assert.NotNil(t, model.Checked)
-		assert.NotZero(t, *model.Checked)
-		assert.True(t, time.Since(*model.Checked) < time.Second)
-
-		num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 2, num)
-
-		/* clear */
-
-		model.Checked = nil
-		env.tester.Replace(model)
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 2, model.Counter)
-		assert.NotNil(t, model.Checked)
-		assert.NotZero(t, *model.Checked)
-		assert.True(t, time.Since(*model.Checked) < time.Second)
-
-		/* outdated */
-
-		model.Checked = stick.P(time.Now().Add(-2 * time.Minute))
-		env.tester.Replace(model)
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 3, model.Counter)
-		assert.NotNil(t, model.Checked)
-		assert.NotZero(t, *model.Checked)
-		assert.True(t, time.Since(*model.Checked) < time.Second)
 	})
 }
 
 func TestCheckTag(t *testing.T) {
-	testOperation(t, CheckTag(checkModelCheck()), func(env operationTest) {
-		model := &checkModel{}
+	withTester(t, func(t *testing.T, store *coal.Store) {
+		testOperation(store, CheckTag(checkModelCheck()), func(env operationTest) {
+			model := &checkModel{}
 
-		n := env.tester.Await(t, 0, func() {
-			model = env.tester.Create(t, model, nil, nil).Model.(*checkModel)
+			n := env.tester.Await(t, 0, func() {
+				model = env.tester.Create(t, model, nil, nil).Model.(*checkModel)
+			})
+			assert.Equal(t, 1, n)
+			assert.Equal(t, 0, model.Counter)
+			assert.Nil(t, model.Checked)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 1, model.Counter)
+
+			num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 2, num)
+
+			/* clear */
+
+			model.SetTag("Checked", nil, time.Now())
+			env.tester.Replace(model)
+
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 2, model.Counter)
+
+			/* outdated */
+
+			model.SetTag("Checked", time.Now().Add(-2*time.Minute), time.Now())
+			env.tester.Replace(model)
+
+			num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
+			assert.NoError(t, err)
+			assert.Equal(t, 3, num)
+
+			env.tester.Refresh(model)
+			assert.Equal(t, 3, model.Counter)
 		})
-		assert.Equal(t, 1, n)
-		assert.Equal(t, 0, model.Counter)
-		assert.Nil(t, model.Checked)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 1, model.Counter)
-
-		num, err := axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 2, num)
-
-		/* clear */
-
-		model.SetTag("Checked", nil, time.Now())
-		env.tester.Replace(model)
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 2, model.Counter)
-
-		/* outdated */
-
-		model.SetTag("Checked", time.Now().Add(-2*time.Minute), time.Now())
-		env.tester.Replace(model)
-
-		num, err = axe.AwaitJob(env.store, 0, NewScanJob(""))
-		assert.NoError(t, err)
-		assert.Equal(t, 3, num)
-
-		env.tester.Refresh(model)
-		assert.Equal(t, 3, model.Counter)
 	})
 }

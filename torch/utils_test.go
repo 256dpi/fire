@@ -36,47 +36,45 @@ type operationTest struct {
 	tester    *roast.Tester
 }
 
-func testOperation(t *testing.T, operation *Operation, fn func(env operationTest)) {
-	withTester(t, func(t *testing.T, store *coal.Store) {
-		queue := axe.NewQueue(axe.Options{
-			Store:    store,
-			Reporter: xo.Crash,
-		})
+func testOperation(store *coal.Store, operation *Operation, fn func(env operationTest)) {
+	queue := axe.NewQueue(axe.Options{
+		Store:    store,
+		Reporter: xo.Crash,
+	})
 
-		reactor := NewReactor(store, queue, operation)
+	reactor := NewReactor(store, queue, operation)
 
-		task := reactor.ScanTask()
-		task.Periodicity = 0
-		task.PeriodicJob = axe.Blueprint{}
-		queue.Add(task)
+	task := reactor.ScanTask()
+	task.Periodicity = 0
+	task.PeriodicJob = axe.Blueprint{}
+	queue.Add(task)
 
-		queue.Add(reactor.ProcessTask())
+	queue.Add(reactor.ProcessTask())
 
-		queue.Run()
-		defer queue.Close()
+	queue.Run()
+	defer queue.Close()
 
-		group := fire.NewGroup(xo.Crash)
+	group := fire.NewGroup(xo.Crash)
 
-		group.Add(&fire.Controller{
-			Store: store,
-			Model: operation.Model,
-			Modifiers: []*fire.Callback{
-				reactor.Modifier(),
-			},
-		})
+	group.Add(&fire.Controller{
+		Store: store,
+		Model: operation.Model,
+		Modifiers: []*fire.Callback{
+			reactor.Modifier(),
+		},
+	})
 
-		tester := roast.NewTester(roast.Config{
-			Store:   store,
-			Models:  []coal.Model{operation.Model},
-			Handler: group.Endpoint(""),
-		})
+	tester := roast.NewTester(roast.Config{
+		Store:   store,
+		Models:  []coal.Model{operation.Model},
+		Handler: group.Endpoint(""),
+	})
 
-		fn(operationTest{
-			store:     store,
-			queue:     queue,
-			reactor:   reactor,
-			operation: operation,
-			tester:    tester,
-		})
+	fn(operationTest{
+		store:     store,
+		queue:     queue,
+		reactor:   reactor,
+		operation: operation,
+		tester:    tester,
 	})
 }
