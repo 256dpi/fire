@@ -43,10 +43,10 @@ func TestReactorCheck(t *testing.T) {
 			model := &testModel{Base: coal.B(), Input: 7}
 			env.Insert(model)
 
-			num, err := axe.Await(env.Store, 0, func() error {
-				return env.Reactor.Check(nil, model)
+			num := env.Await(t, 0, func() {
+				err := env.Reactor.Check(nil, model)
+				assert.NoError(t, err)
 			})
-			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 
 			env.Refresh(model)
@@ -65,10 +65,10 @@ func TestReactorCheckFilter(t *testing.T) {
 			model := &testModel{Base: coal.B(), Input: 7}
 			env.Insert(model)
 
-			num, err := axe.Await(env.Store, 50*time.Millisecond, func() error {
-				return env.Reactor.Check(nil, model)
+			num := env.Await(t, 50*time.Millisecond, func() {
+				err := env.Reactor.Check(nil, model)
+				assert.NoError(t, err)
 			})
-			assert.NoError(t, err)
 			assert.Equal(t, 0, num)
 
 			env.Refresh(model)
@@ -77,10 +77,10 @@ func TestReactorCheckFilter(t *testing.T) {
 			model.Input = 9
 			env.Replace(model)
 
-			num, err = axe.Await(env.Store, 0, func() error {
-				return env.Reactor.Check(nil, model)
+			num = env.Await(t, 0, func() {
+				err := env.Reactor.Check(nil, model)
+				assert.NoError(t, err)
 			})
-			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 
 			env.Refresh(model)
@@ -120,8 +120,7 @@ func TestReactorCheckDefer(t *testing.T) {
 			assert.Equal(t, 1, num)
 			assert.Equal(t, "failed: deferred", err.Error())
 
-			num, err = axe.Await(env.Store, 0)
-			assert.NoError(t, err)
+			num = env.Await(t, 0)
 			assert.Equal(t, 1, num)
 
 			env.Refresh(model)
@@ -226,8 +225,7 @@ func TestReactorModifierAsync(t *testing.T) {
 			assert.NotNil(t, model)
 			assert.Equal(t, 0, model.Output)
 
-			num, err := axe.Await(env.Store, 0)
-			assert.NoError(t, err)
+			num := env.Await(t, 0)
 			assert.Equal(t, 1, num)
 
 			model = env.Find(t, model, nil).Model.(*testModel)
@@ -239,8 +237,7 @@ func TestReactorModifierAsync(t *testing.T) {
 			assert.NotNil(t, model)
 			assert.Equal(t, 14, model.Output)
 
-			num, err = axe.Await(env.Store, 0)
-			assert.NoError(t, err)
+			num = env.Await(t, 0)
 			assert.Equal(t, 1, num)
 
 			model = env.Find(t, model, nil).Model.(*testModel)
@@ -249,8 +246,7 @@ func TestReactorModifierAsync(t *testing.T) {
 
 			env.Delete(t, model, nil)
 
-			num, err = axe.Await(env.Store, 50*time.Millisecond)
-			assert.NoError(t, err)
+			num = env.Await(t, 50*time.Millisecond)
 			assert.Equal(t, 0, num)
 		})
 	})
@@ -267,8 +263,7 @@ func TestReactorModifierSync(t *testing.T) {
 			assert.NotNil(t, model)
 			assert.Equal(t, 14, model.Output)
 
-			num, err := axe.Await(env.Store, 50*time.Millisecond)
-			assert.NoError(t, err)
+			num := env.Await(t, 50*time.Millisecond)
 			assert.Equal(t, 0, num)
 
 			model = env.Find(t, model, nil).Model.(*testModel)
@@ -280,8 +275,7 @@ func TestReactorModifierSync(t *testing.T) {
 			assert.NotNil(t, model)
 			assert.Equal(t, 34, model.Output)
 
-			num, err = axe.Await(env.Store, 50*time.Millisecond)
-			assert.NoError(t, err)
+			num = env.Await(t, 50*time.Millisecond)
 			assert.Equal(t, 0, num)
 
 			model = env.Find(t, model, nil).Model.(*testModel)
@@ -290,8 +284,7 @@ func TestReactorModifierSync(t *testing.T) {
 
 			env.Delete(t, model, nil)
 
-			num, err = axe.Await(env.Store, 50*time.Millisecond)
-			assert.NoError(t, err)
+			num = env.Await(t, 50*time.Millisecond)
 			assert.Equal(t, 0, num)
 		})
 	})
@@ -305,7 +298,7 @@ func TestReactorModifierIdempotence(t *testing.T) {
 		Test(store, testModelOp(), func(env Env) {
 			model := &testModel{Input: 7}
 
-			num, err := axe.Await(env.Store, 0, func() error {
+			num := env.Await(t, 0, func() {
 				model = env.Create(t, model, nil, nil).Model.(*testModel)
 				assert.NotNil(t, model)
 
@@ -313,10 +306,7 @@ func TestReactorModifierIdempotence(t *testing.T) {
 					model.Input *= 2
 					env.Update(t, model, nil, nil)
 				}
-
-				return nil
 			})
-			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 
 			env.Refresh(model)
@@ -324,7 +314,7 @@ func TestReactorModifierIdempotence(t *testing.T) {
 			assert.Equal(t, 28, model.Input)
 			assert.Equal(t, 56, model.Output)
 
-			num, err = env.Scan()
+			num, err := env.Scan()
 			assert.NoError(t, err)
 			assert.Equal(t, 0, num)
 		})
@@ -355,7 +345,7 @@ func TestReactorModifierConcurrency(t *testing.T) {
 		Test(store, op, func(env Env) {
 			model := &testModel{Input: 7}
 
-			num, err := axe.Await(env.Store, 0, func() error {
+			num := env.Await(t, 0, func() {
 				model = env.Create(t, model, nil, nil).Model.(*testModel)
 				assert.NotNil(t, model)
 
@@ -368,17 +358,14 @@ func TestReactorModifierConcurrency(t *testing.T) {
 				}
 
 				close(resumed)
-
-				return nil
 			})
-			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 
 			env.Refresh(model)
 			assert.NotNil(t, model)
 			assert.NotZero(t, model.GetTag("torch/Reactor/foo").(int32))
 
-			num, err = env.Scan()
+			num, err := env.Scan()
 			assert.NoError(t, err)
 			assert.Equal(t, 1, num)
 

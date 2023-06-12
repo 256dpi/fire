@@ -92,6 +92,10 @@ func TestComputeScan(t *testing.T) {
 			model.Input = "What's up?"
 			env.Replace(model)
 
+			n, err = env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 0, n)
+
 			err = env.Process(model)
 			assert.NoError(t, err)
 
@@ -162,19 +166,18 @@ func TestComputeProcess(t *testing.T) {
 
 			/* missing input */
 
-			env.Await(t, 50*time.Millisecond, func() {
+			n := env.Await(t, 50*time.Millisecond, func() {
 				model = env.Create(t, &computeModel{}, nil, nil).Model.(*computeModel)
+				assert.Zero(t, model.Output)
+				assert.Equal(t, &Status{
+					Progress: 1,
+					Updated:  model.Status.Updated,
+					Hash:     "",
+					Valid:    true,
+				}, model.Status)
+				assert.NotZero(t, model.Status.Updated)
 			})
-
-			env.Refresh(model)
-			assert.Zero(t, model.Output)
-			assert.Equal(t, &Status{
-				Progress: 1,
-				Updated:  model.Status.Updated,
-				Hash:     "",
-				Valid:    true,
-			}, model.Status)
-			assert.NotZero(t, model.Status.Updated)
+			assert.Equal(t, 0, n)
 
 			/* first input */
 
@@ -182,11 +185,12 @@ func TestComputeProcess(t *testing.T) {
 			oldStatus := *model.Status
 
 			model.Input = "Hello world!"
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
 				assert.Equal(t, oldStatus, *model.Status)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "HELLO WORLD!", model.Output)
@@ -202,12 +206,11 @@ func TestComputeProcess(t *testing.T) {
 
 			oldOutput = model.Output
 
-			env.Await(t, 50*time.Millisecond, func() {
-				env.Update(t, model, nil, nil)
+			n = env.Await(t, 50*time.Millisecond, func() {
+				model = env.Update(t, model, nil, nil).Model.(*computeModel)
+				assert.Equal(t, oldOutput, model.Output)
 			})
-
-			env.Refresh(model)
-			assert.Equal(t, oldOutput, model.Output)
+			assert.Equal(t, 0, n)
 
 			/* new input */
 
@@ -215,11 +218,12 @@ func TestComputeProcess(t *testing.T) {
 			oldStatus = *model.Status
 
 			model.Input = "What's up?"
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
 				assert.Equal(t, oldStatus, *model.Status)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "WHAT'S UP?", model.Output)
@@ -238,11 +242,12 @@ func TestComputeProcess(t *testing.T) {
 			oldStatus.Valid = false
 
 			model.Status.Valid = false
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
 				assert.Equal(t, oldStatus, *model.Status)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "WHAT'S UP?", model.Output)
@@ -260,11 +265,12 @@ func TestComputeProcess(t *testing.T) {
 			oldStatus = *model.Status
 
 			model.Input = ""
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				env.Update(t, model, nil, nil)
 				assert.Equal(t, oldOutput, model.Output)
 				assert.Equal(t, oldStatus, *model.Status)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Zero(t, model.Output)
@@ -345,11 +351,12 @@ func TestComputeReleaser(t *testing.T) {
 
 			/* first input */
 
-			env.Await(t, 0, func() {
+			n := env.Await(t, 0, func() {
 				model = env.Create(t, &computeModel{
 					Input: "Hello world!",
 				}, nil, nil).Model.(*computeModel)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "HELLO WORLD!", model.Output)
@@ -365,7 +372,7 @@ func TestComputeReleaser(t *testing.T) {
 			oldUpdated := model.Status.Updated
 
 			model.Input = "What's up?"
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Zero(t, model.Output)
 				assert.Equal(t, &Status{
@@ -376,6 +383,7 @@ func TestComputeReleaser(t *testing.T) {
 				}, model.Status)
 				assert.True(t, model.Status.Updated.After(oldUpdated))
 			})
+			assert.Equal(t, 1, n)
 
 			oldUpdated = model.Status.Updated
 
@@ -427,11 +435,12 @@ func TestComputeKeepOutdated(t *testing.T) {
 
 			/* first input */
 
-			env.Await(t, 0, func() {
+			n := env.Await(t, 0, func() {
 				model = env.Create(t, &computeModel{
 					Input: "Hello world!",
 				}, nil, nil).Model.(*computeModel)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "HELLO WORLD!", model.Output)
@@ -448,11 +457,12 @@ func TestComputeKeepOutdated(t *testing.T) {
 			oldStatus := *model.Status
 
 			model.Input = "What's up?"
-			env.Await(t, 0, func() {
+			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
 				assert.Equal(t, oldStatus, *model.Status)
 			})
+			assert.Equal(t, 1, n)
 
 			env.Refresh(model)
 			assert.Equal(t, "WHAT'S UP?", model.Output)
