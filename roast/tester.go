@@ -462,12 +462,18 @@ func (t *Tester) Download(tt *testing.T, key string, typ, name string, data []by
 
 // Await will wait for all jobs created during the execution of the callback to
 // complete. A timeout may be provided to stop after some time.
-func (t *Tester) Await(tt *testing.T, timeout time.Duration, fn func()) int {
+func (t *Tester) Await(tt *testing.T, timeout time.Duration, fns ...func()) int {
+	// wrap functions
+	var newFNs []func() error
+	for _, fn := range fns {
+		newFNs = append(newFNs, func() error {
+			fn()
+			return nil
+		})
+	}
+
 	// await processing
-	n, err := axe.Await(t.Store, timeout, func() error {
-		fn()
-		return nil
-	})
+	n, err := axe.Await(t.Store, timeout, newFNs...)
 	assert.NoError(tt, err)
 
 	return n
