@@ -3,6 +3,7 @@ package torch
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -121,12 +122,15 @@ func Compute(comp Computation) *Operation {
 	// validate field
 	_ = stick.MustGet(comp.Model, comp.Name).(*Status)
 
+	// compute name
+	name := fmt.Sprintf("torch/Compute/%s/%s", coal.GetMeta(comp.Model).Name, comp.Name)
+
 	// compute fields
 	updatedField := "#" + coal.F(comp.Model, comp.Name) + ".updated"
 	validField := "#" + coal.F(comp.Model, comp.Name) + ".valid"
 
 	return &Operation{
-		Name:  "torch/Compute/" + comp.Name,
+		Name:  name,
 		Model: comp.Model,
 		Sync:  true,
 		Query: func() bson.M {

@@ -1,6 +1,7 @@
 package torch
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -43,8 +44,11 @@ func CheckField(check Check) *Operation {
 	// validate field
 	_ = stick.MustGet(check.Model, check.Name).(*time.Time)
 
+	// compute name
+	name := fmt.Sprintf("torch/CheckField/%s/%s", coal.GetMeta(check.Model).Name, check.Name)
+
 	return &Operation{
-		Name:  "torch/CheckField/" + check.Name,
+		Name:  name,
 		Model: check.Model,
 		Query: func() bson.M {
 			return bson.M{
@@ -72,8 +76,11 @@ func CheckField(check Check) *Operation {
 // updated with the latest check time. It may be nilled or zeroed to force the
 // check to run again.
 func CheckTag(check Check) *Operation {
+	// compute name
+	name := fmt.Sprintf("torch/CheckTag/%s/%s", coal.GetMeta(check.Model).Name, check.Name)
+
 	return &Operation{
-		Name:  "torch/CheckTag/" + check.Name,
+		Name:  name,
 		Model: check.Model,
 		Query: func() bson.M {
 			return bson.M{
