@@ -14,10 +14,20 @@ import (
 
 // Status defines the status of a computation.
 type Status struct {
-	Progress float64   `json:"progress"`
-	Updated  time.Time `json:"updated"`
-	Hash     string    `json:"hash"`
-	Valid    bool      `json:"valid"`
+	// Progress defines the state of the computation. If the value is less than
+	// 1.0, a computation is in progress. If the value is 1.0, the computation
+	// is complete.
+	Progress float64 `json:"progress"`
+
+	// Updated defines the time the status was last updated.
+	Updated time.Time `json:"updated"`
+
+	// Hash defines the hash of the input used for a complete computation.
+	Hash string `json:"hash"`
+
+	// Valid indicates whether the value is valid. It may be cleared to indicate
+	// hat the value is outdated and should be recomputed.
+	Valid bool `json:"valid"`
 }
 
 // Hash is a helper function that returns the MD5 hash of the input if present
@@ -217,28 +227,19 @@ func Compute(comp Computation) *Operation {
 				// set defer
 				ctx.Defer = true
 
-				// release outdated value if possible and not kept
+				// release outdated value if existing and not kept
 				if status != nil && status.Hash != "" && comp.Releaser != nil && !comp.KeepOutdated {
-					// release value
 					err := comp.Releaser(ctx)
 					if err != nil {
 						return err
 					}
-
-					// update status value
-					ctx.Change("$set", comp.Name, &Status{
-						Progress: 0,
-						Updated:  time.Now(),
-					})
 				}
 
-				// ensure status value
-				if status == nil {
-					ctx.Change("$set", comp.Name, &Status{
-						Progress: 0,
-						Updated:  time.Now(),
-					})
-				}
+				// clear status value
+				ctx.Change("$set", comp.Name, &Status{
+					Progress: 0,
+					Updated:  time.Now(),
+				})
 
 				return nil
 			}

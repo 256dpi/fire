@@ -188,7 +188,10 @@ func TestComputeProcess(t *testing.T) {
 			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
-				assert.Equal(t, oldStatus, *model.Status)
+				assert.Equal(t, &Status{
+					Progress: 0,
+					Updated:  model.Status.Updated,
+				}, model.Status)
 			})
 			assert.Equal(t, 1, n)
 
@@ -221,7 +224,10 @@ func TestComputeProcess(t *testing.T) {
 			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
-				assert.Equal(t, oldStatus, *model.Status)
+				assert.Equal(t, &Status{
+					Progress: 0,
+					Updated:  model.Status.Updated,
+				}, model.Status)
 			})
 			assert.Equal(t, 1, n)
 
@@ -245,7 +251,10 @@ func TestComputeProcess(t *testing.T) {
 			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
-				assert.Equal(t, oldStatus, *model.Status)
+				assert.Equal(t, &Status{
+					Progress: 0,
+					Updated:  model.Status.Updated,
+				}, model.Status)
 			})
 			assert.Equal(t, 1, n)
 
@@ -460,7 +469,10 @@ func TestComputeKeepOutdated(t *testing.T) {
 			n = env.Await(t, 0, func() {
 				model = env.Update(t, model, nil, nil).Model.(*computeModel)
 				assert.Equal(t, oldOutput, model.Output)
-				assert.Equal(t, oldStatus, *model.Status)
+				assert.Equal(t, &Status{
+					Progress: 0,
+					Updated:  model.Status.Updated,
+				}, model.Status)
 			})
 			assert.Equal(t, 1, n)
 
