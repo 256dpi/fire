@@ -39,7 +39,9 @@ func (m *Matrix) CollectFields(i int, tags ...string) []string {
 	// collect fields
 	for field, permission := range m.Fields {
 		// ensure field
-		coal.F(m.Model, field)
+		if coal.GetMeta(m.Model).Fields[field] == nil {
+			panic("hash: missing field " + field)
+		}
 
 		// check tags
 		if !validFieldTags(permission[i]) {
