@@ -480,9 +480,12 @@ func TestIsFormat(t *testing.T) {
 	ruleTest(t, "-", IsEmail, "invalid format")
 	ruleTest(t, "foo@bar.com", IsEmail, "")
 
-	ruleTest(t, "", IsURL, "")
-	ruleTest(t, "-", IsURL, "invalid format")
-	ruleTest(t, "foo.bar/baz", IsURL, "")
+	ruleTest(t, "", IsURL(false), "")
+	ruleTest(t, "-", IsURL(false), "invalid format")
+	ruleTest(t, "foo.bar/baz", IsURL(false), "")
+	ruleTest(t, "foo.bar/baz", IsURL(true), "invalid format")
+	ruleTest(t, "https://foo.bar/baz", IsURL(false), "")
+	ruleTest(t, "https://foo.bar/baz", IsURL(true), "")
 
 	ruleTest(t, "", IsHost, "")
 	ruleTest(t, "-", IsHost, "invalid format")

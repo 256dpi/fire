@@ -658,7 +658,12 @@ func IsPatternMatch(pattern string) Rule {
 var IsEmail = IsFormat(govalidator.IsEmail)
 
 // IsURL will check if a string is a valid URL.
-var IsURL = IsFormat(govalidator.IsRequestURL)
+func IsURL(full bool) Rule {
+	if full {
+		return IsFormat(govalidator.IsRequestURL)
+	}
+	return IsFormat(govalidator.IsURL)
+}
 
 // IsHost will check if a string is a valid host.
 var IsHost = IsFormat(govalidator.IsHost)
