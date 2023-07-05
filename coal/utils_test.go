@@ -56,6 +56,23 @@ func (m *noteModel) Validate() error {
 	return nil
 }
 
+type listItem struct {
+	Item
+	Title string `json:"title"`
+	Done  bool   `json:"done"`
+}
+
+type listModel struct {
+	Base    `json:"-" bson:",inline" coal:"lists"`
+	Item    listItem   `json:"item"`
+	OptItem *listItem  `json:"opt-item" bson:"opt_item"`
+	Items   []listItem `json:"items"`
+}
+
+func (m *listModel) Validate() error {
+	return nil
+}
+
 func init() {
 	AddIndex(&postModel{}, false, 0, "Published", "Title")
 	AddPartialIndex(&postModel{}, false, 0, []string{"-TextBody"}, bson.M{

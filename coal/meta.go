@@ -15,6 +15,7 @@ var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]*Meta{}
 
 var baseType = reflect.TypeOf(Base{})
+var itemType = reflect.TypeOf(Item{})
 var toOneType = reflect.TypeOf(ID{})
 var optToOneType = reflect.TypeOf(&ID{})
 var toManyType = reflect.TypeOf([]ID{})
@@ -33,6 +34,26 @@ type HasMany struct{}
 
 // A Field contains the meta information about a single field of a model.
 type Field struct {
+	// The underlying item field.
+	ItemField
+
+	// The custom flags.
+	Flags []string
+
+	// The relationship status.
+	ToOne   bool
+	ToMany  bool
+	HasOne  bool
+	HasMany bool
+
+	// The relationship information.
+	RelName    string
+	RelType    string
+	RelInverse string
+}
+
+// ItemField contains the meta information about a single field of an item.
+type ItemField struct {
 	// The index of the field in the struct.
 	Index int
 
@@ -49,22 +70,11 @@ type Field struct {
 	// The BSON document key name e.g. "tire_size".
 	BSONKey string
 
-	// The custom flags.
-	Flags []string
-
 	// Whether the field is a pointer and thus optional.
 	Optional bool
 
-	// The relationship status.
-	ToOne   bool
-	ToMany  bool
-	HasOne  bool
-	HasMany bool
-
-	// The relationship information.
-	RelName    string
-	RelType    string
-	RelInverse string
+	// The item meta if field is a type embedding Item.
+	Meta *ItemMeta
 }
 
 // Meta stores extracted meta data from a model.
@@ -109,6 +119,30 @@ type Meta struct {
 	Indexes []Index
 }
 
+// ItemMeta stores extracted meta data from a model item.
+type ItemMeta struct {
+	// The struct type.
+	Type reflect.Type
+
+	// The struct type name e.g. "models.CarWheel".
+	Name string
+
+	// The struct fields.
+	Fields map[string]*ItemField
+
+	// The struct fields ordered.
+	OrderedFields []*ItemField
+
+	// The database fields.
+	DatabaseFields map[string]*ItemField
+
+	// The attributes.
+	Attributes map[string]*ItemField
+
+	// The accessor.
+	Accessor *stick.Accessor
+}
+
 // GetMeta returns the meta structure for the specified model. It will always
 // return the same value for the same model.
 //
@@ -151,7 +185,7 @@ func GetMeta(model Model) *Meta {
 		// check for first field
 		if i == 0 {
 			// assert first field to be the base
-			if field.Type != baseType {
+			if field.Type != baseType || !field.Anonymous {
 				panic(`coal: expected an embedded "coal.Base" as the first struct field`)
 			}
 
@@ -191,7 +225,7 @@ func GetMeta(model Model) *Meta {
 			coalTags = nil
 		}
 
-		// get field type
+		// get field kind
 		fieldKind := field.Type.Kind()
 		if fieldKind == reflect.Ptr {
 			fieldKind = field.Type.Elem().Kind()
@@ -199,13 +233,16 @@ func GetMeta(model Model) *Meta {
 
 		// prepare field
 		metaField := &Field{
-			Index:    i,
-			Name:     field.Name,
-			Type:     field.Type,
-			Kind:     fieldKind,
-			JSONKey:  stick.JSON.GetKey(field),
-			BSONKey:  stick.BSON.GetKey(field),
-			Optional: field.Type.Kind() == reflect.Ptr,
+			ItemField: ItemField{
+				Index:    i,
+				Name:     field.Name,
+				Type:     field.Type,
+				Kind:     fieldKind,
+				JSONKey:  stick.JSON.GetKey(field),
+				BSONKey:  stick.BSON.GetKey(field),
+				Optional: field.Type.Kind() == reflect.Ptr,
+				Meta:     GetItemMeta(field.Type),
+			},
 		}
 
 		// check if field is a valid to-one relationship
@@ -300,7 +337,7 @@ func GetMeta(model Model) *Meta {
 		meta.Fields[metaField.Name] = metaField
 		meta.OrderedFields = append(meta.OrderedFields, metaField)
 
-		// add db fields
+		// add database fields
 		if metaField.BSONKey != "" {
 			// check existence
 			if meta.DatabaseFields[metaField.BSONKey] != nil {
@@ -372,4 +409,87 @@ func (m *Meta) MakeSlice() interface{} {
 	pointer := reflect.New(slice.Type())
 	pointer.Elem().Set(slice)
 	return pointer.Interface()
+}
+
+// GetItemMeta returns the meta structure for the specified item type. It will
+// always return the same value for the same item.
+func GetItemMeta(typ reflect.Type) *ItemMeta {
+	// TODO: Cache meta.
+
+	// unwrap pointer
+	if typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// check if embedding item
+	if typ.NumField() == 0 || typ.Field(0).Type != itemType || !typ.Field(0).Anonymous {
+		return nil
+	}
+
+	// TODO: Validate json and bson tags.
+
+	// prepare meta
+	meta := &ItemMeta{
+		Type:           typ,
+		Name:           typ.String(),
+		Fields:         map[string]*ItemField{},
+		DatabaseFields: map[string]*ItemField{},
+		Attributes:     map[string]*ItemField{},
+		Accessor:       stick.BuildAccessor(reflect.New(typ).Interface(), "Item"),
+	}
+
+	// parse fields
+	for i := 1; i < typ.NumField(); i++ {
+		// get field
+		field := typ.Field(i)
+
+		// get field kind
+		fieldKind := field.Type.Kind()
+		if fieldKind == reflect.Ptr {
+			fieldKind = field.Type.Elem().Kind()
+		}
+
+		// prepare meta
+		metaField := &ItemField{
+			Index:    i,
+			Name:     field.Name,
+			Type:     field.Type,
+			Kind:     fieldKind,
+			JSONKey:  stick.JSON.GetKey(field),
+			BSONKey:  stick.BSON.GetKey(field),
+			Optional: field.Type.Kind() == reflect.Ptr,
+			Meta:     GetItemMeta(field.Type),
+		}
+
+		// add field
+		meta.Fields[metaField.Name] = metaField
+		meta.OrderedFields = append(meta.OrderedFields, metaField)
+
+		// add database fields
+		if metaField.BSONKey != "" {
+			// check existence
+			if meta.DatabaseFields[metaField.BSONKey] != nil {
+				panic(fmt.Sprintf(`coal: duplicate BSON key "%s"`, metaField.BSONKey))
+			}
+
+			// add field
+			meta.DatabaseFields[metaField.BSONKey] = metaField
+		}
+
+		// add attributes
+		if metaField.JSONKey != "" {
+			// check existence
+			if meta.Attributes[metaField.JSONKey] != nil {
+				panic(fmt.Sprintf(`coal: duplicate JSON key "%s"`, metaField.JSONKey))
+			}
+
+			// add field
+			meta.Attributes[metaField.JSONKey] = metaField
+		}
+	}
+
+	return meta
 }

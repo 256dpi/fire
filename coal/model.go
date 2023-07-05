@@ -91,6 +91,36 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Model)).Accessor
 }
 
+// Item is the base for every coal model item.
+type Item struct {
+	ItemID ID `json:"_id,omitempty" bson:"_id,omitempty"`
+}
+
+// I is a shorthand to construct an item with the provided id or a generated
+// id if none specified.
+func I(id ...ID) Item {
+	// check list
+	if len(id) > 1 {
+		panic("coal: I accepts only one id")
+	}
+
+	// use provided id id available
+	if len(id) > 0 {
+		return Item{
+			ItemID: id[0],
+		}
+	}
+
+	return Item{
+		ItemID: New(),
+	}
+}
+
+// GetAccessor implements the Model interface.
+func (i *Item) GetAccessor(v interface{}) *stick.Accessor {
+	return GetItemMeta(reflect.TypeOf(v)).Accessor
+}
+
 // Clean will clean the model by removing expired tags.
 func Clean(model Model) {
 	// deleted expired tags
