@@ -9,8 +9,6 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/256dpi/fire/stick"
 )
 
 // F is a shorthand function to extract the BSON key of a model field.
@@ -143,40 +141,6 @@ func ReverseSort(sort []string) []string {
 	}
 
 	return newSort
-}
-
-// ToM converts a model to a bson.M including all database fields.
-func ToM(model Model) bson.M {
-	// prepare map
-	m := bson.M{}
-
-	// add all fields
-	for name, field := range GetMeta(model).DatabaseFields {
-		m[name] = stick.MustGet(model, field.Name)
-	}
-
-	return m
-}
-
-// ToD converts a model to a bson.D including all database fields.
-func ToD(model Model) bson.D {
-	// get fields
-	fields := GetMeta(model).OrderedFields
-
-	// prepare document
-	d := make(bson.D, 0, len(fields))
-
-	// add all fields
-	for _, field := range fields {
-		if field.BSONKey != "" {
-			d = append(d, bson.E{
-				Key:   field.BSONKey,
-				Value: stick.MustGet(model, field.Name),
-			})
-		}
-	}
-
-	return d
 }
 
 // Apply will apply the provided update document to the specified model.

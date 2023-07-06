@@ -68,30 +68,6 @@ func TestReverseSort(t *testing.T) {
 	assert.Equal(t, []string{"-foo", "bar", "-baz", "_id"}, sort)
 }
 
-func TestToM(t *testing.T) {
-	assert.Equal(t, bson.M{
-		"title":     "Title",
-		"published": true,
-		"text_body": "Hello World",
-	}, ToM(&postModel{
-		Title:     "Title",
-		Published: true,
-		TextBody:  "Hello World",
-	}))
-}
-
-func TestToD(t *testing.T) {
-	assert.Equal(t, bson.D{
-		{Key: "title", Value: "Title"},
-		{Key: "published", Value: true},
-		{Key: "text_body", Value: "Hello World"},
-	}, ToD(&postModel{
-		Title:     "Title",
-		Published: true,
-		TextBody:  "Hello World",
-	}))
-}
-
 func TestApply(t *testing.T) {
 	post := &postModel{}
 
