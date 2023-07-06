@@ -14,6 +14,9 @@ import (
 var metaMutex sync.Mutex
 var metaCache = map[reflect.Type]*Meta{}
 
+var itemMetaMutex sync.Mutex
+var itemMetaCache = map[reflect.Type]*ItemMeta{}
+
 var baseType = reflect.TypeOf(Base{})
 var itemType = reflect.TypeOf(Item{})
 var toOneType = reflect.TypeOf(ID{})
@@ -189,9 +192,6 @@ func GetMeta(model Model) *Meta {
 				panic(`coal: expected an embedded "coal.Base" as the first struct field`)
 			}
 
-			// split tag
-			baseTag := strings.Split(coalTag, ":")
-
 			// check json tag
 			if field.Tag.Get("json") != "-" {
 				panic(`coal: expected to find a tag of the form 'json:"-"' on "coal.Base"`)
@@ -202,7 +202,8 @@ func GetMeta(model Model) *Meta {
 				panic(`coal: expected to find a tag of the form 'bson:",inline"' on "coal.Base"`)
 			}
 
-			// check tag
+			// split tag
+			baseTag := strings.Split(coalTag, ":")
 			if len(baseTag) > 2 || baseTag[0] == "" {
 				panic(`coal: expected to find a tag of the form 'coal:"plural-name[:collection]"' on "coal.Base"`)
 			}
@@ -210,8 +211,6 @@ func GetMeta(model Model) *Meta {
 			// infer plural and collection names
 			meta.PluralName = baseTag[0]
 			meta.Collection = baseTag[0]
-
-			// infer collection
 			if len(baseTag) == 2 {
 				meta.Collection = baseTag[1]
 			}
@@ -414,7 +413,13 @@ func (m *Meta) MakeSlice() interface{} {
 // GetItemMeta returns the meta structure for the specified item type. It will
 // always return the same value for the same item.
 func GetItemMeta(typ reflect.Type) *ItemMeta {
-	// TODO: Cache meta.
+	// check if meta has already been cached
+	itemMetaMutex.Lock()
+	meta, ok := itemMetaCache[typ]
+	itemMetaMutex.Unlock()
+	if ok {
+		return meta
+	}
 
 	// unwrap pointer
 	if typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
@@ -432,7 +437,7 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 	// TODO: Validate json and bson tags.
 
 	// prepare meta
-	meta := &ItemMeta{
+	meta = &ItemMeta{
 		Type:           typ,
 		Name:           typ.String(),
 		Fields:         map[string]*ItemField{},
@@ -490,6 +495,11 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 			meta.Attributes[metaField.JSONKey] = metaField
 		}
 	}
+
+	// cache meta
+	itemMetaMutex.Lock()
+	itemMetaCache[typ] = meta
+	itemMetaMutex.Unlock()
 
 	return meta
 }
