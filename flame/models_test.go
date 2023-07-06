@@ -25,19 +25,19 @@ func TestIndexes(t *testing.T) {
 	})
 }
 
-func TestTokenInterfaces(t *testing.T) {
+func TestTokenInterfaces(_ *testing.T) {
 	var _ coal.Model = &Token{}
 	var _ GenericToken = &Token{}
 }
 
-func TestApplicationInterfaces(t *testing.T) {
+func TestApplicationInterfaces(_ *testing.T) {
 	coal.Require(&Application{}, "flame-client-id")
 
 	var _ coal.Model = &Application{}
 	var _ Client = &Application{}
 }
 
-func TestUserInterfaces(t *testing.T) {
+func TestUserInterfaces(_ *testing.T) {
 	coal.Require(&User{}, "flame-resource-owner-id")
 
 	var _ coal.Model = &User{}

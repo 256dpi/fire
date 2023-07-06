@@ -19,7 +19,7 @@ func TestEnsureIndexes(t *testing.T) {
 	})
 }
 
-func TestItem(t *testing.T) {
+func TestItem(_ *testing.T) {
 	coal.Require(&Item{}, "fire-soft-delete")
 
 	var _ coal.Model = &Item{}

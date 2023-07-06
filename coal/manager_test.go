@@ -507,6 +507,7 @@ func TestManagerDistinct(t *testing.T) {
 		titles, err := m.Distinct(nil, "Title", nil, false)
 		assert.Error(t, err)
 		assert.True(t, ErrTransactionRequired.Is(err))
+		assert.Empty(t, titles)
 
 		// unsafe
 		titles, err = m.Distinct(nil, "Title", nil, false, NoTransaction)

@@ -1952,9 +1952,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 			// ignore violation if tolerated or verify read only access
 			if stick.Contains(c.TolerateViolations, field.Name) {
 				continue
-			} else {
-				verifyReadOnly = append(verifyReadOnly, field.Name)
 			}
+			verifyReadOnly = append(verifyReadOnly, field.Name)
 		}
 
 		// set attribute
@@ -1978,9 +1977,8 @@ func (c *Controller) assignData(ctx *Context, res *jsonapi.Resource) {
 			// ignore violation if tolerated or verify read only access
 			if stick.Contains(c.TolerateViolations, field.Name) {
 				continue
-			} else {
-				verifyReadOnly = append(verifyReadOnly, field.Name)
 			}
+			verifyReadOnly = append(verifyReadOnly, field.Name)
 		}
 
 		// assign relationship
