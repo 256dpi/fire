@@ -471,27 +471,43 @@ func TestGetMeta(t *testing.T) {
 				},
 				Flags: []string{},
 			},
+			"List": {
+				ItemField: ItemField{
+					Index:   4,
+					Name:    "List",
+					Type:    reflect.TypeOf(List[listItem]{}),
+					Kind:    reflect.Slice,
+					JSONKey: "list",
+					BSONKey: "list",
+					Meta:    itemMeta,
+				},
+				Flags: []string{},
+			},
 		},
 		OrderedFields: []*Field{
 			list.Fields["Item"],
 			list.Fields["OptItem"],
 			list.Fields["Items"],
+			list.Fields["List"],
 		},
 		DatabaseFields: map[string]*Field{
 			"item":     list.Fields["Item"],
 			"opt_item": list.Fields["OptItem"],
 			"items":    list.Fields["Items"],
+			"list":     list.Fields["List"],
 		},
 		Attributes: map[string]*Field{
 			"item":     list.Fields["Item"],
 			"opt-item": list.Fields["OptItem"],
 			"items":    list.Fields["Items"],
+			"list":     list.Fields["List"],
 		},
 		Relationships: map[string]*Field{},
 		RequestFields: map[string]*Field{
 			"item":     list.Fields["Item"],
 			"opt-item": list.Fields["OptItem"],
 			"items":    list.Fields["Items"],
+			"list":     list.Fields["List"],
 		},
 		FlaggedFields: map[string][]*Field{},
 		Accessor: &stick.Accessor{
@@ -508,6 +524,10 @@ func TestGetMeta(t *testing.T) {
 				"Items": {
 					Index: 3,
 					Type:  reflect.TypeOf([]listItem{}),
+				},
+				"List": {
+					Index: 4,
+					Type:  reflect.TypeOf(List[listItem]{}),
 				},
 			},
 		},

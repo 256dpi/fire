@@ -64,9 +64,10 @@ type listItem struct {
 
 type listModel struct {
 	Base    `json:"-" bson:",inline" coal:"lists"`
-	Item    listItem   `json:"item"`
-	OptItem *listItem  `json:"opt-item" bson:"opt_item"`
-	Items   []listItem `json:"items"`
+	Item    listItem       `json:"item"`
+	OptItem *listItem      `json:"opt-item" bson:"opt_item"`
+	Items   []listItem     `json:"items"`
+	List    List[listItem] `json:"list"`
 }
 
 func (m *listModel) Validate() error {

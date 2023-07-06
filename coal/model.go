@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/bsontype"
+
 	"github.com/256dpi/fire/stick"
 )
 
@@ -93,12 +95,12 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 
 // Item is the base for every coal model item.
 type Item struct {
-	ItemID ID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ItemID string `json:"id,omitempty" bson:"_id,omitempty"`
 }
 
 // I is a shorthand to construct an item with the provided id or a generated
 // id if none specified.
-func I(id ...ID) Item {
+func I(id ...string) Item {
 	// check list
 	if len(id) > 1 {
 		panic("coal: I accepts only one id")
@@ -112,13 +114,36 @@ func I(id ...ID) Item {
 	}
 
 	return Item{
-		ItemID: New(),
+		ItemID: New().Hex(),
 	}
 }
 
+// ID will return the items ID.
+func (i Item) ID() string {
+	return i.ItemID
+}
+
 // GetAccessor implements the Model interface.
-func (i *Item) GetAccessor(v interface{}) *stick.Accessor {
+func (i Item) GetAccessor(v interface{}) *stick.Accessor {
 	return GetItemMeta(reflect.TypeOf(v)).Accessor
+}
+
+// List wraps any type that embeds Item as a slice that automatically merges
+// existing items with new items if they have the same ID values.
+type List[T interface{ ID() string }] []T
+
+// UnmarshalJSON implement the json.Unmarshaler interface.
+func (l *List[T]) UnmarshalJSON(bytes []byte) error {
+	return stick.UnmarshalKeyedList(stick.JSON, bytes, l, func(t T) string {
+		return t.ID()
+	})
+}
+
+// UnmarshalBSONValue implement the bson.ValueUnmarshaler interface.
+func (l *List[T]) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+	return stick.UnmarshalKeyedList(stick.BSON, stick.InternalBSONValue(typ, bytes), l, func(t T) string {
+		return t.ID()
+	})
 }
 
 // Clean will clean the model by removing expired tags.
