@@ -1,6 +1,7 @@
 package coal
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/256dpi/lungo/bsonkit"
@@ -46,7 +47,8 @@ func NewTranslator(model Model) *Translator {
 	}
 }
 
-// Field will translate the specified field.
+// Field will translate the specified field. The field may be a path to a nested
+// item field or begin wih a "#" (after prefix) to specify a unknown field.
 func (t *Translator) Field(field string) (string, error) {
 	err := t.field(&field)
 	if err != nil {
@@ -137,38 +139,86 @@ func (t *Translator) value(value interface{}, skipTranslation bool) error {
 	}
 }
 
-func (t *Translator) field(field *string) error {
-	// handle raw fields
-	if strings.HasPrefix(*field, "#") {
-		*field = (*field)[1:]
+func (t *Translator) field(path *string) error {
+	// handle raw paths
+	if strings.HasPrefix(*path, "#") {
+		*path = (*path)[1:]
 		return nil
 	}
 
+	// get first field
+	field := bsonkit.PathSegment(*path)
+
 	// check if known
-	if t.meta.DatabaseFields[*field] != nil {
+	if t.meta.DatabaseFields[field] != nil {
 		return nil
 	}
 
 	// check if system
-	if systemFields[*field] {
+	if systemFields[field] {
 		return nil
 	}
 	for _, prefix := range systemFieldPrefixes {
-		if strings.HasPrefix(*field, prefix) {
+		if strings.HasPrefix(field, prefix) {
 			return nil
 		}
 	}
 
 	// check meta
-	structField := t.meta.Fields[*field]
+	structField := t.meta.Fields[field]
 	if structField == nil {
-		return xo.F("unknown field %q", *field)
+		return xo.F("unknown field %q", field)
 	} else if structField.BSONKey == "" {
-		return xo.F("virtual field %q", *field)
+		return xo.F("virtual field %q", field)
 	}
 
-	// replace field
-	*field = structField.BSONKey
+	// replace single field path
+	if field == *path {
+		*path = structField.BSONKey
+		return nil
+	}
+
+	/* handle multi field path */
+
+	// TODO: Use bsonkit.PathBuilder?
+
+	// split path
+	fields := strings.Split(*path, ".")
+
+	// replace first fields
+	fields[0] = structField.BSONKey
+
+	// handle other fields
+	meta := &structField.ItemField
+	for i, field := range fields[1:] {
+		// handle slice index
+		_, ok := bsonkit.ParseIndex(field)
+		if ok && meta.Kind == reflect.Slice {
+			continue
+		}
+
+		// check meta
+		if meta == nil || meta.Meta == nil {
+			return xo.F("unknown field %q", *path)
+		}
+
+		// check field
+		itemField := meta.Meta.Fields[field]
+		if itemField == nil {
+			return xo.F("unknown field %q", *path)
+		} else if itemField.BSONKey == "" {
+			return xo.F("virtual field %q", *path)
+		}
+
+		// replace field
+		fields[i+1] = itemField.BSONKey
+
+		// advance meta
+		meta = itemField
+	}
+
+	// replace path
+	*path = strings.Join(fields, ".")
 
 	return nil
 }
@@ -177,7 +227,7 @@ func (t *Translator) convert(in bson.M) (bson.D, error) {
 	// attempt fast conversion
 	doc, err := bsonkit.Convert(in)
 	if err == nil {
-		return *doc, xo.W(err)
+		return *doc, nil
 	}
 
 	// otherwise, convert safely

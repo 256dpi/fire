@@ -270,6 +270,27 @@ func TestTranslatorSort(t *testing.T) {
 	}, doc)
 }
 
+func TestTranslatorItem(t *testing.T) {
+	trans := NewTranslator(&listModel{})
+
+	doc, err := trans.Sort([]string{"Item.Title", "-Items.Done"})
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "item.title", Value: int32(1)},
+		{Key: "items.done", Value: int32(-1)},
+	}, doc)
+
+	doc, err = trans.Document(bson.M{
+		"Item.Title": "Hello World!",
+		"Items.Done": true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "item.title", Value: "Hello World!"},
+		{Key: "items.done", Value: true},
+	}, doc)
+}
+
 func BenchmarkTranslatorDocumentSimple(b *testing.B) {
 	trans := NewTranslator(&postModel{})
 

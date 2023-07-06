@@ -19,6 +19,19 @@ func TestF(t *testing.T) {
 	assert.PanicsWithValue(t, `coal: unknown field "Foo"`, func() {
 		F(&postModel{}, "Foo")
 	})
+
+	assert.Equal(t, "item.title", F(&listModel{}, "Item.Title"))
+	assert.Equal(t, "items.title", F(&listModel{}, "Items.Title"))
+	assert.Equal(t, "items.0.title", F(&listModel{}, "Items.0.Title"))
+	assert.Equal(t, "item.foo", F(&listModel{}, "item.foo"))
+
+	assert.PanicsWithValue(t, `coal: unknown field "Item.Foo"`, func() {
+		F(&listModel{}, "Item.Foo")
+	})
+
+	assert.PanicsWithValue(t, `coal: unknown field "Item.0"`, func() {
+		F(&listModel{}, "Item.0")
+	})
 }
 
 func TestL(t *testing.T) {

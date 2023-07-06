@@ -12,7 +12,7 @@ import (
 
 // Index is an index registered with a model.
 type Index struct {
-	// The un-prefixed index struct fields.
+	// The un-prefixed index fields.
 	Fields []string
 
 	// The translated keys of the index.
@@ -51,13 +51,13 @@ func (i *Index) Compile() mongo.IndexModel {
 }
 
 // AddIndex will add an index to the models index list. Fields that are prefixed
-// with a dash will result in a descending key.
+// with a dash will result in a descending key. Fields may be paths to nested
+// item fields or begin wih a "#" (after prefix) to specify unknown fields.
 func AddIndex(model Model, unique bool, expiry time.Duration, fields ...string) {
 	addIndex(model, unique, expiry, fields, nil)
 }
 
-// AddPartialIndex is similar to AddIndex except that it adds an index with a
-// partial filter expression.
+// AddPartialIndex adds an index with a partial filter expression.
 func AddPartialIndex(model Model, unique bool, expiry time.Duration, fields []string, filter bson.M) {
 	// check filter
 	if len(filter) == 0 {

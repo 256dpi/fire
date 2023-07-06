@@ -11,8 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// F is a shorthand function to extract the BSON key of a model field.
-// Additionally, it supports the "-" prefix for retrieving sort keys.
+// F is a shorthand function to extract the BSON key of a model field. Use the
+// "-" prefix for retrieving sort keys. Fields may be paths to nested item
+// fields or begin wih a "#" (after prefix) to specify unknown fields.
 //
 // Note: F will panic if no field has been found.
 func F(m Model, field string) string {
