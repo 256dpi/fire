@@ -104,11 +104,6 @@ func VisualizeDOT(title string, models ...Model) string {
 
 		// prepare index info
 		indexedInfo := map[string]string{}
-		for _, field := range meta.OrderedFields {
-			indexedInfo[field.Name] = ""
-		}
-
-		// analyse indexes
 		for _, index := range meta.Indexes {
 			for i, field := range index.Fields {
 				if index.Filter != nil {
@@ -132,11 +127,20 @@ func VisualizeDOT(title string, models ...Model) string {
 		// write begin of tail table
 		out.WriteString(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`)
 
-		// write attributes
+		// write fields
 		for _, field := range GetMeta(model).OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
 			typ = dotEscape(typ)
 			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, field.Name, field.Name, typ, indexedInfo[field.Name]))
+
+			// write item fields
+			if field.Meta != nil {
+				for _, itemField := range field.Meta.OrderedFields {
+					typ := strings.ReplaceAll(itemField.Type.String(), "primitive.ObjectID", "coal.ID")
+					typ = dotEscape(typ)
+					out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">‣ %s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, itemField.Name, itemField.Name, typ, indexedInfo[field.Name+"."+itemField.Name]))
+				}
+			}
 		}
 
 		// write end of tail table
