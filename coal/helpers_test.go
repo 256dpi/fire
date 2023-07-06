@@ -68,6 +68,20 @@ func TestReverseSort(t *testing.T) {
 	assert.Equal(t, []string{"-foo", "bar", "-baz", "_id"}, sort)
 }
 
+func TestCoding(t *testing.T) {
+	var doc bson.D
+	err := stick.BSON.Transfer(&postModel{
+		Title:     "Hello",
+		Published: true,
+	}, &doc)
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		{Key: "title", Value: "Hello"},
+		{Key: "published", Value: true},
+		{Key: "text_body", Value: ""},
+	}, doc)
+}
+
 func TestApply(t *testing.T) {
 	post := &postModel{}
 
