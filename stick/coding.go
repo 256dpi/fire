@@ -155,98 +155,76 @@ func (c Coding) GetKey(field reflect.StructField) string {
 }
 
 // UnmarshalKeyedList will unmarshal a list and match objects by comparing
-// the key in the specified field instead of their position in the list.
+// a custom key instead of their position in the list.
 //
 // When using with custom types the type should implement the following methods:
 //
-//	func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-//		return stick.BSON.UnmarshalKeyedList(stick.InternalBSONValue(typ, bytes), l, "Ref")
+//	func (l *Links) UnmarshalJSON(bytes []byte) error {
+//		return stick.UnmarshalKeyedList(stick.JSON, bytes, l, func(link Link) string {
+//			return link.Ref
+//		})
 //	}
 //
-//	func (l *Links) UnmarshalJSON(bytes []byte) error {
-//		return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
+//	func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+//		return stick.UnmarshalKeyedList(stick.BSON, stick.InternalBSONValue(typ, bytes), l, func(link Link) string {
+//			return link.Ref
+//		})
 //	}
-func (c Coding) UnmarshalKeyedList(data []byte, list interface{}, field string) error {
-	// get existing list
-	existingList := reflect.ValueOf(list).Elem()
-
-	// get item type
-	itemType := existingList.Type().Elem()
-
-	// create index
-	indexType := reflect.MapOf(reflect.TypeOf(""), itemType)
-	index := reflect.MakeMapWithSize(indexType, existingList.Len())
-
-	// determine coding key
-	codingKey := field
-	if itemType.Kind() == reflect.Struct {
-		structField, ok := itemType.FieldByName(field)
-		if ok {
-			codingKey = c.GetKey(structField)
-		}
+func UnmarshalKeyedList[T any, L ~[]T, K comparable](c Coding, data []byte, list *L, mapper func(T) K) error {
+	// prepare index
+	index := map[K]T{}
+	for i := 0; i < len(*list); i++ {
+		item := (*list)[i]
+		key := mapper(item)
+		index[key] = item
 	}
 
-	// fill index
-	for i := 0; i < existingList.Len(); i++ {
-		// get item
-		item := existingList.Index(i)
-
-		// get key
-		var key string
-		if item.Type().Kind() == reflect.Map {
-			key = item.MapIndex(reflect.ValueOf(codingKey)).Interface().(string)
-		} else {
-			key = item.FieldByName(field).Interface().(string)
-		}
-
-		// store item
-		index.SetMapIndex(reflect.ValueOf(key), item)
-	}
-
-	// unmarshal into dynamic slice
-	var temp []map[string]interface{}
-	err := c.SafeUnmarshal(data, &temp)
+	// unmarshal into typed empty slice
+	var temp []T
+	err := c.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 
-	// check nil
+	// unmarshal into empty slice of maps
+	var rawList []Map
+	err = c.SafeUnmarshal(data, &rawList)
+	if err != nil {
+		return err
+	}
+
+	// handle nil
 	if temp == nil {
-		reflect.ValueOf(list).Elem().Set(reflect.Zero(existingList.Type()))
+		*list = nil
 		return nil
 	}
 
 	// create new list
-	newList := reflect.MakeSlice(existingList.Type(), 0, len(temp))
+	newList := make([]T, 0, len(temp))
 
 	// merge links
-	for _, obj := range temp {
-		// match existing item
-		item := index.MapIndex(reflect.ValueOf(obj[codingKey].(string)))
+	for i := range temp {
+		// get existing item
+		extItem, ok := index[mapper(temp[i])]
 
-		// ensure item if not found
-		if !item.IsValid() {
-			if itemType.Kind() == reflect.Map {
-				item = reflect.MakeMap(itemType)
-			} else {
-				item = reflect.Zero(itemType)
-			}
+		// directly add new item if missing
+		if !ok {
+			newList = append(newList, temp[i])
+			continue
 		}
 
-		// transfer to item
-		pointer := reflect.New(item.Type())
-		pointer.Elem().Set(item)
-		err = c.Transfer(obj, pointer.Interface())
+		// transfer from raw item to existing item
+		err = c.Transfer(rawList[i], &extItem)
 		if err != nil {
 			return err
 		}
 
-		// add item
-		newList = reflect.Append(newList, pointer.Elem())
+		// add existing item
+		newList = append(newList, extItem)
 	}
 
 	// set list
-	reflect.ValueOf(list).Elem().Set(newList)
+	*list = newList
 
 	return nil
 }

@@ -178,7 +178,10 @@ func TestParseBSONTag(t *testing.T) {
 type testListMap []Map
 
 func (t *testListMap) UnmarshalJSON(bytes []byte) error {
-	return JSON.UnmarshalKeyedList(bytes, t, "id")
+	return UnmarshalKeyedList(JSON, bytes, t, func(t Map) string {
+		id, _ := t["id"].(string)
+		return id
+	})
 }
 
 func TestCodingUnmarshalKeyedListMap(t *testing.T) {
@@ -191,13 +194,15 @@ func TestCodingUnmarshalKeyedListMap(t *testing.T) {
 	err := json.Unmarshal([]byte(`[
 		{"id": "c", "val": 4.0},
 		{"id": "d", "val": 5.0},
-		{"id": "a"}
+		{"id": "a"},
+		{"val": 6.0}
 	]`), &list)
 	assert.NoError(t, err)
 	assert.Equal(t, testListMap{
 		{"id": "c", "val": 4.0},
 		{"id": "d", "val": 5.0},
 		{"id": "a", "val": 1.0},
+		{"val": 6.0},
 	}, list)
 }
 
@@ -209,11 +214,15 @@ type testStruct struct {
 type testListStruct []testStruct
 
 func (t *testListStruct) UnmarshalJSON(bytes []byte) error {
-	return JSON.UnmarshalKeyedList(bytes, t, "ID")
+	return UnmarshalKeyedList(JSON, bytes, t, func(t testStruct) string {
+		return t.ID
+	})
 }
 
 func (t *testListStruct) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-	return BSON.UnmarshalKeyedList(InternalBSONValue(typ, bytes), t, "ID")
+	return UnmarshalKeyedList(BSON, InternalBSONValue(typ, bytes), t, func(t testStruct) string {
+		return t.ID
+	})
 }
 
 func TestCodingUnmarshalKeyedListStructJSON(t *testing.T) {
@@ -226,13 +235,15 @@ func TestCodingUnmarshalKeyedListStructJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(`[
 		{"id": "c", "val": 4},
 		{"id": "d", "val": 5},
-		{"id": "a"}
+		{"id": "a"},
+		{"val": 6}
 	]`), &list)
 	assert.NoError(t, err)
 	assert.Equal(t, testListStruct{
 		{ID: "c", Val: 4},
 		{ID: "d", Val: 5},
 		{ID: "a", Val: 1},
+		{Val: 6},
 	}, list)
 
 	err = json.Unmarshal([]byte(`[]`), &list)
@@ -255,12 +266,14 @@ func TestCodingUnmarshalKeyedListStructBSON(t *testing.T) {
 		bson.M{"id": "c", "val": 4},
 		bson.M{"id": "d", "val": 5},
 		bson.M{"id": "a"},
+		bson.M{"val": 6},
 	}), &list)
 	assert.NoError(t, err)
 	assert.Equal(t, testListStruct{
 		{ID: "c", Val: 4},
 		{ID: "d", Val: 5},
 		{ID: "a", Val: 1},
+		{Val: 6},
 	}, list)
 
 	err = BSON.Unmarshal(asBSON(bson.A{}), &list)

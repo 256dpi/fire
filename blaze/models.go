@@ -84,14 +84,18 @@ func IsValidLink(requireFilename bool, whitelist ...string) func(sub stick.Subje
 // Links is a set of links.
 type Links []Link
 
-// UnmarshalBSONValue implements the bson.ValueUnmarshaler interface.
-func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-	return stick.BSON.UnmarshalKeyedList(stick.InternalBSONValue(typ, bytes), l, "Ref")
-}
-
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (l *Links) UnmarshalJSON(bytes []byte) error {
-	return stick.JSON.UnmarshalKeyedList(bytes, l, "Ref")
+	return stick.UnmarshalKeyedList(stick.JSON, bytes, l, func(link Link) string {
+		return link.Ref
+	})
+}
+
+// UnmarshalBSONValue implements the bson.ValueUnmarshaler interface.
+func (l *Links) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
+	return stick.UnmarshalKeyedList(stick.BSON, stick.InternalBSONValue(typ, bytes), l, func(link Link) string {
+		return link.Ref
+	})
 }
 
 // Validate will validate the links.
