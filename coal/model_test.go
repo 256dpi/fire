@@ -40,6 +40,72 @@ func TestDynamicAccess(t *testing.T) {
 	assert.Equal(t, "foo", post.Title)
 }
 
+func TestList(t *testing.T) {
+	list := List[*listItem]{{
+		Title: "Foo",
+		Done:  false,
+	}}
+
+	list = append(list, &listItem{
+		Title: "Bar",
+		Done:  true,
+	})
+
+	err := list.Validate()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, list[0].ItemID)
+	assert.NotEmpty(t, list[1].ItemID)
+
+	list[0].ItemID = "a"
+	list[1].ItemID = "b"
+
+	var out []stick.Map
+	err = stick.JSON.Transfer(list, &out)
+	assert.NoError(t, err)
+	assert.Equal(t, []stick.Map{
+		{
+			"id":    "a",
+			"title": "Foo",
+			"done":  false,
+		}, {
+			"id":    "b",
+			"title": "Bar",
+			"done":  true,
+		},
+	}, out)
+
+	out[0], out[1] = out[1], out[0]
+	out = append(out, stick.Map{
+		"id":    "c",
+		"title": "Baz",
+		"done":  false,
+	})
+
+	err = stick.JSON.Transfer(out, &list)
+	assert.NoError(t, err)
+	assert.Equal(t, List[*listItem]{
+		{
+			ItemBase: I("b"),
+			Title:    "Bar",
+			Done:     true,
+		},
+		{
+			ItemBase: I("a"),
+			Title:    "Foo",
+			Done:     false,
+		},
+		{
+			ItemBase: I("c"),
+			Title:    "Baz",
+			Done:     false,
+		},
+	}, list)
+
+	list = append(list, nil)
+	err = list.Validate()
+	assert.ErrorContains(t, err, "nil item")
+}
+
 func TestSlice(t *testing.T) {
 	list1 := []postModel{{Title: "foo"}}
 	slice1a := Slice(list1)

@@ -198,12 +198,12 @@ func (t *Translator) field(path *string) error {
 		}
 
 		// check meta
-		if meta == nil || meta.Meta == nil {
+		if meta == nil || meta.ItemMeta == nil {
 			return xo.F("unknown field %q", *path)
 		}
 
 		// check field
-		itemField := meta.Meta.Fields[field]
+		itemField := meta.ItemMeta.Fields[field]
 		if itemField == nil {
 			return xo.F("unknown field %q", *path)
 		} else if itemField.BSONKey == "" {

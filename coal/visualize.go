@@ -134,8 +134,8 @@ func VisualizeDOT(title string, models ...Model) string {
 			out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, field.Name, field.Name, typ, indexedInfo[field.Name]))
 
 			// write item fields
-			if field.Meta != nil {
-				for _, itemField := range field.Meta.OrderedFields {
+			if field.ItemMeta != nil {
+				for _, itemField := range field.ItemMeta.OrderedFields {
 					typ := strings.ReplaceAll(itemField.Type.String(), "primitive.ObjectID", "coal.ID")
 					typ = dotEscape(typ)
 					out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">‣ %s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, itemField.Name, itemField.Name, typ, indexedInfo[field.Name+"."+itemField.Name]))

@@ -18,7 +18,7 @@ var itemMetaMutex sync.Mutex
 var itemMetaCache = map[reflect.Type]*ItemMeta{}
 
 var baseType = reflect.TypeOf(Base{})
-var itemType = reflect.TypeOf(Item{})
+var itemBaseType = reflect.TypeOf(ItemBase{})
 var toOneType = reflect.TypeOf(ID{})
 var optToOneType = reflect.TypeOf(&ID{})
 var toManyType = reflect.TypeOf([]ID{})
@@ -76,8 +76,8 @@ type ItemField struct {
 	// Whether the field is a pointer and thus optional.
 	Optional bool
 
-	// The item meta if field is a type embedding Item.
-	Meta *ItemMeta
+	// The item meta if field is a type embedding ItemBase.
+	ItemMeta *ItemMeta
 }
 
 // Meta stores extracted meta data from a model.
@@ -240,7 +240,7 @@ func GetMeta(model Model) *Meta {
 				JSONKey:  stick.JSON.GetKey(field),
 				BSONKey:  stick.BSON.GetKey(field),
 				Optional: field.Type.Kind() == reflect.Ptr,
-				Meta:     GetItemMeta(field.Type),
+				ItemMeta: GetItemMeta(field.Type),
 			},
 		}
 
@@ -422,7 +422,7 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 	}
 
 	// unwrap pointer
-	if typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
+	for typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
 		typ = typ.Elem()
 	}
 	if typ.Kind() != reflect.Struct {
@@ -430,7 +430,7 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 	}
 
 	// check if embedding item
-	if typ.NumField() == 0 || typ.Field(0).Type != itemType || !typ.Field(0).Anonymous {
+	if typ.NumField() == 0 || typ.Field(0).Type != itemBaseType || !typ.Field(0).Anonymous {
 		return nil
 	}
 
@@ -443,7 +443,7 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 		Fields:         map[string]*ItemField{},
 		DatabaseFields: map[string]*ItemField{},
 		Attributes:     map[string]*ItemField{},
-		Accessor:       stick.BuildAccessor(reflect.New(typ).Interface(), "Item"),
+		Accessor:       stick.BuildAccessor(reflect.New(typ).Interface(), "ItemBase"),
 	}
 
 	// parse fields
@@ -466,7 +466,7 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 			JSONKey:  stick.JSON.GetKey(field),
 			BSONKey:  stick.BSON.GetKey(field),
 			Optional: field.Type.Kind() == reflect.Ptr,
-			Meta:     GetItemMeta(field.Type),
+			ItemMeta: GetItemMeta(field.Type),
 		}
 
 		// add field

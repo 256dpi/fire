@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 
 	"github.com/256dpi/fire/stick"
@@ -93,14 +94,23 @@ func (b *Base) GetAccessor(v interface{}) *stick.Accessor {
 	return GetMeta(v.(Model)).Accessor
 }
 
-// Item is the base for every coal model item.
-type Item struct {
+// Item defines the shape of an item stored in a model. Custom types
+// must implement the interface by embedding the Base type.
+type Item interface {
+	ID() string
+	Validate() error
+	GetBase() *ItemBase
+	GetAccessor(interface{}) *stick.Accessor
+}
+
+// ItemBase is the base for every coal model item.
+type ItemBase struct {
 	ItemID string `json:"id,omitempty" bson:"_id,omitempty"`
 }
 
 // I is a shorthand to construct an item with the provided id or a generated
 // id if none specified.
-func I(id ...string) Item {
+func I(id ...string) ItemBase {
 	// check list
 	if len(id) > 1 {
 		panic("coal: I accepts only one id")
@@ -108,41 +118,74 @@ func I(id ...string) Item {
 
 	// use provided id id available
 	if len(id) > 0 {
-		return Item{
+		return ItemBase{
 			ItemID: id[0],
 		}
 	}
 
-	return Item{
+	return ItemBase{
 		ItemID: New().Hex(),
 	}
 }
 
-// ID will return the items ID.
-func (i Item) ID() string {
-	return i.ItemID
+// ID implements the Item interface.
+func (b *ItemBase) ID() string {
+	return b.ItemID
+}
+
+// GetBase implements the Item interface.
+func (b *ItemBase) GetBase() *ItemBase {
+	return b
 }
 
 // GetAccessor implements the Model interface.
-func (i Item) GetAccessor(v interface{}) *stick.Accessor {
+func (*ItemBase) GetAccessor(v interface{}) *stick.Accessor {
 	return GetItemMeta(reflect.TypeOf(v)).Accessor
 }
 
-// List wraps any type that embeds Item as a slice that automatically merges
+// List wraps any type that embeds ItemBase as a slice that automatically merges
 // existing items with new items if they have the same ID values.
-type List[T interface{ ID() string }] []T
+type List[T Item] []T
+
+// Validate will validate all items and return the first error.
+func (l *List[T]) Validate() error {
+	// check value
+	for _, entry := range *l {
+		if reflect.ValueOf(entry).IsNil() {
+			return xo.SF("nil item")
+		}
+	}
+
+	// ensure IDs
+	for _, entry := range *l {
+		base := entry.GetBase()
+		if base.ItemID == "" {
+			base.ItemID = New().Hex()
+		}
+	}
+
+	// validate items
+	for _, item := range *l {
+		err := item.Validate()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // UnmarshalJSON implement the json.Unmarshaler interface.
 func (l *List[T]) UnmarshalJSON(bytes []byte) error {
-	return stick.UnmarshalKeyedList(stick.JSON, bytes, l, func(t T) string {
-		return t.ID()
+	return stick.UnmarshalKeyedList(stick.JSON, bytes, l, func(item T) string {
+		return item.ID()
 	})
 }
 
 // UnmarshalBSONValue implement the bson.ValueUnmarshaler interface.
 func (l *List[T]) UnmarshalBSONValue(typ bsontype.Type, bytes []byte) error {
-	return stick.UnmarshalKeyedList(stick.BSON, stick.InternalBSONValue(typ, bytes), l, func(t T) string {
-		return t.ID()
+	return stick.UnmarshalKeyedList(stick.BSON, stick.InternalBSONValue(typ, bytes), l, func(item T) string {
+		return item.ID()
 	})
 }
 

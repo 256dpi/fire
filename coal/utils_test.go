@@ -6,6 +6,8 @@ import (
 
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/fire/stick"
 )
 
 type postModel struct {
@@ -57,21 +59,27 @@ func (m *noteModel) Validate() error {
 }
 
 type listItem struct {
-	Item
+	ItemBase
 	Title string `json:"title"`
 	Done  bool   `json:"done"`
 }
 
+func (i *listItem) Validate() error {
+	return nil
+}
+
 type listModel struct {
 	Base    `json:"-" bson:",inline" coal:"lists"`
-	Item    listItem       `json:"item"`
-	OptItem *listItem      `json:"opt-item" bson:"opt_item"`
-	Items   []listItem     `json:"items"`
-	List    List[listItem] `json:"list"`
+	Item    listItem        `json:"item"`
+	OptItem *listItem       `json:"opt-item" bson:"opt_item"`
+	Items   []listItem      `json:"items"`
+	List    List[*listItem] `json:"list"`
 }
 
 func (m *listModel) Validate() error {
-	return nil
+	return stick.Validate(m, func(v *stick.Validator) {
+		v.Value("List", false, stick.IsValid)
+	})
 }
 
 func init() {

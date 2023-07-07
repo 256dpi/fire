@@ -31,7 +31,7 @@ func (s State) Valid() bool {
 
 // Event is logged during a job execution.
 type Event struct {
-	coal.Item `json:"-" bson:"-"`
+	coal.ItemBase `json:"-" bson:"-"`
 
 	// The time when the event was reported.
 	Timestamp time.Time `json:"timestamp"`
