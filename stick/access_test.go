@@ -10,6 +10,11 @@ import (
 type accessible struct {
 	String    string
 	OptString *string
+	Strings   []string
+	Item      customAccessible
+	OptItem   *customAccessible
+	List      []customAccessible
+	PtrList   []*customAccessible
 }
 
 type customAccessible struct {
@@ -42,6 +47,26 @@ func TestAccess(t *testing.T) {
 			"OptString": {
 				Index: 1,
 				Type:  reflect.PtrTo(reflect.TypeOf("")),
+			},
+			"Strings": {
+				Index: 2,
+				Type:  reflect.TypeOf([]string{}),
+			},
+			"Item": {
+				Index: 3,
+				Type:  reflect.TypeOf(customAccessible{}),
+			},
+			"OptItem": {
+				Index: 4,
+				Type:  reflect.TypeOf(&customAccessible{}),
+			},
+			"List": {
+				Index: 5,
+				Type:  reflect.TypeOf([]customAccessible{}),
+			},
+			"PtrList": {
+				Index: 6,
+				Type:  reflect.TypeOf([]*customAccessible{}),
 			},
 		},
 	}, acc1)
@@ -83,6 +108,66 @@ func TestGet(t *testing.T) {
 	value, ok = Get(acc, "missing")
 	assert.Nil(t, value)
 	assert.False(t, ok)
+}
+
+func TestGetPath(t *testing.T) {
+	acc := &accessible{
+		Strings: []string{"Foo", "Bar"},
+		Item: customAccessible{
+			Foo: "Item",
+		},
+		OptItem: &customAccessible{
+			Foo: "OptItem",
+		},
+		List: []customAccessible{
+			{Foo: "List1"},
+			{Foo: "List2"},
+		},
+		PtrList: []*customAccessible{
+			{Foo: "PtrList1"},
+			{Foo: "PtrList2"},
+		},
+	}
+
+	value, ok := Get(acc, "Strings.0")
+	assert.True(t, ok)
+	assert.Equal(t, "Foo", value)
+
+	value, ok = Get(acc, "Strings.2")
+	assert.False(t, ok)
+	assert.Zero(t, value)
+
+	value, ok = Get(acc, "Item.Foo")
+	assert.True(t, ok)
+	assert.Equal(t, "Item", value)
+
+	value, ok = Get(acc, "Item.Bar")
+	assert.False(t, ok)
+	assert.Zero(t, value)
+
+	value, ok = Get(acc, "OptItem.Foo")
+	assert.True(t, ok)
+	assert.Equal(t, "OptItem", value)
+
+	value, ok = Get(acc, "OptItem.Bar")
+	assert.False(t, ok)
+	assert.Zero(t, value)
+
+	value, ok = Get(acc, "List.1.Foo")
+	assert.True(t, ok)
+	assert.Equal(t, "List2", value)
+
+	value, ok = Get(acc, "List.1.Bar")
+	assert.False(t, ok)
+	assert.Zero(t, value)
+
+	value, ok = Get(acc, "PtrList.1.Foo")
+	assert.True(t, ok)
+	assert.Equal(t, "PtrList2", value)
+
+	value, ok = Get(acc, "PtrList.1.Bar")
+	assert.False(t, ok)
+	assert.Zero(t, value)
 }
 
 func TestMustGet(t *testing.T) {
@@ -161,6 +246,65 @@ func TestSet(t *testing.T) {
 
 	ok = Set(acc, "OptString", (*string)(nil))
 	assert.True(t, ok)
+}
+
+func TestSetPath(t *testing.T) {
+	acc := &accessible{
+		Strings: []string{""},
+		Item: customAccessible{
+			Foo: "",
+		},
+		OptItem: &customAccessible{
+			Foo: "",
+		},
+		List: []customAccessible{
+			{Foo: ""},
+			{Foo: ""},
+		},
+		PtrList: []*customAccessible{
+			{Foo: ""},
+			{Foo: ""},
+		},
+	}
+
+	ok := Set(acc, "Strings.0", "String1")
+	assert.True(t, ok)
+	assert.Equal(t, "String1", acc.Strings[0])
+
+	ok = Set(acc, "Strings.2", "String3")
+	assert.False(t, ok)
+
+	ok = Set(acc, "Item.Foo", "Item")
+	assert.True(t, ok)
+	assert.Equal(t, "Item", acc.Item.Foo)
+
+	ok = Set(acc, "Item.Bar", "Item")
+	assert.False(t, ok)
+	assert.Zero(t, acc.Item.Bar)
+
+	ok = Set(acc, "OptItem.Foo", "OptItem")
+	assert.True(t, ok)
+	assert.Equal(t, "OptItem", acc.OptItem.Foo)
+
+	ok = Set(acc, "OptItem.Bar", "OptItem")
+	assert.False(t, ok)
+	assert.Zero(t, acc.OptItem.Bar)
+
+	ok = Set(acc, "List.1.Foo", "List2")
+	assert.True(t, ok)
+	assert.Equal(t, "List2", acc.List[1].Foo)
+
+	ok = Set(acc, "List.1.Bar", "List2")
+	assert.False(t, ok)
+	assert.Zero(t, acc.List[1].Bar)
+
+	ok = Set(acc, "PtrList.1.Foo", "PtrList2")
+	assert.True(t, ok)
+	assert.Equal(t, "PtrList2", acc.PtrList[1].Foo)
+
+	ok = Set(acc, "PtrList.1.Bar", "PtrList2")
+	assert.False(t, ok)
+	assert.Zero(t, acc.PtrList[1].Bar)
 }
 
 func TestMustSet(t *testing.T) {

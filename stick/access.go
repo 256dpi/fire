@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 var accessMutex sync.Mutex
@@ -28,8 +30,8 @@ type Accessor struct {
 
 // Access will create, cache and return an accessor for the provided value.
 //
-// Note: Ignored fields are only applied the first time Access is called for
-// the provided type.
+// Note: Ignored fields are only applied the very first time Access is called
+// for the provided type.
 func Access(v interface{}, ignore ...string) *Accessor {
 	// get type
 	typ := structType(v)
@@ -104,35 +106,28 @@ func GetAccessor(v interface{}) *Accessor {
 	return Access(v)
 }
 
-// Get will look up and return the value of the specified field and whether the
-// field was found at all.
-func Get(v interface{}, name string) (interface{}, bool) {
-	// find field
-	field := GetAccessor(v).Fields[name]
-	if field == nil {
+// Get will call GetRaw and return the interface value.
+func Get(v interface{}, path string) (interface{}, bool) {
+	// get raw value
+	value, ok := GetRaw(v, path)
+	if !ok {
 		return nil, false
 	}
 
-	// get value
-	value := structValue(v).Field(field.Index).Interface()
-
-	return value, true
+	return value.Interface(), true
 }
 
-// MustGet will call Get and panic if the operation failed.
-func MustGet(v interface{}, name string) interface{} {
-	// get value
-	value, ok := Get(v, name)
-	if !ok {
-		panic(fmt.Sprintf(`stick: could not get field "%s" on "%s"`, name, GetAccessor(v).Name))
-	}
-
-	return value
+// MustGet will call MustGetRaw and return the interface value.
+func MustGet(v interface{}, path string) interface{} {
+	return MustGetRaw(v, path).Interface()
 }
 
-// GetRaw will look up and return the value of the specified field and whether$
+// GetRaw will look up and return the value of the specified field and whether
 // the field was found at all.
-func GetRaw(v interface{}, name string) (reflect.Value, bool) {
+func GetRaw(v interface{}, path string) (reflect.Value, bool) {
+	// get first name
+	name := bsonkit.PathSegment(path)
+
 	// find field
 	field := GetAccessor(v).Fields[name]
 	if field == nil {
@@ -142,7 +137,40 @@ func GetRaw(v interface{}, name string) (reflect.Value, bool) {
 	// get value
 	value := structValue(v).Field(field.Index)
 
-	return value, true
+	for {
+		// reduce path and return on end
+		path = bsonkit.ReducePath(path)
+		if path == bsonkit.PathEnd {
+			return value, true
+		}
+
+		// get next name
+		name = bsonkit.PathSegment(path)
+
+		// handle list index
+		num, index := bsonkit.ParseIndex(name)
+		if index {
+			// check slice
+			if value.Kind() != reflect.Slice {
+				return reflect.Value{}, false
+			} else if num >= value.Len() {
+				return reflect.Value{}, false
+			}
+
+			// set value
+			value = value.Index(num)
+
+			continue
+		}
+
+		// ensure pointer to value
+		if value.Kind() != reflect.Ptr {
+			value = value.Addr()
+		}
+
+		// descend
+		return GetRaw(value.Interface(), path)
+	}
 }
 
 // MustGetRaw will call GetRaw and panic if the operation failed.
@@ -158,7 +186,10 @@ func MustGetRaw(v interface{}, name string) reflect.Value {
 
 // Set will set the specified field with the provided value and return whether
 // the field has been found and the value has been set.
-func Set(v interface{}, name string, value interface{}) bool {
+func Set(v interface{}, path string, value interface{}) bool {
+	// get first name
+	name := bsonkit.PathSegment(path)
+
 	// find field
 	field := GetAccessor(v).Fields[name]
 	if field == nil {
@@ -167,6 +198,43 @@ func Set(v interface{}, name string, value interface{}) bool {
 
 	// get value
 	fieldValue := structValue(v).Field(field.Index)
+
+	for {
+		// reduce path and break on end
+		path = bsonkit.ReducePath(path)
+		if path == bsonkit.PathEnd {
+			break
+		}
+
+		// get next name
+		name = bsonkit.PathSegment(path)
+
+		// handle list index
+		num, index := bsonkit.ParseIndex(name)
+		if index {
+			// check slice
+			if fieldValue.Kind() != reflect.Slice {
+				return false
+			} else if num >= fieldValue.Len() {
+				return false
+			}
+
+			// set value
+			fieldValue = fieldValue.Index(num)
+
+			continue
+		}
+
+		// ensure pointer to value
+		if fieldValue.Kind() != reflect.Ptr {
+			fieldValue = fieldValue.Addr()
+		}
+
+		// descend
+		return Set(fieldValue.Interface(), path, value)
+	}
+
+	/* set new value */
 
 	// get value value
 	valueValue := reflect.ValueOf(value)
