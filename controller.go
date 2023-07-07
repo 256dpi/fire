@@ -2251,15 +2251,15 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		}
 	}
 
-	// create map from model
-	m, err := jsonapi.StructToMap(model, whitelist)
+	// create attributes from model
+	attributes, err := jsonapi.StructToMap(model, whitelist)
 	xo.AbortIf(err)
 
 	// prepare resource
 	resource := &jsonapi.Resource{
 		Type:          c.meta.PluralName,
 		ID:            model.ID().Hex(),
-		Attributes:    m,
+		Attributes:    attributes,
 		Relationships: make(map[string]*jsonapi.Document),
 	}
 
