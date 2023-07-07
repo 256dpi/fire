@@ -11,7 +11,7 @@ func Z[T any]() T {
 	return z
 }
 
-// N is a shorthand function to get a typed nil object pointer.
+// N is a shorthand to get a typed nil pointer of the specified type.
 func N[T any]() *T {
 	return nil
 }
