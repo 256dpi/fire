@@ -84,13 +84,6 @@ type Computation struct {
 	// The model.
 	Model coal.Model
 
-	// The interval at which the value is checked for changes.
-	RehashInterval time.Duration
-
-	// The interval a which the value is recomputed regardless if the input
-	// is the same.
-	RecomputeInterval time.Duration
-
 	// Hasher returns a hash of the input that is used to determine whether the
 	// computation needed. An absent input is indicated by an empty string.
 	Hasher func(model coal.Model) string
@@ -98,26 +91,33 @@ type Computation struct {
 	// The computation handler.
 	Computer func(ctx *Context) error
 
-	// The release handler is called to release an invalidated value
-	// synchronously. Otherwise, a computation is scheduled to release the
-	// value asynchronously.
+	// The release handler is called to release an invalidated output
+	// synchronously. If absent, a computation is scheduled to release the
+	// output asynchronously using the computer.
 	Releaser func(ctx *Context) error
 
-	// Whether outdated values should be kept until the new value is computed.
-	// Otherwise, values are released synchronously.
+	// Whether an outdated output should be kept until the new output is
+	// computed. Otherwise, output is released immediately if possible.
 	KeepOutdated bool
+
+	// The interval at which the input is checked for outside changes.
+	RehashInterval time.Duration
+
+	// The interval a which the output is recomputed regardless if the input
+	// is the same.
+	RecomputeInterval time.Duration
 }
 
 // Compute will return an operation that automatically runs the provided
 // asynchronous computation. During a check/modifier call, the hash of the input
-// is taken to determine if the values needs to be computed. During a scan the
+// is taken to determine if the output needs to be computed. During a scan the
 // computation is only invoked when the status is missing, invalid or outdated.
 // To force a computation in both cases, the status can be flagged as invalid.
 //
 // If no releaser is configured, the computer is also invoked asynchronously to
-// compute the value for a zero input (zero hash). If a releaser is configured,
-// it is invoked instead synchronously to release (clear) the current value.
-// Optionally, the outdated value can be kept until the new value is computed.
+// compute the output for a zero input (zero hash). If a releaser is configured,
+// it is invoked instead synchronously to release (clear) the current output.
+// Optionally, the outdated output can be kept until it is recomputed.
 func Compute(comp Computation) *Operation {
 	// validate field
 	_ = stick.MustGet(comp.Model, comp.Name).(*Status)
@@ -201,15 +201,15 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// release leftover value if possible
+			// release leftover output if possible
 			if hash == "" && status.Hash != "" && comp.Releaser != nil {
-				// release value
+				// release output
 				err := comp.Releaser(ctx)
 				if err != nil {
 					return err
 				}
 
-				// update status value
+				// update status
 				ctx.Change("$set", comp.Name, &Status{
 					Progress: 1,
 					Updated:  time.Now(),
@@ -231,7 +231,7 @@ func Compute(comp Computation) *Operation {
 				// set defer
 				ctx.Defer = true
 
-				// release outdated value if existing and not kept
+				// release outdated output if existing and not kept
 				if status != nil && status.Hash != "" && comp.Releaser != nil && !comp.KeepOutdated {
 					err := comp.Releaser(ctx)
 					if err != nil {
@@ -239,7 +239,7 @@ func Compute(comp Computation) *Operation {
 					}
 				}
 
-				// clear status value
+				// clear status
 				ctx.Change("$set", comp.Name, &Status{
 					Progress: 0,
 					Updated:  time.Now(),
@@ -279,13 +279,13 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// compute value
+			// compute output
 			err := comp.Computer(ctx)
 			if err != nil {
 				return err
 			}
 
-			// update status value
+			// update status
 			ctx.Change("$set", comp.Name, &Status{
 				Progress: 1,
 				Updated:  time.Now(),
