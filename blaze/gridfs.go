@@ -36,7 +36,7 @@ func (g *GridFS) Prepare(context.Context) (Handle, error) {
 
 // Upload implements the Service interface.
 func (g *GridFS) Upload(ctx context.Context, handle Handle, _ Info) (Upload, error) {
-	// get id
+	// get ID
 	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return nil, ErrInvalidHandle.Wrap()
@@ -55,7 +55,7 @@ func (g *GridFS) Upload(ctx context.Context, handle Handle, _ Info) (Upload, err
 
 // Lookup implements the Service interface.
 func (g *GridFS) Lookup(ctx context.Context, handle Handle) (Info, error) {
-	// get id
+	// get ID
 	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return Info{}, ErrInvalidHandle.Wrap()
@@ -86,7 +86,7 @@ func (g *GridFS) Lookup(ctx context.Context, handle Handle) (Info, error) {
 
 // Download implements the Service interface.
 func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) {
-	// get id
+	// get ID
 	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return nil, ErrInvalidHandle.Wrap()
@@ -113,7 +113,7 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 
 // Delete implements the Service interface.
 func (g *GridFS) Delete(ctx context.Context, handle Handle) error {
-	// get id
+	// get ID
 	id, ok := handle["id"].(coal.ID)
 	if !ok || id.IsZero() {
 		return ErrInvalidHandle.Wrap()

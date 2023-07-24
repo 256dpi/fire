@@ -183,7 +183,7 @@ func Execute() *fire.Callback {
 			}
 		}
 
-		// verify id if available
+		// verify ID if available
 		if verifyIDMatcher(ctx) && policy.VerifyID != nil {
 			// get access
 			access := policy.VerifyID(ctx, ctx.Selector["_id"].(coal.ID))

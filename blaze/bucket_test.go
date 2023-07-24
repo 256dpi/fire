@@ -546,7 +546,7 @@ func TestBucketClaimDecorateReleaseRequired(t *testing.T) {
 			return bucket.Release(ctx, model, "RequiredFile")
 		})
 		assert.Error(t, err)
-		assert.Equal(t, "invalid file id", err.Error())
+		assert.Equal(t, "invalid file ID", err.Error())
 	})
 }
 

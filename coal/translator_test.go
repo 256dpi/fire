@@ -62,7 +62,7 @@ func TestTranslatorDocument(t *testing.T) {
 	assert.Nil(t, doc)
 	assert.Equal(t, `virtual field "Comments"`, err.Error())
 
-	// id
+	// ID
 	id := New()
 	doc, err = trans.Document(bson.M{
 		"_id": id,
@@ -255,7 +255,7 @@ func TestTranslatorSort(t *testing.T) {
 	assert.Nil(t, doc)
 	assert.Equal(t, `virtual field "Comments"`, err.Error())
 
-	// id
+	// ID
 	doc, err = trans.Sort([]string{"_id"})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{

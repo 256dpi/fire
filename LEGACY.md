@@ -6,7 +6,7 @@ Go on Fire implements a small introspection library that is able to infer all ne
 
 ### Basics
 
-The [`Base`](https://godoc.org/github.com/256dpi/fire/coal#Base) struct has to be embedded in every Go on Fire model as it holds the document id and defines the models plural name and collection via the `coal:"plural-name[:collection]"` struct tag:
+The [`Base`](https://godoc.org/github.com/256dpi/fire/coal#Base) struct has to be embedded in every Go on Fire model as it holds the document ID and defines the models plural name and collection via the `coal:"plural-name[:collection]"` struct tag:
 
 ```go
 type Post struct {
@@ -40,7 +40,7 @@ Note: Ember Data requires you to use dashed names for multi-word attribute names
 
 ### Helpers
 
-The [`ID`](https://godoc.org/github.com/256dpi/fire/coal#Base.ID) method can be used to get the document id:
+The [`ID`](https://godoc.org/github.com/256dpi/fire/coal#Base.ID) method can be used to get the document ID:
 
 ```go
 post.ID()

@@ -903,7 +903,7 @@ func (a *Authenticator) findClient(ctx *Context, model Client, id string) Client
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		xo.Abort(xo.F("unable to determine client id field"))
+		xo.Abort(xo.F("unable to determine client ID field"))
 	}
 
 	// add additional filter if provided
@@ -1008,7 +1008,7 @@ func (a *Authenticator) findResourceOwner(ctx *Context, client Client, model Res
 			{"_id": coal.MustFromHex(id)},
 		}
 	} else {
-		xo.Abort(xo.F("unable to determine resource owner id field"))
+		xo.Abort(xo.F("unable to determine resource owner ID field"))
 	}
 
 	// add additional filter if provided
@@ -1100,11 +1100,11 @@ func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, e
 	ctx.Tracer.Push("flame/Authenticator.saveToken")
 	defer ctx.Tracer.Pop()
 
-	// create token with id
+	// create token with ID
 	token := coal.GetMeta(a.policy.Token).Make().(GenericToken)
 	token.GetBase().DocID = coal.New()
 
-	// get resource owner id
+	// get resource owner ID
 	var roID *coal.ID
 	if resourceOwner != nil {
 		roID = stick.P(resourceOwner.ID())

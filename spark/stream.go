@@ -28,7 +28,7 @@ type Event struct {
 	// Type specifies the event type.
 	Type coal.Event
 
-	// ID is the id of the changed resource.
+	// ID is the ID of the changed resource.
 	ID coal.ID
 
 	// Model is the changed model.

@@ -41,7 +41,7 @@ var timeType = reflect.TypeOf(time.Time{})
 type mergeTransformer struct{}
 
 func (t *mergeTransformer) Transformer(typ reflect.Type) func(reflect.Value, reflect.Value) error {
-	// handle id and time types
+	// handle ID and time types
 	if typ == idType || typ == timeType {
 		return func(dst reflect.Value, src reflect.Value) error {
 			if !src.IsZero() && dst.CanSet() {

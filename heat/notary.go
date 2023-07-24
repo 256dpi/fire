@@ -47,7 +47,7 @@ func (n *Notary) Issue(ctx context.Context, key Key) (string, error) {
 	// get base
 	base := key.GetBase()
 
-	// ensure id
+	// ensure ID
 	if base.ID.IsZero() {
 		base.ID = coal.New()
 	}
@@ -104,10 +104,10 @@ func (n *Notary) Verify(ctx context.Context, key Key, token string) error {
 		return err
 	}
 
-	// check id
+	// check ID
 	kid, err := coal.FromHex(rawKey.ID)
 	if err != nil {
-		return xo.F("invalid token id")
+		return xo.F("invalid token ID")
 	}
 
 	// set base

@@ -73,7 +73,7 @@ func TestBasicOperations(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to create post with invalid id
+		// attempt to create post with invalid ID
 		tester.Request("POST", "posts", `{
 			"data": {
 				"type": "posts",
@@ -85,7 +85,7 @@ func TestBasicOperations(t *testing.T) {
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "unnecessary resource id"
+					"detail": "unnecessary resource ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -243,7 +243,7 @@ func TestBasicOperations(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to update post with invalid id
+		// attempt to update post with invalid ID
 		tester.Request("PATCH", "posts/"+id, `{
 			"data": {
 				"type": "posts",
@@ -258,12 +258,12 @@ func TestBasicOperations(t *testing.T) {
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "resource id mismatch"
+					"detail": "resource ID mismatch"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to update post with invalid id
+		// attempt to update post with invalid ID
 		tester.Request("PATCH", "posts/foo", `{
 			"data": {
 				"type": "posts",
@@ -278,7 +278,7 @@ func TestBasicOperations(t *testing.T) {
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid resource id"
+					"detail": "invalid resource ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -359,14 +359,14 @@ func TestBasicOperations(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to get single post with invalid id
+		// attempt to get single post with invalid ID
 		tester.Request("GET", "posts/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid resource id"
+					"detail": "invalid resource ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -425,14 +425,14 @@ func TestBasicOperations(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to delete post with invalid id
+		// attempt to delete post with invalid ID
 		tester.Request("DELETE", "posts/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"errors": [{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid resource id"
+					"detail": "invalid resource ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -1109,7 +1109,7 @@ func TestToOneRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to replace post relationship with invalid id
+		// attempt to replace post relationship with invalid ID
 		tester.Request("PATCH", "comments/"+comment2+"/relationships/post", `{
 			"data": {
 				"type": "posts",
@@ -1121,7 +1121,7 @@ func TestToOneRelationships(t *testing.T) {
 				"errors":[{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid relationship id"
+					"detail": "invalid relationship ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -1460,7 +1460,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to replace posts relationship with invalid id
+		// attempt to replace posts relationship with invalid ID
 		tester.Request("PATCH", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1474,7 +1474,7 @@ func TestToManyRelationships(t *testing.T) {
 				"errors":[{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid relationship id"
+					"detail": "invalid relationship ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -1572,7 +1572,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to add posts relationship with invalid id
+		// attempt to add posts relationship with invalid ID
 		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1586,7 +1586,7 @@ func TestToManyRelationships(t *testing.T) {
 				"errors":[{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid relationship id"
+					"detail": "invalid relationship ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -1619,7 +1619,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// add existing id to posts relationship
+		// add existing ID to posts relationship
 		tester.Request("POST", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1706,7 +1706,7 @@ func TestToManyRelationships(t *testing.T) {
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
 
-		// attempt to remove from posts relationships with invalid id
+		// attempt to remove from posts relationships with invalid ID
 		tester.Request("DELETE", "selections/"+selection+"/relationships/posts", `{
 			"data": [
 				{
@@ -1720,7 +1720,7 @@ func TestToManyRelationships(t *testing.T) {
 				"errors":[{
 					"status": "400",
 					"title": "bad request",
-					"detail": "invalid relationship id"
+					"detail": "invalid relationship ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -2304,14 +2304,14 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
-		// test invalid relationship filter id
+		// test invalid relationship filter ID
 		tester.Request("GET", "notes?filter[post]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"errors":[{
 					"status": "400",
 					"title": "bad request",
-					"detail": "relationship filter value is not an object id"
+					"detail": "relationship filter value is not an object ID"
 				}]
 			}`, r.Body.String(), tester.DebugRequest(rq, r))
 		})
@@ -5882,7 +5882,7 @@ func TestOffsetPagination(t *testing.T) {
 			ListLimit: 7,
 		})
 
-		// prepare ids
+		// prepare IDs
 		var ids []coal.ID
 
 		// create some posts

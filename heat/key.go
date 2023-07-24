@@ -19,7 +19,7 @@ type Key interface {
 
 // Base can be embedded in a struct to turn it into a key.
 type Base struct {
-	// The key id.
+	// The key ID.
 	ID coal.ID
 
 	// The key timestamps

@@ -555,7 +555,7 @@ func (b *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 	// get file
 	file := link.File
 	if file.IsZero() {
-		return xo.F("invalid file id")
+		return xo.F("invalid file ID")
 	}
 
 	// check transaction
@@ -572,7 +572,7 @@ func (b *Bucket) ReleaseLink(ctx context.Context, link *Link) error {
 	return nil
 }
 
-// ReleaseFile will release the file with the provided id.
+// ReleaseFile will release the file with the provided ID.
 //
 // Note: For consistency this should be called within a transaction.
 func (b *Bucket) ReleaseFile(ctx context.Context, file coal.ID) error {

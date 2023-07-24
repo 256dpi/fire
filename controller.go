@@ -389,9 +389,9 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 		ctx.Request = doc
 	}
 
-	// validate id if present
+	// validate ID if present
 	if ctx.JSONAPIRequest.ResourceID != "" && !coal.IsHex(ctx.JSONAPIRequest.ResourceID) {
-		xo.Abort(jsonapi.BadRequest("invalid resource id"))
+		xo.Abort(jsonapi.BadRequest("invalid resource ID"))
 	}
 
 	// set operation
@@ -578,15 +578,15 @@ func (c *Controller) createResource(ctx *Context) {
 		xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
-	// check id
+	// check ID
 	if ctx.Request.Data.One.ID != "" {
-		xo.Abort(jsonapi.BadRequest("unnecessary resource id"))
+		xo.Abort(jsonapi.BadRequest("unnecessary resource ID"))
 	}
 
 	// run authorizers
 	c.runCallbacks(ctx, Authorizer, c.Authorizers, http.StatusUnauthorized)
 
-	// create model with id
+	// create model with ID
 	ctx.Model = c.meta.Make()
 	ctx.Model.GetBase().DocID = coal.New()
 
@@ -694,9 +694,9 @@ func (c *Controller) updateResource(ctx *Context) {
 		xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 	}
 
-	// check id
+	// check ID
 	if ctx.Request.Data.One.ID != ctx.JSONAPIRequest.ResourceID {
-		xo.Abort(jsonapi.BadRequest("resource id mismatch"))
+		xo.Abort(jsonapi.BadRequest("resource ID mismatch"))
 	}
 
 	// load model
@@ -924,12 +924,12 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// finish to-one relationship
 	if rel.ToOne {
-		// lookup id of related resource
+		// lookup ID of related resource
 		id := coal.New()
 		if rel.Optional {
-			oid := stick.MustGet(ctx.Model, rel.Name).(*coal.ID)
-			if oid != nil {
-				id = *oid
+			rid := stick.MustGet(ctx.Model, rel.Name).(*coal.ID)
+			if rid != nil {
+				id = *rid
 			}
 		} else {
 			id = stick.MustGet(ctx.Model, rel.Name).(coal.ID)
@@ -962,7 +962,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 
 	// finish to-many relationship
 	if rel.ToMany {
-		// get ids from loaded model
+		// get IDs from loaded model
 		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
 		// prepare selector
@@ -1195,21 +1195,21 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 			xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// get id
+		// get ID
 		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
-			xo.Abort(jsonapi.BadRequest("invalid relationship id"))
+			xo.Abort(jsonapi.BadRequest("invalid relationship ID"))
 		}
 
-		// get current ids
+		// get current IDs
 		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
-		// check if id is already present
+		// check if ID is already present
 		if stick.Contains(ids, refID) {
 			continue
 		}
 
-		// add id
+		// add ID
 		ids = append(ids, refID)
 		stick.MustSet(ctx.Model, rel.Name, ids)
 	}
@@ -1295,26 +1295,26 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 			xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 		}
 
-		// get id
+		// get ID
 		refID, err := coal.FromHex(ref.ID)
 		if err != nil {
-			xo.Abort(jsonapi.BadRequest("invalid relationship id"))
+			xo.Abort(jsonapi.BadRequest("invalid relationship ID"))
 		}
 
 		// prepare mark
 		var pos = -1
 
-		// get current ids
+		// get current IDs
 		ids := stick.MustGet(ctx.Model, rel.Name).([]coal.ID)
 
-		// check if id is already present
+		// check if ID is already present
 		for i, id := range ids {
 			if id == refID {
 				pos = i
 			}
 		}
 
-		// remove id if present
+		// remove ID if present
 		if pos >= 0 {
 			ids = append(ids[:pos], ids[pos+1:]...)
 			stick.MustSet(ctx.Model, rel.Name, ids)
@@ -1618,13 +1618,13 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// readability is checked after running authorizers
 
-			// convert to object ids
+			// convert to object IDs
 			var ids []coal.ID
 			for _, value := range values {
 				for _, str := range strings.Split(value, ",") {
 					refID, err := coal.FromHex(str)
 					if err != nil {
-						xo.Abort(jsonapi.BadRequest("relationship filter value is not an object id"))
+						xo.Abort(jsonapi.BadRequest("relationship filter value is not an object ID"))
 					}
 					ids = append(ids, refID)
 				}
@@ -2003,24 +2003,24 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 		// prepare zero value
 		var id coal.ID
 
-		// set and check id if available
+		// set and check ID if available
 		if rel.Data != nil && rel.Data.One != nil {
 			// check type
 			if rel.Data.One.Type != field.RelType {
 				xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 			}
 
-			// get id
+			// get ID
 			relID, err := coal.FromHex(rel.Data.One.ID)
 			if err != nil {
-				xo.Abort(jsonapi.BadRequest("invalid relationship id"))
+				xo.Abort(jsonapi.BadRequest("invalid relationship ID"))
 			}
 
-			// extract id
+			// extract ID
 			id = relID
 		}
 
-		// set id properly
+		// set ID properly
 		if !field.Optional {
 			stick.MustSet(ctx.Model, field.Name, id)
 		} else {
@@ -2034,33 +2034,33 @@ func (c *Controller) assignRelationship(ctx *Context, rel *jsonapi.Document, fie
 
 	// handle to-many relationship
 	if field.ToMany {
-		// prepare ids
+		// prepare IDs
 		var ids []coal.ID
 
 		// check if data is available
 		if rel.Data != nil && len(rel.Data.Many) > 0 {
-			// prepare ids
+			// prepare IDs
 			ids = make([]coal.ID, len(rel.Data.Many))
 
-			// convert all ids
+			// convert all IDs
 			for i, r := range rel.Data.Many {
 				// check type
 				if r.Type != field.RelType {
 					xo.Abort(jsonapi.BadRequest("resource type mismatch"))
 				}
 
-				// get id
+				// get ID
 				relID, err := coal.FromHex(r.ID)
 				if err != nil {
-					xo.Abort(jsonapi.BadRequest("invalid relationship id"))
+					xo.Abort(jsonapi.BadRequest("invalid relationship ID"))
 				}
 
-				// set id
+				// set ID
 				ids[i] = relID
 			}
 		}
 
-		// set ids
+		// set IDs
 		stick.MustSet(ctx.Model, field.Name, ids)
 	}
 }
@@ -2117,7 +2117,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 			xo.Abort(xo.F("no relationship matching the inverse name %s", field.RelInverse))
 		}
 
-		// collect model ids
+		// collect model IDs
 		modelIDs := make([]coal.ID, 0, len(models))
 		for _, model := range models {
 			modelIDs = append(modelIDs, model.ID())
@@ -2160,7 +2160,7 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 			for id, value := range references {
 				// handle to one references
 				if rel.ToOne {
-					// get reference id
+					// get reference ID
 					rid, _ := value.(coal.ID)
 					if !rid.IsZero() && rid == modelID {
 						// add reference
@@ -2170,10 +2170,10 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 
 				// handle to many references
 				if rel.ToMany {
-					// get reference ids
+					// get reference IDs
 					rids, _ := value.(bson.A)
 					for _, _rid := range rids {
-						// get reference id
+						// get reference ID
 						rid, _ := _rid.(coal.ID)
 						if !rid.IsZero() && rid == modelID {
 							// add reference
@@ -2298,13 +2298,13 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 
 			if field.Optional {
 				// get and check optional field
-				oid := stick.MustGet(model, field.Name).(*coal.ID)
+				id := stick.MustGet(model, field.Name).(*coal.ID)
 
-				// create reference if id is available
-				if oid != nil {
+				// create reference if ID is available
+				if id != nil {
 					reference = &jsonapi.Resource{
 						Type: field.RelType,
-						ID:   oid.Hex(),
+						ID:   id.Hex(),
 					}
 				}
 			} else {
@@ -2323,7 +2323,7 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 				},
 			}
 		} else if field.ToMany {
-			// get ids
+			// get IDs
 			ids := stick.MustGet(model, field.Name).([]coal.ID)
 
 			// prepare references
@@ -2538,7 +2538,7 @@ func (c *Controller) listLinks(ctx *Context) *jsonapi.DocumentLinks {
 				afterCursor = append(afterCursor, stick.MustGet(ctx.Models[len(ctx.Models)-1], field))
 			}
 
-			// add ids
+			// add IDs
 			beforeCursor = append(beforeCursor, ctx.Models[0].ID())
 			afterCursor = append(afterCursor, ctx.Models[len(ctx.Models)-1].ID())
 

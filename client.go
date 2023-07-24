@@ -67,7 +67,7 @@ func (c *Client) Create(model coal.Model) (coal.Model, *jsonapi.Document, error)
 		return nil, nil, err
 	}
 
-	// unset id
+	// unset ID
 	resource.ID = ""
 
 	// create resource

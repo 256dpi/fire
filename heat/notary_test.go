@@ -77,7 +77,7 @@ func TestNotaryVerifyErrors(t *testing.T) {
 		Data:     nil,
 	}))
 	assert.Error(t, err)
-	assert.Equal(t, "invalid token id", err.Error())
+	assert.Equal(t, "invalid token ID", err.Error())
 
 	err = notary.Verify(nil, &key, makeToken(jwtClaims{
 		Issuer:   "test",

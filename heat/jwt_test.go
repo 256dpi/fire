@@ -50,7 +50,7 @@ func TestIssueErrors(t *testing.T) {
 	token, err = Issue(testSecret, "foo", "bar", RawKey{})
 	assert.Error(t, err)
 	assert.Empty(t, token)
-	assert.Equal(t, "missing id", err.Error())
+	assert.Equal(t, "missing ID", err.Error())
 
 	token, err = Issue(testSecret, "foo", "bar", RawKey{
 		ID: "baz",

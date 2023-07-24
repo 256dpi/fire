@@ -7,10 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// ID is shorthand type for the object id.
+// ID is shorthand type for the object ID.
 type ID = primitive.ObjectID
 
-// New will return a new object id, optionally using a custom timestamp.
+// New will return a new object ID, optionally using a custom timestamp.
 func New(timestamp ...time.Time) ID {
 	// check timestamp
 	if len(timestamp) > 0 {
@@ -20,21 +20,20 @@ func New(timestamp ...time.Time) ID {
 	return primitive.NewObjectID()
 }
 
-// IsHex will assess whether the provided string is a valid hex encoded
-// object id.
+// IsHex will assess whether the provided string is a valid hex encoded ID.
 func IsHex(str string) bool {
 	_, err := FromHex(str)
 	return err == nil
 }
 
-// FromHex will convert the provided string to an object id.
+// FromHex will convert the provided string to an ID.
 func FromHex(str string) (ID, error) {
 	id, err := primitive.ObjectIDFromHex(str)
 	return id, xo.W(err)
 }
 
-// MustFromHex will convert the provided string to an object id and panic if
-// the string is not a valid object id.
+// MustFromHex will convert the provided string to an ID and panic if the string
+// is not a valid ID.
 func MustFromHex(str string) ID {
 	id, err := FromHex(str)
 	if err != nil {

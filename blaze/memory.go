@@ -22,7 +22,7 @@ type Memory struct {
 	// The stored blobs.
 	Blobs map[string]*MemoryBlob
 
-	// The next id.
+	// The next ID.
 	Next int
 
 	mutex sync.Mutex
@@ -41,7 +41,7 @@ func (m *Memory) Prepare(context.Context) (Handle, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// increment id
+	// increment ID
 	m.Next++
 
 	// create handle
@@ -58,7 +58,7 @@ func (m *Memory) Upload(_ context.Context, handle Handle, info Info) (Upload, er
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// get id
+	// get ID
 	id, _ := handle["id"].(string)
 	if id == "" {
 		return nil, ErrInvalidHandle.Wrap()
@@ -89,7 +89,7 @@ func (m *Memory) Lookup(_ context.Context, handle Handle) (Info, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// get id
+	// get ID
 	id, _ := handle["id"].(string)
 	if id == "" {
 		return Info{}, ErrInvalidHandle.Wrap()
@@ -113,7 +113,7 @@ func (m *Memory) Download(_ context.Context, handle Handle) (Download, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// get id
+	// get ID
 	id, _ := handle["id"].(string)
 	if id == "" {
 		return nil, ErrInvalidHandle.Wrap()
@@ -136,7 +136,7 @@ func (m *Memory) Delete(_ context.Context, handle Handle) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// get id
+	// get ID
 	id, _ := handle["id"].(string)
 	if id == "" {
 		return ErrInvalidHandle.Wrap()

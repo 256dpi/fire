@@ -295,7 +295,7 @@ func (t *Task) enqueuer(queue *Queue) error {
 
 	// run forever
 	for {
-		// reset id
+		// reset ID
 		job.GetBase().DocID = coal.New()
 
 		// enqueue task

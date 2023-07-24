@@ -194,7 +194,7 @@ func DefaultApproveStrategy(*Context, Client, ResourceOwner, GenericToken, oauth
 	return nil, ErrApprovalRejected.Wrap()
 }
 
-// DefaultTokenData adds the user's id to the token data claim.
+// DefaultTokenData adds the users ID to the token data claim.
 func DefaultTokenData(_ Client, ro ResourceOwner, _ GenericToken) map[string]interface{} {
 	if ro != nil {
 		return map[string]interface{}{

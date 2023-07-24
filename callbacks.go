@@ -44,14 +44,14 @@ func BasicAuthorizer(credentials map[string]string) *Callback {
 
 // TimestampModifier will set timestamp fields on create and update operations.
 // Missing created timestamps are retroactively set using the timestamp encoded
-// in the model id.
+// in the model ID.
 func TimestampModifier(createdField, updatedField string) *Callback {
 	return C("fire/TimestampModifier", Modifier, Only(Create|Update), func(ctx *Context) error {
 		// get time
 		now := time.Now()
 
 		// set created timestamp on creation and set missing create timestamps
-		// to the timestamp inferred from the model id
+		// to the timestamp inferred from the model ID
 		if createdField != "" {
 			if ctx.Operation == Create {
 				stick.MustSet(ctx.Model, createdField, now)
@@ -180,11 +180,11 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 	return C("fire/ReferencedResourcesValidator", Validator, Only(Create|Update), func(ctx *Context) error {
 		// check all references
 		for field, collection := range pairs {
-			// read referenced id
+			// read referenced ID
 			ref := stick.MustGet(ctx.Model, field)
 
 			// continue if reference is not set
-			if oid, ok := ref.(*coal.ID); ok && oid == nil {
+			if id, ok := ref.(*coal.ID); ok && id == nil {
 				continue
 			}
 
@@ -319,7 +319,7 @@ func RelationshipValidator(model coal.Model, models []coal.Model, exclude ...str
 // the initial reference and in the matchers.
 func MatchingReferencesValidator(reference string, target coal.Model, matcher map[string]string) *Callback {
 	return C("fire/MatchingReferencesValidator", Validator, Only(Create|Update), func(ctx *Context) error {
-		// prepare ids
+		// prepare IDs
 		var ids []coal.ID
 
 		// get reference
@@ -331,14 +331,14 @@ func MatchingReferencesValidator(reference string, target coal.Model, matcher ma
 		}
 
 		// handle optional to-one reference
-		if oid, ok := ref.(*coal.ID); ok {
+		if id, ok := ref.(*coal.ID); ok {
 			// return immediately if not set
-			if oid == nil {
+			if id == nil {
 				return nil
 			}
 
-			// set id
-			ids = []coal.ID{*oid}
+			// set ID
+			ids = []coal.ID{*id}
 		}
 
 		// handle to-many reference

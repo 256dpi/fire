@@ -78,7 +78,7 @@ func (m *Manager) T() *Translator {
 	return m.trans
 }
 
-// Find will find the document with the specified id. It will return whether
+// Find will find the document with the specified ID. It will return whether
 // a document has been found. Lock can be set to true to force a write lock on
 // the document and prevent a stale read during a transaction.
 //
@@ -485,7 +485,7 @@ func (m *Manager) ProjectFirst(ctx context.Context, filter bson.M, field string,
 }
 
 // ProjectAll will look up the specified field for all matching documents and
-// return a map with their ids and field values.
+// return a map with their IDs and field values.
 //
 // A transaction is required to ensure isolation.
 //
@@ -723,8 +723,8 @@ func (m *Manager) Distinct(ctx context.Context, field string, filter bson.M, loc
 	return result, nil
 }
 
-// Insert will insert the provided document. If the document has a zero id a new
-// id will be generated and assigned.
+// Insert will insert the provided document. If the document has a zero ID a new
+// ID will be generated and assigned.
 func (m *Manager) Insert(ctx context.Context, models Model, flags ...Flags) error {
 	// trace
 	ctx, span := xo.Trace(ctx, "coal/Manager.Insert")
@@ -733,8 +733,8 @@ func (m *Manager) Insert(ctx context.Context, models Model, flags ...Flags) erro
 	return m.insert(ctx, []Model{models}, flags...)
 }
 
-// InsertAll will insert the provided documents. If a document has a zero id a
-// new id will be generated and assigned. The documents are inserted in order
+// InsertAll will insert the provided documents. If a document has a zero ID a
+// new ID will be generated and assigned. The documents are inserted in order
 // until an error is encountered.
 func (m *Manager) InsertAll(ctx context.Context, models []Model, flags ...Flags) error {
 	// trace
@@ -750,14 +750,14 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 		return nil
 	}
 
-	// check models and ensure ids
+	// check models and ensure IDs
 	for _, model := range models {
 		// check model
 		if GetMeta(model) != m.meta {
 			return ErrMetaMismatch.Wrap()
 		}
 
-		// ensure id
+		// ensure ID
 		if model.ID().IsZero() {
 			model.GetBase().DocID = New()
 		}
@@ -801,7 +801,7 @@ func (m *Manager) insert(ctx context.Context, models []Model, flags ...Flags) er
 }
 
 // InsertIfMissing will insert the provided document if no document matched the
-// provided filter. If the document has a zero id a new id will be generated and
+// provided filter. If the document has a zero ID a new ID will be generated and
 // assigned. It will return whether a document has been inserted. The underlying
 // upsert operation will Merge the filter with the model fields. Lock can be set
 // to true to force a write lock on the existing document and prevent a stale
@@ -832,7 +832,7 @@ func (m *Manager) InsertIfMissing(ctx context.Context, filter bson.M, model Mode
 		return false, ErrMetaMismatch.Wrap()
 	}
 
-	// ensure id
+	// ensure ID
 	if model.ID().IsZero() {
 		model.GetBase().DocID = New()
 	}
@@ -888,9 +888,9 @@ func (m *Manager) Replace(ctx context.Context, model Model, lock bool, flags ...
 		return false, ErrMetaMismatch.Wrap()
 	}
 
-	// check id
+	// check ID
 	if model.ID().IsZero() {
-		return false, xo.F("model has a zero id")
+		return false, xo.F("model has a zero ID")
 	}
 
 	// require transaction
@@ -980,7 +980,7 @@ func (m *Manager) ReplaceFirst(ctx context.Context, filter bson.M, model Model, 
 	return res.MatchedCount == 1, nil
 }
 
-// Update will update the document with the specified id. It will return whether
+// Update will update the document with the specified ID. It will return whether
 // a document has been found. Lock can be set to true to force a write lock on
 // the document and prevent a stale read during a transaction in case the
 // update did not change the document.
@@ -1265,7 +1265,7 @@ func (m *Manager) Upsert(ctx context.Context, model Model, filter, update bson.M
 	return model.GetBase().Token == token, nil
 }
 
-// Delete will remove the document with the specified id. It will return
+// Delete will remove the document with the specified ID. It will return
 // whether a document has been found and deleted.
 func (m *Manager) Delete(ctx context.Context, model Model, id ID) (bool, error) {
 	// trace

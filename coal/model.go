@@ -35,15 +35,15 @@ type Base struct {
 	Tags  map[string]Tag `json:"-" bson:"_tg,omitempty"`
 }
 
-// B is a shorthand to construct a base with the provided id or a generated
-// id if none specified.
+// B is a shorthand to construct a base with the provided ID or a generated
+// ID if none specified.
 func B(id ...ID) Base {
 	// check list
 	if len(id) > 1 {
-		panic("coal: B accepts only one id")
+		panic("coal: B accepts only one ID")
 	}
 
-	// use provided id id available
+	// use provided ID if available
 	if len(id) > 0 {
 		return Base{
 			DocID: id[0],
@@ -108,15 +108,15 @@ type ItemBase struct {
 	ItemID string `json:"id,omitempty" bson:"_id,omitempty"`
 }
 
-// I is a shorthand to construct an item with the provided id or a generated
-// id if none specified.
+// I is a shorthand to construct an item base with the provided ID or a
+// generated ID if none specified.
 func I(id ...string) ItemBase {
 	// check list
 	if len(id) > 1 {
-		panic("coal: I accepts only one id")
+		panic("coal: I accepts only one ID")
 	}
 
-	// use provided id id available
+	// use provided ID if available
 	if len(id) > 0 {
 		return ItemBase{
 			ItemID: id[0],

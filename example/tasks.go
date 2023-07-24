@@ -91,7 +91,7 @@ func generateTask(store *coal.Store, bucket *blaze.Bucket) *axe.Task {
 				return err
 			}
 
-			// get id
+			// get ID
 			id := ctx.Job.(*generateJob).Item
 
 			// use transaction

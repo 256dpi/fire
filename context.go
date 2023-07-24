@@ -123,7 +123,7 @@ type Context struct {
 	// ResourceAction operation to select a list of models or a specific model.
 	//
 	// On Find, Update and Delete operations, the "_id" key is preset to the
-	// resource id, while on forwarded List operations the relationship filter
+	// resource ID, while on forwarded List operations the relationship filter
 	// is preset.
 	//
 	// Usage: Read only

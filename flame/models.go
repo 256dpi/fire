@@ -44,7 +44,7 @@ type TokenData struct {
 	Client        Client
 	ResourceOwner ResourceOwner
 
-	// The client and resource owner ids.
+	// The client and resource owner IDs.
 	ClientID        coal.ID
 	ResourceOwnerID *coal.ID
 }
@@ -118,7 +118,7 @@ func (t *Token) Validate() error {
 
 // Client is the interface that must be implemented by clients. The field used
 // to uniquely identify the client may be flagged with "flame-client-id". If
-// missing the model id is used instead.
+// missing the model ID is used instead.
 type Client interface {
 	coal.Model
 
@@ -208,7 +208,7 @@ func (a *Application) HashSecret() error {
 
 // ResourceOwner is the interface that must be implemented by resource owners.
 // The field used to uniquely identify the resource owner may be flagged with
-// "flame-resource-owner-id". If missing the model id is used instead.
+// "flame-resource-owner-id". If missing the model ID is used instead.
 type ResourceOwner interface {
 	coal.Model
 

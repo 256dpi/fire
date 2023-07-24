@@ -42,10 +42,10 @@ func (c jwtClaims) Valid() error {
 		err.Inner = xo.F("missing audience")
 	}
 
-	// check id
+	// check ID
 	if c.ID == "" {
 		err.Errors |= jwt.ValidationErrorId
-		err.Inner = xo.F("missing id")
+		err.Inner = xo.F("missing ID")
 	}
 
 	// skip subject
@@ -108,9 +108,9 @@ func Issue(secret []byte, issuer, name string, key RawKey) (string, error) {
 		return "", xo.F("missing name")
 	}
 
-	// check id
+	// check ID
 	if key.ID == "" {
-		return "", xo.F("missing id")
+		return "", xo.F("missing ID")
 	}
 
 	// ensure issued

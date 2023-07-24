@@ -19,7 +19,7 @@ type Job interface {
 
 // Base can be embedded in a struct to turn it into a job.
 type Base struct {
-	// The id of the document.
+	// The ID of the document.
 	DocID coal.ID
 
 	// The label of the job.
@@ -33,7 +33,7 @@ func B(label string) Base {
 	}
 }
 
-// ID will return the job id.
+// ID will return the job ID.
 func (b *Base) ID() coal.ID {
 	return b.DocID
 }

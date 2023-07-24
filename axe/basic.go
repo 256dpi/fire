@@ -24,7 +24,7 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 	meta := GetMeta(job)
 	base := job.GetBase()
 
-	// ensure id
+	// ensure ID
 	if base.DocID.IsZero() {
 		base.DocID = coal.New()
 	}
