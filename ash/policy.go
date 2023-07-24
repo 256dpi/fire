@@ -113,7 +113,7 @@ func SelectMatch(identity Identity, policy func(Identity) *Policy) *fire.Callbac
 	})
 }
 
-// SelectPublic will math the public identity and use the provided factory to
+// SelectPublic will match the public identity and use the provided factory to
 // create a policy.
 func SelectPublic(fn func() *Policy) *fire.Callback {
 	return SelectMatch(&PublicIdentity{}, func(Identity) *Policy {

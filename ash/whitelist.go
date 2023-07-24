@@ -11,8 +11,8 @@ import (
 
 var validFieldTags = regexp.MustCompile(`^[RCUW\s]+$`).MatchString
 
-// Matrix is used declaratively to specify field and property access of multiple
-// candidates.
+// Matrix is used for declarative specification of field and property access for
+// multiple candidates.
 type Matrix struct {
 	// Model is the model being authorized.
 	Model coal.Model
