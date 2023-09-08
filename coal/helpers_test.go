@@ -49,6 +49,16 @@ func TestTAndTVAndTE(t *testing.T) {
 	assert.Equal(t, "_tg.foo", T("foo"))
 	assert.Equal(t, "_tg.foo.e", TE("foo"))
 	assert.Equal(t, "_tg.foo.v", TV("foo"))
+
+	assert.PanicsWithValue(t, "coal: nested tags are not supported", func() {
+		T("foo.bar")
+	})
+	assert.PanicsWithValue(t, "coal: nested tags are not supported", func() {
+		TE("foo.bar")
+	})
+	assert.PanicsWithValue(t, "coal: nested tags are not supported", func() {
+		TV("foo.bar")
+	})
 }
 
 func TestRequire(t *testing.T) {

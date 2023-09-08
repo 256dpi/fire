@@ -3,6 +3,7 @@ package coal
 
 import (
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -67,22 +68,39 @@ func (b *Base) GetBase() *Base {
 
 // GetTag will get the value for the specified tag.
 func (b *Base) GetTag(name string) interface{} {
+	// check name
+	if strings.Contains(name, ".") {
+		panic("coal: nested tags are not supported")
+	}
+
+	// add get tag
 	tv, ok := b.Tags[name]
 	if ok && (tv.Expiry.IsZero() || tv.Expiry.After(time.Now())) {
 		return tv.Value
 	}
+
 	return nil
 }
 
 // SetTag will set the provided value for the specified tag.
 func (b *Base) SetTag(name string, value interface{}, expiry time.Time) {
+	// check name
+	if strings.Contains(name, ".") {
+		panic("coal: nested tags are not supported")
+	}
+
+	// ensure map
 	if b.Tags == nil {
 		b.Tags = map[string]Tag{}
 	}
+
+	// clear tag if nil
 	if value == nil {
 		delete(b.Tags, name)
 		return
 	}
+
+	// otherwise, add tag
 	b.Tags[name] = Tag{
 		Value:  value,
 		Expiry: expiry,

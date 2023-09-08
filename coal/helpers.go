@@ -60,16 +60,31 @@ func L(m Model, flag string, force bool) string {
 
 // T is a helper function to construct the BSON key for a tag.
 func T(name string) string {
+	// check name
+	if strings.Contains(name, ".") {
+		panic("coal: nested tags are not supported")
+	}
+
 	return "_tg." + name
 }
 
 // TV is a helper function to construct the BSON key for a tag value.
 func TV(name string) string {
+	// check name
+	if strings.Contains(name, ".") {
+		panic("coal: nested tags are not supported")
+	}
+
 	return T(name) + ".v"
 }
 
 // TE is a helper function to construct the BSON key for a tag expiry.
 func TE(name string) string {
+	// check name
+	if strings.Contains(name, ".") {
+		panic("coal: nested tags are not supported")
+	}
+
 	return T(name) + ".e"
 }
 
