@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/256dpi/xo"
@@ -123,7 +124,8 @@ func Compute(comp Computation) *Operation {
 	_ = stick.MustGet(comp.Model, comp.Name).(*Status)
 
 	// compute name
-	name := fmt.Sprintf("torch/Compute/%s/%s", coal.GetMeta(comp.Model).Name, comp.Name)
+	modelName := strings.ReplaceAll(coal.GetMeta(comp.Model).Name, ".", "/")
+	name := fmt.Sprintf("torch/Compute/%s/%s", modelName, comp.Name)
 
 	// compute fields
 	updatedField := "#" + coal.F(comp.Model, comp.Name) + ".updated"

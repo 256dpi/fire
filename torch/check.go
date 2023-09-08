@@ -3,6 +3,7 @@ package torch
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,7 +46,8 @@ func CheckField(check Check) *Operation {
 	_ = stick.MustGet(check.Model, check.Name).(*time.Time)
 
 	// compute name
-	name := fmt.Sprintf("torch/CheckField/%s/%s", coal.GetMeta(check.Model).Name, check.Name)
+	modelName := strings.ReplaceAll(coal.GetMeta(check.Model).Name, ".", "/")
+	name := fmt.Sprintf("torch/CheckField/%s/%s", modelName, check.Name)
 
 	return &Operation{
 		Name:  name,
@@ -77,7 +79,8 @@ func CheckField(check Check) *Operation {
 // check to run again.
 func CheckTag(check Check) *Operation {
 	// compute name
-	name := fmt.Sprintf("torch/CheckTag/%s/%s", coal.GetMeta(check.Model).Name, check.Name)
+	modelName := strings.ReplaceAll(coal.GetMeta(check.Model).Name, ".", "/")
+	name := fmt.Sprintf("torch/CheckTag/%s/%s", modelName, check.Name)
 
 	return &Operation{
 		Name:  name,
