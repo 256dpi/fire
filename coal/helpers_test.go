@@ -2,7 +2,6 @@ package coal
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,10 +45,10 @@ func TestL(t *testing.T) {
 	})
 }
 
-func TestT(t *testing.T) {
-	t1 := time.Now()
-	t2 := stick.P(t1)
-	assert.Equal(t, t1, *t2)
+func TestTAndTVAndTE(t *testing.T) {
+	assert.Equal(t, "_tg.foo", T("foo"))
+	assert.Equal(t, "_tg.foo.e", TE("foo"))
+	assert.Equal(t, "_tg.foo.v", TV("foo"))
 }
 
 func TestRequire(t *testing.T) {
