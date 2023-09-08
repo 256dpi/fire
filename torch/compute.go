@@ -221,8 +221,13 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// stop if both hashes are empty and status is valid
+			// just update status if both hashes are empty and status is already valid
 			if hash == "" && status.Hash == "" && status.Valid {
+				ctx.Change("$set", comp.Name, &Status{
+					Progress: 1,
+					Updated:  time.Now(),
+					Valid:    true,
+				})
 				return nil
 			}
 

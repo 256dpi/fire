@@ -613,7 +613,9 @@ func TestComputeRecomputeInterval(t *testing.T) {
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(updated))
 
-			/* do not recompute zero */
+			/* recompute zero */
+
+			updated = model.Status.Updated
 
 			model.Input = ""
 			model.Status.Hash = ""
@@ -631,6 +633,7 @@ func TestComputeRecomputeInterval(t *testing.T) {
 				Hash:     "",
 				Valid:    true,
 			}, model.Status)
+			assert.True(t, model.Status.Updated.After(updated))
 		})
 	})
 }
