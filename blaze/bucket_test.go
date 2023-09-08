@@ -3,7 +3,6 @@ package blaze
 import (
 	"bytes"
 	"context"
-	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -189,9 +188,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 		assert.Equal(t, "expected attachment content disposition", res.Body.String())
 
 		req.Header.Set("Content-Length", "12")
-		req.Header.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{
-			"filename": "火.txt",
-		}))
+		req.Header.Set("Content-Disposition", "attachment; filename*=utf-8''%E7%81%AB%20(!).txt")
 
 		res, err = tester.RunAction(&fire.Context{
 			Operation:   fire.CollectionAction,
@@ -207,7 +204,7 @@ func TestBucketUploadActionExtended(t *testing.T) {
 				Base:    files[0].Base,
 				State:   Uploaded,
 				Updated: files[0].Updated,
-				Name:    "火.txt",
+				Name:    "火 (!).txt",
 				Type:    "text/plain",
 				Size:    12,
 				Service: "default",
