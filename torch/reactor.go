@@ -121,8 +121,10 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 			continue
 		}
 
-		// remove tag
-		model.GetBase().SetTag(operation.TagName, nil, time.Time{})
+		// remove tag only if run in transaction
+		if coal.HasTransaction(ctx) {
+			model.GetBase().SetTag(operation.TagName, nil, time.Time{})
+		}
 	}
 
 	return nil
