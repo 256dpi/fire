@@ -34,10 +34,8 @@ type Context struct {
 	// The executed operation.
 	Operation *Operation
 
-	// The executed check.
-	Check *Check
-
-	// The executed computation.
+	// The executed check or computation if available.
+	Check       *Check
 	Computation *Computation
 
 	// The function used to report progress during a computation.

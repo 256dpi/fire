@@ -13,9 +13,9 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Reactor organizes the execution of operations based on model events (via
-// modifier callback), direct checks or database scans (via periodic jobs). The
-// reactor will ensure that only one operation of the same type per model is
+// Reactor organizes the execution of operations based on model events (via a
+// modifier callback), direct check calls or database scans (via periodic jobs).
+// The reactor will ensure that only one operation of the same type per model is
 // executed at the same. Outstanding operations are tracked using a tag on the
 // model and are guaranteed to be executed eventually until the tag expires.
 type Reactor struct {
@@ -247,8 +247,6 @@ func (r *Reactor) ProcessTask() *axe.Task {
 			if operation.Filter != nil && !operation.Filter(model) {
 				// decrement tag and update expiry
 				n, _ := model.GetBase().GetTag(operation.TagName).(int32)
-
-				// update model if outstanding
 				if n > 0 {
 					_, err = r.store.M(model).Update(ctx, nil, model.ID(), bson.M{
 						"$inc": bson.M{

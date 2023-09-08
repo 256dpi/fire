@@ -85,8 +85,8 @@ type Computation struct {
 	// The model.
 	Model coal.Model
 
-	// Hasher returns a hash of the input that is used to determine whether the
-	// computation needed. An absent input is indicated by an empty string.
+	// Hasher returns a hash of the input that is used to determine whether a
+	// computation is needed. An absent input is indicated by an empty string.
 	Hasher func(model coal.Model) string
 
 	// The computation handler.
@@ -127,9 +127,9 @@ func Compute(comp Computation) *Operation {
 	modelName := strings.ReplaceAll(coal.GetMeta(comp.Model).Name, ".", "/")
 	name := fmt.Sprintf("torch/Compute/%s/%s", modelName, comp.Name)
 
-	// compute fields
-	updatedField := "#" + coal.F(comp.Model, comp.Name) + ".updated"
+	// determine fields
 	validField := "#" + coal.F(comp.Model, comp.Name) + ".valid"
+	updatedField := "#" + coal.F(comp.Model, comp.Name) + ".updated"
 
 	return &Operation{
 		Name:  name,
