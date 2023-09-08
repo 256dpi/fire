@@ -219,7 +219,12 @@ func Compute(comp Computation) *Operation {
 				return nil
 			}
 
-			// stop if hashes match, status is valid and no re-computation is required
+			// stop if both hashes are empty and status is valid
+			if hash == "" && status.Hash == "" && status.Valid {
+				return nil
+			}
+
+			// or, stop if hashes match, status is valid and no re-computation is required
 			if status != nil && status.Hash == hash && status.Valid && (comp.RecomputeInterval == 0 || time.Since(status.Updated) < comp.RecomputeInterval) {
 				return nil
 			}
