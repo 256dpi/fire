@@ -289,7 +289,7 @@ func (b *Bucket) uploadBody(ctx *fire.Context, mediaType string) ([]string, erro
 
 	// parse content disposition
 	if ctx.HTTPRequest.Header.Get("Content-Disposition") != "" {
-		disposition, params, err := parseContentDisposition(ctx.HTTPRequest.Header.Get("Content-Disposition"))
+		disposition, params, err := serve.ParseMediaType(ctx.HTTPRequest.Header.Get("Content-Disposition"))
 		if err != nil {
 			return nil, err
 		}

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/256dpi/xo"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/axe"
@@ -63,34 +62,4 @@ func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 		tester.Clean()
 		fn(t, tester)
 	})
-}
-
-func TestParseContentDisposition(t *testing.T) {
-	typ, params, err := parseContentDisposition("foo")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo", typ)
-	assert.Empty(t, params)
-
-	_, _, err = parseContentDisposition("foo; bar")
-	assert.Error(t, err)
-
-	typ, params, err = parseContentDisposition("foo; bar=baz")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo", typ)
-	assert.Equal(t, map[string]string{"bar": "baz"}, params)
-
-	typ, params, err = parseContentDisposition("foo; bar*=utf-8''baz")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo", typ)
-	assert.Equal(t, map[string]string{"bar": "baz"}, params)
-
-	typ, params, err = parseContentDisposition("foo; bar*=utf-8''A%20B")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo", typ)
-	assert.Equal(t, map[string]string{"bar": "A B"}, params)
-
-	typ, params, err = parseContentDisposition("foo; bar*=utf-8''file_$!&()+#@,-_.mp4")
-	assert.NoError(t, err)
-	assert.Equal(t, "foo", typ)
-	assert.Equal(t, map[string]string{"bar": "file_$!&()+#@,-_.mp4"}, params)
 }
