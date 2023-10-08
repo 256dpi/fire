@@ -1,7 +1,7 @@
 github.com/256dpi/jsonapi/v2 v2.3.1 h1:ARFmrtdybrzeN0DqqluqzXHRW18OnqO7hv9rTxwmPC8=
 github.com/256dpi/jsonapi/v2 v2.3.1/go.mod h1:f0ZOq/bhmnZdIjyYnDnwb9eAIH7V1upZ5hMP48OcgBw=
-github.com/256dpi/lungo v0.3.4 h1:7HsYytH+LPizorlLv2HIf/XQOoY/VdY1OzyJuwGynkw=
-github.com/256dpi/lungo v0.3.4/go.mod h1:28RROJ4SMldg+T7IOmp9q9Gr04zET3SQMJtuZyz2cR4=
+github.com/256dpi/lungo v0.3.5 h1:2bD6HLLToLB0Ndr+bA6xdNHGR50iDxYjwwAPQAfxddA=
+github.com/256dpi/lungo v0.3.5/go.mod h1:lGMNvhUBwCNvVSUInfrg0Ra6q0v+MO5WbxB+7GIDjlo=
 github.com/256dpi/oauth2/v2 v2.2.0 h1:j8XRN3t6sLmOgINNb2JNlBBqDbuvuReuBMRH8b0lWYA=
 github.com/256dpi/oauth2/v2 v2.2.0/go.mod h1:Sr+K9gSyEntfoZF3IFVoCecBgZbfuG8x5NnFinlKM3k=
 github.com/256dpi/serve v0.8.2 h1:zy2E5cPSrl0uwC5loRt0qWXI+WyAkt4Bz8ShTBsBuPk=

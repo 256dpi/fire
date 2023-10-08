@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/256dpi/jsonapi/v2 v2.3.1
-	github.com/256dpi/lungo v0.3.4
+	github.com/256dpi/lungo v0.3.5
 	github.com/256dpi/oauth2/v2 v2.2.0
 	github.com/256dpi/serve v0.8.2
 	github.com/256dpi/xo v0.4.4
