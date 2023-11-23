@@ -12,11 +12,14 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
+// TODO: Add "delay" parameter to allow control of the task execution delay.
+
 // Error is used to control retry a cancellation. These errors are expected and
 // are not forwarded to the reporter.
 type Error struct {
 	Reason string
 	Retry  bool
+	Delay  time.Duration
 }
 
 // E is a shorthand to construct an error. If retry is true the job will be
@@ -26,6 +29,14 @@ func E(reason string, retry bool) *Error {
 	return &Error{
 		Reason: reason,
 		Retry:  retry,
+	}
+}
+
+func ED(reason string, retry bool, delay time.Duration) *Error {
+	return &Error{
+		Reason: reason,
+		Retry:  retry,
+		Delay:  delay,
 	}
 }
 

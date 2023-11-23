@@ -29,7 +29,7 @@ type Context struct {
 	// not yet been fully processed and the handler should be called again
 	// sometime later. If a synchronous operation is deferred, it will always be
 	// retried asynchronously.
-	Defer bool
+	Defer bool // TODO: Use time.Duration?
 
 	// The executed operation.
 	Operation *Operation

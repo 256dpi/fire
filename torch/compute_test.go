@@ -68,6 +68,7 @@ func TestComputeScan(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldUpdated))
 
@@ -106,6 +107,7 @@ func TestComputeScan(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldUpdated))
 
@@ -114,6 +116,7 @@ func TestComputeScan(t *testing.T) {
 			oldUpdated = model.Status.Updated
 
 			model.Status.Valid = false
+			model.Status.Attempts = 0
 			env.Replace(model)
 
 			err = env.Process(model)
@@ -126,6 +129,7 @@ func TestComputeScan(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldUpdated))
 
@@ -146,6 +150,7 @@ func TestComputeScan(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     "",
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldUpdated))
 		})
@@ -202,6 +207,7 @@ func TestComputeProcess(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 
@@ -238,6 +244,7 @@ func TestComputeProcess(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 
@@ -265,6 +272,7 @@ func TestComputeProcess(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 
@@ -288,6 +296,7 @@ func TestComputeProcess(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     "",
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldStatus.Updated))
 		})
@@ -335,6 +344,7 @@ func TestComputeProgress(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.Equal(t, []float64{0, 0.25, 0.5, 0.75, 1}, progress)
 		})
@@ -374,6 +384,7 @@ func TestComputeReleaser(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 
 			/* new input */
@@ -403,6 +414,7 @@ func TestComputeReleaser(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(oldUpdated))
 
@@ -458,6 +470,7 @@ func TestComputeKeepOutdated(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 
 			/* new input */
@@ -483,6 +496,7 @@ func TestComputeKeepOutdated(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 
 			/* leftover input */
@@ -532,6 +546,7 @@ func TestComputeRehashInterval(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 
 			/* rehash same */
@@ -558,6 +573,7 @@ func TestComputeRehashInterval(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(before))
 		})
@@ -593,6 +609,7 @@ func TestComputeRecomputeInterval(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 
 			/* recompute same */
@@ -610,6 +627,7 @@ func TestComputeRecomputeInterval(t *testing.T) {
 				Updated:  model.Status.Updated,
 				Hash:     Hash("Hello world!"),
 				Valid:    true,
+				Attempts: 1,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(updated))
 

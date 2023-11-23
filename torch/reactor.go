@@ -221,7 +221,7 @@ func (r *Reactor) ScanTask() *axe.Task {
 func (r *Reactor) ProcessTask() *axe.Task {
 	return &axe.Task{
 		Job:         &ProcessJob{},
-		MaxAttempts: 3,
+		MaxAttempts: 3, // TODO: Only attempt processing once?
 		Lifetime:    time.Minute,
 		Timeout:     2 * time.Minute,
 		Handler: func(ctx *axe.Context) error {
