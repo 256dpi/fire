@@ -160,6 +160,10 @@ func ReverseSort(sort []string) []string {
 }
 
 // Apply will apply the provided update document to the specified model.
+//
+// Note: The update operator "$unset" will not work as expected on structs,
+// because the fields will not be set to their zero values. Use the "$set"
+// operator instead.
 func Apply(model Model, update bson.M) error {
 	// skip if update is empty
 	if len(update) == 0 {
