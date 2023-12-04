@@ -134,6 +134,9 @@ type Policy struct {
 	// owner to give the approval.
 	ApproveStrategy func(ctx *Context, c Client, ro ResourceOwner, token GenericToken, scope oauth2.Scope) (oauth2.Scope, error)
 
+	// TokensIssued is invoked after tokens haven been issued.
+	TokensIssued func(ctx *Context, c Client, ro ResourceOwner, scope oauth2.Scope) error
+
 	// TokenData may return a map of data that should be included in the
 	// generated JWT tokens as the "dat" field as well as in the token
 	// introspection's response "extra" field.

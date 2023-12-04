@@ -378,6 +378,11 @@ func (a *Authenticator) authorizationEndpoint(ctx *Context) {
 		res := a.issueTokens(ctx, false, scope, req.RedirectURI, client, resourceOwner)
 		res.SetRedirect(req.RedirectURI, req.State)
 
+		// invoke callback if available
+		if a.policy.TokensIssued != nil {
+			xo.AbortIf(a.policy.TokensIssued(ctx, client, resourceOwner, scope))
+		}
+
 		// write response
 		xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 	case oauth2.CodeResponseType:
@@ -485,6 +490,11 @@ func (a *Authenticator) handleResourceOwnerPasswordCredentialsGrant(ctx *Context
 	// issue access token
 	res := a.issueTokens(ctx, true, scope, "", client, resourceOwner)
 
+	// invoke callback if available
+	if a.policy.TokensIssued != nil {
+		xo.AbortIf(a.policy.TokensIssued(ctx, client, resourceOwner, scope))
+	}
+
 	// write response
 	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
 }
@@ -516,6 +526,11 @@ func (a *Authenticator) handleClientCredentialsGrant(ctx *Context, req *oauth2.T
 
 	// issue access token
 	res := a.issueTokens(ctx, true, scope, "", client, nil)
+
+	// invoke callback if available
+	if a.policy.TokensIssued != nil {
+		xo.AbortIf(a.policy.TokensIssued(ctx, client, nil, scope))
+	}
 
 	// write response
 	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
@@ -584,6 +599,11 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 
 	// delete refresh token
 	a.deleteToken(ctx, rt.ID())
+
+	// invoke callback if available
+	if a.policy.TokensIssued != nil {
+		xo.AbortIf(a.policy.TokensIssued(ctx, client, ro, req.Scope))
+	}
 
 	// write response
 	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
@@ -668,6 +688,11 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 
 	// delete authorization code
 	a.deleteToken(ctx, code.ID())
+
+	// invoke callback if available
+	if a.policy.TokensIssued != nil {
+		xo.AbortIf(a.policy.TokensIssued(ctx, client, ro, req.Scope))
+	}
 
 	// write response
 	xo.AbortIf(oauth2.WriteTokenResponse(ctx.writer, res))
