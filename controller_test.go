@@ -1923,7 +1923,7 @@ func TestFiltering(t *testing.T) {
 		}).ID().Hex()
 
 		// create selections
-		selection := tester.Insert(&selectionModel{
+		selection1 := tester.Insert(&selectionModel{
 			Name: "selection-1",
 			Posts: []coal.ID{
 				coal.MustFromHex(post1),
@@ -1936,7 +1936,7 @@ func TestFiltering(t *testing.T) {
 		}).ID().Hex()
 
 		// create notes
-		note := tester.Insert(&noteModel{
+		note1 := tester.Insert(&noteModel{
 			Title: "note-1",
 			Post:  coal.MustFromHex(post1),
 		}).ID().Hex()
@@ -2001,7 +2001,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2012,7 +2012,7 @@ func TestFiltering(t *testing.T) {
 						"note": {
 							"data": {
 								"type": "notes",
-								"id": "`+note+`"
+								"id": "`+note1+`"
 							},
 							"links": {
 								"self": "/posts/`+post1+`/relationships/note",
@@ -2054,7 +2054,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2091,7 +2091,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2146,7 +2146,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2157,7 +2157,7 @@ func TestFiltering(t *testing.T) {
 						"note": {
 							"data": {
 								"type": "notes",
-								"id": "`+note+`"
+								"id": "`+note1+`"
 							},
 							"links": {
 								"self": "/posts/`+post1+`/relationships/note",
@@ -2186,7 +2186,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2236,7 +2236,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2272,7 +2272,7 @@ func TestFiltering(t *testing.T) {
 		})
 
 		// get to-many posts with negative boolean
-		tester.Request("GET", "selections/"+selection+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+		tester.Request("GET", "selections/"+selection1+"/posts?filter[published]=false", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
 			links := gjson.Get(r.Body.String(), "links").Raw
 
@@ -2298,7 +2298,7 @@ func TestFiltering(t *testing.T) {
 							"data": [
 								{
 									"type": "selections",
-									"id": "`+selection+`"
+									"id": "`+selection1+`"
 								}
 							],
 							"links": {
@@ -2317,7 +2317,7 @@ func TestFiltering(t *testing.T) {
 				}
 			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
-				"self": "/selections/`+selection+`/posts?filter[published]=false"
+				"self": "/selections/`+selection1+`/posts?filter[published]=false"
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
@@ -2342,7 +2342,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `[
 				{
 					"type": "notes",
-					"id": "`+note+`",
+					"id": "`+note1+`",
 					"attributes": {
 						"title": "note-1"
 					},
@@ -2353,8 +2353,8 @@ func TestFiltering(t *testing.T) {
 								"id": "`+post1+`"
 							},
 							"links": {
-								"self": "/notes/`+note+`/relationships/post",
-								"related": "/notes/`+note+`/post"
+								"self": "/notes/`+note1+`/relationships/post",
+								"related": "/notes/`+note1+`/post"
 							}
 						}
 					}
@@ -2403,7 +2403,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `[
 				{
 					"type": "selections",
-					"id": "`+selection+`",
+					"id": "`+selection1+`",
 					"attributes": {
 						"name": "selection-1"
 					},
@@ -2424,8 +2424,8 @@ func TestFiltering(t *testing.T) {
 								}
 							],
 							"links": {
-								"self": "/selections/`+selection+`/relationships/posts",
-								"related": "/selections/`+selection+`/posts"
+								"self": "/selections/`+selection1+`/relationships/posts",
+								"related": "/selections/`+selection1+`/posts"
 							}
 						}
 					}
@@ -2445,7 +2445,7 @@ func TestFiltering(t *testing.T) {
 			assert.JSONEq(t, `[
 				{
 					"type": "selections",
-					"id": "`+selection+`",
+					"id": "`+selection1+`",
 					"attributes": {
 						"name": "selection-1"
 					},
@@ -2466,8 +2466,8 @@ func TestFiltering(t *testing.T) {
 								}
 							],
 							"links": {
-								"self": "/selections/`+selection+`/relationships/posts",
-								"related": "/selections/`+selection+`/posts"
+								"self": "/selections/`+selection1+`/relationships/posts",
+								"related": "/selections/`+selection1+`/posts"
 							}
 						}
 					}
