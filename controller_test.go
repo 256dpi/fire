@@ -1892,7 +1892,8 @@ func TestFiltering(t *testing.T) {
 			Model:   &postModel{},
 			Filters: []string{"Title", "Published"},
 		}, &Controller{
-			Model: &commentModel{},
+			Model:   &commentModel{},
+			Filters: []string{"Parent"},
 		}, &Controller{
 			Model:   &selectionModel{},
 			Filters: []string{"Posts"},
@@ -1913,6 +1914,12 @@ func TestFiltering(t *testing.T) {
 		post3 := tester.Insert(&postModel{
 			Title:     "post-3",
 			Published: true,
+		}).ID().Hex()
+
+		// create comments
+		comment1 := tester.Insert(&commentModel{
+			Message: "comment-1",
+			Post:    coal.MustFromHex(post1),
 		}).ID().Hex()
 
 		// create selections
@@ -1979,7 +1986,12 @@ func TestFiltering(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
-							"data": [],
+							"data": [
+								{
+									"type": "comments",
+									"id": "`+comment1+`"
+								}
+							],
 							"links": {
 								"self": "/posts/`+post1+`/relationships/comments",
 								"related": "/posts/`+post1+`/comments"
@@ -2119,7 +2131,12 @@ func TestFiltering(t *testing.T) {
 					},
 					"relationships": {
 						"comments": {
-							"data": [],
+							"data": [
+								{
+									"type": "comments",
+									"id": "`+comment1+`"
+								}
+							],
 							"links": {
 								"self": "/posts/`+post1+`/relationships/comments",
 								"related": "/posts/`+post1+`/comments"
@@ -2348,6 +2365,18 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
+		// filter selections with absent to-many relationship filter
+		tester.Request("GET", "selections?filter[posts]=", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/selections?filter[posts]="
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+
 		// filter selections with to-many relationship filter
 		tester.Request("GET", "selections?filter[posts]="+post1, "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
@@ -2429,6 +2458,18 @@ func TestFiltering(t *testing.T) {
 			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"self": "/selections?filter[posts]=`+post1+`,`+post2+`"
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+
+		// filter comments for absent relationship
+		tester.Request("GET", "comments?filter[parent]=", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/comments?filter[parent]="
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 	})

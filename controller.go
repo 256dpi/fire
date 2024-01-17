@@ -1621,6 +1621,9 @@ func (c *Controller) loadModels(ctx *Context) {
 			// convert to object IDs
 			var ids []coal.ID
 			for _, value := range values {
+				if value == "" && (field.ToOne && field.Optional || field.ToMany) {
+					continue
+				}
 				for _, str := range strings.Split(value, ",") {
 					refID, err := coal.FromHex(str)
 					if err != nil {
