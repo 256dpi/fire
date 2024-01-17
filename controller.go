@@ -1601,11 +1601,18 @@ func (c *Controller) loadModels(ctx *Context) {
 			// split values
 			var items []string
 			for _, value := range values {
-				items = append(items, strings.Split(value, ",")...)
+				if value != "" {
+					items = append(items, strings.Split(value, ",")...)
+				}
 			}
 
 			// handle string values
-			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": items}})
+			if len(items) > 0 {
+				ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": items}})
+			} else {
+				ctx.Filters = append(ctx.Filters, bson.M{field.Name: ""})
+			}
+
 			continue
 		}
 

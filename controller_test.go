@@ -1893,7 +1893,7 @@ func TestFiltering(t *testing.T) {
 			Filters: []string{"Title", "Published"},
 		}, &Controller{
 			Model:   &commentModel{},
-			Filters: []string{"Parent"},
+			Filters: []string{"Message", "Parent"},
 		}, &Controller{
 			Model:   &selectionModel{},
 			Filters: []string{"Posts"},
@@ -1918,8 +1918,7 @@ func TestFiltering(t *testing.T) {
 
 		// create comments
 		comment1 := tester.Insert(&commentModel{
-			Message: "comment-1",
-			Post:    coal.MustFromHex(post1),
+			Post: coal.MustFromHex(post1),
 		}).ID().Hex()
 
 		// create selections
@@ -2478,6 +2477,45 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
+		// filter comments for absent string
+		tester.Request("GET", "comments?filter[message]=", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+			links := gjson.Get(r.Body.String(), "links").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": ""
+					},
+					"relationships": {
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post1+`"
+							},
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
+							}
+						},
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
+							}
+						}
+					}
+				}
+			]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"self": "/comments?filter[message]="
+			}`, linkUnescape(links), tester.DebugRequest(rq, r))
+		})
+
 		// filter comments for absent relationship
 		tester.Request("GET", "comments?filter[parent]=", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			data := gjson.Get(r.Body.String(), "data").Raw
@@ -2489,7 +2527,7 @@ func TestFiltering(t *testing.T) {
 					"type": "comments",
 					"id": "`+comment1+`",
 					"attributes": {
-						"message": "comment-1"
+						"message": ""
 					},
 					"relationships": {
 						"post": {
