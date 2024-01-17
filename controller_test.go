@@ -1931,9 +1931,9 @@ func TestFiltering(t *testing.T) {
 				coal.MustFromHex(post3),
 			},
 		}).ID().Hex()
-		tester.Insert(&selectionModel{
+		selection2 := tester.Insert(&selectionModel{
 			Name: "selection-2",
-		})
+		}).ID().Hex()
 
 		// create notes
 		note := tester.Insert(&noteModel{
@@ -2371,7 +2371,24 @@ func TestFiltering(t *testing.T) {
 			links := gjson.Get(r.Body.String(), "links").Raw
 
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `[]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+			{
+					"type": "selections",
+					"id": "`+selection2+`",
+					"attributes": {
+						"name": "selection-2"
+					},
+					"relationships": {
+						"posts": {
+							"data": [],
+							"links": {
+								"self": "/selections/`+selection2+`/relationships/posts",
+								"related": "/selections/`+selection2+`/posts"
+							}
+						}
+					}
+				}
+			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"self": "/selections?filter[posts]="
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
@@ -2467,7 +2484,34 @@ func TestFiltering(t *testing.T) {
 			links := gjson.Get(r.Body.String(), "links").Raw
 
 			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
-			assert.JSONEq(t, `[]`, data, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				{
+					"type": "comments",
+					"id": "`+comment1+`",
+					"attributes": {
+						"message": "comment-1"
+					},
+					"relationships": {
+						"post": {
+							"data": {
+								"type": "posts",
+								"id": "`+post1+`"
+							},
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/post",
+								"related": "/comments/`+comment1+`/post"
+							}
+						},
+						"parent": {
+							"data": null,
+							"links": {
+								"self": "/comments/`+comment1+`/relationships/parent",
+								"related": "/comments/`+comment1+`/parent"
+							}
+						}
+					}
+				}
+			]`, data, tester.DebugRequest(rq, r))
 			assert.JSONEq(t, `{
 				"self": "/comments?filter[parent]="
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))

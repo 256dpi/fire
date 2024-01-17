@@ -1634,7 +1634,12 @@ func (c *Controller) loadModels(ctx *Context) {
 			}
 
 			// set relationship filter
-			ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": ids}})
+			if len(ids) > 0 {
+				ctx.Filters = append(ctx.Filters, bson.M{field.Name: bson.M{"$in": ids}})
+			} else {
+				ctx.Filters = append(ctx.Filters, bson.M{field.Name: nil})
+			}
+
 			continue
 		}
 
