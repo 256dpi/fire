@@ -47,7 +47,7 @@ func NewBucket(store *coal.Store, notary *heat.Notary, bindings ...*Binding) *Bu
 func (b *Bucket) Use(service Service, name string, upload bool) {
 	// check existence
 	if b.services[name] != nil {
-		panic("duplicate service name")
+		panic("blaze: duplicate service name")
 	}
 
 	// store service
