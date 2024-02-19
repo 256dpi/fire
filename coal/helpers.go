@@ -159,12 +159,13 @@ func ReverseSort(sort []string) []string {
 	return newSort
 }
 
-// Apply will apply the provided update document to the specified model.
+// Apply will apply the provided update document to the specified model. If
+// requested the document is translated before applying.
 //
 // Note: The update operator "$unset" will not work as expected on structs,
 // because the fields will not be set to their zero values. Use the "$set"
 // operator instead.
-func Apply(model Model, update bson.M) error {
+func Apply(model Model, update bson.M, translate bool) error {
 	// skip if update is empty
 	if len(update) == 0 {
 		return nil
@@ -176,14 +177,23 @@ func Apply(model Model, update bson.M) error {
 		return xo.W(err)
 	}
 
-	// transform update
-	updateDoc, err := bsonkit.Transform(update)
+	// translate document if requested
+	var updateDoc bson.D
+	if translate {
+		updateDoc, err = NewTranslator(model).Document(update)
+	} else {
+		var doc bsonkit.Doc
+		doc, err = bsonkit.Transform(update)
+		if err == nil {
+			updateDoc = *doc
+		}
+	}
 	if err != nil {
 		return xo.W(err)
 	}
 
 	// apply update
-	_, err = mongokit.Apply(modelDoc, nil, updateDoc, false, nil)
+	_, err = mongokit.Apply(modelDoc, nil, &updateDoc, false, nil)
 	if err != nil {
 		return xo.W(err)
 	}

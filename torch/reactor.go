@@ -101,7 +101,7 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 		}
 
 		// apply update
-		err = coal.Apply(model, opCtx.Update)
+		err = coal.Apply(model, opCtx.Update, true)
 		if err != nil {
 			return xo.W(err)
 		}

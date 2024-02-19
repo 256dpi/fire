@@ -107,32 +107,32 @@ func TestCoding(t *testing.T) {
 func TestApply(t *testing.T) {
 	post := &postModel{}
 
-	err := Apply(post, bson.M{})
+	err := Apply(post, bson.M{}, true)
 	assert.NoError(t, err)
 
 	err = Apply(post, bson.M{
 		"$set": bson.M{
-			"title": "Title",
+			"text_body": "Title",
 		},
-	})
+	}, true)
 	assert.NoError(t, err)
-	assert.Equal(t, "Title", post.Title)
+	assert.Equal(t, "Title", post.TextBody)
 
 	err = Apply(post, bson.M{
 		"$unset": bson.M{
-			"title": "",
+			"TextBody": "",
 		},
-	})
+	}, true)
 	assert.NoError(t, err)
-	assert.Equal(t, "Title", post.Title)
+	assert.Equal(t, "Title", post.TextBody)
 
 	err = Apply(post, bson.M{
 		"$set": bson.M{
-			"title": nil,
+			"TextBody": nil,
 		},
-	})
+	}, true)
 	assert.NoError(t, err)
-	assert.Equal(t, "", post.Title)
+	assert.Equal(t, "", post.TextBody)
 }
 
 func BenchmarkApply(b *testing.B) {
@@ -146,7 +146,7 @@ func BenchmarkApply(b *testing.B) {
 			"$set": bson.M{
 				"title": "Title",
 			},
-		})
+		}, true)
 		if err != nil {
 			panic(err)
 		}
