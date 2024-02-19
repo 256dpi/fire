@@ -10,9 +10,10 @@ import (
 	"github.com/256dpi/fire/stick"
 )
 
-// Assign will assign a specified non-nil link on the provided model. If a link
-// already exists it is released beforehand. A transaction is used to lock and
-// refresh the model, release and claim the file and update the model.
+// Assign will claim/release the specified link on the provided model to match
+// the provided new link. If a link already exists it is released beforehand.
+// A transaction is used to lock and refresh the model, release and claim the
+// file and update the model.
 func Assign(ctx context.Context, store *coal.Store, bucket *Bucket, model coal.Model, field string, newLink *Link) error {
 	// check stores
 	if store != bucket.store {
@@ -22,9 +23,11 @@ func Assign(ctx context.Context, store *coal.Store, bucket *Bucket, model coal.M
 	// run in transaction
 	err := store.T(ctx, false, func(ctx context.Context) error {
 		// refresh and lock model
-		_, err := store.M(model).Find(ctx, model, model.ID(), true)
+		found, err := store.M(model).Find(ctx, model, model.ID(), true)
 		if err != nil {
 			return err
+		} else if !found {
+			return xo.F("missing model")
 		}
 
 		// get old link
@@ -53,7 +56,7 @@ func Assign(ctx context.Context, store *coal.Store, bucket *Bucket, model coal.M
 		}
 
 		// update model
-		found, err := store.M(model).UpdateFirst(ctx, model, bson.M{
+		found, err = store.M(model).UpdateFirst(ctx, model, bson.M{
 			"_id": model.ID(),
 		}, bson.M{
 			"$set": bson.M{
