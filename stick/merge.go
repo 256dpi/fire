@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

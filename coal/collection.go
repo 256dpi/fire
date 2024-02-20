@@ -507,7 +507,16 @@ func (r *SingleResult) Decode(i interface{}) error {
 	return xo.W(r.res.Decode(i))
 }
 
-// DecodeBytes will return the raw document bytes.s
+// Raw will return the raw document bytes.
+func (r *SingleResult) Raw() (bson.Raw, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	raw, err := r.res.Raw()
+	return raw, xo.W(err)
+}
+
+// DecodeBytes will return the raw document bytes.
 func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 	if r.err != nil {
 		return nil, r.err
