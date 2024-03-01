@@ -1346,6 +1346,80 @@ func TestBucketDownloadActionStream(t *testing.T) {
 	})
 }
 
+func TestBucketRedirectAction(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
+		bucket.Use(NewMemory(), "default", true)
+
+		id := coal.New()
+		key, _ := bucket.GetViewKey(nil, id)
+		reqAction := bucket.RedirectAction("RequiredFile", "/download")
+		optAction := bucket.RedirectAction("OptionalFile", "/download")
+
+		/* zero required link */
+
+		req := httptest.NewRequest("GET", "/", nil)
+		rec, err := tester.RunAction(&fire.Context{
+			Model:       &testModel{},
+			HTTPRequest: req,
+		}, reqAction)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.Equal(t, http.Header{}, rec.Header())
+		assert.Equal(t, "", rec.Body.String())
+
+		/* present required link */
+
+		req = httptest.NewRequest("GET", "/", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			Model: &testModel{
+				RequiredFile: Link{
+					File: id,
+				},
+			},
+			HTTPRequest: req,
+		}, reqAction)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusSeeOther, rec.Code)
+		assert.Equal(t, http.Header{
+			"Content-Type": []string{"text/html; charset=utf-8"},
+			"Location":     []string{"/download?key=" + key},
+		}, rec.Header())
+		assert.Equal(t, `<a href="/download?key=`+key+`">See Other</a>.`, strings.TrimSpace(rec.Body.String()))
+
+		/* absent optional link */
+
+		req = httptest.NewRequest("GET", "/", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			Model:       &testModel{},
+			HTTPRequest: req,
+		}, optAction)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.Equal(t, http.Header{}, rec.Header())
+		assert.Equal(t, "", rec.Body.String())
+
+		/* present required link */
+
+		req = httptest.NewRequest("GET", "/", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			Model: &testModel{
+				OptionalFile: &Link{
+					File: id,
+				},
+			},
+			HTTPRequest: req,
+		}, optAction)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusSeeOther, rec.Code)
+		assert.Equal(t, http.Header{
+			"Content-Type": []string{"text/html; charset=utf-8"},
+			"Location":     []string{"/download?key=" + key},
+		}, rec.Header())
+		assert.Equal(t, `<a href="/download?key=`+key+`">See Other</a>.`, strings.TrimSpace(rec.Body.String()))
+	})
+}
+
 func TestBucketCleanup(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		svc := NewMemory()

@@ -1055,6 +1055,47 @@ func (b *Bucket) DownloadAction(timeout time.Duration) *fire.Action {
 	})
 }
 
+// RedirectAction will construct an action that will redirect to the specified
+// endpoint with the view key of the file in the specified field. The endpoint
+// should be the relative or absolute URL of the blaze download endpoint.
+func (b *Bucket) RedirectAction(field, endpoint string) *fire.Action {
+	return fire.A("blaze/Redirect", []string{"GET"}, 0, 0, func(ctx *fire.Context) error {
+		// lookup field
+		value := stick.MustGet(ctx.Model, field)
+
+		// get link
+		var id coal.ID
+		switch value := value.(type) {
+		case Link:
+			id = value.File
+		case *Link:
+			if value != nil {
+				id = value.File
+			}
+		}
+
+		// handle absence
+		if id.IsZero() {
+			ctx.ResponseWriter.WriteHeader(http.StatusNotFound)
+			return nil
+		}
+
+		// get view key
+		key, err := b.GetViewKey(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		// construct URL
+		url := endpoint + "?key=" + key
+
+		// perform redirect
+		http.Redirect(ctx.ResponseWriter, ctx.HTTPRequest, url, http.StatusSeeOther)
+
+		return nil
+	})
+}
+
 // CleanupFile will clean up a single file. In the first step, files in the
 // uploading or uploaded state are marked as "deleting". In the second step,
 // blobs of "deleting" files are deleted. In the last step "deleting" files with
