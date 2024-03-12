@@ -178,14 +178,14 @@ func (t *Tester) List(tt *testing.T, model coal.Model, response []coal.Model) Re
 }
 
 // ListError will list the provided model and expect an error.
-func (t *Tester) ListError(tt *testing.T, model coal.Model, e error) Result {
+func (t *Tester) ListError(tt *testing.T, model coal.Model, expected error) Result {
 	// list resources
 	_, doc, err := t.DataClient.List(model)
 	assert.Error(tt, err)
 
 	// validate error
-	if e != nil {
-		assert.Equal(tt, e, err)
+	if expected != nil {
+		assert.Equal(tt, expected, err)
 	}
 
 	return Result{
@@ -213,14 +213,14 @@ func (t *Tester) Find(tt *testing.T, model coal.Model, response coal.Model) Resu
 }
 
 // FindError will find the provided model and expect and error.
-func (t *Tester) FindError(tt *testing.T, model coal.Model, e error) Result {
+func (t *Tester) FindError(tt *testing.T, model coal.Model, expected error) Result {
 	// find model
 	_, doc, err := t.DataClient.Find(model)
 	assert.Error(tt, err)
 
 	// validate error
-	if e != nil {
-		assert.Equal(tt, e, err)
+	if expected != nil {
+		assert.Equal(tt, expected, err)
 	}
 
 	return Result{
@@ -258,14 +258,14 @@ func (t *Tester) Create(tt *testing.T, model, response, result coal.Model) Resul
 }
 
 // CreateError will create the provided model and expect and error.
-func (t *Tester) CreateError(tt *testing.T, model coal.Model, e error) Result {
+func (t *Tester) CreateError(tt *testing.T, model coal.Model, expected error) Result {
 	// create resource
 	_, doc, err := t.DataClient.Create(model)
 	assert.Error(tt, err)
 
 	// validate error
-	if e != nil {
-		assert.Equal(tt, e, err)
+	if expected != nil {
+		assert.Equal(tt, expected, err)
 	}
 
 	return Result{
@@ -301,14 +301,14 @@ func (t *Tester) Update(tt *testing.T, model, response, result coal.Model) Resul
 }
 
 // UpdateError will update the provided model and expect an error.
-func (t *Tester) UpdateError(tt *testing.T, model coal.Model, e error) Result {
+func (t *Tester) UpdateError(tt *testing.T, model coal.Model, expected error) Result {
 	// update resource
 	_, doc, err := t.DataClient.Update(model)
 	assert.Error(tt, err)
 
 	// validate error
-	if e != nil {
-		assert.Equal(tt, e, err)
+	if expected != nil {
+		assert.Equal(tt, expected, err)
 	}
 
 	return Result{
@@ -336,14 +336,14 @@ func (t *Tester) Delete(tt *testing.T, model, result coal.Model) Result {
 }
 
 // DeleteError will delete the provided model and expect an error.
-func (t *Tester) DeleteError(tt *testing.T, model coal.Model, e error) Result {
+func (t *Tester) DeleteError(tt *testing.T, model coal.Model, expected error) Result {
 	// delete resource
 	err := t.DataClient.Delete(model)
 	assert.Error(tt, err)
 
 	// validate error
-	if e != nil {
-		assert.Equal(tt, e, err)
+	if expected != nil {
+		assert.Equal(tt, expected, err)
 	}
 
 	return Result{
