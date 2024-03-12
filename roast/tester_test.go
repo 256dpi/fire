@@ -44,6 +44,22 @@ func TestTester(t *testing.T) {
 	tt.Delete(t, post, nil)
 }
 
+func TestTesterHooks(t *testing.T) {
+	post1 := &fooModel{String: "String"}
+	post2 := &fooModel{}
+
+	CopyHook("String")(post1, post2)
+	assert.Equal(t, "String", post1.String)
+	assert.Equal(t, "String", post2.String)
+
+	post1 = &fooModel{String: "String"}
+	post2 = &fooModel{}
+
+	SkipHook("String")(post1, post2)
+	assert.Zero(t, post1.String)
+	assert.Zero(t, post2.String)
+}
+
 func TestTesterErrors(t *testing.T) {
 	tt := NewTester(Config{
 		Models: models.All(),
