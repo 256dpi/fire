@@ -67,4 +67,8 @@ func TestMatrix(t *testing.T) {
 		assert.True(t, item.Is("bar", 2))
 		assert.Equal(t, 2, item["bar"])
 	}
+
+	assert.Panics(t, func() {
+		matrix.Items("qux")
+	})
 }
