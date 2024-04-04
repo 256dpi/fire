@@ -1,6 +1,10 @@
 package roast
 
-import "reflect"
+import (
+	"reflect"
+	
+	"github.com/256dpi/fire/stick"
+)
 
 // Query represents an item query.
 type Query func(Item) bool
@@ -88,7 +92,7 @@ func (m *Matrix) Generate(name string, values []any, fn func(value any, item Ite
 	base := m.items[m.names[len(m.names)-1]]
 
 	// prepare new items
-	newItems := make([]Item, 0, len(base)+len(values))
+	newItems := make([]Item, 0, len(base)*len(values))
 
 	// generate items
 	for _, item := range base {
@@ -110,17 +114,25 @@ func (m *Matrix) Generate(name string, values []any, fn func(value any, item Ite
 }
 
 // Items will return a dimension's items that match at least on of the specified
-// queries. If no queries are specified the full list is returned. Queries
-// are parsed using the Common Expression Language (CEL).
+// queries. If no queries are specified the full list is returned.
 func (m *Matrix) Items(name string, queries ...Query) []Item {
+	// check existence
+	if !stick.Contains(m.names, name) {
+		panic("roast: unknown dimension")
+	}
+	
+	// check queries
 	if len(queries) == 0 {
 		return m.items[name]
 	}
+
+	// collect items
 	var items []Item
 	for _, item := range m.items[name] {
 		if item.Match(queries...) {
 			items = append(items, item)
 		}
 	}
+
 	return items
 }
