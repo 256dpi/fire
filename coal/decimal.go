@@ -13,9 +13,8 @@ import (
 // Decimal supports coding to and from the BSON decimal128 type.
 type Decimal = decimal.Decimal
 
-var decimalType = reflect.TypeOf(Decimal{})
-
 func init() {
+	var decimalType = reflect.TypeOf(Decimal{})
 	Extend(func(builder *bsoncodec.RegistryBuilder) {
 		// register decimal encoder
 		var dve = bsoncodec.DefaultValueEncoders{}
