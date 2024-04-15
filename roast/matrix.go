@@ -2,7 +2,7 @@ package roast
 
 import (
 	"reflect"
-	
+
 	"github.com/256dpi/fire/stick"
 )
 
@@ -120,7 +120,7 @@ func (m *Matrix) Items(name string, queries ...Query) []Item {
 	if !stick.Contains(m.names, name) {
 		panic("roast: unknown dimension")
 	}
-	
+
 	// check queries
 	if len(queries) == 0 {
 		return m.items[name]
