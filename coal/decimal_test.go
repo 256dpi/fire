@@ -1,7 +1,6 @@
 package coal
 
 import (
-	"math"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -10,8 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var zeroPD128, _ = primitive.ParseDecimal128("0")
-var decimalPI = decimal.NewFromFloat(math.Pi)
+var decimalPI = decimal.NewFromFloat(3.14159265)
+var primitivePI, _ = primitive.ParseDecimal128("3.14159265")
+var primitiveZero, _ = primitive.ParseDecimal128("0")
 
 type decTest struct {
 	D Decimal
@@ -28,7 +28,7 @@ func TestDecimalCoding(t *testing.T) {
 	err = bson.Unmarshal(bytes, &m)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.M{
-		"d": zeroPD128,
+		"d": primitiveZero,
 		"p": nil,
 		"l": nil,
 		"m": nil,
@@ -50,6 +50,18 @@ func TestDecimalCoding(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+
+	m = bson.M{}
+	err = bson.Unmarshal(bytes, &m)
+	assert.NoError(t, err)
+	assert.Equal(t, bson.M{
+		"d": primitivePI,
+		"p": primitivePI,
+		"l": bson.A{primitivePI},
+		"m": bson.M{
+			"pi": primitivePI,
+		},
+	}, m)
 
 	out = decTest{}
 	err = bson.Unmarshal(bytes, &out)
