@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/256dpi/xo"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/256dpi/fire/coal"
 )
@@ -15,6 +19,42 @@ import (
 type Minio struct {
 	client *minio.Client
 	bucket string
+}
+
+// NewMinioURL creates a new Minio service from a URL in the format
+// `https://key:secret@host/bucket`.
+func NewMinioURL(str string) (*Minio, error) {
+	// parse URL
+	uri, err := url.Parse(str)
+	if err != nil {
+		return nil, err
+	}
+
+	// check host
+	if uri.Host == "" {
+		return nil, xo.F("missing host")
+	}
+
+	// get bucket
+	bucket := strings.Trim(uri.Path, "/")
+
+	// get key and secret
+	key := uri.User.Username()
+	secret, ok := uri.User.Password()
+	if !ok {
+		return nil, xo.F("missing secret")
+	}
+
+	// get client
+	client, err := minio.New(uri.Host, &minio.Options{
+		Creds:  credentials.NewStaticV4(key, secret, ""),
+		Secure: uri.Scheme == "https",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewMinio(client, bucket), nil
 }
 
 // NewMinio creates a new Minio service.
