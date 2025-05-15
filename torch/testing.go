@@ -33,7 +33,7 @@ func Test(store *coal.Store, operation *Operation, fn func(env Env)) {
 	})
 
 	// create reactor
-	reactor := NewReactor(store, queue, operation)
+	reactor := NewReactor(store, queue, xo.Crash, operation)
 
 	// add scan task
 	task := reactor.ScanTask()

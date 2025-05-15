@@ -3,6 +3,7 @@ package torch
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,23 @@ import (
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
+
+// Error is used to allow computations to soft-fail and retry later.
+type Error struct {
+	Reason string
+}
+
+// E is a shorthand to construct an error.
+func E(reason string) *Error {
+	return &Error{
+		Reason: reason,
+	}
+}
+
+// Error implements the error interface.
+func (e Error) Error() string {
+	return e.Reason
+}
 
 // Status defines the status of a computation.
 type Status struct {
@@ -28,8 +46,11 @@ type Status struct {
 	Hash string `json:"hash"`
 
 	// Valid indicates whether the value is valid. It may be cleared to indicate
-	// hat the value is outdated and should be recomputed.
+	// that the value is outdated and should be recomputed.
 	Valid bool `json:"valid"`
+
+	// Errors counts the number of errors that occurred during the computation.
+	Errors int `json:"errors"`
 }
 
 // Hash is a helper function that returns the MD5 hash of the input if present
@@ -101,11 +122,14 @@ type Computation struct {
 	// computed. Otherwise, output is released immediately if possible.
 	KeepOutdated bool
 
+	// The interval at which the computation should be delayed if failed.
+	RetryInterval time.Duration
+
 	// The interval at which the input is checked for outside changes.
 	RehashInterval time.Duration
 
-	// The interval a which the output is recomputed regardless if the input
-	// is the same.
+	// The interval at which the output is recomputed regardless if the input
+	// is the same or the computation failed.
 	RecomputeInterval time.Duration
 }
 
@@ -116,7 +140,7 @@ type Computation struct {
 // To force a computation in both cases, the status can be flagged as invalid.
 //
 // If no releaser is configured, the computer is also invoked asynchronously to
-// compute the output for a zero input (zero hash). If a releaser is configured,
+// compute the output for a zero input (zero hash). If a releaser is available,
 // it is invoked instead synchronously to release (clear) the current output.
 // Optionally, the outdated output can be kept until it is recomputed.
 func Compute(comp Computation) *Operation {
@@ -130,6 +154,7 @@ func Compute(comp Computation) *Operation {
 	// determine fields
 	validField := "#" + coal.F(comp.Model, comp.Name) + ".valid"
 	updatedField := "#" + coal.F(comp.Model, comp.Name) + ".updated"
+	errorsField := "#" + coal.F(comp.Model, comp.Name) + ".errors"
 
 	return &Operation{
 		Name:  name,
@@ -137,14 +162,42 @@ func Compute(comp Computation) *Operation {
 		Sync:  true,
 		Query: func() bson.M {
 			// prepare filters
-			filters := []bson.M{
-				{comp.Name: nil},
-				{validField: false},
+			var filters []bson.M
+
+			// add base filter
+			baseFilter := bson.M{
+				validField: bson.M{
+					"$ne": true,
+				},
+			}
+			if comp.RetryInterval > 0 {
+				baseFilter[errorsField] = bson.M{
+					"$not": bson.M{
+						"$gt": 0,
+					},
+				}
+			}
+			filters = append(filters, baseFilter)
+
+			// add retry filter
+			if comp.RetryInterval > 0 {
+				filters = append(filters, bson.M{
+					validField: bson.M{
+						"$ne": true,
+					},
+					errorsField: bson.M{
+						"$gt": 0,
+					},
+					updatedField: bson.M{
+						"$lt": time.Now().Add(-comp.RetryInterval),
+					},
+				})
 			}
 
 			// add rehash filter
 			if comp.RehashInterval > 0 {
 				filters = append(filters, bson.M{
+					validField: true,
 					updatedField: bson.M{
 						"$lt": time.Now().Add(-comp.RehashInterval),
 					},
@@ -154,6 +207,7 @@ func Compute(comp Computation) *Operation {
 			// add recompute filter
 			if comp.RecomputeInterval > 0 {
 				filters = append(filters, bson.M{
+					// may be valid or invalid
 					updatedField: bson.M{
 						"$lt": time.Now().Add(-comp.RecomputeInterval),
 					},
@@ -238,6 +292,12 @@ func Compute(comp Computation) *Operation {
 
 			/* otherwise, computation is required */
 
+			// get errors
+			var numErrors int
+			if status != nil {
+				numErrors = status.Errors
+			}
+
 			// defer if sync
 			if ctx.Sync {
 				// set defer
@@ -255,6 +315,7 @@ func Compute(comp Computation) *Operation {
 				ctx.Change("$set", comp.Name, &Status{
 					Progress: 0,
 					Updated:  time.Now(),
+					Errors:   numErrors,
 				})
 
 				return nil
@@ -279,6 +340,7 @@ func Compute(comp Computation) *Operation {
 						comp.Name: &Status{
 							Progress: factor,
 							Updated:  time.Now(),
+							Errors:   numErrors,
 						},
 					},
 				}, false)
@@ -293,6 +355,26 @@ func Compute(comp Computation) *Operation {
 
 			// compute output
 			err := comp.Computer(ctx)
+
+			// handle failures
+			var opError *Error
+			if errors.As(err, &opError) {
+				// report error
+				if ctx.Reactor.reporter != nil {
+					ctx.Reactor.reporter(opError)
+				}
+
+				// update status
+				ctx.Change("$set", comp.Name, &Status{
+					Updated: time.Now(),
+					Valid:   false,
+					Errors:  numErrors + 1,
+				})
+
+				return nil
+			}
+
+			// handle other errors
 			if err != nil {
 				return err
 			}

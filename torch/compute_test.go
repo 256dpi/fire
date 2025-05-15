@@ -637,3 +637,189 @@ func TestComputeRecomputeInterval(t *testing.T) {
 		})
 	})
 }
+
+func TestComputeErrors(t *testing.T) {
+	withStore(t, func(t *testing.T, store *coal.Store) {
+		Test(store, Compute(Computation{
+			Name:   "Status",
+			Model:  &computeModel{},
+			Hasher: StringHasher("Input"),
+			Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
+				if input == "error" {
+					return "", E("error")
+				}
+				return strings.ToUpper(input), nil
+			}),
+		}), func(env Env) {
+			var errs []error
+			env.Reactor.reporter = func(err error) {
+				errs = append(errs, err)
+			}
+
+			/* failed process */
+
+			var model *computeModel
+			n := env.Await(t, 0, func() {
+				model = env.Create(t, &computeModel{
+					Input: "error",
+				}, nil, nil).Model.(*computeModel)
+				assert.Zero(t, model.Output)
+				assert.Equal(t, &Status{
+					Updated: model.Status.Updated,
+				}, model.Status)
+				assert.NotZero(t, model.Status.Updated)
+			})
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Equal(t, "", model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  1,
+			}, model.Status)
+
+			assert.Len(t, errs, 1)
+
+			/* failed scan */
+
+			n, err := env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  2,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+
+			assert.Len(t, errs, 2)
+		})
+	})
+}
+
+func TestComputeRetryInterval(t *testing.T) {
+	withStore(t, func(t *testing.T, store *coal.Store) {
+		Test(store, Compute(Computation{
+			Name:   "Status",
+			Model:  &computeModel{},
+			Hasher: StringHasher("Input"),
+			Computer: StringComputer("Input", "Output", func(ctx *Context, input string) (string, error) {
+				if input == "error" {
+					return "", E("error")
+				}
+				return strings.ToUpper(input), nil
+			}),
+			RetryInterval: time.Second / 2,
+		}), func(env Env) {
+			env.Reactor.reporter = nil
+
+			model := env.Insert(&computeModel{
+				Base: coal.B(),
+			}).(*computeModel)
+
+			/* missing input */
+
+			n, err := env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Progress: 1,
+				Updated:  model.Status.Updated,
+				Hash:     "",
+				Valid:    true,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+
+			/* first input */
+
+			oldUpdated := model.Status.Updated
+
+			model.Input = "Hello world!"
+			model.Status.Valid = false
+			env.Replace(model)
+
+			n, err = env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Equal(t, "HELLO WORLD!", model.Output)
+			assert.Equal(t, &Status{
+				Progress: 1,
+				Updated:  model.Status.Updated,
+				Hash:     Hash("Hello world!"),
+				Valid:    true,
+			}, model.Status)
+			assert.True(t, model.Status.Updated.After(oldUpdated))
+
+			/* failed process */
+
+			n = env.Await(t, 0, func() {
+				model = env.Create(t, &computeModel{
+					Input: "error",
+				}, nil, nil).Model.(*computeModel)
+				assert.Zero(t, model.Output)
+				assert.Equal(t, &Status{
+					Updated: model.Status.Updated,
+				}, model.Status)
+				assert.NotZero(t, model.Status.Updated)
+			})
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Equal(t, "", model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  1,
+			}, model.Status)
+
+			/* ignored scan */
+
+			n, err = env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 0, n)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  1,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+
+			/* failed scan */
+
+			time.Sleep(time.Second)
+
+			n, err = env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  2,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+
+			/* direct process */
+
+			err = env.Process(model)
+			assert.NoError(t, err)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  3,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+		})
+	})
+}

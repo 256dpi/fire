@@ -22,14 +22,16 @@ type Reactor struct {
 	store      *coal.Store
 	queue      *axe.Queue
 	operations *Registry
+	reporter   func(error)
 }
 
 // NewReactor creates and returns a new reactor.
-func NewReactor(store *coal.Store, queue *axe.Queue, operations ...*Operation) *Reactor {
+func NewReactor(store *coal.Store, queue *axe.Queue, reporter func(error), operations ...*Operation) *Reactor {
 	return &Reactor{
 		store:      store,
 		queue:      queue,
 		operations: NewRegistry(operations...),
+		reporter:   reporter,
 	}
 }
 
