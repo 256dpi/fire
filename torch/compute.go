@@ -201,6 +201,10 @@ func Compute(comp Computation) *Operation {
 			}
 		},
 		Filter: func(model coal.Model) bool {
+			// TODO: Honor rehash and retry interval. When processing a model
+			//  through the modifier the retry and rehash interval is not
+			//  considered.
+
 			// get status
 			status := stick.MustGet(model, comp.Name).(*Status)
 			if status == nil || !status.Valid {
