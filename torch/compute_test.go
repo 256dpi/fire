@@ -541,7 +541,7 @@ func TestComputeRehashInterval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, 0, n)
 
-			/* rehash changed */
+			/* rehash changed (scan) */
 
 			before := model.Status.Updated
 
@@ -558,6 +558,26 @@ func TestComputeRehashInterval(t *testing.T) {
 				Progress: 1,
 				Updated:  model.Status.Updated,
 				Hash:     Hash("What's up?"),
+				Valid:    true,
+			}, model.Status)
+			assert.True(t, model.Status.Updated.After(before))
+
+			/* rehash changed (process) */
+
+			before = model.Status.Updated
+
+			model.Input = "Hello world!"
+			env.Replace(model)
+
+			err = env.Process(model)
+			assert.NoError(t, err)
+
+			env.Refresh(model)
+			assert.Equal(t, "HELLO WORLD!", model.Output)
+			assert.Equal(t, &Status{
+				Progress: 1,
+				Updated:  model.Status.Updated,
+				Hash:     Hash("Hello world!"),
 				Valid:    true,
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(before))
@@ -596,7 +616,7 @@ func TestComputeRecomputeInterval(t *testing.T) {
 				Valid:    true,
 			}, model.Status)
 
-			/* recompute same */
+			/* recompute same (scan) */
 
 			updated := model.Status.Updated
 
@@ -614,7 +634,27 @@ func TestComputeRecomputeInterval(t *testing.T) {
 			}, model.Status)
 			assert.True(t, model.Status.Updated.After(updated))
 
-			/* recompute zero */
+			/* recompute same (process) */
+
+			updated = model.Status.Updated
+
+			model.Input = "Hello world!"
+			env.Replace(model)
+
+			err = env.Process(model)
+			assert.NoError(t, err)
+
+			env.Refresh(model)
+			assert.Equal(t, "HELLO WORLD!", model.Output)
+			assert.Equal(t, &Status{
+				Progress: 1,
+				Updated:  model.Status.Updated,
+				Hash:     Hash("Hello world!"),
+				Valid:    true,
+			}, model.Status)
+			assert.True(t, model.Status.Updated.After(updated))
+
+			/* recompute zero (scan) */
 
 			updated = model.Status.Updated
 
@@ -625,6 +665,27 @@ func TestComputeRecomputeInterval(t *testing.T) {
 			n, err = env.Scan()
 			assert.NoError(t, err)
 			assert.Equal(t, 1, n)
+
+			env.Refresh(model)
+			assert.Equal(t, "HELLO WORLD!", model.Output)
+			assert.Equal(t, &Status{
+				Progress: 1,
+				Updated:  model.Status.Updated,
+				Hash:     "",
+				Valid:    true,
+			}, model.Status)
+			assert.True(t, model.Status.Updated.After(updated))
+
+			/* recompute zero (process) */
+
+			updated = model.Status.Updated
+
+			model.Input = ""
+			model.Status.Hash = ""
+			env.Replace(model)
+
+			err = env.Process(model)
+			assert.NoError(t, err)
 
 			env.Refresh(model)
 			assert.Equal(t, "HELLO WORLD!", model.Output)
