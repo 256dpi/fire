@@ -346,6 +346,10 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	// get time
 	start := time.Now()
 
+	// TODO: Create a context without deadline and just a cancel function? Then
+	//  we can arrange for the cancel function being called by a timer, which
+	//  would allow proper extension of the lifetime.
+
 	// add timeout
 	innerContext, cancel := context.WithTimeout(outerContext, t.Lifetime)
 

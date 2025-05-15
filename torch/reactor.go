@@ -315,6 +315,7 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				return err
 			}
 
+			// TODO: How to handle absent models?
 			// TODO: Check outstanding operations and restart job?
 
 			return nil
