@@ -3,7 +3,6 @@ package torch
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,23 +13,6 @@ import (
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
 )
-
-// Error is used to allow computations to soft-fail and retry later.
-type Error struct {
-	Reason string
-}
-
-// E is a shorthand to construct an error.
-func E(reason string) *Error {
-	return &Error{
-		Reason: reason,
-	}
-}
-
-// Error implements the error interface.
-func (e Error) Error() string {
-	return e.Reason
-}
 
 // Status defines the status of a computation.
 type Status struct {
@@ -122,7 +104,7 @@ type Computation struct {
 	// computed. Otherwise, output is released immediately if possible.
 	KeepOutdated bool
 
-	// The interval at which the computation should be delayed if failed.
+	// The interval at which the computation should be retried if failed.
 	RetryInterval time.Duration
 
 	// The interval at which the input is checked for outside changes.
@@ -356,12 +338,11 @@ func Compute(comp Computation) *Operation {
 			// compute output
 			err := comp.Computer(ctx)
 
-			// handle failures
-			var opError *Error
-			if errors.As(err, &opError) {
+			// handle errors
+			if err != nil && comp.RetryInterval > 0 {
 				// report error
 				if ctx.Reactor.reporter != nil {
-					ctx.Reactor.reporter(opError)
+					ctx.Reactor.reporter(err)
 				}
 
 				// update status
@@ -372,10 +353,7 @@ func Compute(comp Computation) *Operation {
 				})
 
 				return nil
-			}
-
-			// handle other errors
-			if err != nil {
+			} else if err != nil {
 				return err
 			}
 
