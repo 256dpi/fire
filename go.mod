@@ -11,6 +11,7 @@ require (
 	github.com/256dpi/xo v0.4.5
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9
 	github.com/gorilla/websocket v1.5.1
 	github.com/minio/minio-go/v7 v7.0.67
 	github.com/shopspring/decimal v1.3.1
@@ -28,7 +29,6 @@ require (
 	github.com/getsentry/sentry-go v0.21.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.5.0 // indirect
