@@ -6,10 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Note: We skip the PDF test in short mode because it requires graphviz to be installed.
+
 func TestCatalogVisualizePDF(t *testing.T) {
-	pdf, err := VisualizePDF("Test", &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &listModel{})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, pdf)
+	if !testing.Short() {
+		pdf, err := VisualizePDF("Test", &postModel{}, &commentModel{}, &selectionModel{}, &noteModel{}, &listModel{})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, pdf)
+	}
 }
 
 func TestCatalogVisualizeDOT(t *testing.T) {
