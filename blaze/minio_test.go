@@ -2,16 +2,22 @@ package blaze
 
 import "testing"
 
+// Note: We skip tests in short mode because they require a running Minio server.
+
 func TestMinioService(t *testing.T) {
-	TestService(t, makeMinioClient())
+	if !testing.Short() {
+		TestService(t, makeMinioClient())
+	}
 }
 
 func TestMinioServiceSeek(t *testing.T) {
-	TestServiceSeek(t, makeMinioClient())
+	if !testing.Short() {
+		TestServiceSeek(t, makeMinioClient())
+	}
 }
 
 func makeMinioClient() *Minio {
-	client, err := NewMinioURL("http://minioadmin:minioadmin@localhost:9000/blaze")
+	client, err := NewMinioURL("http://minioadmin:minioadmin@127.0.0.1:9000/blaze")
 	if err != nil {
 		panic(err)
 	}

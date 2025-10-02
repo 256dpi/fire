@@ -3,15 +3,6 @@ name: Test
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      minio:
-        image: bitnami/minio
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-          MINIO_DEFAULT_BUCKETS: blaze
-        ports:
-          - "9000:9000"
     steps:
       - name: Install
         uses: actions/setup-go@v4
@@ -20,11 +11,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Prepare
-        run: sudo apt-get install graphviz
+        uses: tecolicom/actions-use-apt-tools@v1
+        with:
+          tools: graphviz
       - name: MongoDB
         uses: supercharge/mongodb-github-action@1.9.0
         with:
           mongodb-version: "4.4"
           mongodb-replica-set: rs0
       - name: Test
-        run: go test ./...
+        run: go test -short ./...
