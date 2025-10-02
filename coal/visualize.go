@@ -127,6 +127,20 @@ func VisualizeDOT(title string, models ...Model) string {
 		// write begin of tail table
 		out.WriteString(`<table border="0" align="left" cellspacing="2" cellpadding="0" width="134">`)
 
+		// prepare field writer
+		var fieldWriter func(*ItemMeta, int)
+		fieldWriter = func(meta *ItemMeta, depth int) {
+			for _, itemField := range meta.OrderedFields {
+				typ := strings.ReplaceAll(itemField.Type.String(), "primitive.ObjectID", "coal.ID")
+				typ = dotEscape(typ)
+				arrows := strings.Repeat("  ", depth)
+				out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">%s‣ %s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, itemField.Name, arrows, itemField.Name, typ, indexedInfo[meta.Name+"."+itemField.Name]))
+				if itemField.ItemMeta != nil {
+					fieldWriter(itemField.ItemMeta, depth+1)
+				}
+			}
+		}
+
 		// write fields
 		for _, field := range GetMeta(model).OrderedFields {
 			typ := strings.ReplaceAll(field.Type.String(), "primitive.ObjectID", "coal.ID")
@@ -135,11 +149,7 @@ func VisualizeDOT(title string, models ...Model) string {
 
 			// write item fields
 			if field.ItemMeta != nil {
-				for _, itemField := range field.ItemMeta.OrderedFields {
-					typ := strings.ReplaceAll(itemField.Type.String(), "primitive.ObjectID", "coal.ID")
-					typ = dotEscape(typ)
-					out.WriteString(fmt.Sprintf(`<tr><td align="left" width="130" port="%s">‣ %s<font face="Arial" color="grey60"> %s %s</font></td></tr>`, itemField.Name, itemField.Name, typ, indexedInfo[field.Name+"."+itemField.Name]))
-				}
+				fieldWriter(field.ItemMeta, 1)
 			}
 		}
 
