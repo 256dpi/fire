@@ -59,9 +59,9 @@ func (m *noteModel) Validate() error {
 }
 
 type listItem struct {
-	ItemBase
-	Title string `json:"title"`
-	Done  bool   `json:"done"`
+	ItemBase `bson:",inline"`
+	Title    string `json:"title"`
+	Done     bool   `json:"done"`
 }
 
 func (i *listItem) Validate() error {

@@ -430,11 +430,24 @@ func GetItemMeta(typ reflect.Type) *ItemMeta {
 	}
 
 	// check if embedding item
-	if typ.NumField() == 0 || typ.Field(0).Type != itemBaseType || !typ.Field(0).Anonymous {
+	if typ.NumField() == 0 || typ.Field(0).Type != itemBaseType {
 		return nil
 	}
 
-	// TODO: Validate json and bson tags.
+	// check if field is anonymous
+	if !typ.Field(0).Anonymous {
+		panic(`coal: expected an embedded "coal.ItemBase" as the first struct field`)
+	}
+
+	// check JSON tag
+	if typ.Field(0).Tag.Get("json") != "" && typ.Field(0).Tag.Get("json") != "-" {
+		panic(`coal: expected to find no tag or a tag of the form 'json:"-"' on "coal.ItemBase"`)
+	}
+
+	// check BSON tag
+	if typ.Field(0).Tag.Get("bson") != ",inline" && typ.Field(0).Tag.Get("bson") != "-" {
+		panic(`coal: expected to find a tag of the form 'bson:",inline" or 'bson:"-" on "coal.ItemBase"`)
+	}
 
 	// prepare meta
 	meta = &ItemMeta{

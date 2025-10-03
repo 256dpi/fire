@@ -60,6 +60,21 @@ func TestList(t *testing.T) {
 	list[1].ItemID = "b"
 
 	var out []stick.Map
+	err = stick.BSON.Transfer(list, &out)
+	assert.NoError(t, err)
+	assert.Equal(t, []stick.Map{
+		{
+			"_id":   "a",
+			"title": "Foo",
+			"done":  false,
+		}, {
+			"_id":   "b",
+			"title": "Bar",
+			"done":  true,
+		},
+	}, out)
+
+	out = nil
 	err = stick.JSON.Transfer(list, &out)
 	assert.NoError(t, err)
 	assert.Equal(t, []stick.Map{
@@ -73,6 +88,8 @@ func TestList(t *testing.T) {
 			"done":  true,
 		},
 	}, out)
+
+	/* move items */
 
 	out[0], out[1] = out[1], out[0]
 	out = append(out, stick.Map{
