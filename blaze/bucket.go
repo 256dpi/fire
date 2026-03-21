@@ -82,7 +82,9 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	if mediaType == "" {
 		mediaType = "application/octet-stream"
 		if name != "" {
-			mediaType = serve.MimeTypeByExtension(path.Ext(name), false)
+			if t := serve.MimeTypeByExtension(path.Ext(name), false); t != "" {
+				mediaType = t
+			}
 		}
 	}
 

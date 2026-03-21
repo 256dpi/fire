@@ -63,6 +63,31 @@ func TestBucketUpload(t *testing.T) {
 	})
 }
 
+func TestBucketUploadUnknownExtension(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		service := NewMemory()
+
+		bucket := NewBucket(tester.Store, testNotary, bindings.All()...)
+		bucket.Use(service, "default", true)
+
+		key, file, err := bucket.Upload(nil, "data.alp", "", 12, func(upload Upload) (int64, error) {
+			return UploadFrom(upload, strings.NewReader("Hello World!"))
+		})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, key)
+		assert.Equal(t, &File{
+			Base:    file.Base,
+			State:   Uploaded,
+			Updated: file.Updated,
+			Name:    "data.alp",
+			Type:    "application/octet-stream",
+			Size:    12,
+			Service: "default",
+			Handle:  Handle{"id": "1"},
+		}, file)
+	})
+}
+
 func TestBucketUploadSizeMismatch(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
 		service := NewMemory()
