@@ -592,6 +592,9 @@ func (a *Authenticator) handleRefreshTokenGrant(ctx *Context, req *oauth2.TokenR
 	var ro ResourceOwner
 	if data.ResourceOwnerID != nil {
 		ro = a.getFirstResourceOwner(ctx, client, *data.ResourceOwnerID)
+		if ro == nil {
+			xo.Abort(oauth2.InvalidGrant("unknown resource owner"))
+		}
 	}
 
 	// issue tokens
@@ -681,6 +684,9 @@ func (a *Authenticator) handleAuthorizationCodeGrant(ctx *Context, req *oauth2.T
 	var ro ResourceOwner
 	if data.ResourceOwnerID != nil {
 		ro = a.getFirstResourceOwner(ctx, client, *data.ResourceOwnerID)
+		if ro == nil {
+			xo.Abort(oauth2.InvalidGrant("unknown resource owner"))
+		}
 	}
 
 	// issue tokens
