@@ -130,6 +130,7 @@ func (l *Links) Validate(uniqueFilenames bool, whitelist ...string) error {
 
 		// add reference
 		refs[link.Ref] = true
+		files[link.File] = true
 		names[link.FileName] = true
 	}
 

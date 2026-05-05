@@ -167,6 +167,27 @@ func TestLinksValidate(t *testing.T) {
 
 	err = links.Validate(true, "foo/bar")
 	assert.NoError(t, err)
+
+	file := coal.New()
+	links = Links{
+		{
+			Ref:      "1",
+			File:     file,
+			FileName: "foo",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+		{
+			Ref:      "2",
+			File:     file,
+			FileName: "bar",
+			FileType: "foo/bar",
+			FileSize: 12,
+		},
+	}
+	err = links.Validate(true, "foo/bar")
+	assert.Error(t, err)
+	assert.Equal(t, "ambiguous file", err.Error())
 }
 
 func TestIsLinksValid(t *testing.T) {
