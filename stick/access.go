@@ -69,6 +69,11 @@ func BuildAccessor(v interface{}, ignore ...string) *Accessor {
 		// get field
 		field := typ.Field(i)
 
+		// skip unexported fields; reflect.Value.Interface panics on them
+		if !field.IsExported() {
+			continue
+		}
+
 		// check field
 		var skip bool
 		for _, item := range ignore {
