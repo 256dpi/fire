@@ -427,17 +427,26 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		if t.MaxAttempts == 0 || attempt < t.MaxAttempts {
 			// fail job
 			delay := stick.Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
-			_ = Fail(outerContext, queue.options.Store, job, err.Error(), delay)
+			failErr := Fail(outerContext, queue.options.Store, job, err.Error(), delay)
+			if failErr != nil {
+				return errors.Join(err, failErr)
+			}
 
 			return err
 		}
 
 		// cancel job
-		_ = Cancel(outerContext, queue.options.Store, job, err.Error())
+		cancelErr := Cancel(outerContext, queue.options.Store, job, err.Error())
+		if cancelErr != nil {
+			return errors.Join(err, cancelErr)
+		}
 
 		// call notifier if available
 		if t.Notifier != nil {
-			_ = t.Notifier(ctx, true, err.Error())
+			notifyErr := t.Notifier(ctx, true, err.Error())
+			if notifyErr != nil {
+				return errors.Join(err, xo.W(notifyErr))
+			}
 		}
 
 		return err
