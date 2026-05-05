@@ -164,7 +164,12 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
-	defer download.Close()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = download.Close()
+		}
+	}()
 	if size > 0 {
 		_, err = download.Seek(size-1, io.SeekStart)
 		if err != nil {
@@ -178,6 +183,7 @@ func (b *Bucket) Upload(ctx context.Context, name, mediaType string, size int64,
 		}
 	}
 	err = download.Close()
+	closed = true
 	if err != nil {
 		return "", nil, xo.W(err)
 	}
