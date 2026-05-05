@@ -67,6 +67,8 @@ type Queue struct {
 	options Options
 	tasks   map[string]*Task
 	boards  map[string]*board
+	context context.Context
+	cancel  context.CancelFunc
 	tomb    tomb.Tomb
 }
 
@@ -182,6 +184,9 @@ func (q *Queue) Action(methods []string, cb func(ctx *fire.Context) Blueprint) *
 // Run will start fetching jobs from the queue and execute them. It will return
 // a channel that is closed once the queue has been synced and is available.
 func (q *Queue) Run() chan struct{} {
+	// prepare lifecycle context
+	q.context, q.cancel = context.WithCancel(context.Background())
+
 	// initialize boards
 	q.boards = make(map[string]*board)
 
@@ -206,6 +211,11 @@ func (q *Queue) Run() chan struct{} {
 
 // Close will close the queue.
 func (q *Queue) Close() {
+	// cancel active work first
+	if q.cancel != nil {
+		q.cancel()
+	}
+
 	// kill and wait
 	q.tomb.Kill(nil)
 	_ = q.tomb.Wait()

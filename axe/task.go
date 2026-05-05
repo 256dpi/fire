@@ -324,8 +324,14 @@ func (t *Task) enqueuer(queue *Queue) error {
 }
 
 func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
+	// prepare root context
+	rootContext := queue.context
+	if rootContext == nil {
+		rootContext = context.Background()
+	}
+
 	// create tracer
-	tracer, outerContext := xo.CreateTracer(context.Background(), "TASK "+name)
+	tracer, outerContext := xo.CreateTracer(rootContext, "TASK "+name)
 	defer tracer.End()
 
 	// prepare job
