@@ -78,7 +78,9 @@ func (s *Stream) open(manager *manager, reporter func(error)) {
 		// handle errors
 		if e == coal.Errored {
 			// report error
-			reporter(err)
+			if reporter != nil {
+				reporter(err)
+			}
 
 			return nil
 		}
