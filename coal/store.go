@@ -59,7 +59,7 @@ func Connect(uri string, reporter func(error), opts ...*options.ClientOptions) (
 	}
 
 	// ping server
-	err = client.Ping(nil, nil)
+	err = client.Ping(context.Background(), nil)
 	if err != nil {
 		return nil, xo.W(err)
 	}
@@ -340,7 +340,7 @@ func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Con
 // Close will close the store and its associated client.
 func (s *Store) Close() error {
 	// disconnect client
-	err := s.client.Disconnect(nil)
+	err := s.client.Disconnect(context.Background())
 	if err != nil {
 		return xo.W(err)
 	}
