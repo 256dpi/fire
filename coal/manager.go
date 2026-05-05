@@ -600,8 +600,14 @@ func (m *Manager) project(ctx context.Context, filter bson.M, field string, sort
 			return err
 		}
 
+		// get id
+		id, ok := item["_id"].(ID)
+		if !ok {
+			return xo.F("missing or invalid _id")
+		}
+
 		// yield pair
-		if !fn(item["_id"].(ID), item[field]) {
+		if !fn(id, item[field]) {
 			break
 		}
 	}
