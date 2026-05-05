@@ -81,3 +81,19 @@ func TestCallbackInsufficientAccessToken(t *testing.T) {
 		assert.Len(t, ctx.Data, 0)
 	})
 }
+
+func TestCallbackMissingClient(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		tester.Context = context.WithValue(context.Background(), AccessTokenContextKey, &Token{
+			Scope: []string{"foo"},
+		})
+
+		cb := Callback(true, "foo")
+
+		ctx := &fire.Context{}
+		err := tester.RunCallback(ctx, cb)
+		assert.Error(t, err)
+
+		assert.Len(t, ctx.Data, 0)
+	})
+}

@@ -46,7 +46,10 @@ func Callback(force bool, scope ...string) *fire.Callback {
 		}
 
 		// get client
-		client := ctx.Value(ClientContextKey).(Client)
+		client, ok := ctx.Value(ClientContextKey).(Client)
+		if !ok || client == nil {
+			return fire.ErrAccessDenied.Wrap()
+		}
 
 		// get resource owner
 		resourceOwner, _ := ctx.Value(ResourceOwnerContextKey).(ResourceOwner)
