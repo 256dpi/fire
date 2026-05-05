@@ -137,6 +137,18 @@ func TestStoreT(t *testing.T) {
 		}))
 
 		assert.Equal(t, 2, tester.Count(&postModel{}))
+
+		foreign := mongoStore
+		if tester.Store == mongoStore {
+			foreign = lungoStore
+		}
+
+		err := tester.Store.T(context.WithValue(context.Background(), Transaction{}, Transaction{
+			Store: foreign,
+		}), false, func(tc context.Context) error {
+			return nil
+		})
+		assert.EqualError(t, err, "unexpected transaction store")
 	})
 }
 

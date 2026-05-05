@@ -210,7 +210,11 @@ func (s *Store) T(ctx context.Context, readOnly bool, fn func(ctx context.Contex
 	}
 
 	// check if transaction already exists
-	if HasTransaction(ctx) {
+	if ok, tx := GetTransaction(ctx); ok {
+		if tx.Store != s {
+			return xo.F("unexpected transaction store")
+		}
+
 		return fn(ctx)
 	}
 
