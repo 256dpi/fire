@@ -611,16 +611,19 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 			return xo.F("stores must be identical")
 		}
 
+		// capture fields
+		activeFields := fields
+
 		// collect fields if empty
-		if len(fields) == 0 {
-			fields = collectFields(ctx.Controller.Model)
+		if len(activeFields) == 0 {
+			activeFields = collectFields(ctx.Controller.Model)
 		}
 
 		// get owner
 		owner := ctx.Model.ID()
 
 		// check all fields
-		for _, field := range fields {
+		for _, field := range activeFields {
 			// get value
 			value := stick.MustGet(ctx.Model, field)
 
@@ -865,14 +868,17 @@ func (b *Bucket) Decorate(ctx context.Context, link *Link) error {
 // Decorator will populate all or just the specified link fields.
 func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 	return fire.C("blaze/Bucket.Decorator", fire.Decorator, fire.All(), func(ctx *fire.Context) error {
+		// capture fields
+		activeFields := fields
+
 		// collect fields if empty
-		if len(fields) == 0 {
-			fields = collectFields(ctx.Controller.Model)
+		if len(activeFields) == 0 {
+			activeFields = collectFields(ctx.Controller.Model)
 		}
 
 		// decorate model
 		if ctx.Model != nil {
-			err := b.decorateModel(ctx, ctx.Model, fields)
+			err := b.decorateModel(ctx, ctx.Model, activeFields)
 			if err != nil {
 				return err
 			}
@@ -880,7 +886,7 @@ func (b *Bucket) Decorator(fields ...string) *fire.Callback {
 
 		// decorate models
 		for _, model := range ctx.Models {
-			err := b.decorateModel(ctx, model, fields)
+			err := b.decorateModel(ctx, model, activeFields)
 			if err != nil {
 				return err
 			}
