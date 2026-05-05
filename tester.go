@@ -61,6 +61,9 @@ func (t *Tester) Assign(prefix string, controllers ...*Controller) *Group {
 	// add controllers
 	group.Add(controllers...)
 
+	// save prefix for generated request paths
+	t.Prefix = strings.Trim(prefix, "/")
+
 	// set handler
 	t.Handler = serve.Compose(xo.RootHandler(), group.Endpoint(prefix))
 
@@ -75,6 +78,9 @@ func (t *Tester) Clean() {
 
 	// reset header
 	t.Header = make(map[string]string)
+
+	// reset prefix
+	t.Prefix = ""
 
 	// reset context
 	t.Context = context.Background()

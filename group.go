@@ -140,7 +140,17 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 
 		// trim path
 		path := strings.Trim(r.URL.Path, "/")
-		path = strings.TrimPrefix(path, prefix)
+		if prefix != "" {
+			if path == prefix {
+				path = ""
+			} else {
+				prefixed := prefix + "/"
+				if !strings.HasPrefix(path, prefixed) {
+					xo.Abort(jsonapi.NotFound("resource not found"))
+				}
+				path = strings.TrimPrefix(path, prefixed)
+			}
+		}
 		path = strings.Trim(path, "/")
 
 		// check path

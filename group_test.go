@@ -46,6 +46,28 @@ func TestGroupEndpointMissingResource(t *testing.T) {
 	})
 }
 
+func TestGroupEndpointPrefixEnforced(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		group := NewGroup(xo.Crash)
+		group.Handle("foo", &GroupAction{
+			Action: A("TestGroupEndpointPrefixEnforced", []string{"GET"}, 0, 0, func(ctx *Context) error {
+				ctx.ResponseWriter.WriteHeader(http.StatusNoContent)
+				return nil
+			}),
+		})
+
+		tester.Handler = group.Endpoint("api")
+
+		tester.Request("GET", "api/foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNoContent, r.Result().StatusCode)
+		})
+
+		tester.Request("GET", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+		})
+	})
+}
+
 func TestGroupAbort(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		var lastErr error
