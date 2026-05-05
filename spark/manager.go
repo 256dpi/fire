@@ -161,6 +161,10 @@ func (m *manager) handle(ctx *fire.Context) error {
 	errs := make(chan error, 1)
 	reqs := make(chan request, 10)
 
+	// signal reader to exit when writer returns
+	writerDone := make(chan struct{})
+	defer close(writerDone)
+
 	// run reader
 	go func() {
 		for {
@@ -206,6 +210,9 @@ func (m *manager) handle(ctx *fire.Context) error {
 			select {
 			case reqs <- req:
 			case <-m.tomb.Dying():
+				close(errs)
+				return
+			case <-writerDone:
 				close(errs)
 				return
 			}
