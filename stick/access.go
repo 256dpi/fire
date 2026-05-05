@@ -168,13 +168,17 @@ func Set(v interface{}, name string, value interface{}) bool {
 	// get value
 	fieldValue := structValue(v).Field(field.Index)
 
+	// reject untyped nil for non-pointer fields and normalize it for pointers.
+	if value == nil {
+		if field.Type.Kind() != reflect.Ptr {
+			return false
+		}
+		fieldValue.Set(reflect.Zero(field.Type))
+		return true
+	}
+
 	// get value value
 	valueValue := reflect.ValueOf(value)
-
-	// correct untyped nil values
-	if value == nil && field.Type.Kind() == reflect.Ptr {
-		valueValue = reflect.Zero(field.Type)
-	}
 
 	// check type
 	if fieldValue.Type() != valueValue.Type() {

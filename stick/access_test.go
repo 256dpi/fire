@@ -161,6 +161,9 @@ func TestSet(t *testing.T) {
 
 	ok = Set(acc, "OptString", (*string)(nil))
 	assert.True(t, ok)
+
+	ok = Set(acc, "String", nil)
+	assert.False(t, ok)
 }
 
 func TestMustSet(t *testing.T) {
