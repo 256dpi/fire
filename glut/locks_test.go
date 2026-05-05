@@ -252,3 +252,21 @@ func TestLockReleasesOnValidationError(t *testing.T) {
 		assert.Nil(t, model.Token)
 	})
 }
+
+func TestMutateLockedReturnsErrorIfLockExpiresBeforeWrite(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		var value testValue
+
+		locked, err := Lock(nil, tester.Store, &value, 100*time.Millisecond)
+		assert.NoError(t, err)
+		assert.True(t, locked)
+
+		err = MutateLocked(nil, tester.Store, &value, func(exists bool) error {
+			assert.True(t, exists)
+			value.Data = "Hello!"
+			time.Sleep(200 * time.Millisecond)
+			return nil
+		})
+		assert.EqualError(t, err, "lost lock")
+	})
+}

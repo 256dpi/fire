@@ -332,12 +332,16 @@ func MutateLocked(ctx context.Context, store *coal.Store, value Value, fn func(b
 	err = fn(ok)
 	if err != nil {
 		return err
+	} else if !ok {
+		return nil
 	}
 
 	// set value
-	_, err = SetLocked(ctx, store, value)
+	modified, err := SetLocked(ctx, store, value)
 	if err != nil {
 		return err
+	} else if !modified {
+		return xo.F("lost lock")
 	}
 
 	return nil
