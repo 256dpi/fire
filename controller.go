@@ -1188,6 +1188,11 @@ func (c *Controller) appendToRelationship(ctx *Context) {
 		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
 	}
 
+	// check data
+	if ctx.Request.Data == nil {
+		xo.Abort(jsonapi.BadRequest("missing relationship data"))
+	}
+
 	// process all references
 	for _, ref := range ctx.Request.Data.Many {
 		// check type
@@ -1286,6 +1291,11 @@ func (c *Controller) removeFromRelationship(ctx *Context) {
 	// check if relationship is writable
 	if !stick.Contains(c.writableFields(ctx, ctx.Model), rel.Name) {
 		xo.Abort(jsonapi.BadRequest("relationship is not writable"))
+	}
+
+	// check data
+	if ctx.Request.Data == nil {
+		xo.Abort(jsonapi.BadRequest("missing relationship data"))
 	}
 
 	// process all references
