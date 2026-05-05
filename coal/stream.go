@@ -206,6 +206,18 @@ func (s *Stream) tail() error {
 		s.token = ch.ResumeToken
 	}
 
+	// stop cleanly if the stream was cancelled as part of shutdown.
+	if ctx.Err() != nil {
+		return nil
+	}
+
+	// check iterator error before closing; Next() returns false both on EOF and
+	// on stream failure.
+	err = cs.Err()
+	if err != nil {
+		return xo.W(err)
+	}
+
 	// close stream and check error
 	err = cs.Close(ctx)
 	if err != nil {
