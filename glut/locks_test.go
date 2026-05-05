@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/fire/coal"
 	"github.com/256dpi/fire/stick"
@@ -208,5 +209,28 @@ func TestLock(t *testing.T) {
 		assert.True(t, deleted)
 
 		assert.Equal(t, 0, tester.Count(&Model{}))
+	})
+}
+
+func TestLockContentionSkipsDecodeValidation(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		var value1 testValue
+		var value2 testValue
+
+		locked, err := Lock(nil, tester.Store, &value1, time.Minute)
+		assert.NoError(t, err)
+		assert.True(t, locked)
+
+		model := tester.FindLast(&Model{}).(*Model)
+		_, err = tester.Store.M(&Model{}).Update(nil, model, model.ID(), bson.M{
+			"$set": bson.M{
+				"Data": stick.Map{"data": "error"},
+			},
+		}, false)
+		assert.NoError(t, err)
+
+		locked, err = Lock(nil, tester.Store, &value2, time.Minute)
+		assert.NoError(t, err)
+		assert.False(t, locked)
 	})
 }

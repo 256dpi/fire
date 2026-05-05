@@ -117,6 +117,8 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 	}, nil, false)
 	if err != nil {
 		return false, err
+	} else if !found {
+		return false, nil
 	}
 
 	// decode value
@@ -131,7 +133,7 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, err
 	}
 
-	return found, nil
+	return true, nil
 }
 
 // SetLocked will update the specified value only if it is locked. It will als
