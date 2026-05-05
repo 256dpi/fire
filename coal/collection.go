@@ -437,6 +437,7 @@ func (i *Iterator) All(list interface{}) error {
 		span.Tag("loaded", i.counter)
 		span.End()
 	}
+	i.spans = nil
 
 	return xo.W(err)
 }
