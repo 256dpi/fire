@@ -81,6 +81,9 @@ func (m *Matrix) Generate(name string, values []any, fn func(value any, item Ite
 			if fn != nil {
 				value = fn(value, Item{})
 			}
+			if value == Ignore {
+				continue
+			}
 			m.items[name] = append(m.items[name], Item{
 				name: value,
 			})

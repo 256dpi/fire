@@ -72,3 +72,19 @@ func TestMatrix(t *testing.T) {
 		matrix.Items("qux")
 	})
 }
+
+func TestMatrixGenerateIgnoreFirstDimension(t *testing.T) {
+	matrix := NewMatrix()
+
+	matrix.Generate("foo", []any{"a", "b"}, func(value any, item Item) any {
+		if value == "a" {
+			return Ignore
+		}
+
+		return value
+	})
+
+	assert.Equal(t, []Item{
+		{"foo": "b"},
+	}, matrix.Items("foo"))
+}
