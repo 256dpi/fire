@@ -320,6 +320,7 @@ func (s *Store) RT(ctx context.Context, maxAttempts int, fn func(ctx context.Con
 			if err != nil {
 				// handle unknown commit result error
 				if attempts < maxAttempts && sc.Err() == nil && isUnknownCommitResultError(err) {
+					attempts++
 					goto Commit
 				}
 
