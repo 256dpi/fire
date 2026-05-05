@@ -825,7 +825,9 @@ func (a *Authenticator) introspectionEndpoint(ctx *Context) {
 			res.ExpiresAt = data.ExpiresAt.Unix()
 			res.IssuedAt = token.ID().Timestamp().Unix()
 			res.Identifier = token.ID().Hex()
-			res.Extra = a.policy.TokenData(client, resourceOwner, token)
+			if a.policy.TokenData != nil {
+				res.Extra = a.policy.TokenData(client, resourceOwner, token)
+			}
 		}
 	}
 
