@@ -105,7 +105,7 @@ func AssignResource(model coal.Model, res *jsonapi.Resource) error {
 		// get relationship
 		rel := meta.Relationships[name]
 		if rel == nil {
-			return fmt.Errorf("wood: unknown relationship %q for %T", name, model)
+			return fmt.Errorf("fire: unknown relationship %q for %T", name, model)
 		}
 
 		// skip has-* relationships
@@ -116,20 +116,23 @@ func AssignResource(model coal.Model, res *jsonapi.Resource) error {
 		// handle to one
 		if rel.ToOne {
 			if rel.Optional {
-				if doc.Data != nil {
+				if doc.Data != nil && doc.Data.One != nil {
 					id := coal.MustFromHex(doc.Data.One.ID)
 					stick.MustSet(model, rel.Name, &id)
 				} else {
 					stick.MustSet(model, rel.Name, nil)
 				}
 			} else {
+				if doc.Data == nil || doc.Data.One == nil {
+					return fmt.Errorf("fire: missing data for relationship %q", name)
+				}
 				stick.MustSet(model, rel.Name, coal.MustFromHex(doc.Data.One.ID))
 			}
 		}
 
 		// handle to many
 		if rel.ToMany {
-			if len(doc.Data.Many) > 0 {
+			if doc.Data != nil && len(doc.Data.Many) > 0 {
 				ids := make([]coal.ID, 0, len(doc.Data.Many))
 				for _, rel := range doc.Data.Many {
 					ids = append(ids, coal.MustFromHex(rel.ID))
