@@ -109,13 +109,15 @@ func (p *pipeUpload) Write(data []byte) (int, error) {
 
 func (p *pipeUpload) Abort() error {
 	// abort upload
-	err := p.pipe.CloseWithError(errPipeUploadAbort)
-	if err != nil {
-		return err
-	}
+	closeErr := p.pipe.CloseWithError(errPipeUploadAbort)
 
-	// await return
-	err = <-p.done
+	// await return regardless of close result so the goroutine never leaks
+	err := <-p.done
+
+	// surface the first non-nil meaningful error
+	if closeErr != nil {
+		return closeErr
+	}
 	if err != nil && !errors.Is(err, errPipeUploadAbort) {
 		return err
 	}
