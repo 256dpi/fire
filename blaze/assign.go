@@ -31,7 +31,10 @@ func Assign(ctx context.Context, store *coal.Store, bucket *Bucket, model coal.M
 		}
 
 		// get old link
-		oldLink := stick.MustGet(model, field).(*Link)
+		oldLink, ok := stick.MustGet(model, field).(*Link)
+		if !ok {
+			panic("blaze: expected *Link field")
+		}
 
 		// handle double absence
 		if oldLink == nil && newLink == nil {

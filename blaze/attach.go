@@ -24,7 +24,10 @@ func Attach(ctx context.Context, store *coal.Store, bucket *Bucket, model coal.M
 	}
 
 	// check input
-	link := stick.MustGet(model, field).(*Link)
+	link, ok := stick.MustGet(model, field).(*Link)
+	if !ok {
+		panic("blaze: expected *Link field")
+	}
 	if link != nil {
 		return ErrExistingLink.Wrap()
 	}
