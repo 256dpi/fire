@@ -979,7 +979,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			xo.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			xo.Abort(xo.F("no relationship matching the inverse name %s", rel.RelInverse))
 		}
 
 		// prepare selector
@@ -1009,7 +1009,7 @@ func (c *Controller) getRelatedResources(ctx *Context) {
 		// find inverse relationship
 		inverse := rc.meta.Relationships[rel.RelInverse]
 		if inverse == nil {
-			xo.Abort(xo.F("no relationship matching the inverse name %s", inverse.RelInverse))
+			xo.Abort(xo.F("no relationship matching the inverse name %s", rel.RelInverse))
 		}
 
 		// prepare selector
