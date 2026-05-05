@@ -98,12 +98,6 @@ func (m *manager) run() error {
 				close(queue)
 			}
 
-			// closed all subscribes
-			close(m.subscribes)
-			for sub := range m.subscribes {
-				close(sub)
-			}
-
 			return tomb.ErrDying
 		}
 	}
