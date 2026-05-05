@@ -123,6 +123,13 @@ func TestProcessEach(t *testing.T) {
 			return nil
 		})
 		assert.Error(t, err)
+
+		matched, modified, err = ProcessEach(nil, tester.Store, &fooModel{}, bson.M{}, 0, func(model Model) error {
+			return nil
+		})
+		assert.Error(t, err)
+		assert.Zero(t, matched)
+		assert.Zero(t, modified)
 	})
 }
 

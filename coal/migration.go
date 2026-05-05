@@ -114,6 +114,11 @@ func (m *Migrator) run(store *Store, logger io.Writer, migration *Migration) err
 // in parallel up to the specified amount of concurrency. Documents are not
 // validated during lookup.
 func ProcessEach(ctx context.Context, store *Store, model Model, filter bson.M, concurrency int, fn func(Model) error) (int64, int64, error) {
+	// verify concurrency
+	if concurrency < 1 {
+		return 0, 0, xo.F("invalid concurrency")
+	}
+
 	// get meta
 	meta := GetMeta(model)
 
