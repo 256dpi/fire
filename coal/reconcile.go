@@ -1,6 +1,8 @@
 package coal
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -12,7 +14,7 @@ func Reconcile(store *Store, model Model, loaded func(), created, updated func(M
 	// prepare load
 	load := func() error {
 		// get cursor
-		iter, err := store.C(model).Find(nil, bson.M{})
+		iter, err := store.C(model).Find(context.Background(), bson.M{})
 		if err != nil {
 			return err
 		}
