@@ -1594,7 +1594,13 @@ func (c *Controller) loadModels(ctx *Context) {
 
 			// handle boolean attributes
 			if field.Kind == reflect.Bool && len(values) == 1 {
-				ctx.Filters = append(ctx.Filters, bson.M{field.Name: values[0] == "true"})
+				if values[0] == "true" {
+					ctx.Filters = append(ctx.Filters, bson.M{field.Name: true})
+				} else if values[0] == "false" {
+					ctx.Filters = append(ctx.Filters, bson.M{field.Name: false})
+				} else {
+					xo.Abort(jsonapi.BadRequest(fmt.Sprintf(`invalid filter "%s"`, name)))
+				}
 				continue
 			}
 

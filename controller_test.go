@@ -2258,6 +2258,17 @@ func TestFiltering(t *testing.T) {
 			}`, linkUnescape(links), tester.DebugRequest(rq, r))
 		})
 
+		tester.Request("GET", "posts?filter[published]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors":[{
+					"status": "400",
+					"title": "bad request",
+					"detail": "invalid filter \"published\""
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
 		// test not supported relationship filter
 		tester.Request("GET", "comments?filter[post]=foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
