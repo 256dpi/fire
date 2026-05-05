@@ -93,7 +93,8 @@ func Await(store *coal.Store, timeout time.Duration, fns ...func() error) (int, 
 		if event == coal.Errored {
 			done <- err
 			close(done)
-			return nil
+			closed = true
+			return coal.ErrStop.Wrap()
 		}
 
 		// handles stop
