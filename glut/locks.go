@@ -121,15 +121,30 @@ func Lock(ctx context.Context, store *coal.Store, value Value, timeout time.Dura
 		return false, nil
 	}
 
+	// release lock if a subsequent step fails
+	release := func() {
+		_, _ = store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+			"Key":   key,
+			"Token": base.Token,
+		}, bson.M{
+			"$set": bson.M{
+				"Locked": nil,
+				"Token":  nil,
+			},
+		}, nil, false)
+	}
+
 	// decode value
 	err = model.Data.Unmarshal(value, meta.Coding)
 	if err != nil {
+		release()
 		return false, err
 	}
 
 	// validate value
 	err = value.Validate()
 	if err != nil {
+		release()
 		return false, err
 	}
 

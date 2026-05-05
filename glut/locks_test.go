@@ -234,3 +234,21 @@ func TestLockContentionSkipsDecodeValidation(t *testing.T) {
 		assert.False(t, locked)
 	})
 }
+
+func TestLockReleasesOnValidationError(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *coal.Tester) {
+		existing := tester.Insert(&Model{
+			Key:  "test",
+			Data: stick.Map{"data": "error"},
+		}).(*Model)
+
+		var value testValue
+		locked, err := Lock(nil, tester.Store, &value, time.Minute)
+		assert.False(t, locked)
+		assert.Error(t, err)
+
+		model := tester.Fetch(&Model{}, existing.ID()).(*Model)
+		assert.Nil(t, model.Locked)
+		assert.Nil(t, model.Token)
+	})
+}
