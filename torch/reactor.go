@@ -226,13 +226,14 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				return xo.F("unknown operation")
 			}
 
-			// load model
+			// load model (treat absence as a no-op since the model may have been
+			// deleted between scan/enqueue and process)
 			model := coal.GetMeta(operation.Model).Make()
 			found, err := r.store.M(model).Find(ctx, model, job.Model, false)
 			if err != nil {
 				return err
 			} else if !found {
-				return xo.F("missing model")
+				return nil
 			}
 
 			// check filter
