@@ -809,7 +809,22 @@ func TestComputeRetryInterval(t *testing.T) {
 			}, model.Status)
 			assert.NotZero(t, model.Status.Updated)
 
-			/* direct process */
+			/* ignored direct process (within retry interval) */
+
+			err = env.Process(model)
+			assert.NoError(t, err)
+
+			env.Refresh(model)
+			assert.Zero(t, model.Output)
+			assert.Equal(t, &Status{
+				Updated: model.Status.Updated,
+				Errors:  2,
+			}, model.Status)
+			assert.NotZero(t, model.Status.Updated)
+
+			/* direct process (after retry interval) */
+
+			time.Sleep(time.Second)
 
 			err = env.Process(model)
 			assert.NoError(t, err)

@@ -201,11 +201,19 @@ func Compute(comp Computation) *Operation {
 			}
 		},
 		Filter: func(model coal.Model) bool {
-			// TODO: Honor retry interval.
-
 			// get status
 			status := stick.MustGet(model, comp.Name).(*Status)
-			if status == nil || !status.Valid {
+			if status == nil {
+				return true
+			}
+
+			// honor retry interval if errored
+			if status.Errors > 0 && comp.RetryInterval > 0 && time.Since(status.Updated) < comp.RetryInterval {
+				return false
+			}
+
+			// check if invalid
+			if !status.Valid {
 				return true
 			}
 
