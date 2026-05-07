@@ -294,19 +294,20 @@ func (r *Reactor) ProcessTask() *axe.Task {
 				return nil
 			}
 
-			// decrement tag and update expiry
+			// decrement tag and update expiry if outstanding
 			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
-			opCtx.Change("$inc", coal.TV(operation.TagName), -n)
-			opCtx.Change("$set", coal.TE(operation.TagName), time.Now().Add(operation.TagExpiry))
-
-			// update model
-			_, err = r.store.M(model).Update(ctx, nil, model.ID(), opCtx.Update, false)
-			if err != nil {
-				return err
+			if n > 0 {
+				opCtx.Change("$inc", coal.TV(operation.TagName), -n)
+				opCtx.Change("$set", coal.TE(operation.TagName), time.Now().Add(operation.TagExpiry))
 			}
 
-			// TODO: How to handle absent models?
-			// TODO: Check outstanding operations and restart job?
+			// update model if there are any changes
+			if len(opCtx.Update) > 0 {
+				_, err = r.store.M(model).Update(ctx, nil, model.ID(), opCtx.Update, false)
+				if err != nil {
+					return err
+				}
+			}
 
 			return nil
 		},
