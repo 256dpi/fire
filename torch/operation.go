@@ -136,6 +136,7 @@ func (o *Operation) Validate() error {
 		v.Value("Name", false, stick.IsNotZero)
 		v.Value("Model", false, stick.IsNotZero)
 		v.Value("Processor", false, stick.IsNotZero)
+		v.Value("ScanBatch", false, stick.IsMinInt(1))
 	})
 }
 
