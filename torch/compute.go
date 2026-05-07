@@ -95,9 +95,9 @@ type Computation struct {
 	// The computation handler.
 	Computer func(ctx *Context) error
 
-	// The release handler is called to release an invalidated output
-	// synchronously. If absent, a computation is scheduled to release the
-	// output asynchronously using the computer.
+	// The release handler is called in-line during processing to release an
+	// invalidated output. If absent, the computer is invoked instead to
+	// produce a zero output, which may happen asynchronously.
 	Releaser func(ctx *Context) error
 
 	// Whether an outdated output should be kept until the new output is

@@ -150,12 +150,11 @@ func (r *Reactor) ScanTask() *axe.Task {
 			}
 
 			// prepare filters
-			var filters []bson.M
-			filters = append(filters, bson.M{
+			filters := []bson.M{{
 				coal.TV(operation.TagName): bson.M{
 					"$gt": 0,
 				},
-			})
+			}}
 
 			// add query if present
 			if operation.Query != nil {
