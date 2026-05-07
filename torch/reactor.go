@@ -69,16 +69,10 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 
 		// handle async operations
 		if !operation.Sync {
-			// increment tag
-			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
-			model.GetBase().SetTag(operation.TagName, n+1, time.Now().Add(operation.TagExpiry))
-
-			// enqueue job
-			_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
+			err := r.enqueueProcess(ctx, model, operation)
 			if err != nil {
 				return err
 			}
-
 			continue
 		}
 
@@ -110,16 +104,10 @@ func (r *Reactor) Check(ctx context.Context, model coal.Model) error {
 
 		// handle defer
 		if opCtx.Defer {
-			// increment tag
-			n, _ := model.GetBase().GetTag(operation.TagName).(int32)
-			model.GetBase().SetTag(operation.TagName, n+1, time.Now().Add(operation.TagExpiry))
-
-			// enqueue job
-			_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
+			err := r.enqueueProcess(ctx, model, operation)
 			if err != nil {
 				return err
 			}
-
 			continue
 		}
 
@@ -323,4 +311,18 @@ func (r *Reactor) ProcessTask() *axe.Task {
 			return nil
 		},
 	}
+}
+
+func (r *Reactor) enqueueProcess(ctx context.Context, model coal.Model, op *Operation) error {
+	// increment tag
+	n, _ := model.GetBase().GetTag(op.TagName).(int32)
+	model.GetBase().SetTag(op.TagName, n+1, time.Now().Add(op.TagExpiry))
+
+	// enqueue job
+	_, err := r.queue.Enqueue(ctx, NewProcessJob(op.Name, model.ID()), 0, 0)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
