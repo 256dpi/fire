@@ -225,6 +225,9 @@ func Compute(comp Computation) *Operation {
 			// set computation
 			ctx.Computation = &comp
 
+			// default progress is a no-op (only meaningful in async mode)
+			ctx.Progress = func(factor float64) error { return nil }
+
 			// hash input
 			hash := comp.Hasher(ctx.Model)
 
