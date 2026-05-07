@@ -190,6 +190,43 @@ func TestReactorScanFilter(t *testing.T) {
 	})
 }
 
+func TestReactorScanFilterTagCleanup(t *testing.T) {
+	withStore(t, func(t *testing.T, store *coal.Store) {
+		Test(store, testModelOp(), func(env Env) {
+			env.Operation.Filter = func(model coal.Model) bool {
+				return model.(*testModel).Input%7 != 0
+			}
+
+			// two rejected models with different tag values plus one accepted
+			rejected1 := &testModel{Base: coal.B(), Input: 7}
+			rejected1.SetTag("torch/Reactor/foo", 1, time.Now().Add(time.Hour))
+			env.Insert(rejected1)
+
+			rejected2 := &testModel{Base: coal.B(), Input: 14}
+			rejected2.SetTag("torch/Reactor/foo", 2, time.Now().Add(time.Hour))
+			env.Insert(rejected2)
+
+			accepted := &testModel{Base: coal.B(), Input: 9}
+			accepted.SetTag("torch/Reactor/foo", 1, time.Now().Add(time.Hour))
+			env.Insert(accepted)
+
+			num, err := env.Scan()
+			assert.NoError(t, err)
+			assert.Equal(t, 1, num)
+
+			env.Refresh(rejected1)
+			assert.Equal(t, int32(0), rejected1.GetTag("torch/Reactor/foo"))
+
+			env.Refresh(rejected2)
+			assert.Equal(t, int32(0), rejected2.GetTag("torch/Reactor/foo"))
+
+			env.Refresh(accepted)
+			assert.Equal(t, 18, accepted.Output)
+			assert.Equal(t, int32(0), accepted.GetTag("torch/Reactor/foo"))
+		})
+	})
+}
+
 func TestReactorProcessFilter(t *testing.T) {
 	withStore(t, func(t *testing.T, store *coal.Store) {
 		Test(store, testModelOp(), func(env Env) {

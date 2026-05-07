@@ -174,21 +174,41 @@ func (r *Reactor) ScanTask() *axe.Task {
 				return err
 			}
 
-			// get models
-			var models []coal.Model
-			if operation.Filter != nil {
-				for _, model := range coal.Slice(list) {
-					if operation.Filter(model) {
-						models = append(models, model)
+			// process models, collecting rejected ones grouped by tag value so
+			// dangling tags can be cleared in a single update per group below
+			rejects := map[int32][]coal.ID{}
+			for _, model := range coal.Slice(list) {
+				if operation.Filter != nil && !operation.Filter(model) {
+					n, _ := model.GetBase().GetTag(operation.TagName).(int32)
+					if n > 0 {
+						rejects[n] = append(rejects[n], model.ID())
 					}
+					continue
 				}
-			} else {
-				models = coal.Slice(list)
+
+				// enqueue process job
+				_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
+				if err != nil {
+					return err
+				}
 			}
 
-			// enqueue process jobs
-			for _, model := range models {
-				_, err := r.queue.Enqueue(ctx, NewProcessJob(operation.Name, model.ID()), 0, 0)
+			// clear dangling tags, preserving any concurrent increments via
+			// atomic $inc (an interleaved Check would have re-incremented and
+			// enqueued its own job, which the next scan/process picks up)
+			for n, ids := range rejects {
+				_, err = r.store.M(operation.Model).UpdateAll(ctx, bson.M{
+					"_id": bson.M{
+						"$in": ids,
+					},
+				}, bson.M{
+					"$inc": bson.M{
+						coal.TV(operation.TagName): -n,
+					},
+					"$set": bson.M{
+						coal.TE(operation.TagName): time.Now().Add(operation.TagExpiry),
+					},
+				}, false)
 				if err != nil {
 					return err
 				}
