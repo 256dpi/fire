@@ -189,7 +189,7 @@ func Compute(comp Computation) *Operation {
 			// add recompute filter
 			if comp.RecomputeInterval > 0 {
 				filters = append(filters, bson.M{
-					// may be valid or invalid
+					validField: true,
 					updatedField: bson.M{
 						"$lt": time.Now().Add(-comp.RecomputeInterval),
 					},
