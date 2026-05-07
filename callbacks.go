@@ -101,7 +101,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 
 				// check equality
 				if !reflect.DeepEqual(stick.MustGet(ctx.Model, field), def) {
-					return xo.SF("field " + field + " is protected")
+					return xo.SF("field %s is protected", field)
 				}
 			}
 		}
@@ -111,7 +111,7 @@ func ProtectedFieldsValidator(pairs map[string]interface{}) *Callback {
 			// check all fields
 			for field := range pairs {
 				if ctx.Modified(field) {
-					return xo.SF("field " + field + " is protected")
+					return xo.SF("field %s is protected", field)
 				}
 			}
 		}
@@ -210,7 +210,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 				// check for existence
 				if int(count) != len(ids) {
-					return xo.SF("missing references for field " + field)
+					return xo.SF("missing references for field %s", field)
 				}
 
 				continue
@@ -228,7 +228,7 @@ func ReferencedResourcesValidator(pairs map[string]coal.Model) *Callback {
 
 			// check for existence
 			if count != 1 {
-				return xo.SF("missing reference for field " + field)
+				return xo.SF("missing reference for field %s", field)
 			}
 		}
 

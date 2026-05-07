@@ -670,7 +670,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 				// modify link
 				err := b.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				if err != nil {
-					return xo.WF(err, field)
+					return xo.WF(err, "%s", field)
 				}
 
 				// update link
@@ -694,7 +694,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 				// modify link
 				err := b.modifyLink(ctx, newLink, oldLink, binding.Name, owner)
 				if err != nil {
-					return xo.WF(err, field)
+					return xo.WF(err, "%s", field)
 				}
 
 				// update link
@@ -716,7 +716,7 @@ func (b *Bucket) Modifier(fields ...string) *fire.Callback {
 				// modify links
 				err := b.modifyLinks(ctx, newLinks, oldLinks, binding.Name, owner)
 				if err != nil {
-					return xo.WF(err, field)
+					return xo.WF(err, "%s", field)
 				}
 
 				// update links

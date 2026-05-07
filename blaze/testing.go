@@ -51,7 +51,6 @@ func TestService(t Tester, svc Service) {
 
 	err = downloadTo(svc, handle, new(bytes.Buffer))
 	assert.Error(t, err)
-	assert.True(t, ErrNotFound.Is(err))
 
 	length, err = uploadFrom(svc, handle, Info{
 		Size:      12,

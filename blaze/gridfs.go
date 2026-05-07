@@ -2,6 +2,7 @@ package blaze
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/256dpi/lungo"
@@ -63,15 +64,15 @@ func (g *GridFS) Lookup(ctx context.Context, handle Handle) (Info, error) {
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
-	if err != nil {
+	if errors.Is(err, lungo.ErrFileNotFound) {
+		return Info{}, ErrNotFound.Wrap()
+	} else if err != nil {
 		return Info{}, xo.W(err)
 	}
 
 	// load file and first chunk
 	_, err = stream.Seek(0, io.SeekStart)
-	if err == lungo.ErrFileNotFound {
-		return Info{}, ErrNotFound.Wrap()
-	} else if err != nil {
+	if err != nil {
 		return Info{}, xo.W(err)
 	}
 
@@ -94,15 +95,15 @@ func (g *GridFS) Download(ctx context.Context, handle Handle) (Download, error) 
 
 	// open download stream
 	stream, err := g.bucket.OpenDownloadStream(ctx, id)
-	if err != nil {
+	if errors.Is(err, lungo.ErrFileNotFound) {
+		return nil, ErrNotFound.Wrap()
+	} else if err != nil {
 		return nil, xo.W(err)
 	}
 
 	// load file and first chunk
 	_, err = stream.Seek(0, io.SeekStart)
-	if err == lungo.ErrFileNotFound {
-		return nil, ErrNotFound.Wrap()
-	} else if err != nil {
+	if err != nil {
 		return nil, xo.W(err)
 	}
 

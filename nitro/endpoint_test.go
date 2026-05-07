@@ -69,13 +69,13 @@ func TestEndpoint(t *testing.T) {
 
 	/* wrong method */
 
-	res := serve.Record(endpoint, "GET", "/foo", nil, "")
+	res := serve.Record(nil, endpoint, "GET", "/foo", nil, "")
 	assert.Equal(t, http.StatusMethodNotAllowed, res.Code)
 	assert.Equal(t, "", res.Body.String())
 
 	/* not found */
 
-	res = serve.Record(endpoint, "POST", "/foo", nil, "")
+	res = serve.Record(nil, endpoint, "POST", "/foo", nil, "")
 	assert.Equal(t, http.StatusNotFound, res.Code)
 	assert.Equal(t, "", res.Body.String())
 
@@ -152,13 +152,13 @@ func TestEndpoint(t *testing.T) {
 
 	/* invalid method */
 
-	r := serve.Record(endpoint, "GET", "/proc", nil, "")
+	r := serve.Record(nil, endpoint, "GET", "/proc", nil, "")
 	assert.Equal(t, http.StatusMethodNotAllowed, r.Code)
 	assert.Equal(t, ``, r.Body.String())
 
 	/* missing procedure */
 
-	r = serve.Record(endpoint, "POST", "/cool", nil, "")
+	r = serve.Record(nil, endpoint, "POST", "/cool", nil, "")
 	assert.Equal(t, http.StatusNotFound, r.Code)
 	assert.Equal(t, ``, r.Body.String())
 

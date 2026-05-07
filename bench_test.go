@@ -115,7 +115,7 @@ func listBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	}
 
 	parallelBenchmark(b, parallelism, func() bool {
-		res := serve.Record(tester.Handler, "GET", "/posts", nil, "")
+		res := serve.Record(nil, tester.Handler, "GET", "/posts", nil, "")
 		return res.Code == http.StatusOK
 	})
 }
@@ -147,7 +147,7 @@ func findBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	}).ID()
 
 	parallelBenchmark(b, parallelism, func() bool {
-		res := serve.Record(tester.Handler, "GET", "/posts/"+id.Hex(), nil, "")
+		res := serve.Record(nil, tester.Handler, "GET", "/posts/"+id.Hex(), nil, "")
 		return res.Code == http.StatusOK
 	})
 }
@@ -178,7 +178,7 @@ func createBenchmark(b *testing.B, store *coal.Store, parallelism int) {
 	}
 
 	parallelBenchmark(b, parallelism, func() bool {
-		res := serve.Record(tester.Handler, "POST", "/posts", headers, `{
+		res := serve.Record(nil, tester.Handler, "POST", "/posts", headers, `{
 			"data": {
 				"type": "posts",
 				"attributes": {
