@@ -6,17 +6,22 @@ import (
 	"github.com/256dpi/fire"
 )
 
+// StateFactory constructs per-connection state.
+type StateFactory func(ctx *fire.Context) (State, error)
+
 // Watcher will watch multiple collections and serve watch requests by clients.
 type Watcher struct {
+	factory  StateFactory
 	reporter func(error)
 	manager  *manager
 	streams  map[string]*Stream
 }
 
 // NewWatcher creates and returns a new watcher.
-func NewWatcher(reporter func(error)) *Watcher {
+func NewWatcher(factory StateFactory, reporter func(error)) *Watcher {
 	// prepare watcher
 	w := &Watcher{
+		factory:  factory,
 		reporter: reporter,
 		streams:  make(map[string]*Stream),
 	}

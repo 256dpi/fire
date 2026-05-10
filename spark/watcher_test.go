@@ -14,7 +14,7 @@ import (
 
 func TestWatcher(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
-		watcher := NewWatcher(xo.Crash)
+		watcher := NewWatcher(nil, xo.Crash)
 		watcher.Add(&Stream{
 			Model: &itemModel{},
 			Store: tester.Store,

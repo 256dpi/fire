@@ -127,6 +127,15 @@ func (m *manager) handle(ctx *fire.Context) error {
 	// ensure the connections gets closed
 	defer conn.Close()
 
+	// construct state
+	var state State
+	if m.watcher.factory != nil {
+		state, err = m.watcher.factory(ctx)
+		if err != nil {
+			return xo.WF(err, "state factory failed")
+		}
+	}
+
 	// prepare queue
 	queue := make(chan *Event, 10)
 
@@ -241,6 +250,7 @@ func (m *manager) handle(ctx *fire.Context) error {
 					Context: ctx,
 					Data:    data,
 					Stream:  stream,
+					State:   state,
 				}
 
 				// validate subscription if available
@@ -265,6 +275,14 @@ func (m *manager) handle(ctx *fire.Context) error {
 			// check if closed
 			if !ok {
 				return nil
+			}
+
+			// update state before dispatch
+			if state != nil {
+				err = state.Update(evt)
+				if err != nil {
+					return xo.WF(err, "state update failed")
+				}
 			}
 
 			// get subscription

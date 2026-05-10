@@ -11,6 +11,12 @@ import (
 // Map holds custom data for a subscription.
 type Map map[string]interface{}
 
+// State holds per-connection state. Update is called for every event observed
+// by the watcher before subscriptions are evaluated.
+type State interface {
+	Update(*Event) error
+}
+
 // Subscription is a single subscription to a stream by a client.
 type Subscription struct {
 	// Context is the original context of the request.
@@ -21,6 +27,9 @@ type Subscription struct {
 
 	// Stream is the subscribed stream.
 	Stream *Stream
+
+	// State is the per-connection state.
+	State State
 }
 
 // Event describes an event.
