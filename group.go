@@ -214,8 +214,13 @@ func (g *Group) Endpoint(prefix string) http.Handler {
 				// replace context
 				ctx.Context = ct
 
-				// call action with context
-				xo.AbortIf(action.Action.Handler(ctx))
+				// call action with context and handle errors
+				err := xo.W(action.Action.Handler(ctx))
+				if xo.IsSafe(err) {
+					xo.Abort(jsonapi.ErrorFromStatus(http.StatusBadRequest, err.Error()))
+				} else if err != nil {
+					xo.Abort(err)
+				}
 
 				return
 			}

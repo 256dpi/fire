@@ -153,6 +153,9 @@ func TestGroupAction(t *testing.T) {
 				}),
 			},
 			Action: A("TestGroupAction", []string{"GET", "PUT", "DELETE"}, 0, 0, func(ctx *Context) error {
+				if ctx.HTTPRequest.Method == "PUT" {
+					return xo.SF("bad request")
+				}
 				ctx.ResponseWriter.WriteHeader(http.StatusFound)
 				return nil
 			}),
@@ -182,6 +185,10 @@ func TestGroupAction(t *testing.T) {
 
 		tester.Request("PUT", "bar", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
 			assert.Equal(t, http.StatusNotFound, r.Result().StatusCode)
+		})
+
+		tester.Request("PUT", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode)
 		})
 
 		tester.Request("DELETE", "foo", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
