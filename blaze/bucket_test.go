@@ -1191,6 +1191,17 @@ func TestBucketDownloadAction(t *testing.T) {
 		assert.Equal(t, http.Header{}, rec.Header())
 		assert.Equal(t, "", rec.Body.String())
 
+		/* invalid key */
+
+		req = httptest.NewRequest("GET", "/foo?key=invalid", nil)
+		rec, err = tester.RunAction(&fire.Context{
+			HTTPRequest: req,
+		}, action)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusForbidden, rec.Code)
+		assert.Equal(t, http.Header{}, rec.Header())
+		assert.Equal(t, "", rec.Body.String())
+
 		/* with key */
 
 		_, file, err := bucket.Upload(nil, "火.txt", "text/plain", 12, func(upload Upload) (int64, error) {

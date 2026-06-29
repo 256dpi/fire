@@ -1023,7 +1023,12 @@ func (b *Bucket) DownloadAction(timeout time.Duration) *fire.Action {
 
 		// initiate download
 		download, file, err := b.Download(ctx, key)
-		if err != nil {
+		if heat.ErrExpiredToken.Is(err) || heat.ErrInvalidToken.Is(err) {
+			// an expired or invalid view key is a client condition (e.g. a stale
+			// or cached download URL) and must not be reported as a server error
+			ctx.ResponseWriter.WriteHeader(http.StatusForbidden)
+			return nil
+		} else if err != nil {
 			return err
 		}
 
