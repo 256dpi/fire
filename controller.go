@@ -433,9 +433,11 @@ func (c *Controller) handle(prefix string, ctx *Context, selector bson.M, write 
 	ctx.Store = c.Store
 	ctx.Selector = selector
 	ctx.Filters = []bson.M{}
-	ctx.ReadableFields = c.initialFields(false, ctx.JSONAPIRequest)
-	ctx.WritableFields = c.initialFields(true, nil)
-	ctx.ReadableProperties = c.initialProperties(ctx.JSONAPIRequest)
+	ctx.ReadableFields = c.initialFields(false)
+	ctx.WritableFields = c.initialFields(true)
+	ctx.ReadableProperties = c.initialProperties()
+	ctx.selectedFields = c.selectedFields(ctx.JSONAPIRequest)
+	ctx.selectedProperties = c.selectedProperties(ctx.JSONAPIRequest)
 	ctx.RelationshipFilters = map[string][]bson.M{}
 
 	// run operation with transaction if not an action
@@ -1430,7 +1432,7 @@ func (c *Controller) handleResourceAction(ctx *Context) {
 	c.runAction(action, ctx, http.StatusBadRequest)
 }
 
-func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
+func (c *Controller) initialFields(write bool) []string {
 	// prepare list
 	list := make([]string, 0, len(c.meta.Attributes)+len(c.meta.Relationships))
 
@@ -1446,24 +1448,36 @@ func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
 		}
 	}
 
-	// check if a field whitelist has been provided
-	if r != nil && len(r.Fields[c.meta.PluralName]) > 0 {
-		// convert requested fields list
-		var requested []string
-		for _, field := range r.Fields[c.meta.PluralName] {
-			// add attribute
-			if f := c.meta.Attributes[field]; f != nil {
-				requested = append(requested, f.Name)
-			}
+	// sort list
+	sort.Strings(list)
 
-			// add relationship
-			if f := c.meta.Relationships[field]; f != nil && (!write || f.ToOne || f.ToMany) {
-				requested = append(requested, f.Name)
-			}
+	return list
+}
+
+// selectedFields returns the fields named by the request's sparse fieldset, or
+// nil if the request did not provide one. Unknown names are dropped rather than
+// refused, as a sparse fieldset is a projection and not an assertion about the
+// resource.
+func (c *Controller) selectedFields(r *jsonapi.Request) []string {
+	// check request
+	if r == nil || len(r.Fields[c.meta.PluralName]) == 0 {
+		return nil
+	}
+
+	// prepare list
+	list := make([]string, 0, len(r.Fields[c.meta.PluralName]))
+
+	// convert requested fields
+	for _, field := range r.Fields[c.meta.PluralName] {
+		// add attribute
+		if f := c.meta.Attributes[field]; f != nil {
+			list = append(list, f.Name)
 		}
 
-		// whitelist requested fields
-		list = stick.Intersect(requested, list)
+		// add relationship
+		if f := c.meta.Relationships[field]; f != nil {
+			list = append(list, f.Name)
+		}
 	}
 
 	// sort list
@@ -1472,7 +1486,7 @@ func (c *Controller) initialFields(write bool, r *jsonapi.Request) []string {
 	return list
 }
 
-func (c *Controller) initialProperties(r *jsonapi.Request) []string {
+func (c *Controller) initialProperties() []string {
 	// prepare list
 	list := make([]string, 0, len(c.Properties))
 
@@ -1481,27 +1495,30 @@ func (c *Controller) initialProperties(r *jsonapi.Request) []string {
 		list = append(list, name)
 	}
 
-	// check if a field whitelist has been provided
-	if r != nil && len(r.Fields[c.meta.PluralName]) > 0 {
-		// convert requested fields list
-		var requested []string
-		for _, field := range r.Fields[c.meta.PluralName] {
-			// add attribute
-			var found bool
-			var name string
-			for n, key := range c.Properties {
-				if field == key {
-					found = true
-					name = n
-				}
-			}
-			if found {
-				requested = append(requested, name)
+	// sort list
+	sort.Strings(list)
+
+	return list
+}
+
+// selectedProperties returns the properties named by the request's sparse
+// fieldset, or nil if the request did not provide one.
+func (c *Controller) selectedProperties(r *jsonapi.Request) []string {
+	// check request
+	if r == nil || len(r.Fields[c.meta.PluralName]) == 0 {
+		return nil
+	}
+
+	// prepare list
+	list := make([]string, 0, len(c.Properties))
+
+	// convert requested fields, properties are addressed by their key
+	for _, field := range r.Fields[c.meta.PluralName] {
+		for name, key := range c.Properties {
+			if field == key {
+				list = append(list, name)
 			}
 		}
-
-		// whitelist requested fields
-		list = stick.Intersect(requested, list)
 	}
 
 	// sort list
@@ -2101,8 +2118,9 @@ func (c *Controller) preloadRelationships(ctx *Context, models []coal.Model) map
 	ctx.Tracer.Push("fire/Controller.preloadRelationships")
 	defer ctx.Tracer.Pop()
 
-	// get readable fields
-	readableFields := c.readableFields(ctx, ctx.Model)
+	// get exposed fields, a relationship the sparse fieldset leaves out is not
+	// serialized and does not have to be loaded
+	readableFields := c.exposedFields(ctx, ctx.Model)
 
 	// prepare relationships
 	relationships := make(map[string]map[coal.ID][]coal.ID)
@@ -2260,8 +2278,8 @@ func (c *Controller) resourcesForModels(ctx *Context, models []coal.Model, relat
 func (c *Controller) constructResource(ctx *Context, model coal.Model, relationships map[string]map[coal.ID][]coal.ID) *jsonapi.Resource {
 	// do not trace this call
 
-	// get readable fields
-	readableFields := c.readableFields(ctx, model)
+	// get exposed fields
+	readableFields := c.exposedFields(ctx, model)
 
 	// prepare whitelist
 	whitelist := make([]string, 0, len(readableFields))
@@ -2453,8 +2471,8 @@ func (c *Controller) constructResource(ctx *Context, model coal.Model, relations
 		}
 	}
 
-	// get readable properties
-	readableProperties := c.readableProperties(ctx, model)
+	// get exposed properties
+	readableProperties := c.exposedProperties(ctx, model)
 
 	// call properties
 	for name, key := range c.Properties {
@@ -2656,6 +2674,36 @@ func (c *Controller) runAction(a *Action, ctx *Context, errorStatus int) {
 	} else if err != nil {
 		xo.Abort(err)
 	}
+}
+
+// exposedFields returns the readable fields reduced to the sparse fieldset the
+// client requested. It is what a serialized resource carries, while
+// readableFields stays the authorization boundary that filtering, sorting and
+// relationship access are checked against.
+func (c *Controller) exposedFields(ctx *Context, model coal.Model) []string {
+	// get readable fields
+	fields := c.readableFields(ctx, model)
+
+	// check selection
+	if ctx.selectedFields == nil {
+		return fields
+	}
+
+	return stick.Intersect(fields, ctx.selectedFields)
+}
+
+// exposedProperties returns the readable properties reduced to the sparse
+// fieldset the client requested.
+func (c *Controller) exposedProperties(ctx *Context, model coal.Model) []string {
+	// get readable properties
+	properties := c.readableProperties(ctx, model)
+
+	// check selection
+	if ctx.selectedProperties == nil {
+		return properties
+	}
+
+	return stick.Intersect(properties, ctx.selectedProperties)
 }
 
 func (c *Controller) readableFields(ctx *Context, model coal.Model) []string {

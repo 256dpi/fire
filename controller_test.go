@@ -4871,6 +4871,103 @@ func TestSparseFields(t *testing.T) {
 	})
 }
 
+func TestSparseFieldsFiltering(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model:   &postModel{},
+			Filters: []string{"Title"},
+			Sorters: []string{"Title"},
+		}, &Controller{
+			Model: &noteModel{},
+		})
+
+		// create posts
+		post1 := tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		}).ID()
+		tester.Insert(&postModel{
+			Title:     "post-2",
+			Published: false,
+		})
+
+		// a sparse fieldset is a projection the client asked for and not an
+		// authorization boundary, so a field it leaves out may still be
+		// filtered and sorted on
+		tester.Request("GET", "posts?fields[posts]=published&filter[title]=post-1&sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			data := gjson.Get(r.Body.String(), "data").Raw
+
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `[
+				{
+					"type": "posts",
+					"id": "`+post1.Hex()+`",
+					"attributes": {
+						"published": true
+					}
+				}
+			]`, data, tester.DebugRequest(rq, r))
+		})
+	})
+}
+
+func TestSparseFieldsUnreadable(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		tester.Assign("", &Controller{
+			Model:   &postModel{},
+			Filters: []string{"Title"},
+			Sorters: []string{"Title"},
+			Authorizers: L{
+				C("TestSparseFieldsUnreadable", Authorizer, All(), func(ctx *Context) error {
+					// the sparse fieldset must not narrow what the authorizer
+					// is handed, or it could not reduce what it never saw
+					assert.Equal(t, []string{"Comments", "Note", "Published", "Selections", "TextBody", "Title"}, ctx.ReadableFields)
+					ctx.ReadableFields = []string{"Published"}
+					return nil
+				}),
+			},
+		}, &Controller{
+			Model: &noteModel{},
+		})
+
+		// create post
+		tester.Insert(&postModel{
+			Title:     "post-1",
+			Published: true,
+		})
+
+		// requesting a field the authorizer removed yields it neither as an
+		// attribute nor as a filter
+		tester.Request("GET", "posts?fields[posts]=title,published", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusOK, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.NotContains(t, r.Body.String(), `"title"`, tester.DebugRequest(rq, r))
+			assert.Contains(t, r.Body.String(), `"published"`, tester.DebugRequest(rq, r))
+		})
+
+		tester.Request("GET", "posts?fields[posts]=title&filter[title]=post-1", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "filter field is not readable"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+
+		tester.Request("GET", "posts?fields[posts]=title&sort=title", "", func(r *httptest.ResponseRecorder, rq *http.Request) {
+			assert.Equal(t, http.StatusBadRequest, r.Result().StatusCode, tester.DebugRequest(rq, r))
+			assert.JSONEq(t, `{
+				"errors": [{
+					"status": "400",
+					"title": "bad request",
+					"detail": "sort field is not readable"
+				}]
+			}`, r.Body.String(), tester.DebugRequest(rq, r))
+		})
+	})
+}
+
 func TestReadableFields(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *Tester) {
 		tester.Assign("", &Controller{

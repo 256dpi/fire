@@ -153,6 +153,10 @@ type Context struct {
 	// attributes and relationships. Additionally, only readable fields can
 	// be used for filtering and sorting.
 	//
+	// This is the authorization boundary and is not narrowed by a sparse
+	// fieldset: a client may filter and sort on a field it chose not to have
+	// returned, as long as it is allowed to read it.
+	//
 	// Usage: Reduce only
 	// Availability: Authorizers
 	// Operations: !Delete, !ResourceAction, !CollectionAction
@@ -195,6 +199,13 @@ type Context struct {
 	// Availability: Authorizers.
 	// Operations: !Create, !CollectionAction
 	RelationshipFilters map[string][]bson.M
+
+	// The fields and properties named by the request's sparse fieldset, or nil
+	// if the request did not carry one. They are a projection the client asked
+	// for and never widen what ReadableFields and ReadableProperties allow, so
+	// they are applied when a resource is serialized and nowhere else.
+	selectedFields     []string
+	selectedProperties []string
 
 	// The model that will be created, updated, deleted or is requested by a
 	// resource action.
