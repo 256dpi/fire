@@ -9,6 +9,10 @@ import (
 )
 
 // ProcessJob defines a job that processes a single operation.
+//
+// The job is not an axe.RequeueableJob, as the outstanding tag already ensures
+// that changes made during processing are picked up by the next scan, while
+// flagging the running job could fail the transactions of concurrent requests.
 type ProcessJob struct {
 	axe.Base  `json:"-" axe:"torch/process"`
 	Operation string  `json:"operation"`
