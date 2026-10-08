@@ -44,8 +44,9 @@ type Event struct {
 }
 
 func init() {
-	// add indexes
-	coal.AddIndex(&Model{}, false, 0, "Name")
+	// add indexes, the compound index serves the Enqueue filter and, through
+	// its prefix, the queries that only select a name
+	coal.AddIndex(&Model{}, false, 0, "Name", "Label", "State")
 	coal.AddIndex(&Model{}, false, 0, "State")
 	coal.AddIndex(&Model{}, false, time.Minute, "Finished")
 }
