@@ -85,6 +85,10 @@ type Model struct {
 	// Attempts is incremented with each execution attempt.
 	Attempts int `json:"attempts"`
 
+	// Whether the job has been enqueued again during the current execution.
+	// It is reset when the job is dequeued.
+	Requeue bool `json:"requeue"`
+
 	// The current execution status.
 	Status string `json:":status"`
 

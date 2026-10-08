@@ -3,6 +3,7 @@ package axe
 import (
 	"io"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1055,5 +1056,64 @@ func TestQueueCloseFinish(t *testing.T) {
 		model := tester.Fetch(&Model{}, job.ID()).(*Model)
 		assert.Equal(t, Completed, model.State)
 		assert.Equal(t, 1, model.Attempts)
+	})
+}
+
+func TestQueueRequeue(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		started := make(chan struct{})
+		release := make(chan struct{})
+		done := make(chan struct{})
+
+		queue := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: xo.Crash,
+		})
+
+		// the first execution runs until released, the second one is the
+		// requeued job
+		var runs atomic.Int32
+		queue.Add(&Task{
+			Job: &requeueJob{},
+			Handler: func(ctx *Context) error {
+				if runs.Add(1) == 1 {
+					close(started)
+					<-release
+				} else {
+					close(done)
+				}
+				return nil
+			},
+		})
+
+		<-queue.Run()
+
+		enqueued, err := queue.Enqueue(nil, &requeueJob{Base: B("test")}, 0, 0)
+		assert.NoError(t, err)
+		assert.True(t, enqueued)
+
+		<-started
+
+		// enqueueing while the job runs flags it
+		enqueued, err = queue.Enqueue(nil, &requeueJob{Base: B("test")}, 0, 0)
+		assert.NoError(t, err)
+		assert.False(t, enqueued)
+
+		close(release)
+
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Fatal("job not requeued")
+		}
+
+		queue.Close()
+
+		assert.Equal(t, int32(2), runs.Load())
+
+		list := *tester.FindAll(&Model{}).(*[]*Model)
+		assert.Len(t, list, 2)
+		assert.Equal(t, Completed, list[0].State)
+		assert.Equal(t, Completed, list[1].State)
 	})
 }

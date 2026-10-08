@@ -19,6 +19,10 @@ import (
 // label in the enqueued, dequeued or failed state. If isolation is non-zero
 // the same rules applies also to unlabeled jobs in addition to that finished
 // jobs must be older than the specified duration.
+//
+// If the job is requeueable, isolation is zero and a job with the same label
+// is dequeued, that job is flagged to be requeued instead. See RequeueableJob
+// for details.
 func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation time.Duration) (bool, error) {
 	// get meta and base
 	meta := GetMeta(job)
@@ -85,6 +89,25 @@ func Enqueue(ctx context.Context, store *coal.Store, job Job, delay, isolation t
 		}
 
 		return true, nil
+	}
+
+	// flag a dequeued job with the same label to be requeued if requested, as
+	// it may have already read the state this job is enqueued for
+	if rj, ok := job.(RequeueableJob); ok && rj.Requeueable() && isolation == 0 {
+		found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
+			"Name":  meta.Name,
+			"Label": base.Label,
+			"State": Dequeued,
+		}, bson.M{
+			"$set": bson.M{
+				"Requeue": true,
+			},
+		}, nil, false)
+		if err != nil {
+			return false, err
+		} else if found {
+			return false, nil
+		}
 	}
 
 	// prepare filter
@@ -170,6 +193,7 @@ func Dequeue(ctx context.Context, store *coal.Store, job Job, timeout time.Durat
 			"Available": now.Add(timeout),
 			"Started":   now,
 			"Ended":     nil,
+			"Requeue":   false,
 		},
 		"$inc": bson.M{
 			"Attempts": 1,
@@ -329,10 +353,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":   job.ID(),
-		"State": Dequeued,
-	}, bson.M{
+	return finishJob(ctx, store, job, bson.M{
 		"$set": bson.M{
 			"State":    Completed,
 			"Data":     data,
@@ -347,14 +368,7 @@ func Complete(ctx context.Context, store *coal.Store, job Job) error {
 				State:     Completed,
 			},
 		},
-	}, nil, false)
-	if err != nil {
-		return err
-	} else if !found {
-		return xo.F("missing job")
-	}
-
-	return nil
+	})
 }
 
 // Fail will fail the specified job with the provided reason. It may delay the
@@ -422,10 +436,7 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 	now := time.Now()
 
 	// update job
-	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, bson.M{
-		"_id":   job.ID(),
-		"State": Dequeued,
-	}, bson.M{
+	return finishJob(ctx, store, job, bson.M{
 		"$set": bson.M{
 			"State":    Cancelled,
 			"Ended":    now,
@@ -438,7 +449,79 @@ func Cancel(ctx context.Context, store *coal.Store, job Job, reason string) erro
 				Reason:    reason,
 			},
 		},
-	}, nil, false)
+	})
+}
+
+// finishJob will apply the update to the specified dequeued job. If the job
+// has been flagged to be requeued, a new job with the same name, label and data
+// is enqueued first. The new job is inserted before the update, so if the
+// process dies in between, the job stays dequeued and is executed again after
+// its timeout, but the request is never lost.
+func finishJob(ctx context.Context, store *coal.Store, job Job, update bson.M) error {
+	// prepare filter
+	filter := bson.M{
+		"_id":   job.ID(),
+		"State": Dequeued,
+		"Requeue": bson.M{
+			"$ne": true,
+		},
+	}
+
+	// update job, unless flagged to be requeued. the flag is only set on
+	// dequeued jobs, so once this update matched, a later enqueue inserts a
+	// new job instead
+	found, err := store.M(&Model{}).UpdateFirst(ctx, nil, filter, update, nil, false)
+	if err != nil {
+		return err
+	} else if found {
+		return nil
+	}
+
+	// get flagged job
+	var model Model
+	found, err = store.M(&Model{}).FindFirst(ctx, &model, bson.M{
+		"_id":     job.ID(),
+		"State":   Dequeued,
+		"Requeue": true,
+	}, nil, 0, false)
+	if err != nil {
+		return err
+	} else if !found {
+		return xo.F("missing job")
+	}
+
+	// get time
+	now := time.Now()
+
+	// enqueue new job, unless one is already waiting
+	_, err = store.M(&Model{}).InsertIfMissing(ctx, bson.M{
+		"Name":  model.Name,
+		"Label": model.Label,
+		"State": bson.M{
+			"$in": bson.A{Enqueued, Failed},
+		},
+	}, &Model{
+		Base:      coal.B(),
+		Name:      model.Name,
+		Label:     model.Label,
+		Data:      model.Data,
+		State:     Enqueued,
+		Created:   now,
+		Available: now,
+		Events: []Event{
+			{
+				Timestamp: now,
+				State:     Enqueued,
+			},
+		},
+	}, false)
+	if err != nil {
+		return err
+	}
+
+	// update job
+	delete(filter, "Requeue")
+	found, err = store.M(&Model{}).UpdateFirst(ctx, nil, filter, update, nil, false)
 	if err != nil {
 		return err
 	} else if !found {

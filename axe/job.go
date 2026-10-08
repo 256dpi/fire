@@ -17,6 +17,21 @@ type Job interface {
 	GetAccessor(interface{}) *stick.Accessor
 }
 
+// RequeueableJob is an optional interface that can be implemented by labeled
+// jobs that act on state which may change while they are executed.
+type RequeueableJob interface {
+	Job
+
+	// Requeueable returns whether the job should be requeued if it is enqueued
+	// without isolation while a job with the same label is dequeued. If true,
+	// the dequeued job is flagged and a new job with the same name, label and
+	// data is enqueued once the flagged job has been completed or cancelled.
+	//
+	// Note: The flag is set on the dequeued job, which will conflict with
+	// other transactions that enqueue the same job concurrently.
+	Requeueable() bool
+}
+
 // Base can be embedded in a struct to turn it into a job.
 type Base struct {
 	// The ID of the document.

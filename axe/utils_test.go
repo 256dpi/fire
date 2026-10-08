@@ -29,6 +29,20 @@ func (j *testJob) Validate() error {
 	return nil
 }
 
+type requeueJob struct {
+	Base `json:"-" axe:"requeue"`
+
+	Data string `json:"data"`
+}
+
+func (j *requeueJob) Validate() error {
+	return nil
+}
+
+func (j *requeueJob) Requeueable() bool {
+	return true
+}
+
 func withTester(t *testing.T, fn func(*testing.T, *fire.Tester)) {
 	t.Run("Mongo", func(t *testing.T) {
 		tester := fire.NewTester(mongoStore, modelList...)
