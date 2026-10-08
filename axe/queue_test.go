@@ -997,11 +997,13 @@ func TestQueueCloseActive(t *testing.T) {
 				<-ctx.Done()
 				return ctx.Err()
 			},
+			MaxAttempts: 1,
 		})
 
 		<-queue.Run()
 
-		_, err := queue.Enqueue(nil, &testJob{}, 0, 0)
+		job := testJob{}
+		_, err := queue.Enqueue(nil, &job, 0, 0)
 		assert.NoError(t, err)
 
 		<-started
@@ -1012,5 +1014,46 @@ func TestQueueCloseActive(t *testing.T) {
 		mutex.Lock()
 		assert.Empty(t, reported)
 		mutex.Unlock()
+
+		// the job is failed to be retried, although it was the last attempt
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, Failed, model.State)
+		assert.Equal(t, 1, model.Attempts)
+	})
+}
+
+func TestQueueCloseFinish(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		started := make(chan struct{})
+
+		queue := NewQueue(Options{
+			Store:    tester.Store,
+			Reporter: xo.Crash,
+		})
+
+		// the job finishes although the queue is closed
+		queue.Add(&Task{
+			Job: &testJob{},
+			Handler: func(ctx *Context) error {
+				close(started)
+				<-ctx.Done()
+				return nil
+			},
+		})
+
+		<-queue.Run()
+
+		job := testJob{}
+		_, err := queue.Enqueue(nil, &job, 0, 0)
+		assert.NoError(t, err)
+
+		<-started
+
+		queue.Close()
+
+		// the outcome is recorded
+		model := tester.Fetch(&Model{}, job.ID()).(*Model)
+		assert.Equal(t, Completed, model.State)
+		assert.Equal(t, 1, model.Attempts)
 	})
 }

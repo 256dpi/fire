@@ -390,6 +390,13 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		return xo.F(`task "%s" ran longer than the specified lifetime`, name)
 	}
 
+	// prepare a context for the job state updates that is not cancelled by
+	// closing the queue, so the outcome of the handler is still recorded
+	stateContext := context.WithoutCancel(outerContext)
+
+	// check if the handler has been interrupted by closing the queue
+	interrupted := !queue.tomb.Alive() && errors.Is(err, context.Canceled)
+
 	// check error
 	var anError *Error
 	if errors.As(err, &anError) {
@@ -397,7 +404,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		if anError.Retry {
 			// fail job
 			delay := stick.Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
-			err = Fail(outerContext, queue.options.Store, job, anError.Reason, delay)
+			err = Fail(stateContext, queue.options.Store, job, anError.Reason, delay)
 			if err != nil {
 				return err
 			}
@@ -406,7 +413,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		}
 
 		// cancel job
-		err = Cancel(outerContext, queue.options.Store, job, anError.Reason)
+		err = Cancel(stateContext, queue.options.Store, job, anError.Reason)
 		if err != nil {
 			return err
 		}
@@ -424,11 +431,11 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 
 	// handle other errors
 	if err != nil {
-		// check attempts
-		if t.MaxAttempts == 0 || attempt < t.MaxAttempts {
+		// check attempts, an interrupted job is always retried
+		if t.MaxAttempts == 0 || attempt < t.MaxAttempts || interrupted {
 			// fail job
 			delay := stick.Backoff(t.MinDelay, t.MaxDelay, t.DelayFactor, attempt)
-			failErr := Fail(outerContext, queue.options.Store, job, err.Error(), delay)
+			failErr := Fail(stateContext, queue.options.Store, job, err.Error(), delay)
 			if failErr != nil {
 				return errors.Join(err, failErr)
 			}
@@ -437,7 +444,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 		}
 
 		// cancel job
-		cancelErr := Cancel(outerContext, queue.options.Store, job, err.Error())
+		cancelErr := Cancel(stateContext, queue.options.Store, job, err.Error())
 		if cancelErr != nil {
 			return errors.Join(err, cancelErr)
 		}
@@ -454,7 +461,7 @@ func (t *Task) execute(queue *Queue, name string, id coal.ID) error {
 	}
 
 	// complete job
-	err = Complete(outerContext, queue.options.Store, job)
+	err = Complete(stateContext, queue.options.Store, job)
 	if err != nil {
 		return err
 	}
