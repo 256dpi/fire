@@ -209,28 +209,33 @@ func (q *Queue) Run() chan struct{} {
 	return synced
 }
 
-// Close will close the queue.
+// Close will close the queue. Active jobs are cancelled, the errors caused
+// by that are not reported.
 func (q *Queue) Close() {
-	// cancel active work first
+	// kill first, so cancellations are known to be caused by the close
+	q.tomb.Kill(nil)
+
+	// cancel active work
 	if q.cancel != nil {
 		q.cancel()
 	}
 
-	// kill and wait
-	q.tomb.Kill(nil)
+	// wait
 	_ = q.tomb.Wait()
 }
 
 func (q *Queue) process(synced chan struct{}) error {
-	// start tasks
-	for _, task := range q.tasks {
-		task.start(q)
-	}
-
-	// reconcile jobs
+	// reconcile jobs and start the tasks once the existing jobs have been
+	// loaded, so they never work with a partial board and every job enqueued
+	// from then on is yielded by the stream
 	var once sync.Once
 	stream := coal.Reconcile(q.options.Store, &Model{}, func() {
 		once.Do(func() {
+			if q.tomb.Alive() {
+				for _, task := range q.tasks {
+					task.start(q)
+				}
+			}
 			close(synced)
 		})
 	}, func(model coal.Model) {

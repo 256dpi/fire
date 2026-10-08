@@ -279,9 +279,10 @@ func (t *Task) worker(queue *Queue) error {
 			continue
 		}
 
-		// execute job
+		// execute job, a cancellation caused by closing the queue is not an
+		// error of the job
 		err := t.execute(queue, name, id)
-		if err != nil && queue.options.Reporter != nil {
+		if err != nil && queue.options.Reporter != nil && (queue.tomb.Alive() || !errors.Is(err, context.Canceled)) {
 			queue.options.Reporter(err)
 		}
 	}

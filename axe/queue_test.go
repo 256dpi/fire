@@ -2,6 +2,7 @@ package axe
 
 import (
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +12,14 @@ import (
 	"github.com/256dpi/fire"
 	"github.com/256dpi/fire/stick"
 )
+
+type chainJob struct {
+	Base `json:"-" axe:"chain"`
+}
+
+func (j *chainJob) Validate() error {
+	return nil
+}
 
 func TestQueue(t *testing.T) {
 	withTester(t, func(t *testing.T, tester *fire.Tester) {
@@ -903,5 +912,105 @@ func TestQueuePeriodically(t *testing.T) {
 		}, model.Events)
 
 		queue.Close()
+	})
+}
+
+func TestQueueStartChain(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		// a job enqueued while the queue starts must not be missed, the race
+		// needs a few rounds to show
+		for i := 0; i < 20; i++ {
+			tester.Clean()
+
+			done := make(chan struct{})
+			var once sync.Once
+
+			queue := NewQueue(Options{
+				Store:    tester.Store,
+				Reporter: xo.Crash,
+			})
+
+			// the periodic job enqueues another job when the queue starts
+			queue.Add(&Task{
+				Job: &testJob{},
+				Handler: func(ctx *Context) error {
+					_, err := ctx.Queue.Enqueue(ctx, &chainJob{}, 0, 0)
+					return err
+				},
+				Periodicity: time.Minute,
+				PeriodicJob: Blueprint{
+					Job: &testJob{
+						Base: B("periodic"),
+					},
+				},
+			})
+
+			queue.Add(&Task{
+				Job: &chainJob{},
+				Handler: func(ctx *Context) error {
+					once.Do(func() {
+						close(done)
+					})
+					return nil
+				},
+			})
+
+			<-queue.Run()
+
+			var executed bool
+			select {
+			case <-done:
+				executed = true
+			case <-time.After(5 * time.Second):
+			}
+
+			queue.Close()
+
+			if !executed {
+				t.Fatalf("round %d: chained job not executed", i)
+			}
+		}
+	})
+}
+
+func TestQueueCloseActive(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		started := make(chan struct{})
+
+		var mutex sync.Mutex
+		var reported []error
+
+		queue := NewQueue(Options{
+			Store: tester.Store,
+			Reporter: func(err error) {
+				mutex.Lock()
+				reported = append(reported, err)
+				mutex.Unlock()
+			},
+		})
+
+		// the job runs until the queue is closed
+		queue.Add(&Task{
+			Job: &testJob{},
+			Handler: func(ctx *Context) error {
+				close(started)
+				<-ctx.Done()
+				return ctx.Err()
+			},
+		})
+
+		<-queue.Run()
+
+		_, err := queue.Enqueue(nil, &testJob{}, 0, 0)
+		assert.NoError(t, err)
+
+		<-started
+
+		// closing cancels the job without reporting it
+		queue.Close()
+
+		mutex.Lock()
+		assert.Empty(t, reported)
+		mutex.Unlock()
 	})
 }
