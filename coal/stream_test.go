@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -378,26 +380,31 @@ func TestStreamError(t *testing.T) {
 		bytes, err := bson.Marshal(map[string]string{"foo": "bar"})
 		assert.NoError(t, err)
 
-		i := 1
+		var last time.Time
+		i := 0
 		OpenStream(tester.Store, &postModel{}, bytes, func(e Event, id ID, model Model, err error, token []byte) error {
 			i++
 
 			switch i {
-			case 1:
-				assert.Equal(t, Errored, e)
-				assert.Zero(t, id)
-				assert.Nil(t, model)
-				assert.Error(t, err)
-				assert.NotNil(t, token)
-			case 2:
+			case 1, 2:
 				assert.Equal(t, Errored, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
 				assert.Error(t, err)
 				assert.NotNil(t, token)
 
-				return ErrStop.Wrap()
+				last = time.Now()
 			case 3:
+				// attempts that keep failing are delayed
+				assert.Equal(t, Errored, e)
+				assert.Zero(t, id)
+				assert.Nil(t, model)
+				assert.Error(t, err)
+				assert.NotNil(t, token)
+				assert.True(t, time.Since(last) >= streamMinDelay)
+
+				return ErrStop.Wrap()
+			case 4:
 				assert.Equal(t, Stopped, e)
 				assert.Zero(t, id)
 				assert.Nil(t, model)
@@ -481,4 +488,94 @@ func TestStreamInvalidation(t *testing.T) {
 
 		stream.Close()
 	})
+}
+
+func TestStreamHistoryLost(t *testing.T) {
+	// open a stream with a lost token in a subprocess, which panics
+	if os.Getenv("COAL_HISTORY_LOST") == "1" {
+		tester := NewTester(mongoStore, modelList...)
+		OpenStream(mongoStore, &postModel{}, lostToken(t, tester), func(Event, ID, Model, error, []byte) error {
+			return nil
+		})
+		time.Sleep(10 * time.Second)
+		return
+	}
+
+	// run subprocess
+	cmd := exec.Command(os.Args[0], "-test.run=^TestStreamHistoryLost$")
+	cmd.Env = append(os.Environ(), "COAL_HISTORY_LOST=1")
+	out, err := cmd.CombinedOutput()
+
+	// check panic
+	var exitErr *exec.ExitError
+	assert.True(t, errors.As(err, &exitErr), string(out))
+	assert.Contains(t, string(out), `coal: stream on "posts" lost its history`)
+}
+
+func TestStreamTokenWithoutEvents(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *Tester) {
+		// lungo provides tokens only with events
+		if tester.Store.Lungo() {
+			return
+		}
+
+		time.Sleep(100 * time.Millisecond)
+
+		open := make(chan struct{})
+		done := make(chan struct{})
+
+		stream := OpenStream(tester.Store, &postModel{}, nil, func(e Event, id ID, model Model, err error, token []byte) error {
+			switch e {
+			case Opened:
+				assert.Nil(t, token)
+				close(open)
+			case Stopped:
+				// the token advanced without any event on the collection
+				assert.NotNil(t, token)
+				close(done)
+			default:
+				panic(e)
+			}
+
+			return nil
+		})
+
+		<-open
+
+		// write to another collection while the stream waits
+		tester.Insert(&commentModel{
+			Message: "foo",
+		})
+		time.Sleep(1500 * time.Millisecond)
+
+		stream.Close()
+
+		<-done
+	})
+}
+
+// lostToken returns a resume token of the posts collection with a timestamp
+// before the start of the oplog.
+func lostToken(t *testing.T, tester *Tester) []byte {
+	// watch posts
+	cs, err := tester.Store.DB().Collection(GetMeta(&postModel{}).Collection).Watch(context.Background(), []bson.M{})
+	assert.NoError(t, err)
+	defer cs.Close(context.Background())
+
+	// get a token
+	tester.Insert(&postModel{
+		Title: "lost",
+	})
+	assert.True(t, cs.Next(context.Background()))
+	var token struct {
+		Data string `bson:"_data"`
+	}
+	assert.NoError(t, bson.Unmarshal(cs.ResumeToken(), &token))
+
+	// replace the timestamp, which follows the leading type byte
+	token.Data = token.Data[:2] + "0000000100000001" + token.Data[18:]
+	bytes, err := bson.Marshal(token)
+	assert.NoError(t, err)
+
+	return bytes
 }

@@ -1,11 +1,18 @@
 package coal
 
 import (
+	"errors"
+	"fmt"
+	"time"
+
 	"github.com/256dpi/xo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"gopkg.in/tomb.v2"
+
+	"github.com/256dpi/fire/stick"
 )
 
 // ErrStop may be returned by a receiver to stop the stream.
@@ -47,6 +54,19 @@ const (
 // Receiver is a callback that receives stream events.
 type Receiver func(event Event, id ID, model Model, err error, token []byte) error
 
+// The delays between attempts to tail a stream that keeps failing. A stream
+// that ran for the maximum delay is resumed right away.
+const (
+	streamMinDelay = 100 * time.Millisecond
+	streamMaxDelay = 10 * time.Second
+)
+
+// The server error codes of a resume token that is no longer in the oplog.
+const (
+	errChangeStreamFatal       = 280
+	errChangeStreamHistoryLost = 286
+)
+
 // Stream simplifies the handling of change streams to receive changes to
 // documents.
 type Stream struct {
@@ -64,8 +84,11 @@ type Stream struct {
 // resume the stream.
 //
 // The stream automatically resumes on errors using an internally stored resume
-// token. Applications that need more control should store the token externally
-// and reopen the stream manually to resume from a specific position.
+// token, which also advances while no events arrive. Attempts that keep
+// failing are delayed with an exponential backoff. If the token is no longer
+// in the oplog, the changes in between are lost and the stream panics.
+// Applications that need more control should store the token externally and
+// reopen the stream manually to resume from a specific position.
 func OpenStream(store *Store, model Model, token []byte, receiver Receiver) *Stream {
 	// create stream
 	s := &Stream{
@@ -89,6 +112,9 @@ func (s *Stream) Close() {
 }
 
 func (s *Stream) open() error {
+	// prepare failures
+	var failures int
+
 	for {
 		// check if alive
 		if !s.tomb.Alive() {
@@ -96,16 +122,46 @@ func (s *Stream) open() error {
 		}
 
 		// tail stream
+		start := time.Now()
 		err := s.tail()
 		if ErrStop.Is(err) {
 			return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
-		} else if err != nil {
-			err = xo.W(s.receiver(Errored, ID{}, nil, err, s.token))
-			if ErrStop.Is(err) {
-				return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
+		} else if err == nil {
+			continue
+		}
+
+		// the stream cannot be resumed if its history was lost
+		if historyLost(err) {
+			panic(fmt.Sprintf("coal: stream on %q lost its history: %s", GetMeta(s.model).Collection, err.Error()))
+		}
+
+		// report error
+		err = xo.W(s.receiver(Errored, ID{}, nil, err, s.token))
+		if ErrStop.Is(err) {
+			return xo.W(s.receiver(Stopped, ID{}, nil, nil, s.token))
+		}
+
+		// retry right away after a stream that ran for a while, but back off
+		// while attempts keep failing quickly
+		if time.Since(start) >= streamMaxDelay {
+			failures = 0
+		}
+		if failures > 0 {
+			select {
+			case <-time.After(stick.Backoff(streamMinDelay, streamMaxDelay, 2, failures-1)):
+			case <-s.tomb.Dying():
 			}
 		}
+		failures++
 	}
+}
+
+// historyLost returns whether the error says the resume token is no longer in
+// the oplog.
+func historyLost(err error) bool {
+	var serverErr mongo.ServerError
+	return errors.As(err, &serverErr) &&
+		(serverErr.HasErrorCode(errChangeStreamHistoryLost) || serverErr.HasErrorCode(errChangeStreamFatal))
 }
 
 func (s *Stream) tail() error {
@@ -204,6 +260,13 @@ func (s *Stream) tail() error {
 
 		// save token
 		s.token = ch.ResumeToken
+	}
+
+	// keep the latest token, which the server advances with every batch, so
+	// a stream without events does not fall behind the oplog; all delivered
+	// events have been received at this point
+	if token := cs.ResumeToken(); token != nil {
+		s.token = token
 	}
 
 	// stop cleanly if the stream was cancelled as part of shutdown.
