@@ -8,7 +8,7 @@ require (
 	github.com/256dpi/lungo v0.4.0
 	github.com/256dpi/oauth2/v2 v2.2.1
 	github.com/256dpi/serve v0.9.1
-	github.com/256dpi/xo v0.4.6
+	github.com/256dpi/xo v0.4.7
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9
