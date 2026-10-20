@@ -33,8 +33,11 @@ var ErrApprovalRejected = xo.BF("approval rejected")
 // requested scope exceeds the grantable scope.
 var ErrInvalidScope = xo.BF("invalid scope")
 
-// Key is they key used to issue and verify tokens and codes.
-type Key struct {
+// TokenKey is the key used to issue and verify tokens and codes.
+//
+// Note: The heat name "flame/key" is part of every issued token and must not
+// change.
+type TokenKey struct {
 	heat.Base `json:"-" heat:"flame/key,1h"`
 
 	// The extra data included in the key.
@@ -250,7 +253,7 @@ func (p *Policy) Issue(ctx context.Context, token GenericToken, client Client, r
 	}
 
 	// prepare key
-	key := Key{
+	key := TokenKey{
 		Base: heat.Base{
 			ID:      token.ID(),
 			Issued:  issued,
@@ -269,9 +272,9 @@ func (p *Policy) Issue(ctx context.Context, token GenericToken, client Client, r
 }
 
 // Verify will verify the presented token and return the decoded raw key.
-func (p *Policy) Verify(ctx context.Context, str string) (*Key, error) {
+func (p *Policy) Verify(ctx context.Context, str string) (*TokenKey, error) {
 	// parse token and check expired errors
-	var key Key
+	var key TokenKey
 	err := p.Notary.Verify(ctx, &key, str)
 	if err != nil {
 		return nil, err
