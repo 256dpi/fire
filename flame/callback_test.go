@@ -97,3 +97,73 @@ func TestCallbackMissingClient(t *testing.T) {
 		assert.Len(t, ctx.Data, 0)
 	})
 }
+
+func TestCallbackKey(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		client := &Application{
+			Name: "app",
+		}
+
+		resourceOwner := &User{
+			Name: "user",
+		}
+
+		key := &testKey{
+			Scope: []string{"foo", "bar"},
+		}
+
+		tester.Context = context.WithValue(tester.Context, ClientContextKey, client)
+		tester.Context = context.WithValue(tester.Context, ResourceOwnerContextKey, resourceOwner)
+		tester.Context = context.WithValue(tester.Context, KeyContextKey, key)
+
+		cb := Callback(true, "foo")
+
+		ctx := &fire.Context{}
+		err := tester.RunCallback(ctx, cb)
+		assert.NoError(t, err)
+
+		assert.Len(t, ctx.Data, 1)
+		assert.Equal(t, AuthInfo{
+			Client:        client,
+			ResourceOwner: resourceOwner,
+			Key:           key,
+		}, *ctx.Data[AuthInfoDataKey].(*AuthInfo))
+	})
+}
+
+func TestCallbackKeyWithoutClient(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		key := &testKey{
+			Scope: []string{"foo"},
+		}
+
+		tester.Context = context.WithValue(context.Background(), KeyContextKey, key)
+
+		cb := Callback(true, "foo")
+
+		ctx := &fire.Context{}
+		err := tester.RunCallback(ctx, cb)
+		assert.NoError(t, err)
+
+		assert.Len(t, ctx.Data, 1)
+		assert.Equal(t, AuthInfo{
+			Key: key,
+		}, *ctx.Data[AuthInfoDataKey].(*AuthInfo))
+	})
+}
+
+func TestCallbackInsufficientKey(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		tester.Context = context.WithValue(context.Background(), KeyContextKey, &testKey{
+			Scope: []string{"bar"},
+		})
+
+		cb := Callback(true, "foo")
+
+		ctx := &fire.Context{}
+		err := tester.RunCallback(ctx, cb)
+		assert.Error(t, err)
+
+		assert.Len(t, ctx.Data, 0)
+	})
+}

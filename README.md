@@ -28,6 +28,7 @@ Go on Fire ships with built-in support for various features to provide a complet
 - Event sourcing via WebSockets and SSE.
 - Declarative authentication and authorization framework.
 - Integrated OAuth2 authenticator and authorizer.
+- Personal and API keys.
 - Support for tracing via [opentracing](https://opentracing.io).
 
 ## Installation

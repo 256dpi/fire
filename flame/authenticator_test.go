@@ -3,6 +3,7 @@ package flame
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -451,4 +452,434 @@ func mustIssue(p *Policy, typ TokenType, id coal.ID, expiresAt time.Time) string
 	}
 
 	return str
+}
+
+type keyCapture struct {
+	key           GenericKey
+	client        Client
+	resourceOwner ResourceOwner
+	accessToken   GenericToken
+}
+
+func newKeyHandler(auth *Authenticator, loadClient, loadResourceOwner bool, capture *keyCapture) http.Handler {
+	authorizer := auth.Authorizer([]string{"foo"}, true, loadClient, loadResourceOwner)
+	return authorizer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*capture = keyCapture{}
+		capture.key, _ = r.Context().Value(KeyContextKey).(GenericKey)
+		capture.client, _ = r.Context().Value(ClientContextKey).(Client)
+		capture.resourceOwner, _ = r.Context().Value(ResourceOwnerContextKey).(ResourceOwner)
+		capture.accessToken, _ = r.Context().Value(AccessTokenContextKey).(GenericToken)
+		_, _ = w.Write([]byte("OK"))
+	}))
+}
+
+func keyRequest(handler http.Handler, token string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	return res
+}
+
+func keyPolicy() *Policy {
+	policy := DefaultPolicy(testNotary)
+	policy.Key = &testKey{}
+	policy.KeyPrefix = "tk_"
+	return policy
+}
+
+func insertKey(t *testing.T, tester *fire.Tester, key *testKey) (*testKey, string) {
+	key.Base = coal.B()
+	secret, err := keyPolicy().GenerateKey(key)
+	assert.NoError(t, err)
+	tester.Insert(key)
+	return key, secret
+}
+
+func TestKeyAuthorizer(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		var errs []string
+		authenticator := NewAuthenticator(tester.Store, keyPolicy(), func(err error) {
+			errs = append(errs, err.Error())
+		})
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		application := tester.Insert(&Application{
+			Name: "App",
+			Key:  "application",
+		}).(*Application)
+
+		user := tester.Insert(&User{
+			Name:     "User",
+			Email:    "user@example.com",
+			Password: "foo",
+		}).(*User)
+
+		/* keys referencing a client and resource owner */
+
+		fullKey, fullSecret := insertKey(t, tester, &testKey{
+			Scope:       []string{"foo", "bar"},
+			Application: stick.P(application.ID()),
+			User:        stick.P(user.ID()),
+		})
+
+		res := keyRequest(handler, fullSecret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, fullKey.ID(), capture.key.ID())
+		assert.Equal(t, application.ID(), capture.client.ID())
+		assert.Equal(t, user.ID(), capture.resourceOwner.ID())
+		assert.Nil(t, capture.accessToken)
+
+		/* keys referencing nothing */
+
+		plainKey, plainSecret := insertKey(t, tester, &testKey{
+			Scope: []string{"foo"},
+		})
+
+		res = keyRequest(handler, plainSecret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, plainKey.ID(), capture.key.ID())
+		assert.Nil(t, capture.client)
+		assert.Nil(t, capture.resourceOwner)
+		assert.Nil(t, capture.accessToken)
+
+		/* keys referencing only a resource owner */
+
+		userKey, userSecret := insertKey(t, tester, &testKey{
+			Scope: []string{"foo"},
+			User:  stick.P(user.ID()),
+		})
+
+		res = keyRequest(handler, userSecret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, userKey.ID(), capture.key.ID())
+		assert.Nil(t, capture.client)
+		assert.Equal(t, user.ID(), capture.resourceOwner.ID())
+
+		/* keys that have not yet expired */
+
+		_, futureSecret := insertKey(t, tester, &testKey{
+			Scope:     []string{"foo"},
+			ExpiresAt: stick.P(time.Now().Add(time.Hour)),
+		})
+
+		res = keyRequest(handler, futureSecret)
+		assert.Equal(t, http.StatusOK, res.Code)
+
+		/* insufficient scope */
+
+		_, barSecret := insertKey(t, tester, &testKey{
+			Scope: []string{"bar"},
+		})
+
+		res = keyRequest(handler, barSecret)
+		assert.Equal(t, http.StatusForbidden, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error="insufficient_scope"`)
+
+		/* unknown and tampered keys */
+
+		for _, secret := range []string{"tk_unknown", fullSecret + "x", fullSecret[:len(fullSecret)-1]} {
+			res = keyRequest(handler, secret)
+			assert.Equal(t, http.StatusUnauthorized, res.Code)
+			assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error="invalid_token"`)
+			assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="unknown key"`)
+		}
+
+		/* keys without the prefix are verified as access tokens */
+
+		for _, secret := range []string{fullSecret[len("tk_"):], "ok_" + fullSecret[len("tk_"):]} {
+			res = keyRequest(handler, secret)
+			assert.Equal(t, http.StatusUnauthorized, res.Code)
+			assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="malformed bearer token"`)
+		}
+
+		/* expired key */
+
+		expiredKey, expiredSecret := insertKey(t, tester, &testKey{
+			Scope:     []string{"foo"},
+			ExpiresAt: stick.P(time.Now().Add(-time.Hour)),
+		})
+
+		res = keyRequest(handler, expiredSecret)
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="expired key"`)
+		assert.Nil(t, tester.Fetch(&testKey{}, expiredKey.ID()).(*testKey).Used)
+
+		/* missing resource owner */
+
+		_, missingUserSecret := insertKey(t, tester, &testKey{
+			Scope: []string{"foo"},
+			User:  stick.P(coal.New()),
+		})
+
+		res = keyRequest(handler, missingUserSecret)
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="missing resource owner"`)
+
+		/* missing client */
+
+		_, missingClientSecret := insertKey(t, tester, &testKey{
+			Scope:       []string{"foo"},
+			Application: stick.P(coal.New()),
+		})
+
+		assert.Empty(t, errs)
+		res = keyRequest(handler, missingClientSecret)
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
+		assert.Equal(t, []string{"missing client"}, errs)
+
+		/* revoked key */
+
+		tester.Delete(plainKey)
+
+		res = keyRequest(handler, plainSecret)
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="unknown key"`)
+	})
+}
+
+func TestKeyAuthorizerUse(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		authenticator := NewAuthenticator(tester.Store, keyPolicy(), xo.Crash)
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		key, secret := insertKey(t, tester, &testKey{
+			Scope: []string{"foo"},
+		})
+		assert.Nil(t, key.Used)
+
+		// first use is recorded
+		res := keyRequest(handler, secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		used := capture.key.(*testKey).Used
+		assert.NotNil(t, used)
+		assert.WithinDuration(t, time.Now(), *used, time.Second)
+		stored := tester.Fetch(&testKey{}, key.ID()).(*testKey).Used
+		assert.NotNil(t, stored)
+		assert.WithinDuration(t, *used, *stored, time.Millisecond)
+
+		// recent use is not recorded again
+		recent := time.Now().Add(-KeyUseInterval / 2).Round(time.Millisecond)
+		tester.Update(key, bson.M{"$set": bson.M{"Used": recent}})
+		res = keyRequest(handler, secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, recent, capture.key.(*testKey).Used.Local())
+		assert.Equal(t, recent, tester.Fetch(&testKey{}, key.ID()).(*testKey).Used.Local())
+
+		// older use is recorded again
+		tester.Update(key, bson.M{"$set": bson.M{"Used": time.Now().Add(-KeyUseInterval * 2)}})
+		res = keyRequest(handler, secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.WithinDuration(t, time.Now(), *capture.key.(*testKey).Used, time.Second)
+		assert.WithinDuration(t, time.Now(), *tester.Fetch(&testKey{}, key.ID()).(*testKey).Used, time.Second)
+	})
+}
+
+func TestKeyAuthorizerWithoutUse(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		policy := DefaultPolicy(testNotary)
+		policy.Key = &testMinimalKey{}
+		policy.KeyPrefix = "tk_"
+
+		authenticator := NewAuthenticator(tester.Store, policy, xo.Crash)
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		key := &testMinimalKey{Base: coal.B(), Scope: []string{"foo"}}
+		secret, err := policy.GenerateKey(key)
+		assert.NoError(t, err)
+		tester.Insert(key)
+
+		res := keyRequest(handler, secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, key.ID(), capture.key.ID())
+	})
+}
+
+func TestKeyAuthorizerLoading(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		authenticator := NewAuthenticator(tester.Store, keyPolicy(), xo.Crash)
+
+		application := tester.Insert(&Application{
+			Name: "App",
+			Key:  "application",
+		}).(*Application)
+
+		user := tester.Insert(&User{
+			Name:     "User",
+			Email:    "user@example.com",
+			Password: "foo",
+		}).(*User)
+
+		key, secret := insertKey(t, tester, &testKey{
+			Scope:       []string{"foo"},
+			Application: stick.P(application.ID()),
+			User:        stick.P(user.ID()),
+		})
+
+		var capture keyCapture
+
+		res := keyRequest(newKeyHandler(authenticator, false, false, &capture), secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, key.ID(), capture.key.ID())
+		assert.Nil(t, capture.client)
+		assert.Nil(t, capture.resourceOwner)
+
+		res = keyRequest(newKeyHandler(authenticator, true, false, &capture), secret)
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, key.ID(), capture.key.ID())
+		assert.Equal(t, application.ID(), capture.client.ID())
+		assert.Nil(t, capture.resourceOwner)
+	})
+}
+
+func TestKeyAuthorizerAccessTokens(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		policy := keyPolicy()
+		authenticator := NewAuthenticator(tester.Store, policy, xo.Crash)
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		application := tester.Insert(&Application{
+			Name: "App",
+			Key:  "application",
+		}).(*Application)
+
+		accessToken := tester.Insert(&Token{
+			Type:        AccessToken,
+			ExpiresAt:   time.Now().Add(time.Hour),
+			Scope:       []string{"foo"},
+			Application: application.ID(),
+		}).(*Token)
+
+		// access tokens are still verified as such
+		res := keyRequest(handler, mustIssue(policy, AccessToken, accessToken.ID(), accessToken.ExpiresAt))
+		assert.Equal(t, http.StatusOK, res.Code)
+		assert.Equal(t, accessToken.ID(), capture.accessToken.ID())
+		assert.Equal(t, application.ID(), capture.client.ID())
+		assert.Nil(t, capture.key)
+
+		// tokens without the prefix are not verified as keys
+		res = keyRequest(handler, "foo")
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="malformed bearer token"`)
+	})
+}
+
+func TestKeyAuthorizerWithoutKeyModel(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		authenticator := NewAuthenticator(tester.Store, DefaultPolicy(testNotary), xo.Crash)
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		_, secret := insertKey(t, tester, &testKey{
+			Scope: []string{"foo"},
+		})
+
+		res := keyRequest(handler, secret)
+		assert.Equal(t, http.StatusUnauthorized, res.Code)
+		assert.Contains(t, res.Header().Get("WWW-Authenticate"), `error_description="malformed bearer token"`)
+		assert.Nil(t, capture.key)
+	})
+}
+
+func TestNewAuthenticatorKeyModel(t *testing.T) {
+	assert.NotPanics(t, func() {
+		NewAuthenticator(lungoStore, keyPolicy(), xo.Crash)
+	})
+
+	assert.PanicsWithValue(t, "flame: missing key prefix", func() {
+		policy := keyPolicy()
+		policy.KeyPrefix = ""
+		NewAuthenticator(lungoStore, policy, xo.Crash)
+	})
+
+	assert.PanicsWithValue(t, `flame: expected "flame-key-used" field to be a time pointer`, func() {
+		policy := keyPolicy()
+		policy.Key = &testInvalidUsedKey{}
+		NewAuthenticator(lungoStore, policy, xo.Crash)
+	})
+}
+
+func TestDefaultKeyAuthorizer(t *testing.T) {
+	withTester(t, func(t *testing.T, tester *fire.Tester) {
+		policy := DefaultPolicy(testNotary)
+		policy.Key = &Key{}
+		policy.KeyPrefix = "fk_"
+
+		authenticator := NewAuthenticator(tester.Store, policy, xo.Crash)
+
+		var capture keyCapture
+		handler := newKeyHandler(authenticator, true, true, &capture)
+
+		application := tester.Insert(&Application{
+			Name: "App",
+			Key:  "application",
+		}).(*Application)
+
+		user := tester.Insert(&User{
+			Name:     "User",
+			Email:    "user@example.com",
+			Password: "foo",
+		}).(*User)
+
+		for _, item := range []struct {
+			name        string
+			application *coal.ID
+			user        *coal.ID
+		}{
+			{name: "application", application: stick.P(application.ID())},
+			{name: "user", user: stick.P(user.ID())},
+			{name: "both", application: stick.P(application.ID()), user: stick.P(user.ID())},
+		} {
+			t.Run(item.name, func(t *testing.T) {
+				key := &Key{
+					Base:        coal.B(),
+					Name:        item.name,
+					Scope:       []string{"foo"},
+					Application: item.application,
+					User:        item.user,
+				}
+
+				// generate secret
+				secret, err := policy.GenerateKey(key)
+				assert.NoError(t, err)
+				assert.Equal(t, secret, key.Secret)
+				assert.True(t, strings.HasPrefix(key.Fingerprint, "fk_"))
+				tester.Insert(key)
+
+				// secret is not stored
+				stored := tester.Fetch(&Key{}, key.ID()).(*Key)
+				assert.Empty(t, stored.Secret)
+				assert.Nil(t, stored.Used)
+
+				// authorize
+				res := keyRequest(handler, secret)
+				assert.Equal(t, http.StatusOK, res.Code)
+				assert.Equal(t, key.ID(), capture.key.ID())
+				assert.Nil(t, capture.accessToken)
+				if item.application != nil {
+					assert.Equal(t, application.ID(), capture.client.ID())
+				} else {
+					assert.Nil(t, capture.client)
+				}
+				if item.user != nil {
+					assert.Equal(t, user.ID(), capture.resourceOwner.ID())
+				} else {
+					assert.Nil(t, capture.resourceOwner)
+				}
+
+				// use is recorded
+				stored = tester.Fetch(&Key{}, key.ID()).(*Key)
+				assert.NotNil(t, stored.Used)
+			})
+		}
+	})
 }

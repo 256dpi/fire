@@ -89,6 +89,15 @@ type Policy struct {
 	// The client models.
 	Clients []Client
 
+	// The key model and the prefix of its secrets. If a model is set, bearer
+	// tokens that carry the prefix are verified as keys instead of access
+	// tokens. See GenericKey for the fields a key model must flag.
+	//
+	// Note: ResourceOwners is called without a client for keys that reference
+	// a resource owner but no client.
+	Key       GenericKey
+	KeyPrefix string
+
 	// Grants should return the permitted grants for the provided client.
 	Grants func(ctx *Context, c Client) (Grants, error)
 
@@ -281,4 +290,9 @@ func (p *Policy) Verify(ctx context.Context, str string) (*TokenKey, error) {
 	}
 
 	return &key, nil
+}
+
+// GenerateKey will call GenerateKey with the policy's key prefix.
+func (p *Policy) GenerateKey(key GenericKey) (string, error) {
+	return GenerateKey(key, p.KeyPrefix)
 }

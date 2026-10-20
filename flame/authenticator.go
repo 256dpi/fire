@@ -31,25 +31,42 @@ const (
 	// ResourceOwnerContextKey is the key used to save the resource owner in a
 	// context.
 	ResourceOwnerContextKey = ctxKey("resource-owner")
+
+	// KeyContextKey is the key used to save the key in a context.
+	KeyContextKey = ctxKey("key")
 )
 
 // Authenticator provides OAuth2 based authentication and authorization. The
 // implementation supports the standard "Resource Owner Credentials Grant",
 // "Client Credentials Grant", "Implicit Grant" and "Authorization Code Grant".
 // Additionally, it supports the "Refresh Token Grant" and "Token Revocation"
-// flows.
+// flows. Requests may also be authorized with keys that are presented directly
+// as bearer tokens.
 type Authenticator struct {
-	store    *coal.Store
-	policy   *Policy
-	reporter func(error)
+	store     *coal.Store
+	policy    *Policy
+	reporter  func(error)
+	keyFields keyFields
 }
 
-// NewAuthenticator constructs a new Authenticator from a store and policy.
+// NewAuthenticator constructs a new Authenticator from a store and policy. It
+// will panic if the policy's key model is set without a key prefix or does not
+// flag its fields as required.
 func NewAuthenticator(store *coal.Store, policy *Policy, reporter func(error)) *Authenticator {
+	// check key model
+	var fields keyFields
+	if policy.Key != nil {
+		if policy.KeyPrefix == "" {
+			panic("flame: missing key prefix")
+		}
+		fields = getKeyFields(policy.Key)
+	}
+
 	return &Authenticator{
-		store:    store,
-		policy:   policy,
-		reporter: reporter,
+		store:     store,
+		policy:    policy,
+		reporter:  reporter,
+		keyFields: fields,
 	}
 }
 
@@ -115,7 +132,8 @@ func (a *Authenticator) Endpoint(prefix string) http.Handler {
 }
 
 // Authorizer returns a middleware that can be used to authorize a request by
-// requiring an access token with the provided scope to be granted.
+// requiring an access token or key with the provided scope to be granted.
+// Bearer tokens that carry the policy's key prefix are verified as keys.
 func (a *Authenticator) Authorizer(scope []string, force, loadClient, loadResourceOwner bool) func(http.Handler) http.Handler {
 	// get scope str
 	scopeStr := oauth2.Scope(scope).String()
@@ -165,20 +183,88 @@ func (a *Authenticator) Authorizer(scope []string, force, loadClient, loadResour
 			tk, err := oauth2.ParseBearerToken(r)
 			xo.AbortIf(err)
 
-			// parse token
-			key, err := a.policy.Verify(rcx, tk)
-			if heat.ErrExpiredToken.Is(err) {
-				xo.Abort(oauth2.InvalidToken("expired bearer token"))
-			} else if err != nil {
-				xo.Abort(oauth2.InvalidToken("malformed bearer token"))
-			}
-
 			// prepare context
 			ctx := &Context{
 				Context: rcx,
 				Request: r,
 				writer:  w,
 				Tracer:  tracer,
+			}
+
+			// authorize key if the token carries the key prefix
+			if a.policy.Key != nil && strings.HasPrefix(tk, a.policy.KeyPrefix) {
+				// get key
+				storedKey := a.verifyKey(ctx, tk)
+
+				// get key data
+				data := storedKey.GetKeyData()
+
+				// validate expiration
+				if data.ExpiresAt != nil && data.ExpiresAt.Before(time.Now()) {
+					xo.Abort(oauth2.InvalidToken("expired key"))
+				}
+
+				// record use
+				a.recordKeyUse(ctx, storedKey)
+
+				// validate scope
+				if !data.Scope.Includes(scope) {
+					xo.Abort(oauth2.InsufficientScope(scope))
+				}
+
+				// create new context with key
+				rcx = context.WithValue(rcx, KeyContextKey, storedKey)
+
+				// call next handler if client should not be loaded
+				if !loadClient {
+					// call next handler
+					next.ServeHTTP(w, r.WithContext(rcx))
+
+					return
+				}
+
+				// get client if referenced
+				var client Client
+				if data.ClientID != nil {
+					client = a.getFirstClient(ctx, *data.ClientID)
+					if client == nil {
+						xo.Abort(xo.F("missing client"))
+					}
+
+					// create new context with client
+					rcx = context.WithValue(rcx, ClientContextKey, client)
+				}
+
+				// call next handler if resource owner does not exist or should
+				// not be loaded
+				if data.ResourceOwnerID == nil || !loadResourceOwner {
+					// call next handler
+					next.ServeHTTP(w, r.WithContext(rcx))
+
+					return
+				}
+
+				// get resource owner
+				resourceOwner := a.getFirstResourceOwner(ctx, client, *data.ResourceOwnerID)
+				if resourceOwner == nil {
+					xo.Abort(oauth2.InvalidToken("missing resource owner"))
+				}
+
+				// create new context with resource owner
+				rcx = context.WithValue(rcx, ResourceOwnerContextKey, resourceOwner)
+
+				// call next handler
+				next.ServeHTTP(w, r.WithContext(rcx))
+
+				return
+			}
+
+			// parse token
+			key, err := a.policy.Verify(rcx, tk)
+			if heat.ErrExpiredToken.Is(err) {
+				xo.Abort(oauth2.InvalidToken("expired bearer token"))
+			} else if err != nil {
+				xo.Abort(oauth2.InvalidToken("malformed bearer token"))
 			}
 
 			// get token
@@ -1126,6 +1212,55 @@ func (a *Authenticator) getToken(ctx *Context, id coal.ID) GenericToken {
 	}
 
 	return token
+}
+
+func (a *Authenticator) verifyKey(ctx *Context, secret string) GenericKey {
+	// trace
+	ctx.Tracer.Push("flame/Authenticator.verifyKey")
+	defer ctx.Tracer.Pop()
+
+	// prepare key
+	key := coal.GetMeta(a.policy.Key).Make().(GenericKey)
+
+	// find key by hash
+	found, err := a.store.M(key).FindFirst(ctx, key, bson.M{
+		a.keyFields.hash: hashKey(secret),
+	}, nil, 0, false)
+	xo.AbortIf(err)
+	if !found {
+		xo.Abort(oauth2.InvalidToken("unknown key"))
+	}
+
+	return key
+}
+
+func (a *Authenticator) recordKeyUse(ctx *Context, key GenericKey) {
+	// trace
+	ctx.Tracer.Push("flame/Authenticator.recordKeyUse")
+	defer ctx.Tracer.Pop()
+
+	// check field
+	if a.keyFields.used == "" {
+		return
+	}
+
+	// check last use
+	now := time.Now()
+	used := stick.MustGet(key, a.keyFields.used).(*time.Time)
+	if used != nil && now.Sub(*used) < KeyUseInterval {
+		return
+	}
+
+	// record use
+	_, err := a.store.M(key).Update(ctx, nil, key.ID(), bson.M{
+		"$set": bson.M{
+			a.keyFields.used: now,
+		},
+	}, false)
+	xo.AbortIf(err)
+
+	// update key
+	stick.MustSet(key, a.keyFields.used, &now)
 }
 
 func (a *Authenticator) saveToken(ctx *Context, typ TokenType, scope []string, expiresAt time.Time, redirectURI string, client Client, resourceOwner ResourceOwner) GenericToken {
